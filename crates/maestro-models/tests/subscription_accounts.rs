@@ -15,13 +15,13 @@ fn subscription_refresh_omits_scope() {
         assert_eq!(String::from_utf8(request.body).unwrap(), r#"{"grant_type":"refresh_token","client_id":"9d1c250a-e61b-44d9-88ed-5944d1962f5e","refresh_token":"old"}"#);
         Box::pin(async { Ok(HttpResponse { status_text: String::new(), status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"rotated-access","refresh_token":"rotated-refresh","expires_in":3600,"scope":"discard"}"#.to_vec())])) }) })
     });
-    let before = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64() * 1000.0;
+    let before = crate::clock::epoch_millis();
     let credentials = refresh_anthropic_token("old".into(), Some(fetch)).await.unwrap();
-    let after = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64() * 1000.0;
+    let after = crate::clock::epoch_millis();
     assert_eq!(credentials.access, "rotated-access");
     assert_eq!(credentials.refresh, "rotated-refresh");
     assert!(credentials.extra.is_empty());
-    assert!((before.floor() + 3_300_000.0..=after.floor() + 3_300_000.0).contains(&credentials.expires));
+    assert!((before + 3_300_000.0..=after + 3_300_000.0).contains(&credentials.expires));
     });
 }
 

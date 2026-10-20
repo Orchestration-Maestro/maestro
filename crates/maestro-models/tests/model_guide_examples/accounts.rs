@@ -184,13 +184,7 @@ fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
     let _registry = bundled::registry();
     block_on(false, async {
         reset_api_providers();
-        assert_eq!(
-            get_api_providers()
-                .iter()
-                .map(|p| p.api.as_str())
-                .collect::<Vec<_>>(),
-            bundled::registered_apis()
-        );
+        assert_eq!(bundled::registered(), bundled::registered_apis());
         register_api_provider(api_provider("old result"), Some("guide-old".into()));
         let old = get_api_provider("guide-api").ok_or("old callback")?;
         register_api_provider(api_provider("new result"), Some("guide-new".into()));
@@ -219,13 +213,7 @@ fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
             .await;
         assert_eq!(bundled::text_of(&retained), "old result");
         reset_api_providers();
-        assert_eq!(
-            get_api_providers()
-                .iter()
-                .map(|p| p.api.as_str())
-                .collect::<Vec<_>>(),
-            bundled::registered_apis()
-        );
+        assert_eq!(bundled::registered(), bundled::registered_apis());
         check_account_handles().await?;
         Ok(())
     })

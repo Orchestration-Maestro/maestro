@@ -91,30 +91,24 @@ mod tests {
 
     #[test]
     fn maestro_diagnostics_append_with_current_timestamp() {
+        use crate::clock::epoch_millis;
         use maestro_models::records::diagnostics::{
             DiagnosticInput, append_assistant_message_diagnostic,
             create_assistant_message_diagnostic,
         };
         use maestro_models::records::types::AssistantMessage;
-        let now = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs_f64()
-                * 1000.0
-        };
-        let before = now().floor();
+        let before = epoch_millis();
         let details = json!({"attempt":2});
         let diagnostic = create_assistant_message_diagnostic(
             "retry",
             DiagnosticInput::Text("failure"),
             Some(details.as_object().unwrap().clone()),
         );
-        let after = now();
+        let after = epoch_millis();
         assert!(diagnostic.timestamp >= before && diagnostic.timestamp <= after);
         let root = maestro_models::timestamp_now();
         let module = maestro_models::records::diagnostics::timestamp_now();
-        assert!(root >= before && module >= root && module <= now());
+        assert!(root >= before && module >= root && module <= epoch_millis());
         assert!(root.fract().abs() < f64::EPSILON);
         assert_eq!(diagnostic.r#type, "retry");
         assert_eq!(

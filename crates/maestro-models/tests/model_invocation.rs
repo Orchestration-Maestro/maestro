@@ -213,13 +213,7 @@ mod tests {
         }
         let retained = get_api_provider("2").unwrap();
         register_api_provider(provider("2", 40.0), Some("new".into()));
-        assert_eq!(
-            get_api_providers()
-                .iter()
-                .map(|entry| entry.api.as_str())
-                .collect::<Vec<_>>(),
-            ["10", "2", "01"]
-        );
+        assert_eq!(crate::bundled::registered(), ["10", "2", "01"]);
         assert_eq!(
             ready(stream(model("2"), context(), None).unwrap().result())
                 .read()
@@ -237,13 +231,7 @@ mod tests {
             41.0_f64.to_bits()
         );
         unregister_api_providers("old");
-        assert_eq!(
-            get_api_providers()
-                .iter()
-                .map(|entry| entry.api.as_str())
-                .collect::<Vec<_>>(),
-            ["2"]
-        );
+        assert_eq!(crate::bundled::registered(), ["2"]);
         unregister_api_providers("absent");
         clear_api_providers();
         assert!(get_api_providers().is_empty());

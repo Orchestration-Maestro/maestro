@@ -11,7 +11,7 @@ use maestro_models::{
 use serde_json::{Value, json};
 
 use crate::chat::{TestResult, context, model, rows};
-use crate::json::canonical;
+use crate::json::{canonical, decode};
 
 /// What a case observed.
 pub struct Observed {
@@ -172,14 +172,6 @@ fn response_hook(case: &Value, log: &Log) -> OnResponse {
             .map_or(Ok(()), |message| Err(hook_failure(message)));
         Box::pin(std::future::ready(outcome))
     })
-}
-
-/// Decode an optional option the case names.
-fn decode<T: serde::de::DeserializeOwned>(spec: &Value, key: &str) -> TestResult<Option<T>> {
-    Ok(spec
-        .get(key)
-        .map(|value| serde_json::from_value(value.clone()))
-        .transpose()?)
 }
 
 /// Decode the options a case names into common stream options with the hooks installed.

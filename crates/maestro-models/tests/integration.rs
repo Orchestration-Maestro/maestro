@@ -51,6 +51,8 @@ mod chat_response_identity;
 mod chat_tool_choices;
 mod checked_tool_arguments;
 mod circle_fixture;
+#[path = "support/clock.rs"]
+mod clock;
 mod cloud_content_projection;
 mod cloud_conversation_configuration;
 mod cloud_conversation_conversion;

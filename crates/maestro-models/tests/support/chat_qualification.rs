@@ -2,7 +2,7 @@
 
 use crate::{
     bundled, chat,
-    json::{canonical, event_record},
+    json::{canonical, event_record, exact_context},
 };
 use chat::TestResult;
 use maestro_models::{
@@ -370,18 +370,6 @@ fn metadata(catalog: &Catalog) -> TestResult<Value> {
         entries.push(entry);
     }
     Ok(json!({"metadata": entries}))
-}
-
-/// Decode conversation records only when every fixture field survives in the public type.
-fn exact_context<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Context, D::Error> {
-    use serde::de::Error as _;
-    let value = Value::deserialize(decoder)?;
-    let context: Context = serde_json::from_value(value.clone()).map_err(D::Error::custom)?;
-    let retained = serde_json::to_value(&context).map_err(D::Error::custom)?;
-    if canonical(retained) != canonical(value) {
-        return Err(D::Error::custom("context fixture fields were not retained"));
-    }
-    Ok(context)
 }
 
 /// Common settings and the transport's request recorder for one invocation.

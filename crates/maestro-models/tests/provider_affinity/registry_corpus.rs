@@ -1,5 +1,6 @@
 //! Recorded ordered registry changes retain their original callback owners.
 #![cfg(test)]
+use crate::bundled::registered;
 use maestro_models::*;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -94,13 +95,13 @@ async fn observe(
             let old = retained.as_ref().unwrap();
             let current = get_api_provider(&replaced).unwrap();
             Ok(
-                json!({"order": order(), "retained": text(&old.stream, &replaced, local).await?,
+                json!({"order": registered(), "retained": text(&old.stream, &replaced, local).await?,
                 "current": text(&current.stream, &replaced, local).await?}),
             )
         }
         Input::Cleanup { remove } => {
             unregister_api_providers(&remove);
-            Ok(json!({"remaining":order()}))
+            Ok(json!({"remaining":registered()}))
         }
         Input::Clear { clear } => {
             assert!(clear);
@@ -120,13 +121,6 @@ async fn observe(
             Ok(json!({"error":error.message}))
         }
     }
-}
-/// Ordered keys retain insertion and replacement position.
-fn order() -> Vec<String> {
-    get_api_providers()
-        .into_iter()
-        .map(|provider| provider.api)
-        .collect()
 }
 /// Choose only the family envelope; synchronous callbacks never submit production.
 fn invocation<K: StreamOptionsFamily>(local: bool) -> ProviderInvocation<K> {

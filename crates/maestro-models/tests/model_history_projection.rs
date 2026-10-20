@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use crate::clock::epoch_millis;
     use maestro_models::*;
     use serde_json::json;
 
@@ -591,15 +592,6 @@ mod tests {
         user.content = UserContent::Text("changed".into());
     }
 
-    fn now() -> f64 {
-        (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64()
-            * 1000.0)
-            .floor()
-    }
-
     #[test]
     fn maestro_projection_never_mutates_history() {
         let source = assistant(vec![
@@ -629,9 +621,9 @@ mod tests {
             seen.borrow_mut().push(id.to_owned());
             format!("normalized-{id}")
         };
-        let before = now();
+        let before = epoch_millis();
         let mut output = transform_messages(&context.messages, &model(), Some(&normalize));
-        let after = now();
+        let after = epoch_millis();
         assert_eq!(*seen.borrow(), vec!["a", "b"]);
         assert_eq!(context, original);
         assert_eq!(output.len(), 4);
