@@ -112,7 +112,8 @@ impl<'a> Sequence<'a> {
     fn new(event: &'a KeyEvent, opts: &KeyEncoder, entry: Entry) -> Self {
         let mods = event.mods;
         let semantic = opts.encoding == super::KeyEncoding::Semantic;
-        let wire_mods = modifier_code(mods) + ((mods.int() & 0x30) << 2);
+        let wire_mods =
+            modifier_code(mods) + ((mods.int() >> 6) & 0x30) + ((mods.int() & 0x30) << 2);
         let action = if enabled(opts, Flags::REPORT_EVENTS) {
             match event.action {
                 KeyAction::Press => 1,

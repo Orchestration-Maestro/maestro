@@ -5,11 +5,11 @@ use super::key_encode::KeyEncoder;
 use super::key_mods::Mods;
 use crate::modes::Mode;
 
-/// Encode shift, alt, control, super, Hyper and Meta in protocol order, plus one.
+/// Encode the binding modifiers in shift, alt, control, super order, plus one.
 #[must_use]
 pub(super) fn modifier_code(mods: Mods) -> u16 {
     let bits = mods.binding().int();
-    1 + (bits & 1) + ((bits & 4) >> 1) + ((bits & 2) << 1) + (bits & 8) + ((mods.int() >> 6) & 0x30)
+    1 + (bits & 1) + ((bits & 4) >> 1) + ((bits & 2) << 1) + (bits & 8)
 }
 
 /// Select a PC-style sequence before considering generated text.

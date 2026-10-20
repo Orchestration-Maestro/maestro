@@ -33,15 +33,13 @@ impl PaneTerminal {
         discard_seed_effects(&mut core);
         observe_evidence(&mut core, pane_id, bytes);
         let title_changed = core.agent_osc_state.observe(bytes);
-        let filtered = if shell_pid > 0
-            && core.terminal.active_screen() != maestro_terminal::screen_set::Key::Alternate
-            && contains_scrollback_clear_sequence(bytes)
-        {
-            maybe_filter_primary_screen_scrollback_clear(
-                bytes,
-                core.terminal.active_screen() == maestro_terminal::screen_set::Key::Alternate,
-                foreground_job.as_ref(),
-            )
+        let alternate_screen =
+            core.terminal.active_screen() == maestro_terminal::screen_set::Key::Alternate;
+        let filtered = if shell_pid > 0 {
+            let foreground_job = (!alternate_screen && contains_scrollback_clear_sequence(bytes))
+                .then(|| foreground_job.as_ref())
+                .flatten();
+            maybe_filter_primary_screen_scrollback_clear(bytes, alternate_screen, foreground_job)
         } else {
             Cow::Borrowed(bytes)
         };
