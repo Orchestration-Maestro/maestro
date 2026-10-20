@@ -23,9 +23,11 @@ function fixture(t, overrides = {}, setup = '') {
   Object.assign(bodies, overrides);
   const source = `export default async function() { ${setup} }
 async function policyError() {
+  await srcdocError('window.complete()');
+}
+async function srcdocError(script) {
   const frame = document.createElement('iframe');
-  const html = '<script>window.complete()<\\/script>';
-  frame.srcdoc = html;
+  frame.srcdoc = '<script>' + script + '<\\/script>';
   const loaded = new Promise(resolve => frame.onload = resolve);
   document.body.append(frame);
   await loaded;
@@ -123,8 +125,6 @@ test('assertion_failures_keep_sync_and_async_errors', async t => {
 test('unexpected_page_errors_fail', async t => {
   const root = fixture(t, {}, 'await policyError();');
   await assert.rejects(execute(root), /inventory.*window.complete is not a function/s);
-  const other = fixture(t, {[first]: `await policyError()`});
-  await assert.rejects(execute(other), /window.complete is not a function/);
 });
 
 test('expected_policy_error_matches_once', async t => {
@@ -141,7 +141,8 @@ test('extra_policy_errors_fail', async t => {
 });
 
 test('different_policy_errors_fail', async t => {
-  await assert.rejects(execute(fixture(t, {[policy]: "throw TypeError('different sentinel')"})), /different sentinel/);
+  // A page error from the policy frame whose message differs.
+  await assert.rejects(execute(fixture(t, {[policy]: `await srcdocError("throw TypeError('different sentinel')");`})), /different sentinel/);
 });
 
 test('policy_error_in_other_exports_fails', async t => {
@@ -149,7 +150,9 @@ test('policy_error_in_other_exports_fails', async t => {
 });
 
 test('policy_error_from_another_source_fails', async t => {
-  await assert.rejects(execute(fixture(t, {[policy]: 'window.complete();'})), /window.complete is not a function/);
+  // The policy error raised by the top page instead of the policy frame.
+  const topPage = "const script = document.createElement('script'); script.textContent = 'window.complete()'; document.body.append(script);";
+  await assert.rejects(execute(fixture(t, {[policy]: topPage})), /window.complete is not a function/);
 });
 
 async function crashPage(page) {

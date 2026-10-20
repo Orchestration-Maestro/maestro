@@ -93,10 +93,12 @@ errors fail. Error accounting stays attached until the page closes. Browser,
 server and temporary preparation are closed or removed on both outcomes; a
 cleanup failure does not skip the other resource or replace an assertion failure.
 
-Run the driver regressions with the same supplied environment:
+Run the driver regressions with the same supplied environment. The packaging
+regression invokes Cargo, so they use the same launcher:
 
 ```sh
-node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
+  node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
 ```
 
 Canvas session-header tests and offline tool cards are not executed; the latter
