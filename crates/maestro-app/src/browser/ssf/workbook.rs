@@ -22,7 +22,7 @@ pub struct WorkBook {
     /// Detached number-format table snapshot.
     pub ssf: BTreeMap<u32, String>,
 }
-/// Failure at an archive, XML, native reader or address boundary.
+/// Failure reading workbook data or building extracted text.
 #[derive(Debug)]
 pub enum WorkbookError {
     /// Invalid archive with supplied workbook context.
@@ -33,6 +33,8 @@ pub enum WorkbookError {
     Xml(String),
     /// Native value-reader failure.
     Reader(String),
+    /// Extracted text exceeds 512 MiB or its output allocation failed.
+    Output(String),
     /// Invalid cell or range address.
     Address(String),
 }
@@ -43,6 +45,7 @@ impl std::fmt::Display for WorkbookError {
             | Self::MissingPart(s)
             | Self::Xml(s)
             | Self::Reader(s)
+            | Self::Output(s)
             | Self::Address(s) => f.write_str(s),
         }
     }

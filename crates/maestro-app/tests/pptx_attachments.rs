@@ -22,17 +22,13 @@ fn load(bytes: &[u8]) -> Result<Attachment, AttachmentError> {
         ))
 }
 
-/// Deflated slides whose headers each declare `declared` expanded bytes.
-fn slide_package(declared: u32, slides: usize, corrupt: bool) -> Vec<u8> {
+/// One deflated slide whose headers declare `declared` expanded bytes.
+fn slide_package(declared: u32, corrupt: bool) -> Vec<u8> {
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let options = zip::write::SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated);
-    for index in 1..=slides {
-        writer
-            .start_file(format!("ppt/slides/slide{index}.xml"), options)
-            .unwrap();
-        writer.write_all(b"<a:t>hi</a:t>").unwrap();
-    }
+    writer.start_file("ppt/slides/slide1.xml", options).unwrap();
+    writer.write_all(b"<a:t>hi</a:t>").unwrap();
     let mut bytes = writer.finish().unwrap().into_inner();
     for (signature, offset) in [(b"PK\x03\x04", 22), (b"PK\x01\x02", 24)] {
         let positions: Vec<_> = bytes
@@ -62,7 +58,7 @@ fn pptx_entries_past_the_size_bound_fail_without_inflating() {
         (1, Err("File is larger than its declared uncompressed size")),
         (BOUND + 1, Err("entry is larger than 512 MiB")),
     ] {
-        let result = load(&slide_package(declared, 1, declared > BOUND));
+        let result = load(&slide_package(declared, declared > BOUND));
         match expected {
             Ok(text) => assert!(
                 result.unwrap().extracted_text.unwrap().contains(text),
@@ -112,6 +108,15 @@ fn pptx_extracted_output_past_the_bound_fails() {
     let bytes = large_slide_package(true);
     let result = load(&bytes);
     assert!(result.is_err(), "oversized extracted output was accepted");
+    assert!(
+        !matches!(
+            &result,
+            Err(AttachmentError::Pptx(
+                maestro_app::browser::docx_preview::DocxError::Archive(_)
+            ))
+        ),
+        "output overflow was classified as an archive failure"
+    );
     assert_eq!(
         result.unwrap_err().to_string(),
         "Failed to process PPTX: extracted text exceeds 512 MiB"

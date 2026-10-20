@@ -71,7 +71,7 @@ pub(super) fn observe(
             );
             json!({"error":"TypeError"})
         }
-        Err(DocxError::Archive(_) | DocxError::Xml { .. }) => {
+        Err(DocxError::Archive(_) | DocxError::Xml { .. } | DocxError::Output(_)) => {
             panic!("Unexpected font resource failure")
         }
     }

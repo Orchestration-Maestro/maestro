@@ -216,39 +216,35 @@ const PPTX_MIME: &str = "application/vnd.openxmlformats-officedocument.presentat
 fn process_pptx(bytes: &[u8], file_name: &str) -> Result<String, DocxError> {
     let package = OpenXmlPackage::open(bytes, Options::default())?;
     let mut output = String::new();
-    append_extracted_text(&mut output, &format!("<pptx filename=\"{file_name}\">"))
-        .map_err(DocxError::Archive)?;
+    let mut append =
+        |text: &str| append_extracted_text(&mut output, text).map_err(DocxError::Output);
+    append(&format!("<pptx filename=\"{file_name}\">"))?;
     for (position, (name, _)) in pptx_parts(&package, "ppt/slides/slide").iter().enumerate() {
         let source = package.text_exact(name)?.unwrap_or_default();
         let (matched, runs) = pptx_runs(&source);
         if matched {
-            append_extracted_text(
-                &mut output,
-                &format!("\n<slide number=\"{}\">", position + 1),
-            )
-            .map_err(DocxError::Archive)?;
+            append(&format!("\n<slide number=\"{}\">", position + 1))?;
             if !runs.is_empty() {
-                append_extracted_text(&mut output, "\n").map_err(DocxError::Archive)?;
-                append_extracted_text(&mut output, &runs.join("\n")).map_err(DocxError::Archive)?;
+                append("\n")?;
+                append(&runs.join("\n"))?;
             }
-            append_extracted_text(&mut output, "\n</slide>").map_err(DocxError::Archive)?;
+            append("\n</slide>")?;
         }
     }
     let notes = pptx_parts(&package, "ppt/notesSlides/notesSlide");
     if !notes.is_empty() {
-        append_extracted_text(&mut output, "\n<notes>").map_err(DocxError::Archive)?;
+        append("\n<notes>")?;
         for (name, digits) in notes {
             let source = package.text_exact(name)?.unwrap_or_default();
             let (_, runs) = pptx_runs(&source);
             if !runs.is_empty() {
-                append_extracted_text(&mut output, &format!("\n[Slide {digits} notes]: "))
-                    .map_err(DocxError::Archive)?;
-                append_extracted_text(&mut output, &runs.join(" ")).map_err(DocxError::Archive)?;
+                append(&format!("\n[Slide {digits} notes]: "))?;
+                append(&runs.join(" "))?;
             }
         }
-        append_extracted_text(&mut output, "\n</notes>").map_err(DocxError::Archive)?;
+        append("\n</notes>")?;
     }
-    append_extracted_text(&mut output, "\n</pptx>").map_err(DocxError::Archive)?;
+    append("\n</pptx>")?;
     Ok(output)
 }
 
@@ -361,21 +357,21 @@ fn process_excel(bytes: &[u8], name: &str) -> Result<String, WorkbookError> {
     let mut ssf = Ssf::default();
     let mut workbook = ssf::read(bytes, name, &mut ssf)?;
     let mut output = String::new();
-    append_extracted_text(&mut output, &format!("<excel filename=\"{name}\">"))
-        .map_err(WorkbookError::Reader)?;
+    let mut append =
+        |text: &str| append_extracted_text(&mut output, text).map_err(WorkbookError::Output);
+    append(&format!("<excel filename=\"{name}\">"))?;
     for (index, (name, sheet)) in workbook.sheets.iter_mut().enumerate() {
         let csv = sheet
             .as_mut()
             .map_or_else(|_| String::new(), |sheet| ssf::sheet_to_csv(sheet, &ssf));
-        append_extracted_text(
-            &mut output,
-            &format!("\n<sheet name=\"{name}\" index=\"{}\">\n", index + 1),
-        )
-        .map_err(WorkbookError::Reader)?;
-        append_extracted_text(&mut output, &csv).map_err(WorkbookError::Reader)?;
-        append_extracted_text(&mut output, "\n</sheet>").map_err(WorkbookError::Reader)?;
+        append(&format!(
+            "\n<sheet name=\"{name}\" index=\"{}\">\n",
+            index + 1
+        ))?;
+        append(&csv)?;
+        append("\n</sheet>")?;
     }
-    append_extracted_text(&mut output, "\n</excel>").map_err(WorkbookError::Reader)?;
+    append("\n</excel>")?;
     Ok(output)
 }
 
