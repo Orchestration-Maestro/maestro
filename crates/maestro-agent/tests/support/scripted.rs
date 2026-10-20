@@ -115,17 +115,10 @@ pub fn block_text(block: &UserBlock) -> Option<&str> {
 /// Panics if a controlled fixture lock is poisoned or a fixture is malformed.
 #[must_use]
 pub fn describe(message: &AgentMessage) -> (&'static str, String) {
-    let joined = |blocks: &[UserBlock]| {
-        blocks
-            .iter()
-            .filter_map(block_text)
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
     match message {
         AgentMessage::User(user) => match &user.read().unwrap().content {
             UserContent::Text(text) => ("user", text.clone()),
-            UserContent::Blocks(blocks) => ("user", joined(blocks)),
+            UserContent::Blocks(blocks) => ("user", UserBlock::text_output(blocks)),
         },
         AgentMessage::Assistant(assistant) => {
             let content = &assistant.read().unwrap().content;
@@ -135,7 +128,10 @@ pub fn describe(message: &AgentMessage) -> (&'static str, String) {
             });
             ("assistant", texts.collect::<Vec<_>>().join("\n"))
         }
-        AgentMessage::ToolResult(result) => ("toolResult", joined(&result.read().unwrap().content)),
+        AgentMessage::ToolResult(result) => (
+            "toolResult",
+            UserBlock::text_output(&result.read().unwrap().content),
+        ),
         AgentMessage::Custom(never) => match *never.read().unwrap() {},
     }
 }
