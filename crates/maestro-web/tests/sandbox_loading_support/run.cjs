@@ -177,10 +177,21 @@ async function serve(root) {
 }
 
 async function inspectSandbox({page}, id, action, phase) {
+  const element = await page.evaluateHandle(id => {
+    const documents = [document];
+    for (const doc of documents) {
+      for (const frame of doc.querySelectorAll('iframe')) {
+        if (frame.parentElement.id === id) return frame;
+        if (frame.contentDocument) documents.push(frame.contentDocument);
+      }
+    }
+    return null;
+  }, id);
   let selected;
-  for (const frame of page.frames().slice(1)) {
-    const element = await frame.frameElement();
-    if (await element.evaluate((e, id) => e.parentElement.id === id, id)) { selected = frame; break; }
+  try {
+    selected = await element.asElement()?.contentFrame();
+  } finally {
+    await element.dispose();
   }
   if (!selected) throw new Error('mounted frame not found ' + id);
   if (action === 'click') {
