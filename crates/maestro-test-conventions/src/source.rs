@@ -83,11 +83,20 @@ fn files(path: &Path) -> Result<Vec<PathBuf>, String> {
 
 /// Compute a one-based source line for a byte offset.
 pub(crate) fn line(source: &str, offset: usize) -> usize {
-    source[..offset]
-        .bytes()
-        .filter(|byte| *byte == b'\n')
-        .count()
-        + 1
+    count_newlines(&source[..offset]) + 1
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Bytes visited by newline scans on the current test thread.
+    static SCANNED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Count line breaks in the supplied source slice.
+pub(crate) fn count_newlines(source: &str) -> usize {
+    #[cfg(test)]
+    SCANNED_BYTES.set(SCANNED_BYTES.get() + source.len());
+    source.bytes().filter(|byte| *byte == b'\n').count()
 }
 
 /// Extract line and terminated block comments without inspecting literals.

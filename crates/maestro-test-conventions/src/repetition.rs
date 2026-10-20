@@ -22,6 +22,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 /// Check documentation tokens without interpreting comment-like text in literals.
 fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String> {
     let mut offset = ra_ap_rustc_lexer::strip_shebang(&source.contents).unwrap_or(0);
+    let mut line = crate::source::line(&source.contents, offset);
     let mut block = Documentation::default();
     let mut style = None;
     for token in ra_ap_rustc_lexer::tokenize(&source.contents[offset..], FrontmatterAllowed::No) {
@@ -33,7 +34,6 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
             TokenKind::BlockComment {
                 doc_style: Some(_), ..
             } if !generated_bindings => {
-                let line = crate::source::line(&source.contents, offset);
                 return Err(format!(
                     "{}:{line}: block documentation: use /// or //!",
                     source.path.display()
@@ -53,9 +53,9 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
                 block = Documentation::default();
                 style = Some(owner);
             }
-            let start = crate::source::line(&source.contents, offset);
-            block.comment(body, start);
+            block.comment(body, line);
         }
+        line += crate::source::count_newlines(&source.contents[offset..end]);
         offset = end;
     }
     block.check(source)

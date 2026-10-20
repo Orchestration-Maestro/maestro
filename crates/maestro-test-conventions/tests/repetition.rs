@@ -50,6 +50,26 @@ fn repeated_documentation_reports_both_lines() {
 }
 
 #[test]
+fn repeated_documentation_lines_count_line_breaks_inside_earlier_tokens() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    std::fs::write(
+        &path,
+        "const TEXT: &str = \"one\ntwo\";\n/* one\ntwo */\n/// Read a value.\n/// Read a value.\nfn read() {}\n",
+    )
+    .unwrap();
+    assert_eq!(
+        check_workspace(&workspace.root).unwrap_err(),
+        format!(
+            "{}:6: repeated documentation; first at line 5",
+            path.display()
+        )
+    );
+}
+
+#[test]
 fn documentation_ignores_code_fences_and_resets_at_each_item() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
