@@ -24,10 +24,11 @@ struct Row {
 }
 
 /// Require the complete selected family without deduplicating repeated observations.
-pub(super) fn check(group: &str, count: usize) {
+pub(super) fn check(group: &str, count: usize, fixture: &str) {
     check_with_options(
         group,
         count,
+        fixture,
         &[
             MarkedOptions::Terminal,
             MarkedOptions::Browser { escape_html: false },
@@ -38,9 +39,8 @@ pub(super) fn check(group: &str, count: usize) {
 }
 
 /// Compare recorded observations for the grammars that own the selected rule.
-pub(super) fn check_with_options(group: &str, count: usize, options: &[MarkedOptions]) {
-    let rows: Vec<Row> =
-        serde_json::from_str(include_str!("../fixtures/grammar_observations.json")).unwrap();
+pub(super) fn check_with_options(group: &str, count: usize, fixture: &str, options: &[MarkedOptions]) {
+    let rows: Vec<Row> = serde_json::from_str(fixture).unwrap();
     let mut seen = 0;
     let mut failures = Vec::new();
     for row in rows.into_iter().filter(|row| row.group == group) {
@@ -132,7 +132,7 @@ fn metadata(input: &[Node]) -> (Vec<String>, Vec<String>) {
 }
 
 /// Compare native semantic fields while coalescing adjacent display text only.
-fn nodes(input: &[Node], image_children: bool) -> Value {
+pub(super) fn nodes(input: &[Node], image_children: bool) -> Value {
     let mut output: Vec<Value> = Vec::new();
     for node in input {
         let value = observe(&node.kind, image_children);
