@@ -37,6 +37,8 @@ mod resource_cases;
 #[cfg(not(target_arch = "wasm32"))]
 mod resource_output;
 mod resource_resolution_checks;
+#[path = "support/runtime.rs"]
+mod runtime;
 mod sandbox;
 mod scratch;
 mod skill_pack_checks;

@@ -28,10 +28,7 @@ pub(super) fn run(user_jobs: usize, project_jobs: usize, git_jobs: usize) -> Gro
     install_groups(&effects, &started, &finished, send, wait);
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let operation = local.spawn_local(manager.update(None));
     let first = runtime.block_on(local.run_until(async {
         for _ in 0..user_jobs.min(1) + project_jobs.min(1) + git_jobs.min(4) {

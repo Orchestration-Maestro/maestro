@@ -1,7 +1,7 @@
 //! Real children launched through the native package operations.
 #![cfg(unix)]
 #![cfg(test)]
-use crate::capture_checks::runtime;
+use crate::runtime::runtime;
 use crate::scratch;
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,

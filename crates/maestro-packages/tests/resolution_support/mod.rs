@@ -139,10 +139,9 @@ pub fn manager(
     )
 }
 
-/// Drives boundary-test futures through the native Rust runtime.
+/// Drives boundary-test futures through the shared test runtime.
+///
+/// The fixed output type lets each caller's `async` block end in `Ok(())` and use `?`.
 pub fn run(operation: impl std::future::Future<Output = io::Result<()>>) -> io::Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(operation)
+    crate::runtime::run(operation)
 }

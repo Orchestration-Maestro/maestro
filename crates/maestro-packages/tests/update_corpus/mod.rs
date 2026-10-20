@@ -100,10 +100,7 @@ fn controlled(input: Input) -> Expected {
     configure(&input, &manager, &settings, &effects, &observed);
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let result = runtime.block_on(local.run_until(manager.update(source.as_deref())));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     let mut actual = std::mem::take(&mut *observed.borrow_mut());

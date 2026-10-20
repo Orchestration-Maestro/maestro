@@ -50,15 +50,10 @@ fn check_matching_pin(offline: bool, member: &str) {
         },
         support::Controlled(Rc::clone(&effects)),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let result = runtime
-        .block_on(
-            manager
-                .resolve_extension_sources(&["npm:pkg@2.0.0".into()], Some(SourceScope::Project)),
-        )
-        .unwrap();
+    let result = crate::runtime::run(
+        manager.resolve_extension_sources(&["npm:pkg@2.0.0".into()], Some(SourceScope::Project)),
+    )
+    .unwrap();
     assert_eq!(
         result.extensions.len(),
         1,

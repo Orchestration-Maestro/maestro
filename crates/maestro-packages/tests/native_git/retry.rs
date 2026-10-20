@@ -75,10 +75,7 @@ impl RetryFixture {
             },
             Controlled(effects.clone()),
         ));
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::runtime::runtime();
         Self {
             repo,
             manager,

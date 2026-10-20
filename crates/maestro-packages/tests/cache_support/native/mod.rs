@@ -112,11 +112,7 @@ pub fn refresh() {
         },
         support::Controlled(effects),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(observe(&manager, &seed, &remote));
+    crate::runtime::run(observe(&manager, &seed, &remote));
 }
 /// Assertions observe the same checkout before and after changed and failed refreshes.
 async fn observe(manager: &DefaultPackageManager<support::Controlled>, seed: &Path, remote: &Path) {
