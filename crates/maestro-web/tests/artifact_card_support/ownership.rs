@@ -31,35 +31,7 @@ pub fn run() {
     .unwrap();
     presentation.opened.set(0);
     let mut renderer = ArtifactsToolRenderer::new(Some(panel.clone()));
-    let mut params = json!({"command":"create", "filename":filename, "content":"YWJj <&> 雪"});
-    let object: JsonObject = serde_json::from_value(params.clone()).unwrap();
-    let native: ArtifactsParams = serde_json::from_value(params.clone()).unwrap();
-    let recipes = [
-        <ArtifactsToolRenderer as ToolRenderer<Value, ()>>::render(
-            &renderer,
-            Some(&params),
-            None,
-            false,
-        )
-        .unwrap(),
-        <ArtifactsToolRenderer as ToolRenderer<JsonObject, ()>>::render(
-            &renderer,
-            Some(&object),
-            None,
-            false,
-        )
-        .unwrap(),
-        <ArtifactsToolRenderer as ToolRenderer<ArtifactsParams, ()>>::render(
-            &renderer,
-            Some(&native),
-            None,
-            false,
-        )
-        .unwrap(),
-    ];
-    params["filename"] = "changed.rs".into();
-    params["content"] = "changed".into();
-    drop((params, object, native));
+    let recipes = retained_recipes(&renderer, filename);
     let replacement = Rc::new(crate::presentation::Presentation::new(surface.host()));
     renderer.artifacts_panel = Some(Rc::new(LocalArtifactsPanel::new_local(replacement.clone())));
     drop(renderer);
@@ -86,4 +58,41 @@ pub fn run() {
         let _ = js("detachedArtifactPill.click()");
         assert_eq!(presentation.opened.get(), index + 1);
     }
+}
+
+/// Prepare all adapter families before their borrowed source values are dropped.
+fn retained_recipes(
+    renderer: &ArtifactsToolRenderer,
+    filename: &str,
+) -> [maestro_web::tools::types::ToolRenderResult; 3] {
+    let mut params = json!({"command":"create", "filename":filename, "content":"YWJj <&> 雪"});
+    let object: JsonObject = serde_json::from_value(params.clone()).unwrap();
+    let native: ArtifactsParams = serde_json::from_value(params.clone()).unwrap();
+    let recipes = [
+        <ArtifactsToolRenderer as ToolRenderer<Value, ()>>::render(
+            renderer,
+            Some(&params),
+            None,
+            false,
+        )
+        .unwrap(),
+        <ArtifactsToolRenderer as ToolRenderer<JsonObject, ()>>::render(
+            renderer,
+            Some(&object),
+            None,
+            false,
+        )
+        .unwrap(),
+        <ArtifactsToolRenderer as ToolRenderer<ArtifactsParams, ()>>::render(
+            renderer,
+            Some(&native),
+            None,
+            false,
+        )
+        .unwrap(),
+    ];
+    params["filename"] = "changed.rs".into();
+    params["content"] = "changed".into();
+    drop((params, object, native));
+    recipes
 }

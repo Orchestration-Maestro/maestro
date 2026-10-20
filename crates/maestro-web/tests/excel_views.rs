@@ -262,6 +262,7 @@ fn excel_overlay_preserves_alias_mode_and_error_rules() {
     assert!(effects[index + 1].starts_with("remove:"));
 }
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn excel_tool_commands_retain_and_update_live_view() {
     use artifact_support::{
         panel::{Harness, Input},

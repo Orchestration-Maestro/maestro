@@ -1,7 +1,7 @@
 //! Document observations through retained production dialogs.
 #![cfg(all(test, target_arch = "wasm32"))]
 use maestro_web::dialogs::dialog::{DialogHeaderProps, dialog_header};
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsCast as _, prelude::*};
 
 /// Prove header retains title description and literal text.
 #[wasm_bindgen]
@@ -71,9 +71,8 @@ impl View {
     /// Bind the production dialog to the runner document.
     fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
-        use wasm_bindgen::JsCast as _;
         let document = web_sys::window().unwrap().document().unwrap();
         let host = Rc::new(
             BrowserAttachmentHost::new(
@@ -355,6 +354,7 @@ pub fn dialog_retained_body_replacement_keeps_old_owner_until_publish() {
 #[wasm_bindgen]
 pub fn dialog_native_field_escape_reaches_every_open_owner() {
     use std::cell::{Cell, RefCell};
+
     let view = View::new();
     let mode = Rc::new(Cell::new(0));
     let behavior = mode.clone();
@@ -443,7 +443,6 @@ pub fn dialog_escape_from_native_predecessor_and_body_releases_listener() {
 
 /// Let native next-frame callbacks settle without a test deadline.
 async fn next_frame() {
-    use wasm_bindgen::JsCast as _;
     let promise: js_sys::Promise = js("new Promise(resolve=>requestAnimationFrame(resolve))")
         .dyn_into()
         .unwrap();
@@ -560,6 +559,7 @@ pub fn dialog_semantic_close_revokes_callbacks_when_candidate_or_owner_drops() {
 #[wasm_bindgen]
 pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
     use std::cell::RefCell;
+
     let mut view = View::new();
     let observed = Rc::new(RefCell::new(Vec::new()));
     let record = observed.clone();
@@ -607,7 +607,7 @@ pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
             assert!((f64::from(actual) - expected).abs() < 0.02);
         }
         let shapes = view.shapes.borrow();
-        assert!(shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.stroke.width==1. && r.rect.width()>200.)));
+        assert!(shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.stroke.width.to_bits()==1_f32.to_bits() && r.rect.width()>200.)));
     }
 }
 
@@ -651,7 +651,7 @@ fn visible(view: &View, shape: &egui::epaint::ClippedShape, outside: Option<egui
             let egui::epaint::Primitive::Mesh(mesh) = &primitive.primitive else {
                 return false;
             };
-            mesh.indices.chunks_exact(3).any(|indices| {
+            mesh.indices.as_chunks::<3>().0.iter().any(|indices| {
                 let [a, b, c] = [
                     mesh.vertices[indices[0] as usize],
                     mesh.vertices[indices[1] as usize],
@@ -714,7 +714,7 @@ pub fn dialog_decoration_survives_clipping_and_scroll() {
     });
     view.owner.set_props(view.props.clone()).unwrap();
     view.draw();
-    let before: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width==1.)).cloned().collect();
+    let before: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width.to_bits()==1_f32.to_bits())).cloned().collect();
     assert_eq!(before.len(), 3);
     let panel = egui::Rect::from_min_size(egui::pos2(100., 210.), egui::vec2(600., 180.));
     let presentation = view
@@ -735,7 +735,7 @@ pub fn dialog_decoration_survives_clipping_and_scroll() {
             unreachable!()
         };
         assert_eq!(shadow.rect, expected);
-        assert_eq!(shadow.blur_width, blur);
+        assert_eq!(shadow.blur_width.to_bits(), f32::to_bits(blur));
         assert_eq!(shadow.fill, border.gamma_multiply(0.1));
     }
     assert!(visible(&view, &before[2], None));
@@ -751,7 +751,7 @@ pub fn dialog_decoration_survives_clipping_and_scroll() {
         "globalThis.dialogFrame=document.querySelector('.maestro-dialog-native').parentElement.parentElement;globalThis.dialogFrameStyle=dialogFrame.getAttribute('style');dialogFrame.firstElementChild.scrollTop=50",
     );
     view.draw();
-    let after: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width==1.)).cloned().collect();
+    let after: Vec<_> = view.shapes.borrow().iter().filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.blur_width>0. || r.stroke.width.to_bits()==1_f32.to_bits())).cloned().collect();
     assert_eq!(before, after);
     assert_eq!(js("dialogFrame.firstElementChild.scrollTop>0 && dialogFrame.getAttribute('style')===dialogFrameStyle").as_bool(), Some(true));
     assert_eq!(js("(()=>{const r=document.querySelector('.maestro-dialog-semantic-close').getBoundingClientRect();return Math.abs(r.x-closeBeforeScroll.x)<.02&&Math.abs(r.y-closeBeforeScroll.y)<.02})()").as_bool(), Some(true));

@@ -24,7 +24,7 @@ struct Card {
     clip: Option<egui::Rect>,
 }
 impl Card {
-    fn new(filename: Value, with_panel: bool) -> Self {
+    fn new(filename: &Value, with_panel: bool) -> Self {
         let mut surface = Surface::new();
         surface.time = Some(0.);
         let presentation = Rc::new(crate::presentation::Presentation::new(surface.host()));
@@ -110,9 +110,6 @@ impl Card {
             "(()=>{const n=document.querySelector('.maestro-diff'),r=n.getBoundingClientRect();return !n.contains(document.elementFromPoint(r.left+20,r.top+8))})()"
         });
     }
-    fn pill(&self) -> egui::Pos2 {
-        point(".maestro-artifact-pill")
-    }
     fn header(&self) -> egui::Pos2 {
         drawing::glyphs(&self.surface)[0].center()
     }
@@ -132,8 +129,8 @@ fn point(selector: &str) -> egui::Pos2 {
 pub fn actions() {
     recorded();
     let filename = "literal <&> 雪.rs";
-    let mut card = Card::new(filename.into(), true);
-    let pill = card.pill();
+    let mut card = Card::new(&filename.into(), true);
+    let pill = point(".maestro-artifact-pill");
     let header = card.header();
     card.button(pill, true);
     card.button(header, false);
@@ -158,36 +155,11 @@ pub fn actions() {
     card.button(egui::pos2(790., 590.), false);
     card.open(false);
     assert_eq!(card.presentation.opened.get(), 2);
-    card.enabled = false;
-    card.draw();
-    card.click(pill);
-    card.open(false);
-    assert_eq!(card.presentation.opened.get(), 2);
-    card.enabled = true;
-    card.clip = Some(egui::Rect::from_min_max(
-        egui::Pos2::ZERO,
-        egui::pos2(30., 30.),
-    ));
-    card.draw();
-    card.click(pill);
-    card.open(false);
-    assert_eq!(card.presentation.opened.get(), 2);
-    card.clip = None;
-    card.draw();
-    crate::presentation::ready((card.panel.tool().execute)(
-        "delete".into(),
-        json!({"command":"delete", "filename":filename}),
-        None,
-        None,
-    ))
-    .unwrap();
-    card.click(pill);
-    card.open(false);
-    assert_eq!(card.presentation.opened.get(), 2);
+    denied_actions(&mut card, filename, pill);
     drop(card);
 
-    let mut card = Card::new("passive.rs".into(), false);
-    card.click(card.pill());
+    let mut card = Card::new(&"passive.rs".into(), false);
+    card.click(point(".maestro-artifact-pill"));
     card.open(true);
     assert_eq!(card.presentation.opened.get(), 0);
     let _ = js("document.querySelector('.maestro-artifact-pill').click()");
@@ -199,7 +171,7 @@ pub fn actions() {
 /// Panics if native selection, identity or keyboard behavior differs.
 pub fn literal() {
     let filename = "<script>no()</script>  雪\t<&>.rs";
-    let mut card = Card::new(filename.into(), true);
+    let mut card = Card::new(&filename.into(), true);
     publish("artifactFilename", &filename.into());
     check("document.querySelector('.maestro-artifact-pill').textContent===artifactFilename");
     check("document.querySelectorAll('.maestro-artifact-pill script').length===0");
@@ -209,7 +181,7 @@ pub fn literal() {
     );
     check("window.find('雪',false,false,true)");
     let _ = js("getSelection().removeAllRanges()");
-    card.click(card.pill());
+    card.click(point(".maestro-artifact-pill"));
     assert_eq!(card.panel.active_filename().as_deref(), Some(filename));
     card.open(false);
     card.surface.size = (240., 600.);
@@ -241,7 +213,7 @@ pub fn literal() {
     }
     assert_eq!(card.presentation.opened.get(), 1);
     drop(card);
-    let mut card = Card::new(json!({"name":"display only"}), true);
+    let mut card = Card::new(&json!({"name":"display only"}), true);
     let _ = js("document.querySelector('.maestro-artifact-pill').click()");
     card.open(false);
     assert_eq!(card.panel.active_filename().as_deref(), Some("sentinel"));
@@ -252,14 +224,14 @@ pub fn literal() {
 /// # Panics
 /// Panics if native foreground paint or the independent pill color differs.
 pub async fn hover() {
-    let mut card = Card::new("hover.rs".into(), true);
+    let mut card = Card::new(&"hover.rs".into(), true);
     let pack = card.surface.pack.clone();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     publish(
         "colors",
         &serde_json::to_string(&presentation.colors).unwrap().into(),
     );
-    card.surface.events = vec![egui::Event::PointerMoved(card.pill())];
+    card.surface.events = vec![egui::Event::PointerMoved(point(".maestro-artifact-pill"))];
     card.draw();
     card.draw();
     publish("hoverText", &presentation.colors["text"].into());
@@ -284,7 +256,7 @@ fn recorded() {
     for case in cases {
         let expected = &case["expected"];
         let filename = expected["filename"].as_str().unwrap();
-        let mut card = Card::new(filename.into(), case["supplied"].as_bool().unwrap());
+        let mut card = Card::new(&filename.into(), case["supplied"].as_bool().unwrap());
         card.open(!expected["nested"]["initiallyCollapsed"].as_bool().unwrap());
         let _ = js("document.querySelector('.maestro-artifact-pill').click()");
         card.open(!expected["nested"]["collapsedAfterPill"].as_bool().unwrap());
@@ -330,4 +302,34 @@ fn recorded() {
             assert_eq!(call.as_str(), card.panel.active_filename().as_deref());
         }
     }
+}
+
+/// Keep disabled, clipped and deleted filenames from admitting actions.
+fn denied_actions(card: &mut Card, filename: &str, pill: egui::Pos2) {
+    card.enabled = false;
+    card.draw();
+    card.click(pill);
+    card.open(false);
+    assert_eq!(card.presentation.opened.get(), 2);
+    card.enabled = true;
+    card.clip = Some(egui::Rect::from_min_max(
+        egui::Pos2::ZERO,
+        egui::pos2(30., 30.),
+    ));
+    card.draw();
+    card.click(pill);
+    card.open(false);
+    assert_eq!(card.presentation.opened.get(), 2);
+    card.clip = None;
+    card.draw();
+    crate::presentation::ready((card.panel.tool().execute)(
+        "delete".into(),
+        json!({"command":"delete", "filename":filename}),
+        None,
+        None,
+    ))
+    .unwrap();
+    card.click(pill);
+    card.open(false);
+    assert_eq!(card.presentation.opened.get(), 2);
 }

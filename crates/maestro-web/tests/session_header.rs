@@ -198,7 +198,10 @@ fn header_scope_uses_shared_theme_and_preserves_caller_style() {
             env!("CARGO_MANIFEST_DIR"),
             "/../../assets/brand/packs/signal.json"
         ),
+        #[cfg(not(target_arch = "wasm32"))]
         &maestro_theme::theme::NativeThemeOperations,
+        #[cfg(target_arch = "wasm32")]
+        &crate::support::brand::Pack,
     )
     .unwrap();
     for pack in [&default, &alternate] {

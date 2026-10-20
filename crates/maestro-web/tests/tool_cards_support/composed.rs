@@ -77,7 +77,7 @@ impl Case {
         });
     }
 }
-pub fn composed() {
+pub(crate) fn composed() {
     let recorded = fixture();
     let mut surface = Surface::new();
     let names = TOOL_RENDERERS.with(|all| all.borrow().keys().cloned().collect::<Vec<_>>());

@@ -24,51 +24,7 @@ pub async fn rows(name: &str, count: usize) {
 /// # Panics
 /// Panics if a native observation differs from its recorded value.
 pub async fn observe(surface: &mut Surface, recipe: &ToolRenderResult, expected: &Expected) {
-    surface.time.get_or_insert(0.);
-    assert_eq!(recipe.is_custom, expected.is_custom);
-    let mut state = ToolRenderState::default();
-    drawing::draw(surface, recipe, &mut state);
-    drawing::draw(surface, recipe, &mut state);
-    publish(
-        "artifactExpected",
-        &serde_json::to_string(expected).unwrap().into(),
-    );
-    assert_eq!(
-        js("document.querySelector('.maestro-tool-caption').textContent")
-            .as_string()
-            .unwrap(),
-        expected.caption
-    );
-    check(
-        "(document.querySelector('.maestro-artifact-pill')?.textContent??null)===JSON.parse(artifactExpected).pill",
-    );
-    let glyphs = drawing::glyphs(surface);
-    assert_eq!(
-        glyphs.len(),
-        1 + usize::from(expected.collapsible) + usize::from(expected.status == "inprogress")
-    );
-    let pack = surface.pack.clone();
-    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
-    drawing::has_role(
-        surface,
-        glyphs[usize::from(expected.status == "inprogress" && expected.collapsible)],
-        match expected.status.as_str() {
-            "complete" => "success",
-            "error" => "error",
-            "inprogress" => "text",
-            _ => panic!("unknown status"),
-        },
-        &presentation,
-    );
-    if expected.collapsible {
-        assert_eq!(expected.initially_collapsed, Some(true));
-        check(
-            "[...document.querySelectorAll('.maestro-code,.maestro-console,.maestro-diff')].every(n=>{const r=n.getBoundingClientRect();return !n.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})",
-        );
-        open(surface, recipe, &mut state);
-    } else {
-        assert!(expected.initially_collapsed.is_none());
-    }
+    let mut state = header(surface, recipe, expected);
     body();
     if let Some(code) = expected.code.first() {
         drawing::click(
@@ -234,4 +190,59 @@ pub async fn localized() {
             .unwrap();
         observe(&mut surface, &super::prepare(&row).unwrap(), &row.expected).await;
     }
+}
+
+/// Draw and observe the caption before exposing its existing body.
+fn header(
+    surface: &mut Surface,
+    recipe: &ToolRenderResult,
+    expected: &Expected,
+) -> ToolRenderState {
+    surface.time.get_or_insert(0.);
+    assert_eq!(recipe.is_custom, expected.is_custom);
+    let mut state = ToolRenderState::default();
+    drawing::draw(surface, recipe, &mut state);
+    drawing::draw(surface, recipe, &mut state);
+    publish(
+        "artifactExpected",
+        &serde_json::to_string(expected).unwrap().into(),
+    );
+    assert_eq!(
+        js("document.querySelector('.maestro-tool-caption').textContent")
+            .as_string()
+            .unwrap(),
+        expected.caption
+    );
+    check(
+        "(document.querySelector('.maestro-artifact-pill')?.textContent??null)===JSON.parse(artifactExpected).pill",
+    );
+    let glyphs = drawing::glyphs(surface);
+    assert_eq!(
+        glyphs.len(),
+        1 + usize::from(expected.collapsible) + usize::from(expected.status == "inprogress")
+    );
+    let pack = surface.pack.clone();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    drawing::has_role(
+        surface,
+        glyphs[usize::from(expected.status == "inprogress" && expected.collapsible)],
+        match expected.status.as_str() {
+            "complete" => "success",
+            "error" => "error",
+            "inprogress" => "text",
+            _ => panic!("unknown status"),
+        },
+        &presentation,
+    );
+    if expected.collapsible {
+        assert_eq!(expected.initially_collapsed, Some(true));
+        check(
+            "[...document.querySelectorAll('.maestro-code,.maestro-console,.maestro-diff')].every(n=>{const r=n.getBoundingClientRect();return !n.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})",
+        );
+        open(surface, recipe, &mut state);
+    } else {
+        assert!(expected.initially_collapsed.is_none());
+    }
+
+    state
 }

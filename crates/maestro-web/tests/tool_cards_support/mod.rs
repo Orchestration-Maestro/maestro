@@ -95,13 +95,15 @@ pub struct NativeDetail {
     pub detail_reads: usize,
 }
 
-pub fn fixture() -> Fixture {
+#[must_use]
+pub(crate) fn fixture() -> Fixture {
     serde_json::from_str(include_str!("../fixtures/tool_cards.json")).unwrap()
 }
-pub fn surface() -> Surface {
+#[must_use]
+pub(crate) fn surface() -> Surface {
     Surface::new()
 }
-pub fn prepare(tool: &str, input: &Input) -> ToolRenderResult {
+pub(crate) fn prepare(tool: &str, input: &Input) -> ToolRenderResult {
     assert!(input.language.is_none());
     let renderer: &dyn ToolRenderer = match tool {
         "bash" => &BashRenderer,
@@ -117,7 +119,7 @@ pub fn prepare(tool: &str, input: &Input) -> ToolRenderResult {
         )
         .unwrap()
 }
-pub fn observe(
+pub(crate) fn observe(
     surface: &mut Surface,
     recipe: &ToolRenderResult,
     retained: &mut ToolRenderState,
@@ -169,7 +171,7 @@ pub fn observe(
         &presentation,
     );
 }
-pub fn rows(test: &str) {
+pub(crate) fn rows(test: &str) {
     let mut surface = surface();
     let rows: Vec<_> = fixture()
         .rows

@@ -290,7 +290,10 @@ fn tile_badge_tessellation_shares_tile_contour_in_both_packs() {
         let mut frame = Frame {
             pack: maestro_theme::load_brand_pack(
                 &format!("{}/../../assets/brand/{pack}", env!("CARGO_MANIFEST_DIR")),
+                #[cfg(not(target_arch = "wasm32"))]
                 &maestro_theme::theme::NativeThemeOperations,
+                #[cfg(target_arch = "wasm32")]
+                &crate::support::brand::Pack,
             )
             .unwrap(),
             ..Frame::default()

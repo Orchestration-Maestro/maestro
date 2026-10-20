@@ -141,7 +141,7 @@ pub fn independent() {
                     .assert_no_overlays()
                     .unwrap();
             }
-        })
+        });
     };
     draw(&mut surface);
     check("document.querySelectorAll('.maestro-tool-caption').length===2");
@@ -189,37 +189,9 @@ pub async fn controls() {
     let mut state = ToolRenderState::default();
     let mut surface = Surface::new();
     surface.time = Some(0.);
-    let host = surface.host();
-    surface.draw(|ui, frame| {
-        ui.add_enabled_ui(false, |ui| {
-            recipe
-                .render(ui, view(&host, frame), &mut state)
-                .assert_no_overlays()
-                .unwrap()
-        })
-    });
-    let _ = js("document.querySelector('.maestro-tool-caption').click()");
-    drawing::draw(&mut surface, &recipe, &mut state);
-    surface.time = Some(0.3);
-    drawing::draw(&mut surface, &recipe, &mut state);
-    assert_eq!(drawing::glyphs(&surface).len(), 2);
-    surface.draw(|ui, frame| {
-        ui.set_clip_rect(egui::Rect::from_min_size(
-            egui::Pos2::ZERO,
-            egui::Vec2::ZERO,
-        ));
-        recipe
-            .render(ui, view(&host, frame), &mut state)
-            .assert_no_overlays()
-            .unwrap()
-    });
-    let _ = js("document.querySelector('.maestro-tool-caption').click()");
-    drawing::draw(&mut surface, &recipe, &mut state);
-    surface.time = Some(0.6);
-    drawing::draw(&mut surface, &recipe, &mut state);
-    assert_eq!(drawing::glyphs(&surface).len(), 2);
+    denied_controls(&mut surface, &recipe, &mut state);
     open(&mut surface, &recipe, &mut state);
-    assert!(surface.context.memory(|m| m.focused()).is_some());
+    assert!(surface.context.memory(egui::Memory::focused).is_some());
     let _ = js(
         "globalThis.selectedCode=document.querySelector('.maestro-code');const r=document.createRange();r.selectNodeContents(selectedCode.querySelector('code'));getSelection().removeAllRanges();getSelection().addRange(r);globalThis.documentSelection=getSelection().toString()",
     );
@@ -331,4 +303,41 @@ pub fn renderer_switch() {
     drawing::draw(&mut surface, &changed, &mut state);
     check("!previousToolHeader.isConnected && !previousToolCode.isConnected");
     assert_eq!(drawing::glyphs(&surface).len(), 2);
+}
+
+/// Keep disabled and fully clipped headers from accepting native clicks.
+fn denied_controls(
+    surface: &mut Surface,
+    recipe: &maestro_web::tools::types::ToolRenderResult,
+    state: &mut ToolRenderState,
+) {
+    let host = surface.host();
+    surface.draw(|ui, frame| {
+        ui.add_enabled_ui(false, |ui| {
+            recipe
+                .render(ui, view(&host, frame), state)
+                .assert_no_overlays()
+                .unwrap()
+        })
+    });
+    let _ = js("document.querySelector('.maestro-tool-caption').click()");
+    drawing::draw(surface, recipe, state);
+    surface.time = Some(0.3);
+    drawing::draw(surface, recipe, state);
+    assert_eq!(drawing::glyphs(surface).len(), 2);
+    surface.draw(|ui, frame| {
+        ui.set_clip_rect(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            egui::Vec2::ZERO,
+        ));
+        recipe
+            .render(ui, view(&host, frame), state)
+            .assert_no_overlays()
+            .unwrap()
+    });
+    let _ = js("document.querySelector('.maestro-tool-caption').click()");
+    drawing::draw(surface, recipe, state);
+    surface.time = Some(0.6);
+    drawing::draw(surface, recipe, state);
+    assert_eq!(drawing::glyphs(surface).len(), 2);
 }

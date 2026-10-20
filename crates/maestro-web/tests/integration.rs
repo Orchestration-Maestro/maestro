@@ -14,6 +14,8 @@ mod attachment_surfaces;
 mod attachment_tiles;
 mod browser_effects;
 mod browser_errors;
+mod browser_fixture_support;
+mod browser_fixtures;
 mod browser_formatting;
 mod code_blocks;
 mod composed_consumer;

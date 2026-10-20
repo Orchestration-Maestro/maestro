@@ -8,78 +8,10 @@ use maestro_web::export_html::template::{download_session_json, load_document};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::*};
 
-#[wasm_bindgen(inline_js = r#"
-let active;
-export function begin(mode) {
-    if (active) throw new Error('unfinished browser transaction');
-    const create = document.createElement;
-    const append = document.body.appendChild;
-    const body = document.body;
-    const createUrl = URL.createObjectURL;
-    const revoke = URL.revokeObjectURL;
-    const state = { mode, blobs: [], anchors: [], live: new Set(), events: [] };
-    URL.createObjectURL = function(blob) {
-        const url = createUrl.call(this, blob);
-        state.blobs.push(blob); state.live.add(url); state.events.push('create-url');
-        return url;
-    };
-    URL.revokeObjectURL = function(url) {
-        if (!state.live.delete(url)) throw new Error('wrong URL revoked');
-        state.events.push('revoke-url'); return revoke.call(this, url);
-    };
-    document.createElement = function(tag, ...rest) {
-        if (tag === 'a' && mode === 'create') throw new DOMException('controlled create', 'InvalidStateError');
-        const element = create.call(this, tag, ...rest);
-        if (tag === 'a') {
-            state.anchors.push(element);
-            element.addEventListener('click', event => {
-                event.preventDefault();
-                if (!state.live.has(element.href) || !element.isConnected) throw new Error('click without live resources');
-                state.events.push('click');
-                if (mode === 'removed') element.remove();
-            });
-        }
-        return element;
-    };
-    body.appendChild = function(child) {
-        if (mode === 'append') throw new DOMException('controlled append', 'HierarchyRequestError');
-        state.events.push('append'); return append.call(this, child);
-    };
-    if (mode === 'body') Object.defineProperty(document, 'body', { configurable: true, get: () => null });
-    state.restore = () => {
-        URL.createObjectURL = createUrl; URL.revokeObjectURL = revoke;
-        document.createElement = create; body.appendChild = append;
-        if (mode === 'body') delete document.body;
-        active = undefined;
-    };
-    active = state;
-}
-export async function finish(bytes, mime, name, success) {
-    const state = active;
-    try {
-        if (state.blobs.length !== 1 || state.live.size !== 0) throw new Error('Blob/URL ownership');
-        const blob = state.blobs[0];
-        const actual = new Uint8Array(await blob.arrayBuffer());
-        if (actual.length !== bytes.length || actual.some((b, i) => b !== bytes[i]) || blob.type !== mime) throw new Error('original bytes/MIME');
-        for (const anchor of state.anchors) {
-            if (anchor.download !== name || anchor.isConnected) throw new Error('literal name/anchor cleanup');
-        }
-        const expected = success ? ['create-url', 'append', 'click', 'revoke-url'] : ['create-url', 'revoke-url'];
-        if (JSON.stringify(state.events) !== JSON.stringify(expected)) throw new Error('effect order: ' + state.events.join(','));
-        console.log('PASS native download ' + state.mode + ': ' + state.events.join(' -> '));
-    } finally { state.restore(); }
-}
-"#)]
-extern "C" {
-    /// Start one controlled native DOM transaction.
-    fn begin(mode: &str);
-    /// Observe the retained actual Blob and resources after synchronous return.
-    fn finish(bytes: &[u8], mime: &str, name: &str, success: bool) -> js_sys::Promise;
-}
-
 /// Exercise both public routes, reached failures and idempotent anchor cleanup.
 #[wasm_bindgen]
 pub async fn session_and_attachment_downloads_share_native_cleanup() {
+    let fixture = Fixture::load().await;
     let canvas = web_sys::window()
         .unwrap()
         .document()
@@ -99,7 +31,7 @@ pub async fn session_and_attachment_downloads_share_native_cleanup() {
     let expected =
         "{\"type\":\"header\",\"id\":\"雪<room>\"}\n{\"type\":\"custom\",\"data\":\"é\"}";
     for mode in ["success", "create", "body", "append", "removed"] {
-        begin(mode);
+        fixture.begin(mode);
         let result = download_session_json(&document, &host);
         let success = matches!(mode, "success" | "removed");
         if success {
@@ -110,7 +42,7 @@ pub async fn session_and_attachment_downloads_share_native_cleanup() {
                 Some(AttachmentHostError::Host(_))
             )));
         }
-        wasm_bindgen_futures::JsFuture::from(finish(
+        wasm_bindgen_futures::JsFuture::from(fixture.finish(
             expected.as_bytes(),
             "application/x-ndjson",
             "雪<room>.jsonl",
@@ -119,6 +51,51 @@ pub async fn session_and_attachment_downloads_share_native_cleanup() {
         .await
         .unwrap();
     }
+    attachment_download(&fixture, &host).await;
+}
+
+/// Native namespaces retained for one browser test transaction.
+#[derive(Clone)]
+pub struct Fixture {
+    /// Original packaged native namespace.
+    module0: crate::browser_fixture_support::FixtureModule,
+}
+impl Fixture {
+    /// Load each namespace before installing controlled host effects.
+    pub async fn load() -> Self {
+        Self {
+            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
+                module = "/tests/session_download_support/browser.js"
+            ))
+            .await
+            .unwrap(),
+        }
+    }
+    /// Start one controlled native DOM transaction.
+    pub fn begin(&self, mode: &str) {
+        self.module0
+            .call("begin", &js_sys::Array::of1(&mode.into()))
+            .unwrap();
+    }
+    /// Observe the retained actual Blob and resources after synchronous return.
+    pub fn finish(&self, bytes: &[u8], mime: &str, name: &str, success: bool) -> js_sys::Promise {
+        self.module0
+            .call(
+                "finish",
+                &js_sys::Array::of4(
+                    &js_sys::Uint8Array::from(bytes),
+                    &mime.into(),
+                    &name.into(),
+                    &success.into(),
+                ),
+            )
+            .unwrap()
+            .unchecked_into()
+    }
+}
+
+/// Observe the original attachment bytes through the same native cleanup fixture.
+async fn attachment_download(fixture: &Fixture, host: &BrowserAttachmentHost) {
     let bytes = [0, 255, 128, 13, 10, 42];
     let attachment = maestro_web::Attachment {
         id: "binary".into(),
@@ -130,9 +107,9 @@ pub async fn session_and_attachment_downloads_share_native_cleanup() {
         extracted_text: Some("not original".into()),
         preview: None,
     };
-    begin("attachment");
+    fixture.begin("attachment");
     host.download(Rc::new(RefCell::new(attachment))).unwrap();
-    wasm_bindgen_futures::JsFuture::from(finish(
+    wasm_bindgen_futures::JsFuture::from(fixture.finish(
         &bytes,
         "application/octet-stream",
         "binary<雪>.dat",

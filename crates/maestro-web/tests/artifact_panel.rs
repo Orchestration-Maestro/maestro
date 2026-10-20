@@ -1,5 +1,5 @@
 //! Retained artifact panel through its public application and native host seams.
-#![cfg(test)]
+#![cfg(all(test, not(target_arch = "wasm32")))]
 use crate::artifact_support;
 use crate::canvas_paint;
 use crate::session_header_support;

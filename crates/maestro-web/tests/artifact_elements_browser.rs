@@ -25,7 +25,7 @@ impl View {
     /// Bind the supplied canvas, not a synthesized native sample.
     fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
         let doc = web_sys::window().unwrap().document().unwrap();
         let canvas = doc.get_element_by_id("canvas").unwrap().dyn_into().unwrap();

@@ -236,7 +236,7 @@ mod tests {
             _: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
         ) -> maestro_web::tools::types::ToolContentOutput {
-            let response = (|| Ok(ui.label("replacement")))();
+            let response = Ok(ui.label("replacement"));
             maestro_web::tools::types::ToolContentOutput {
                 response,
                 overlays: Vec::new(),

@@ -244,15 +244,17 @@ pub fn document(id: &serde_json::Value) -> maestro_web::export_html::template::S
         &base64::engine::general_purpose::STANDARD.encode(serde_json::json!({"entries":[],"header":{"id":id},"systemPrompt":"admitted prompt","tools":false}).to_string()), "", None,
     ).unwrap()
 }
-/// Load the repository pack through its normal operations.
-#[cfg(not(target_arch = "wasm32"))]
+/// Load the repository pack through target-appropriate operations.
 /// # Panics
 /// Panics when controlled fixture input is invalid.
 #[must_use]
 pub fn pack() -> maestro_theme::BrandPack {
     maestro_theme::load_brand_pack(
         concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
+        #[cfg(not(target_arch = "wasm32"))]
         &maestro_theme::theme::NativeThemeOperations,
+        #[cfg(target_arch = "wasm32")]
+        &crate::support::brand::Pack,
     )
     .unwrap()
 }

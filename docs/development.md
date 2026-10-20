@@ -39,6 +39,41 @@ otherwise hide missing normal precision. The generated `maestro-dependencies`
 member is exempt from member JSON inheritance; the workspace `serde_json`
 precision requirement still applies.
 
+## Browser integration qualification
+
+Lint the browser library, examples and complete integration target with the
+pinned toolchain:
+
+```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
+  -p maestro-web --lib --examples --test integration --profile test \
+  --target wasm32-unknown-unknown --locked -- \
+  -D warnings -D clippy::missing_docs_in_private_items
+```
+
+Build the same integration program for browser execution:
+
+```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo test \
+  -p maestro-web --test integration --target wasm32-unknown-unknown \
+  --locked --no-run --message-format=json
+```
+
+The libtest artifact also starts native `#[test]` cases when bindings initialize.
+To invoke browser exports alone, use a scratch cdylib manifest pointing at the
+same `tests/integration.rs`, with `--cfg test` applied only to its root crate.
+Keep that manifest outside the repository and retain the locked dependencies.
+
+Bind the runtime artifact with the matching wasm-bindgen CLI version,
+`--target web` and `--split-linked-modules`. Fixture imports need packaged files:
+the default embedded module URLs do not preserve shared identity across link
+sites or resolve relative fixture imports. The shared test loader retains native
+module namespaces and passes native values directly to their exports.
+
+These commands qualify the aggregate target locally. Shared CI's browser lint,
+build and Chromium execution rollout is separate; a local pass does not prove
+that the workflow selects or executes browser integration tests.
+
 ## Feature unification
 
 See [dependency locks](dependency_locks.md) for generated-lock ownership,
