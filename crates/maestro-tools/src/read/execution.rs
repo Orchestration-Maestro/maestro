@@ -1,7 +1,7 @@
 //! Cancellable dispatch of one read to its text or image route.
 
 use super::{ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, text::read_text};
-use crate::output::{text_block, text_result};
+use crate::output::text_block;
 use crate::utils::{
     diagnostics::{aborted, guarded},
     image_resize::{ImageResizeOptions, format_dimension_note, resize_image},
@@ -91,7 +91,7 @@ impl Reader {
                 model.as_deref(),
             )),
             None => read_text(&bytes, &input.path, input.offset, input.limit)
-                .map(|(text, details)| text_result(text, details)),
+                .map(|(text, details)| AgentToolResult::text_result(text, details)),
         };
         if signal.is_some_and(Cancellation::is_aborted) {
             return Err(aborted());

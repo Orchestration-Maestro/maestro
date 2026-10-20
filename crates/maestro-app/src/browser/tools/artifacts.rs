@@ -6,9 +6,7 @@ use super::prompts::{
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
-use maestro_models::{
-    BoxFuture, StringEnumOptions, TextContent, Tool, UserBlock, present, string_enum,
-};
+use maestro_models::{BoxFuture, StringEnumOptions, Tool, present, string_enum};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
@@ -185,14 +183,7 @@ macro_rules! caller {
                         let panel = panel.clone();
                         Box::pin(async move {
                             let text = panel.execute(params, Options::default()).await;
-                            Ok(AgentToolResult::<()> {
-                                content: vec![UserBlock::Text(TextContent {
-                                    text,
-                                    text_signature: None,
-                                })],
-                                details: None,
-                                terminate: None,
-                            })
+                            Ok(AgentToolResult::<()>::text_result(text, None))
                         })
                     }),
                 )

@@ -1,10 +1,7 @@
 //! Ordered, cancellable execution of one write.
 
 use super::{WriteOperations, WriteToolInput};
-use crate::{
-    output::text_result,
-    utils::diagnostics::{diagnostic, guarded},
-};
+use crate::utils::diagnostics::{diagnostic, guarded};
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use std::sync::Arc;
@@ -52,7 +49,7 @@ pub(super) async fn write_file(
         operations.write_file(absolute_path, input.content)
     })
     .await?;
-    Ok(text_result(
+    Ok(AgentToolResult::text_result(
         format!("Successfully wrote {bytes} bytes to {}", input.path),
         None,
     ))

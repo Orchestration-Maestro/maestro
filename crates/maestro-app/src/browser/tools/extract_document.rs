@@ -5,8 +5,8 @@ use futures_util::TryStreamExt;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
 use maestro_models::SharedHandle;
 use maestro_models::{
-    BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, TextContent,
-    Tool, UserBlock, default_fetch,
+    BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, Tool,
+    default_fetch,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
@@ -143,19 +143,15 @@ async fn execute(
     }
     let attachment = load(bytes, name).await?;
     let text = attachment.extracted_text.filter(|text| !text.is_empty()).ok_or_else(|| DiagnosticErrorInfo::error("Document format not supported. Supported formats:\n- PDF (.pdf)\n- Word (.docx)\n- Excel (.xlsx, .xls)\n- PowerPoint (.pptx)"))?;
-    Ok(AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: text.clone(),
-            text_signature: None,
-        })],
-        details: Some(ExtractDocumentResult {
+    Ok(AgentToolResult::text_result(
+        text.clone(),
+        Some(ExtractDocumentResult {
             extracted_text: text,
             format: attachment_format(&attachment.mime_type).into(),
             file_name: attachment.file_name,
             size: attachment.size,
         }),
-        terminate: None,
-    })
+    ))
 }
 
 /// Remediation shared by download and proxy failures.

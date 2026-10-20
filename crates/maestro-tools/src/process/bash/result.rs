@@ -5,7 +5,6 @@ use crate::{
     output::{
         output_accumulator::OutputSnapshot,
         render_parts::{float, num},
-        text_result,
     },
     utils::diagnostics::{diagnostic, failure},
 };
@@ -87,7 +86,7 @@ pub(super) fn settle(
                     &format!("Command exited with code {}", num(code)),
                 ));
             }
-            Ok(text_result(text, details))
+            Ok(AgentToolResult::text_result(text, details))
         }
         Err(BashError::Aborted) => Err(status(&text, "Command aborted")),
         Err(BashError::Timeout(seconds)) => Err(status(

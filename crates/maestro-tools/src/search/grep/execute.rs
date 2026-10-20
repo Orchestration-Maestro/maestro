@@ -3,7 +3,6 @@ use super::{GrepOperations, GrepToolDetails, GrepToolInput, native::Match};
 use crate::{
     output::{
         render_parts::{float, num},
-        text_result,
         truncate::truncate_line,
     },
     path_utils::{resolve_path, resolve_to_cwd},
@@ -87,7 +86,10 @@ impl Searcher {
         let (matches, count) =
             super::native::search(&program, &root, &input, limit, signal).await?;
         if count == 0 {
-            return Ok(text_result("No matches found".into(), None));
+            return Ok(AgentToolResult::text_result(
+                "No matches found".into(),
+                None,
+            ));
         }
         let mut body = Body::default();
         let context = input.context.unwrap_or(0.0).max(0.0).floor();
@@ -199,7 +201,7 @@ impl Body {
                 match_limit_reached: limit,
                 lines_truncated: self.clipped.then_some(true),
             });
-        text_result(text, details)
+        AgentToolResult::text_result(text, details)
     }
 }
 /// Project display text against a lexical root, falling back only for actual parent components.

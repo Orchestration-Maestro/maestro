@@ -2,10 +2,7 @@
 
 use super::{DEFAULT_LIMIT, LsOperations, LsToolDetails, LsToolInput};
 use crate::{
-    output::{
-        render_parts::{float, num},
-        text_result,
-    },
+    output::render_parts::{float, num},
     path_utils::resolve_to_cwd,
     utils::diagnostics::{aborted, blocking, diagnostic, failure, guarded},
 };
@@ -26,7 +23,7 @@ pub(super) struct Lister {
 /// The listing text and details for `entries`, which stopped at `limit` when `reached`.
 fn format_entries(entries: &[String], reached: bool, limit: f64) -> AgentToolResult<LsToolDetails> {
     if entries.is_empty() {
-        return text_result("(empty directory)".into(), None);
+        return AgentToolResult::text_result("(empty directory)".into(), None);
     }
     let notices = if reached {
         vec![format!(
@@ -44,7 +41,7 @@ fn format_entries(entries: &[String], reached: bool, limit: f64) -> AgentToolRes
         entry_limit_reached: reached.then_some(limit),
     };
     let reported = details.truncation.is_some() || details.entry_limit_reached.is_some();
-    text_result(output, reported.then_some(details))
+    AgentToolResult::text_result(output, reported.then_some(details))
 }
 
 impl Lister {

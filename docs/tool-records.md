@@ -3,7 +3,9 @@
 `maestro-tool` owns the shared declarations for `ToolExecutionMode`,
 `AgentToolResult`, `ReadToolDetails`, `TruncationBy`, `TruncationResult` and
 `BashResult`. It depends only on `maestro-request` within the workspace and
-contains no execution or selection policy.
+contains no execution or selection policy. For results using `Option` fields,
+`AgentToolResult::text_result(text, details)` builds one text block with the
+supplied details and no termination request.
 
 The existing native and guest result paths are aliases or re-exports. Native
 truncation counts use `usize`; guest counts use `f64`. Optional fields retain
