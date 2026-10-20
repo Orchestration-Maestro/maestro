@@ -94,7 +94,9 @@ impl Browser {
                 "CARGO_TARGET_DIR",
                 Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-tests"),
             )
-            .env("TRUNK_SKIP_VERSION_CHECK", "true");
+            .env("TRUNK_SKIP_VERSION_CHECK", "true")
+            // Trunk's completion emoji depends on LANG, even with piped output.
+            .env("LANG", "C.UTF-8");
         command
     }
 
