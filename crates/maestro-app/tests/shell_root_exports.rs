@@ -48,7 +48,7 @@ impl BashOperations for Supplied {
 #[test]
 fn bash_factories_are_available_from_application_root() {
     use maestro_app::{
-        BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolOptions, create_bash_tool,
+        BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolOptions,
         create_bash_tool_definition,
     };
     let hook: BashSpawnHook = Arc::new(|context: BashSpawnContext| Ok(context));
@@ -73,6 +73,7 @@ fn bash_factories_are_available_from_application_root() {
     );
     #[cfg(unix)]
     {
+        use maestro_app::create_bash_tool;
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()

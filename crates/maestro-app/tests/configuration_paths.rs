@@ -33,6 +33,7 @@ fn tilde_expansion_changes_only_supported_prefixes() {
 }
 
 use maestro_app::configuration::config::installation::{Installation, PackageLayout};
+#[cfg(not(windows))]
 use std::cell::RefCell;
 
 #[derive(Deserialize, Default)]
@@ -121,11 +122,13 @@ struct ObservedCase<I, E, O> {
     expected: E,
     observations: O,
 }
+#[cfg(not(windows))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ExistsLog {
     exists: Vec<String>,
 }
+#[cfg(not(windows))]
 fn check_package_cases(text: &str, count: usize) {
     let cases: Vec<ObservedCase<PathInput, String, ExistsLog>> =
         serde_json::from_str(text).unwrap();
@@ -298,6 +301,7 @@ fn rust_package_markers_preserve_package_walk() {
     );
 }
 
+#[cfg(not(windows))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HomeInput {
@@ -395,6 +399,7 @@ fn directory_operations_read_home_only_when_needed() {
     }
 }
 
+#[cfg(not(windows))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct CwdInput {
@@ -402,6 +407,7 @@ struct CwdInput {
     env: Environment,
     cwd_error: bool,
 }
+#[cfg(not(windows))]
 #[derive(Deserialize)]
 enum TextOperation {
     #[serde(rename = "getReadmePath")]
