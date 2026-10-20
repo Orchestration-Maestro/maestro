@@ -1,24 +1,16 @@
 //! Controlled model responses for public-operation tests.
 #![cfg(test)]
-use maestro_agent::{AgentContext, AgentLoopConfig, AgentLoopOptions, AgentMessage};
+use maestro_agent::{AgentContext, AgentLoopConfig};
 use maestro_models::{
-    AssistantContent, AssistantMessage, AssistantMessageEventStream, Context, JsonObject, Message,
-    Model, ModelCost, ProviderObjects, SharedAssistantMessage, SimpleStreamOptions, StopReason,
-    TextContent, UserContent, UserMessage,
+    AssistantContent, AssistantMessage, Model, ModelCost, SharedAssistantMessage, StopReason,
+    TextContent,
 };
-use std::{
-    collections::VecDeque,
-    sync::{Arc, Mutex, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
-/// Construct a shared user entry.
-#[must_use]
-pub fn user(text: &str) -> AgentMessage {
-    AgentMessage::User(Arc::new(RwLock::new(UserMessage {
-        content: UserContent::Text(text.into()),
-        timestamp: 1.0,
-    })))
-}
+/// Plain user entries, history conversion and queued responses shared with other crates.
+mod controlled_loop;
+pub use controlled_loop::{responses, user};
+
 /// Supply retained history and instructions.
 #[must_use]
 pub fn context() -> AgentContext {
@@ -47,45 +39,10 @@ pub fn model() -> Model {
         compat: None,
     }
 }
-/// Convert ordinary records at the model boundary.
-///
-/// # Panics
-/// Panics if a retained lock is poisoned or conversion encounters a custom entry.
+/// The controlled loop configuration over the fixture model.
 #[must_use]
 pub fn config() -> AgentLoopConfig {
-    AgentLoopConfig {
-        thinking_budgets: None,
-        model: Arc::new(RwLock::new(model())),
-        options: SimpleStreamOptions::default(),
-        extra: JsonObject::new(),
-        objects: ProviderObjects::default(),
-        convert_to_llm: Arc::new(|history| {
-            let messages = history
-                .read()
-                .unwrap()
-                .iter()
-                .map(|message| match message {
-                    AgentMessage::User(value) => Message::User(value.read().unwrap().clone()),
-                    AgentMessage::Assistant(value) => {
-                        Message::Assistant(value.read().unwrap().clone())
-                    }
-                    AgentMessage::ToolResult(value) => {
-                        Message::ToolResult(value.read().unwrap().clone())
-                    }
-                    AgentMessage::Custom(_) => unreachable!(),
-                })
-                .collect();
-            Box::pin(async { Ok(messages) })
-        }),
-        transform_context: None,
-        get_api_key: None,
-        before_tool_call: None,
-        after_tool_call: None,
-        should_stop_after_turn: None,
-        get_steering_messages: None,
-        get_follow_up_messages: None,
-        tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
-    }
+    controlled_loop::config(model())
 }
 /// Construct a completed text response.
 ///
@@ -94,29 +51,6 @@ pub fn config() -> AgentLoopConfig {
 #[must_use]
 pub fn assistant(text: &str) -> SharedAssistantMessage {
     Arc::new(RwLock::new(AssistantMessage { content: vec![AssistantContent::Text(TextContent { text: text.into(), text_signature: None })], api: "fixture".into(), provider: "fixture".into(), model: "fixture".into(), response_model: None, response_id: None, diagnostics: None, usage: serde_json::from_value(serde_json::json!({"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}})).unwrap(), stop_reason: StopReason::Stop, error_message: None, timestamp: 2.0 }))
-}
-/// Publish one authoritative result for each requested turn.
-///
-/// # Panics
-/// Panics if the controlled response queue is poisoned or exhausted.
-#[must_use]
-pub fn responses(messages: Vec<SharedAssistantMessage>) -> AgentLoopOptions {
-    let messages = Arc::new(Mutex::new(VecDeque::from(messages)));
-    AgentLoopOptions {
-        signal: None,
-        stream_fn: Some(Arc::new(move |_, _: Context, _, _| {
-            let message = messages
-                .lock()
-                .unwrap()
-                .pop_front()
-                .expect("unexpected turn");
-            Box::pin(async {
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(message));
-                Ok(stream)
-            })
-        })),
-    }
 }
 /// Execute local futures on the test-owned runtime.
 ///
