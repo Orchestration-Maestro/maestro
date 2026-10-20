@@ -677,6 +677,7 @@ fn maestro_skills_report_explicit_path_failures() {
     let upper = dir.file("upper.MD", "---\ndescription: Not loaded\n---");
     let stat = dir.file("stat.md", "---\ndescription: Not loaded\n---");
     let missing = dir.0.join("absent");
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut paths = vec![missing.clone(), upper.clone(), stat.clone()];
     #[cfg(unix)]
     let _socket = {
@@ -703,6 +704,7 @@ fn maestro_skills_report_explicit_path_failures() {
     )
     .unwrap();
     assert!(result.skills.is_empty());
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut expected = vec![
         ("skill path does not exist", missing),
         ("skill path is not a markdown file", upper),
@@ -1395,6 +1397,7 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
     let unreadable = dir.file("unreadable/SKILL.md", "---\ndescription: Unreadable\n---");
     let _ = dir.file("blocked/SKILL.md", "---\ndescription: Blocked\n---");
     let ignore = dir.file(".ignore", "keep/\n");
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut failures = vec![
         ("read_file", ignore),
         ("read_dir", dir.0.join("blocked")),

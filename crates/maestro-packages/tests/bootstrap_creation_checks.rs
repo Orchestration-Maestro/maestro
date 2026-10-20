@@ -473,6 +473,7 @@ fn resolution_propagates_original_bootstrap_failures() {
 }
 
 /// Checks replacing mode against each occupied destination class.
+#[cfg_attr(not(unix), allow(unused_variables))]
 fn replaced(path: &str, kind: Entry, original: &std::fs::Metadata) {
     assert_eq!(sandbox::read(path), "new text");
     #[cfg(unix)]

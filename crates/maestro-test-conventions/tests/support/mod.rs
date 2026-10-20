@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use std::fs;
+#[cfg(unix)]
 use std::path::PathBuf;
 
 /// The guest crate's own lint table: the fixture workspace table with the three lints its
