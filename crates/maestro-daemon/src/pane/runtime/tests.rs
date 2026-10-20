@@ -373,6 +373,29 @@ fn runtime_spawned_detection_observes_real_child_hint() {
     );
 }
 
+/// Checks the nondefault negotiation before comparing its imported snapshot.
+fn distinctive_handoff_modes(runtime: &PaneRuntime) -> crate::pane::terminal::InputState {
+    let input = runtime.input_state().unwrap();
+    assert!(bool::from(input.application_cursor));
+    assert!(bool::from(input.bracketed_paste));
+    assert!(bool::from(input.focus_reporting));
+    assert!(bool::from(input.modify_other_keys));
+    assert!(!bool::from(input.mouse_alternate_scroll));
+    assert_eq!(
+        input.mouse_protocol_mode,
+        crate::input::MouseProtocolMode::ButtonMotion
+    );
+    assert_eq!(
+        input.mouse_protocol_encoding,
+        crate::input::MouseProtocolEncoding::Sgr
+    );
+    assert_eq!(
+        runtime.keyboard_protocol(),
+        crate::input::KeyboardProtocol::Kitty { flags: 5 }
+    );
+    input
+}
+
 #[test]
 fn runtime_handoff_resumes_the_same_child_with_retained_modes_and_history() {
     let name = "runtime_handoff_resumes_the_same_child_with_retained_modes_and_history";
@@ -381,9 +404,10 @@ fn runtime_handoff_resumes_the_same_child_with_retained_modes_and_history() {
     }
     with_runtime(
         name,
-        "printf 'BEFORE-HANDOFF'; read -r line; printf 'AFTER-HANDOFF'; read -r line",
+        "printf '\\033[>5u\\033[>4;2m\\033[?1h\\033[?2004h\\033[?1004h\\033[?1002h\\033[?1006h\\033[?1007lBEFORE-HANDOFF'; read -r line; printf 'AFTER-HANDOFF'; read -r line",
         |mut runtime, _, notify| async move {
             wait_text(&runtime, &notify, "BEFORE-HANDOFF").await;
+            let input = distinctive_handoff_modes(&runtime);
             runtime
                 .pause_handoff_reader(std::time::Duration::from_secs(1))
                 .await
@@ -405,6 +429,11 @@ fn runtime_handoff_resumes_the_same_child_with_retained_modes_and_history() {
             runtime.preserve_for_handoff().await.unwrap();
             assert_eq!(imported.child_pid(), pid);
             assert!(imported.visible_text().contains("BEFORE-HANDOFF"));
+            assert_eq!(imported.input_state(), Some(input));
+            assert_eq!(
+                imported.keyboard_protocol(),
+                crate::input::KeyboardProtocol::Kitty { flags: 5 }
+            );
             imported.assume_handoff_ownership();
             imported.set_handoff_reader_paused(false).await.unwrap();
             imported.send_bytes(b"\n".to_vec()).await.unwrap();
@@ -420,6 +449,96 @@ fn runtime_handoff_resumes_the_same_child_with_retained_modes_and_history() {
             watcher.await.unwrap();
         },
     );
+}
+
+#[test]
+fn runtime_cursor_projection_gates_clips_and_translates_the_viewport() {
+    let name = "runtime_cursor_projection_gates_clips_and_translates_the_viewport";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, _, _| async move {
+        use maestro_workspace::layout::Rect;
+        runtime.seed_history_ansi("\x1b[3;5H\x1b[5 q");
+        let area = Rect::new(10, 20, 8, 6);
+        assert!(runtime.cursor_state(area, false).is_none());
+        assert!(
+            runtime
+                .cursor_state(Rect::new(10, 20, 4, 6), true)
+                .is_none()
+        );
+        assert!(
+            runtime
+                .cursor_state(Rect::new(10, 20, 8, 2), true)
+                .is_none()
+        );
+        let cursor = runtime.cursor_state(area, true).unwrap();
+        assert_eq!(
+            (cursor.x, cursor.y, cursor.visible, cursor.shape),
+            (14, 22, true, 5)
+        );
+        runtime.seed_history_ansi("\x1b[?25l");
+        assert!(!runtime.cursor_state(area, true).unwrap().visible);
+        runtime.shutdown().await;
+    });
+}
+
+#[test]
+fn runtime_pixel_size_requires_nonzero_checked_geometry() {
+    let name = "runtime_pixel_size_requires_nonzero_checked_geometry";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, _, _| async move {
+        assert_eq!(runtime.pixel_size(), None);
+        runtime.resize(12, 40, 10, 20);
+        assert_eq!(runtime.pixel_size(), Some((400, 240)));
+        for (width, height) in [(0, 20), (10, 0), (u32::MAX, 20), (10, u32::MAX)] {
+            runtime.resize(12, 40, width, height);
+            assert_eq!(runtime.pixel_size(), None);
+        }
+        runtime.shutdown().await;
+    });
+}
+
+#[test]
+fn runtime_alternate_scroll_encodes_only_vertical_keys_in_the_selected_mode() {
+    let name = "runtime_alternate_scroll_encodes_only_vertical_keys_in_the_selected_mode";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, _, _| async move {
+        use maestro_protocol::frames::ClientMouseKind::{
+            Moved, ScrollDown, ScrollLeft, ScrollRight, ScrollUp,
+        };
+        assert_eq!(runtime.encode_alternate_scroll(ScrollUp), None);
+        runtime.seed_history_ansi("\x1b[?1049h\x1b[?1007h");
+        assert_eq!(
+            runtime.encode_alternate_scroll(ScrollUp),
+            Some(b"\x1b[A".to_vec())
+        );
+        assert_eq!(
+            runtime.encode_alternate_scroll(ScrollDown),
+            Some(b"\x1b[B".to_vec())
+        );
+        for kind in [ScrollLeft, ScrollRight, Moved] {
+            assert_eq!(runtime.encode_alternate_scroll(kind), None);
+        }
+        runtime.seed_history_ansi("\x1b[?1h");
+        assert_eq!(
+            runtime.encode_alternate_scroll(ScrollUp),
+            Some(b"\x1bOA".to_vec())
+        );
+        assert_eq!(
+            runtime.encode_alternate_scroll(ScrollDown),
+            Some(b"\x1bOB".to_vec())
+        );
+        runtime.seed_history_ansi("\x1b[?1003h");
+        assert_eq!(runtime.encode_alternate_scroll(ScrollUp), None);
+        runtime.seed_history_ansi("\x1b[?1003l\x1b[?1007l");
+        assert_eq!(runtime.encode_alternate_scroll(ScrollUp), None);
+        runtime.shutdown().await;
+    });
 }
 
 #[test]
@@ -477,6 +596,90 @@ fn pane_death_publication_waits_for_capacity() {
     });
 }
 
+/// Observes shutdown completion before releasing any bounded event capacity.
+async fn shutdown_with_full_event_queue(
+    mut runtime: PaneRuntime,
+    mut events: mpsc::Receiver<AppEvent>,
+) {
+    use std::{
+        future::Future,
+        task::{Context, Poll, Waker},
+    };
+    runtime.stop_detection().await;
+    while events.try_recv().is_ok() {}
+    for _ in 0..8 {
+        runtime
+            .shared
+            .events
+            .try_send(AppEvent::TerminalBell {
+                pane_id: PaneId::from_raw(42),
+                count: 1,
+            })
+            .unwrap();
+    }
+    assert_eq!(events.capacity(), 0);
+    let shutdown = runtime.shutdown();
+    tokio::pin!(shutdown);
+    assert!(
+        matches!(
+            shutdown
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Ready(())
+        ),
+        "shutdown must not wait for event-queue capacity"
+    );
+    let mut bells = 0;
+    loop {
+        match events.recv().await.unwrap() {
+            AppEvent::TerminalBell { count: 1, .. } => bells += 1,
+            AppEvent::PaneDied { .. } => break,
+            event => panic!("unexpected event: {event:?}"),
+        }
+    }
+    assert_eq!(bells, 8, "queued events must not be lost");
+}
+
+#[test]
+fn spawned_shutdown_completes_with_a_full_unpolled_event_queue() {
+    let name = "spawned_shutdown_completes_with_a_full_unpolled_event_queue";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, events, _| async move {
+        shutdown_with_full_event_queue(runtime, events).await;
+    });
+}
+
+#[test]
+fn imported_shutdown_completes_with_a_full_unpolled_event_queue() {
+    let name = "imported_shutdown_completes_with_a_full_unpolled_event_queue";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    with_runtime(name, "read -r line", |runtime, _events, _| async move {
+        runtime
+            .pause_handoff_reader(std::time::Duration::from_secs(1))
+            .await
+            .unwrap();
+        let fd = runtime.duplicate_handoff_fd().await.unwrap();
+        let state = runtime.handoff_runtime_state(42);
+        let (config, events, _) = config(&[]);
+        let mut imported = PaneRuntime::from_handoff_fd(
+            config,
+            crate::handoff_runtime::ImportedHandoffRuntime {
+                master_fd: fd,
+                state,
+            },
+        )
+        .unwrap();
+        runtime.preserve_for_handoff().await.unwrap();
+        imported.assume_handoff_ownership();
+        imported.set_handoff_reader_paused(false).await.unwrap();
+        shutdown_with_full_event_queue(imported, events).await;
+    });
+}
+
 #[test]
 fn runtime_child_death_reaches_the_workspace_queue() {
     let name = "runtime_child_death_reaches_the_workspace_queue";
@@ -498,6 +701,52 @@ fn runtime_child_death_reaches_the_workspace_queue() {
             runtime.shutdown().await;
         },
     );
+}
+
+#[test]
+fn runtime_shutdown_kills_members_after_the_shell_is_reaped() {
+    let name = "runtime_shutdown_kills_members_after_the_shell_is_reaped";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    let script = "/bin/sh -c 'trap \"\" HUP TERM; printf \"MEMBER:%s:READY\\n\" \"$$\"; exec sleep 600' & read -r line; exit 0";
+    with_runtime(name, script, |runtime, mut events, notify| async move {
+        wait_text(&runtime, &notify, ":READY").await;
+        let member: u32 = runtime
+            .visible_text()
+            .split_once("MEMBER:")
+            .unwrap()
+            .1
+            .split_once(":READY")
+            .unwrap()
+            .0
+            .parse()
+            .unwrap();
+        runtime.send_bytes(b"\n".to_vec()).await.unwrap();
+        while !matches!(events.recv().await, Some(AppEvent::PaneDied { .. })) {}
+        assert!(
+            runtime
+                .child_wait_completed
+                .as_ref()
+                .unwrap()
+                .load(Ordering::Acquire)
+        );
+        assert!(maestro_process::child_process::process_exists(member));
+        runtime.shutdown().await;
+        let stat = std::fs::read_to_string(format!("/proc/{member}/stat")).ok();
+        maestro_process::child_process::signal_processes(
+            &[member],
+            maestro_process::child_process::Signal::Kill,
+        );
+        if let Some(stat) = stat {
+            assert_eq!(
+                stat[stat.rfind(')').unwrap() + 2..]
+                    .split_whitespace()
+                    .next(),
+                Some("Z")
+            );
+        }
+    });
 }
 
 #[test]

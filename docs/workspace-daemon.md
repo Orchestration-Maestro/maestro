@@ -128,10 +128,10 @@ geometry updates remain independent of that queue. During handoff, accepted inpu
 drains before reads pause. Only a quiesced actor can duplicate its master. Rollback
 resumes it; successful committed release closes the old owner without closing an
 owned duplicate. An optional asynchronous exit hook finishes before the old master
-is released. Graceful shutdown must keep draining critical notifications until
-pending hooks finish, before destroying the runtime. The
+is released. Before destroying the async runtime, drain critical notifications
+until pending hooks finish. Pane shutdown itself does not wait for event capacity. The
 [daemon loop delivery](https://github.com/Orchestration-Maestro/maestro/issues/1445)
-owns that integration; destroying the runtime cancels outstanding hooks and releases
+owns that integration; destroying the async runtime cancels outstanding hooks and releases
 their terminal resources.
 
 Shell builders retain login-shell custom commands, plain pane commands and
@@ -213,13 +213,19 @@ then 500 ms for unidentified panes or 300 ms for identified panes; release or
 transient child colours use 50 ms rechecks. Imported panes reuse the same detector
 with the imported-pane cadence. Terminal reads aggregate bells, retain admitted
 cwd reports, send terminal replies through the actor and coalesce render requests.
-Focus reporting and bracketed paste use the destination's live modes.
+Focus reporting and bracketed paste use the destination's live modes. Runtime
+cursor reads gate visibility, clip to the supplied viewport and translate its
+coordinates. Pixel size requires nonzero dimensions without multiplication
+overflow. Alternate-screen wheel input becomes vertical cursor keys only when
+alternate-scroll routing is selected, using the live keyboard modes.
 
-Explicit shutdown cancels and joins detection and delayed work, stops the I/O
-actor and escalates hangup, terminate and kill across the child's session, with
-250 ms per signal. Keep consuming events during shutdown: child reaping and
-imported-reader exit wait for queue capacity to deliver pane death. Dropping a
-runtime requests the same stop and session escalation but cannot await tasks.
+Explicit shutdown cancels and joins detection and delayed work, requests I/O
+shutdown and escalates hangup, terminate and kill across the original terminal
+session, with 250 ms per signal. Session lookup uses the original session leader's
+identity even after that child is reaped. Shutdown returns without waiting for
+event capacity; the child watcher and imported-reader exit hook retain lossless
+pane-death delivery until the consumer reads. Dropping a runtime requests the
+same stop and session escalation but cannot await tasks.
 
 Handoff pauses readers after accepted input drains and duplicates the owned
 master. Export retains terminal modes, keyboard negotiation and the display title;

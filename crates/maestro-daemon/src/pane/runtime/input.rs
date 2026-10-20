@@ -47,6 +47,24 @@ impl PaneRuntime {
             .encode_terminal_key(key, self.keyboard_protocol())
     }
 
+    /// Encodes vertical wheel input as cursor keys only in alternate-scroll mode.
+    #[must_use]
+    pub fn encode_alternate_scroll(
+        &self,
+        kind: maestro_protocol::frames::ClientMouseKind,
+    ) -> Option<Vec<u8>> {
+        use maestro_protocol::frames::{ClientKeyCode, ClientMouseKind};
+        if self.wheel_routing()? != super::super::WheelRouting::AlternateScroll {
+            return None;
+        }
+        let key = match kind {
+            ClientMouseKind::ScrollUp => ClientKeyCode::Up,
+            ClientMouseKind::ScrollDown => ClientKeyCode::Down,
+            _ => return None,
+        };
+        Some(self.encode_terminal_key(TerminalKey::new(key, 0)))
+    }
+
     /// Sends a paste using the destination's bracketed-paste mode.
     ///
     /// # Errors

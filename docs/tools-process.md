@@ -272,5 +272,7 @@ The platform-independent `foreground` module owns `ForegroundJob` and
 `ForegroundProcess` observations. Linux retains their existing `pty::foreground`
 paths as re-exports. The Linux-only `pty::foreground` module reads live process
 groups, arguments, native working directories, raw environment values and session
-membership. Detection mode and the
-environment-variable name come from the caller. See [pane processes](workspace-daemon.md#pane-processes).
+membership. `session_processes_by_id` takes the original session identity, which terminal
+setup establishes as the spawned child's PID; it does not need a live leader.
+`session_processes` instead resolves a live member's session before enumerating it.
+Detection mode and the environment-variable name come from the caller. See [pane processes](workspace-daemon.md#pane-processes).

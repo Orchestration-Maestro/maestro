@@ -3,7 +3,7 @@ use super::reader;
 use crate::events::AppEvent;
 use maestro_process::{
     child_process::{Signal, process_exists, signal_processes},
-    pty::foreground::session_processes,
+    pty::foreground::session_processes_by_id,
 };
 use std::sync::{
     Arc,
@@ -74,7 +74,7 @@ pub(super) fn shutdown_processes(child: u32, completed: Option<&AtomicBool>) {
     if child == 0 {
         return;
     }
-    let mut pids = session_processes(child);
+    let mut pids = session_processes_by_id(child);
     if pids.is_empty() {
         pids.push(child);
     }

@@ -92,7 +92,40 @@ impl std::ops::Deref for PaneRuntime {
 }
 
 impl PaneRuntime {
-    /// Stops I/O, terminates the owned session and joins its child watcher.
+    /// Projects the live cursor into a visible viewport, clipping outside its bounds.
+    #[must_use]
+    pub fn cursor_state(
+        &self,
+        area: maestro_workspace::layout::Rect,
+        show_cursor: bool,
+    ) -> Option<super::terminal::TerminalCursorState> {
+        if !show_cursor {
+            return None;
+        }
+        let cursor = self
+            .shared
+            .terminal
+            .cursor_state(std::time::Instant::now())?;
+        if cursor.x >= area.width || cursor.y >= area.height {
+            return None;
+        }
+        Some(super::terminal::TerminalCursorState {
+            x: area.x.checked_add(cursor.x)?,
+            y: area.y.checked_add(cursor.y)?,
+            ..cursor
+        })
+    }
+
+    /// Returns nonzero total pixel dimensions when both products fit.
+    #[must_use]
+    pub fn pixel_size(&self) -> Option<(u32, u32)> {
+        let size = self.size.get();
+        let width = u32::from(size.cols).checked_mul(size.cell_width_px)?;
+        let height = u32::from(size.rows).checked_mul(size.cell_height_px)?;
+        (width > 0 && height > 0).then_some((width, height))
+    }
+
+    /// Stops I/O and terminates the owned session without waiting for event capacity.
     pub async fn shutdown(mut self) {
         self.stop_detection().await;
         self.io.shutdown();
@@ -101,13 +134,9 @@ impl PaneRuntime {
             self.child_wait_completed.as_deref(),
         );
         self.preserve_processes_on_drop = true;
-        let _ = self.io.wait_closed().await;
         for task in self.shared.take_delayed() {
             task.abort();
             let _ = task.await;
-        }
-        if let Some(watcher) = self.watcher.take() {
-            let _ = watcher.await;
         }
     }
 }
