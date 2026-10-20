@@ -373,6 +373,76 @@ and release it before waiting for completion. Pipe both output streams explicitl
 `spawn` otherwise retains inherited stdin. Live pipe-closure transactions use the
 single-test isolation described above, not a process-wide owner lock.
 
+## Fuzzing
+
+`fuzz/` holds coverage-guided fuzz targets for the parsers that read untrusted
+text. It is a separate Cargo workspace, so `just check`, `just test` and shared
+CI never build it. Each target calls a public entry point and reports a crash,
+a hang or runaway memory as a finding.
+
+| Target | Entry point |
+| --- | --- |
+| `markdown` | `maestro_markdown::parse_with_options` with every caller grammar, then the terminal `Markdown` component rendering an assistant reply at width 80 |
+| `frontmatter` | `maestro_resources::parse_frontmatter`, which the skill and prompt loaders call |
+| `terminal-escapes` | `maestro_terminal::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
+| `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
+| `tool-call-arguments` | `maestro_models::parsed_arguments` |
+
+The text targets skip input that is not UTF-8, because their callers only pass
+decoded text. Seeds come from the existing test fixtures and live in
+`fuzz/corpus/<target>/`. The Markdown seeds include inputs that reproduce known
+defects: a 60-level quote, a 150-line and a 10,000-line reply-style quote, and
+5,000 nested quote markers.
+
+Each target has recorded libFuzzer limits. A run that exceeds one reports a
+finding:
+
+| Target | `-max_len` (bytes) | `-timeout` (seconds) | `-rss_limit_mb` |
+| --- | --- | --- | --- |
+| `markdown` | 131072 | 60 | 2048 |
+| `frontmatter` | 4096 | 10 | 2048 |
+| `terminal-escapes` | 4096 | 10 | 2048 |
+| `protocol-frames` | 4096 | 10 | 2048 |
+| `tool-call-arguments` | 4096 | 10 | 2048 |
+
+The Markdown limits keep the largest seed whole. Under the instrumented fuzz
+build, 128 KB of ordinary Markdown takes 12 to 23 seconds, depending on
+machine load. Each defect seed exceeds the timeout or the stack.
+
+### Run one target locally
+
+You need Linux, a nightly Rust toolchain and cargo-fuzz:
+
+```sh
+rustup toolchain install nightly
+cargo install cargo-fuzz --locked
+```
+
+From the repository root, fuzz the Markdown target for one minute:
+
+```sh
+mkdir -p target/fuzz-corpus/markdown
+cargo +nightly fuzz run markdown target/fuzz-corpus/markdown fuzz/corpus/markdown -- \
+  -max_total_time=60 -max_len=131072 -timeout=60 -rss_limit_mb=2048
+```
+
+New inputs go to the first directory, under the ignored `target/`, so the
+committed seeds stay unchanged. Use another target's name, corpus and limits
+from the table to run it. A finding stops the run and leaves its input in
+`fuzz/artifacts/<target>/`. Pass that file in place of the corpus directories,
+with the same limits, to reproduce it.
+
+The Markdown seeds stop a run at the first known defect until its fix lands.
+To explore new inputs in the meantime, leave the seed directory off the command.
+
+### Nightly findings
+
+The shared nightly fuzz job runs each declared target for ten minutes with
+these limits. It never gates a pull request or the merge queue. A crash, hang
+or out-of-memory input becomes an issue in this repository, one per distinct
+crash signature, with the minimized input attached to the job's run as an
+artifact. A repeat of an open finding adds a comment to that issue.
+
 ## Package commands and roles
 
 `models-`, `agent-`, `tui-` and `app-` each offer `clean`, `build`, `dev`, `test` and
