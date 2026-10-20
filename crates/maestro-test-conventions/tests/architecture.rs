@@ -1283,19 +1283,27 @@ fn complete_resolved_metadata() {
 /// Documented dependencies checked against the permitted policy.
 const FOUNDATION_SPECIFICATION: &str = include_str!("../../../docs/specs/maestro-port.md");
 
-/// The crates the specification excludes from the path utility are the policy's exclusions.
-fn documented_utility_exclusions_match_policy() {
-    let documented: std::collections::BTreeSet<_> = FOUNDATION_SPECIFICATION
-        .split_once("The guest authoring crate")
+/// Backticked names in the foundation specification between the first `start` and the next `end`.
+fn specification_names(start: &str, end: &str) -> Vec<&'static str> {
+    FOUNDATION_SPECIFICATION
+        .split_once(start)
         .unwrap()
         .1
-        .split_once("are excluded from this")
+        .split_once(end)
         .unwrap()
         .0
         .split('`')
         .skip(1)
         .step_by(2)
-        .collect();
+        .collect()
+}
+
+/// The crates the specification excludes from the path utility are the policy's exclusions.
+fn documented_utility_exclusions_match_policy() {
+    let documented: std::collections::BTreeSet<_> =
+        specification_names("The guest authoring crate", "are excluded from this")
+            .into_iter()
+            .collect();
     assert_eq!(documented, UTILITY_EXCLUDED.iter().copied().collect());
 }
 
@@ -2285,22 +2293,8 @@ fn test_process_policy_keeps_existing_domain_edges() {
 fn test_process_inventory_matches_foundation_contract() {
     assert_eq!(support::class(OWNER), "dedicated");
     assert!(UTILITY_EXCLUDED.contains(&OWNER));
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let specification = std::fs::read_to_string(root.join("docs/specs/maestro-port.md")).unwrap();
-    let documented: Vec<_> = specification
-        .split_once("from `maestro-agent`")
-        .unwrap()
-        .1
-        .split_once("; a\ncaller declares it only")
-        .unwrap()
-        .0
-        .split('`')
-        .skip(1)
-        .step_by(2)
-        .collect();
-    let declared: Vec<_> = std::iter::once("maestro-agent")
-        .chain(documented.iter().copied())
-        .collect();
+    let documented = specification_names("from `maestro-agent`", "; a\ncaller declares it only");
+    let declared: Vec<_> = std::iter::once("maestro-agent").chain(documented).collect();
     assert_eq!(declared, support::policy::TEST_PROCESS_CALLERS);
     let workspace = Workspace::new();
     workspace.foundation(&[OWNER]);
