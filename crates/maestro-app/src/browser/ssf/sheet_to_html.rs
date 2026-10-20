@@ -3,6 +3,7 @@ use super::{
     CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat, Ssf,
     WorkSheet, encode_cell, format_cell,
 };
+use crate::browser::executable;
 use maestro_text::markup::{EscapeMode, escape};
 use std::fmt::Write as _;
 /// Project the declared worksheet range as a table, retaining formatter caches.
@@ -151,35 +152,4 @@ fn content(cell: &mut CellObject, ssf: &Ssf) -> String {
         let _ = format_cell(Some(cell), None, &CellFormatOptions::default(), ssf);
     }
     escape(cell.w.as_deref().unwrap_or(""), EscapeMode::SpreadsheetHtml)
-}
-/// Reject executable URL schemes without narrowing ordinary link capabilities.
-fn executable(target: &str) -> bool {
-    let Ok(url) = url::Url::parse(target) else {
-        return false;
-    };
-    match url.scheme() {
-        "javascript" | "vbscript" => true,
-        "data" => {
-            let mime = url
-                .path()
-                .split([',', ';'])
-                .next()
-                .unwrap_or("")
-                .trim()
-                .to_ascii_lowercase();
-            matches!(
-                mime.as_str(),
-                "text/html"
-                    | "text/xml"
-                    | "application/xml"
-                    | "application/xhtml+xml"
-                    | "image/svg+xml"
-                    | "text/javascript"
-                    | "application/javascript"
-                    | "application/ecmascript"
-                    | "text/ecmascript"
-            )
-        }
-        _ => false,
-    }
 }

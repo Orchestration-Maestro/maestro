@@ -1,0 +1,58 @@
+//! Link target policy shared by browser renderers.
+
+/// Whether a browser would run `target` as script or an active document.
+///
+/// That is a `javascript:` or `vbscript:` URL, or a `data:` URL whose media type is
+/// HTML, XML, SVG or script. Other targets, including unparsable ones, are not refused.
+#[must_use]
+pub fn executable(target: &str) -> bool {
+    let Ok(url) = url::Url::parse(target) else {
+        return false;
+    };
+    match url.scheme() {
+        scheme if script_scheme(scheme) => true,
+        "data" => {
+            let mime = url
+                .path()
+                .split([',', ';'])
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_ascii_lowercase();
+            matches!(
+                mime.as_str(),
+                "text/html"
+                    | "text/xml"
+                    | "application/xml"
+                    | "application/xhtml+xml"
+                    | "image/svg+xml"
+                    | "text/javascript"
+                    | "application/javascript"
+                    | "application/ecmascript"
+                    | "text/ecmascript"
+            )
+        }
+        _ => false,
+    }
+}
+
+/// Whether a normalized URL scheme is `javascript` or `vbscript`.
+#[must_use]
+pub fn script_scheme(scheme: &str) -> bool {
+    matches!(scheme, "javascript" | "vbscript")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn data_targets_are_not_script_schemes() {
+        for target in [
+            "data:text/plain,hello",
+            "data:,hello",
+            "data:image/svg+xml,<svg/>",
+        ] {
+            let url = url::Url::parse(target).unwrap();
+            assert!(!super::script_scheme(url.scheme()), "{target}");
+        }
+    }
+}

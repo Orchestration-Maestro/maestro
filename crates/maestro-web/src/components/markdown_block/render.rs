@@ -1,6 +1,7 @@
 //! Shared owned document to transcript HTML, with contextual math.
 use super::admission::{Formula, MathBlocks, block_formula, scan, starts_display};
 use maestro_app::{
+    browser::script_scheme,
     is_whitespace_scalar,
     markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node, Table},
     markup::{EscapeMode, escape_into},
@@ -105,6 +106,7 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
         policy: Policy::Transcript {
             math: &math,
             inline: &inline,
+            escape_html,
         },
         prepared: Prepared {
             slot_attribute,
@@ -128,6 +130,8 @@ enum Policy<'a, 'd> {
         math: &'a katex::KatexContext,
         /// Original container and label scopes, used only by chat.
         inline: &'a InlineContext<'d>,
+        /// Whether authored HTML is shown as text.
+        escape_html: bool,
     },
     /// Standalone selectable session markup.
     Export(&'a dyn maestro_theme::SyntaxHighlighter),
@@ -416,14 +420,28 @@ impl Writer<'_, '_> {
             }
             return;
         }
-        out.push_str("<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"");
-        escape(&utf8_percent_encode(href, URL_SAFE).to_string(), out);
-        out.push('"');
-        title(&meta.title, out);
-        out.push('>');
-        let Policy::Transcript { inline, .. } = self.policy else {
+        let Policy::Transcript {
+            inline,
+            escape_html,
+            ..
+        } = self.policy
+        else {
             return;
         };
+        // A refused target keeps the label; with escaping on, an angle autolink keeps its source.
+        let href = utf8_percent_encode(href, URL_SAFE).to_string();
+        let refused = maestro_app::browser::executable(&href);
+        if refused && escape_html && meta.link_type == markdown::LinkType::Autolink {
+            escape(&node.authored, out);
+            return;
+        }
+        if !refused {
+            out.push_str("<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"");
+            escape(&href, out);
+            out.push('"');
+            title(&meta.title, out);
+            out.push('>');
+        }
         if let Some(scope) = inline.scope(&node.range, true) {
             let content = scope.content_range();
             let formulas = scan(scope, content.clone(), false);
@@ -435,7 +453,7 @@ impl Writer<'_, '_> {
         } else {
             self.inline(children, None, out);
         }
-        out.push_str("</a>");
+        out.push_str(if refused { "" } else { "</a>" });
     }
     /// Write formatted children inside `tag`.
     fn tagged(&mut self, tag: &str, children: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
@@ -495,13 +513,14 @@ fn task(checked: bool, out: &mut String) {
         "<input disabled=\"\" type=\"checkbox\"> "
     });
 }
-/// Write an image with its plain alternative text.
+/// Write an image with its plain alternative text, or only that text for a refused target.
 fn image(meta: &markdown::ImageMetadata, out: &mut String) {
+    let destination = utf8_percent_encode(&meta.destination, URL_SAFE).to_string();
+    if url::Url::parse(&destination).is_ok_and(|url| script_scheme(url.scheme())) {
+        return plain(&meta.children, out);
+    }
     out.push_str("<img src=\"");
-    escape(
-        &utf8_percent_encode(&meta.destination, URL_SAFE).to_string(),
-        out,
-    );
+    escape(&destination, out);
     out.push_str("\" alt=\"");
     plain(&meta.children, out);
     out.push('"');
