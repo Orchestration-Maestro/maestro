@@ -60,7 +60,7 @@ export CHROMIUM_PATH=/absolute/path/to/chrome
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just browser-test
 ```
 
-The command installs nothing. It requires Node >=20, Playwright 1.64.1,
+The command installs no browser tools. It requires Node >=20, Playwright 1.64.1,
 Chromium 156.0.8078.4 (supplier revision 1248), and wasm-bindgen CLI 0.2.129,
 matching the locked Rust binding. The shared workflow owns tool acquisition.
 Observed versions, checkout SHA and Cargo's emitted artifact paths are printed.
@@ -69,8 +69,10 @@ The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
 execution uses an unregistered temporary cdylib pointing at the unchanged
 `tests/integration.rs`, with `--cfg test` applied only to its root crate. Scratch
-dependencies come from the current manifests; offline lock preparation rejects
-new external package identities. The authored manifests and lock stay unchanged.
+dependencies come from the current manifests. Packaging first fetches the
+checkout's locked dependencies, which may require network access on a cold cache.
+Offline scratch lock preparation rejects new external package identities. The
+authored manifests and lock stay unchanged.
 Build outputs remain in Cargo's resolved target directory.
 
 Bindings use `--target web --split-linked-modules` to retain local snippets,

@@ -178,6 +178,11 @@ live until reset replaces the current collection.
 
 ## Qualification boundary
 
+The [browser test command](../development.md#browser-integration-qualification)
+fetches the checkout's locked dependencies before offline scratch preparation.
+An initially empty Cargo home is supported when the configured dependency sources
+are reachable. The command installs no browser tools.
+
 Native tests exercise document envelopes, ordered result collection and shared routing. The browser-executed
 loading witnesses cover native listener removal, current-window admission,
 ready/error settlement, preparation/runtime values, literal validation documents
