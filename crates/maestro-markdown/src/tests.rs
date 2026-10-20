@@ -31,6 +31,8 @@ pub(crate) struct Work {
     pub(crate) text_bytes: usize,
     /// Bytes searched for the end of a fallback text line.
     pub(crate) line_bytes: usize,
+    /// Authored bytes compared by the plain-text merge check.
+    pub(crate) merge_bytes: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
@@ -388,5 +390,27 @@ fn paragraph_text_work_grows_linearly_with_its_lines() {
         assert_eq!(grows("plain line.\n"), (true, true), "{options:?} lines");
         // One line keeps the rest of the line visible to the recognizer, but finds its end once.
         assert!(grows("a_ ").1, "{options:?} one line");
+    }
+}
+
+/// Bytes compared by the plain-text merge check for one line of identical plain pieces.
+fn plain_merge_work(pieces: usize, options: crate::MarkedOptions) -> usize {
+    WORK.with_borrow_mut(|work| *work = Work::default());
+    let document = crate::parse_with_options("a_".repeat(pieces), options);
+    assert_eq!(document.nodes.len(), 1);
+    WORK.with_borrow(|work| work.merge_bytes)
+}
+
+#[test]
+fn plain_text_merge_work_grows_linearly_with_its_pieces() {
+    for options in [
+        crate::MarkedOptions::Documentation,
+        crate::MarkedOptions::Terminal,
+        crate::MarkedOptions::Export,
+        crate::MarkedOptions::Browser { escape_html: false },
+        crate::MarkedOptions::Browser { escape_html: true },
+    ] {
+        let [small, medium, large] = [64, 128, 256].map(|pieces| plain_merge_work(pieces, options));
+        assert_eq!(large - medium, 2 * (medium - small), "{options:?}");
     }
 }
