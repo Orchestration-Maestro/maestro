@@ -41,46 +41,42 @@ fn connection_retains_browser_exception_names() {
 
 #[test]
 fn http_status_text_empty_for_http2() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let address = listener.local_addr().unwrap();
-            let server = tokio::spawn(async move {
-                let (socket, _) = listener.accept().await.unwrap();
-                hyper::server::conn::http2::Builder::new(TokioExecutor::new())
-                    .serve_connection(
-                        TokioIo::new(socket),
-                        service_fn(|_| async {
-                            Ok::<_, Infallible>(
-                                Response::builder()
-                                    .status(503)
-                                    .body(Full::new(Bytes::from_static(b"body")))
-                                    .unwrap(),
-                            )
-                        }),
-                    )
-                    .await
-                    .unwrap();
-            });
-            let client = reqwest::Client::builder()
-                .http2_prior_knowledge()
-                .build()
-                .unwrap();
-            let response = client
-                .get(format!("http://{address}/"))
-                .send()
+    crate::tests::runtime::run(async {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (socket, _) = listener.accept().await.unwrap();
+            hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                .serve_connection(
+                    TokioIo::new(socket),
+                    service_fn(|_| async {
+                        Ok::<_, Infallible>(
+                            Response::builder()
+                                .status(503)
+                                .body(Full::new(Bytes::from_static(b"body")))
+                                .unwrap(),
+                        )
+                    }),
+                )
                 .await
                 .unwrap();
-            assert_eq!(response.version(), Version::HTTP_2);
-            assert_eq!(response.status(), 503);
-            assert_eq!(status_text(&response), "");
-            assert_eq!(response.bytes().await.unwrap().as_ref(), b"body");
-            drop(client);
-            server.await.unwrap();
         });
+        let client = reqwest::Client::builder()
+            .http2_prior_knowledge()
+            .build()
+            .unwrap();
+        let response = client
+            .get(format!("http://{address}/"))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.version(), Version::HTTP_2);
+        assert_eq!(response.status(), 503);
+        assert_eq!(status_text(&response), "");
+        assert_eq!(response.bytes().await.unwrap().as_ref(), b"body");
+        drop(client);
+        server.await.unwrap();
+    });
 }
 
 #[test]

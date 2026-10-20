@@ -1,5 +1,6 @@
 //! Native socket effect qualification.
 use super::*;
+use crate::tests::runtime::run;
 use futures_util::{SinkExt as _, StreamExt as _};
 use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::handshake::server::{
@@ -128,14 +129,4 @@ fn connect_future_drop_releases_partial_upgrade() {
         drop(connect);
         peer.await.unwrap();
     });
-}
-
-/// Drive a native socket witness.
-#[cfg(test)]
-fn run(future: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future);
 }

@@ -2,8 +2,9 @@
 
 use super::super::messages::{convert_responses_messages, convert_responses_tools};
 use super::super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions};
-use super::{TestResult, block_on, responses};
+use super::{TestResult, responses};
 use crate as maestro_models;
+use crate::tests::runtime::run;
 use maestro_models::Tool;
 use responses::{Fields, Script};
 use serde_json::{Value, json};
@@ -188,7 +189,7 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
             done,
             completed.to_owned(),
         ])?;
-        Ok::<_, Box<dyn std::error::Error>>((item, block_on(false, responses::reduce(script))?))
+        Ok::<_, Box<dyn std::error::Error>>((item, run(responses::reduce(script))?))
     };
     let (item, accepted) = reduce_item(127)?;
     accepted.outcome?;
@@ -240,7 +241,7 @@ fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() ->
         let mut fields = Fields::new("sample", row)?;
         fields.take("test");
         fields.take("id");
-        block_on(false, responses::check_events(fields))
+        run(responses::check_events(fields))
     };
     consume(sample.clone())?;
     let mut nested = sample.clone();

@@ -212,42 +212,39 @@ hooks!(threaded_hooks, Threaded, Arc, Arc::new(0), 0);
 #[test]
 fn registered_callback_preserves_hook_phases_and_counts() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            let trace = Trace::default();
-            let owner = Arc::new(HookProvider(trace.clone()));
-            register_api_provider(
-                ApiProvider {
-                    api: "controlled".into(),
-                    stream: owner.clone(),
-                    stream_simple: owner,
-                },
-                Some("hook-matrix".into()),
-            );
-            assert!(trace.lock().unwrap().is_empty());
-            for row in super::corpus::load().registered.rows {
-                if !row.name.starts_with("registered_") {
-                    continue;
-                }
-                let input: CallbackInput = serde_json::from_value(row.input)?;
-                for local in [true, false] {
-                    trace.lock().unwrap().clear();
-                    let (events, message) = run_case(&input, &trace, local).await?;
-                    let observed = json!({"trace": *trace.lock().unwrap(), "result": message,
-                    "events": events});
-                    assert_eq!(
-                        crate::json::canonical(observed),
-                        row.expected,
-                        "{} local={local}",
-                        row.name
-                    );
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        let trace = Trace::default();
+        let owner = Arc::new(HookProvider(trace.clone()));
+        register_api_provider(
+            ApiProvider {
+                api: "controlled".into(),
+                stream: owner.clone(),
+                stream_simple: owner,
+            },
+            Some("hook-matrix".into()),
+        );
+        assert!(trace.lock().unwrap().is_empty());
+        for row in super::corpus::load().registered.rows {
+            if !row.name.starts_with("registered_") {
+                continue;
             }
-            unregister_api_providers("hook-matrix");
-            Ok(())
-        }),
-    )
+            let input: CallbackInput = serde_json::from_value(row.input)?;
+            for local in [true, false] {
+                trace.lock().unwrap().clear();
+                let (events, message) = run_case(&input, &trace, local).await?;
+                let observed = json!({"trace": *trace.lock().unwrap(), "result": message,
+                    "events": events});
+                assert_eq!(
+                    crate::json::canonical(observed),
+                    row.expected,
+                    "{} local={local}",
+                    row.name
+                );
+            }
+        }
+        unregister_api_providers("hook-matrix");
+        Ok(())
+    }))
 }
 /// Use the recorded model identity so complete output trees remain comparable.
 fn descriptor() -> Model {

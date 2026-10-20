@@ -6,22 +6,29 @@ use std::sync::Arc;
 
 #[test]
 fn subscription_refresh_omits_scope() {
-    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    let fetch: Fetch = Arc::new(|request| {
-        assert_eq!(request.method, "POST");
-        assert_eq!(request.url, "https://platform.claude.com/v1/oauth/token");
-        assert_eq!(request.headers["content-type"], "application/json");
-        assert_eq!(request.headers["accept"], "application/json");
-        assert_eq!(String::from_utf8(request.body).unwrap(), r#"{"grant_type":"refresh_token","client_id":"9d1c250a-e61b-44d9-88ed-5944d1962f5e","refresh_token":"old"}"#);
-        Box::pin(async { Ok(HttpResponse { status_text: String::new(), status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"rotated-access","refresh_token":"rotated-refresh","expires_in":3600,"scope":"discard"}"#.to_vec())])) }) })
-    });
-    let before = crate::clock::epoch_millis();
-    let credentials = refresh_anthropic_token("old".into(), Some(fetch)).await.unwrap();
-    let after = crate::clock::epoch_millis();
-    assert_eq!(credentials.access, "rotated-access");
-    assert_eq!(credentials.refresh, "rotated-refresh");
-    assert!(credentials.extra.is_empty());
-    assert!((before + 3_300_000.0..=after + 3_300_000.0).contains(&credentials.expires));
+    crate::runtime::run(async {
+        let fetch: Fetch = Arc::new(|request| {
+            assert_eq!(request.method, "POST");
+            assert_eq!(request.url, "https://platform.claude.com/v1/oauth/token");
+            assert_eq!(request.headers["content-type"], "application/json");
+            assert_eq!(request.headers["accept"], "application/json");
+            assert_eq!(
+                String::from_utf8(request.body).unwrap(),
+                r#"{"grant_type":"refresh_token","client_id":"9d1c250a-e61b-44d9-88ed-5944d1962f5e","refresh_token":"old"}"#
+            );
+            Box::pin(async {
+                Ok(HttpResponse { status_text: String::new(), status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"rotated-access","refresh_token":"rotated-refresh","expires_in":3600,"scope":"discard"}"#.to_vec())])) })
+            })
+        });
+        let before = crate::clock::epoch_millis();
+        let credentials = refresh_anthropic_token("old".into(), Some(fetch))
+            .await
+            .unwrap();
+        let after = crate::clock::epoch_millis();
+        assert_eq!(credentials.access, "rotated-access");
+        assert_eq!(credentials.refresh, "rotated-refresh");
+        assert!(credentials.extra.is_empty());
+        assert!((before + 3_300_000.0..=after + 3_300_000.0).contains(&credentials.expires));
     });
 }
 
@@ -309,110 +316,110 @@ mod oauth_callback {
 
     #[test]
     fn subscription_manual_login_uses_localhost_redirect() {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let _permit = PORT.acquire().await.unwrap();
-                let fetch: Fetch = Arc::new(|request| {
-                    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-                    assert_eq!(body["code"], "manual-code");
-                    assert_eq!(body["state"], body["code_verifier"]);
-                    assert_eq!(body["redirect_uri"], "http://localhost:53692/callback");
-                    Box::pin(std::future::ready(Ok(json_response(
-                        br#"{"access_token":"a","refresh_token":"r","expires_in":3600}"#,
-                    ))))
-                });
-                let result = maestro_models::login_anthropic(Arc::new(Manual), Some(fetch))
-                    .await
-                    .unwrap();
-                assert_eq!(result.access, "a");
-                assert_eq!(result.refresh, "r");
-                let _released = bind_callback_probe();
+        crate::runtime::run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let fetch: Fetch = Arc::new(|request| {
+                let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(body["code"], "manual-code");
+                assert_eq!(body["state"], body["code_verifier"]);
+                assert_eq!(body["redirect_uri"], "http://localhost:53692/callback");
+                Box::pin(std::future::ready(Ok(json_response(
+                    br#"{"access_token":"a","refresh_token":"r","expires_in":3600}"#,
+                ))))
             });
+            let result = maestro_models::login_anthropic(Arc::new(Manual), Some(fetch))
+                .await
+                .unwrap();
+            assert_eq!(result.access, "a");
+            assert_eq!(result.refresh, "r");
+            let _released = bind_callback_probe();
+        });
     }
 
     #[test]
     fn subscription_callback_login_rejects_then_accepts() {
-        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-        let _permit = PORT.acquire().await.unwrap();
-        let fetch: Fetch = Arc::new(|request| {
-            let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-            assert_eq!(body["code"], "callback-code");
-            Box::pin(std::future::ready(Ok(json_response(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#))))
+        crate::runtime::run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let fetch: Fetch = Arc::new(|request| {
+                let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(body["code"], "callback-code");
+                Box::pin(std::future::ready(Ok(json_response(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#))))
+            });
+            let callbacks = Arc::new(Callback {
+                peer: maestro_models::EventStream::new(|_| false, |_| ()),
+            });
+            let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch))
+                .await
+                .unwrap();
+            let mut peer = callbacks.peer.next().await.unwrap().await.unwrap();
+            // The completed response established admission on this same keep-alive peer.
+            write_peer(
+                &mut peer,
+                b"GET /callback?code=fresh&state=wrong HTTP/1.1\r\nHost: localhost\r\n\r\n",
+            )
+            .await;
+            let mut byte = [0];
+            assert_eq!(
+                read_peer(&mut peer, &mut byte).await,
+                0,
+                "stopped listener served a fresh request"
+            );
+            assert_eq!(result.access, "callback-access");
         });
-        let callbacks = Arc::new(Callback { peer: maestro_models::EventStream::new(|_| false, |_| ()) });
-        let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch)).await.unwrap();
-        let mut peer = callbacks.peer.next().await.unwrap().await.unwrap();
-        // The completed response established admission on this same keep-alive peer.
-        write_peer(&mut peer, b"GET /callback?code=fresh&state=wrong HTTP/1.1\r\nHost: localhost\r\n\r\n").await;
-        let mut byte = [0];
-        assert_eq!(read_peer(&mut peer, &mut byte).await, 0, "stopped listener served a fresh request");
-        assert_eq!(result.access, "callback-access");
-    });
     }
 
     #[test]
     fn subscription_provider_delegates_without_model_changes() {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let _permit = PORT.acquire().await.unwrap();
-                let provider = maestro_models::ANTHROPIC_OAUTH_PROVIDER;
-                assert_eq!(provider.id(), "anthropic");
-                assert_eq!(provider.name(), "Anthropic (Claude Pro/Max)");
-                assert_eq!(provider.uses_callback_server(), Some(true));
-                let fetch: Fetch = Arc::new(|request| {
-                    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-                    assert!(matches!(
-                        body["grant_type"].as_str(),
-                        Some("authorization_code" | "refresh_token")
-                    ));
-                    Box::pin(std::future::ready(Ok(json_response(
-                        br#"{"access_token":"key","refresh_token":"rotated","expires_in":1}"#,
-                    ))))
-                });
-                let credentials = provider
-                    .login(Arc::new(Manual), Some(fetch.clone()))
-                    .await
-                    .unwrap();
-                let key = provider.get_api_key(&credentials).unwrap();
-                assert_eq!(key.as_ptr(), credentials.access.as_ptr());
-                let mut models = maestro_models::get_models("openai");
-                models.truncate(2);
-                assert_eq!(models.len(), 2);
-                models[0].name = "first custom".into();
-                models[1].name = "second custom".into();
-                assert!(provider.modify_models(&models, &credentials).is_none());
-                assert_eq!(
-                    provider
-                        .refresh_token(credentials, Some(fetch))
-                        .await
-                        .unwrap()
-                        .refresh,
-                    "rotated"
-                );
+        crate::runtime::run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let provider = maestro_models::ANTHROPIC_OAUTH_PROVIDER;
+            assert_eq!(provider.id(), "anthropic");
+            assert_eq!(provider.name(), "Anthropic (Claude Pro/Max)");
+            assert_eq!(provider.uses_callback_server(), Some(true));
+            let fetch: Fetch = Arc::new(|request| {
+                let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+                assert!(matches!(
+                    body["grant_type"].as_str(),
+                    Some("authorization_code" | "refresh_token")
+                ));
+                Box::pin(std::future::ready(Ok(json_response(
+                    br#"{"access_token":"key","refresh_token":"rotated","expires_in":1}"#,
+                ))))
             });
+            let credentials = provider
+                .login(Arc::new(Manual), Some(fetch.clone()))
+                .await
+                .unwrap();
+            let key = provider.get_api_key(&credentials).unwrap();
+            assert_eq!(key.as_ptr(), credentials.access.as_ptr());
+            let mut models = maestro_models::get_models("openai");
+            models.truncate(2);
+            assert_eq!(models.len(), 2);
+            models[0].name = "first custom".into();
+            models[1].name = "second custom".into();
+            assert!(provider.modify_models(&models, &credentials).is_none());
+            assert_eq!(
+                provider
+                    .refresh_token(credentials, Some(fetch))
+                    .await
+                    .unwrap()
+                    .refresh,
+                "rotated"
+            );
+        });
     }
 
     #[test]
     fn subscription_occupied_port_reports_native_error() {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let _permit = PORT.acquire().await.unwrap();
-                let listener = bind_callback_probe();
-                let error = maestro_models::login_anthropic(Arc::new(Uncalled), None)
-                    .await
-                    .unwrap_err();
-                assert!(error.errno.is_some());
-                drop(listener);
-                let _released = bind_callback_probe();
-            });
+        crate::runtime::run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let listener = bind_callback_probe();
+            let error = maestro_models::login_anthropic(Arc::new(Uncalled), None)
+                .await
+                .unwrap_err();
+            assert!(error.errno.is_some());
+            drop(listener);
+            let _released = bind_callback_probe();
+        });
     }
 }

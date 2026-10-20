@@ -361,7 +361,7 @@ pub fn assert_rows(test: &str) -> TestResult {
         if row.input.adc_appears_inside_hook != Some(true) {
             write_credentials(&credentials);
         }
-        let result = chat::block_on(false, observe(&row.input, credentials, &refreshes));
+        let result = crate::runtime::run(observe(&row.input, credentials, &refreshes));
         server.finish()?;
         return check(row, result?);
     }

@@ -9,7 +9,7 @@ use crate::chat;
 use crate::key_selection;
 
 use bundled::{PROTOCOLS, Protocol, registered};
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::records::api_registry::get_api_provider;
 use maestro_models::{
     AnthropicOptions, ApiProvider, AssistantMessageEvent, AssistantMessageEventStream,
@@ -215,7 +215,7 @@ fn expected_hooks(protocol: &Protocol) -> &'static [&'static str] {
 fn maestro_public_routes_reach_real_adapters() -> TestResult {
     let _registry = bundled::registry();
     maestro_models::reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for protocol in &PROTOCOLS {
             for route in ROUTES {
                 let text = format!("{} via {route:?}", protocol.api);
@@ -346,7 +346,7 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
         old.err().map(|error| error.message),
         Some("custom".to_owned())
     );
-    block_on(false, async {
+    crate::runtime::run(async {
         for protocol in &PROTOCOLS {
             let seen = invoke(protocol, Route::GenericStream, "restored").await?;
             assert_eq!(
@@ -376,7 +376,7 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
 fn maestro_clear_does_not_reactivate() -> TestResult {
     let _registry = bundled::registry();
     clear_api_providers();
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         for protocol in &PROTOCOLS {
             assert!(registered().is_empty());
             let missing = format!("No API provider registered for api: {}", protocol.api);
@@ -417,7 +417,7 @@ fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
         message(stream_simple(model.clone(), bundled::conversation()?, None)).as_deref(),
         Some("custom setup")
     );
-    let completed = block_on(false, async {
+    let completed = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(complete(model, bundled::conversation()?, None)
             .await
             .err()
@@ -444,7 +444,7 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
     register_api_provider(ending_provider(), None);
     let model = bundled::descriptor("ending-api", "https://controlled.invalid")?;
     let started = stream(model.clone(), bundled::conversation()?, None)?;
-    let original = block_on(false, async {
+    let original = crate::runtime::run::<crate::TestResult<_>>(async {
         let events = bundled::drain(&started).await;
         assert!(matches!(
             events.as_slice(),
@@ -479,7 +479,7 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
         None,
     );
     started.end(Some(Arc::clone(&original)));
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         assert!(Arc::ptr_eq(&raw.await?, &original));
         assert!(Arc::ptr_eq(&simple.await?, &original));
         Ok(())
@@ -613,7 +613,7 @@ fn maestro_builtin_setup_errors_settle() -> TestResult {
     reset_api_providers();
     let aborted = maestro_models::Cancellation::new();
     aborted.abort();
-    block_on(false, async {
+    crate::runtime::run(async {
         for protocol in &PROTOCOLS {
             let dedicated = dedicated_simple(protocol, None)?;
             assert_eq!(
@@ -786,7 +786,7 @@ async fn assert_hook_failure(protocol: &Protocol, fail_payload: bool) -> TestRes
 fn maestro_root_hooks_keep_shared_results() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         assert_shared_results(&PROTOCOLS[1], false).await?;
         for root in [false, true] {
             assert_shared_results(&PROTOCOLS[5], root).await?;
@@ -842,7 +842,7 @@ fn single_body_fetch(body: maestro_models::HttpBody) -> maestro_models::Fetch {
 fn maestro_cloud_partial_failure_settles() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         let common = StreamOptions {
             api_key: Some("controlled-key".into()),
             fetch: Some(single_body_fetch(broken_body()?)),
@@ -1002,7 +1002,7 @@ fn extra_options(
 fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for (index, (api, extra)) in rejected_extras()
             .iter()
             .chain(&rejected_shapes())
@@ -1109,7 +1109,7 @@ fn maestro_provider_objects_keep_typed_aliases() -> TestResult {
         })
     };
     assert!(stream(model.clone(), bundled::conversation()?, options(&objects)).is_err());
-    let completed = block_on(false, async {
+    let completed = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(
             complete(model, bundled::conversation()?, options(&replaced))
                 .await
@@ -1172,7 +1172,7 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
     };
     let mut model = bundled::protocol_model(&PROTOCOLS[0])?;
     model.base_url = "not a url".into();
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         let mut objects = maestro_models::ProviderObjects::default();
         objects.insert(Arc::clone(&client));
         let raw = ProviderStreamOptions {
@@ -1296,7 +1296,7 @@ async fn assert_session_response_retry() -> TestResult {
 fn maestro_response_session_cache_affinity_completes() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for session in [None, Some(""), Some("affinity")] {
             let (mut common, requests, _) = common("cache affinity e2e success", &PROTOCOLS[5]);
             common.session_id = session.map(str::to_owned);
@@ -1336,7 +1336,7 @@ fn maestro_response_session_cache_affinity_completes() -> TestResult {
 fn maestro_response_session_raw_key_errors_settle() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
-    block_on(false, async {
+    crate::runtime::run(async {
         for (key, aborted) in [
             (None, false),
             (None, true),

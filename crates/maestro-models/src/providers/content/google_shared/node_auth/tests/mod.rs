@@ -29,6 +29,7 @@ fn client_key_pem() -> String {
 }
 
 use crate::tests::content_credentials::{Files, workforce};
+use crate::tests::runtime::{run, run_paused};
 
 impl Files {
     /// Write one new fixture file, preserving any pre-existing file.
@@ -71,15 +72,6 @@ async fn prepare(client: &super::super::ApiClient) -> super::super::PreparedCont
     client.prepare_request(projected, None).await.unwrap()
 }
 
-/// Drive a focused native operation without mutating process environment.
-fn run<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
 /// Fetch recording each requested URL and answering through `reply`.
 fn recording(
     reply: impl Fn(&str) -> Result<crate::HttpResponse, crate::FetchError> + Send + Sync + 'static,
@@ -105,14 +97,4 @@ fn google_response_with(value: &serde_json::Value) -> crate::HttpResponse {
         .headers
         .insert("metadata-flavor".into(), "Google".into());
     response
-}
-
-/// Drive a paused-clock runtime so retry backoff never sleeps for real.
-fn run_paused<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
 }

@@ -15,7 +15,7 @@ use maestro_models::{
 use serde_json::json;
 
 use bedrock::{diagnostic as callback_error, options};
-use chat::{TestResult, block_on};
+use chat::TestResult;
 
 /// Compare token counts and costs, which are exact except for the rates' rounding.
 fn near(actual: &[f64], expected: &[f64]) {
@@ -166,7 +166,7 @@ fn numbered_cases<'a>() -> TestResult<Vec<EventCase<'a>>> {
 
 #[test]
 fn text_events_keep_shared_result_and_completion() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let all = event_cases()?.into_iter().chain(numbered_cases()?);
         for (name, chunks, labels, content) in all {
             let (seen, message) = run(chunks).await?;
@@ -213,7 +213,7 @@ async fn updates_share_the_final_message() -> TestResult {
 
 #[test]
 fn terminal_reasons_keep_success_and_error_outcomes() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let outcomes = [
             (Some("end_turn"), "stop", None),
             (Some("stop_sequence"), "stop", None),
@@ -285,7 +285,7 @@ fn reported(total: i64) -> serde_json::Value {
 
 #[test]
 fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let usage = usage_after(&reported(9_999_999)).await?;
         near(
             &[
@@ -343,7 +343,7 @@ fn service_failure(status: u16, class: &str, message: &str) -> TestResult<transp
 
 #[test]
 fn service_failures_keep_readable_prefixes() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let sent = [
             (500, "InternalServerException", "Internal server error"),
             (424, "ModelStreamErrorException", "Model stream error"),
@@ -529,7 +529,7 @@ async fn hook_sees(
 
 #[test]
 fn response_hook_runs_after_the_first_frame_before_updates() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         for (headers, expected) in header_cases() {
             hook_sees(headers, expected).await?;
         }
@@ -539,7 +539,7 @@ fn response_hook_runs_after_the_first_frame_before_updates() -> TestResult {
 
 #[test]
 fn first_frame_failure_ends_before_the_response_hook() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let mut damaged = start()?;
         if let Some(last) = damaged.last_mut() {
             *last ^= 0xFF;
@@ -597,7 +597,7 @@ async fn run_counting(
 
 #[test]
 fn unknown_events_are_skipped_before_and_between_real_events() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let plain = bedrock::answer("text")?;
         let (expected, expected_message, _) = run_counting(plain.clone(), false).await?;
         let mut leading = vec![unknown()?];
@@ -621,7 +621,7 @@ fn unknown_events_are_skipped_before_and_between_real_events() -> TestResult {
 
 #[test]
 fn damaged_frame_after_unknown_event_wins_over_the_response_hook() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let mut damaged = start()?;
         if let Some(last) = damaged.last_mut() {
             *last ^= 0xFF;
@@ -641,7 +641,7 @@ fn damaged_frame_after_unknown_event_wins_over_the_response_hook() -> TestResult
 
 #[test]
 fn callback_failure_stops_before_events() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         for text in ["response hook says", ""] {
             let scripted = bedrock::serve(bedrock::answer("unseen")?);
             let mut hooked = options(&scripted);
@@ -660,7 +660,7 @@ use bedrock::held;
 
 #[test]
 fn cancellation_settles_same_operation() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let signal = Cancellation::new();
         signal.abort();
         let scripted = bedrock::serve(bedrock::answer("unused")?);
@@ -723,7 +723,7 @@ fn cancellation_settles_same_operation() -> TestResult {
 
 #[test]
 fn binary_stream_failures_preserve_partial_text() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let whole: Vec<u8> = bedrock::answer("fragmented")?.concat();
         let pieces: Vec<Vec<u8>> = whole.chunks(7).map(<[u8]>::to_vec).collect();
         let (labels, message) = run(pieces).await?;
@@ -758,7 +758,7 @@ fn binary_stream_failures_preserve_partial_text() -> TestResult {
 
 #[test]
 fn dropped_consumer_does_not_abort_producer() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let mut pending = held(
             vec![start()?, delta(0, "kept")?],
             bedrock::answer("-later")?.split_off(1),
@@ -783,7 +783,7 @@ fn dropped_consumer_does_not_abort_producer() -> TestResult {
 
 /// Run an unauthenticated conversation whose setup cannot succeed and check how it ends.
 fn setup_failure_ends_stream(profile: Option<&str>) -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let hook_calls = Arc::clone(&calls);
         let scripted = bedrock::serve(bedrock::answer("unused")?);
@@ -835,7 +835,7 @@ fn sdk_setup_failures_end_stream() -> TestResult {
             assert!(output.status.success(), "{output:?}");
         };
     }
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let scripted = transport::transport(vec![transport::Attempt::Fail(FetchError::Timeout)]);
         let (labels, message) = run_with(options(&scripted)).await?;
         assert_eq!(labels, ["error"]);

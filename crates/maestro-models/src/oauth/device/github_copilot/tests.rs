@@ -1,6 +1,7 @@
 //! Device authorization with a controlled wall clock and native timer ownership.
 #![cfg(test)]
 use super::*;
+use crate::tests::runtime::run_paused_after_start;
 use crate::{Cancellation, HttpResponse, OAuthLoginCallbacks};
 use futures_util::FutureExt as _;
 use std::collections::VecDeque;
@@ -34,18 +35,6 @@ impl OAuthLoginCallbacks for Interaction {
     fn signal(&self) -> Option<&Cancellation> {
         Some(&self.signal)
     }
-}
-
-/// Run a controlled native timer scenario.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            tokio::time::pause();
-            work.await;
-        });
 }
 
 /// Device response with supplied numeric spellings.
@@ -132,7 +121,7 @@ async fn exercise_with(
 
 #[test]
 fn maestro_device_login_uses_remaining_lifetime() {
-    run(maestro_device_login_uses_remaining_lifetime_scenario());
+    run_paused_after_start(maestro_device_login_uses_remaining_lifetime_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -169,7 +158,7 @@ async fn maestro_device_login_uses_remaining_lifetime_scenario() {
 
 #[test]
 fn device_polling_rounds_clamps_and_resamples_clock() {
-    run(device_polling_rounds_clamps_and_resamples_clock_scenario());
+    run_paused_after_start(device_polling_rounds_clamps_and_resamples_clock_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -214,7 +203,7 @@ async fn device_polling_rounds_clamps_and_resamples_clock_scenario() {
 
 #[test]
 fn device_slow_down_accepts_positive_interval_or_adds_delay() {
-    run(device_slow_down_accepts_positive_interval_or_adds_delay_scenario());
+    run_paused_after_start(device_slow_down_accepts_positive_interval_or_adds_delay_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -280,7 +269,7 @@ async fn device_slow_down_accepts_positive_interval_or_adds_delay_scenario() {
 
 #[test]
 fn device_timeouts_depend_on_observed_slow_down() {
-    run(device_timeouts_depend_on_observed_slow_down_scenario());
+    run_paused_after_start(device_timeouts_depend_on_observed_slow_down_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -344,7 +333,7 @@ async fn device_timeouts_depend_on_observed_slow_down_scenario() {
 
 #[test]
 fn device_long_and_fractional_waits_avoid_runtime_clamping() {
-    run(device_long_and_fractional_waits_avoid_runtime_clamping_scenario());
+    run_paused_after_start(device_long_and_fractional_waits_avoid_runtime_clamping_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -389,7 +378,7 @@ async fn device_long_and_fractional_waits_avoid_runtime_clamping_scenario() {
 
 #[test]
 fn device_invalid_durations_fail_at_the_consuming_branch() {
-    run(device_invalid_durations_fail_at_the_consuming_branch_scenario());
+    run_paused_after_start(device_invalid_durations_fail_at_the_consuming_branch_scenario());
 }
 
 /// Caller Waker with destruction and notification witnesses.
@@ -476,7 +465,7 @@ async fn device_invalid_durations_fail_at_the_consuming_branch_scenario() {
 
 #[test]
 fn device_waits_release_cancellation_observers() {
-    run(device_waits_release_cancellation_observers_scenario());
+    run_paused_after_start(device_waits_release_cancellation_observers_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.

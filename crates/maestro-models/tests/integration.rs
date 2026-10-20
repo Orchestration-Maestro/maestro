@@ -178,6 +178,8 @@ mod response_session_surface;
 mod response_support;
 mod response_tool_images;
 mod routed_cache_write;
+#[path = "support/runtime.rs"]
+mod runtime;
 mod schema_checker_qualification;
 mod schema_diagnostics;
 mod scripted_model_invocation;

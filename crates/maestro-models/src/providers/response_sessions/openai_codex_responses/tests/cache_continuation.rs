@@ -7,11 +7,12 @@ use super::super::debug::{
 use super::super::sessions::close_openai_codex_web_socket_sessions;
 use super::super::websocket::wire_body;
 use super::loopback::{Conversation, answer, read_request, respond};
-use super::socket_transport::{accept, listen, run_native};
+use super::socket_transport::{accept, listen};
 use crate::providers::json_text::compact_json;
 use crate::providers::responses::openai_responses_shared::{
     ConvertResponsesMessagesOptions, messages::convert_responses_messages,
 };
+use crate::tests::runtime::run;
 use crate::{AssistantMessage, Model, Transport};
 use futures_util::StreamExt;
 use futures_util::future::join;
@@ -111,7 +112,7 @@ fn member_names(request: &Value) -> Vec<&str> {
 
 /// The second request of a cached conversation carries only the input suffix on the wire.
 fn send_delta_over_the_wire() {
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let mut chat =
             Conversation::new(&url, Some("delta-wire"), Some(Transport::WebsocketCached)).await;
@@ -140,7 +141,7 @@ fn send_delta_over_the_wire() {
 #[test]
 fn maestro_response_sessions_send_full_context_without_cache_mode() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let mut chat = Conversation::new(&url, Some("modes"), None).await;
         let modes = [
@@ -273,7 +274,7 @@ fn maestro_response_sessions_project_socket_response_items() {
 /// Retention follows reduction: a response without an identifier leaves the context unchanged,
 /// and a request that mismatches it clears the context for good.
 fn retain_context_after_reduction() {
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let mut chat =
             Conversation::new(&url, Some("retain"), Some(Transport::WebsocketCached)).await;
@@ -386,7 +387,7 @@ async fn raw_request(
 #[test]
 fn maestro_response_sessions_send_delta_with_deeply_nested_open_member() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let mut chat =
             Conversation::new(&url, Some("deep-open"), Some(Transport::WebsocketCached)).await;
@@ -455,7 +456,7 @@ fn maestro_response_sessions_report_projection_failure_on_retention() {
 #[test]
 fn maestro_response_sessions_preserve_open_socket_payloads() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (first, second) = two_requests("open-fields", |payload| {
             payload["unknown"] = json!({"z": 1, "a": [1, 2, 2]});
             payload["store"] = json!(true);

@@ -164,7 +164,7 @@ macro_rules! invoke {
 #[test]
 fn recorded_dispatch_corpus_keeps_all_fields() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(false, async {
+    crate::runtime::run(async {
         for row in super::corpus::load().dispatch.rows {
             if row.input.get("outcome").is_some() {
                 continue;

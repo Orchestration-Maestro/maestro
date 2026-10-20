@@ -8,7 +8,7 @@ use crate::transport;
 
 use std::sync::{Arc, Mutex, OnceLock};
 
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use futures_util::FutureExt;
 use maestro_models::{
     AnthropicClient, AnthropicOptions, AnthropicRequestOptions, AssistantMessageEvent,
@@ -61,7 +61,7 @@ async fn default_client_posts_request() -> TestResult {
 
 #[test]
 fn messages_send_key_request() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         messages::assert_rows(FIXTURE, "messages_send_key_request").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             default_client_posts_request().await?;
@@ -113,7 +113,7 @@ async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
 
 #[test]
 fn messages_apply_raw_token_default() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         messages::assert_rows(FIXTURE, "messages_apply_raw_token_default").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             nonfinite_numbers_are_written_as_json_does().await?;
@@ -124,66 +124,63 @@ fn messages_apply_raw_token_default() -> TestResult {
 
 #[test]
 fn messages_filter_blank_content() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_filter_blank_content"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_filter_blank_content",
+    ))
 }
 
 #[test]
 fn messages_replay_thinking() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_replay_thinking"),
-    )
+    crate::runtime::run(messages::assert_rows(FIXTURE, "messages_replay_thinking"))
 }
 
 #[test]
 fn messages_project_foreign_replay() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_project_foreign_replay"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_project_foreign_replay",
+    ))
 }
 
 #[test]
 fn messages_normalize_tool_ids() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_normalize_tool_ids"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_normalize_tool_ids",
+    ))
 }
 
 #[test]
 fn messages_group_tool_results() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_group_tool_results"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_group_tool_results",
+    ))
 }
 
 #[test]
 fn messages_place_default_cache() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_place_default_cache"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_place_default_cache",
+    ))
 }
 
 #[test]
 fn messages_select_tool_input_mode() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_select_tool_input_mode"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_select_tool_input_mode",
+    ))
 }
 
 #[test]
 fn messages_project_tool_schemas() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_project_tool_schemas"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_project_tool_schemas",
+    ))
 }
 
 /// The payload members follow one order in the body text.
@@ -220,7 +217,7 @@ async fn payload_members_are_written_in_order() -> TestResult {
 
 #[test]
 fn messages_apply_metadata_and_tool_choice() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         messages::assert_rows(FIXTURE, "messages_apply_metadata_and_tool_choice").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             payload_members_are_written_in_order().await?;
@@ -231,32 +228,32 @@ fn messages_apply_metadata_and_tool_choice() -> TestResult {
 
 #[test]
 fn messages_resolve_cache_retention() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_resolve_cache_retention"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_resolve_cache_retention",
+    ))
 }
 
 #[test]
 fn messages_merge_protocol_headers() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_merge_protocol_headers"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_merge_protocol_headers",
+    ))
 }
 
 #[test]
 fn messages_keep_http_error_envelopes() -> TestResult {
-    block_on(
-        false,
-        messages::assert_rows(FIXTURE, "messages_keep_http_error_envelopes"),
-    )
+    crate::runtime::run(messages::assert_rows(
+        FIXTURE,
+        "messages_keep_http_error_envelopes",
+    ))
 }
 
 /// Both selected error-detail branches report the native conversion failure above the bound.
 #[test]
 fn messages_report_error_detail_conversion_failure() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let nested = format!("{}0{}", "[".repeat(128), "]".repeat(128));
         for body in [format!(r#"{{"message":{nested}}}"#), nested] {
             let case = messages::Case {
@@ -283,7 +280,7 @@ fn call_outside_a_runtime_ends_in_error() -> TestResult {
         messages::context(&Value::Null)?,
         Some(messages::options(&messages::Case::default())?),
     );
-    let (events, result) = block_on(false, messages::collect(&stream))?;
+    let (events, result) = crate::runtime::run(messages::collect(&stream))?;
     assert_eq!(events, [json!({"type": "error"})]);
     assert_eq!(
         result["errorMessage"],
@@ -330,7 +327,7 @@ async fn payload_hook_precedes_authentication_failure() -> TestResult {
 
 #[test]
 fn messages_keep_auth_failure_in_stream() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         messages::assert_rows(FIXTURE, "messages_keep_auth_failure_in_stream").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             payload_hook_precedes_authentication_failure().await?;
@@ -540,7 +537,7 @@ fn default_payload(members: &Value) -> Value {
 
 #[test]
 fn messages_keep_callback_order_and_replacement() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let steps = ["payload", "client", "onResponse:201:yes", "start", "done"];
         let cases = [
             (Payload::Keep, default_payload(&json!({}))),
@@ -668,7 +665,7 @@ async fn client_owns_status_and_failures() -> TestResult {
 #[test]
 fn messages_inject_client_without_auth() -> TestResult {
     injected_call_runs_without_drivers()?;
-    block_on(false, async {
+    crate::runtime::run(async {
         let (calls, result) = injected_call(|_| {}).await?;
         assert_eq!(
             result["stopReason"], "stop",
@@ -732,7 +729,7 @@ async fn retried_call(
 
 #[test]
 fn messages_reuse_setup_retry_policy() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let busy = || Attempt::body(500, &[], b"busy".to_vec());
         let answer = || Attempt::body(200, &[], short_answer());
         let (target, result, statuses) = retried_call(vec![busy(), answer()], 2.0).await?;
@@ -765,7 +762,7 @@ struct CompatibilityQuery {
 }
 #[test]
 fn messages_open_options_keep_eager_streaming_and_retention() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let rows: Vec<CompatibilityQuery> =
             serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
         for (index, row) in rows

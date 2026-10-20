@@ -52,13 +52,6 @@ mod tests {
         assert_eq!(message.stop_reason, StopReason::ToolUse);
     }
 
-    /// Exercise wait through the public invocation boundary.
-    fn wait<T>(future: impl std::future::Future<Output = T>) -> T {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(future)
-    }
     /// Exercise context through the public invocation boundary.
     fn context(text: &str) -> Context {
         Context {
@@ -83,7 +76,7 @@ mod tests {
         let _serial = crate::bundled::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("answer")]);
-        let message = wait(complete(
+        let message = crate::runtime::run(complete(
             registration.get_model(None).unwrap().clone(),
             context("hello"),
             None,
@@ -118,7 +111,7 @@ mod tests {
         context: Context,
         options: Option<ProviderStreamOptions>,
     ) -> AssistantMessage {
-        wait(complete(model(registration), context, options))
+        crate::runtime::run(complete(model(registration), context, options))
             .unwrap()
             .read()
             .unwrap()
@@ -130,7 +123,7 @@ mod tests {
         options: Option<ProviderStreamOptions>,
     ) -> Vec<AssistantMessageEvent> {
         let stream = stream(model(registration), context("hello"), options).unwrap();
-        wait(async {
+        crate::runtime::run(async {
             let mut events = Vec::new();
             while let Some(event) = stream.next().await {
                 events.push(event);
@@ -683,7 +676,7 @@ mod tests {
                 .iter()
                 .any(|event| event_name(event).ends_with("_end") || event_name(event) == "done")
         );
-        let result = wait(stream.result());
+        let result = crate::runtime::run(stream.result());
         let message = result.read().unwrap();
         assert_eq!(message.stop_reason, StopReason::Aborted);
         assert_eq!(
@@ -836,8 +829,8 @@ mod tests {
         );
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(authored))]);
         let stream = stream(model(&registration), context("hi"), None).unwrap();
-        let result = wait(stream.result());
-        let observed = wait(async {
+        let result = crate::runtime::run(stream.result());
+        let observed = crate::runtime::run(async {
             let mut observed = Vec::new();
             while let Some(event) = stream.next().await {
                 observed.push(event);
@@ -1113,7 +1106,7 @@ mod tests {
             registration.append_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
                 SelectedModelFactory,
             ))]);
-            let result = wait(complete(
+            let result = crate::runtime::run(complete(
                 registration.get_model(Some(id)).unwrap().clone(),
                 context("hi"),
                 None,
@@ -1153,11 +1146,11 @@ mod tests {
         assert_eq!(registration.state.call_count(), 2);
         release_tx.send(()).unwrap();
         assert_eq!(
-            wait(first).unwrap().read().unwrap().content,
+            crate::runtime::run(first).unwrap().read().unwrap().content,
             vec![AssistantContent::Text(faux_text("2"))]
         );
         assert_eq!(
-            wait(second).unwrap().read().unwrap().content,
+            crate::runtime::run(second).unwrap().read().unwrap().content,
             vec![AssistantContent::Text(faux_text("second"))]
         );
         registration.unregister();
@@ -1331,7 +1324,7 @@ mod tests {
             FailingFactory,
         ))]);
         let stream = stream(model(&registration), context("hi"), None).unwrap();
-        let observed = wait(async {
+        let observed = crate::runtime::run(async {
             let mut events = Vec::new();
             while let Some(event) = stream.next().await {
                 events.push(event);
@@ -1339,7 +1332,7 @@ mod tests {
             events
         });
         assert_eq!(observed.len(), 1);
-        let result = wait(stream.result());
+        let result = crate::runtime::run(stream.result());
         let message = result.read().unwrap();
         assert_eq!(message.stop_reason, StopReason::Error);
         assert_eq!(message.error_message.as_deref(), Some("boom"));
@@ -1430,7 +1423,11 @@ mod tests {
             vec![AssistantContent::Text(faux_text("replacement"))]
         );
         assert_eq!(
-            wait(pending).unwrap().read().unwrap().content,
+            crate::runtime::run(pending)
+                .unwrap()
+                .read()
+                .unwrap()
+                .content,
             vec![AssistantContent::Text(faux_text("pending"))]
         );
         second.unregister();
@@ -1665,7 +1662,7 @@ mod tests {
             }),
             ..SimpleStreamOptions::default()
         };
-        let result = wait(complete_simple(
+        let result = crate::runtime::run(complete_simple(
             model(&registration),
             context("hi"),
             Some(simple),
@@ -1779,7 +1776,7 @@ mod tests {
         entered_rx.recv().unwrap();
         assert_eq!(*order.lock().unwrap(), ["hook start"]);
         release_tx.send(()).unwrap();
-        drop(wait(result));
+        drop(crate::runtime::run(result));
         assert_eq!(
             *order.lock().unwrap(),
             ["hook start", "hook end", "factory"]
@@ -1832,7 +1829,7 @@ mod tests {
             });
             let start = std::time::Instant::now();
             let result = if caller_runtime {
-                wait(complete_in_caller(&registration, options))
+                crate::runtime::run(complete_in_caller(&registration, options))
             } else {
                 invoke(&registration, context("hi"), options)
             };
@@ -1984,7 +1981,7 @@ mod tests {
     /// Exercise documented flow runs offline through the public invocation boundary.
     fn maestro_documented_flow_runs_offline() {
         let _serial = crate::bundled::registry();
-        let output = wait(documented_flow()).unwrap();
+        let output = crate::runtime::run(documented_flow()).unwrap();
         assert_eq!(&output[output.len() - 3..], ["true", "0", "2"]);
         assert_eq!(output[0], "start");
         assert_eq!(output[1], "thinking_start");

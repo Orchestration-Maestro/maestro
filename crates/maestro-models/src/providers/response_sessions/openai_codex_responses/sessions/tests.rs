@@ -1,7 +1,8 @@
 //! Controlled native observations of retired idle owners and synchronous claims.
 
-use super::super::tests::{exclusive, socket_transport::run_native};
+use super::super::tests::exclusive;
 use super::*;
+use crate::tests::runtime::run;
 use futures_util::SinkExt;
 
 /// A real loopback connection and its peer.
@@ -25,7 +26,7 @@ fn identity() -> Identity {
 #[test]
 fn maestro_response_sessions_closed_state_is_not_busy() {
     let _isolated = exclusive();
-    run_native(async {
+    run(async {
         let (socket, mut peer) = pair().await;
         let lease = publish("closed-state", identity(), socket);
         let entry = cached_entry("closed-state").unwrap();
@@ -40,7 +41,7 @@ fn maestro_response_sessions_closed_state_is_not_busy() {
 #[test]
 fn maestro_response_sessions_retired_idle_poll_cannot_expire_new_owner() {
     let _isolated = exclusive();
-    run_native(async {
+    run(async {
         let (socket, mut peer) = pair().await;
         publish("retired-poll", identity(), socket).keep();
         let entry = cached_entry("retired-poll").unwrap();
@@ -63,7 +64,7 @@ fn maestro_response_sessions_retired_idle_poll_cannot_expire_new_owner() {
 #[test]
 fn maestro_response_sessions_claim_drains_ready_idle_close() {
     let _isolated = exclusive();
-    run_native(async {
+    run(async {
         let (socket, mut peer) = pair().await;
         publish("ready-close", identity(), socket).keep();
         let entry = cached_entry("ready-close").unwrap();
@@ -107,7 +108,7 @@ fn maestro_response_sessions_claim_drains_ready_idle_close() {
 #[test]
 fn maestro_response_sessions_keep_registers_observer_inside_publication_lock() {
     let _isolated = exclusive();
-    run_native(async {
+    run(async {
         let (socket, _peer) = pair().await;
         let lease = publish("keep-lock", identity(), socket);
         let entry = cached_entry("keep-lock").unwrap();

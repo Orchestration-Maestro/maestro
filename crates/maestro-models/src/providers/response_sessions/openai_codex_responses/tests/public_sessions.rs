@@ -60,7 +60,7 @@ async fn closed(peer: &mut WebSocketStream<tokio::net::TcpStream>) {
 #[test]
 fn maestro_response_sessions_sticky_fallback_reset_and_close() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
+    crate::tests::runtime::run(
         maestro_response_sessions_sticky_fallback_reset_and_close_scenario(),
     );
 }
@@ -115,7 +115,7 @@ async fn maestro_response_sessions_sticky_fallback_reset_and_close_scenario() {
 #[test]
 fn maestro_response_sessions_failure_creates_sticky_fallback() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(async {
+    crate::tests::runtime::run(async {
         reset_openai_codex_web_socket_debug_stats(None);
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let (model, context, mut options) = super::invocation();
@@ -166,9 +166,7 @@ fn maestro_response_sessions_failure_creates_sticky_fallback() {
 #[test]
 fn maestro_response_sessions_cleanup_registered_sockets() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_cleanup_registered_sockets_scenario(),
-    );
+    crate::tests::runtime::run(maestro_response_sessions_cleanup_registered_sockets_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -207,9 +205,7 @@ async fn maestro_response_sessions_cleanup_registered_sockets_scenario() {
 #[test]
 fn maestro_response_sessions_empty_sessions_stay_uncached() {
     let _guard = super::exclusive();
-    super::socket_transport::run_native(
-        maestro_response_sessions_empty_sessions_stay_uncached_scenario(),
-    );
+    crate::tests::runtime::run(maestro_response_sessions_empty_sessions_stay_uncached_scenario());
 }
 
 /// Execute the controlled public-operation scenario.

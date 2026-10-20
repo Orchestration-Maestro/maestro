@@ -13,11 +13,7 @@ use super::{Route, WireRequest, bridge};
 
 #[test]
 fn stalled_response_is_a_connector_timeout() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         tokio::time::pause();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
@@ -75,11 +71,7 @@ fn socks_body_outlives_header_deadline() {
 
 /// Observe headers, then release the same body after the connector deadline.
 fn response_after_deadline(socks_proxy: bool) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         use crate::tests::{loopback, socks};
         tokio::time::pause();
         let (release, released) = std::sync::mpsc::channel();
@@ -131,11 +123,7 @@ fn response_after_deadline(socks_proxy: bool) {
 
 #[test]
 fn sequential_metadata_requests_reuse_one_connection() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(serve_two_metadata_requests(listener));
@@ -196,11 +184,7 @@ async fn serve_two_metadata_requests(listener: tokio::net::TcpListener) -> usize
 
 #[test]
 fn socks_sender_reuses_configuration_without_replaying_requests() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         use crate::tests::{loopback, socks};
         let (sent, received) = std::sync::mpsc::channel();
         let server = loopback::start_routed(Arc::new(move |mut socket| {

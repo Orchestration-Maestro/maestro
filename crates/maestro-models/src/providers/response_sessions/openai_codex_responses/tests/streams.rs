@@ -18,11 +18,7 @@ struct EventCase {
 
 #[test]
 fn maestro_response_sessions_normalize_terminal_events() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let rows: Vec<EventCase> =
             super::fixture_rows(include_str!("fixtures/events.json"), &["events"]).unwrap();
         for row in rows {
@@ -81,11 +77,7 @@ struct ApiCase {
 
 #[test]
 fn maestro_response_sessions_preserve_api_error_identity() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let rows: Vec<ApiCase> =
             super::fixture_rows(include_str!("fixtures/api-errors.json"), &["events"]).unwrap();
         for row in rows {
@@ -127,12 +119,7 @@ async fn assert_api_case(row: ApiCase) {
 
 #[test]
 fn maestro_response_sessions_run_http_lifecycle() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run_paused(async {
         let rows: Vec<LifecycleCase> =
             super::fixture_rows(include_str!("fixtures/lifecycle.json"), &["scenario"]).unwrap();
         for row in rows {
@@ -143,12 +130,7 @@ fn maestro_response_sessions_run_http_lifecycle() {
 
 #[test]
 fn maestro_response_sessions_bound_setup_retries() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run_paused(async {
         for status in [400, 401, 408, 429, 500, 502, 503, 504, 505] {
             assert_retry_sequence(status, "plain failure").await;
         }
@@ -236,11 +218,7 @@ fn assert_retry_outcome(
 fn maestro_response_sessions_price_requested_tier_over_echoed_default() {
     use crate::providers::nullable::Nullable::Value;
     use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier as Tier;
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         for (id, tier, input, output, total) in [
             ("gpt-5.1-codex", Tier::Flex, 0.5, 1.0, 1.5),
             ("gpt-5.1-codex", Tier::Priority, 2.0, 4.0, 6.0),
@@ -327,31 +305,36 @@ async fn finite_body(
 
 #[test]
 fn maestro_response_sessions_require_terminal_events() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let partial = event_bytes(&[
             serde_json::json!({"type":"response.output_item.added","item":{"type":"message","content":[{"type":"output_text"}]}}),
             serde_json::json!({"type":"response.output_text.delta","delta":"retained partial"}),
         ]);
         for (bytes, retained) in [
-            (Vec::new(), None),
-            (b"data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"status\":\"in_progress\"}}\n\n".to_vec(), None),
-            (b"data: [DONE]\n\n".to_vec(), None),
-            (partial, Some("retained partial")),
-        ] {
-            let (result, output) = finite_body(bytes).await;
-            assert_eq!(result.unwrap_err().diagnostic().message, "Response stream ended before a terminal event");
-            if let Some(retained) = retained {
-                assert_eq!(output_value(&output)["content"][0]["text"], retained);
-            }
+        (Vec::new(), None),
+        (b"data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"status\":\"in_progress\"}}\n\n".to_vec(), None),
+        (b"data: [DONE]\n\n".to_vec(), None),
+        (partial, Some("retained partial")),
+    ] {
+        let (result, output) = finite_body(bytes).await;
+        assert_eq!(result.unwrap_err().diagnostic().message, "Response stream ended before a terminal event");
+        if let Some(retained) = retained {
+            assert_eq!(output_value(&output)["content"][0]["text"], retained);
         }
+    }
         assert_tool_eof().await;
-        for (kind, status, reason) in [("response.completed", "completed", crate::StopReason::Stop),
-            ("response.incomplete", "incomplete", crate::StopReason::Length)] {
-            let (result, output) = finite_body(event_bytes(&[serde_json::json!({"type":kind,"response":{"status":status}})])).await;
+        for (kind, status, reason) in [
+            ("response.completed", "completed", crate::StopReason::Stop),
+            (
+                "response.incomplete",
+                "incomplete",
+                crate::StopReason::Length,
+            ),
+        ] {
+            let (result, output) = finite_body(event_bytes(&[
+                serde_json::json!({"type":kind,"response":{"status":status}}),
+            ]))
+            .await;
             assert!(result.is_ok());
             assert_eq!(output.read().unwrap().stop_reason, reason);
         }
@@ -397,30 +380,17 @@ async fn assert_frames(text: &str) {
 
 #[test]
 fn maestro_response_sessions_frame_legal_line_endings() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(assert_frames(include_str!("fixtures/framing.json")));
+    crate::tests::runtime::run(assert_frames(include_str!("fixtures/framing.json")));
 }
 
 #[test]
 fn maestro_response_sessions_filter_sse_data() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(assert_frames(include_str!("fixtures/data.json")));
+    crate::tests::runtime::run(assert_frames(include_str!("fixtures/data.json")));
 }
 
 #[test]
 fn maestro_response_sessions_keep_hook_and_abort_order() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run_paused(async {
         for stage in [
             "preaborted",
             "payload-fails",
@@ -475,11 +445,7 @@ async fn assert_exhausted_retries() {
 
 #[test]
 fn maestro_response_sessions_reject_bodyless_success() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         for status in [204, 205, 200] {
             assert_empty_success(status).await;
         }
@@ -571,11 +537,7 @@ impl Drop for TerminalBody {
 
 #[test]
 fn maestro_response_sessions_finish_before_body_eof() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         for kind in ["response.done", "response.completed", "response.incomplete"] {
             for status in [
                 serde_json::json!("completed"),
@@ -680,11 +642,7 @@ impl Drop for PausedBody {
 
 #[test]
 fn maestro_response_sessions_cancel_body_reads() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         assert_cancelled_read().await;
         for error in [
             crate::FetchError::Connection(super::super::request::diagnostic(
@@ -785,12 +743,7 @@ async fn invoke_body(
 
 #[test]
 fn maestro_response_sessions_release_retry_waits() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run_paused(async {
         assert_cancelled_retry_wait().await;
         let signal = crate::Cancellation::new();
         let bytes = event_bytes(&[
@@ -857,11 +810,7 @@ async fn assert_cancelled_retry_wait() {
 
 #[test]
 fn maestro_response_sessions_reduce_shared_content() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let bytes = event_bytes(&[
             serde_json::json!({"type":"response.output_item.added","item":{"type":"reasoning","summary":[]}}),
             serde_json::json!({"type":"response.reasoning_text.delta","delta":"provisional thinking"}),
@@ -883,7 +832,21 @@ fn maestro_response_sessions_reduce_shared_content() {
             assert!(std::sync::Arc::ptr_eq(partial, &output));
             kinds.push(kind);
         }
-        assert_eq!(kinds, ["start", "thinking_start", "thinking_delta", "thinking_end", "text_start", "text_delta", "text_end", "toolcall_start", "toolcall_delta", "toolcall_end"]);
+        assert_eq!(
+            kinds,
+            [
+                "start",
+                "thinking_start",
+                "thinking_delta",
+                "thinking_end",
+                "text_start",
+                "text_delta",
+                "text_end",
+                "toolcall_start",
+                "toolcall_delta",
+                "toolcall_end"
+            ]
+        );
     });
 }
 

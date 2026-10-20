@@ -43,7 +43,7 @@ fn assert_history_rows(test: &str) -> TestResult {
 
 #[test]
 fn maestro_chat_replays_thinking_as_text() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_history_rows("maestro_chat_replays_thinking_as_text")?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
             return {
@@ -140,7 +140,7 @@ fn maestro_chat_serializes_replay_arguments() -> TestResult {
             r#"{"2":2,"10":10,"z":"line\n\"☃","a":1e+21,"b":1e-7,"c":0,"d":{"1":null,"9":[1,0.5]}}"#
         )
     );
-    chat::block_on(true, replayed_numbers())
+    crate::runtime::run_paused(replayed_numbers())
 }
 
 /// Replayed arguments and signatures carry numbers the way their double prints, in the request
@@ -329,7 +329,7 @@ async fn non_finite_numbers_become_null() -> TestResult {
 
 #[test]
 fn maestro_chat_preserves_numeric_options() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_numeric_options").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
             non_finite_numbers_become_null().await?;
@@ -369,7 +369,7 @@ async fn send_through_hook(
 
 #[test]
 fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let unchanged = send_through_hook(|payload| payload).await?;
         assert_eq!(unchanged["temperature"], json!(0.25));
         assert_eq!(unchanged["model"], "model");
@@ -399,42 +399,38 @@ fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
 
 #[test]
 fn maestro_chat_selects_reasoning_payloads() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_payload_rows("maestro_chat_selects_reasoning_payloads").await
     })
 }
 
 #[test]
 fn maestro_chat_preserves_routing_fields() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_routing_fields").await
     })
 }
 
 #[test]
 fn maestro_chat_places_cache_markers() -> TestResult {
-    chat::block_on(false, async {
-        assert_payload_rows("maestro_chat_places_cache_markers").await
-    })
+    crate::runtime::run(async { assert_payload_rows("maestro_chat_places_cache_markers").await })
 }
 
 #[test]
 fn maestro_chat_preserves_prompt_cache_policy() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_prompt_cache_policy").await
     })
 }
 
 #[test]
 fn maestro_chat_preserves_tool_choice() -> TestResult {
-    chat::block_on(false, async {
-        assert_payload_rows("maestro_chat_preserves_tool_choice").await
-    })
+    crate::runtime::run(async { assert_payload_rows("maestro_chat_preserves_tool_choice").await })
 }
 
 #[test]
 fn maestro_chat_preserves_tool_declarations() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_tool_declarations").await
     })
 }
@@ -456,7 +452,7 @@ async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -
 
 #[test]
 fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let supported = get_model("zai", "glm-5.1").ok_or("glm-5.1")?;
         assert!(
             requests_tool_stream(&supported, true).await?,
@@ -584,21 +580,19 @@ async fn assert_compat_rows(test: &str) -> TestResult {
 
 #[test]
 fn maestro_chat_derives_compatibility() -> TestResult {
-    chat::block_on(false, async {
-        assert_compat_rows("maestro_chat_derives_compatibility").await
-    })
+    crate::runtime::run(async { assert_compat_rows("maestro_chat_derives_compatibility").await })
 }
 
 #[test]
 fn maestro_chat_applies_compatibility_overrides() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_compat_rows("maestro_chat_applies_compatibility_overrides").await
     })
 }
 
 #[test]
 fn maestro_chat_preserves_header_precedence() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_rows(FIXTURE, "maestro_chat_preserves_header_precedence").await
     })
 }
@@ -621,7 +615,7 @@ async fn send_with_headers(
 
 #[test]
 fn maestro_chat_normalizes_request_header_values() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let padded = [
             ("x-edge", " \t\r\nvalue\n\t "),
             ("x-empty", " \t"),
@@ -671,7 +665,7 @@ fn maestro_chat_normalizes_request_header_values() -> TestResult {
 
 #[test]
 fn maestro_chat_preserves_gateway_authorization() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_rows(FIXTURE, "maestro_chat_preserves_gateway_authorization").await
     })
 }
@@ -720,7 +714,7 @@ fn record_hooks(common: &mut StreamOptions) -> Arc<HookRecord> {
 
 #[test]
 fn maestro_chat_observes_callback_boundaries() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         assert_rows(FIXTURE, "maestro_chat_observes_callback_boundaries").await?;
 
         let target = transport::transport(vec![
@@ -764,14 +758,14 @@ fn maestro_chat_observes_callback_boundaries() -> TestResult {
 
 #[test]
 fn maestro_chat_preserves_simple_options() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_rows(FIXTURE, "maestro_chat_preserves_simple_options").await
     })
 }
 
 #[test]
 fn maestro_chat_preserves_auth_boundaries() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         assert_rows(FIXTURE, "maestro_chat_preserves_auth_boundaries").await
     })
 }
@@ -819,7 +813,7 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
 
 #[test]
 fn maestro_chat_forwards_control_characters_to_the_transport() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let value = "\u{b}a\u{1}b\u{7f}c\u{c}";
         let (target, outcome) = send_with_headers(&[("x-control", value)]).await?;
         assert!(
@@ -901,11 +895,11 @@ async fn open_chat_options(wrong_types: bool) -> TestResult {
 }
 #[test]
 fn chat_open_options_control_flags_and_literals() -> TestResult {
-    chat::block_on(false, open_chat_options(false))
+    crate::runtime::run(open_chat_options(false))
 }
 #[test]
 fn chat_open_options_keep_nullish_and_strict_decisions() -> TestResult {
-    chat::block_on(false, open_chat_options(true))
+    crate::runtime::run(open_chat_options(true))
 }
 
 fn key_paths(value: &Value) -> Vec<String> {
@@ -953,11 +947,11 @@ async fn routing_options(gateway: bool) -> TestResult {
 }
 #[test]
 fn chat_forwards_router_values_without_narrowing() -> TestResult {
-    chat::block_on(false, routing_options(false))
+    crate::runtime::run(routing_options(false))
 }
 #[test]
 fn chat_gateway_selects_only_requested_routing_fields() -> TestResult {
-    chat::block_on(false, routing_options(true))
+    crate::runtime::run(routing_options(true))
 }
 
 async fn open_reasoning_options(wrong_types: bool) -> TestResult {

@@ -228,28 +228,22 @@ fn launch_other(
 
 #[test]
 fn content_stream_keeps_its_protocol_identity() -> chat::TestResult {
-    chat::block_on(false, protocol_identity("content", "google-generative-ai"))
+    crate::runtime::run(protocol_identity("content", "google-generative-ai"))
 }
 
 #[test]
 fn cloud_content_stream_keeps_its_protocol_identity() -> chat::TestResult {
-    chat::block_on(false, protocol_identity("content", "google-vertex"))
+    crate::runtime::run(protocol_identity("content", "google-vertex"))
 }
 
 #[test]
 fn cloud_response_stream_keeps_its_protocol_identity() -> chat::TestResult {
-    chat::block_on(
-        false,
-        protocol_identity("content", "azure-openai-responses"),
-    )
+    crate::runtime::run(protocol_identity("content", "azure-openai-responses"))
 }
 
 #[test]
 fn cloud_conversation_keeps_its_protocol_identity() -> chat::TestResult {
-    chat::block_on(
-        false,
-        protocol_identity("bedrock", "bedrock-converse-stream"),
-    )
+    crate::runtime::run(protocol_identity("bedrock", "bedrock-converse-stream"))
 }
 
 /// Replay both recorded identities and a matching-API control through each outcome.

@@ -7,7 +7,7 @@ use std::{collections::BTreeMap, sync::Arc};
 #[test]
 fn maestro_response_refresh_keeps_stderr_clean() {
     if std::env::var_os("MAESTRO_RESPONSE_STDERR_CHILD").is_none() {
-        run(async {
+        crate::runtime::run(async {
             let output = maestro_test_process::TestProcess::current(
                 "maestro_response_refresh_keeps_stderr_clean",
             )
@@ -38,14 +38,6 @@ fn maestro_response_refresh_keeps_stderr_clean() {
     });
 }
 
-/// Drive a controlled authorization future with native effects enabled.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(work);
-}
 /// Token response with supplied account metadata.
 fn token_fetch(account: &str) -> Fetch {
     use base64::Engine as _;
@@ -221,7 +213,7 @@ async fn read_request(peer: &tokio::net::TcpStream) -> Vec<u8> {
 }
 #[test]
 fn response_default_fetch_reads_complete_loopback_response() {
-    run(async {
+    crate::runtime::run(async {
         for reason in [Some("Odd Reason"), Some(""), None] {
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
             let address = listener.local_addr().unwrap();
@@ -310,7 +302,7 @@ mod oauth_callback {
         if public_fallback_child("maestro_response_tokens_require_account_claim") {
             return;
         }
-        run(maestro_response_tokens_require_account_claim_flow());
+        crate::runtime::run(maestro_response_tokens_require_account_claim_flow());
     }
 
     async fn maestro_response_tokens_require_account_claim_flow() {
@@ -355,7 +347,7 @@ mod oauth_callback {
         if public_fallback_child("response_provider_delegates_and_borrows_access_key") {
             return;
         }
-        run(async {
+        crate::runtime::run(async {
             let provider = maestro_models::OPENAI_CODEX_OAUTH_PROVIDER;
             assert_eq!(
                 (
@@ -406,7 +398,7 @@ mod oauth_callback {
         if public_fallback_child("maestro_response_authorization_keeps_protocol_fields") {
             return;
         }
-        run(maestro_response_authorization_keeps_protocol_fields_flow());
+        crate::runtime::run(maestro_response_authorization_keeps_protocol_fields_flow());
     }
 
     async fn maestro_response_authorization_keeps_protocol_fields_flow() {

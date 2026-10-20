@@ -15,7 +15,7 @@ use serde_json::{Map, Value};
 use url::Url;
 
 use crate::bedrock;
-use crate::chat::{TestResult, block_on};
+use crate::chat::TestResult;
 use crate::json::canonical;
 use crate::transport;
 
@@ -235,7 +235,7 @@ pub fn check_rows(fixture: &str, test: &str) -> TestResult {
             .iter()
             .find(|row| row.id == case)
             .ok_or("unknown row")?;
-        return block_on(true, check(row));
+        return crate::runtime::run_paused(check(row));
     }
     for row in &owned {
         let env = environment(row);

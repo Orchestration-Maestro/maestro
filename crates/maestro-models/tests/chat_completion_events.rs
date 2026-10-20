@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 
 use cases::assert_rows;
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use futures_util::StreamExt;
 use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
@@ -28,7 +28,7 @@ const FIXTURE: &str = include_str!("fixtures/chat_completions/events.json");
 
 /// Run the rows a test owns.
 fn rows_of(test: &str) -> TestResult {
-    block_on(false, assert_rows(FIXTURE, test))
+    crate::runtime::run(assert_rows(FIXTURE, test))
 }
 
 #[test]
@@ -64,7 +64,7 @@ async fn wrong_typed_fields_read_as_absent() -> TestResult {
 
 #[test]
 fn maestro_chat_ignores_noncontent_chunks() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         assert_rows(FIXTURE, "maestro_chat_ignores_noncontent_chunks").await?;
         wrong_typed_fields_read_as_absent().await
     })
@@ -81,7 +81,7 @@ fn maestro_chat_requires_a_running_runtime() -> TestResult {
     };
     let history = chat::context(&json!({"messages": [{"role": "user", "content": "hello"}]}))?;
     let stream = stream_openai_completions(chat::model(&json!({}))?, history, Some(options));
-    let (labels, message) = block_on(false, async { drain(&stream).await })?;
+    let (labels, message) = crate::runtime::run(async { drain(&stream).await })?;
     assert_eq!(labels, ["error"]);
     assert_eq!(
         message.error_message.as_deref(),
@@ -317,7 +317,7 @@ async fn body_aborts_with_the_signal() -> TestResult {
 
 #[test]
 fn maestro_chat_cancels_owned_request_work() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         assert_rows(FIXTURE, "maestro_chat_cancels_owned_request_work").await?;
         abort_while_the_body_is_pending().await?;
         abort_as_the_body_ends().await?;
@@ -352,7 +352,7 @@ async fn body_fails_midstream() -> TestResult {
 
 #[test]
 fn maestro_chat_retains_failure_context() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         assert_rows(FIXTURE, "maestro_chat_retains_failure_context").await?;
         body_fails_midstream().await
     })
@@ -460,7 +460,7 @@ async fn error_body_is_decoded_as_text() -> TestResult {
 
 #[test]
 fn maestro_chat_decodes_body_text_leniently() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         text_is_decoded_whatever_the_chunk_boundaries().await?;
         undecodable_trailer_is_an_ignored_field().await?;
         error_body_is_decoded_as_text().await
@@ -491,7 +491,7 @@ async fn a_mark_opens_a_later_line() -> TestResult {
 
 #[test]
 fn maestro_chat_drops_one_byte_order_mark_per_line() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         repeated_marks_open_an_ignored_field().await?;
         a_mark_opens_a_later_line().await
     })
@@ -515,7 +515,7 @@ async fn every_line_ending_ends_a_line() -> TestResult {
 
 #[test]
 fn maestro_chat_ends_lines_at_every_line_ending() -> TestResult {
-    block_on(true, every_line_ending_ends_a_line())
+    crate::runtime::run_paused(every_line_ending_ends_a_line())
 }
 
 /// Fields other than `data` and `event` do not change the event they appear in.
@@ -553,7 +553,7 @@ async fn an_open_event_is_not_delivered() -> TestResult {
 
 #[test]
 fn maestro_chat_reads_event_fields() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         unknown_fields_are_ignored().await?;
         one_space_after_the_colon_is_dropped().await?;
         an_open_event_is_not_delivered().await
@@ -649,7 +649,7 @@ async fn extreme_numbers_are_positions() -> TestResult {
 
 #[test]
 fn maestro_chat_matches_tool_indices_by_number() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         equal_numbers_are_one_position().await?;
         extreme_numbers_are_positions().await
     })
@@ -662,7 +662,7 @@ fn raw_event(data: &str) -> Vec<u8> {
 
 #[test]
 fn maestro_chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let usable = raw_event(concat!(
             r#"{"unread":1e400,"id":"first","id":"r","model":"first","model":"served","#,
             r#""choices":[{"nested":[-1e400,{"deep":2e400}],"finish_reason":"stop","#,
@@ -723,7 +723,7 @@ async fn signature_after(data: &str) -> TestResult<Option<String>> {
 
 #[test]
 fn maestro_chat_serializes_numeric_signatures() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let nested_in = r#"[1e400,{"10":1,"2":2,"n":9007199254740993,"z":-1e400}]"#;
         let nested_out = r#"[null,{"2":2,"10":1,"n":9007199254740992,"z":null}]"#;
         let mapped_in = r#"{"b":18446744073709551615,"a":1e21}"#;
@@ -764,7 +764,7 @@ async fn failure_after_text(event: &str) -> TestResult<String> {
 
 #[test]
 fn maestro_chat_formats_numeric_failures() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let responses = [
             (
                 r#"{"error":{"n":9007199254740993}}"#,
@@ -823,7 +823,7 @@ async fn usage_of(usage: &str) -> TestResult<maestro_models::Usage> {
 
 #[test]
 fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let infinite =
             usage_of(r#"{"prompt_tokens":1e400,"prompt_tokens_details":{"cached_tokens":1e400}}"#)
                 .await?;
@@ -879,7 +879,7 @@ async fn ending_after(reasons: &[&str]) -> TestResult<(String, StopReason, Optio
 
 #[test]
 fn maestro_chat_replaces_earlier_finish_reasons() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let (last, stop, error) = ending_after(&["network_error", "stop"]).await?;
         assert_eq!((last.as_str(), error), ("done", None));
         assert!(matches!(stop, StopReason::Stop));
@@ -979,7 +979,7 @@ async fn read_with_probe(
 
 #[test]
 fn maestro_chat_shares_partial_observations() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let (attempt, release) = held_back_attempt();
         let (stream, _) = start(attempt, &Cancellation::new())?;
         let probe = Arc::new(WriteProbe::default());
@@ -1042,7 +1042,7 @@ async fn finish_after_edit(
 
 #[test]
 fn maestro_chat_reports_supplied_stop_reasons() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         for (stop_reason, supplied, expected) in [
             (StopReason::Aborted, "ignored", "Request was aborted"),
             (
@@ -1144,7 +1144,7 @@ fn maestro_chat_observes_repeated_response_headers() -> TestResult {
             Ok(())
         };
     }
-    block_on(false, async {
+    crate::runtime::run(async {
         let headers = response_headers_after(
             b"X-Gap: \r\nX-Gap: b\r\nX-Tail: a\r\nX-Tail: \r\n\
               Cookie: a=1\r\nCookie: b=2\r\nX-Latin: \xE9\x80\xFF\r\n\
@@ -1187,7 +1187,7 @@ fn maestro_chat_transport_is_replaceable() -> TestResult {
             Ok(())
         };
     }
-    block_on(false, async {
+    crate::runtime::run(async {
         let body = framed_response();
         // Split inside multi-byte characters so framing must reassemble them.
         let pieces: Vec<Vec<u8>> = body.chunks(7).map(<[u8]>::to_vec).collect();
@@ -1282,7 +1282,7 @@ async fn deep_unread_fields_are_passed_over() -> TestResult {
 #[test]
 fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return block_on(true, deep_unread_fields_are_passed_over());
+        return crate::runtime::run_paused(deep_unread_fields_are_passed_over());
     }
     {
         let output = maestro_test_process::TestProcess::current(
@@ -1324,7 +1324,7 @@ async fn error_details_convert_to_the_json_limit() -> TestResult {
 #[test]
 fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return block_on(true, error_details_convert_to_the_json_limit());
+        return crate::runtime::run_paused(error_details_convert_to_the_json_limit());
     }
     {
         let output =
@@ -1359,7 +1359,7 @@ async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
 #[test]
 fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return block_on(true, streamed_signatures_convert_to_the_json_limit());
+        return crate::runtime::run_paused(streamed_signatures_convert_to_the_json_limit());
     }
     {
         let output = maestro_test_process::TestProcess::current(
@@ -1440,7 +1440,7 @@ async fn projected_call(ending: &str) -> TestResult {
 
 #[test]
 fn maestro_chat_projects_streamed_argument_numbers() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         for ending in ["}", ""] {
             projected_call(ending).await?;
         }
@@ -1505,7 +1505,7 @@ async fn bounded_call(depth: usize, complete: bool) -> TestResult {
 
 #[test]
 fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         for depth in [127, 128] {
             for complete in [false, true] {
                 bounded_call(depth, complete).await?;
@@ -1517,7 +1517,7 @@ fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
 
 #[test]
 fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         assert_eq!(signature_after(r#"{"\ud800":7,"keep":1}"#).await?, None);
         Ok(())
     })
@@ -1527,7 +1527,7 @@ fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
 fn maestro_chat_emits_carriage_delimited_events() -> TestResult {
     use futures_util::FutureExt as _;
 
-    block_on(false, async {
+    crate::runtime::run(async {
         let first = format!("data: {}\r\r", chunk_json("carriage"));
         let (attempt, Gate { reached, release }) =
             gated(vec![first.into_bytes()], b"data: [DONE]\n\n".to_vec());

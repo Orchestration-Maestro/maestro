@@ -177,18 +177,13 @@ async fn hook_lifetime() {
 
 /// All lifetime witnesses share paused time and producer-closed teardown guarantees.
 pub(super) fn verify() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(async {
-            setup_lifetime().await;
-            body_lifetime().await;
-            error_body_lifetime().await;
-            supplied_body_and_teardown().await;
-            hook_lifetime().await;
-        });
+    crate::tests::runtime::run_paused(async {
+        setup_lifetime().await;
+        body_lifetime().await;
+        error_body_lifetime().await;
+        supplied_body_and_teardown().await;
+        hook_lifetime().await;
+    });
 }
 
 /// Immediate headers arm the timer before any body read.

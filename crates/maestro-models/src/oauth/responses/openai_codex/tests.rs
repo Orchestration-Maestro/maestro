@@ -2,7 +2,7 @@
 use super::{callback, token};
 
 mod native;
-use crate::oauth::tests::run;
+use crate::tests::runtime::run;
 use crate::{
     BoxFuture, EventStream, Fetch, FetchError, HttpResponse, OAuthCredentials, OAuthError,
 };

@@ -32,13 +32,10 @@ fn raw_simple_and_catalog_keep_original_option_families() -> crate::TestResult {
     assert!(owner.observed.lock().unwrap().is_empty());
     let provider = maestro_models::get_api_provider("controlled").unwrap();
     let model = crate::bundled::descriptor("controlled", "https://fixture.invalid")?;
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            original_options::exercise(&provider, &model, &owner).await;
-            Ok(())
-        }),
-    )?;
+    crate::runtime::run::<crate::TestResult<_>>(tokio::task::LocalSet::new().run_until(async {
+        original_options::exercise(&provider, &model, &owner).await;
+        Ok(())
+    }))?;
     maestro_models::unregister_api_providers("original-options");
     Ok(())
 }
@@ -161,25 +158,22 @@ fn default_sdk_futures_remain_thread_safe() {
 #[test]
 fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
     let _registry = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for protocol in [
-                "openai-completions",
-                "anthropic-messages",
-                "openai-responses",
-                "azure-openai-responses",
-                "mistral-conversations",
-                "google-generative-ai",
-                "openai-codex-responses",
-            ] {
-                for simple in [false, true] {
-                    direct_local_case(protocol, simple).await?;
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for protocol in [
+            "openai-completions",
+            "anthropic-messages",
+            "openai-responses",
+            "azure-openai-responses",
+            "mistral-conversations",
+            "google-generative-ai",
+            "openai-codex-responses",
+        ] {
+            for simple in [false, true] {
+                direct_local_case(protocol, simple).await?;
             }
-            Ok(())
-        }),
-    )
+        }
+        Ok(())
+    }))
 }
 
 /// Keep authentication and transport selection on the real direct entry route.
@@ -527,7 +521,7 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
     let stream =
         stream_simple_openai_completions_for::<Local>(model, context, Some(options), spawn);
     assert_eq!(admissions.get(), 1);
-    let (events, result) = chat::block_on(false, transport::drain(&stream))?;
+    let (events, result) = crate::runtime::run(transport::drain(&stream))?;
     assert_eq!(events, ["error"]);
     assert_eq!(
         result.error_message.as_deref(),
@@ -562,15 +556,12 @@ fn direct_cloud_local_submission_preserves_hook_phases() -> crate::TestResult {
             Ok(())
         };
     }
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for simple in [false, true] {
-                direct_cloud_local_case(simple).await?;
-            }
-            Ok(())
-        }),
-    )
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for simple in [false, true] {
+            direct_cloud_local_case(simple).await?;
+        }
+        Ok(())
+    }))
 }
 
 /// Exercise the native SDK and response-admission path with genuinely local hooks.
@@ -708,7 +699,7 @@ macro_rules! eager_failure_operations {
         let c = $complete(failure.clone(), $context.clone(), raw $(, $spawn.clone())?);
         let d = $complete_simple(failure, $context.clone(), simple $(, $spawn.clone())?);
         assert_eq!(&$calls.lock().unwrap()[before..], &expected);
-        crate::chat::block_on(false, async {
+        crate::runtime::run::<crate::TestResult<_>>(async {
             assert_eq!(c.await.unwrap_err().message, "setup stopped");
             assert_eq!(d.await.unwrap_err().message, "setup stopped");
             Ok(())
@@ -728,7 +719,7 @@ macro_rules! eager_operations {
             let c = $complete($model.clone(), $context.clone(), raw $(, $spawn.clone())?);
             let d = $complete_simple($model.clone(), $context.clone(), simple $(, $spawn.clone())?);
             assert_eq!(&$calls.lock().unwrap()[before..], &expected);
-            crate::chat::block_on(false, async {
+            crate::runtime::run::<crate::TestResult<_>>(async {
                 for (message, label) in [a.result().await, b.result().await, c.await?, d.await?].into_iter().zip(expected) {
                     let content = &message.read().unwrap().content;
                     assert_eq!(*content, [maestro_models::AssistantContent::Text(maestro_models::faux_text(label))]);
@@ -875,56 +866,53 @@ fn eager_default(
 fn registered_scripted_submission_keeps_local_hooks() -> crate::TestResult {
     use maestro_models::{ProviderInvocation, ProviderStreamOptions, RegisterFauxProviderOptions};
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            let registration =
-                maestro_models::register_faux_provider(RegisterFauxProviderOptions::default());
-            let model = registration.get_model(None).unwrap().clone();
-            let context = crate::bundled::conversation()?;
-            queue_scripted_pair(&registration);
-            let retained = maestro_models::get_api_provider(&registration.api).unwrap();
-            registration.unregister();
-            let tasks = Rc::new(std::cell::RefCell::new(Vec::new()));
-            let admissions = Rc::new(Cell::new(0));
-            let observed = Rc::new(Cell::new(0));
-            let common = scripted_local_observer(Rc::clone(&observed));
-            let local = retained.stream.call(
-                model.clone(),
-                context.clone(),
-                ProviderInvocation::Local(
-                    Some(ProviderStreamOptions {
-                        common,
-                        ..Default::default()
-                    }),
-                    local_submission(Rc::clone(&tasks), Rc::clone(&admissions)),
-                ),
-            )?;
-            assert_eq!(admissions.get(), 1);
-            assert_eq!(observed.get(), 0);
-            assert_eq!(
-                (
-                    registration.state.call_count(),
-                    registration.get_pending_response_count()
-                ),
-                (1, 1)
-            );
-            let (_, first) = crate::transport::drain(&local).await?;
-            for task in tasks.take() {
-                task.await?;
-            }
-            assert_eq!(observed.get(), 2);
-            assert_eq!(
-                first.content,
-                [maestro_models::AssistantContent::Text(
-                    maestro_models::faux_text("local")
-                )]
-            );
-            retained_scripted_threaded(&retained, model, context, &registration).await?;
-            assert_eq!(admissions.get(), 1);
-            Ok(())
-        }),
-    )
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        let registration =
+            maestro_models::register_faux_provider(RegisterFauxProviderOptions::default());
+        let model = registration.get_model(None).unwrap().clone();
+        let context = crate::bundled::conversation()?;
+        queue_scripted_pair(&registration);
+        let retained = maestro_models::get_api_provider(&registration.api).unwrap();
+        registration.unregister();
+        let tasks = Rc::new(std::cell::RefCell::new(Vec::new()));
+        let admissions = Rc::new(Cell::new(0));
+        let observed = Rc::new(Cell::new(0));
+        let common = scripted_local_observer(Rc::clone(&observed));
+        let local = retained.stream.call(
+            model.clone(),
+            context.clone(),
+            ProviderInvocation::Local(
+                Some(ProviderStreamOptions {
+                    common,
+                    ..Default::default()
+                }),
+                local_submission(Rc::clone(&tasks), Rc::clone(&admissions)),
+            ),
+        )?;
+        assert_eq!(admissions.get(), 1);
+        assert_eq!(observed.get(), 0);
+        assert_eq!(
+            (
+                registration.state.call_count(),
+                registration.get_pending_response_count()
+            ),
+            (1, 1)
+        );
+        let (_, first) = crate::transport::drain(&local).await?;
+        for task in tasks.take() {
+            task.await?;
+        }
+        assert_eq!(observed.get(), 2);
+        assert_eq!(
+            first.content,
+            [maestro_models::AssistantContent::Text(
+                maestro_models::faux_text("local")
+            )]
+        );
+        retained_scripted_threaded(&retained, model, context, &registration).await?;
+        assert_eq!(admissions.get(), 1);
+        Ok(())
+    }))
 }
 
 /// Count both sides of a suspended response hook on its caller-local state.
@@ -1005,8 +993,5 @@ fn threaded_submission(
 
 /// Exercise both cloud hook-capture families with the shared synchronized witnesses.
 pub(crate) fn cloud_affinity() -> crate::TestResult {
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(bundled_cases::cloud_affinity()),
-    )
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(bundled_cases::cloud_affinity()))
 }

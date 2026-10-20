@@ -10,7 +10,7 @@ use serde::Deserialize;
 use crate::TestResult;
 use crate::profile_credentials::{Input, On, Toggle};
 use crate::profile_files::Workdir;
-use crate::{bedrock, chat, loopback, profile_services, transport};
+use crate::{bedrock, loopback, profile_services, transport};
 
 /// One service call, retaining order, route and authentication identity.
 #[derive(Debug, Deserialize, PartialEq)]
@@ -503,7 +503,7 @@ pub fn check(test: &str) -> TestResult {
             .into_iter()
             .find(|row| row.id == case)
             .ok_or("unknown route row")?;
-        return chat::block_on(false, converse(row, supplied));
+        return crate::runtime::run(converse(row, supplied));
     }
     owned.into_iter().try_for_each(|row| outside(row, supplied))
 }

@@ -87,7 +87,7 @@ fn assert_retention_row(row: &serde_json::Value) -> TestResult {
             },
             ..ProviderStreamOptions::default()
         };
-        let result = chat::block_on(false, async {
+        let result = crate::runtime::run::<crate::TestResult<_>>(async {
             Ok(stream(model, bundled::conversation()?, Some(options))?
                 .result()
                 .await)

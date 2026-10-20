@@ -111,14 +111,6 @@ fn ids() -> Vec<String> {
         .map(|provider| provider.id().to_owned())
         .collect()
 }
-/// Run a fully controlled future without external services.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
 
 #[test]
 fn maestro_oauth_registry_replaces_without_reordering() {
@@ -139,7 +131,7 @@ fn maestro_oauth_registry_replaces_without_reordering() {
     );
     let selected = get_oauth_provider("z-last").unwrap();
     assert_eq!(
-        run(selected.refresh_token(credentials(f64::INFINITY), None))
+        crate::runtime::run(selected.refresh_token(credentials(f64::INFINITY), None))
             .unwrap()
             .access,
         "changed-access"
@@ -204,7 +196,7 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
         Box::pin(async move { Ok(selected) })
     });
     register_oauth_provider(Arc::new(custom));
-    let output = run(refresh_oauth_token(
+    let output = crate::runtime::run(refresh_oauth_token(
         "controlled",
         input.clone(),
         Some(supplied_fetch),
@@ -215,7 +207,7 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
     let mut failing = provider("controlled", "unused");
     failing.refresh = Box::new(|_, _| Box::pin(async { Err(error("inner-refresh")) }));
     register_oauth_provider(Arc::new(failing));
-    let failure = run(refresh_oauth_token("controlled", input, None)).unwrap_err();
+    let failure = crate::runtime::run(refresh_oauth_token("controlled", input, None)).unwrap_err();
     assert_eq!(failure.to_string(), "inner-refresh");
     assert_eq!(
         failure.diagnostic.code,
@@ -225,7 +217,7 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
     );
     assert_eq!(failure.cause.unwrap().to_string(), "inner-refresh-cause");
     assert_eq!(
-        run(refresh_oauth_token("missing", credentials(0.0), None))
+        crate::runtime::run(refresh_oauth_token("missing", credentials(0.0), None))
             .unwrap_err()
             .to_string(),
         "Unknown OAuth provider: missing"
@@ -264,7 +256,7 @@ fn maestro_oauth_key_refreshes_at_expiry() {
         );
         let input = indexmap::IndexMap::from([("controlled".into(), record)]);
         let before = input.clone();
-        let output = run(maestro_models::get_oauth_api_key(
+        let output = crate::runtime::run(maestro_models::get_oauth_api_key(
             "controlled",
             &input,
             None,
@@ -292,7 +284,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
     let _admission = Admission::enter();
     let empty = indexmap::IndexMap::new();
     assert_eq!(
-        run(get_oauth_api_key("unknown", &empty, None))
+        crate::runtime::run(get_oauth_api_key("unknown", &empty, None))
             .err()
             .unwrap()
             .to_string(),
@@ -303,7 +295,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
     absent.key = Box::new(|_| panic!("absence must not extract"));
     register_oauth_provider(Arc::new(absent));
     assert!(
-        run(get_oauth_api_key("controlled", &empty, None))
+        crate::runtime::run(get_oauth_api_key("controlled", &empty, None))
             .unwrap()
             .is_none()
     );
@@ -312,7 +304,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
     failing.key = Box::new(|_| panic!("failed refresh must not extract"));
     register_oauth_provider(Arc::new(failing));
     let expired = indexmap::IndexMap::from([("controlled".into(), credentials(0.0))]);
-    let failure = run(get_oauth_api_key("controlled", &expired, None))
+    let failure = crate::runtime::run(get_oauth_api_key("controlled", &expired, None))
         .err()
         .unwrap();
     assert_eq!(
@@ -354,14 +346,14 @@ fn maestro_oauth_provider_names_are_literal() {
         assert_eq!(selected.id(), id);
         let input = indexmap::IndexMap::from([(identifier, credentials(f64::INFINITY))]);
         assert_eq!(
-            run(get_oauth_api_key(id, &input, None))
+            crate::runtime::run(get_oauth_api_key(id, &input, None))
                 .unwrap()
                 .unwrap()
                 .api_key,
             "old-access"
         );
         assert!(
-            run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
+            crate::runtime::run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
                 .unwrap()
                 .is_none()
         );
@@ -393,7 +385,7 @@ fn check_distinct_literal_names() {
     assert_eq!(ids(), expected);
     for (index, id) in distinct.iter().enumerate() {
         assert_eq!(
-            run(refresh_oauth_token(id, credentials(0.0), None))
+            crate::runtime::run(refresh_oauth_token(id, credentials(0.0), None))
                 .unwrap()
                 .access,
             index.to_string()
@@ -406,14 +398,14 @@ fn check_unknown_literal_names() {
     for id in ["KEY", "missing", "line\nunknown", "☃"] {
         assert!(get_oauth_provider(id).is_none());
         assert_eq!(
-            run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
+            crate::runtime::run(get_oauth_api_key(id, &indexmap::IndexMap::new(), None))
                 .err()
                 .unwrap()
                 .to_string(),
             format!("Unknown OAuth provider: {id}")
         );
         assert_eq!(
-            run(refresh_oauth_token(id, credentials(0.0), None))
+            crate::runtime::run(refresh_oauth_token(id, credentials(0.0), None))
                 .unwrap_err()
                 .to_string(),
             format!("Unknown OAuth provider: {id}")
@@ -421,14 +413,14 @@ fn check_unknown_literal_names() {
     }
     unregister_oauth_provider("");
     assert_eq!(
-        run(get_oauth_api_key("", &indexmap::IndexMap::new(), None))
+        crate::runtime::run(get_oauth_api_key("", &indexmap::IndexMap::new(), None))
             .err()
             .unwrap()
             .to_string(),
         "Unknown OAuth provider: "
     );
     assert_eq!(
-        run(refresh_oauth_token("", credentials(0.0), None))
+        crate::runtime::run(refresh_oauth_token("", credentials(0.0), None))
             .unwrap_err()
             .to_string(),
         "Unknown OAuth provider: "
@@ -441,7 +433,7 @@ fn maestro_oauth_registry_restores_builtin_providers() {
     for id in ["anthropic", "github-copilot", "openai-codex"] {
         register_oauth_provider(Arc::new(provider(id, "override")));
         assert_eq!(
-            run(refresh_oauth_token(id, credentials(0.0), None))
+            crate::runtime::run(refresh_oauth_token(id, credentials(0.0), None))
                 .unwrap()
                 .access,
             "override"
@@ -508,7 +500,8 @@ fn check_builtin_refresh(id: &str) {
         })
     });
     let before = epoch_millis();
-    let output = run(refresh_oauth_token(id, credentials(0.0), Some(fetch))).unwrap();
+    let output =
+        crate::runtime::run(refresh_oauth_token(id, credentials(0.0), Some(fetch))).unwrap();
     let after = epoch_millis();
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert_eq!(output.access, key);
@@ -599,12 +592,12 @@ fn maestro_oauth_registry_retains_shared_provider_state() {
             ["anthropic", "github-copilot", "openai-codex", "shared"]
         );
         for alias in [&external, &lookup, saved] {
-            let output = run(alias.refresh_token(credentials(0.0), None)).unwrap();
+            let output = crate::runtime::run(alias.refresh_token(credentials(0.0), None)).unwrap();
             assert_eq!(alias.get_api_key(&output).unwrap(), "after");
         }
         if transition == "replace" {
             assert_eq!(
-                run(refresh_oauth_token("shared", credentials(0.0), None))
+                crate::runtime::run(refresh_oauth_token("shared", credentials(0.0), None))
                     .unwrap()
                     .access,
                 "replacement"
@@ -664,7 +657,7 @@ fn maestro_oauth_registry_drops_callbacks_after_unlocking() {
             drop(survivor);
             assert_eq!(completed.load(std::sync::atomic::Ordering::SeqCst), 1);
             assert_eq!(
-                run(refresh_oauth_token("from-drop", credentials(0.0), None))
+                crate::runtime::run(refresh_oauth_token("from-drop", credentials(0.0), None))
                     .unwrap()
                     .access,
                 "drop"
@@ -775,7 +768,7 @@ async fn independent_resolutions() {
 #[test]
 fn maestro_oauth_callbacks_outlive_registry_changes() {
     let _admission = Admission::enter();
-    run(async {
+    crate::runtime::run(async {
         for transition in ["replace", "remove", "reset"] {
             admitted_resolution(transition).await;
         }
@@ -795,7 +788,7 @@ fn check_empty_refresh_result() {
     });
     register_oauth_provider(Arc::new(empty));
     let input = indexmap::IndexMap::from([("controlled".into(), credentials(0.0))]);
-    let output = run(get_oauth_api_key("controlled", &input, None))
+    let output = crate::runtime::run(get_oauth_api_key("controlled", &input, None))
         .unwrap()
         .unwrap();
     assert_eq!(output.api_key, "");
@@ -820,7 +813,7 @@ fn check_extraction_failures() {
         });
         register_oauth_provider(Arc::new(failing_key));
         let input = indexmap::IndexMap::from([("controlled".into(), credentials(expiry))]);
-        let failure = run(get_oauth_api_key("controlled", &input, None))
+        let failure = crate::runtime::run(get_oauth_api_key("controlled", &input, None))
             .err()
             .unwrap();
         assert_eq!(failure.to_string(), "inner-key");
