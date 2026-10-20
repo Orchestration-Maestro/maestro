@@ -79,13 +79,26 @@ pub(super) fn scan(
         opaque.partition_point(|(span, _)| span.end <= range.start),
         0_usize,
     );
-    let mut index = range.start;
+    let (mut index, mut open, mut enclosing) = (range.start, 0, Vec::<usize>::new());
     while index < source.len() {
         while opaque
             .get(next)
             .is_some_and(|(range, _)| range.end <= index)
         {
             next += 1;
+        }
+        while enclosing.last().is_some_and(|&end| end <= index) {
+            enclosing.pop();
+        }
+        while let Some((span, content)) = scope.spans.get(open).filter(|(_, c)| c.start <= index) {
+            open += 1;
+            let admitted = found.partition_point(|f: &Formula| f.range.end <= span.start);
+            let consumed = found
+                .get(admitted)
+                .is_some_and(|f| f.range.start <= span.start);
+            if content.end > index && !consumed {
+                enclosing.push(content.end);
+            }
         }
         if let Some((range, _)) = opaque.get(next).filter(|(r, _)| r.contains(&index)) {
             index = range.end;
@@ -101,6 +114,7 @@ pub(super) fn scan(
                 .opaque
                 .get(barrier)
                 .is_none_or(|range| range.start >= formula.range.end)
+                && enclosing.last().is_none_or(|&end| formula.range.end <= end)
         }) {
             index = formula.range.end;
             slashes = 0;

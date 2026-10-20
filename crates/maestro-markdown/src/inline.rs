@@ -26,6 +26,8 @@ pub struct InlineScope<'a> {
     pub operands: Vec<(Range<usize>, &'a Node)>,
     /// Code, image, HTML and autolink barriers, including those inside authored labels.
     pub opaque: Vec<Range<usize>>,
+    /// Strong, strike and emphasis extents with their content extents, in authored order.
+    pub spans: Vec<(Range<usize>, Range<usize>)>,
 }
 /// A locally interpreted inline run and its retained atom identities.
 pub struct InlineRun<'a> {
@@ -79,6 +81,7 @@ impl<'a> InlineContext<'a> {
                 definitions: &document.definitions,
                 operands: Vec::new(),
                 opaque: Vec::new(),
+                spans: Vec::new(),
             };
             collect(children, &mut scope, false);
             self.scopes.insert((range.start, range.end, label), scope);
@@ -123,7 +126,18 @@ fn collect<'a>(nodes: &'a [Node], scope: &mut InlineScope<'a>, label: bool) {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.visits += 1);
         match &node.kind {
-            Kind::Strong(c) | Kind::Strike(c) | Kind::Emphasis(c) => collect(c, scope, label),
+            Kind::Strong(c) | Kind::Strike(c) | Kind::Emphasis(c) => {
+                let content = c.first().zip(c.last());
+                let content = content.map(|(first, last)| first.range.start..last.range.end);
+                if let Some((span, content)) = scope
+                    .source
+                    .local(&node.range)
+                    .zip(content.and_then(|content| scope.source.local(&content)))
+                {
+                    scope.spans.push((span, content));
+                }
+                collect(c, scope, label);
+            }
             Kind::Link(c, _, _, meta) => {
                 operand(node, scope, label);
                 if matches!(
