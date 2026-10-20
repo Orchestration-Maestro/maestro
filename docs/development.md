@@ -163,10 +163,13 @@ for fresh input-specific markers printed by compiled binaries to prove rebuilds
 for source, sibling dependency and Cargo configuration changes. They also observe
 a marker from a rebuilt development binary, then a fresh sibling marker after
 that replacement. Queued unrelated successful builds cannot satisfy these checks.
-They retain both output streams in one ordered transcript. Browser author child
-lines and blocking-operation phases are also flushed to per-test files in
-`MAESTRO_TEST_DIAGNOSTICS_DIR`, or `target/browser-author-diagnostics/` when it is
-unset, outside disposable fixtures and isolated home directories. A forced-kill
+They retain both output streams in one ordered transcript. The harness also writes
+watch-test child lines, setup command lines and blocking-operation phases to
+per-test files in `MAESTRO_TEST_DIAGNOSTICS_DIR`, or
+`target/browser-author-diagnostics/` when it is unset, outside disposable fixtures
+and isolated home directories. Set the variable to an absolute path; a relative
+one resolves against `crates/maestro-tooling`. The harness does not capture
+commands whose output a test reads only after they exit. A forced-kill
 test checks both directory routes and verifies that child lines survive termination
 while still reaching stderr and the watch consumer. There are no exact build counts
 or negative observation windows. Their watch processes share a test-owned

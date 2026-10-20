@@ -132,15 +132,21 @@ pub fn transcript() -> fs::File {
         .unwrap()
 }
 
-/// Flush a phase or child-output record before the test can block again.
+/// Write a phase or child-output record before the test can block again.
 pub fn record(message: impl std::fmt::Display) {
     use std::io::Write;
     let mut file = transcript();
     file.write_all(format!("{message}\n").as_bytes()).unwrap();
-    file.flush().unwrap();
 }
 
-/// Flush child lines to disk before echoing to stderr and forwarding to the consumer.
+/// Join a capture reader between phase records, so a blocked join is visible.
+pub fn join_reader(thread: std::thread::JoinHandle<()>) {
+    record("phase: reader join");
+    thread.join().unwrap();
+    record("phase: reader joined");
+}
+
+/// Write child lines to the transcript before echoing to stderr and forwarding to the consumer.
 pub fn capture_lines<R: std::io::Read>(
     reader: impl FnOnce() -> R + Send + 'static,
     send: std::sync::mpsc::Sender<String>,

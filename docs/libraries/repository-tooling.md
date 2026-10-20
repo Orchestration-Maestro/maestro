@@ -43,7 +43,9 @@ Binaryen/wasm-opt 133 (Apache-2.0), and miniserve 0.35.0 (MIT). Native release
 checksums are retained in `mise.lock`. These are external development binaries,
 not workspace Cargo dependencies or consumer lifecycle hooks. The checked
 non-development Linux-musl closures contain 394, 168 and 296 packages for Trunk,
-wasm-bindgen-cli and miniserve respectively. Trunk's mandatory
+wasm-bindgen-cli and miniserve respectively. These records cover only the
+Linux-musl builds, not the GNU, macOS and Windows builds that mise installs on
+those hosts. Trunk's mandatory
 lockfree-object-pool 0.1.6 uses the Boost Software License 1.0; its
 [notice](../licenses/author-tools/lockfree-object-pool.txt) is retained alongside
 these author-tool records. See [browser author commands](../browser-build.md).
