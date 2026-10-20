@@ -5,6 +5,8 @@ use std::cell::RefCell;
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
+    /// Operand visits inside cursor-generated label windows.
+    pub(crate) cursor_label_operands: usize,
     /// Actual quote framing line visits.
     pub(crate) quote_lines: usize,
     /// Actual list continuation line visits.
@@ -434,3 +436,148 @@ fn plain_text_merge_work_grows_linearly_with_its_pieces() {
 }
 
 mod container_accumulation;
+
+/// Static label slots visit only the selected label window.
+fn scoped_label_operands_use_selected_windows() {
+    for n in [32, 64] {
+        let document = crate::parse_with_options(
+            "[a $x$](u) ".repeat(n),
+            crate::MarkedOptions::Browser { escape_html: true },
+        );
+        let context = InlineContext::new(&document);
+        let scope = context.scope(&document.nodes[0].range, false).unwrap();
+        let spans: Vec<_> = scope
+            .text()
+            .match_indices("$x$")
+            .map(|(start, _)| start..start + 3)
+            .collect();
+        WORK.with_borrow_mut(|work| work.cursor_label_operands = 0);
+        let run = scope.interpret(scope.content_range(), &spans);
+        let Kind::Paragraph(children) = &run.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        assert_eq!(
+            children
+                .iter()
+                .filter(|node| matches!(node.kind, Kind::Link(..)))
+                .count(),
+            0
+        );
+        assert_eq!(run.atoms.len(), n);
+        let visits = WORK.with_borrow(|work| work.cursor_label_operands);
+        println!("SELECTED-LABEL-WORK n={n} visited_operands={visits}");
+        assert_eq!(
+            visits, n,
+            "only the one contained atom is visited per selected label"
+        );
+    }
+}
+
+/// Fixed caller prefix for measuring parser work rather than formula recognition.
+struct WorkToken;
+impl crate::InlineTokenizer for WorkToken {
+    fn start(&self, source: &str) -> Option<usize> {
+        source.find("$x$")
+    }
+    fn tokenize(&mut self, source: &str) -> Option<crate::InlineToken> {
+        source.starts_with("$x$").then_some(crate::InlineToken {
+            length: 3,
+            index: 0,
+        })
+    }
+}
+
+#[test]
+fn cursor_admission_work_tracks_selected_windows() {
+    scoped_label_operands_use_selected_windows();
+    let work = [32, 64].map(|count| {
+        check_operand_windows(count);
+        check_cursor_work(count)
+    });
+    assert_eq!(work[1].local_bytes, 2 * work[0].local_bytes);
+    assert_eq!(
+        work[1].operand_examinations,
+        2 * work[0].operand_examinations
+    );
+}
+
+/// Count document setup and selected recursive windows.
+fn check_cursor_work(count: usize) -> Work {
+    WORK.with_borrow_mut(|work| *work = Work::default());
+    let document = crate::parse_with_options(
+        "*a $x$* `q` [r](u)\n\n".repeat(count),
+        crate::MarkedOptions::Browser { escape_html: true },
+    );
+    let context = InlineContext::new(&document);
+    let mut retained = 0;
+    for node in document
+        .nodes
+        .iter()
+        .filter(|node| matches!(node.kind, Kind::Paragraph(_)))
+    {
+        let scope = context.scope(&node.range, false).unwrap();
+        let run = scope.interpret_with_tokenizer(scope.content_range(), &mut WorkToken);
+        retained += run
+            .atoms
+            .iter()
+            .filter(|atom| matches!(atom, InlineAtom::Resolved(_)))
+            .count();
+        assert_eq!(
+            run.atoms
+                .iter()
+                .filter(|atom| matches!(atom, InlineAtom::Opaque(0)))
+                .count(),
+            1
+        );
+    }
+    assert_eq!(retained, 2 * count);
+    let work = WORK.with_borrow(|work| *work);
+    assert_eq!(work.documents, 1);
+    assert_eq!(work.reference_indexes, 1);
+    assert_eq!(work.indexes, 1);
+    work
+}
+
+/// Compare repeated and ordered selection over the same actual native code operands.
+fn check_operand_windows(count: usize) {
+    let document = crate::parse_with_options(
+        "a $x$ `q` ".repeat(count),
+        crate::MarkedOptions::Browser { escape_html: true },
+    );
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let mut negative = Vec::new();
+    let mut control = Vec::new();
+    let mut negative_work = 0;
+    let mut control_work = 0;
+    let mut next = 0;
+    for index in 0..count {
+        let window = index * 10..(index + 1) * 10;
+        negative.extend(
+            scope
+                .opaque
+                .iter()
+                .filter(|span| {
+                    negative_work += 1;
+                    span.start < window.end && window.start < span.end
+                })
+                .cloned(),
+        );
+        while let Some(span) = scope
+            .opaque
+            .get(next)
+            .filter(|span| span.start < window.end)
+        {
+            control_work += 1;
+            if window.start < span.end {
+                control.push(span.clone());
+            }
+            next += 1;
+        }
+    }
+    assert_eq!(negative, scope.opaque);
+    assert_eq!(control, negative);
+    assert_eq!(negative_work, count * count);
+    assert_eq!(control_work, count);
+    println!("OPERAND-CONTROL n={count} rescan={negative_work} selected={control_work}");
+}

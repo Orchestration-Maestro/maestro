@@ -1,5 +1,6 @@
 //! Contextual math admission over the shared owned document.
-use maestro_app::{is_whitespace_scalar, markdown};
+use maestro_app::is_whitespace_scalar;
+use maestro_app::markdown;
 use std::ops::Range;
 
 /// Delimiter family of one formula.
@@ -32,17 +33,17 @@ impl Delimiter {
 
 /// An admitted formula with its trimmed body.
 #[derive(Clone, Debug)]
-pub(super) struct Formula {
+pub(super) struct Formula<'a> {
     /// Extent in the scanned source.
     pub(super) range: Range<usize>,
     /// Trimmed body, trimmed after the nonempty check.
-    pub(super) tex: String,
+    pub(super) tex: &'a str,
     /// Delimiter family.
     pub(super) delimiter: Delimiter,
 }
 
 /// Match one formula starting exactly at `index`.
-fn matching(source: &str, index: usize, display: bool) -> Option<Formula> {
+pub(super) fn matching(source: &str, index: usize, display: bool) -> Option<Formula<'_>> {
     let families = if display {
         [Delimiter::DoubleDollar, Delimiter::Bracket]
     } else {
@@ -57,18 +58,17 @@ fn matching(source: &str, index: usize, display: bool) -> Option<Formula> {
         let excluded = dollar && (body.contains('$') || (!display && body.contains('\n')));
         (!body.is_empty() && !excluded).then(|| Formula {
             range: index..index + open.len() + end + close.len(),
-            tex: body.trim_matches(is_whitespace_scalar).to_owned(),
+            tex: body.trim_matches(is_whitespace_scalar),
             delimiter,
         })
     })
 }
 
 /// Formulas of one display class, using original mapped operands without reparsing.
-pub(super) fn scan(
-    scope: &markdown::InlineScope<'_>,
+pub(super) fn scan<'a>(
+    scope: &'a markdown::InlineScope<'_>,
     range: Range<usize>,
-    display: bool,
-) -> Vec<Formula> {
+) -> Vec<Formula<'a>> {
     let source = &scope.text()[..range.end];
     if !source[range.start..].contains(['$', '\\']) {
         return Vec::new();
@@ -92,7 +92,7 @@ pub(super) fn scan(
         }
         while let Some((span, content)) = scope.spans.get(open).filter(|(_, c)| c.start <= index) {
             open += 1;
-            let admitted = found.partition_point(|f: &Formula| f.range.end <= span.start);
+            let admitted = found.partition_point(|f: &Formula<'_>| f.range.end <= span.start);
             let consumed = found
                 .get(admitted)
                 .is_some_and(|f| f.range.start <= span.start);
@@ -106,7 +106,7 @@ pub(super) fn scan(
             continue;
         }
         let formula = (slashes % 2 == 0)
-            .then(|| matching(source, index, display))
+            .then(|| matching(source, index, true))
             .flatten();
         let barrier = scope.opaque.partition_point(|range| range.end <= index);
         if let Some(formula) = formula.filter(|formula| {
@@ -152,13 +152,13 @@ impl markdown::BlockTokenizer for MathBlocks {
                 "blockMathLatex"
             }
             .to_owned(),
-            text: formula.tex,
+            text: formula.tex.to_owned(),
         })
     }
 }
 
 /// Recover the already parsed custom block without matching its source again.
-pub(super) fn block_formula(kind: &str, text: &str, length: usize) -> Option<Formula> {
+pub(super) fn block_formula<'a>(kind: &str, text: &'a str, length: usize) -> Option<Formula<'a>> {
     let delimiter = match kind {
         "blockMathDollar" => Delimiter::DoubleDollar,
         "blockMathLatex" => Delimiter::Bracket,
@@ -166,7 +166,26 @@ pub(super) fn block_formula(kind: &str, text: &str, length: usize) -> Option<For
     };
     Some(Formula {
         range: 0..length,
-        tex: text.to_owned(),
+        tex: text,
         delimiter,
     })
+}
+
+/// Browser formula grammar selected by the shared inline loop.
+#[derive(Default)]
+pub(super) struct MathInline;
+impl markdown::InlineTokenizer for MathInline {
+    fn start(&self, source: &str) -> Option<usize> {
+        [source.find('$'), source.find("\\(")]
+            .into_iter()
+            .flatten()
+            .min()
+    }
+    fn tokenize(&mut self, source: &str) -> Option<markdown::InlineToken> {
+        let formula = matching(source, 0, false)?;
+        Some(markdown::InlineToken {
+            length: formula.range.end,
+            index: 0,
+        })
+    }
 }
