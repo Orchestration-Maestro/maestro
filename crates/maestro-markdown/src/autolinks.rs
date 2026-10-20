@@ -86,6 +86,8 @@ fn candidate_rules(
 ///
 /// `previous` is the character before it in the same text run.
 pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions) -> Option<usize> {
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.address_checks += 1);
     candidate_rules(options, &START)
         .into_iter()
         .find_map(|(regex, email)| {
@@ -100,6 +102,8 @@ pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions
                 return None;
             }
             let matched = regex?.find(text)?;
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.address_bytes += matched.end());
             Some(accepted(previous, &text[matched.range()], email)?.0)
         })
 }

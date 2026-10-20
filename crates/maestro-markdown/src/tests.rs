@@ -49,6 +49,10 @@ pub(crate) struct Work {
     pub(crate) line_bytes: usize,
     /// Authored bytes compared by the plain-text merge check.
     pub(crate) merge_bytes: usize,
+    /// Bare-address checks run at inline token starts.
+    pub(crate) address_checks: usize,
+    /// Bytes up to the end of each address candidate the start patterns matched.
+    pub(crate) address_bytes: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
@@ -431,6 +435,52 @@ fn plain_text_merge_work_grows_linearly_with_its_pieces() {
         let [small, medium, large] = [64, 128, 256].map(|pieces| plain_merge_work(pieces, options));
         assert_eq!(large - medium, 2 * (medium - small), "{options:?}");
     }
+}
+
+/// Bare-address start checks and matched candidate bytes for one paragraph.
+fn address_work(lines: usize, line: &str, options: crate::MarkedOptions) -> (usize, usize) {
+    WORK.with_borrow_mut(|work| *work = Work::default());
+    let document = crate::parse_with_options(line.repeat(lines), options);
+    assert_eq!(document.nodes.len(), 1);
+    WORK.with_borrow(|work| (work.address_checks, work.address_bytes))
+}
+
+#[test]
+fn address_start_checks_grow_linearly_with_their_addresses() {
+    let linear = |small: usize, medium: usize, large: usize| large - medium == 2 * (medium - small);
+    for options in [
+        crate::MarkedOptions::Terminal,
+        crate::MarkedOptions::Export,
+        crate::MarkedOptions::Browser { escape_html: false },
+        crate::MarkedOptions::Browser { escape_html: true },
+    ] {
+        for line in ["see www.a.io or b@c.io now\n", "ordinary words only\n"] {
+            let [small, medium, large] =
+                [32, 64, 128].map(|lines| address_work(lines, line, options));
+            eprintln!(
+                "{options:?} {line:?} N/2N/4N work={:?}",
+                [small, medium, large]
+            );
+            assert!(
+                small.0 > 0 && linear(small.0, medium.0, large.0),
+                "{options:?} {line:?}"
+            );
+            assert!(linear(small.1, medium.1, large.1), "{options:?} {line:?}");
+            // Ordinary text never reaches a candidate, so the patterns match nothing.
+            assert_eq!(
+                small.1 == 0,
+                line.starts_with("ordinary"),
+                "{options:?} {line:?}"
+            );
+        }
+    }
+    // Documentation text keeps addresses as plain text and never runs the check.
+    let documentation = address_work(
+        32,
+        "see www.a.io now\n",
+        crate::MarkedOptions::Documentation,
+    );
+    assert_eq!(documentation, (0, 0));
 }
 
 mod container_accumulation;
