@@ -863,3 +863,47 @@ fn caller_opaque_anchor_text_does_not_disable_bare_addresses() {
     );
     assert!(text(children).contains("https://a.b/_x_"));
 }
+
+#[test]
+fn bare_addresses_follow_link_label_context() {
+    observations::check("address-label", 7);
+}
+
+#[test]
+fn image_labels_disable_address_tokens() {
+    let document = parse("![https://a.b/_x_](y)".into());
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let Kind::Image(_, metadata) = &children[0].kind else {
+        panic!("image")
+    };
+    assert!(
+        matches!(&metadata.children[1].kind, Kind::Emphasis(children) if text(children) == "x")
+    );
+}
+
+#[test]
+fn link_label_scopes_disable_address_tokens() {
+    let document = parse("[https://a.b/_x_](y)".into());
+    let context = InlineContext::new(&document);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let scope = context.scope(&children[0].range, true).unwrap();
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(matches!(&children[1].kind, Kind::Emphasis(children) if text(children) == "x"));
+}
+
+#[test]
+fn nested_authored_links_keep_existing_admission() {
+    let document = parse("[a [b](z)](y)".into());
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(matches!(&children[1].kind, Kind::Link(_, _, href, _) if href == "z"));
+    assert_eq!(text(children), "[a b](y)");
+}

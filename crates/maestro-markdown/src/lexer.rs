@@ -419,6 +419,7 @@ impl<'a, E> Lexer<'a, E> {
             self.options,
             &self.definitions,
             Some(&mut self.scopes),
+            false,
         )
         .parse(&[])
     }

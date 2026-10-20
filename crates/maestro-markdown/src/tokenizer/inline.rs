@@ -21,8 +21,8 @@ pub(crate) struct Tokenizer<'a> {
     pub(crate) scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
     /// Original operand identities for local interpretation, indexed like the atom ranges.
     pub(crate) retained_atoms: Option<&'a [crate::InlineAtom<'a>]>,
-    /// Raw anchor state shared by recursive inline spans.
-    raw_anchor: bool,
+    /// Link-label and raw-anchor context shared by recursive inline spans.
+    in_link: bool,
     /// Local interpretation has no document scope collector.
     #[cfg(test)]
     local: bool,
@@ -34,6 +34,7 @@ impl<'a> Tokenizer<'a> {
         options: MarkedOptions,
         definitions: &'a HashMap<String, Definition>,
         scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
+        in_link: bool,
     ) -> Self {
         #[cfg(test)]
         let local = scopes.is_none();
@@ -42,7 +43,7 @@ impl<'a> Tokenizer<'a> {
             options,
             definitions,
             scopes,
-            raw_anchor: false,
+            in_link,
             retained_atoms: None,
             #[cfg(test)]
             local,
@@ -51,16 +52,11 @@ impl<'a> Tokenizer<'a> {
 
     /// Admit inline constructs with typed atoms ahead of ordinary grammar.
     pub(crate) fn parse(&mut self, atoms: &[Range<usize>]) -> Vec<Node> {
-        self.tokens(0..self.source.text.len(), atoms, false)
+        self.tokens(0..self.source.text.len(), atoms)
     }
 
     /// Interpret one inline span without admitting block constructs.
-    pub(crate) fn tokens(
-        &mut self,
-        extent: Range<usize>,
-        atoms: &[Range<usize>],
-        in_link: bool,
-    ) -> Vec<Node> {
+    pub(crate) fn tokens(&mut self, extent: Range<usize>, atoms: &[Range<usize>]) -> Vec<Node> {
         #[cfg(test)]
         if self.local {
             crate::tests::WORK.with_borrow_mut(|work| work.local_bytes += extent.len());
@@ -86,13 +82,13 @@ impl<'a> Tokenizer<'a> {
             let text = &self.source.text[cursor..extent.end];
             let token = self
                 .soft_break(text)
-                .or_else(|| self.admit_operand(cursor..extent.end, atoms, in_link))
+                .or_else(|| self.admit_operand(cursor..extent.end, atoms))
                 .or_else(|| {
                     let masked = (masked.as_str(), extent.start, previous);
-                    self.emphasis(cursor..extent.end, masked, atoms, in_link)
+                    self.emphasis(cursor..extent.end, masked, atoms)
                 })
                 .or_else(|| self.line_break(text))
-                .or_else(|| self.deletion(cursor..extent.end, atoms, in_link));
+                .or_else(|| self.deletion(cursor..extent.end, atoms));
             if let Some((size, kind)) =
                 token.filter(|(size, kind)| *size > 0 && fits(atoms, cursor + size, limit, kind))
             {
@@ -101,7 +97,7 @@ impl<'a> Tokenizer<'a> {
                 cursor += size;
                 continue;
             }
-            let address = self.address(text, &output, in_link);
+            let address = self.address(text, &output);
             if let Some(size) = address.filter(|size| cursor + size <= limit) {
                 self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
                 cursor += size;
@@ -135,20 +131,20 @@ impl<'a> Tokenizer<'a> {
         output.push(node(self.source, range, Kind::Atom(index)));
     }
 
-    /// Update the shared raw-anchor state only after a tag has been admitted.
+    /// Apply admitted raw-anchor transitions to the shared link context.
     fn track_anchor(&mut self, kind: &Kind) {
         if let Kind::Html(html) = kind {
-            self.raw_anchor = crate::autolinks::anchor_state(html, self.raw_anchor);
+            self.in_link = crate::autolinks::anchor_state(html, self.in_link);
         }
     }
 
     /// Keep accepted bare addresses whole where the grammar enables URL tokens.
-    fn address(&self, text: &str, output: &[Node], in_link: bool) -> Option<usize> {
+    fn address(&self, text: &str, output: &[Node]) -> Option<usize> {
         let previous = match output.last().map(|node| &node.kind) {
             Some(Kind::Text(text)) => text.authored.chars().next_back(),
             _ => None,
         };
-        (!in_link && !self.raw_anchor && self.options != MarkedOptions::Documentation)
+        (!self.in_link && self.options != MarkedOptions::Documentation)
             .then(|| crate::autolinks::address(text, previous, self.options))
             .flatten()
     }
@@ -276,12 +272,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     /// Caller-selected deletion uses the same recursive inline grammar.
-    fn deletion(
-        &mut self,
-        range: Range<usize>,
-        atoms: &[Range<usize>],
-        in_link: bool,
-    ) -> Option<(usize, Kind)> {
+    fn deletion(&mut self, range: Range<usize>, atoms: &[Range<usize>]) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
         if !text.starts_with('~') {
             return None;
@@ -290,11 +281,7 @@ impl<'a> Tokenizer<'a> {
         crate::tests::WORK.with_borrow_mut(|work| work.deletion_bytes += text.len());
         let matched = rules::inline_del(self.options)?.find(text)?;
         let body = matched.group(2)?;
-        let children = self.tokens(
-            range.start + body.start..range.start + body.end,
-            atoms,
-            in_link,
-        );
+        let children = self.tokens(range.start + body.start..range.start + body.end, atoms);
         Some((matched.end(), Kind::Strike(children)))
     }
 
@@ -303,15 +290,14 @@ impl<'a> Tokenizer<'a> {
         &mut self,
         range: Range<usize>,
         atoms: &[Range<usize>],
-        in_link: bool,
     ) -> Option<(usize, Kind)> {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.operand_admissions += 1);
         let text = &self.source.text[range.clone()];
         match text.as_bytes().first()? {
             b'\\' => Self::escape(text),
-            b'<' => self.tag(text).or_else(|| self.angle(range, in_link)),
-            b'[' | b'!' => self.link(range, atoms, in_link),
+            b'<' => self.tag(text).or_else(|| self.angle(range)),
+            b'[' | b'!' => self.link(range, atoms),
             b'`' => Self::code(text),
             _ => None,
         }

@@ -214,8 +214,13 @@ impl<'a> InlineScope<'a> {
                 atoms.push(atom);
             }
         }
-        let mut tokenizer =
-            crate::tokenizer::inline::Tokenizer::new(&source, self.options, self.definitions, None);
+        let mut tokenizer = crate::tokenizer::inline::Tokenizer::new(
+            &source,
+            self.options,
+            self.definitions,
+            None,
+            self.label,
+        );
         tokenizer.retained_atoms = Some(&atoms);
         let children = tokenizer.parse(&slots);
         InlineRun {
