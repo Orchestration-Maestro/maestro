@@ -25,7 +25,7 @@ fn browser_proxy_exports_reach_application() {
     assert!(is_cors_error(&DiagnosticErrorInfo::error(
         "cross-origin refusal"
     )));
-    let wrapper: maestro_app::StreamFn = create_stream_fn(std::sync::Arc::new(|| {
+    let wrapper: maestro_app::StreamFn = create_stream_fn(maestro_app::SharedHandle::new(|| {
         Box::pin(async { Err(DiagnosticErrorInfo::error("facade settings")) })
     }));
     let mut invocation = wrapper(

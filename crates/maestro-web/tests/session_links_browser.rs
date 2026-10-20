@@ -4,98 +4,9 @@
 use crate::reading_slots_support;
 use crate::support;
 use maestro_web::browser::attachment_content::{AttachmentHost, BrowserAttachmentHost};
+use reading_slots_support::{js, snapshot, unchanged};
 use wasm_bindgen::{JsCast as _, prelude::*};
 
-#[wasm_bindgen(inline_js = r#"
-let active;
-export function begin(mode, text) {
-    if (active) throw new Error('unfinished clipboard transaction');
-    const descriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
-    const create = document.createElement, body = document.body, append = body.appendChild;
-    const execDescriptor = Object.getOwnPropertyDescriptor(document, 'execCommand');
-    const timeout = window.setTimeout;
-    const state = {mode, text, events: [], nodes: [], timers:0};
-    window.setTimeout=function(...args){state.timers++;return timeout.apply(this,args)};
-    const writeText = value => {
-        state.events.push('api');
-        if (value !== text) throw new Error('wrong API text');
-        if (mode === 'call') throw new DOMException('controlled call');
-        if (mode === 'reject') return Promise.reject(new DOMException('controlled rejection'));
-        if (mode === 'pending') return new Promise(resolve=>{state.resolve=resolve});
-        return Promise.resolve();
-    };
-    Object.defineProperty(navigator, 'clipboard', {configurable:true, get() {
-        if (mode === 'getter') throw new DOMException('controlled getter');
-        if (mode === 'missing') return undefined;
-        if (mode === 'method') return {};
-        return ['api','call','reject','pending'].includes(mode) ? {writeText} : undefined;
-    }});
-    document.createElement = function(tag, ...rest) {
-        if (tag === 'textarea' && mode === 'create') throw new DOMException('controlled create');
-        const node = create.call(this, tag, ...rest);
-        if (tag === 'textarea') { state.nodes.push(node); state.events.push('create'); }
-        return node;
-    };
-    body.appendChild = function(node) {
-        if (node.localName === 'textarea') {
-            if (mode === 'append') throw new DOMException('controlled append');
-            state.events.push('append');
-        }
-        return append.call(this, node);
-    };
-    if (mode === 'body') Object.defineProperty(document, 'body', {configurable:true, get:()=>null});
-    Object.defineProperty(document, 'execCommand', {configurable:true, value(command) {
-        const node = state.nodes.at(-1);
-        if (command !== 'copy' || document.activeElement !== node || node.value !== text ||
-            node.selectionStart !== 0 || node.selectionEnd !== text.length ||
-            node.style.position !== 'fixed' || node.style.opacity !== '0') throw new Error('native selection operands');
-        state.events.push('exec');
-        if (mode === 'exec') throw new DOMException('controlled exec');
-        if (mode === 'removed') node.remove();
-        return mode !== 'false';
-    }});
-    state.restore = () => {
-        document.createElement=create; body.appendChild=append; window.setTimeout=timeout;
-        if (mode === 'body') delete document.body;
-        if (descriptor) Object.defineProperty(navigator,'clipboard',descriptor); else delete navigator.clipboard;
-        if (execDescriptor) Object.defineProperty(document,'execCommand',execDescriptor); else delete document.execCommand;
-        active=undefined;
-    };
-    active=state;
-}
-export function immediate(mode) {
-    const api = ['api','call','reject','pending'].includes(mode);
-    if (api && active.events[0] !== 'api') throw new Error('API deferred behind local dispatch');
-    if (!api && !['create','getter'].includes(mode) && active.nodes.length !== 1) throw new Error('synchronous fallback deferred');
-}
-export function resolvePending() {active.resolve();}
-export function finish(success) {
-    const state=active;
-    try {
-        if (state.nodes.some(node=>node.isConnected)) throw new Error('temporary selection leaked');
-        if (['api','pending'].includes(state.mode) && state.nodes.length) throw new Error('fallback after API success');
-        const expected = !['false','create','body','append','exec'].includes(state.mode);
-        if (success !== expected) throw new Error('wrong native success result');
-        if (state.timers !== 0) throw new Error('feedback admitted without live control');
-        const expectedEvents = ['api','pending'].includes(state.mode) ? ['api'] :
-            state.mode==='create' ? [] : ['body','append'].includes(state.mode) ? ['create'] :
-            ['call','reject'].includes(state.mode) ? ['api','create','append','exec'] : ['create','append','exec'];
-        if (JSON.stringify(state.events)!==JSON.stringify(expectedEvents)) throw new Error('wrong effect sequence');
-        console.log('PASS clipboard '+state.mode+': '+state.events.join(' -> '));
-    } finally {state.restore();}
-}
-"#)]
-extern "C" {
-    /// Install controlled effects below the native adapter's wrappers.
-    fn begin(mode: &str, text: &str);
-    /// Check synchronous native admission before polling the future.
-    fn immediate(mode: &str);
-    /// Assert resource cleanup and restore every patched native operation.
-    fn finish(success: bool);
-    /// Fulfill the retained native clipboard request after owner release.
-    #[wasm_bindgen(js_name = resolvePending)]
-    fn resolve_pending();
-}
 /// Construct the default adapter on the runner's actual canvas document.
 fn host() -> BrowserAttachmentHost {
     let canvas = web_sys::window()
@@ -111,33 +22,35 @@ fn host() -> BrowserAttachmentHost {
 /// Native API admission precedes dispatch; rejected and absent APIs select fallback.
 #[wasm_bindgen]
 pub async fn browser_clipboard_prefers_api_and_falls_back() {
+    let fixture = Fixture::load().await;
     let host = host();
     for mode in [
         "api", "missing", "method", "getter", "call", "reject", "false",
     ] {
-        begin(mode, "literal 雪😀\n<entry>&");
+        fixture.begin(mode, "literal 雪😀\n<entry>&");
         let work = host.copy_to_clipboard(
             "literal 雪😀\n<entry>&",
             maestro_web::browser::attachment_content::ClipboardMode::Fallback,
         );
-        immediate(mode);
-        finish(work.await);
+        fixture.immediate(mode);
+        fixture.finish(work.await);
     }
 }
 /// Real temporary nodes are disconnected on every reached failure and success.
 #[wasm_bindgen]
 pub async fn browser_clipboard_cleans_every_temporary_textarea() {
+    let fixture = Fixture::load().await;
     let host = host();
     for mode in [
         "create", "body", "append", "exec", "missing", "false", "removed",
     ] {
-        begin(mode, "original 雪😀\ntext");
+        fixture.begin(mode, "original 雪😀\ntext");
         let work = host.copy_to_clipboard(
             "original 雪😀\ntext",
             maestro_web::browser::attachment_content::ClipboardMode::Fallback,
         );
-        immediate(mode);
-        finish(work.await);
+        fixture.immediate(mode);
+        fixture.finish(work.await);
     }
 }
 
@@ -154,6 +67,7 @@ impl Composition {
     /// Measure a literal reading message with one identified control hole.
     fn new() -> Self {
         use maestro_web::browser::attachment_content::{ReadingContent, ReadingRoot};
+
         let mut slots = reading_slots_support::Slots::new();
         let target = slots.root.clone();
         slots.content = std::rc::Rc::new(ReadingContent {
@@ -253,7 +167,7 @@ impl Composition {
 /// Panics when the actual native observations differ from the required behavior.
 #[wasm_bindgen]
 pub async fn copy_link_native_slot_composition_preserves_reading_selection() {
-    use reading_slots_support::{js, snapshot, unchanged};
+    let fixture = Fixture::load().await;
     let mut view = Composition::new();
     let root = view.slots.root();
     assert_eq!(view.rect.size(), egui::vec2(28., 28.));
@@ -288,22 +202,22 @@ pub async fn copy_link_native_slot_composition_preserves_reading_selection() {
     view.slots.clip = egui::Rect::from_min_max(full.center(), full.max);
     view.frame(pointer(full.min, true));
     view.frame(pointer(full.center(), false));
-    begin(
+    fixture.begin(
         "pending",
         "https://example.test/view?leafId=branch&targetId=native+%E9%9B%AA",
     );
     view.slots.clip = egui::Rect::EVERYTHING;
     focus_and_activate(&mut view, &root);
-    immediate("pending");
+    fixture.immediate("pending");
     let host = std::rc::Rc::downgrade(&view.slots.host);
     drop(view);
-    resolve_pending();
+    fixture.resolve_pending();
     // A native frame follows settlement of the ready local microtask queue.
     let settled = js(&JsValue::NULL, "return new Promise(requestAnimationFrame)")
         .dyn_into::<js_sys::Promise>()
         .unwrap();
     wasm_bindgen_futures::JsFuture::from(settled).await.unwrap();
-    finish(true);
+    fixture.finish(true);
     assert!(host.upgrade().is_none());
     assert!(!root.is_connected());
 }
@@ -322,7 +236,6 @@ fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
 
 /// Reveal the actual native slot on toolkit focus, then activate with the keyboard.
 fn focus_and_activate(view: &mut Composition, root: &web_sys::Element) {
-    use reading_slots_support::js;
     js(
         root,
         "window.linkReveal=0;const slot=value.querySelector('.test-slot'); const original=slot.scrollIntoView;slot.scrollIntoView=function(...args){window.linkReveal++;return original.apply(this,args)};return true",
@@ -346,4 +259,47 @@ fn focus_and_activate(view: &mut Composition, root: &web_sys::Element) {
         repeat: false,
         modifiers: egui::Modifiers::NONE,
     }]);
+}
+
+/// Native namespaces retained for one browser test transaction.
+#[derive(Clone)]
+pub struct Fixture {
+    /// Original packaged native namespace.
+    module0: crate::browser_fixture_support::FixtureModule,
+}
+impl Fixture {
+    /// Load each namespace before installing controlled host effects.
+    pub async fn load() -> Self {
+        Self {
+            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
+                module = "/tests/session_links_support/clipboard.js"
+            ))
+            .await
+            .unwrap(),
+        }
+    }
+    /// Install controlled effects below the native adapter's wrappers.
+    pub fn begin(&self, mode: &str, text: &str) {
+        self.module0
+            .call("begin", &js_sys::Array::of2(&mode.into(), &text.into()))
+            .unwrap();
+    }
+    /// Check synchronous native admission before polling the future.
+    pub fn immediate(&self, mode: &str) {
+        self.module0
+            .call("immediate", &js_sys::Array::of1(&mode.into()))
+            .unwrap();
+    }
+    /// Assert resource cleanup and restore every patched native operation.
+    pub fn finish(&self, success: bool) {
+        self.module0
+            .call("finish", &js_sys::Array::of1(&success.into()))
+            .unwrap();
+    }
+    /// Fulfill the retained native clipboard request after owner release.
+    pub fn resolve_pending(&self) {
+        self.module0
+            .call("resolvePending", &js_sys::Array::new())
+            .unwrap();
+    }
 }

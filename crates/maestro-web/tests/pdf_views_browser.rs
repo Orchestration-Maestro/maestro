@@ -44,8 +44,9 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
         assert_eq!(
             js("document.querySelectorAll('.maestro-pdf img').length")
                 .as_f64()
-                .unwrap(),
-            f64::from(count)
+                .unwrap()
+                .to_bits(),
+            f64::from(count).to_bits()
         );
     }
     check(
@@ -568,7 +569,7 @@ fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_
     ));
     assert!(Rc::ptr_eq(
         view.host.downloads.borrow().last().unwrap(),
-        &record
+        record
     ));
     view.host.fail_download.set(false);
     view.overlay(&mut overlay, vec![]);
@@ -703,7 +704,7 @@ fn presentation_phase(
                 .map_err(|e| JsValue::from_str(&e.to_string()))?;
         }
         if phase == "append" {
-            js("document.querySelector('pre').parentElement.remove()");
+            let _ = js("document.querySelector('pre').parentElement.remove()");
         }
     }
     let install = js_sys::Function::new_with_args(

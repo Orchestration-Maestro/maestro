@@ -311,7 +311,7 @@ pub fn rich_header() {
         }
         check("richSDKCode===document.querySelector('.maestro-code')");
         assert!(expanded.get());
-        assert!(surface.context.memory(|m| m.focused()).is_some());
+        assert!(surface.context.memory(egui::Memory::focused).is_some());
         for (key, expected) in [(egui::Key::Space, false), (egui::Key::Enter, true)] {
             for pressed in [true, false] {
                 surface.events = vec![egui::Event::Key {
@@ -365,7 +365,7 @@ pub fn caption_without_pill() {
             "noPillCaption===document.querySelector('.maestro-tool-caption') && getSelection().toString()==='Creating artifact' && document.querySelector('.maestro-artifact-pill')===null",
         );
         assert!(response.rect.height() > 40.);
-        assert!(surface.context.memory(|m| m.focused()).is_some());
+        assert!(surface.context.memory(egui::Memory::focused).is_some());
         for (key, open) in [(egui::Key::Space, false), (egui::Key::Enter, true)] {
             for pressed in [true, false] {
                 surface.events = vec![egui::Event::Key {

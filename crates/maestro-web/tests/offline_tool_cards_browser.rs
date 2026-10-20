@@ -14,7 +14,7 @@ mod tests {
     use wasm_bindgen::prelude::*;
 
     /// Produce a complete card at the public formatter seam.
-    fn card(name: &str, arguments: Value, result: Option<Value>) -> String {
+    fn card(name: &str, arguments: &Value, result: Option<Value>) -> String {
         let entries = result.map_or_else(Vec::new, |message| {
             vec![json!({"type":"message","message":message})]
         });
@@ -39,7 +39,7 @@ mod tests {
         )
         .unwrap();
         crate::expandable_output_browser::tests::disclosures_keep_selection_and_mounted_lifetimes(
-            html,
+            &html,
         );
     }
     /// Decoded images, unwrapped diffs and selectable blank output survive native layout.
@@ -49,14 +49,14 @@ mod tests {
         let image = base64::engine::general_purpose::STANDARD.encode("<svg xmlns='http://www.w3.org/2000/svg' width='100' height='1000'><rect width='100' height='1000' fill='black'/></svg>");
         let read = card(
             "read",
-            json!({"path":"image"}),
+            &json!({"path":"image"}),
             Some(
                 json!({"role":"toolResult","toolCallId":"c","content":[{"type":"image","mimeType":"image/svg+xml","data":image},{"type":"text","text":"one\n\nthree"}]}),
             ),
         );
         let diff = card(
             "edit",
-            json!({"path":"file"}),
+            &json!({"path":"file"}),
             Some(
                 json!({"role":"toolResult","toolCallId":"c","details":{"diff":format!("+{}\n-removed\n context", "wide ".repeat(100))}}),
             ),
@@ -87,25 +87,25 @@ mod tests {
     #[wasm_bindgen]
     pub async fn tool_cards_use_selected_brand_roles_without_changing_custom_html() {
         let result = |error| json!({"role":"toolResult","toolCallId":"c","isError":error,"content":[{"type":"text","text":"output"}]});
-        let pending = card("bash", json!({"command":"pending"}), None);
+        let pending = card("bash", &json!({"command":"pending"}), None);
         let success = card(
             "read",
-            json!({"path":"/home/user/file","offset":2,"limit":3}),
+            &json!({"path":"/home/user/file","offset":2,"limit":3}),
             Some(result(false)),
         );
         let error = card(
             "write",
-            json!({"path":true,"content":17}),
+            &json!({"path":true,"content":17}),
             Some(result(true)),
         );
         let count = card(
             "write",
-            json!({"path":"count", "content":"line\n".repeat(10)}),
+            &json!({"path":"count", "content":"line\n".repeat(10)}),
             None,
         );
         let diff = card(
             "edit",
-            json!({"path":"diff"}),
+            &json!({"path":"diff"}),
             Some(
                 json!({"role":"toolResult","toolCallId":"c","details":{"diff":"+MMMM added\n-MMMM removed\n MMMM context"}}),
             ),

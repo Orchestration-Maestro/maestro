@@ -16,11 +16,11 @@ pub(crate) mod tests {
     pub fn expandable_outputs_keep_selection_and_mounted_lifetimes() {
         let engine = maestro_theme::SyntectHighlighter::new().unwrap();
         let html = format_expandable_output("one\n\nthree", 1, None, &engine);
-        disclosures_keep_selection_and_mounted_lifetimes(html);
+        disclosures_keep_selection_and_mounted_lifetimes(&html);
     }
 
     /// Replay root, selection, live-class and teardown transitions for caller-produced HTML.
-    pub(crate) fn disclosures_keep_selection_and_mounted_lifetimes(html: String) {
+    pub(crate) fn disclosures_keep_selection_and_mounted_lifetimes(html: &str) {
         let mut slots = Slots::new();
         let root = export_mount::mount(&mut slots, format!("{html}{html}"));
         let factory = Rc::clone(&slots.content);

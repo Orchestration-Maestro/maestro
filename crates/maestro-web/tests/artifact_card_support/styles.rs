@@ -114,21 +114,7 @@ async fn card(surface: &mut Surface, presentation: &BrandPresentation<'_>, error
     publish("artifactPaintError", &error.into());
     publish("artifactPaintClip", &JsValue::NULL);
     reading_paint::observe("artifact-roles").await;
-    // Retain focus and native owners while the containing row clips both drawing paths.
-    let at = drawing::glyphs(surface)[1].center();
-    surface.events = crate::attachment_support::click(at);
-    draw(surface, &recipe, &mut state, presentation, None);
-    assert!(surface.context.memory(|m| m.focused()).is_some());
-    let clip = egui::Rect::from_min_max(egui::pos2(12., 0.), egui::pos2(300., 56.));
-    draw(surface, &recipe, &mut state, presentation, Some(clip));
-    draw(surface, &recipe, &mut state, presentation, Some(clip));
-    let outside = egui::Rect::from_min_max(egui::pos2(0., 58.), egui::pos2(600., 400.));
-    assert!(drawing::pixels(surface, outside).iter().all(|p| p[3] == 0));
-    publish(
-        "artifactPaintClip",
-        &js_sys::Array::of4(&12.into(), &0.into(), &300.into(), &56.into()),
-    );
-    reading_paint::observe("artifact-clip").await;
+    clipped_card(surface, presentation, &recipe, &mut state).await;
     drop(state);
     check(
         "document.querySelectorAll('.maestro-artifact-pill,.maestro-diff,.maestro-message-error').length===0",
@@ -186,4 +172,28 @@ fn style(selector: &str, property: &str, role: &str, percent: u8) {
     check(
         "(()=>{const [selector,property,role,percent]=JSON.parse(artifactStyle),n=document.querySelector(selector),p=document.createElement('span');p.style[property]=percent===100?JSON.parse(colors)[role]:`color-mix(in srgb, ${JSON.parse(colors)[role]} ${percent}%, transparent)`;document.body.append(p);const equal=getComputedStyle(n)[property]===getComputedStyle(p)[property];p.remove();return equal})()",
     );
+}
+
+/// Retain focus and native owners while clipping both drawing paths.
+async fn clipped_card(
+    surface: &mut Surface,
+    presentation: &BrandPresentation<'_>,
+    recipe: &ToolRenderResult,
+    state: &mut ToolRenderState,
+) {
+    // Retain focus and native owners while the containing row clips both drawing paths.
+    let at = drawing::glyphs(surface)[1].center();
+    surface.events = crate::attachment_support::click(at);
+    draw(surface, recipe, state, presentation, None);
+    assert!(surface.context.memory(egui::Memory::focused).is_some());
+    let clip = egui::Rect::from_min_max(egui::pos2(12., 0.), egui::pos2(300., 56.));
+    draw(surface, recipe, state, presentation, Some(clip));
+    draw(surface, recipe, state, presentation, Some(clip));
+    let outside = egui::Rect::from_min_max(egui::pos2(0., 58.), egui::pos2(600., 400.));
+    assert!(drawing::pixels(surface, outside).iter().all(|p| p[3] == 0));
+    publish(
+        "artifactPaintClip",
+        &js_sys::Array::of4(&12.into(), &0.into(), &300.into(), &56.into()),
+    );
+    reading_paint::observe("artifact-clip").await;
 }

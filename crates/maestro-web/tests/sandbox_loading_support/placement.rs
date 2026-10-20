@@ -28,13 +28,15 @@ impl ThemeOperations for Pack {
     }
 }
 /// Construct a mounted owner from the selected brand pack.
-pub fn adapter() -> SandboxIframe {
+#[must_use]
+pub(crate) fn adapter() -> SandboxIframe {
     adapter_pack(false, BrandMode::Dark).0
 }
 /// Materialize a second same-format selection using only existing approved pack values.
-pub fn adapter_pack(alternate: bool, mode: BrandMode) -> (SandboxIframe, String) {
+#[must_use]
+pub(crate) fn adapter_pack(alternate: bool, mode: BrandMode) -> (SandboxIframe, String) {
     std::panic::set_hook(Box::new(|info| {
-        web_sys::console::error_1(&info.to_string().into())
+        web_sys::console::error_1(&info.to_string().into());
     }));
     let mut json: serde_json::Value =
         serde_json::from_str(include_str!("../../../../assets/brand/brand.json")).unwrap();

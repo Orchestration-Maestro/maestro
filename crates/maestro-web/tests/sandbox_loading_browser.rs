@@ -9,8 +9,9 @@ use sandbox_loading_support::*;
 /// Native values retain their stringify semantics at the public preparation boundary.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn prepared_documents_keep_native_data_and_failures() {
+    let fixture = Fixture::load().await;
     let sandbox = adapter();
-    for row in document_cases() {
+    for row in document_cases(&fixture) {
         let prepared =
             sandbox.prepare_html_document(&row.id, &row.code, &row.providers, Some(row.options));
         if let Some(category) = js_sys::Reflect::get(&row.expected, &"error_category".into())
@@ -20,28 +21,32 @@ pub async fn prepared_documents_keep_native_data_and_failures() {
             let error = prepared.unwrap_err();
             assert_eq!(error.name.as_deref().unwrap_or("Error"), category);
         } else {
-            wasm_bindgen_futures::JsFuture::from(observe_document(
+            wasm_bindgen_futures::JsFuture::from(fixture.observe_document(
                 &row.name,
                 &prepared.unwrap(),
-                row.expected,
+                &row.expected,
             ))
             .await
             .unwrap();
         }
     }
     sandbox.remove().unwrap();
-    finish();
+    fixture.finish();
 }
 
 /// Download preparation keeps provider helpers without installing online routes.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn standalone_runtime_keeps_helpers_without_parent_messaging() {
+    let fixture = Fixture::load().await;
     let sandbox = adapter();
     let html = sandbox
         .prepare_html_document(
             "offline",
             "<body>offline</body>",
-            &[provider("function(id){window.localHelper=()=>id;}")],
+            &[provider(
+                &fixture,
+                "function(id){window.localHelper=()=>id;}",
+            )],
             Some(
                 maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
                     is_html_artifact: true,
@@ -50,16 +55,17 @@ pub async fn standalone_runtime_keeps_helpers_without_parent_messaging() {
             ),
         )
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(standalone(&html))
+    wasm_bindgen_futures::JsFuture::from(fixture.standalone(&html))
         .await
         .unwrap();
     sandbox.remove().unwrap();
-    finish();
+    fixture.finish();
 }
 
 /// Completion waits for callbacks without replacing a user's result with callback failure.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn repl_completion_callbacks_preserve_order_and_errors() {
+    let fixture = Fixture::load().await;
     let sandbox = adapter();
     for row in fixture_group("callbacks_") {
         let code = if row.input["outcome"] == "success" {
@@ -70,7 +76,7 @@ pub async fn repl_completion_callbacks_preserve_order_and_errors() {
         let html = sandbox
             .prepare_html_document("callbacks", code, &[], None)
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(callbacks(
+        wasm_bindgen_futures::JsFuture::from(fixture.callbacks(
             &html,
             &row.input.to_string(),
             &row.output.to_string(),
@@ -79,27 +85,34 @@ pub async fn repl_completion_callbacks_preserve_order_and_errors() {
         .unwrap();
     }
     sandbox.remove().unwrap();
-    finish();
+    fixture.finish();
 }
 
 /// The actual mounted frame runs the injected console before supplied runtimes.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn srcdoc_load_injects_console_before_supplied_providers() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
-    arm("loaded");
+    fixture.arm("loaded");
     sandbox
         .load_content(
             "srcdoc",
-            &content(),
+            &fixture.content(),
             vec![
-                provider("function(){window.firstProvider=typeof window.complete}"),
-                provider("function(){window.secondProvider=window.firstProvider}"),
+                provider(
+                    &fixture,
+                    "function(){window.firstProvider=typeof window.complete}",
+                ),
+                provider(
+                    &fixture,
+                    "function(){window.secondProvider=window.firstProvider}",
+                ),
             ],
-            vec![maestro_app::SharedHandle::new(Consumer)],
+            vec![maestro_app::SharedHandle::new(Consumer(fixture.clone()))],
         )
         .unwrap();
-    let loaded = wasm_bindgen_futures::JsFuture::from(waited())
+    let loaded = wasm_bindgen_futures::JsFuture::from(fixture.waited())
         .await
         .unwrap();
     for name in ["first", "second"] {
@@ -111,76 +124,79 @@ pub async fn srcdoc_load_injects_console_before_supplied_providers() {
             Some("function")
         );
     }
-    wasm_bindgen_futures::JsFuture::from(route_check("srcdoc"))
+    wasm_bindgen_futures::JsFuture::from(fixture.route_check("srcdoc"))
         .await
         .unwrap();
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// Reload retains one native listener and explicit close revokes the actual callback.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn external_links_dispatch_once_across_reload_and_close() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
     for _ in 0..2 {
-        arm("loaded");
+        fixture.arm("loaded");
         sandbox
-            .load_content("links", &content(), vec![], vec![])
+            .load_content("links", &fixture.content(), vec![], vec![])
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(waited())
+        wasm_bindgen_futures::JsFuture::from(fixture.waited())
             .await
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(route_check("click"))
+        wasm_bindgen_futures::JsFuture::from(fixture.route_check("click"))
             .await
             .unwrap();
     }
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// Current frame identity is read live after replacement and cannot be forged by another window.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn unrelated_or_stale_frames_cannot_open_urls() {
-    begin();
-    fault("sibling");
+    let fixture = Fixture::load().await;
+    fixture.begin();
+    fixture.fault("sibling");
     let sandbox = adapter();
     for id in ["old", "new"] {
-        arm("loaded");
+        fixture.arm("loaded");
         sandbox
-            .load_content(id, &content(), vec![], vec![])
+            .load_content(id, &fixture.content(), vec![], vec![])
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(waited())
+        wasm_bindgen_futures::JsFuture::from(fixture.waited())
             .await
             .unwrap();
-        dispatch("remember", "current");
+        fixture.dispatch("remember", "current");
     }
-    wasm_bindgen_futures::JsFuture::from(route_check("unrelated"))
+    wasm_bindgen_futures::JsFuture::from(fixture.route_check("unrelated"))
         .await
         .unwrap();
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// The URL callback is read again on reload; only actual readiness forwards the document.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn url_load_uses_live_configuration_and_ready_handshake() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
     for mode in ["first", "replacement"] {
-        let expected = url(mode);
+        let expected = fixture.url(mode);
         sandbox
             .sandbox_url_provider
             .replace(Some(maestro_app::SharedHandle::new(move || {
                 Ok(expected.clone())
             })));
-        arm("url-mounted");
+        fixture.arm("url-mounted");
         sandbox
             .load_content(
                 &format!("url-{mode}"),
@@ -189,7 +205,7 @@ pub async fn url_load_uses_live_configuration_and_ready_handshake() {
                 vec![],
             )
             .unwrap();
-        let mounted = wasm_bindgen_futures::JsFuture::from(waited())
+        let mounted = wasm_bindgen_futures::JsFuture::from(fixture.waited())
             .await
             .unwrap();
         assert_eq!(
@@ -199,87 +215,96 @@ pub async fn url_load_uses_live_configuration_and_ready_handshake() {
                 .as_deref(),
             Some(mode)
         );
-        wasm_bindgen_futures::JsFuture::from(route_check("ready"))
+        wasm_bindgen_futures::JsFuture::from(fixture.route_check("ready"))
             .await
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(route_check("reset-opens"))
+        wasm_bindgen_futures::JsFuture::from(fixture.route_check("reset-opens"))
             .await
             .unwrap();
     }
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// Bootstrap errors use the registered consumer route without admitting a parent-origin forgery.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn url_error_reaches_registered_consumers_without_source_bypass() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
     sandbox
         .sandbox_url_provider
-        .replace(Some(maestro_app::SharedHandle::new(|| Ok(url("error")))));
-    arm("url-mounted");
+        .replace(Some(maestro_app::SharedHandle::new({
+            let fixture = fixture.clone();
+            move || Ok(fixture.url("error"))
+        })));
+    fixture.arm("url-mounted");
     sandbox
         .load_content(
             "url-error",
             "<body>url branch</body>",
-            vec![provider("function(){}")],
-            vec![maestro_app::SharedHandle::new(Consumer)],
+            vec![provider(&fixture, "function(){}")],
+            vec![maestro_app::SharedHandle::new(Consumer(fixture.clone()))],
         )
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(waited())
+    wasm_bindgen_futures::JsFuture::from(fixture.waited())
         .await
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(route_check("error"))
+    wasm_bindgen_futures::JsFuture::from(fixture.route_check("error"))
         .await
         .unwrap();
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// Tabs are used only for URL loading, with ordinary window fallback otherwise.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn extension_links_use_tabs_then_window_fallback() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
-    fault("tabs");
+    fixture.fault("tabs");
     sandbox
         .sandbox_url_provider
-        .replace(Some(maestro_app::SharedHandle::new(|| Ok(url("tabs")))));
-    arm("url-mounted");
+        .replace(Some(maestro_app::SharedHandle::new({
+            let fixture = fixture.clone();
+            move || Ok(fixture.url("tabs"))
+        })));
+    fixture.arm("url-mounted");
     sandbox
         .load_content("tabs", "<body>url branch</body>", vec![], vec![])
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(waited())
+    wasm_bindgen_futures::JsFuture::from(fixture.waited())
         .await
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(route_check("tabs"))
+    wasm_bindgen_futures::JsFuture::from(fixture.route_check("tabs"))
         .await
         .unwrap();
     sandbox.sandbox_url_provider.replace(None);
-    arm("loaded");
+    fixture.arm("loaded");
     sandbox
-        .load_content("tabs-srcdoc", &content(), vec![], vec![])
+        .load_content("tabs-srcdoc", &fixture.content(), vec![], vec![])
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(waited())
+    wasm_bindgen_futures::JsFuture::from(fixture.waited())
         .await
         .unwrap();
-    wasm_bindgen_futures::JsFuture::from(route_check("click"))
+    wasm_bindgen_futures::JsFuture::from(fixture.route_check("click"))
         .await
         .unwrap();
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// Navigation decisions use real resolved anchors and form actions, including nested targets.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn navigation_intercepts_resolved_links_and_forms() {
+    let fixture = Fixture::load().await;
     let sandbox = adapter();
     let html = sandbox
         .prepare_html_document(
@@ -295,7 +320,7 @@ pub async fn navigation_intercepts_resolved_links_and_forms() {
         )
         .unwrap();
     for row in fixture_group("navigation_") {
-        wasm_bindgen_futures::JsFuture::from(navigation(
+        wasm_bindgen_futures::JsFuture::from(fixture.navigation(
             &html,
             &row.input.to_string(),
             &row.output.to_string(),
@@ -304,13 +329,14 @@ pub async fn navigation_intercepts_resolved_links_and_forms() {
         .unwrap();
     }
     sandbox.remove().unwrap();
-    finish();
+    fixture.finish();
 }
 
 /// Native parser recovery and reached parser failures select the exact fallback text.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn validation_uses_native_parser_and_fallback_messages() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
     for (html, mode, expected) in [
         ("<html><body>valid</body></html>", "", ""),
@@ -324,25 +350,26 @@ pub async fn validation_uses_native_parser_and_fallback_messages() {
         ("x", "parse-throw", "controlled parse failure"),
         ("x", "parse-no-message", "Unknown validation error"),
     ] {
-        fault(mode);
+        fixture.fault(mode);
         sandbox
             .load_content("validation", html, vec![], vec![])
             .unwrap();
-        fault("");
-        wasm_bindgen_futures::JsFuture::from(validation_check(expected, ""))
+        fixture.fault("");
+        wasm_bindgen_futures::JsFuture::from(fixture.validation_check(expected, ""))
             .await
             .unwrap();
     }
     sandbox.remove().unwrap();
-    closed(0);
-    end();
-    finish();
+    fixture.closed(0);
+    fixture.end();
+    fixture.finish();
 }
 
 /// The literal error remains inert and uses each independently selected pack and mode.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn validation_document_keeps_literal_text_and_selected_pack() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let literal = "literal <tag> & <script>window.executed=true</script>";
     for alternate in [false, true] {
         for light in [false, true] {
@@ -358,108 +385,111 @@ pub async fn validation_document_keeps_literal_text_and_selected_pack() {
                 .load_content("replace", "<body>previous</body>", vec![], vec![])
                 .unwrap();
             sandbox.load_content("invalid", "<parsererror>literal &lt;tag&gt; &amp; &lt;script&gt;window.executed=true&lt;/script&gt;</parsererror>", vec![], vec![]).unwrap();
-            wasm_bindgen_futures::JsFuture::from(validation_check(literal, &css))
+            wasm_bindgen_futures::JsFuture::from(fixture.validation_check(literal, &css))
                 .await
                 .unwrap();
             sandbox.remove().unwrap();
-            closed(0);
-            finish();
+            fixture.closed(0);
+            fixture.finish();
         }
     }
-    end();
+    fixture.end();
 }
 
 /// Every URL settlement phase and final drop revoke the same native registration.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn close_removes_ready_error_and_external_routes() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     for phase in ["pending", "ready", "error", "invalid", "drop", "retry"] {
         let sandbox = adapter();
         sandbox
             .sandbox_url_provider
-            .replace(Some(maestro_app::SharedHandle::new(|| Ok(url("close")))));
+            .replace(Some(maestro_app::SharedHandle::new({
+                let fixture = fixture.clone();
+                move || Ok(fixture.url("close"))
+            })));
         if phase == "invalid" {
             sandbox
                 .load_content("closing", "<parsererror>bad</parsererror>", vec![], vec![])
                 .unwrap();
-            wasm_bindgen_futures::JsFuture::from(validation_check("bad", ""))
+            wasm_bindgen_futures::JsFuture::from(fixture.validation_check("bad", ""))
                 .await
                 .unwrap();
         } else {
-            arm("url-mounted");
+            fixture.arm("url-mounted");
             sandbox
                 .load_content("closing", "<body>closing</body>", vec![], vec![])
                 .unwrap();
-            wasm_bindgen_futures::JsFuture::from(waited())
+            wasm_bindgen_futures::JsFuture::from(fixture.waited())
                 .await
                 .unwrap();
             if phase == "ready" || phase == "error" {
-                dispatch(
-                    if phase == "ready" {
-                        "sandbox-ready"
-                    } else {
-                        "sandbox-error"
-                    },
-                    "current",
-                );
+                let event = match phase {
+                    "ready" => "sandbox-ready",
+                    _ => "sandbox-error",
+                };
+                fixture.dispatch(event, "current");
             }
         }
         if phase == "retry" {
-            fault("detach");
+            fixture.fault("detach");
             assert!(sandbox.remove().is_err());
-            closed(2);
-            fault("");
+            fixture.closed(2);
+            fixture.fault("");
         }
         if phase != "drop" {
             sandbox.remove().unwrap();
             sandbox.remove().unwrap();
         }
         drop(sandbox);
-        closed(0);
-        finish();
+        fixture.closed(0);
+        fixture.finish();
     }
-    end();
+    fixture.end();
 }
 
 /// Closing either registered sibling leaves the other's router and opener live.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn removing_one_sandbox_preserves_its_sibling() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     for first in [0, 1] {
         let mut sandboxes = [adapter(), adapter()];
         for (index, sandbox) in sandboxes.iter_mut().enumerate() {
-            arm("loaded");
+            fixture.arm("loaded");
             sandbox
                 .load_content(
                     &format!("sibling-{index}"),
-                    &content(),
+                    &fixture.content(),
                     vec![],
-                    vec![maestro_app::SharedHandle::new(Consumer)],
+                    vec![maestro_app::SharedHandle::new(Consumer(fixture.clone()))],
                 )
                 .unwrap();
-            wasm_bindgen_futures::JsFuture::from(waited())
+            wasm_bindgen_futures::JsFuture::from(fixture.waited())
                 .await
                 .unwrap();
         }
         sandboxes[first].remove().unwrap();
-        closed(2);
-        wasm_bindgen_futures::JsFuture::from(route_check("click"))
+        fixture.closed(2);
+        wasm_bindgen_futures::JsFuture::from(fixture.route_check("click"))
             .await
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(route_check("sibling-probe"))
+        wasm_bindgen_futures::JsFuture::from(fixture.route_check("sibling-probe"))
             .await
             .unwrap();
         sandboxes[1 - first].remove().unwrap();
-        closed(0);
-        finish();
+        fixture.closed(0);
+        fixture.finish();
     }
-    end();
+    fixture.end();
 }
 
 /// Reached native/provider failures release acquired resources and permit an ordinary next load.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn failed_load_releases_native_registration_and_frame() {
-    begin();
+    let fixture = Fixture::load().await;
+    fixture.begin();
     let sandbox = adapter();
     for mode in [
         "url",
@@ -471,26 +501,8 @@ pub async fn failed_load_releases_native_registration_and_frame() {
         "create",
         "append",
     ] {
-        fault(mode);
-        let providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> =
-            if mode == "data" || mode == "runtime" {
-                vec![maestro_app::SharedHandle::new(Provider {
-                    data: js_sys::Object::new().into(),
-                    runtime: "function(){}".into(),
-                    failure: Some(mode.into()),
-                })]
-            } else if mode == "serializer" {
-                let data = js_sys::Object::new();
-                js_sys::Reflect::set(&data, &"value".into(), &wasm_bindgen::JsValue::UNDEFINED)
-                    .unwrap();
-                vec![maestro_app::SharedHandle::new(Provider {
-                    data: data.into(),
-                    runtime: "function(){}".into(),
-                    failure: None,
-                })]
-            } else {
-                vec![]
-            };
+        fixture.fault(mode);
+        let providers = failing_providers(&fixture, mode);
         sandbox
             .sandbox_url_provider
             .replace((mode == "url").then(|| {
@@ -508,23 +520,23 @@ pub async fn failed_load_releases_native_registration_and_frame() {
         if mode == "data" || mode == "runtime" {
             assert_eq!(error.message, "provider failed");
         }
-        fault("");
-        wasm_bindgen_futures::JsFuture::from(route_check("empty"))
+        fixture.fault("");
+        wasm_bindgen_futures::JsFuture::from(fixture.route_check("empty"))
             .await
             .unwrap();
         sandbox.sandbox_url_provider.replace(None);
-        arm("loaded");
+        fixture.arm("loaded");
         sandbox
-            .load_content("recovered", &content(), vec![], vec![])
+            .load_content("recovered", &fixture.content(), vec![], vec![])
             .unwrap();
-        wasm_bindgen_futures::JsFuture::from(waited())
+        wasm_bindgen_futures::JsFuture::from(fixture.waited())
             .await
             .unwrap();
         sandbox.remove().unwrap();
-        closed(0);
+        fixture.closed(0);
     }
-    end();
-    finish();
+    fixture.end();
+    fixture.finish();
 }
 
 /// Inline programs keep exact text, head semantics, policies and module ordering.
@@ -549,4 +561,30 @@ pub async fn html_artifacts_keep_head_policies_at_each_insertion_point() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn marker_looking_payloads_survive_preparation_and_completion() {
     sandbox_loading_support::programs::marker_witness().await;
+}
+
+/// Prepare only the provider failure selected by the existing native fixture.
+fn failing_providers(
+    fixture: &Fixture,
+    mode: &str,
+) -> Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> {
+    if mode == "data" || mode == "runtime" {
+        vec![maestro_app::SharedHandle::new(Provider {
+            fixture: fixture.clone(),
+            data: js_sys::Object::new().into(),
+            runtime: "function(){}".into(),
+            failure: Some(mode.into()),
+        })]
+    } else if mode == "serializer" {
+        let data = js_sys::Object::new();
+        js_sys::Reflect::set(&data, &"value".into(), &wasm_bindgen::JsValue::UNDEFINED).unwrap();
+        vec![maestro_app::SharedHandle::new(Provider {
+            fixture: fixture.clone(),
+            data: data.into(),
+            runtime: "function(){}".into(),
+            failure: None,
+        })]
+    } else {
+        vec![]
+    }
 }

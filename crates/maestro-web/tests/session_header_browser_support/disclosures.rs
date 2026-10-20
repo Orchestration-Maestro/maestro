@@ -1,6 +1,7 @@
 //! Public native disclosure interactions and mounted lifetime.
 use super::js;
 use crate::session_header_browser::Header;
+use base64::Engine as _;
 use wasm_bindgen::prelude::*;
 
 fn header() -> Header {
@@ -86,10 +87,10 @@ pub fn header_expansion_is_independent_and_selection_safe() {
 /// Panics if native computed styles differ from the header contract.
 #[wasm_bindgen]
 pub async fn header_disclosure_styles_paint_native_hierarchy() {
-    let mut _header = header();
-    let following = _header.draw(egui::vec2(600., 2000.));
+    let mut live_header = header();
+    let following = live_header.draw(egui::vec2(600., 2000.));
     let root = root();
-    let spacing = _header
+    let spacing = live_header
         .pack
         .presentation(maestro_theme::BrandMode::Dark)
         .unwrap()
@@ -123,7 +124,7 @@ pub async fn header_disclosure_styles_paint_native_hierarchy() {
         .unwrap(),
         "\"[hide parameters]\""
     );
-    drop(_header);
+    drop(live_header);
     style_corpus().await;
 }
 
@@ -232,7 +233,6 @@ fn factory_for(
     let mut state = maestro_web::export_html::template::HeaderState::new(host.clone());
     let pack =
         maestro_theme::load_brand_pack("brand.json", &crate::session_header_browser::Pack).unwrap();
-    use base64::Engine as _;
     let doc = crate::session_header_browser::load_document(
         &base64::engine::general_purpose::STANDARD.encode(data.to_string()),
         "",
@@ -248,8 +248,8 @@ fn factory_for(
     )
     .0
     .unwrap();
-    let factory = std::rc::Rc::clone(&host.admissions.borrow()[0]);
-    factory
+
+    std::rc::Rc::clone(&host.admissions.borrow()[0])
 }
 
 /// Root removal revokes callbacks even with a surviving SDK factory alias.
@@ -419,32 +419,7 @@ async fn style_corpus() {
             let presentation = slots.pack.presentation(mode).unwrap();
             let roles = serde_json::json!({"text":presentation.colors["text"],"muted":presentation.colors["muted"],"accent":presentation.colors["accent"],"warning":presentation.colors["warning"],"border":presentation.colors["border"]});
             assert!(js(&root,&format!("const roles={roles};const color=k=>{{const e=document.createElement('span');e.style.color=roles[k];return e.style.color}};return [['.system-prompt-header','accent'],['.tools-header','accent'],['.tool-item-name','text'],['.tool-param-type','muted'],['.tool-param-required','warning']].every(([s,k])=>[...value.querySelectorAll(s)].every(e=>getComputedStyle(e).color===color(k))) && [...value.querySelectorAll('.tool-param-type,.tool-params-hint')].every(e=>getComputedStyle(e).fontStyle==='italic') && [...value.querySelectorAll('.tool-params-content')].every(e=>getComputedStyle(e).borderLeftColor===color('border'))")).as_bool().unwrap());
-            if ["canonical-properties", "expansions"]
-                .iter()
-                .any(|name| row["name"] == *name)
-            {
-                let request = js(
-                    &root,
-                    &format!(
-                        "if(typeof window.captureHeader==='function')return window.captureHeader({:?})",
-                        format!(
-                            "{}-{}-{}",
-                            pack,
-                            if matches!(mode, maestro_theme::BrandMode::Dark) {
-                                "dark"
-                            } else {
-                                "light"
-                            },
-                            row["name"].as_str().unwrap()
-                        )
-                    ),
-                );
-                if request.is_instance_of::<js_sys::Promise>() {
-                    wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(request))
-                        .await
-                        .unwrap();
-                }
-            }
+            capture_style(&root, pack, mode, row).await;
             count += 1;
         }
         assert_eq!(count, 80);
@@ -469,4 +444,34 @@ fn rendered_whitespace(root: &web_sys::Element, name: &serde_json::Value) {
         ),
     );
     assert_eq!(failed.as_string().as_deref(), Some(""), "{name}");
+}
+
+/// Capture only the corpus rows with painted native hierarchy observations.
+async fn capture_style(
+    root: &web_sys::Element,
+    pack: &str,
+    mode: maestro_theme::BrandMode,
+    row: &serde_json::Value,
+) {
+    if ["canonical-properties", "expansions"]
+        .iter()
+        .any(|name| row["name"] == *name)
+    {
+        let mode_name = match mode {
+            maestro_theme::BrandMode::Dark => "dark",
+            maestro_theme::BrandMode::Light => "light",
+        };
+        let request = js(
+            root,
+            &format!(
+                "if(typeof window.captureHeader==='function')return window.captureHeader({:?})",
+                format!("{}-{}-{}", pack, mode_name, row["name"].as_str().unwrap())
+            ),
+        );
+        if request.is_instance_of::<js_sys::Promise>() {
+            wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(request))
+                .await
+                .unwrap();
+        }
+    }
 }

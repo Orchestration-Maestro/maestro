@@ -78,11 +78,10 @@ pub fn artifact_panel_browser_switches_keep_native_roots() {
     let pos = output
         .shapes
         .iter()
-        .filter_map(|shape| match &shape.shape {
+        .find_map(|shape| match &shape.shape {
             egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
             _ => None,
         })
-        .next()
         .unwrap();
     view.draw(vec![
         egui::Event::PointerMoved(pos),

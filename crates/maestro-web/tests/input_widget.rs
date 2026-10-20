@@ -153,7 +153,10 @@ fn input_defaults_keep_native_text_and_medium_size() {
     let context = egui::Context::default();
     let pack = maestro_theme::load_brand_pack(
         concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
+        #[cfg(not(target_arch = "wasm32"))]
         &maestro_theme::theme::NativeThemeOperations,
+        #[cfg(target_arch = "wasm32")]
+        &crate::support::brand::Pack,
     )
     .unwrap();
     let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
@@ -470,7 +473,10 @@ fn input_styles_use_caller_tokens_without_replacing_layout() {
         let mut frame = attachment_support::Frame {
             pack: maestro_theme::load_brand_pack(
                 &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
+                #[cfg(not(target_arch = "wasm32"))]
                 &maestro_theme::theme::NativeThemeOperations,
+                #[cfg(target_arch = "wasm32")]
+                &crate::support::brand::Pack,
             )
             .unwrap(),
             mode,

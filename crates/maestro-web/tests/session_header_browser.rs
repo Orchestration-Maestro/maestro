@@ -449,86 +449,9 @@ pub fn header_clamped_viewports_keep_controls_in_current_slots() {
             .unwrap(),
         "value.style.width='1000px'; value.style.height='450px'",
     );
-    let slots = Slots::new();
-    for sizes in [
-        Slots::sizes([(40., 20.), (70., 30.), (100., 40.)]),
-        Slots::sizes([(140., 50.), (170., 60.), (200., 70.)]),
-    ] {
-        for height in [0., 1., 40., 600.] {
-            let layout = slots.publish(egui::vec2(300., height), &sizes);
-            let wrapper = slots.wrapper().get_bounding_client_rect();
-            for ((id, expected), (_, element)) in layout
-                .controls
-                .iter()
-                .zip(&slots.root.borrow().as_ref().unwrap().slots)
-            {
-                assert!(sizes.iter().any(|(slot, _)| slot == id));
-                let actual = element.get_bounding_client_rect();
-                let local = egui::Rect::from_min_size(
-                    egui::pos2(
-                        ((actual.x() - wrapper.x()) / 1.25).to_f32().unwrap(),
-                        ((actual.y() - wrapper.y()) / 0.75).to_f32().unwrap(),
-                    ),
-                    egui::vec2(
-                        (actual.width() / 1.25).to_f32().unwrap(),
-                        (actual.height() / 0.75).to_f32().unwrap(),
-                    ),
-                );
-                assert!(
-                    (expected.min - local.min).length() < 0.1
-                        && (expected.size() - local.size()).length() < 0.1
-                );
-            }
-        }
-    }
-    drop(slots);
+    clamped_slots();
     let mut header = Header::new();
-    for height in [0., 1., 40., 600.] {
-        header.draw(egui::vec2(300., height));
-        let slots = native_controls();
-        let wrapper = panel()
-            .parent_element()
-            .unwrap()
-            .parent_element()
-            .unwrap()
-            .get_bounding_client_rect();
-        let viewport = egui::Rect::from_min_size(
-            egui::pos2(
-                (wrapper.x() / 1.25).to_f32().unwrap(),
-                (wrapper.y() / 0.75).to_f32().unwrap(),
-            ),
-            egui::vec2(
-                (wrapper.width() / 1.25).to_f32().unwrap(),
-                (wrapper.height() / 0.75).to_f32().unwrap(),
-            ),
-        );
-        for (slot, label) in slots
-            .iter()
-            .zip(["Toggle thinking", "Toggle tools", "↓ JSONL"])
-        {
-            let visible = slot.intersect(viewport);
-            let text = header.shapes.iter().find(
-                |shape| matches!(&shape.shape, egui::Shape::Text(t) if t.galley.text()==label),
-            );
-            assert_eq!(text.is_some(), visible.is_positive());
-            if let Some(text) = text {
-                assert!(
-                    (text.clip_rect.min - visible.min).length() < 0.1
-                        && (text.clip_rect.max - visible.max).length() < 0.1
-                );
-            }
-            if !visible.is_positive() {
-                click_header(&mut header, slot.center(), egui::vec2(300., height));
-                assert!(header.actions.is_empty());
-            }
-        }
-        click_header(
-            &mut header,
-            egui::pos2(290., 590.),
-            egui::vec2(300., height),
-        );
-        assert!(header.actions.is_empty());
-    }
+    clipped_header_controls(&mut header);
     header.draw(egui::vec2(300., 40.));
     let before = native_controls();
     js(&panel(), "value.parentElement.parentElement.scrollTop=90.4");
@@ -587,8 +510,8 @@ fn owned_factory_survives_document() {
         .0
         .unwrap();
         drop(doc);
-        let retained = Rc::clone(&host.admissions.borrow()[0]);
-        retained
+
+        Rc::clone(&host.admissions.borrow()[0])
     };
     let document = web_sys::window().unwrap().document().unwrap();
     let root = (factory.mount)(&document).unwrap();
@@ -604,7 +527,7 @@ fn owned_factory_survives_document() {
 #[wasm_bindgen]
 pub fn reading_geometry_accepts_second_realm_rectangle() {
     std::panic::set_hook(Box::new(|info| {
-        web_sys::console::error_1(&info.to_string().into())
+        web_sys::console::error_1(&info.to_string().into());
     }));
     let slots = Slots::new();
     let document = web_sys::window().unwrap().document().unwrap();
@@ -652,13 +575,24 @@ pub fn reading_frame_repaint_preserves_single_scroller_and_native_state() {
     unchanged(&saved);
     slots.publish(egui::vec2(300., 600.), &sizes);
     assert_eq!(
-        slots.wrapper().get_bounding_client_rect().height(),
-        slots.frame().get_bounding_client_rect().height()
+        slots
+            .wrapper()
+            .get_bounding_client_rect()
+            .height()
+            .to_bits(),
+        slots.frame().get_bounding_client_rect().height().to_bits()
     );
     let unbounded = slots.publish(egui::vec2(260., f32::INFINITY), &sizes);
     assert!(unbounded.height > 40.);
     slots.publish(egui::vec2(300., 0.), &sizes);
-    assert_eq!(slots.wrapper().get_bounding_client_rect().height(), 0.);
+    assert_eq!(
+        slots
+            .wrapper()
+            .get_bounding_client_rect()
+            .height()
+            .to_bits(),
+        0_f64.to_bits()
+    );
     let root = slots.root();
     let frame = slots.frame();
     let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -687,13 +621,7 @@ pub fn reading_frame_transitions_restore_both_nodes_after_failure() {
     reading_input_transition_keeps_caller_class_and_native_events();
     for route in [Route::Retained, Route::Replacement] {
         for node in ["frame", "viewport", "slot0", "slot1", "slot2"] {
-            for moment in ["before", "after"] {
-                for phase in ["", "publish-"] {
-                    let kind = format!("{phase}{node}-{moment}");
-                    slot_failure(route, &kind, false);
-                    slot_failure(route, &kind, true);
-                }
-            }
+            slot_failure_moments(route, node);
         }
         slot_failure(route, "readback-axis", true);
     }
@@ -860,4 +788,98 @@ fn reading_input_transition_keeps_caller_class_and_native_events() {
     assert!(reference.borrow().is_none());
     js(&input, "value.dispatchEvent(new Event('input'))");
     assert_eq!(calls.get(), 1);
+}
+
+/// Exercise every before/after and publication boundary for one retained node.
+fn slot_failure_moments(route: Route, node: &str) {
+    for moment in ["before", "after"] {
+        for phase in ["", "publish-"] {
+            let kind = format!("{phase}{node}-{moment}");
+            slot_failure(route, &kind, false);
+            slot_failure(route, &kind, true);
+        }
+    }
+}
+
+/// Compare every bounded slot with native placement under unequal axis scales.
+fn clamped_slots() {
+    let slots = Slots::new();
+    for sizes in [
+        Slots::sizes([(40., 20.), (70., 30.), (100., 40.)]),
+        Slots::sizes([(140., 50.), (170., 60.), (200., 70.)]),
+    ] {
+        for height in [0., 1., 40., 600.] {
+            let layout = slots.publish(egui::vec2(300., height), &sizes);
+            let wrapper = slots.wrapper().get_bounding_client_rect();
+            for ((id, expected), (_, element)) in layout
+                .controls
+                .iter()
+                .zip(&slots.root.borrow().as_ref().unwrap().slots)
+            {
+                assert!(sizes.iter().any(|(slot, _)| slot == id));
+                let actual = element.get_bounding_client_rect();
+                let local = egui::Rect::from_min_size(
+                    egui::pos2(
+                        ((actual.x() - wrapper.x()) / 1.25).to_f32().unwrap(),
+                        ((actual.y() - wrapper.y()) / 0.75).to_f32().unwrap(),
+                    ),
+                    egui::vec2(
+                        (actual.width() / 1.25).to_f32().unwrap(),
+                        (actual.height() / 0.75).to_f32().unwrap(),
+                    ),
+                );
+                assert!(
+                    (expected.min - local.min).length() < 0.1
+                        && (expected.size() - local.size()).length() < 0.1
+                );
+            }
+        }
+    }
+    drop(slots);
+}
+
+/// Compare native header slots and their clipped painted controls at every height.
+fn clipped_header_controls(header: &mut Header) {
+    for height in [0., 1., 40., 600.] {
+        header.draw(egui::vec2(300., height));
+        let slots = native_controls();
+        let wrapper = panel()
+            .parent_element()
+            .unwrap()
+            .parent_element()
+            .unwrap()
+            .get_bounding_client_rect();
+        let viewport = egui::Rect::from_min_size(
+            egui::pos2(
+                (wrapper.x() / 1.25).to_f32().unwrap(),
+                (wrapper.y() / 0.75).to_f32().unwrap(),
+            ),
+            egui::vec2(
+                (wrapper.width() / 1.25).to_f32().unwrap(),
+                (wrapper.height() / 0.75).to_f32().unwrap(),
+            ),
+        );
+        for (slot, label) in slots
+            .iter()
+            .zip(["Toggle thinking", "Toggle tools", "↓ JSONL"])
+        {
+            let visible = slot.intersect(viewport);
+            let text = header.shapes.iter().find(
+                |shape| matches!(&shape.shape, egui::Shape::Text(t) if t.galley.text()==label),
+            );
+            assert_eq!(text.is_some(), visible.is_positive());
+            if let Some(text) = text {
+                assert!(
+                    (text.clip_rect.min - visible.min).length() < 0.1
+                        && (text.clip_rect.max - visible.max).length() < 0.1
+                );
+            }
+            if !visible.is_positive() {
+                click_header(header, slot.center(), egui::vec2(300., height));
+                assert!(header.actions.is_empty());
+            }
+        }
+        click_header(header, egui::pos2(290., 590.), egui::vec2(300., height));
+        assert!(header.actions.is_empty());
+    }
 }

@@ -473,7 +473,10 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
                 "{}/../../assets/brand/{filename}",
                 env!("CARGO_MANIFEST_DIR")
             ),
+            #[cfg(not(target_arch = "wasm32"))]
             &maestro_theme::theme::NativeThemeOperations,
+            #[cfg(target_arch = "wasm32")]
+            &crate::support::brand::Pack,
         )
         .unwrap(),
         mode,

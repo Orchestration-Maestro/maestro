@@ -13,7 +13,7 @@ use maestro_web::{
 use num_traits::ToPrimitive as _;
 use std::rc::Rc;
 
-pub fn styles() {
+pub(crate) fn styles() {
     let mut surface = Surface::new();
     for pack in [surface.pack.clone(), surface.alternate.clone()] {
         for mode in [
@@ -147,7 +147,7 @@ fn narrow(surface: &mut Surface, presentation: &maestro_theme::BrandPresentation
     }
 }
 
-pub fn wrapped_summary() {
+pub(crate) fn wrapped_summary() {
     let mut surface = Surface::new();
     let pack = surface.pack.clone();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();

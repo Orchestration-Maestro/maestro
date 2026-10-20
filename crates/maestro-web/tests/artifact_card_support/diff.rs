@@ -55,66 +55,8 @@ pub fn run() {
         "artifactDiff===document.querySelector('.maestro-diff') && artifactScroll===document.querySelector('.maestro-diff-scroll') && artifactLine===artifactScroll.querySelector('pre') && artifactScroll.scrollTop===80 && getSelection().toString()==='  context'",
     );
     check("artifactScroll.lastElementChild.textContent==='+ changed'");
-    for (text, title) in [
-        (format!("{old}changed\nextra\n"), Some("Renamed 雪")),
-        (format!("{old}shrunk\n"), None),
-        (format!("{old}grown\nagain\n"), Some("Restored <&>")),
-        (format!("{old}last\n"), Some("")),
-    ] {
-        let next = titled(old.clone(), text, title);
-        drawing::draw(&mut surface, &next, &mut state);
-        drawing::draw(&mut surface, &next, &mut state);
-        retained();
-        check(&format!(
-            "artifactScroll.children.length==={}",
-            if title == Some("Restored <&>") || title == Some("Renamed 雪") {
-                102
-            } else {
-                101
-            }
-        ));
-        if let Some(title) = title.filter(|title| !title.is_empty()) {
-            check(&format!(
-                "artifactDiff.querySelector('.maestro-diff-header').firstChild.textContent==={}",
-                serde_json::to_string(title).unwrap()
-            ));
-        } else {
-            check("artifactDiff.querySelector('.maestro-diff-header')===null");
-        }
-    }
-    let _ = js(
-        "globalThis.diffBeforeFailure=artifactDiff.outerHTML;globalThis.diffFrame=artifactDiff.parentElement.parentElement;globalThis.diffFrameStyle=diffFrame.getAttribute('style');artifactScroll.appendChild=()=>{throw new Error('forced diff append failure')}",
-    );
-    let failed = titled(
-        old.clone(),
-        format!("{old}failure\nextra\n"),
-        Some("Must roll back"),
-    );
-    let host = surface.host();
-    let result = surface.draw(|ui, frame| {
-        failed
-            .render(ui, drawing::view(&host, frame), &mut state)
-            .response
-    });
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("forced diff append failure")
-    );
-    retained();
-    check(
-        "artifactDiff.outerHTML===diffBeforeFailure && diffFrame.getAttribute('style')===diffFrameStyle && artifactDiff.querySelector('.maestro-diff-header')===null && document.querySelectorAll('.maestro-diff-header').length===0",
-    );
-    let _ = js("delete artifactScroll.appendChild");
-    drawing::draw(&mut surface, &failed, &mut state);
-    drawing::draw(&mut surface, &failed, &mut state);
-    retained();
-    check(
-        "artifactScroll.children.length===102 && artifactDiff.querySelector('.maestro-diff-header').firstChild.textContent==='Must roll back'",
-    );
-    drop(state);
-    check("!artifactDiff.isConnected && document.querySelector('.maestro-diff')===null");
+    reconcile_titles(&mut surface, &old, &mut state);
+    failed_reconciliation(&mut surface, &old, &mut state);
 }
 
 /// Keep unchanged rows, local offsets and the native selection through reconciliation.
@@ -134,4 +76,72 @@ fn titled(old_text: String, new_text: String, title: Option<&str>) -> ToolRender
         }),
         is_custom: true,
     }
+}
+
+/// Retain rows and selection through each optional title transition.
+fn reconcile_titles(surface: &mut Surface, old: &str, state: &mut ToolRenderState) {
+    for (text, title) in [
+        (format!("{old}changed\nextra\n"), Some("Renamed 雪")),
+        (format!("{old}shrunk\n"), None),
+        (format!("{old}grown\nagain\n"), Some("Restored <&>")),
+        (format!("{old}last\n"), Some("")),
+    ] {
+        let next = titled(old.to_owned(), text, title);
+        drawing::draw(surface, &next, state);
+        drawing::draw(surface, &next, state);
+        retained();
+        check(&format!(
+            "artifactScroll.children.length==={}",
+            if title == Some("Restored <&>") || title == Some("Renamed 雪") {
+                102
+            } else {
+                101
+            }
+        ));
+        if let Some(title) = title.filter(|title| !title.is_empty()) {
+            check(&format!(
+                "artifactDiff.querySelector('.maestro-diff-header').firstChild.textContent==={}",
+                serde_json::to_string(title).unwrap()
+            ));
+        } else {
+            check("artifactDiff.querySelector('.maestro-diff-header')===null");
+        }
+    }
+}
+
+/// Keep the existing failed update and recovery on the retained native diff.
+fn failed_reconciliation(surface: &mut Surface, old: &str, state: &mut ToolRenderState) {
+    let _ = js(
+        "globalThis.diffBeforeFailure=artifactDiff.outerHTML;globalThis.diffFrame=artifactDiff.parentElement.parentElement;globalThis.diffFrameStyle=diffFrame.getAttribute('style');artifactScroll.appendChild=()=>{throw new Error('forced diff append failure')}",
+    );
+    let failed = titled(
+        old.to_owned(),
+        format!("{old}failure\nextra\n"),
+        Some("Must roll back"),
+    );
+    let host = surface.host();
+    let result = surface.draw(|ui, frame| {
+        failed
+            .render(ui, drawing::view(&host, frame), state)
+            .response
+    });
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("forced diff append failure")
+    );
+    retained();
+    check(
+        "artifactDiff.outerHTML===diffBeforeFailure && diffFrame.getAttribute('style')===diffFrameStyle && artifactDiff.querySelector('.maestro-diff-header')===null && document.querySelectorAll('.maestro-diff-header').length===0",
+    );
+    let _ = js("delete artifactScroll.appendChild");
+    drawing::draw(surface, &failed, state);
+    drawing::draw(surface, &failed, state);
+    retained();
+    check(
+        "artifactScroll.children.length===102 && artifactDiff.querySelector('.maestro-diff-header').firstChild.textContent==='Must roll back'",
+    );
+    drop(std::mem::take(state));
+    check("!artifactDiff.isConnected && document.querySelector('.maestro-diff')===null");
 }

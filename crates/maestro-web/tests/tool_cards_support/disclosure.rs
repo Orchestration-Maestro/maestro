@@ -72,7 +72,7 @@ struct Moment {
     chevron: String,
 }
 
-pub fn draw(surface: &mut Surface, section: &mut ExpandableSection) -> egui::Response {
+pub(crate) fn draw(surface: &mut Surface, section: &mut ExpandableSection) -> egui::Response {
     let host = surface.host();
     surface.draw(|ui, frame| {
         section
@@ -81,7 +81,7 @@ pub fn draw(surface: &mut Surface, section: &mut ExpandableSection) -> egui::Res
             .unwrap()
     })
 }
-pub fn toggle(surface: &mut Surface, section: &mut ExpandableSection) {
+pub(crate) fn toggle(surface: &mut Surface, section: &mut ExpandableSection) {
     let header = draw(surface, section);
     let host = surface.host();
     surface.click(header.rect.center(), |ui, frame| {
@@ -153,7 +153,7 @@ fn observe(surface: &mut Surface, section: &mut ExpandableSection, expected: &Mo
             .collect::<Vec<_>>()
     );
 }
-pub fn lifecycle() {
+pub(crate) fn lifecycle() {
     let cases: Vec<Lifecycle> =
         serde_json::from_str(include_str!("../fixtures/expandable_sections.json")).unwrap();
     for case in cases {
@@ -195,7 +195,7 @@ pub fn lifecycle() {
         check("document.querySelectorAll('.maestro-console,.maestro-tool-caption').length===0");
     }
 }
-pub async fn activation() {
+pub(crate) async fn activation() {
     let mut surface = Surface::new();
     let calls = Rc::new(Cell::new(0));
     let mut section = ExpandableSection::new(
