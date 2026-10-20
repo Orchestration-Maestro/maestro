@@ -353,6 +353,38 @@ fn hrefs(nodes: &[Node]) -> Vec<&str> {
 }
 
 #[test]
+fn failed_local_runs_preserve_text_and_later_addresses() {
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        for (scalar, tail) in ['a', 'Z', '0', '.', '_', '+', '-']
+            .into_iter()
+            .flat_map(|scalar| ["", "@localhost", " b@c.io"].map(|tail| (scalar, tail)))
+        {
+            let input = format!("Payload: {}{tail}", scalar.to_string().repeat(256));
+            let mut document = parse_with_options(input.clone(), options);
+            autolinks(&mut document);
+            assert_eq!(text(&document.nodes), input);
+            let expected = if tail == " b@c.io" {
+                vec!["mailto:b@c.io"]
+            } else {
+                vec![]
+            };
+            assert_eq!(hrefs(&document.nodes), expected);
+            let Kind::Paragraph(children) = &document.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            for node in children {
+                assert_eq!(document.source[node.range.clone()], node.authored);
+            }
+        }
+    }
+}
+
+#[test]
 fn mapped_links_share_one_policy_aware_scanner() {
     check("url", 17);
     for (options, expected) in [
