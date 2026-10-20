@@ -50,32 +50,15 @@ pub enum Alignment {
     Right,
 }
 
-/// Source classification of a link or image.
+/// Handling class of a link.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LinkType {
-    /// Inline destination.
+    /// Authored link label, including resolved document references.
     Inline,
-    /// Explicit reference definition.
-    Reference,
-    /// Unresolved explicit reference supplied by a caller.
-    ReferenceUnknown,
-    /// Collapsed reference definition.
-    Collapsed,
-    /// Unresolved collapsed reference supplied by a caller.
-    CollapsedUnknown,
-    /// Shortcut reference definition.
-    Shortcut,
-    /// Unresolved shortcut reference supplied by a caller.
-    ShortcutUnknown,
     /// Angle-enclosed URI or mapped bare destination.
     Autolink,
     /// Angle-enclosed email address.
     Email,
-    /// Caller-supplied wiki classification; parsing does not enable wiki syntax.
-    WikiLink {
-        /// Whether an explicit label separates the destination from its display text.
-        has_pothole: bool,
-    },
 }
 
 /// A native node together with its source extent.
@@ -169,10 +152,8 @@ pub struct Text {
 pub struct LinkMetadata {
     /// Optional tooltip; empty means absent.
     pub title: String,
-    /// Native source classification.
+    /// Link handling class.
     pub link_type: LinkType,
-    /// Native reference identity.
-    pub id: String,
 }
 /// Complete image operands retained beside the authored terminal label.
 pub struct ImageMetadata {
@@ -180,10 +161,6 @@ pub struct ImageMetadata {
     pub destination: String,
     /// Decoded tooltip.
     pub title: String,
-    /// Native link classification.
-    pub link_type: LinkType,
-    /// Native reference identity.
-    pub id: String,
     /// Alt-label inline structure.
     pub children: Vec<Node>,
 }

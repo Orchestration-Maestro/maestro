@@ -355,7 +355,6 @@ fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>, options: MarkedOption
                 crate::types::LinkMetadata {
                     title: String::new(),
                     link_type: crate::LinkType::Autolink,
-                    id: String::new(),
                 },
             ),
             range: absolute,

@@ -4,17 +4,18 @@
 source and all native nodes, metadata and authored ranges. The same operations
 are exposed through `maestro_app::markdown` for frontend consumers.
 `Alignment` and `LinkType` belong to the shared Markdown owner. They describe
-column alignment and link provenance through owned Rust types. All reference
-classifications remain constructible; wiki classifications do not enable wiki syntax.
+column alignment and link handling through owned Rust types. Links distinguish
+authored labels (including resolved references), angle-enclosed URIs or mapped
+bare destinations, and angle-enclosed email addresses.
 
 After mapped-link selection, `InlineContext::new(&document)` indexes original
 container and link-label scopes. `scope(range, label)` exposes authored bytes,
 resolved operands and opaque ranges without parsing a fragment for admission.
 `InlineScope::interpret` applies native inline grammar locally with caller spans
 and resolved operands as typed atoms. The caller supplies ordered, disjoint spans
-within the selected UTF-8 source range. Link hrefs, titles and reference identities
-remain those of the original document; label interpretation uses inline-only grammar
-and does not resolve them again. Subrange lookup selects source-ordered operands by
+within the selected UTF-8 source range. Link hrefs and titles remain those of the
+original document; label interpretation uses inline-only grammar and does not
+resolve them again. Subrange lookup selects source-ordered operands by
 start offset rather than scanning the entire scope. Captured table-pipe provenance
 also keeps mapped URLs separate from their neighboring inline source. Link-label
 scopes retain authored escapes for caller admission; export interpretation unescapes
@@ -30,9 +31,9 @@ and email spans to links.
 Native code, authored links and images remain opaque to that pass. Identity text
 units retain exact selected source subranges; decoded transformations stay atomic.
 
-The parser retains link titles, destinations, reference identities and inline
-labels; image destinations, titles and alt children; table alignments and authored
-cell spans; task markers; and full code information and bodies. Container-local
+The parser retains link titles, destinations and inline labels; image destinations,
+titles and alt children; table alignments and authored cell spans; task markers;
+and full code information and bodies. Container-local
 source removes quote/list continuation prefixes. Aligned list continuations expand
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still
 names the original document source, not its container-local spelling.
