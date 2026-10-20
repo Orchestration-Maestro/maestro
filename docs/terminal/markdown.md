@@ -24,6 +24,12 @@ then each body row in turn, so stateful callbacks see both passes in source orde
 accepted but do not align text. When the width cannot give every column one cell, the
 table's source rows are shown instead; a table inside a list item also shows its source rows.
 
+Quotes reserve two cells for `│ ` only when at least three content cells remain,
+after horizontal padding and outer quote borders. At narrower widths, that level
+omits its border and keeps the body text and quote styling. Wider renders restore
+the borders that fit. The minimum content width remains one cell, even at viewport
+width zero. Wrapping follows the [styled text rules](text.md).
+
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
 `DefaultTextStyle`. Callers set `clean_content` to filter decoded authored values with
 the [shared terminal cleaners](../text.md) before styling and hyperlink generation.

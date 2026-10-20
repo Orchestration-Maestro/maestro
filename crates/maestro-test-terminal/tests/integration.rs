@@ -18,6 +18,7 @@ mod frame_styles;
 mod loader_animation;
 mod loader_rendering;
 mod markdown_layout;
+mod markdown_quotes;
 mod markdown_styles;
 mod markdown_tables;
 mod output_backlog;
