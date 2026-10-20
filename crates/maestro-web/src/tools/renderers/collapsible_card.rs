@@ -185,12 +185,9 @@ impl<R: 'static> ToolContent for Content<R> {
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
     ) -> ToolContentOutput {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let mut overlays = Vec::new();
-        let response = self.card.draw(ui, view, &mut retained, &mut overlays);
-        drop(slot.replace(retained));
-        ToolContentOutput { response, overlays }
+        ToolContentOutput::retained(state, |retained: &mut Retained, overlays| {
+            self.card.draw(ui, view, retained, overlays)
+        })
     }
 }
 impl CollapsibleCard {

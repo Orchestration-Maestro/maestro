@@ -128,33 +128,26 @@ impl ToolContent for Header {
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
     ) -> ToolContentOutput {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let plain_state = self.expanded.is_none().then_some(self.state);
-        if plain_state.is_some()
-            && retained.plain_state.is_some()
-            && retained.plain_state != plain_state
-        {
-            retained = Retained::default();
-        }
-        retained.plain_state = plain_state;
-        let time = ui.input(|input| input.time);
-        let angle = if self.state == ToolHeaderState::Inprogress {
-            let start = *retained.pending_since.get_or_insert(time);
-            ui.ctx().request_repaint();
-            attachment_content::points((time - start).rem_euclid(1.) * std::f64::consts::TAU)
-        } else {
-            retained.pending_since = None;
-            0.
-        };
-        let mut overlays = Vec::new();
-        let result = self.draw(ui, view, &mut retained, (angle, &mut overlays));
-        let old = slot.replace(retained);
-        drop(old);
-        ToolContentOutput {
-            response: result,
-            overlays,
-        }
+        ToolContentOutput::retained(state, |retained: &mut Retained, overlays| {
+            let plain_state = self.expanded.is_none().then_some(self.state);
+            if plain_state.is_some()
+                && retained.plain_state.is_some()
+                && retained.plain_state != plain_state
+            {
+                *retained = Retained::default();
+            }
+            retained.plain_state = plain_state;
+            let time = ui.input(|input| input.time);
+            let angle = if self.state == ToolHeaderState::Inprogress {
+                let start = *retained.pending_since.get_or_insert(time);
+                ui.ctx().request_repaint();
+                attachment_content::points((time - start).rem_euclid(1.) * std::f64::consts::TAU)
+            } else {
+                retained.pending_since = None;
+                0.
+            };
+            self.draw(ui, view, retained, (angle, overlays))
+        })
     }
 }
 impl Header {

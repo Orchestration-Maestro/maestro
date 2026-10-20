@@ -33,6 +33,23 @@ impl ToolContentOutput {
         overlays.extend(self.overlays);
         self.response
     }
+    /// Lend the row's retained owners of type `R` to one draw and collect its overlays.
+    /// The owners leave the slot while drawing, so a draw never runs under a row-state
+    /// borrow, and the placeholder left behind is dropped after that borrow ends.
+    pub(crate) fn retained<R: Default + 'static>(
+        state: &ToolRendererState,
+        draw: impl FnOnce(
+            &mut R,
+            &mut Vec<crate::AttachmentOverlay>,
+        ) -> Result<egui::Response, ToolUiError>,
+    ) -> Self {
+        let slot = state.state::<R>();
+        let mut retained = std::mem::take(&mut *slot.borrow_mut());
+        let mut overlays = Vec::new();
+        let response = draw(&mut retained, &mut overlays);
+        drop(slot.replace(retained));
+        Self { response, overlays }
+    }
 }
 /// Owned drawing recipe; mutable widgets belong to the caller's retained row.
 pub trait ToolContent: Any {

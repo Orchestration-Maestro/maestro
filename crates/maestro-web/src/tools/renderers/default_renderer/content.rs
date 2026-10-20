@@ -87,16 +87,9 @@ impl ToolContent for DefaultContent {
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
     ) -> ToolContentOutput {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let mut overlays = Vec::new();
-        let result = self.draw(ui, view, &mut retained, &mut overlays);
-        let old = slot.replace(retained);
-        drop(old);
-        ToolContentOutput {
-            response: result,
-            overlays,
-        }
+        ToolContentOutput::retained(state, |retained: &mut Retained, overlays| {
+            self.draw(ui, view, retained, overlays)
+        })
     }
 }
 impl DefaultContent {
