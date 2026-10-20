@@ -24,3 +24,11 @@ pub enum WheelRouting {
     /// Navigate retained host scrollback.
     HostScroll,
 }
+
+/// Pane launch environment and shell selection.
+#[cfg(target_os = "linux")]
+pub mod shell;
+
+/// Pane terminal identity and launch environment.
+#[cfg(target_os = "linux")]
+pub mod launch_env;

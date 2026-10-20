@@ -190,6 +190,24 @@ hidden-only damage. `take` drains all accumulated origins together and clears th
 pending flag while retaining the supplied visibility policy. Reading title origins
 does not drain them or mark those panes as damaged.
 
+`maestro_daemon::pane::shell` builds native shell operands from supplied settings
+and environment observations. A configured shell wins over `SHELL`; blank values
+use `/bin/sh` on Unix or `powershell.exe` on Windows. Automatic mode uses a login
+shell only on macOS. Login mode resolves an executable path before launch and
+sets `SHELL`; on Unix, argument zero is `-` followed by the shell basename.
+Windows direct PowerShell launches wrap the profile prompt to report filesystem
+cwd without changing the status observed by the original prompt.
+
+`maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
+(`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
+id, and applies user environment pairs. User pairs can override terminal defaults.
+The daemon marker, supplied socket/binary paths and managed workspace/tab/pane
+identity then override user pairs. Callers may retain inherited identity or remove
+only the pane id. Existing replacement environments remain replacements.
+
+The native PTY adapter is currently available on Linux; shell policy branches for
+Windows and macOS are exercised with supplied target and environment observations.
+
 ## Pane agents
 
 [`maestro_detection::agents`](../crates/maestro-detection/src/agents.rs) owns the

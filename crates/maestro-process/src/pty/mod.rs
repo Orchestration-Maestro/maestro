@@ -33,6 +33,8 @@ pub struct PtySize {
 pub struct PtyCommand {
     /// Native executable operand.
     pub program: OsString,
+    /// Optional Unix argument zero, independent of the executable path.
+    pub argv0: Option<OsString>,
     /// Ordered native arguments.
     pub args: Vec<OsString>,
     /// Working directory selected before launch.

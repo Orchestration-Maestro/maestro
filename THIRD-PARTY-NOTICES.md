@@ -795,6 +795,13 @@ also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
 noninteractive process builder, Linux platform operations, shared Unix quoting
 and PTY backend, descriptor and actor modules.
 
+The pane launch environment and shell policy in
+`crates/maestro-daemon/src/pane/{launch_env,shell}.rs` and their tests derive from
+the pane and integration environment sources under the same license. Native
+login argument zero follows the terminal command builder
+(`vendor/portable-pty/src/cmdbuilder.rs`, MIT). The adapter uses Rust
+`CommandExt::arg0` rather than incorporating that library or its native calls.
+
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations, owned identity allocation and separation of
 native runtime effects. Socket changes include supplied paths and overrides,
@@ -1006,6 +1013,36 @@ The original licence follows.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```
+
+## Native login shell arguments
+
+The native pane launch adapter follows the login argument-zero behavior of
+portable-pty 0.9.0 (`src/cmdbuilder.rs`), copyright Wez Furlong, licensed under MIT.
+It uses the standard Rust command API without adding portable-pty as a dependency.
+
+```text
+MIT License
+
+Copyright (c) 2018 Wez Furlong
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ## Terminal emulator engine
