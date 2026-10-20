@@ -19,6 +19,7 @@ maestro-detection = { path = "../maestro-detection" }
 maestro-protocol = { path = "../maestro-protocol" }
 maestro-workspace = { path = "../maestro-workspace" }
 maestro-tui = { path = "../maestro-tui" }
+maestro-terminal = { path = "../maestro-terminal" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

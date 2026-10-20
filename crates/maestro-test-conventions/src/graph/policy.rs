@@ -375,6 +375,8 @@ pub(crate) fn required(name: &str) -> &'static [&'static str] {
         "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer"
     ) {
         &["maestro-app"]
+    } else if name == "maestro-daemon" {
+        &["maestro-terminal"]
     } else if name == "maestro-tui-crossterm" {
         &["maestro-tui", "maestro-text"]
     } else if exact(name) {
