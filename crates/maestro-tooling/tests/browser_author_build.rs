@@ -494,6 +494,7 @@ fn external_identity(browser: &Browser) -> std::path::PathBuf {
 #[test]
 fn browser_example_build_uses_shared_inputs() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     success(&browser.run("browser-example-build"));
     let output = browser.path("target/maestro-browser/example");
     assert!(output.join("index.html").is_file());
@@ -574,6 +575,7 @@ fn browser_preview_serves_without_author_tools() {
 #[test]
 fn browser_example_check_emits_no_distribution() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     success(&browser.run("browser-example-check"));
     assert!(!browser.path("target/maestro-browser/library").exists());
     assert!(!browser.path("target/maestro-browser/example").exists());
@@ -618,6 +620,7 @@ fn browser_example_clean_preserves_shared_assets() {
 #[test]
 fn browser_styles_reach_prepared_output() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let path = browser.fixture("assets/app.css");
     fs::write(
         &path,
@@ -1045,6 +1048,7 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
 /// Exercise literal selected paths and native options through the actual bundler.
 fn check_real_author_literals() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let pack = browser.path("assets/brand/pack's 東京.json");
     let mut value: serde_json::Value =
         serde_json::from_slice(&fs::read(browser.path("assets/brand/brand.json")).unwrap())
@@ -1362,6 +1366,7 @@ fn install_authored_hook(browser: &Browser) -> std::path::PathBuf {
 #[test]
 fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let pack = external_identity(&browser);
     let extra = browser.path("authored-extra");
     fs::create_dir(&extra).unwrap();
@@ -1466,6 +1471,7 @@ fn assert_ignored_event(receive: &std::sync::mpsc::Receiver<String>, path: &str)
 #[cfg(target_os = "linux")]
 fn browser_author_native_hook_preserves_overrides_environment_and_failure() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     fs::create_dir(browser.fixture("scripts")).unwrap();
     let script = browser.path("hook-source");
     fs::write(&script, "#!/bin/sh\nset -eu\ncp assets/app.css hook.css\nprintf '%s\\n' \"$1\" \"$TRUNK_PROFILE\" \"$TRUNK_HTML_FILE\" \"$TRUNK_SOURCE_DIR\" \"$TRUNK_DIST_DIR\" \"$TRUNK_PUBLIC_URL\" \"$TRUNK_STAGING_DIR\" \"$MAESTRO_HOOK_INHERITED\" > hook-environment\nexit \"$MAESTRO_HOOK_STATUS\"\n").unwrap();
@@ -1536,6 +1542,7 @@ fn assert_hook_environment(browser: &Browser) {
 #[test]
 fn browser_author_hook_uses_resolved_configuration_directory() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let directory = browser.path("linked configuration");
     fs::create_dir(&directory).unwrap();
     fs::write(directory.join("source.css"), "linked source").unwrap();
@@ -1604,6 +1611,7 @@ fn browser_author_check_preserves_adjacent_locks() {
 fn browser_author_trunk_rejects_stale_lock_without_writes() {
     use browser_support::start_output;
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let lock = browser.fixture("Cargo.lock");
     let original = fs::read(&lock).unwrap();
     for recipe in [
@@ -1658,6 +1666,7 @@ fn browser_author_trunk_rejects_stale_lock_without_writes() {
 #[test]
 fn browser_author_included_files_rebuild_without_source_changes() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let source = fs::read(browser.fixture("src/main.rs")).unwrap();
     success(&browser.run("browser-library-build"));
     let before = browser_support::wasm(&browser, "library");
@@ -1694,6 +1703,7 @@ fn browser_author_included_files_rebuild_without_source_changes() {
 #[test]
 fn browser_author_projection_failure_prevents_dependent_build() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     for path in [
         browser.path("assets/brand/brand.json"),
         browser.path("assets/brand/mark.svg"),
@@ -1724,6 +1734,7 @@ fn browser_author_projection_failure_prevents_dependent_build() {
 #[test]
 fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let manifest = fs::read(browser.fixture("Cargo.toml")).unwrap();
     let lock = fs::read(browser.fixture("Cargo.lock")).unwrap();
     let unifier = browser.path("crates/maestro-dependencies");
@@ -1796,6 +1807,7 @@ fn assert_fixture_independent(browser: &Browser) {
 #[test]
 fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let target = root
         .join("target/browser-author-tests")

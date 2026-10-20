@@ -175,10 +175,14 @@ process group, the harness directs its LLVM profiles into that fixture's target
 directory, outside the merged coverage profile set, because cleanup can forcibly
 stop its descendants.
 
-Browser author tests preserve the independent fixture lock without regenerating
-it. Provision both root and fixture sources explicitly before testing; cold-cache
-qualification vendors locked offline sources and starts with empty Cargo home and
-target. See [browser author locks and writes](browser-build.md#locks-writes-and-direct-cargo-use)
+Browser author tests keep the checked-in full fixture and its independent lock
+unchanged. Pipeline-only tests use disposable copies with the minimal bootstrap
+source and a reduced lock generated during setup, before preservation snapshots.
+Framework, optimizer, dependency-closure, formatter and identity-consumption checks
+keep the full fixture. Provision both root and fixture sources explicitly before
+testing; cold-cache qualification vendors locked offline sources, then starts with
+empty Cargo home and target. See
+[browser author locks and writes](browser-build.md#locks-writes-and-direct-cargo-use)
 for the write allowlist, formatter exception and direct-Cargo preparation.
 
 Tooling test fixtures share a child-toolchain command builder that removes the
