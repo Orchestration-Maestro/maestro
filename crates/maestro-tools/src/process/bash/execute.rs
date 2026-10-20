@@ -3,7 +3,7 @@ use super::{BashExecOptions, BashExecution, BashOperations, BashSpawnContext, Ba
 use crate::{
     output::{
         output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
-        text_block,
+        text_result,
     },
     utils::diagnostics::diagnostic,
 };
@@ -73,14 +73,13 @@ impl Progress {
         self.dirty = false;
         self.last = Some(Instant::now());
         match self.output.snapshot(true) {
-            Ok(snapshot) => Some(AgentToolResult {
-                content: vec![text_block(snapshot.content)],
-                details: Some(BashToolDetails {
+            Ok(snapshot) => Some(text_result(
+                snapshot.content,
+                Some(BashToolDetails {
                     truncation: snapshot.truncation.truncated.then_some(snapshot.truncation),
                     full_output_path: snapshot.full_output_path,
                 }),
-                terminate: None,
-            }),
+            )),
             Err(error) => {
                 self.error = Some(error);
                 None

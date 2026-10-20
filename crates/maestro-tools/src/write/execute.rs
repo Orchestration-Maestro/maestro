@@ -2,7 +2,7 @@
 
 use super::{WriteOperations, WriteToolInput};
 use crate::{
-    output::text_block,
+    output::text_result,
     utils::diagnostics::{diagnostic, guarded},
 };
 use maestro_agent::AgentToolResult;
@@ -52,12 +52,8 @@ pub(super) async fn write_file(
         operations.write_file(absolute_path, input.content)
     })
     .await?;
-    Ok(AgentToolResult {
-        content: vec![text_block(format!(
-            "Successfully wrote {bytes} bytes to {}",
-            input.path
-        ))],
-        details: None,
-        terminate: None,
-    })
+    Ok(text_result(
+        format!("Successfully wrote {bytes} bytes to {}", input.path),
+        None,
+    ))
 }

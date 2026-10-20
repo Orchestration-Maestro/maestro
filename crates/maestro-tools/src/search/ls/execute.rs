@@ -4,7 +4,7 @@ use super::{DEFAULT_LIMIT, LsOperations, LsToolDetails, LsToolInput};
 use crate::{
     output::{
         render_parts::{float, num},
-        text_block,
+        text_result,
     },
     path_utils::resolve_to_cwd,
     utils::diagnostics::{aborted, blocking, diagnostic, failure, guarded},
@@ -21,15 +21,6 @@ pub(super) struct Lister {
     pub(super) cwd: String,
     /// File access, native or supplied.
     pub(super) operations: Arc<dyn LsOperations>,
-}
-
-/// A result of one text block.
-fn text_result(text: String, details: Option<LsToolDetails>) -> AgentToolResult<LsToolDetails> {
-    AgentToolResult {
-        content: vec![text_block(text)],
-        details,
-        terminate: None,
-    }
 }
 
 /// The listing text and details for `entries`, which stopped at `limit` when `reached`.

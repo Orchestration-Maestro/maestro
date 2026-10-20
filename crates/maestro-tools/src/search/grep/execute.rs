@@ -3,7 +3,7 @@ use super::{GrepOperations, GrepToolDetails, GrepToolInput, native::Match};
 use crate::{
     output::{
         render_parts::{float, num},
-        text_block,
+        text_result,
         truncate::truncate_line,
     },
     path_utils::{resolve_path, resolve_to_cwd},
@@ -87,7 +87,7 @@ impl Searcher {
         let (matches, count) =
             super::native::search(&program, &root, &input, limit, signal).await?;
         if count == 0 {
-            return Ok(result("No matches found".into(), None));
+            return Ok(text_result("No matches found".into(), None));
         }
         let mut body = Body::default();
         let context = input.context.unwrap_or(0.0).max(0.0).floor();
@@ -199,7 +199,7 @@ impl Body {
                 match_limit_reached: limit,
                 lines_truncated: self.clipped.then_some(true),
             });
-        result(text, details)
+        text_result(text, details)
     }
 }
 /// Project display text against a lexical root, falling back only for actual parent components.
@@ -224,14 +224,6 @@ fn display_path(
         basename(&text, None)
     };
     Ok(display.replace(SEP, "/"))
-}
-/// A text result with no termination policy.
-fn result(text: String, details: Option<GrepToolDetails>) -> AgentToolResult<GrepToolDetails> {
-    AgentToolResult {
-        content: vec![text_block(text)],
-        details,
-        terminate: None,
-    }
 }
 
 /// Append one source row through the shared scalar clipping owner.
