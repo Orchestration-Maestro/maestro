@@ -169,10 +169,9 @@ only crate whose direct `serde_json` entries bypass member inheritance.
 `maestro-path` has no domain dependencies and is the optional utility exception to
 leaf and exact-set rules, alongside the native feature unifier. Any crate in the
 specification table may declare it as a normal or build dependency (optional and target-specific forms included)
-without changing its layer, except the guest authoring crate, the runtime
-adapter, shared request owner, cancellation leaf, watch leaf, lock leaf, process leaf,
-file-pattern crate, text leaf, JSON leaf, entry and tool record crates, brand crate and the
-terminal scenario harness. Shared path helpers take supplied directory observations and
+without changing its layer, subject to the exclusions in the specification's
+[crate graph](specs/maestro-port.md#crates-and-delivery-order).
+Shared path helpers take supplied directory observations and
 add no global environment, filesystem service, directory cache, scheduler or workspace
 dependency. The edge is ignored when checking a crate's complete
 direct set or leaf

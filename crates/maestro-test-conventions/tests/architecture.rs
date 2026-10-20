@@ -749,6 +749,7 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
+    documented_utility_exclusions_match_policy();
     native_consumers_may_declare_the_utility(&consumers);
     for from in consumers {
         native_consumer_may_not_dev_declare_the_utility(from);
@@ -1281,6 +1282,22 @@ fn complete_resolved_metadata() {
 
 /// Documented dependencies checked against the permitted policy.
 const FOUNDATION_SPECIFICATION: &str = include_str!("../../../docs/specs/maestro-port.md");
+
+/// The crates the specification excludes from the path utility are the policy's exclusions.
+fn documented_utility_exclusions_match_policy() {
+    let documented: std::collections::BTreeSet<_> = FOUNDATION_SPECIFICATION
+        .split_once("The guest authoring crate")
+        .unwrap()
+        .1
+        .split_once("are excluded from this")
+        .unwrap()
+        .0
+        .split('`')
+        .skip(1)
+        .step_by(2)
+        .collect();
+    assert_eq!(documented, UTILITY_EXCLUDED.iter().copied().collect());
+}
 
 #[test]
 fn documented_foundation_graph_rejects_missing_and_extra_edges() {
