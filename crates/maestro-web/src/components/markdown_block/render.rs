@@ -3,7 +3,7 @@ use super::admission::{Formula, MathBlocks, block_formula, scan, starts_display}
 use maestro_app::{
     browser::script_scheme,
     is_whitespace_scalar,
-    markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node, Table},
+    markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node},
     markup::{EscapeMode, escape_into},
     normalize_to_lf,
 };
@@ -11,6 +11,7 @@ use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 use std::{fmt::Write as _, ops::Range};
 
 pub(super) mod export;
+mod table;
 
 /// Characters the browser's URL encoder leaves untouched, plus the percent sign.
 const URL_SAFE: &AsciiSet = &NON_ALPHANUMERIC
@@ -223,29 +224,6 @@ impl Writer<'_, '_> {
             code,
             language: language.to_owned(),
         });
-    }
-    /// Write a table inside its own horizontal scroller.
-    fn table(&mut self, table: &Table, atoms: Atoms<'_, '_>, out: &mut String) {
-        if matches!(self.policy, Policy::Transcript { .. }) {
-            out.push_str("<div class=\"maestro-table-scroll\">");
-        }
-        out.push_str("<table>\n<thead>\n");
-        self.row(&table.header, (&table.alignments, "th"), atoms, out);
-        out.push_str("</thead>\n");
-        let body = !table.rows.is_empty() || matches!(self.policy, Policy::Transcript { .. });
-        if body {
-            out.push_str("<tbody>");
-        }
-        for row in &table.rows {
-            self.row(row, (&table.alignments, "td"), atoms, out);
-        }
-        if body {
-            out.push_str("</tbody>");
-        }
-        out.push_str("</table>\n");
-        if matches!(self.policy, Policy::Transcript { .. }) {
-            out.push_str("</div>");
-        }
     }
     /// Write one table row.
     fn row(
