@@ -7,7 +7,8 @@ pub use summaries::{summary_controls, user_styles};
 mod widget;
 use crate::registry::REGISTRY;
 use input::{Action, Case};
-use maestro_tui::{Component, KeybindingsManager, get_keybindings, set_keybindings};
+use maestro_theme::LiveTheme;
+use maestro_tui::{Component, KeybindingsManager, MarkdownTheme, get_keybindings, set_keybindings};
 use std::{collections::HashSet, rc::Rc};
 use widget::Widget;
 
@@ -32,6 +33,14 @@ fn bind(keys: Vec<String>) {
         vec![],
     ));
 }
+/// Uses the controlled palette with the real Markdown callbacks and highlighter.
+fn markdown(live: LiveTheme, enabled: bool) -> MarkdownTheme {
+    maestro_theme::get_markdown_theme(
+        live,
+        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
+        enabled,
+    )
+}
 /// Replays one complete recorded invocation, preserving frame order.
 fn replay(case: &Case) {
     let input = &case.input;
@@ -39,11 +48,7 @@ fn replay(case: &Case) {
         published::published(&palette::palette(input.palette.as_deref().unwrap_or("a")));
     bind(vec!["ctrl+o".into()]);
     let enabled = input.styles_enabled.unwrap_or(true);
-    let mut markdown = maestro_theme::get_markdown_theme(
-        live.clone(),
-        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        enabled,
-    );
+    let mut markdown = markdown(live.clone(), enabled);
     if input.custom_markdown.unwrap_or(false) {
         markdown.heading = Box::new(|text| format!("CUSTOM[{text}]"));
     }
@@ -116,11 +121,7 @@ pub fn group(name: &str) {
 /// Weak handles prove replacement and final-drop release without a clock.
 pub fn releases_handles() {
     let (_, live) = published::published(&palette::palette("a"));
-    let markdown = Rc::new(maestro_theme::get_markdown_theme(
-        live.clone(),
-        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        true,
-    ));
+    let markdown = Rc::new(markdown(live.clone(), true));
     let original = widget::message(None);
     let old = std::sync::Arc::downgrade(&original);
     let component = maestro_chat::AssistantMessageComponent::new(
@@ -173,11 +174,7 @@ const TERMINAL_CONTROL_CASES: &[(&str, &str)] = &[
 /// render without them, keeping the words around them.
 pub fn drops_terminal_controls() {
     let (_, live) = published::published(&palette::palette("a"));
-    let markdown = Rc::new(maestro_theme::get_markdown_theme(
-        live.clone(),
-        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        true,
-    ));
+    let markdown = Rc::new(markdown(live.clone(), true));
     let mut leaks = Vec::new();
     for &(name, control) in TERMINAL_CONTROL_CASES {
         let text = format!("before {control} after\n\n```\ncode {control} end\n```");
