@@ -5,6 +5,22 @@ use std::cell::RefCell;
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
+    /// Actual quote framing line visits.
+    pub(crate) quote_lines: usize,
+    /// Actual list continuation line visits.
+    pub(crate) list_lines: usize,
+    /// Item-local lookahead patterns prepared.
+    pub(crate) list_rules: usize,
+    /// Borrowed source windows created.
+    pub(crate) source_views: usize,
+    /// Original/local projection calls.
+    pub(crate) projections: usize,
+    /// Bytes appended to existing mapped buffers.
+    pub(crate) joined_bytes: usize,
+    /// Last reentry's mapped end before preserving already consumed chunks.
+    pub(crate) reentry_end: usize,
+    /// Recognized consumption before the last container reentry.
+    pub(crate) reentry_previous: usize,
     /// Complete native document parses.
     pub(crate) documents: usize,
     /// Whole-document context indexes.
@@ -251,7 +267,9 @@ fn hinted_blocks(source: &str, options: crate::MarkedOptions, mut block: Delimit
         .iter()
         .filter_map(|node| match node.kind {
             Kind::Paragraph(_) => Some(node.authored.trim_end().to_owned()),
-            Kind::CustomBlock(..) => Some(format!("block {}", node.authored)),
+            Kind::CustomBlock(..) => {
+                Some(format!("block {}", node.authored.trim_end_matches('\n')))
+            }
             _ => None,
         })
         .collect()
@@ -414,3 +432,5 @@ fn plain_text_merge_work_grows_linearly_with_its_pieces() {
         assert_eq!(large - medium, 2 * (medium - small), "{options:?}");
     }
 }
+
+mod container_accumulation;

@@ -344,6 +344,36 @@ fn maestro_markdown_render_list_content_inside_blockquotes() {
 }
 
 #[test]
+fn markdown_list_items_skip_children_that_render_empty() {
+    // Rows recorded from the reference terminal component (width 60, plain theme).
+    for (text, expected) in [
+        ("- item\n>", vec!["- item"]),
+        ("1. one\n>", vec!["1. one"]),
+        ("- >", vec!["-"]),
+        ("- item\n> x", vec!["- item", "  x"]),
+        (">", vec![""]),
+    ] {
+        let component = Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                clean_content: false,
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        let rows: Vec<String> = component
+            .render(60)
+            .iter()
+            .map(|row| row.trim_end().to_owned())
+            .collect();
+        assert_eq!(rows, expected, "{text:?}");
+    }
+}
+
+#[test]
 fn maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line() {
     markdown::cases(
         "maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line",
@@ -839,4 +869,9 @@ fn markdown_continuation_keeps_authored_indentation() {
         };
         assert_eq!(markdown::component(&case).render(case.width), case.lines);
     }
+}
+
+#[test]
+fn container_frames_follow_configured_grammar() {
+    markdown::cases("container_frames_follow_configured_grammar");
 }

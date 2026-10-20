@@ -602,6 +602,11 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 `maestro-markdown` owns native Markdown structure, owned source extents and mapped
 extended links. The toolkit keeps terminal normalization and formatting. The
 application re-exports the parser as `markdown`; browser consumers use that edge.
+Document, list-item and quote-chunk parsing share one recursive block accumulator.
+List items enter non-top-level grammar; completed block calls return to top level.
+Quote chunks save and restore the enclosing grammar while appending to the same
+output. Recognized raw consumption is separate from semantic text and its mapped
+source, including empty quote bodies and invisible definitions.
 The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.

@@ -27,10 +27,26 @@
     "group": "space",
     "input": "\n",
     "targets": [
-      [],
-      [],
-      [],
-      []
+      [
+        [
+          "gap"
+        ]
+      ],
+      [
+        [
+          "gap"
+        ]
+      ],
+      [
+        [
+          "gap"
+        ]
+      ],
+      [
+        [
+          "gap"
+        ]
+      ]
     ],
     "inline_authored": [
       [],
@@ -50,10 +66,26 @@
     "group": "space",
     "input": "\n\n  \n",
     "targets": [
-      [],
-      [],
-      [],
-      []
+      [
+        [
+          "gap"
+        ]
+      ],
+      [
+        [
+          "gap"
+        ]
+      ],
+      [
+        [
+          "gap"
+        ]
+      ],
+      [
+        [
+          "gap"
+        ]
+      ]
     ],
     "inline_authored": [
       [],
@@ -1728,7 +1760,7 @@
           [
             [
               "code-block",
-              "code\n",
+              "code",
               null
             ]
           ]
@@ -1749,7 +1781,7 @@
           [
             [
               "code-block",
-              "code\n",
+              "code",
               null
             ]
           ]
@@ -1770,7 +1802,7 @@
           [
             [
               "code-block",
-              "code\n",
+              "code",
               null
             ]
           ]
@@ -1791,7 +1823,7 @@
           [
             [
               "code-block",
-              "code\n",
+              "code",
               null
             ]
           ]

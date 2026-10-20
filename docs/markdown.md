@@ -37,6 +37,13 @@ source removes quote/list continuation prefixes. Aligned list continuations expa
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still
 names the original document source, not its container-local spelling.
 
+Documents, list items and quote chunks share one recursive block accumulator.
+Quote reentry keeps the trailing container's own raw source and the unconsumed
+remainder. Semantic text can change spelling or be empty without erasing raw
+consumption. Code continuations reuse one indentation-removal operation;
+definitions continuing paragraph or item text stay literal instead of entering
+the reference index.
+
 Callers own normalization and presentation. The terminal adapter normalizes line
 endings, expands tabs and replaces NUL before parsing; it removes one final code
 newline only when formatting terminal code.

@@ -8,6 +8,15 @@ use serde::Deserialize;
 #[path = "grammar_rules/observations.rs"]
 mod observations;
 
+/// Compare an existing grammar family with its independently recorded targets.
+fn check(group: &str, count: usize) {
+    observations::check(
+        group,
+        count,
+        include_str!("fixtures/grammar_observations.json"),
+    );
+}
+
 /// One independently qualified native entity field.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -126,7 +135,7 @@ fn spans_never_end_inside_a_caller_atom() {
 
 #[test]
 fn inline_tags_preserve_link_and_raw_block_state() {
-    observations::check("inline-html", 6);
+    check("inline-html", 6);
     for options in [
         MarkedOptions::Terminal,
         MarkedOptions::Browser { escape_html: true },
@@ -145,18 +154,18 @@ fn inline_tags_preserve_link_and_raw_block_state() {
 
 #[test]
 fn blank_lines_retain_block_boundaries() {
-    observations::check("space", 9);
+    check("space", 9);
     let document = parse("\n\nalpha".into());
     assert_eq!(document.nodes[0].range, 0..2);
     assert_eq!(document.nodes[0].authored, "\n\n");
     assert!(matches!(document.nodes[0].kind, Kind::Gap));
     assert!(matches!(document.nodes[1].kind, Kind::Paragraph(_)));
-    assert!(parse("\n\n  \n".into()).nodes.is_empty());
+    assert!(matches!(parse("\n\n  \n".into()).nodes[0].kind, Kind::Gap));
 }
 
 #[test]
 fn line_breaks_distinguish_authored_and_decoded_newlines() {
-    observations::check("break", 6);
+    check("break", 6);
     for (input, expected) in [
         ("a\n    b &NewLine; c", "a\n    b \n c"),
         ("a&#10;    b", "a\n    b"),
@@ -172,7 +181,7 @@ fn line_breaks_distinguish_authored_and_decoded_newlines() {
 
 #[test]
 fn lists_keep_marker_indent_looseness_and_task_state() {
-    observations::check("list", 17);
+    check("list", 17);
     let document = parse("-\n- b".into());
     let Kind::List(None, items) = &document.nodes[0].kind else {
         panic!("list")
@@ -190,7 +199,7 @@ fn lists_keep_marker_indent_looseness_and_task_state() {
 
 #[test]
 fn references_use_document_index_and_first_definition() {
-    observations::check("definition", 10);
+    check("definition", 10);
     for (input, id, destination) in [
         ("[ẞ]\n\n[SS]: /u", "ẞ", "/u"),
         ("[ẞ]\n\n[ß]: /u", "ẞ", "/u"),
@@ -231,7 +240,7 @@ fn links_keep_balanced_destinations_titles_and_image_children() {
             .any(|node| matches!(&node.kind, Kind::Link(_, _, href, _) if href == "https://out.y"))
     );
 
-    observations::check("link", 14);
+    check("link", 14);
     for input in [
         "[a](\\&amp; \"\\&amp;\")",
         "[a][r]\n\n[r]: \\&amp; \"\\&amp;\"",
@@ -271,7 +280,7 @@ fn links_keep_balanced_destinations_titles_and_image_children() {
 
 #[test]
 fn fences_retain_body_info_and_closing_rules() {
-    observations::check("fences", 7);
+    check("fences", 7);
     for (input, expected) in [
         ("```lang\\+x &amp;\na\n```", "a\n"),
         ("```lang\\+x &amp;\na", "a"),
@@ -290,7 +299,7 @@ fn fences_retain_body_info_and_closing_rules() {
 
 #[test]
 fn tables_keep_column_alignment_pipes_and_authored_padding() {
-    observations::check("table", 9);
+    check("table", 9);
     let document = parse("- item\n| A | B |\n| --- | --- |\n| 1 | 2 |".into());
     let Kind::List(_, items) = &document.nodes[0].kind else {
         panic!("list")
@@ -298,20 +307,14 @@ fn tables_keep_column_alignment_pipes_and_authored_padding() {
     let Kind::Item(children) = &items[0].kind else {
         panic!("item")
     };
-    assert_eq!(children.len(), 1);
-    let Kind::Inline(children) = &children[0].kind else {
-        panic!("lazy inline continuation")
-    };
-    assert_eq!(text(children), "item\n| A | B |\n| --- | --- |\n| 1 | 2 |");
+    assert_eq!(children.len(), 2);
+    assert!(matches!(&children[1].kind, Kind::Table(table) if table.header.len() == 2));
     let document = parse("> q\n| A | B |\n| --- | --- |\n| 1 | 2 |".into());
     let Kind::Quote(children, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
-    assert_eq!(children.len(), 1);
-    let Kind::Paragraph(children) = &children[0].kind else {
-        panic!("lazy paragraph")
-    };
-    assert_eq!(text(children), "q\n| A | B |\n| --- | --- |\n| 1 | 2 |");
+    assert_eq!(children.len(), 2);
+    assert!(matches!(&children[1].kind, Kind::Table(table) if table.rows.len() == 1));
     for input in [
         "- | A | B |\n  | - | - |\n  | 1 | 2 |",
         "> | A | B |\n> | - | - |\n> | 1 | 2 |",
@@ -352,7 +355,7 @@ fn hrefs(nodes: &[Node]) -> Vec<&str> {
 
 #[test]
 fn mapped_links_share_one_policy_aware_scanner() {
-    observations::check("url", 17);
+    check("url", 17);
     for (options, expected) in [
         (
             MarkedOptions::Terminal,
@@ -398,7 +401,12 @@ fn mapped_links_share_one_policy_aware_scanner() {
 
 #[test]
 fn quotes_keep_lazy_continuations_and_nested_extents() {
-    observations::check("quote", 9);
+    check("quote", 9);
+    for input in ["> > a\n> b\ntail\n", "> - a\n>   b\nc\n"] {
+        let document = parse(input.into());
+        assert_eq!(document.nodes[0].authored, input);
+        assert_eq!(&document.source[document.nodes[0].range.clone()], input);
+    }
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
         let mut document = parse(input.into());
         maestro_markdown::autolinks(&mut document);
@@ -433,22 +441,22 @@ fn neighboring_marker_kinds_do_not_loosen_a_completed_list() {
 
 #[test]
 fn headings_respect_delimiters_and_text_whitespace() {
-    observations::check("heading", 9);
+    check("heading", 9);
 }
 
 #[test]
 fn html_terminators_retain_reachable_suffixes() {
-    observations::check("html", 10);
+    check("html", 10);
 }
 
 #[test]
 fn escapes_preserve_authored_and_decoded_units() {
-    observations::check("escape", 5);
+    check("escape", 5);
 }
 
 #[test]
 fn emphasis_respects_unicode_flanking_masks_and_runs() {
-    observations::check("emphasis", 17);
+    check("emphasis", 17);
 }
 
 #[test]
@@ -482,22 +490,22 @@ fn emphasis_flanking_distinguishes_combining_marks_from_letters_and_numbers() {
 
 #[test]
 fn code_spans_normalize_only_their_own_whitespace() {
-    observations::check("codespan", 8);
+    check("codespan", 8);
 }
 
 #[test]
 fn deletion_uses_each_callers_selected_rule() {
-    observations::check("delete", 8);
+    check("delete", 8);
 }
 
 #[test]
 fn angle_links_stay_opaque_and_raw() {
-    observations::check("autolink", 5);
+    check("autolink", 5);
 }
 
 #[test]
 fn fallback_text_is_lossless_and_advances() {
-    observations::check("text", 6);
+    check("text", 6);
 }
 
 /// Controlled extension responses for invalid-boundary validation.
@@ -530,6 +538,10 @@ fn block_extensions_reject_invalid_prefixes_and_hint_boundaries() {
             Some(&mut InvalidExtension { hint }),
         );
         assert!(matches!(result, Err(maestro_markdown::InvalidBlockToken)));
+        assert_eq!(
+            result.err().unwrap().to_string(),
+            "block tokenizer returned an invalid input prefix or start boundary"
+        );
     }
 }
 
@@ -805,6 +817,7 @@ fn bare_addresses_follow_raw_anchor_transitions() {
     observations::check_with_options(
         "address-context",
         5,
+        include_str!("fixtures/grammar_observations.json"),
         &[
             MarkedOptions::Terminal,
             MarkedOptions::Browser { escape_html: false },
@@ -827,7 +840,7 @@ fn documentation_grammar_keeps_emphasis_inside_bare_addresses() {
 
 #[test]
 fn unmatched_opening_parentheses_end_bare_addresses() {
-    observations::check("url-backpedal", 3);
+    check("url-backpedal", 3);
 }
 
 #[test]
@@ -866,7 +879,7 @@ fn caller_opaque_anchor_text_does_not_disable_bare_addresses() {
 
 #[test]
 fn bare_addresses_follow_link_label_context() {
-    observations::check("address-label", 7);
+    check("address-label", 7);
 }
 
 #[test]
@@ -874,6 +887,7 @@ fn mapped_addresses_resume_after_link_and_image_labels() {
     observations::check_with_options(
         "address-completion",
         2,
+        include_str!("fixtures/grammar_observations.json"),
         &[
             MarkedOptions::Terminal,
             MarkedOptions::Browser { escape_html: false },

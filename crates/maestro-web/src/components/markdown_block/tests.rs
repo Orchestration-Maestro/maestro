@@ -362,11 +362,35 @@ fn mapped_entity_links_keep_browser_suffixes_once() {
     }
 }
 
+/// Complete HTML from each independently configured browser consumer.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ContainerHtml {
+    /// Original complete authored input.
+    input: String,
+    /// Raw-markup consumer output.
+    raw: String,
+    /// Escaped-markup consumer output.
+    escaped: String,
+}
+
 #[test]
 fn browser_list_continuations_keep_following_blocks_outside() {
     for first in ["# h", "    code", "```", "***"] {
         let html = prepare(&format!("- {first}\noutside"), true).html;
         assert!(html.ends_with("</ul>\n<p>outside</p>\n"), "{html}");
+    }
+    let cases: Vec<ContainerHtml> =
+        serde_json::from_str(include_str!("fixtures/container_html.json")).unwrap();
+    for case in cases {
+        assert_eq!(prepare(&case.input, false).html, case.raw);
+        assert_eq!(prepare(&case.input, true).html, case.escaped);
+    }
+    for escaped in [false, true] {
+        let empty = prepare("- item\n| a | b |\n|---|---|", escaped).html;
+        assert!(empty.contains("</thead>\n<tbody></tbody></table>"));
+        let nonempty = prepare("1. step\n| a | b |\n|---|---|\n| 1 | 2 |", escaped).html;
+        assert!(nonempty.contains("<tbody><tr>\n<td>1</td>\n<td>2</td>\n</tr>\n</tbody>"));
     }
     let html = prepare("- a\n\n\tb", true).html;
     assert_eq!(html, "<ul>\n<li><p>a</p>\n<p>  b</p>\n</li>\n</ul>\n");

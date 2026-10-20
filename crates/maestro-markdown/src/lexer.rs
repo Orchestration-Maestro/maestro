@@ -1,4 +1,5 @@
 //! Document block dispatch and first-wins reference ownership.
+mod blocks;
 mod quote;
 use crate::parse::Extension;
 use crate::{Alignment, BlockToken, Cell, Definition, Document, Kind, MarkedOptions, Node, Table};
@@ -9,17 +10,12 @@ use crate::{
     source::{ScopeSource, Source},
     tokenizer::{self, capture},
 };
+use blocks::BlockTokens;
 use maestro_text::is_whitespace_scalar;
-use std::{collections::HashMap, ops::Range};
-
-/// Block grammar position, independent of any consumer.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum BlockContext {
-    /// Paragraphs can be clipped at a block extension start.
-    TopLevel,
-    /// Tight item text stays inline unless an extension starts the block itself.
-    ListItem,
-}
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    ops::Range,
+};
 
 /// Per-document grammar state; inline work begins after all definitions are known.
 pub(crate) struct Lexer<'a, E> {
@@ -28,7 +24,7 @@ pub(crate) struct Lexer<'a, E> {
     /// First invalid extension result, propagated before inline resolution.
     error: Option<E>,
     /// Current paragraph-versus-item grammar position.
-    context: BlockContext,
+    top: bool,
     /// Whether the preceding paragraph was clipped at an extension hint.
     clipped: bool,
     /// Extension-hint barriers of the current block source, reused across its paragraphs.
@@ -52,7 +48,7 @@ impl<'a, E> Lexer<'a, E> {
         let mut lexer = Self {
             tokenizer,
             error: None,
-            context: BlockContext::TopLevel,
+            top: true,
             clipped: false,
             barriers: None,
             options,
@@ -73,96 +69,17 @@ impl<'a, E> Lexer<'a, E> {
         })
     }
 
-    /// Dispatch blocks with a monotonically advancing authored cursor.
+    /// Admit a document into one retained block accumulator.
     pub(crate) fn blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
-        self.blocks_in(source, BlockContext::TopLevel)
+        let mut output = BlockTokens::default();
+        self.block_tokens(source, &mut output, false);
+        output.nodes
     }
 
-    /// Preserve item text context while sharing the same block dispatcher.
+    /// Begin item grammar; completion intentionally returns to top level.
     pub(crate) fn item_blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
-        self.blocks_in(source, BlockContext::ListItem)
-    }
-
-    /// Restore the enclosing grammar context after recursively admitting containers.
-    fn blocks_in(&mut self, source: &ScopeSource, context: BlockContext) -> Vec<Node> {
-        let previous_context = std::mem::replace(&mut self.context, context);
-        let previous_barriers = self.barriers.take();
-        let mut output = Vec::new();
-        let mut cursor = 0;
-        let mut clipped = false;
-        while cursor < source.text.len() {
-            let previous = output.len();
-            self.clipped = false;
-            let rest = source.view(cursor..source.text.len());
-            cursor += self.advance(&rest, &mut output);
-            if clipped && output.len() > previous {
-                let mut next = output.split_off(previous);
-                self.join_continuation(source, &mut output, &mut next);
-                output.extend(next);
-            }
-            clipped = self.clipped;
-        }
-        self.context = previous_context;
-        self.barriers = previous_barriers;
-        output
-    }
-
-    /// Admit one block and return its positive consumed byte count.
-    fn advance(&mut self, source: &Source<'_>, output: &mut Vec<Node>) -> usize {
-        if self.error.is_some() {
-            return source.text.len();
-        }
-        if let Some(consumed) = self.extension(source, output) {
-            return consumed;
-        }
-        let gap = rules::BLOCK_NEWLINE
-            .as_ref()
-            .and_then(|rule| rule.find(source.text));
-        if let Some(gap) = gap.filter(|gap| gap.end() > 0) {
-            // With nothing before it, even one line break is a gap when content follows.
-            if (gap.end() > 1 && !output.is_empty())
-                || (output.is_empty()
-                    && source.text[gap.end()..]
-                        .chars()
-                        .any(|scalar| !is_whitespace_scalar(scalar)))
-                || output
-                    .last()
-                    .is_some_and(|node| node.authored.ends_with('\n'))
-            {
-                output.push(source.node(gap.range(), Kind::Gap));
-            }
-            return gap.end();
-        }
-        if let Some(block) = tokenizer::block::leaf(source, self.options) {
-            if let Some(inline) = block.inline {
-                self.scopes.insert(
-                    (block.node.range.start, block.node.range.end, false),
-                    inline,
-                );
-            }
-            output.push(block.node);
-            return block.consumed;
-        }
-        if let Some((consumed, node)) = self.container(source) {
-            self.clipped = false;
-            output.push(node);
-            return consumed;
-        }
-        if let Some(consumed) = self.definition(source) {
-            return consumed;
-        }
-        if let Some((consumed, node)) = self.table(source).or_else(|| self.paragraph(source)) {
-            output.push(node);
-            return consumed;
-        }
-        let size = source.text.chars().next().map_or(0, char::len_utf8);
-        let node = source.node(0..size, Kind::Paragraph(Vec::new()));
-        self.scopes.insert(
-            (node.range.start, node.range.end, false),
-            source.select(std::iter::once(0..size)),
-        );
-        output.push(node);
-        size
+        self.top = false;
+        self.blocks(source)
     }
 
     /// Try a validated caller block extension before built-in tokenizers.
@@ -189,7 +106,7 @@ impl<'a, E> Lexer<'a, E> {
     fn extension_start(&mut self, source: &Source<'_>) -> usize {
         let (whole, offset) = source.whole();
         let source = source.text;
-        if self.context == BlockContext::ListItem || self.tokenizer.is_none() {
+        if !self.top || self.tokenizer.is_none() {
             return source.len();
         }
         let mut begin = source.chars().next().map_or(0, char::len_utf8);
@@ -226,25 +143,27 @@ impl<'a, E> Lexer<'a, E> {
         self.quote(source).or_else(|| self.list(source))
     }
 
-    /// Capture definitions once, preserving the first destination and title.
-    fn definition(&mut self, source: &Source<'_>) -> Option<usize> {
-        let matched = rules::block_def(self.options)?.find(source.text)?;
-        let id = reference_key(capture(source.text, &matched, 1));
-        let destination = capture(source.text, &matched, 2);
+    /// Register a recognized definition only once, reporting whether it is new.
+    fn definition(&mut self, source: &Source<'_>, matched: &regress::Match) -> bool {
+        let id = reference_key(capture(source.text, matched, 1));
+        let destination = capture(source.text, matched, 2);
         let destination = destination
             .strip_prefix('<')
             .and_then(|text| text.strip_suffix('>'))
             .unwrap_or(destination);
-        let title = capture(source.text, &matched, 3);
+        let title = capture(source.text, matched, 3);
         let title = title.get(1..title.len().saturating_sub(1)).unwrap_or("");
-        self.definitions.entry(id).or_insert_with(|| Definition {
+        let Entry::Vacant(entry) = self.definitions.entry(id) else {
+            return false;
+        };
+        entry.insert(Definition {
             destination: destination.to_owned(),
             title: title.to_owned(),
         });
-        Some(matched.end())
+        true
     }
 
-    /// Capture a setext heading or an ordinary paragraph's inline source.
+    /// Capture setext headings before selecting top-level paragraphs or item text.
     fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
         let heading = rules::block_lheading(self.options).and_then(|rule| rule.find(source.text));
         let limit = if heading.is_none() {
@@ -253,48 +172,40 @@ impl<'a, E> Lexer<'a, E> {
             source.text.len()
         };
         let window = source.prefix(limit);
-        let (matched, kind) = if let Some(matched) = heading {
+        let (end, content, kind) = if let Some(matched) = heading {
             let level = if capture(source.text, &matched, 2).starts_with('=') {
                 1
             } else {
                 2
             };
             let label = capture(source.text, &matched, 1).to_owned();
-            (matched, Kind::Heading(level, Vec::new(), label))
-        } else {
             (
-                rules::block_paragraph(self.options)?.find(window.text)?,
+                matched.end(),
+                matched.group(1)?,
+                Kind::Heading(level, Vec::new(), label),
+            )
+        } else if self.top {
+            let matched = rules::block_paragraph(self.options)?.find(window.text)?;
+            (
+                matched.end(),
+                matched.group(1)?,
                 Kind::Paragraph(Vec::new()),
             )
-        };
-        let range = matched.group(1)?;
-        let logical_end = if matches!(kind, Kind::Paragraph(_)) {
-            paragraph_end(&window, matched.end())
         } else {
-            matched.end()
+            let end = source.text.find('\n').unwrap_or(source.text.len());
+            (end, 0..end, Kind::Inline(Vec::new()))
         };
-        let end = logical_end
-            + usize::from(
-                matches!(kind, Kind::Paragraph(_))
-                    && source.text.as_bytes().get(logical_end) == Some(&b'\n'),
-            );
-
         let node = source.node(0..end, kind);
-        let inline_range = if matches!(node.kind, Kind::Paragraph(_)) {
-            range.start..end
-        } else {
-            range
-        };
         self.scopes.insert(
             (node.range.start, node.range.end, false),
-            source.select(std::iter::once(inline_range)),
+            source.select(std::iter::once(content)),
         );
         Some((end, node))
     }
 
     /// Select a table only when header and delimiter column counts agree.
     fn table(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        if self.options == MarkedOptions::Documentation || source.is_lazy(0) {
+        if self.options == MarkedOptions::Documentation {
             return None;
         }
         let matched = rules::block_table(self.options)?.find(source.text)?;
@@ -447,28 +358,4 @@ pub(crate) fn lines(source: &str) -> impl Iterator<Item = Range<usize>> {
 /// Match reference identities using full Unicode folding without changing their spelling.
 pub(crate) fn reference_key(source: &str) -> String {
     unicase::UniCase::new(reference_id(source)).to_folded_case()
-}
-
-/// Keep a lazy table-looking continuation in its original paragraph.
-fn paragraph_end(source: &Source<'_>, mut end: usize) -> usize {
-    while source.text.as_bytes().get(end) == Some(&b'\n') {
-        let next = end + 1;
-        if !source.is_lazy(next) {
-            break;
-        }
-        let Some(table) = rules::BLOCK_TABLE.as_ref() else {
-            break;
-        };
-        let Some(paragraph) = rules::BLOCK_PARAGRAPH.as_ref() else {
-            break;
-        };
-        if table.find(&source.text[next..]).is_none() {
-            break;
-        }
-        let Some(continuation) = paragraph.find(&source.text[next..]) else {
-            break;
-        };
-        end = next + continuation.end();
-    }
-    end
 }

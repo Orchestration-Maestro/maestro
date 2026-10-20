@@ -42,6 +42,19 @@ pub(crate) static BLOCK_LIST: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::with_flags(r"^( {0,3}(?:[*+-]|\d{1,9}[.)]))([ \t][^\n]+?)?(?:\n|$)", "").ok()
 });
 
+/// Frame an admitted list's items, including empty marker whitespace.
+pub(crate) static LIST_ITEM: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::with_flags(
+        r"^( {0,3}(?:[*+-]|\d{1,9}[.)]))((?:[\t ][^\n]*)?(?:\n|$))",
+        "",
+    )
+    .ok()
+});
+
+/// Detect a retained blank-line suffix between items of the same list.
+pub(crate) static LIST_BLANK_END: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::with_flags(r"\n[ \t]*\n[ \t]*$", "").ok());
+
 /// Reference spelling of block html syntax.
 pub(crate) const BLOCK_HTML_SOURCE: &str = r#"^ {0,3}(?:<(script|pre|style|textarea)[\s>][\s\S]*?(?:<\/\1>[^\n]*\n+|$)|<!--(?:-?>|[\s\S]*?(?:-->|$))[^\n]*(\n+|$)|<\?[\s\S]*?(?:\?>\n*|$)|<![A-Z][\s\S]*?(?:>\n*|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>\n*|$)|<\/?(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?: +|\n|\/?>)[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<(?!script|pre|style|textarea)([a-z][\w-]*)(?: +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?)*? *\/?>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<\/(?!script|pre|style|textarea)[a-z][\w-]*\s*>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$))"#;
 
