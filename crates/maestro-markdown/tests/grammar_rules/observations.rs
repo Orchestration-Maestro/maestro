@@ -17,6 +17,10 @@ struct Row {
     input: String,
     /// Terminal, raw browser, escaped browser and export observations.
     targets: [Value; 4],
+    /// Recorded joined authored spellings at block inline scopes.
+    inline_authored: Option<[Option<Vec<String>>; 4]>,
+    /// Recorded link labels in traversal order.
+    link_labels: Option<[Option<Vec<String>>; 4]>,
 }
 
 /// Require the complete selected family without deduplicating repeated observations.
@@ -27,27 +31,98 @@ pub(super) fn check(group: &str, count: usize) {
     let mut failures = Vec::new();
     for row in rows.into_iter().filter(|row| row.group == group) {
         seen += 1;
-        for (options, expected) in [
+        for (target, (options, expected)) in [
             MarkedOptions::Terminal,
             MarkedOptions::Browser { escape_html: false },
             MarkedOptions::Browser { escape_html: true },
             MarkedOptions::Export,
         ]
         .into_iter()
-        .zip(row.targets)
+        .zip(&row.targets)
+        .enumerate()
         {
             let mut document =
                 parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
             autolinks(&mut document);
+            if let Some(difference) = metadata_difference(&row, target, &document.nodes) {
+                failures.push(format!("{} {options:?}: {difference}", row.id));
+            }
             // The export grammar's recording keeps only the authored image label.
             let actual = nodes(&document.nodes, options != MarkedOptions::Export);
-            if actual != expected {
+            if actual != *expected {
                 failures.push(format!("{} {options:?}: {actual} != {expected}", row.id));
             }
         }
     }
     assert_eq!(seen, count);
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// Describe a mismatch only for independently recorded metadata targets.
+fn metadata_difference(row: &Row, target: usize, nodes: &[Node]) -> Option<String> {
+    let authored = row.inline_authored.as_ref()?[target].as_ref()?;
+    let expected_labels = row.link_labels.as_ref().unwrap()[target].as_ref().unwrap();
+    let (actual_authored, labels) = metadata(nodes);
+    (actual_authored != *authored || labels != *expected_labels).then(|| {
+        format!("metadata {actual_authored:?} / {labels:?} != {authored:?} / {expected_labels:?}")
+    })
+}
+
+/// Collect authored inline scopes and link labels in source traversal order.
+fn metadata(input: &[Node]) -> (Vec<String>, Vec<String>) {
+    let mut authored = Vec::new();
+    let mut labels = Vec::new();
+    for node in input {
+        let scopes: Vec<&[Node]> = match &node.kind {
+            Kind::Paragraph(children) | Kind::Inline(children) | Kind::Heading(_, children, _) => {
+                vec![children]
+            }
+            Kind::Table(table) => table
+                .header
+                .iter()
+                .chain(table.rows.iter().flatten())
+                .map(|cell| cell.children.as_slice())
+                .collect(),
+            _ => Vec::new(),
+        };
+        for children in scopes {
+            authored.push(
+                children
+                    .iter()
+                    .map(|child| child.authored.as_str())
+                    .collect(),
+            );
+        }
+        let children = match &node.kind {
+            Kind::Link(children, label, ..) => {
+                labels.push(label.clone());
+                children.as_slice()
+            }
+            Kind::Paragraph(children)
+            | Kind::Inline(children)
+            | Kind::Heading(_, children, _)
+            | Kind::Item(children)
+            | Kind::List(_, children)
+            | Kind::Quote(children, _)
+            | Kind::Strong(children)
+            | Kind::Emphasis(children)
+            | Kind::Strike(children) => children,
+            Kind::Image(_, meta) => &meta.children,
+            Kind::Table(table) => {
+                for cell in table.header.iter().chain(table.rows.iter().flatten()) {
+                    let (nested_authored, nested_labels) = metadata(&cell.children);
+                    authored.extend(nested_authored);
+                    labels.extend(nested_labels);
+                }
+                continue;
+            }
+            _ => &[],
+        };
+        let (nested_authored, nested_labels) = metadata(children);
+        authored.extend(nested_authored);
+        labels.extend(nested_labels);
+    }
+    (authored, labels)
 }
 
 /// Compare native semantic fields while coalescing adjacent display text only.
