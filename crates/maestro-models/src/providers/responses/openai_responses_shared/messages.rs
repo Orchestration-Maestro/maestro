@@ -252,15 +252,7 @@ fn function_call(call: &ToolCall, other_model: bool) -> Result<Value, Diagnostic
 /// Convert a tool result. Its text lines are joined; images follow the text when the model
 /// reads images, and otherwise only the text, or a placeholder, is sent.
 fn convert_tool_result(result: &ToolResultMessage, model: &Model) -> Value {
-    let text = result
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            UserBlock::Text(text) => Some(text.text.as_str()),
-            UserBlock::Image(_) => None,
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
+    let text = UserBlock::text_output(&result.content);
     let images: Vec<Value> = result
         .content
         .iter()

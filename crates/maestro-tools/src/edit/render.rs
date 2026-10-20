@@ -293,15 +293,7 @@ fn format_result(
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<Option<String>> {
     if context.is_error {
-        let text = result
-            .content
-            .iter()
-            .filter_map(|block| match block {
-                UserBlock::Text(text) => Some(text.text.as_str()),
-                UserBlock::Image(_) => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        let text = UserBlock::text_output(result.content);
         if text.is_empty()
             || preview.is_some_and(|preview| {
                 preview

@@ -428,15 +428,7 @@ fn convert_tool_results(
 ) -> bool {
     let mut images = Vec::new();
     for result in results {
-        let text = result
-            .content
-            .iter()
-            .filter_map(|block| match block {
-                UserBlock::Text(text) => Some(text.text.as_str()),
-                UserBlock::Image(_) => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        let text = UserBlock::text_output(&result.content);
         let name = (compat.has(Capability::RequiresToolResultName) && !result.tool_name.is_empty())
             .then(|| result.tool_name.clone());
         params.push(ChatCompletionMessageParam::Tool {

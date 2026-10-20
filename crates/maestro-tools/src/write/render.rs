@@ -171,15 +171,7 @@ pub(super) fn render_result(
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
-    let output = result
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            UserBlock::Text(text) => Some(text.text.as_str()),
-            UserBlock::Image(_) => None,
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
+    let output = UserBlock::text_output(result.content);
     if context.is_error && !output.is_empty() {
         let error = paint(theme, &ThemeColor::Error, &output)?;
         return Ok(into_text(
