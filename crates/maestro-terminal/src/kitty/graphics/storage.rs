@@ -5,8 +5,16 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use super::image::{Image, Limits, LoadingImage};
-use crate::{PageList, page_list::TrackedPin};
+use super::{
+    command::Delete,
+    image::{Image, Limits, LoadingImage},
+    render::Rect,
+};
+use crate::{
+    PageList, Point,
+    page_list::{Pin, TrackedPin},
+    point::Coordinate,
+};
 
 /// Process-wide content stamps; zero denotes storage that has never changed.
 static GENERATION: AtomicU64 = AtomicU64::new(0);
@@ -289,4 +297,196 @@ impl ImageStorage {
             }
         }
     }
+}
+
+/// A validated deletion selector expressed in retained screen coordinates.
+#[derive(Clone, Copy)]
+enum DeleteTarget {
+    /// All physical placements, excluding placeholder prototypes.
+    All,
+    /// One image and optionally one external placement.
+    Id(u32, u32),
+    /// Rectangle intersection with an optional stacking restriction.
+    Cell(Pin, Option<i32>),
+    /// One zero-based column.
+    Column(u32),
+    /// One retained row, independent of column.
+    Row(Pin),
+    /// Physical placements on one stacking level.
+    Z(i32),
+    /// Inclusive image identifier interval.
+    Range(u32, u32),
+    /// Invalid coordinates or unsupported animation frames.
+    None,
+}
+
+impl DeleteTarget {
+    /// Test one placement against the already resolved selector.
+    fn matches(
+        self,
+        key: PlacementKey,
+        placement: &Placement,
+        rect: Option<Rect>,
+        pages: &PageList,
+    ) -> bool {
+        match self {
+            Self::All => matches!(placement.location, Location::Pin(_)),
+            Self::Id(id, pid) => {
+                key.image_id == id && (pid == 0 || key.placement_id == PlacementId::External(pid))
+            }
+            Self::Cell(pin, z) => rect.is_some_and(|r| {
+                pin.x >= r.top_left.x
+                    && pin.x <= r.bottom_right.x
+                    && pin.is_between(pages, r.top_left, r.bottom_right)
+                    && z.is_none_or(|z| placement.z == z)
+            }),
+            Self::Column(x) => rect
+                .is_some_and(|r| u32::from(r.top_left.x) <= x && x <= u32::from(r.bottom_right.x)),
+            Self::Row(mut pin) => rect.is_some_and(|r| {
+                pin.x = r.top_left.x;
+                pin.is_between(pages, r.top_left, r.bottom_right)
+            }),
+            Self::Z(z) => matches!(placement.location, Location::Pin(_)) && placement.z == z,
+            Self::Range(first, last) => (first..=last).contains(&key.image_id),
+            Self::None => false,
+        }
+    }
+}
+
+impl ImageStorage {
+    /// Delete selected placements and, when requested, their now-unused images.
+    /// No-op commands preserve both the generation and dirty flag.
+    pub fn delete(
+        &mut self,
+        pages: &mut PageList,
+        cell: (u32, u32),
+        cursor: Coordinate,
+        cmd: Delete,
+    ) {
+        let before = (self.placements.len(), self.images.len());
+        let (target, delete_images) = self.delete_target(pages, cursor, cmd);
+        let keys: Vec<_> = self
+            .placements
+            .iter()
+            .filter_map(|(&key, placement)| {
+                let rect = self
+                    .images
+                    .get(&key.image_id)
+                    .and_then(|image| placement.rect(image, pages, cell));
+                target.matches(key, placement, rect, pages).then_some(key)
+            })
+            .collect();
+        for key in keys {
+            if let Some(placement) = self.placements.remove(&key) {
+                placement.deinit(pages);
+            }
+            if delete_images {
+                self.delete_if_unused(key.image_id);
+            }
+        }
+        if delete_images {
+            match target {
+                DeleteTarget::Id(id, _) => self.delete_if_unused(id),
+                DeleteTarget::All => self.delete_all_unused(),
+                _ => {}
+            }
+        }
+        if before != (self.placements.len(), self.images.len()) {
+            self.mark_mutated();
+        }
+    }
+
+    /// Remove unplaced payloads while preserving placeholder prototypes.
+    fn delete_all_unused(&mut self) {
+        let ids: Vec<_> = self.images.keys().copied().collect();
+        for id in ids {
+            self.delete_if_unused(id);
+        }
+    }
+
+    /// Remove a payload only after its last placement has gone.
+    fn delete_if_unused(&mut self, id: u32) {
+        if self.placements.keys().any(|key| key.image_id == id) {
+            return;
+        }
+        if let Some(image) = self.images.remove(&id) {
+            self.total_bytes -= image.data.len();
+        }
+    }
+
+    /// Resolve protocol coordinates once for every caller of rectangle intersection.
+    fn delete_target(
+        &self,
+        pages: &PageList,
+        cursor: Coordinate,
+        cmd: Delete,
+    ) -> (DeleteTarget, bool) {
+        match cmd {
+            Delete::All(delete) => (DeleteTarget::All, delete),
+            Delete::Id {
+                delete,
+                image_id,
+                placement_id,
+            } => (DeleteTarget::Id(image_id, placement_id), delete),
+            Delete::Newest {
+                delete,
+                image_number,
+                placement_id,
+            } => (
+                self.image_by_number(image_number)
+                    .map_or(DeleteTarget::None, |image| {
+                        DeleteTarget::Id(image.id, placement_id)
+                    }),
+                delete,
+            ),
+            _ => spatial_target(pages, cursor, cmd),
+        }
+    }
+}
+
+/// Resolve physical selectors independently of image identifier lookup.
+fn spatial_target(pages: &PageList, cursor: Coordinate, cmd: Delete) -> (DeleteTarget, bool) {
+    match cmd {
+        Delete::IntersectCursor(delete) => (
+            pages
+                .pin(Point::Active(cursor))
+                .map_or(DeleteTarget::None, |pin| DeleteTarget::Cell(pin, None)),
+            delete,
+        ),
+        Delete::IntersectCell { delete, x, y } => (cell_target(pages, x, y, None), delete),
+        Delete::IntersectCellZ { delete, x, y, z } => (cell_target(pages, x, y, Some(z)), delete),
+        Delete::Column { delete, x } => (
+            x.checked_sub(1)
+                .map_or(DeleteTarget::None, DeleteTarget::Column),
+            delete,
+        ),
+        Delete::Row { delete, y } => (
+            y.checked_sub(1)
+                .and_then(|y| pages.pin(Point::Active(Coordinate { x: 0, y })))
+                .map_or(DeleteTarget::None, DeleteTarget::Row),
+            delete,
+        ),
+        Delete::Z { delete, z } => (DeleteTarget::Z(z), delete),
+        Delete::Range {
+            delete,
+            first,
+            last,
+        } if first > 0 && first <= last => (DeleteTarget::Range(first, last), delete),
+        Delete::Range { .. }
+        | Delete::AnimationFrames(_)
+        | Delete::All(_)
+        | Delete::Id { .. }
+        | Delete::Newest { .. } => (DeleteTarget::None, false),
+    }
+}
+
+/// Resolve a one-based cell without narrowing an unrepresentable column.
+fn cell_target(pages: &PageList, x: u32, y: u32, z: Option<i32>) -> DeleteTarget {
+    let point = x
+        .checked_sub(1)
+        .and_then(|x| u16::try_from(x).ok())
+        .zip(y.checked_sub(1));
+    point
+        .and_then(|(x, y)| pages.pin(Point::Active(Coordinate { x, y })))
+        .map_or(DeleteTarget::None, |pin| DeleteTarget::Cell(pin, z))
 }

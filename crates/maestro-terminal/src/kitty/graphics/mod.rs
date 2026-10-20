@@ -5,3 +5,5 @@ pub mod command;
 pub mod image;
 
 pub mod storage;
+
+pub mod render;
