@@ -97,6 +97,7 @@ impl Selection {
 }
 
 /// Attach help bypasses name validation without becoming an explicit target.
+#[cfg(unix)]
 enum AttachRequest {
     /// No target supplied by the command.
     Inherited,
@@ -107,6 +108,7 @@ enum AttachRequest {
 }
 
 /// Observe attach-only options before the child-argument separator.
+#[cfg(unix)]
 fn attach_target(args: &[String]) -> Result<AttachRequest, String> {
     if args.get(1).map(String::as_str) != Some("attach") {
         return Ok(AttachRequest::Inherited);
