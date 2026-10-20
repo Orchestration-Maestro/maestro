@@ -9,22 +9,24 @@ use crate::oauth::native::CallbackServer;
 pub(super) async fn bind(state: String) -> Result<CallbackServer, OAuthError> {
     bind_with(
         state,
+        1455,
         |key| std::env::var(key).ok(),
         |listener| Box::pin(listener.accept()),
     )
     .await
 }
-/// Bind through supplied native effects, recovering only native listener failures.
+/// Bind the supplied port through native effects, recovering only listener failures.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) async fn bind_with(
     state: String,
+    port: u16,
     environment: impl FnOnce(&str) -> Option<String>,
     accept: impl for<'a> Fn(&'a tokio::net::TcpListener) -> crate::oauth::native::Accept<'a>
     + Send
     + 'static,
 ) -> Result<CallbackServer, OAuthError> {
     Ok(
-        crate::oauth::native::bind_with(state, 1455, route, environment, accept)
+        crate::oauth::native::bind_with(state, port, route, environment, accept)
             .await
             .unwrap_or_else(|_| cancelled()),
     )

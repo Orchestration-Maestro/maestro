@@ -1,5 +1,7 @@
 //! Controlled response-account policy and recorded protocol cases.
 use super::{callback, token};
+
+mod native;
 use crate::oauth::tests::run;
 use crate::{
     BoxFuture, EventStream, Fetch, FetchError, HttpResponse, OAuthCredentials, OAuthError,
@@ -487,7 +489,11 @@ impl Interaction {
     }
 }
 impl crate::OAuthLoginCallbacks for Interaction {
-    fn on_auth(&self, _: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
+    fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
+        assert_eq!(
+            info.instructions.as_deref(),
+            Some("A browser window should open. Complete login to finish.")
+        );
         self.auth.push(());
         if self.fail == "auth" {
             Err(OAuthError::message("auth failed"))
@@ -552,16 +558,25 @@ fn accept(wait: &EventStream<crate::oauth::native::CallbackOutcome, ()>, code: &
     ));
 }
 /// Successful token bytes for interaction tests.
-fn success_bytes() -> Vec<u8> {
+fn success_bytes(account: &str) -> Vec<u8> {
     use base64::Engine as _;
-    let payload = base64::engine::general_purpose::URL_SAFE
-        .encode(br#"{"https://api.openai.com/auth":{"chatgpt_account_id":"acct_123"}}"#);
+    let payload = base64::engine::general_purpose::URL_SAFE.encode(
+        serde_json::to_vec(
+            &serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": account}}),
+        )
+        .unwrap(),
+    );
     format!(r#"{{"access_token":"h.{payload}.s","refresh_token":"rotated","expires_in":0.5}}"#)
         .into_bytes()
 }
 /// Controlled successful transport.
 fn success_fetch() -> Fetch {
-    response(200, String::new(), vec![success_bytes()], Effect::Normal)
+    response(
+        200,
+        String::new(),
+        vec![success_bytes("acct_123")],
+        Effect::Normal,
+    )
 }
 /// Exercise the real coordinator while controlling only entropy and listener effects.
 async fn login(
@@ -792,7 +807,7 @@ async fn held_body(
 ) -> Result<Vec<u8>, FetchError> {
     entered.push(());
     gate.result().await;
-    Ok(success_bytes())
+    Ok(success_bytes("acct_123"))
 }
 #[test]
 fn response_expiry_uses_unbuffered_completion_clock() {
@@ -884,108 +899,6 @@ fn response_settled_manual_errors_precede_code_selection() {
     });
 }
 
-/// Unit-level native callback scenarios share one fixed-port admission owner.
-static NATIVE_PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
-/// Probe release using the same reuse policy as the native listener.
-fn probe() -> tokio::net::TcpListener {
-    let socket = tokio::net::TcpSocket::new_v4().unwrap();
-    #[cfg(unix)]
-    socket.set_reuseaddr(true).unwrap();
-    socket.bind("127.0.0.1:1455".parse().unwrap()).unwrap();
-    socket.listen(128).unwrap()
-}
-/// Hold supplied token bytes behind a body-consumed witness and release gate.
-async fn controlled_body(
-    entered: EventStream<(), ()>,
-    release: EventStream<(), ()>,
-    bytes: Vec<u8>,
-) -> Result<Vec<u8>, FetchError> {
-    entered.push(());
-    release.result().await;
-    Ok(bytes)
-}
-/// Keep admission through this token body and observe shutdown after its outcome.
-async fn check_token_cleanup(status: u16, bytes: Vec<u8>) {
-    let server = crate::oauth::native::bind("s".into(), 1455, callback::route)
-        .await
-        .unwrap();
-    let stop = server.stop.clone();
-    let stopped = server.stopped.clone();
-    let entered = EventStream::new(|()| true, |()| ());
-    let release = EventStream::new(|()| true, |()| ());
-    let consumed = entered.clone();
-    let gate = release.clone();
-    let successful = bytes == success_bytes();
-    let fetch: Fetch = Arc::new(move |_| {
-        let body = controlled_body(consumed.clone(), gate.clone(), bytes.clone());
-        Box::pin(std::future::ready(Ok(HttpResponse {
-            status,
-            status_text: String::new(),
-            headers: BTreeMap::new(),
-            body: Box::pin(futures_util::stream::once(body)),
-        })))
-    });
-    let work = tokio::spawn(login(
-        Interaction::new(Some(Ok("manual".into())), "unused", ""),
-        fetch,
-        server,
-    ));
-    entered.result().await;
-    assert!(!stop.is_aborted());
-    let peer = tokio::net::TcpStream::connect("127.0.0.1:1455")
-        .await
-        .unwrap();
-    release.push(());
-    assert_eq!(work.await.unwrap().is_ok(), successful);
-    assert!(stop.is_aborted());
-    stopped.result().await;
-    drop(peer);
-    drop(probe());
-}
-/// Observe listener release after interaction failure or future abandonment.
-async fn check_interaction_cleanup(phase: &str) {
-    let server = crate::oauth::native::bind("s".into(), 1455, callback::route)
-        .await
-        .unwrap();
-    let stop = server.stop.clone();
-    let stopped = server.stopped.clone();
-    let callbacks = if phase == "manual" {
-        Interaction::new(
-            Some(Err(OAuthError::message("manual failed"))),
-            "unused",
-            "",
-        )
-    } else {
-        Interaction::new(None, "unused", "prompt")
-    };
-    if phase == "prompt" {
-        server
-            .wait
-            .push(crate::oauth::native::CallbackOutcome::Cancelled);
-    }
-    let mut work = Box::pin(login(callbacks, success_fetch(), server));
-    if phase == "drop" {
-        assert!(work.as_mut().now_or_never().is_none());
-        drop(work);
-    } else {
-        assert_eq!(
-            work.await.unwrap_err().to_string(),
-            format!("{phase} failed")
-        );
-    }
-    assert!(stop.is_aborted());
-    stopped.result().await;
-    drop(probe());
-}
-
-/// Publish a native accept failure only when its named producer releases it.
-async fn failed_accept(
-    gate: EventStream<(), ()>,
-) -> std::io::Result<(tokio::net::TcpStream, std::net::SocketAddr)> {
-    gate.result().await;
-    Err(std::io::Error::from_raw_os_error(5))
-}
-
 #[test]
 fn response_ignores_progress_selector_signal_and_deadlines() {
     run(async {
@@ -1051,187 +964,5 @@ async fn late_manual(input: EventStream<bool, ()>) -> Result<String, OAuthError>
         Err(OAuthError::message("late failed"))
     } else {
         Ok("late-success".into())
-    }
-}
-
-/// Read environment only at native binding and prove the configured host is reached.
-async fn binding_witness(
-    state: String,
-    host: Option<&str>,
-    observed: Arc<std::sync::atomic::AtomicUsize>,
-) -> Result<crate::oauth::native::CallbackServer, OAuthError> {
-    let server = callback::bind_with(
-        state,
-        move |key| {
-            assert_eq!(key, "MAESTRO_OAUTH_CALLBACK_HOST");
-            observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            host.map(str::to_owned)
-        },
-        |listener| Box::pin(listener.accept()),
-    )
-    .await?;
-    if host != Some(" ") {
-        let actual = host.filter(|host| !host.is_empty()).unwrap_or("127.0.0.1");
-        drop(
-            tokio::net::TcpStream::connect((actual, 1455))
-                .await
-                .unwrap(),
-        );
-    }
-    Ok(server)
-}
-
-/// Fail the selected proof phase without replacing the shared primitive's implementation.
-fn controlled_proof(phase: &str) -> Result<crate::Pkce, OAuthError> {
-    if phase == "proof" {
-        Err(OAuthError::message("proof failed"))
-    } else {
-        Ok(proof())
-    }
-}
-
-/// Tests that bind the fixed callback port live in an `oauth_callback` module.
-mod oauth_callback {
-    use super::*;
-
-    #[test]
-    fn response_login_closes_after_token_completion() {
-        run(async {
-            let _permit = NATIVE_PORT.acquire().await.unwrap();
-            for (status, bytes) in [
-                (200, success_bytes()),
-                (200, b"{".to_vec()),
-                (
-                    200,
-                    b"{\"access_token\":\"h.e30.s\",\"refresh_token\":\"r\",\"expires_in\":1}"
-                        .to_vec(),
-                ),
-                (401, b"denied".to_vec()),
-            ] {
-                check_token_cleanup(status, bytes).await;
-            }
-            for phase in ["prompt", "manual", "drop"] {
-                check_interaction_cleanup(phase).await;
-            }
-        });
-    }
-
-    #[test]
-    fn response_auth_callback_failure_releases_listener() {
-        run(async {
-            let _permit = NATIVE_PORT.acquire().await.unwrap();
-            let server = crate::oauth::native::bind("s".into(), 1455, callback::route)
-                .await
-                .unwrap();
-            let stopped = server.stopped.clone();
-            let fetch: Fetch = Arc::new(|_| panic!("auth failure precedes token exchange"));
-            assert_eq!(
-                login(Interaction::new(None, "unused", "auth"), fetch, server)
-                    .await
-                    .unwrap_err()
-                    .to_string(),
-                "auth failed"
-            );
-            assert!(stopped.result().now_or_never().is_some());
-            drop(probe());
-        });
-    }
-
-    #[test]
-    fn response_login_environment_is_read_at_binding() {
-        run(response_login_environment_is_read_at_binding_flow());
-    }
-
-    async fn response_login_environment_is_read_at_binding_flow() {
-        let _permit = NATIVE_PORT.acquire().await.unwrap();
-        for host in [None, Some(""), Some("127.0.0.2"), Some(" ")] {
-            let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-            let observed = reads.clone();
-            let result = super::super::login_with(
-                Interaction::new(Some(Ok("manual".into())), "unused", ""),
-                None,
-                success_fetch(),
-                |_| {
-                    Ok((
-                        proof(),
-                        "s".into(),
-                        super::super::auth_info(&proof(), "s", "maestro"),
-                    ))
-                },
-                move |state| binding_witness(state, host, observed),
-            )
-            .await;
-            assert_eq!(result.unwrap().extra["accountId"], "acct_123");
-            assert_eq!(reads.load(std::sync::atomic::Ordering::SeqCst), 1);
-        }
-        for phase in ["proof", "state"] {
-            let result = super::super::login_with(
-                Interaction::new(None, "unused", ""),
-                None,
-                success_fetch(),
-                move |originator| {
-                    super::super::authorization_flow_with(
-                        originator,
-                        || controlled_proof(phase),
-                        |_| Err(OAuthError::message("state failed")),
-                    )
-                },
-                move |state| {
-                    callback::bind_with(
-                        state,
-                        |_| panic!("entropy failure avoids environment access"),
-                        |listener| Box::pin(listener.accept()),
-                    )
-                },
-            )
-            .await;
-            assert_eq!(result.unwrap_err().to_string(), format!("{phase} failed"));
-        }
-    }
-
-    #[test]
-    fn response_post_bind_failure_enters_fallback() {
-        run(response_post_bind_failure_enters_fallback_flow());
-    }
-
-    async fn response_post_bind_failure_enters_fallback_flow() {
-        let _permit = NATIVE_PORT.acquire().await.unwrap();
-        for accepted in [false, true] {
-            let release = EventStream::new(|()| true, |()| ());
-            let gate = release.clone();
-            let server = callback::bind_with(
-                "s".into(),
-                |_| None,
-                move |_| Box::pin(failed_accept(gate.clone())),
-            )
-            .await
-            .unwrap();
-            let stopped = server.stopped.clone();
-            if accepted {
-                accept(&server.wait, "accepted");
-            }
-            let checked: Fetch = Arc::new(move |request| {
-                let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
-                    .into_owned()
-                    .collect();
-                assert_eq!(
-                    fields["code"],
-                    if accepted { "accepted" } else { "fallback" }
-                );
-                success_fetch()(request)
-            });
-            let mut work = Box::pin(login(
-                Interaction::new(None, "fallback", ""),
-                checked,
-                server,
-            ));
-            if !accepted {
-                assert!(work.as_mut().now_or_never().is_none());
-            }
-            release.push(());
-            stopped.result().await;
-            assert_eq!(work.await.unwrap().extra["accountId"], "acct_123");
-            drop(probe());
-        }
     }
 }
