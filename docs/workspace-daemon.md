@@ -136,8 +136,46 @@ their terminal resources.
 
 Shell builders retain login-shell custom commands, plain pane commands and
 shell-evaluated scrollback editor selection. Foreground observations contain process
-facts rather than application classifications. Application wiring is described by the
+facts rather than application classifications. Their records are available through
+`maestro_process::foreground` on every platform; native lookup remains Linux-only.
+Application wiring is described by the
 [workspace daemon contract](specs/workspace-daemon.md).
+
+## Pane terminals
+
+`maestro_daemon::pane::terminal::PaneTerminal` owns one concrete terminal engine
+with a single lock for screen state and pane policy. `process_pty_bytes` returns
+ordered child replies, title changes, bells, clipboard writes and working-directory
+observations. Its foreground-job source is lazy: colour sets and primary-screen
+history clears request it at most once per write, only when the shell PID is known.
+Callers send replies directly to the PTY, independently of queued
+user input. Capability and host-colour replies retain their position among engine
+replies, including queries split across writes. Child colour overrides survive
+host-theme refreshes until reset or a matching foreground-owner restore.
+
+Resize retains bottom-follow and returns in-band size reports. Scrolling and mode
+reads use live engine state. Synchronized output suppresses immediate redraws;
+returned delays let the caller schedule image and cursor settling without a
+pane-owned timer. Key and mouse encoding reuse the engine's encoders. Mouse reports
+and converted non-character keys use live pane modes; character keys and semantic
+fallbacks retain the caller's keyboard protocol. Keyboard handoff replays the
+retained flag stack without the independent modified-key mode. Grouped key repeats
+expand at the destination; releases encode once.
+
+Visible, recent and detection reads share the engine's retained rows and text
+formatters. Recent snapshots report whether the physical-row budget omitted older
+rows; unwrapped variants join soft wraps without changing that budget. Retained
+literal search handles Unicode case folding and complete graphemes. Word and WORD
+motions use the same retained buffer. `with_render_state` refreshes and borrows the
+single render snapshot under the pane lock; frame rendering stays with its caller.
+
+`maestro_daemon::selection::Selection` anchors and drags in absolute retained rows,
+orders inclusive endpoints and clamps screen coordinates to the pane. A click
+alone does not activate a selection. `extract_selection` reads those endpoints
+through the engine; highlighting and clipboard policy stay with the caller.
+
+Native Windows input fallback and recent-text qualification are tracked in
+[Windows qualification](https://github.com/Orchestration-Maestro/maestro/issues/1473).
 
 ## Pane agents
 

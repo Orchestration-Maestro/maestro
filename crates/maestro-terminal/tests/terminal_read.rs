@@ -115,7 +115,7 @@ fn keyboard_replay_excludes_cells_and_restores_both_keyboard_modes() {
     assert_eq!(terminal.kitty_keyboard_state_ansi().unwrap(), "");
     terminal.write(b"\x1b[>4;2m\x1b[=5;1u");
     let replay = terminal.kitty_keyboard_state_ansi().unwrap();
-    assert_eq!(replay, "\x1b[=5;1u\x1b[>4;2m");
+    assert_eq!(replay, "\x1b[=5u\x1b[>4;2m");
     let mut restored = Terminal::new(20, 3, 100_000).unwrap();
     restored.write(replay.as_bytes());
     assert_eq!(restored.kitty_keyboard_flags().int(), 5);

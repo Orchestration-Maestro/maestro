@@ -15,6 +15,8 @@ pub mod shell;
 #[cfg(not(target_arch = "wasm32"))]
 pub use shell::{Launch, windows_shell_launch};
 
+pub mod foreground;
+
 #[cfg(target_os = "linux")]
 pub mod pty;
 

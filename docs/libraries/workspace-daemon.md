@@ -128,3 +128,9 @@ the same approved dependency used by the model and package owners; it adds no
 package identity or version. SHA-2 is licensed under MIT OR Apache-2.0. The shared
 native feature unifier is unchanged. Windows device-stem recognition reuses
 `maestro-path::win32::is_reserved`; the daemon keeps no second reserved-name list.
+
+## Pane text matching
+
+`maestro-daemon` directly uses the existing locked `regex =1.13.1` with default
+features for retained terminal text matching. It adds no new package identity.
+The dependency uses the MIT OR Apache-2.0 licence.

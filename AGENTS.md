@@ -200,7 +200,8 @@ no internal dependencies apart from the optional utility and the unifier. Sparse
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
-utility edge never supplies a required edge. Other non-leaves permit subsets.
+utility edge never supplies a required edge. The daemon requires the terminal
+engine. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic. The internal development
 edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests

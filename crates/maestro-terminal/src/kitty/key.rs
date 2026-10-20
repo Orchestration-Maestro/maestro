@@ -54,6 +54,8 @@ pub struct FlagStack {
     flags: [Flags; 8],
     /// Index of the current value.
     index: usize,
+    /// Number of retained ancestors, including disabled entries.
+    depth: usize,
 }
 
 impl FlagStack {
@@ -77,6 +79,24 @@ impl FlagStack {
     pub fn push(&mut self, flags: Flags) {
         self.index = (self.index + 1) % self.flags.len();
         self.flags[self.index] = flags;
+        self.depth = (self.depth + 1).min(self.flags.len() - 1);
+    }
+
+    /// Serialize retained flags and pushes, preserving nested handoff behaviour.
+    ///
+    /// # Errors
+    /// Returns the writer's formatting error.
+    pub fn replay_ansi(&self, writer: &mut impl std::fmt::Write) -> std::fmt::Result {
+        let baseline = (self.index + self.flags.len() - self.depth) % self.flags.len();
+        let flags = self.flags[baseline].int();
+        if flags != 0 {
+            write!(writer, "\x1b[={flags}u")?;
+        }
+        for offset in 1..=self.depth {
+            let flags = self.flags[(baseline + offset) % self.flags.len()].int();
+            write!(writer, "\x1b[>{flags}u")?;
+        }
+        Ok(())
     }
 
     /// Clear and pop entries; eight or more resets the entire history.
@@ -85,9 +105,13 @@ impl FlagStack {
             *self = Self::default();
             return;
         }
+        self.depth = self.depth.saturating_sub(count);
         for _ in 0..count {
             self.flags[self.index] = Flags::DISABLED;
             self.index = (self.index + self.flags.len() - 1) % self.flags.len();
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

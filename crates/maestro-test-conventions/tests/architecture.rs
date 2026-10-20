@@ -2348,6 +2348,19 @@ fn workspace_daemon_owners_are_core() {
 }
 
 #[test]
+fn daemon_requires_the_terminal_engine() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-daemon"]);
+    workspace.member("maestro-daemon", "maestro-daemon", "");
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("maestro-daemon: missing required direct dependency maestro-terminal".into())
+    );
+    workspace.foundation(&["maestro-daemon"]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
 fn workspace_root_rejects_optional_wiring() {
     check_root_dependency_form("dependencies", ", optional = true");
 }

@@ -64,3 +64,15 @@ pub struct MouseEvent {
     /// Surface-space position in scaled pixels.
     pub pos: Pos,
 }
+
+impl Pos {
+    /// Convert unsigned pixel coordinates with nearest floating-point rounding.
+    #[must_use]
+    pub fn from_pixels(x: u32, y: u32) -> Self {
+        use num_traits::ToPrimitive;
+        Self {
+            x: x.to_f32().unwrap_or_default(),
+            y: y.to_f32().unwrap_or_default(),
+        }
+    }
+}

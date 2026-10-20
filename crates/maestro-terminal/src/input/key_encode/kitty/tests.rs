@@ -9,6 +9,7 @@ fn sequence(mods: u16, event: u8, text: &str, final_char: char) -> Sequence<'_> 
             final_char,
             modifier: false,
         },
+        semantic: false,
         mods,
         event,
         alternates: [None; 2],
@@ -65,4 +66,61 @@ fn sequence_special_mods_only() {
 #[test]
 fn sequence_special_mods_and_event() {
     assert_eq!(sequence(2, 3, "", 'A').encode(), b"\x1b[1;2:3A");
+}
+
+#[test]
+fn semantic_extended_modifiers_do_not_collapse_to_plain_text() {
+    use crate::input::{
+        key::KeyEvent,
+        key_encode::{KeyEncoder, KeyEncoding},
+        key_mods::Mods,
+    };
+    use crate::kitty::key::Flags;
+    let encoder = KeyEncoder {
+        encoding: KeyEncoding::Semantic,
+        kitty_flags: Flags::from_int(1).unwrap(),
+        ..KeyEncoder::default()
+    };
+    for (bits, expected) in [
+        (1 << 10, b"\x1b[97;17u".as_slice()),
+        (1 << 11, b"\x1b[97;33u"),
+    ] {
+        let event = KeyEvent {
+            mods: Mods::from_int(bits),
+            unshifted_codepoint: 97,
+            utf8: "a".into(),
+            ..KeyEvent::default()
+        };
+        assert_eq!(encoder.encode(&event), expected);
+    }
+}
+
+#[test]
+fn semantic_legacy_alt_enter_keeps_escape_prefix() {
+    use crate::input::{
+        key::{Key, KeyEvent},
+        key_encode::{KeyEncoder, KeyEncoding},
+        key_mods::Mods,
+    };
+    let encoder = KeyEncoder {
+        encoding: KeyEncoding::Semantic,
+        ..KeyEncoder::default()
+    };
+    for (mods, expected) in [
+        (Mods::ALT, b"\x1b\r".as_slice()),
+        (Mods::ALT.union(Mods::SHIFT), b"\x1b\r"),
+        (Mods::ALT.union(Mods::CTRL), b"\x1b\r"),
+        (Mods::ALT.union(Mods::HYPER), b"\x1b\r"),
+        (Mods::SHIFT, b"\r"),
+        (Mods::CTRL, b"\r"),
+    ] {
+        assert_eq!(
+            encoder.encode(&KeyEvent {
+                key: Key::Enter,
+                mods,
+                ..KeyEvent::default()
+            }),
+            expected
+        );
+    }
 }

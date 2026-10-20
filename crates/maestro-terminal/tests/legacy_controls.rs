@@ -152,3 +152,32 @@ fn legacy_drops_release_and_composition_but_repeats_text() {
     event.utf8.clear();
     assert!(encoder.encode(&event).is_empty());
 }
+
+#[test]
+fn semantic_legacy_ignores_enhanced_modifier_bits() {
+    use maestro_terminal::input::key_encode::KeyEncoding;
+    let encoder = KeyEncoder {
+        encoding: KeyEncoding::Semantic,
+        ..KeyEncoder::default()
+    };
+    for mods in [Mods::HYPER, Mods::META] {
+        let actual: Vec<_> = [
+            (Key::ArrowUp, mods),
+            (Key::Tab, mods),
+            (Key::Escape, Mods::ALT.union(mods)),
+        ]
+        .into_iter()
+        .map(|(key, mods)| {
+            encoder.encode(&KeyEvent {
+                key,
+                mods,
+                ..KeyEvent::default()
+            })
+        })
+        .collect();
+        assert_eq!(
+            actual,
+            [b"\x1b[A".to_vec(), b"\t".to_vec(), b"\x1b\x1b".to_vec()]
+        );
+    }
+}

@@ -19,7 +19,8 @@ pub(super) fn encode(event: &KeyEvent, opts: &KeyEncoder) -> Vec<u8> {
     if event.action == KeyAction::Release
         && (!enabled(opts, Flags::REPORT_EVENTS)
             || (!enabled(opts, Flags::REPORT_ALL)
-                && matches!(event.key, Key::Enter | Key::Backspace | Key::Tab)))
+                && matches!(event.key, Key::Enter | Key::Backspace | Key::Tab)
+                && (opts.encoding != super::KeyEncoding::Semantic || event.mods.empty())))
     {
         return Vec::new();
     }
@@ -55,7 +56,19 @@ fn plain_text(event: &KeyEvent, opts: &KeyEncoder) -> Option<Vec<u8>> {
             _ => {}
         }
     }
-    if enabled(opts, Flags::REPORT_ALL) || !event.effective_mods().binding().empty() {
+    if opts.encoding == super::KeyEncoding::Semantic
+        && !enabled(opts, Flags::REPORT_ALL)
+        && event.action != KeyAction::Release
+        && let Some(text) = super::semantic::text(event)
+    {
+        return Some(text.as_bytes().to_vec());
+    }
+    let mods = event.effective_mods();
+    if enabled(opts, Flags::REPORT_ALL)
+        || !mods.binding().empty()
+        || mods.contains(Mods::HYPER)
+        || mods.contains(Mods::META)
+    {
         return None;
     }
     match event.key {
@@ -90,13 +103,17 @@ struct Sequence<'a> {
     alternates: [Option<u32>; 2],
     /// Associated text, empty when modifiers or releases prevent it.
     text: &'a str,
+    /// Semantic reports always retain the modifier field and explicit press kind.
+    semantic: bool,
 }
 
 impl<'a> Sequence<'a> {
     /// Prepare the protocol fields from the caller's event.
     fn new(event: &'a KeyEvent, opts: &KeyEncoder, entry: Entry) -> Self {
         let mods = event.mods;
-        let wire_mods = modifier_code(mods) + ((mods.int() & 0x30) << 2);
+        let semantic = opts.encoding == super::KeyEncoding::Semantic;
+        let wire_mods =
+            modifier_code(mods) + ((mods.int() >> 6) & 0x30) + ((mods.int() & 0x30) << 2);
         let action = if enabled(opts, Flags::REPORT_EVENTS) {
             match event.action {
                 KeyAction::Press => 1,
@@ -111,6 +128,7 @@ impl<'a> Sequence<'a> {
             || (mods.contains(Mods::ALT) && opts.macos_option_as_alt.active(mods));
         Self {
             entry,
+            semantic,
             mods: wire_mods,
             event: action,
             alternates: if enabled(opts, Flags::REPORT_ALTERNATES) {
@@ -118,7 +136,11 @@ impl<'a> Sequence<'a> {
             } else {
                 [None; 2]
             },
-            text: if enabled(opts, Flags::REPORT_ASSOCIATED) && action != 3 && !prevents_text {
+            text: if enabled(opts, Flags::REPORT_ASSOCIATED)
+                && action != 3
+                && !prevents_text
+                && (!semantic || super::semantic::text(event).is_some())
+            {
                 &event.utf8
             } else {
                 ""
@@ -141,10 +163,10 @@ impl<'a> Sequence<'a> {
             }
             let _ = write!(result, ":{base}");
         }
-        let prior = if self.event > 1 {
+        let prior = if self.event > 1 || self.semantic && self.event > 0 {
             let _ = write!(result, ";{}:{}", self.mods, self.event);
             true
-        } else if self.mods > 1 {
+        } else if self.mods > 1 || self.semantic {
             let _ = write!(result, ";{}", self.mods);
             true
         } else {

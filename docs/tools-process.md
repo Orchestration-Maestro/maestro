@@ -262,6 +262,9 @@ releasing its master. Graceful shutdown keeps the runtime and notification consu
 alive until pending hooks finish; destroying the runtime cancels them and closes
 their masters.
 
-The `pty::foreground` module reads live process groups, arguments, native working
-directories, raw environment values and session membership. Detection mode and the
+The platform-independent `foreground` module owns `ForegroundJob` and
+`ForegroundProcess` observations. Linux retains their existing `pty::foreground`
+paths as re-exports. The Linux-only `pty::foreground` module reads live process
+groups, arguments, native working directories, raw environment values and session
+membership. Detection mode and the
 environment-variable name come from the caller. See [pane processes](workspace-daemon.md#pane-processes).
