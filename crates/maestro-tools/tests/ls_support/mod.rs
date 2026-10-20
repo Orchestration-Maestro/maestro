@@ -910,6 +910,7 @@ pub fn check_theme_error_as<D: serde::Serialize>(
 }
 
 /// A recorded listing of a real directory.
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeInput {
@@ -918,6 +919,7 @@ struct NativeInput {
 }
 
 /// Run a recorded listing of the real directory `root` and assert the recorded outcome.
+#[cfg(unix)]
 pub fn check_native(case: &Case, root: &str) {
     let input: NativeInput = serde_json::from_value(case.input.clone()).unwrap();
     let tool = create_ls_tool(root.into(), LsToolOptions::default());

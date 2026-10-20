@@ -8,10 +8,9 @@ use maestro_tools::{
     ReadToolOptions, create_read_tool_definition, expand_path, resolve_read_path, resolve_to_cwd,
 };
 use read_support::*;
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
-};
+#[cfg(unix)]
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[test]
 fn path_expansion_preserves_only_the_named_transforms() {
