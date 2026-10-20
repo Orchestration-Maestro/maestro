@@ -6,7 +6,7 @@ pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
     runtime(false).block_on(future)
 }
 
-/// Complete `future` on a runtime whose clock advances only while every task waits.
+/// Complete `future` on a runtime whose clock starts paused.
 pub fn run_paused<T>(future: impl std::future::Future<Output = T>) -> T {
     runtime(true).block_on(future)
 }

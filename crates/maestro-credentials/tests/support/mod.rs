@@ -120,7 +120,7 @@ pub fn block_on<F: std::future::Future>(future: F) -> F::Output {
         .block_on(future)
 }
 
-/// Run `future` on a current-thread runtime whose clock advances only when idle.
+/// Run `future` on a current-thread runtime whose clock starts paused.
 pub fn block_on_paused<F: std::future::Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
