@@ -1,9 +1,4 @@
 //! Bundled protocols reached through the public registry, generic dispatch and root exports.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::bundled;
 use crate::chat;
 use crate::key_selection;

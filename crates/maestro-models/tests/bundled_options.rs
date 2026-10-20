@@ -1,9 +1,4 @@
 //! Raw extras and simple settings of each bundled protocol reach the wire as authored.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::bundled;
 use crate::chat;
 use crate::key_selection;

@@ -3,7 +3,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::limited_host;
 use crate::local_support;
-#[allow(dead_code, reason = "Shared theme publication fixture.")]
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
 use crate::ui_host;

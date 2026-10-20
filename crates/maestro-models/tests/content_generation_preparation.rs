@@ -1,9 +1,4 @@
 //! Request preparation of the content-generation provider through its public operations.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::chat;
 use crate::content_preparation;
 use crate::environment_rows;

@@ -1,7 +1,6 @@
 //! Live guarded base contexts over the runner's bound capabilities.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
 use crate::local_support;
 use crate::model_support;
 use crate::ui_host;

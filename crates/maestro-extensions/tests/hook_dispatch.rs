@@ -1,7 +1,6 @@
 //! Live registered hook dispatch through the native runner.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
 use crate::local_support as support;
 use maestro_extensions::*;
 use std::rc::Rc;

@@ -1,9 +1,4 @@
 //! Public content-generation invocation behavior.
-#![allow(
-    dead_code,
-    reason = "shared chat support serves multiple test binaries"
-)]
-
 use crate::{bundled, chat, response_output};
 use chat::TestResult;
 

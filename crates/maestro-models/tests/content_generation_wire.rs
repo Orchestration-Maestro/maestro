@@ -1,9 +1,4 @@
 //! Wire projection of the content-generation request body through its public operation.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::chat;
 use crate::content_wire;
 

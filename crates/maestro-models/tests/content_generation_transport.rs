@@ -1,9 +1,4 @@
 //! Pure content-generation transport preparation against recorded request observations.
-#![allow(
-    dead_code,
-    reason = "shared chat support serves multiple test binaries"
-)]
-
 use crate::chat;
 
 use std::collections::HashSet;
