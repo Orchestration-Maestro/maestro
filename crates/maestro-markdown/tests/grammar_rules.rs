@@ -817,6 +817,7 @@ fn bare_addresses_follow_raw_anchor_transitions() {
     observations::check_with_options(
         "address-context",
         5,
+        include_str!("fixtures/grammar_observations.json"),
         &[
             MarkedOptions::Terminal,
             MarkedOptions::Browser { escape_html: false },
@@ -839,7 +840,7 @@ fn documentation_grammar_keeps_emphasis_inside_bare_addresses() {
 
 #[test]
 fn unmatched_opening_parentheses_end_bare_addresses() {
-    observations::check("url-backpedal", 3);
+    check("url-backpedal", 3);
 }
 
 #[test]
@@ -878,7 +879,7 @@ fn caller_opaque_anchor_text_does_not_disable_bare_addresses() {
 
 #[test]
 fn bare_addresses_follow_link_label_context() {
-    observations::check("address-label", 7);
+    check("address-label", 7);
 }
 
 #[test]
@@ -886,6 +887,7 @@ fn mapped_addresses_resume_after_link_and_image_labels() {
     observations::check_with_options(
         "address-completion",
         2,
+        include_str!("fixtures/grammar_observations.json"),
         &[
             MarkedOptions::Terminal,
             MarkedOptions::Browser { escape_html: false },

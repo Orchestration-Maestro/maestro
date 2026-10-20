@@ -41,7 +41,12 @@ pub(super) fn check(group: &str, count: usize, fixture: &str) {
 }
 
 /// Compare recorded observations for the grammars that own the selected rule.
-pub(super) fn check_with_options(group: &str, count: usize, fixture: &str, options: &[MarkedOptions]) {
+pub(super) fn check_with_options(
+    group: &str,
+    count: usize,
+    fixture: &str,
+    options: &[MarkedOptions],
+) {
     let rows: Vec<Row> = serde_json::from_str(fixture).unwrap();
     let mut seen = 0;
     let mut failures = Vec::new();
