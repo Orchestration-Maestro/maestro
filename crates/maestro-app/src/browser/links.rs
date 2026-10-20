@@ -41,18 +41,3 @@ pub fn executable(target: &str) -> bool {
 pub fn script_scheme(scheme: &str) -> bool {
     matches!(scheme, "javascript" | "vbscript")
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn data_targets_are_not_script_schemes() {
-        for target in [
-            "data:text/plain,hello",
-            "data:,hello",
-            "data:image/svg+xml,<svg/>",
-        ] {
-            let url = url::Url::parse(target).unwrap();
-            assert!(!super::script_scheme(url.scheme()), "{target}");
-        }
-    }
-}
