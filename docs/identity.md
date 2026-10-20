@@ -340,9 +340,11 @@ foreground. Several thinking levels share a color in a small palette.
 Forge uses Barlow Condensed for display, Barlow for body text and JetBrains Mono
 for code and measurements. Signal uses Space Grotesk for display/body and
 JetBrains Mono for code. Each font entry records its SIL Open Font License 1.1
-identifier, upstream license URL and ordered fallbacks. Font files are not
-bundled here. When distributing them, include their copyright and license
-notices. Do not make viewing an exported page depend on a remote font service.
+identifier, upstream license URL and ordered fallbacks. Whole font files and
+their copyright/license notices live in `assets/brand/fonts/`; the
+[browser author build](browser-build.md#fonts-and-notices) prepares them locally.
+Noto Sans Symbols 2 is a symbol fallback, not an additional brand text role.
+Do not make viewing an exported page depend on a remote font service.
 The terminal's font stays under the user's control.
 
 | Type role | Font role | Size (CSS px) | Weight | Line height |

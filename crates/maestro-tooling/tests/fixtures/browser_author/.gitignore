@@ -1,0 +1,5 @@
+/target/
+/dist/
+/dist-debug/
+/.trunk/
+.DS_Store
