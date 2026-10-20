@@ -55,7 +55,7 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `panic!`. Unsafe code is forbidden. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Clippy also rejects the ambiguous JSON map `remove`; see
-[quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden apart from the engine exception above and the generated-binding exception below.
+[quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden apart from the generated-binding exception below.
 `maestro-extensions-wasm` declares its own lint table instead of inheriting the workspace's:
 the same table with `pedantic`, `too_many_arguments` and `excessive_nesting` at `deny`
 rather than `forbid`, because its generated bindings cannot compile under `forbid`. Its

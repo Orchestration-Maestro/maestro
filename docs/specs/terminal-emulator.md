@@ -278,12 +278,12 @@ Each item is unreachable from every workspace path or replaced by a Maestro owne
 
 | # | Delivery | Blocked by |
 |---|---|---|
-| 1 | Create the crate, amend the foundation, codepoint width and grapheme rules | — |
+| 1 | Create the crate, amend the foundation and codepoint width | — |
 | 2 | Page storage | 1 |
 | 3 | Page list and byte-bounded scrollback | 2 |
 | 4 | VT parser, SGR, colours, character sets and standalone OSC decoding | 1 |
 | 5 | Screens | 3, 4 |
-| 6 | Terminal printing, cursor, tabs and modes | 5 |
+| 6 | Terminal printing, grapheme rules, cursor, tabs and modes | 5 |
 | 7 | Terminal editing, screens, resize and reset | 6 |
 | 8 | Byte input through the stream | 7 |
 | 9 | OSC effects, APC routing and replies | 8 |
