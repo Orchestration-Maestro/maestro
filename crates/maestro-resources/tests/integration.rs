@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod development_guidance;
+mod frontmatter_grammar;
 mod frontmatter_loading;
 mod frontmatter_values;
 mod resource_paths;

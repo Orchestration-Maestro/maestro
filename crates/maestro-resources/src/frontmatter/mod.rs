@@ -1,6 +1,8 @@
 //! Extract authored metadata without trimming ordinary text.
 
 mod alias_count;
+mod composer;
+mod cst;
 mod lexer;
 mod parser;
 mod resolve_block_map;
@@ -37,7 +39,7 @@ pub struct ParsedFrontmatter {
     pub body: String,
 }
 
-/// A metadata failure with native source coordinates when available.
+/// A metadata failure with source coordinates when available.
 #[derive(Debug, PartialEq)]
 pub struct FrontmatterError {
     /// Useful parser or field-validation cause.
@@ -72,7 +74,7 @@ impl FrontmatterError {
 /// escape pairs as one Unicode scalar.
 ///
 /// # Errors
-/// Returns a native parsing cause when the extracted metadata is invalid.
+/// Returns a parsing cause when the extracted metadata is invalid.
 pub fn parse_frontmatter(content: &str) -> Result<ParsedFrontmatter, FrontmatterError> {
     let normalized = maestro_text::normalize_to_lf(content);
     let Some(end) = normalized
@@ -89,7 +91,7 @@ pub fn parse_frontmatter(content: &str) -> Result<ParsedFrontmatter, Frontmatter
     let frontmatter = if yaml.is_empty() {
         FrontmatterValue::Mapping(Vec::new())
     } else {
-        parser::parse(yaml)?
+        composer::compose(yaml)?
     };
     Ok(ParsedFrontmatter {
         frontmatter,

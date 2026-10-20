@@ -1,5 +1,4 @@
 //! Public frontmatter grammar and native field-selection witnesses.
-#![cfg(test)]
 
 use maestro_resources::{FrontmatterValue, parse_frontmatter, strip_frontmatter};
 use serde::Deserialize;
@@ -21,6 +20,16 @@ enum Expected {
     Mapping(Vec<(String, Self)>),
 }
 
+/// Complete decoded metadata and retained body.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExpectedDocument {
+    /// Independently decoded metadata.
+    frontmatter: Expected,
+    /// Independently retained body text.
+    body: String,
+}
+
 /// One complete authored document and its independently recorded result.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -28,7 +37,7 @@ struct Case {
     id: String,
     test: String,
     input: String,
-    expected: Option<Expected>,
+    expected: Option<ExpectedDocument>,
 }
 
 /// Compare all decoded members in order, without losing floating-point distinctions.
@@ -75,13 +84,8 @@ fn check_family(name: &str) {
             continue;
         };
         let parsed = parsed.unwrap_or_else(|error| panic!("{}: {error}", case.id));
-        let Expected::Mapping(fields) = expected else {
-            panic!("expected document");
-        };
-        assert_eq!(fields.len(), 2);
-        assert_eq!(fields[0].0, "frontmatter");
-        assert_value(&parsed.frontmatter, &fields[0].1);
-        assert_value(&FrontmatterValue::String(parsed.body.clone()), &fields[1].1);
+        assert_value(&parsed.frontmatter, &expected.frontmatter);
+        assert_eq!(parsed.body, expected.body);
         assert_eq!(stripped.unwrap(), parsed.body);
     }
     assert!(count > 0);
@@ -138,8 +142,7 @@ fn frontmatter_wide_mappings_keep_order_and_duplicate_identity() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(test)]
-pub mod support;
+use crate::support;
 
 /// Load isolated authored metadata through both native consumers.
 #[cfg(not(target_arch = "wasm32"))]
@@ -335,4 +338,151 @@ fn nonstring_domains() {
             );
         }
     }
+}
+
+/// Build a nested block collection through authored indentation.
+fn nested_block(depth: usize, indicator: &str) -> String {
+    let mut text = String::new();
+    for indent in 0..depth {
+        text.push_str(&" ".repeat(indent));
+        text.push_str(indicator);
+        text.push('\n');
+    }
+    text.push_str(&" ".repeat(depth));
+    text.push('v');
+    text
+}
+
+/// Observe each retained level rather than serializing through a depth-limited codec.
+fn assert_nested_block(value: &FrontmatterValue, depth: usize, indicator: &str) {
+    let mut current = value;
+    for _ in 0..depth {
+        current = match current {
+            FrontmatterValue::Sequence(items) if indicator == "-" => {
+                assert_eq!(items.len(), 1);
+                &items[0]
+            }
+            FrontmatterValue::Mapping(items) if indicator == "k:" => {
+                assert_eq!(items.len(), 1);
+                assert_eq!(items[0].0, "k");
+                &items[0].1
+            }
+            _ => panic!("wrong nested collection shape"),
+        };
+    }
+    assert_eq!(current, &FrontmatterValue::String("v".into()));
+}
+
+#[test]
+fn frontmatter_depth_is_safe_on_a_worker_stack() {
+    std::thread::Builder::new()
+        .stack_size(2 * 1024 * 1024)
+        .spawn(|| {
+            for indicator in ["-", "k:"] {
+                eprintln!("depth witness: {indicator} 800");
+                let input = format!("---\n{}\n---\nBody", nested_block(800, indicator));
+                let parsed = parse_frontmatter(&input).unwrap();
+                assert_nested_block(&parsed.frontmatter, 800, indicator);
+                assert_eq!(parsed.body, "Body");
+                assert_eq!(strip_frontmatter(&input).unwrap(), "Body");
+            }
+            let yaml = format!("a: {}{}", "[".repeat(700), "]".repeat(700));
+            let input = format!("---\n{yaml}\n---\nBody");
+            eprintln!("depth witness: flow 700");
+            let parsed = parse_frontmatter(&input).unwrap();
+            let FrontmatterValue::Mapping(fields) = &parsed.frontmatter else {
+                panic!("missing root mapping");
+            };
+            assert_eq!(fields.len(), 1);
+            assert_eq!(fields[0].0, "a");
+            let mut value = &fields[0].1;
+            for _ in 1..700 {
+                let FrontmatterValue::Sequence(items) = value else {
+                    panic!("missing nested sequence");
+                };
+                assert_eq!(items.len(), 1);
+                value = &items[0];
+            }
+            assert_eq!(value, &FrontmatterValue::Sequence(Vec::new()));
+            assert_eq!(parsed.body, "Body");
+            assert_eq!(strip_frontmatter(&input).unwrap(), "Body");
+            assert_rejected_depths();
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+/// Both public entry points reject excessive nesting without aborting.
+fn assert_rejected_depths() {
+    for depth in [1001, 100_000] {
+        eprintln!("depth witness: flow {depth} rejection");
+        let input = format!(
+            "---\na: {}{}\n---\nBody",
+            "[".repeat(depth),
+            "]".repeat(depth)
+        );
+        assert!(parse_frontmatter(&input).is_err());
+        assert!(strip_frontmatter(&input).is_err());
+    }
+    for indicator in ["-", "k:"] {
+        eprintln!("depth witness: {indicator} 1001 rejection");
+        let input = format!("---\n{}\n---\nBody", nested_block(1001, indicator));
+        assert!(parse_frontmatter(&input).is_err());
+        assert!(strip_frontmatter(&input).is_err());
+    }
+}
+
+#[test]
+fn frontmatter_errors_retain_source_coordinates() {
+    for (yaml, line, column) in [("key: \"ok\"junk", 1, 10), ("key: &a - item", 1, 9)] {
+        let input = format!("---\n{yaml}\n---\nBody");
+        let error = parse_frontmatter(&input).unwrap_err();
+        assert_eq!(error.line, Some(line));
+        assert_eq!(error.column, Some(column));
+        assert_eq!(strip_frontmatter(&input).unwrap_err(), error);
+    }
+}
+
+#[test]
+fn frontmatter_implicit_key_limits_measure_text_units() {
+    let mut failures = Vec::new();
+    for width in [600, 1025] {
+        let key = "名".repeat(width);
+        for flow in [false, true] {
+            let yaml = if flow {
+                format!("[{key}: x]")
+            } else {
+                format!("{key}: x")
+            };
+            let input = format!("---\n{yaml}\n---\nBody");
+            if width > 1024 {
+                assert!(parse_frontmatter(&input).is_err());
+                assert!(strip_frontmatter(&input).is_err());
+                continue;
+            }
+            let parsed = match parse_frontmatter(&input) {
+                Ok(parsed) => parsed,
+                Err(error) => {
+                    failures.push(format!("width {width}, flow {flow}: {error}"));
+                    continue;
+                }
+            };
+            let pair = FrontmatterValue::Mapping(vec![(
+                key.clone(),
+                FrontmatterValue::String("x".into()),
+            )]);
+            assert_eq!(
+                parsed.frontmatter,
+                if flow {
+                    FrontmatterValue::Sequence(vec![pair])
+                } else {
+                    pair
+                }
+            );
+            assert_eq!(parsed.body, "Body");
+            assert_eq!(strip_frontmatter(&input).unwrap(), "Body");
+        }
+    }
+    assert!(failures.is_empty(), "{failures:?}");
 }

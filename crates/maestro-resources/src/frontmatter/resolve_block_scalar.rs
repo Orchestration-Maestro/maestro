@@ -1,6 +1,10 @@
 //! Literal and folded scalar indentation and final-newline policy.
 
-use super::{FrontmatterError, parser::Parser};
+use super::{
+    FrontmatterError,
+    composer::Composer,
+    cst::{Node, SourceToken, TokenKind as K},
+};
 
 /// Final-newline handling selected by a block header.
 #[derive(Default, PartialEq, Eq)]
@@ -33,50 +37,92 @@ enum BlockStyle {
     Folded,
 }
 
-impl Parser<'_> {
-    /// Read a complete block scalar, stopping before the next collection entry.
-    pub fn block_scalar(&mut self, parent: usize) -> Result<String, FrontmatterError> {
-        let header = self.block_header()?;
-        let mut indent = header.indent.map(|n| parent + n);
-        let mut leading = 0;
-        let mut lines = Vec::new();
-        while self.cursor.peek().is_some() {
-            let start = self.cursor.offset;
-            while self.cursor.eat(' ') {}
-            let spaces = self.cursor.offset - start;
-            let empty = matches!(self.cursor.peek(), None | Some('\n'));
-            if !empty && spaces <= parent {
-                self.cursor.offset = start;
-                break;
-            }
-            if !empty && indent.is_none() && leading > spaces {
-                return Err(self.cursor.error("More-indented leading empty line"));
-            }
-            if !empty && indent.is_none() {
-                indent = Some(spaces);
-            }
-            if !empty && spaces < indent.unwrap_or(parent + 1) {
-                return Err(self.cursor.error("Under-indented block scalar"));
-            }
-            if indent.is_none() {
-                leading = leading.max(spaces);
-            }
-            while !matches!(self.cursor.peek(), None | Some('\n')) {
-                self.cursor.next();
-            }
-            let end = self.cursor.offset;
-            let newline = self.cursor.eat('\n');
-            lines.push((&self.cursor.source[start..end], newline));
+impl Composer<'_> {
+    /// Resolve a complete block scalar header and its lexer-delimited content.
+    pub fn resolve_block_scalar(
+        &self,
+        node: &Node,
+        props: &[SourceToken],
+        source: Option<&SourceToken>,
+    ) -> Result<String, FrontmatterError> {
+        let first = props
+            .first()
+            .ok_or_else(|| self.error_at(node.offset, "Missing block scalar header"))?;
+        let header = self.block_header(first)?;
+        self.resolve_end(&props[1..], false)?;
+        let text = source.map_or("", |token| self.text(token));
+        let lines: Vec<_> = text
+            .split_inclusive('\n')
+            .map(|line| {
+                (
+                    line.strip_suffix('\n').unwrap_or(line),
+                    line.ends_with('\n'),
+                )
+            })
+            .collect();
+        if lines
+            .iter()
+            .all(|(line, _)| line.bytes().all(|byte| byte == b' '))
+        {
+            return Ok(if header.chomp == Chomp::Keep && !text.is_empty() {
+                "\n".repeat(text.bytes().filter(|byte| *byte == b'\n').count().max(1))
+            } else {
+                String::new()
+            });
         }
-        Ok(render(&lines, indent.unwrap_or(parent + 1), &header))
+        let indent = self.block_indent(&lines, node, &header)?;
+        if indent == 0 && node.indent > 0 {
+            return Err(self.error_at(node.offset, "Block scalar values must be indented"));
+        }
+        if lines.iter().any(|(line, _)| {
+            !line.bytes().all(|byte| byte == b' ')
+                && line.len() - line.trim_start_matches(' ').len() < indent
+        }) {
+            return Err(self.error_at(node.offset, "Under-indented block scalar"));
+        }
+        Ok(render(&lines, indent, &header))
     }
 
-    /// Parse indentation/chomping in either legal order and a separated comment.
-    fn block_header(&mut self) -> Result<Header, FrontmatterError> {
-        let style = if self.cursor.eat('|') {
+    /// Determine indentation from the first content line and leading blanks.
+    fn block_indent(
+        &self,
+        lines: &[(&str, bool)],
+        node: &Node,
+        header: &Header,
+    ) -> Result<usize, FrontmatterError> {
+        let mut indent = node.indent + header.indent.unwrap_or_default();
+        for (line, _) in lines {
+            let spaces = line.len() - line.trim_start_matches(' ').len();
+            let blank = line.bytes().all(|byte| byte == b' ');
+            if blank && header.indent.is_none() {
+                indent = indent.max(spaces);
+            }
+            if blank {
+                continue;
+            }
+            if spaces < indent {
+                return Err(self.error_at(
+                    node.offset,
+                    "More-indented leading empty line or under-indented content",
+                ));
+            }
+            if header.indent.is_none() {
+                indent = spaces;
+            }
+            break;
+        }
+        Ok(indent)
+    }
+
+    /// Decode indentation and chomping from the complete header token.
+    fn block_header(&self, token: &SourceToken) -> Result<Header, FrontmatterError> {
+        if token.kind != K::BlockScalarHeader {
+            return Err(self.error_at(token.offset, "Invalid block scalar header"));
+        }
+        let mut chars = self.text(token).chars();
+        let style = if chars.next() == Some('|') {
             BlockStyle::Literal
         } else {
-            self.cursor.next();
             BlockStyle::Folded
         };
         let mut header = Header {
@@ -84,22 +130,15 @@ impl Parser<'_> {
             indent: None,
             chomp: Chomp::Clip,
         };
-        while let Some(ch) = self.cursor.peek() {
+        for ch in chars {
             match ch {
                 '1'..='9' if header.indent.is_none() => {
                     header.indent = ch.to_digit(10).map(|n| n as usize);
                 }
                 '+' if header.chomp == Chomp::Clip => header.chomp = Chomp::Keep,
                 '-' if header.chomp == Chomp::Clip => header.chomp = Chomp::Strip,
-                ' ' | '\t' | '\n' => break,
-                _ => return Err(self.cursor.error("Invalid block scalar header")),
+                _ => return Err(self.error_at(token.offset, "Invalid block scalar header")),
             }
-            self.cursor.next();
-        }
-        self.cursor.spaces();
-        self.cursor.comment();
-        if self.cursor.peek().is_some() && !self.cursor.eat('\n') {
-            return Err(self.cursor.error("Unexpected block header content"));
         }
         Ok(header)
     }

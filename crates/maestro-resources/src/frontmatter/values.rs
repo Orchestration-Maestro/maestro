@@ -3,7 +3,7 @@
 use super::{FrontmatterError, FrontmatterValue, resolve_flow_scalar::Style, resolve_props::Tag};
 use num_traits::ToPrimitive;
 
-/// Resolve scalar text according to native style and authored tags.
+/// Resolve scalar text according to scalar style and authored tags.
 pub(super) fn scalar(text: String, style: Style, tag: Option<&Tag>) -> FrontmatterValue {
     if let Some(tag) = tag.filter(|tag| **tag != Tag::Data) {
         let resolved = match tag {

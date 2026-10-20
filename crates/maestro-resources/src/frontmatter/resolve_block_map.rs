@@ -1,85 +1,120 @@
-//! Block mappings, explicit keys and ordered typed-key construction.
+//! Validate concrete block mapping entries and prepare their pairs.
 
 use super::{
-    FrontmatterError, FrontmatterValue,
-    parser::{Mode, Parser},
-    values::Mapping,
+    FrontmatterError,
+    composer::{
+        Composer,
+        collection::{CollectionKind, CollectionPlan},
+    },
+    cst::{CollectionItem, Node, NodeKind, TokenKind as K},
+    resolve_props::{Properties, PropertyContext},
 };
 
-impl Parser<'_> {
-    /// Parse mapping entries at one indentation level.
-    pub fn block_map(&mut self, indent: usize) -> Result<FrontmatterValue, FrontmatterError> {
-        let mut mapping = Mapping::default();
-        loop {
-            let explicit = self.cursor.indicator('?');
-            let key = self.block_key(indent)?;
-            self.cursor.spaces();
-            let value = if self.cursor.eat(':') {
-                self.entry_value(indent, explicit)?
-            } else if explicit {
-                FrontmatterValue::Null
-            } else {
-                return Err(self.cursor.error("Expected ':' after mapping key"));
-            };
-            mapping.insert(key, value)?;
-            self.finish_entry()?;
-            if self.cursor.peek().is_none()
-                || self.cursor.document_end()
-                || self.cursor.column() < indent
+impl Composer<'_> {
+    /// Prepare mapping children in authored key/value order.
+    pub fn resolve_block_map<'n>(
+        &self,
+        node: &Node,
+        items: &'n [CollectionItem],
+    ) -> Result<CollectionPlan<'n>, FrontmatterError> {
+        let mut children = Vec::new();
+        for item in items {
+            let props = self.resolve_props(
+                &item.start,
+                PropertyContext {
+                    indicator: K::ExplicitKeyInd,
+                    flow: false,
+                    newline: true,
+                    indent: node.indent,
+                },
+                item.key.as_deref(),
+            )?;
+            if props.found.is_none()
+                && props.anchor.is_none()
+                && props.tag.is_none()
+                && item.sep.is_none()
             {
-                break;
+                continue;
             }
-            if self.cursor.column() != indent || !self.cursor.mapping_start() {
-                break;
-            }
+            self.check_block_key(node, item, &props)?;
+            let value_props = self.resolve_props(
+                item.sep.as_deref().unwrap_or_default(),
+                PropertyContext {
+                    indicator: K::MapValueInd,
+                    flow: false,
+                    newline: item.key.is_none(),
+                    indent: node.indent,
+                },
+                item.value.as_deref(),
+            )?;
+            self.check_block_value(node, item, &props, &value_props)?;
+            children.push(self.child(item.key.as_deref(), props)?);
+            children.push(self.child(item.value.as_deref(), value_props)?);
         }
-        Ok(mapping.finish())
+        Ok(CollectionPlan {
+            kind: CollectionKind::Mapping,
+            children,
+        })
     }
 
-    /// Parse the value after a mapping colon, rejecting an inline sequence.
-    fn entry_value(
-        &mut self,
-        indent: usize,
-        explicit: bool,
-    ) -> Result<FrontmatterValue, FrontmatterError> {
-        self.cursor.spaces();
-        if !explicit && self.cursor.indicator('-') {
-            return Err(self
-                .cursor
-                .error("Block sequence indicator on the same line as a mapping key"));
-        }
-        self.block_value(indent, Mode::Inline)
-    }
-
-    /// Read an implicit single-line key or an explicit possibly multiline key.
-    fn block_key(&mut self, indent: usize) -> Result<FrontmatterValue, FrontmatterError> {
-        let explicit = self.cursor.indicator('?');
-        if explicit {
-            self.cursor.next();
-            self.cursor.spaces();
-        }
-        let start = self.cursor.offset;
-        let key = if self.cursor.indicator(':')
-            || matches!(self.cursor.peek(), None | Some('\n' | '#'))
+    /// Validate implicit key extent and mapping indentation.
+    fn check_block_key(
+        &self,
+        node: &Node,
+        item: &CollectionItem,
+        props: &Properties,
+    ) -> Result<(), FrontmatterError> {
+        if props.found.is_none()
+            && (props.newline_after_prop
+                || item
+                    .key
+                    .as_deref()
+                    .is_some_and(|key| self.contains_newline(key)))
         {
-            FrontmatterValue::Null
-        } else {
-            self.node(indent, Mode::Key)?
+            return Err(self.error_at(node.offset, "Implicit keys must be on one line"));
+        }
+        let bad_implicit = props.found.is_none()
+            && item.key.as_deref().is_some_and(|key| {
+                key.indent != node.indent || matches!(key.kind, NodeKind::BlockSequence(_))
+            });
+        let bad_explicit = props
+            .found
+            .as_ref()
+            .is_some_and(|token| token.indent != node.indent);
+        if bad_implicit || bad_explicit {
+            return Err(self.error_at(node.offset, "Mapping items must start at the same column"));
+        }
+        Ok(())
+    }
+
+    /// Validate a colon and the compact implicit-key value restrictions.
+    fn check_block_value(
+        &self,
+        node: &Node,
+        item: &CollectionItem,
+        props: &Properties,
+        value_props: &Properties,
+    ) -> Result<(), FrontmatterError> {
+        if props.found.is_some() {
+            return Ok(());
+        }
+        let Some(colon) = &value_props.found else {
+            return Err(self.error_at(node.offset, "Expected ':' after mapping key"));
         };
-        let source = &self.cursor.source[start..self.cursor.offset];
-        if !explicit
-            && (source.contains('\n')
-                || source.trim_end_matches([' ', '\t']).chars().count() > 1024)
+        if item
+            .value
+            .as_ref()
+            .is_some_and(|value| matches!(value.kind, NodeKind::BlockMap(_)))
+            && !value_props.newline
         {
-            return Err(self.cursor.error("Invalid implicit mapping key"));
+            return Err(self.error_at(
+                node.offset,
+                "Nested mappings are not allowed in compact mappings",
+            ));
         }
-        if explicit {
-            self.cursor.spaces();
-            self.cursor.comment();
-            if self.cursor.eat('\n') {
-                self.cursor.trivia();
-            }
+        if self.implicit_key_too_long(item.key.as_deref(), props, colon) {
+            return Err(self.error_at(colon.offset, "Implicit mapping key exceeds 1024 characters"));
         }
-        Ok(key)
+        Ok(())
     }
 }

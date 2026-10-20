@@ -1,7 +1,9 @@
 # Resource parsing
 
-The resources crate owns its frontmatter YAML reader. Its private grammar modules
-construct ordered metadata directly, without a bundled parser or public YAML SDK.
+The resources crate owns its frontmatter YAML reader. A single lexer owns token
+boundaries. An iterative parser builds a private syntax tree; composition validates
+its properties and resolves ordered metadata. There is no bundled parser or public
+YAML SDK.
 See [frontmatter](../resources/frontmatter.md) for scalar and escape behavior.
 Source-derived grammar attribution is in the [third-party notices](../../THIRD-PARTY-NOTICES.md#frontmatter-grammar).
 

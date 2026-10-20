@@ -1,8 +1,9 @@
-//! Scalar text, line folding and Unicode-safe double-quoted escapes.
+//! Decode scalar token contents without finding lexical boundaries.
 
 use super::{
     FrontmatterError,
-    parser::{Mode, Parser},
+    composer::Composer,
+    cst::{SourceToken, TokenKind as K},
 };
 
 /// Cause reported for an escape that names no Unicode scalar.
@@ -22,145 +23,118 @@ pub(super) enum Style {
     Quoted,
 }
 
-impl Parser<'_> {
-    /// Decode scalar text exactly once at its lexical boundary.
-    pub fn flow_scalar(
-        &mut self,
-        indent: usize,
-        mode: Mode,
+impl Composer<'_> {
+    /// Decode one complete scalar token with no access to neighbouring text.
+    pub fn resolve_flow_scalar(
+        &self,
+        token: &SourceToken,
     ) -> Result<(String, Style), FrontmatterError> {
-        match self.cursor.peek() {
-            Some('\'' | '"') => Ok((self.quoted()?, Style::Quoted)),
-            Some('@' | '`' | '%' | ',' | ']' | '}' | '|' | '>') => {
-                Err(self.cursor.error("Invalid plain scalar start"))
+        let text = self.text(token);
+        if token.kind == K::Scalar {
+            if text.starts_with(['\t', ',', '%', '|', '>', '@', '`']) {
+                return Err(self.error_at(token.offset, "Invalid plain scalar start"));
             }
-            _ => Ok((self.plain(indent, mode)?, Style::Plain)),
+            return Ok((fold_lines(text), Style::Plain));
         }
-    }
-
-    /// Read one plain scalar, leaving collection punctuation unconsumed.
-    fn plain(&mut self, indent: usize, mode: Mode) -> Result<String, FrontmatterError> {
-        let mut text = String::new();
-        let mut separated = true;
-        while let Some(ch) = self.cursor.peek() {
-            if ch == '#' && separated
-                || mode == Mode::Flow && matches!(ch, ',' | '[' | ']' | '{' | '}')
-            {
-                break;
-            }
-            if ch == ':'
-                && (self.cursor.indicator(':')
-                    || mode == Mode::Flow && self.cursor.rest()[1..].starts_with([',', ']', '}']))
-            {
-                break;
-            }
-            if ch == '\n' && mode == Mode::Key {
-                break;
-            }
-            if ch == '\n' && !self.plain_continuation(indent, mode, &mut text)? {
-                break;
-            }
-            if ch == '\n' {
-                separated = true;
-                continue;
-            }
-            separated = matches!(ch, ' ' | '\t');
-            text.push(ch);
-            self.cursor.next();
-        }
-        trim_blanks(&mut text, 0);
-        Ok(text)
-    }
-
-    /// Consume a folded continuation only while it belongs to this scalar.
-    fn plain_continuation(
-        &mut self,
-        indent: usize,
-        mode: Mode,
-        text: &mut String,
-    ) -> Result<bool, FrontmatterError> {
-        let saved = self.cursor.offset;
-        self.cursor.blank_lines();
-        if self.cursor.peek().is_none_or(|ch| ch == '#')
-            || self.cursor.document_end()
-            || mode != Mode::Flow && self.cursor.column() <= indent
-        {
-            return Ok(false);
-        }
-        if mode != Mode::Flow && self.cursor.mapping_start() {
-            return Err(self
-                .cursor
-                .error("Unexpected mapping in scalar continuation"));
-        }
-        let breaks = self.cursor.source[saved..self.cursor.offset]
-            .bytes()
-            .filter(|b| *b == b'\n')
-            .count();
-        trim_blanks(text, 0);
-        if breaks == 1 {
-            text.push(' ');
+        let quote = if token.kind == K::SingleQuotedScalar {
+            '\''
         } else {
-            text.extend(std::iter::repeat_n('\n', breaks - 1));
+            '"'
+        };
+        let inner = text
+            .strip_prefix(quote)
+            .and_then(|text| text.strip_suffix(quote))
+            .ok_or_else(|| self.error_at(token.offset, "Unclosed quoted scalar"))?;
+        if quote == '\'' {
+            return Ok((fold_lines(inner).replace("''", "'"), Style::Quoted));
         }
-        Ok(true)
-    }
-
-    /// Read a quoted scalar and enforce separation after its closing quote.
-    fn quoted(&mut self) -> Result<String, FrontmatterError> {
-        let start = self.cursor.offset;
-        let quote = self
-            .cursor
-            .next()
-            .ok_or_else(|| self.cursor.error("Missing quote"))?;
-        let mut text = String::new();
+        let mut decoder = Decoder {
+            chars: inner.chars(),
+            composer: self,
+            offset: token.offset,
+        };
+        let mut value = String::new();
         let mut escaped = 0;
-        loop {
-            let Some(ch) = self.cursor.next() else {
-                return Err(self.cursor.error_at(start, "Unclosed quoted scalar"));
-            };
-            if ch == quote && quote == '\'' && self.cursor.eat('\'') {
-                text.push('\'');
-                continue;
+        while let Some(ch) = decoder.chars.next() {
+            match ch {
+                '\\' => {
+                    value.extend(decoder.escape()?);
+                    escaped = value.len();
+                }
+                '\n' => {
+                    trim_blanks(&mut value, escaped);
+                    decoder.fold_newline(&mut value);
+                }
+                _ => value.push(ch),
             }
-            if ch == quote {
-                break;
-            }
-            if ch == '\\' && quote == '"' {
-                text.extend(self.escape(start)?);
-                escaped = text.len();
-            } else if ch == '\n' {
-                trim_blanks(&mut text, escaped);
-                self.fold_newline(&mut text);
+        }
+        Ok((value, Style::Quoted))
+    }
+}
+
+/// Fold complete plain or single-quoted token lines.
+fn fold_lines(text: &str) -> String {
+    let Some((first, rest)) = text.split_once('\n') else {
+        return text.into();
+    };
+    let mut value = first.trim_end_matches([' ', '\t']).to_owned();
+    let mut sep = " ";
+    let mut lines = rest.split('\n').peekable();
+    while let Some(line) = lines.next() {
+        let line = line.trim_start_matches([' ', '\t']);
+        if lines.peek().is_none() {
+            value.push_str(sep);
+            value.push_str(line);
+            break;
+        }
+        let line = line.trim_end_matches([' ', '\t']);
+        if line.is_empty() {
+            if sep == "\n" {
+                value.push('\n');
             } else {
-                text.push(ch);
+                sep = "\n";
             }
+        } else {
+            value.push_str(sep);
+            value.push_str(line);
+            sep = " ";
         }
-        let end = self.cursor.offset;
-        self.cursor.spaces();
-        if self.cursor.peek() == Some('#') && end == self.cursor.offset {
-            return Err(self.cursor.error("Expected separation before comment"));
-        }
-        if self
-            .cursor
-            .peek()
-            .is_some_and(|c| !matches!(c, '\n' | '#' | ':' | ',' | ']' | '}'))
+    }
+    value
+}
+
+/// Double-quoted token-local decoding state.
+struct Decoder<'a, 'b> {
+    /// Only the contents of the current scalar token.
+    chars: std::str::Chars<'a>,
+    /// Source-coordinate formatter.
+    composer: &'b Composer<'a>,
+    /// Opening quote's byte position.
+    offset: usize,
+}
+
+impl Decoder<'_, '_> {
+    /// Consume literal indentation inside this token.
+    fn spaces(&mut self) {
+        while self
+            .chars
+            .clone()
+            .next()
+            .is_some_and(|ch| matches!(ch, ' ' | '\t'))
         {
-            let kind = if quote == '"' { "double" } else { "single" };
-            return Err(self.cursor.error(&format!(
-                "invalid trailing content after {kind}-quoted scalar"
-            )));
+            self.chars.next();
         }
-        Ok(text)
     }
 
     /// Fold a consumed ordinary newline and following indentation.
     fn fold_newline(&mut self, text: &mut String) {
         let mut breaks = 0;
         loop {
-            self.cursor.spaces();
-            if !self.cursor.eat('\n') {
+            self.spaces();
+            if self.chars.clone().next() != Some('\n') {
                 break;
             }
+            self.chars.next();
             breaks += 1;
         }
         if breaks == 0 {
@@ -170,12 +144,12 @@ impl Parser<'_> {
         }
     }
 
-    /// Decode one escape, reporting native failures at the scalar's opening quote.
-    fn escape(&mut self, start: usize) -> Result<Option<char>, FrontmatterError> {
+    /// Decode one escape, reporting failures at the scalar's opening quote.
+    fn escape(&mut self) -> Result<Option<char>, FrontmatterError> {
         let ch = self
-            .cursor
+            .chars
             .next()
-            .ok_or_else(|| self.escape_error(start, "found unknown escape character"))?;
+            .ok_or_else(|| self.escape_error("found unknown escape character"))?;
         let decoded = match ch {
             '0' => '\0',
             'a' => '\u{7}',
@@ -192,28 +166,30 @@ impl Parser<'_> {
             'L' => '\u{2028}',
             'P' => '\u{2029}',
             '\n' => {
-                self.cursor.spaces();
+                self.spaces();
                 return Ok(None);
             }
-            'x' | 'u' | 'U' => return self.unicode_escape(ch, start).map(Some),
-            _ => return Err(self.escape_error(start, "found unknown escape character")),
+            'x' | 'u' | 'U' => return self.unicode_escape(ch).map(Some),
+            _ => return Err(self.escape_error("found unknown escape character")),
         };
         Ok(Some(decoded))
     }
 
-    /// Read hexadecimal digits without accepting partial escapes.
+    /// Read complete hexadecimal escapes from the token-local character iterator.
     fn hex(&mut self, width: usize) -> Option<u32> {
-        let end = self.cursor.offset.checked_add(width)?;
-        let digits = self.cursor.source.get(self.cursor.offset..end)?;
-        if !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
-            return None;
+        let mut value = 0;
+        for _ in 0..width {
+            let ch = self.chars.next()?;
+            if !ch.is_ascii_hexdigit() {
+                return None;
+            }
+            value = value * 16 + ch.to_digit(16)?;
         }
-        self.cursor.offset = end;
-        u32::from_str_radix(digits, 16).ok()
+        Some(value)
     }
 
-    /// Decode a scalar or an adjacent pair of four-digit surrogate escapes.
-    fn unicode_escape(&mut self, kind: char, start: usize) -> Result<char, FrontmatterError> {
+    /// Decode a scalar or adjacent pair of four-digit surrogate escapes.
+    fn unicode_escape(&mut self, kind: char) -> Result<char, FrontmatterError> {
         let width = match kind {
             'x' => 2,
             'u' => 4,
@@ -221,26 +197,26 @@ impl Parser<'_> {
         };
         let value = self
             .hex(width)
-            .ok_or_else(|| self.escape_error(start, "did not find expected hexadecimal number"))?;
-        let invalid = || self.escape_error(start, INVALID_ESCAPE);
+            .ok_or_else(|| self.escape_error("did not find expected hexadecimal number"))?;
         if kind == 'u' && (0xd800..=0xdbff).contains(&value) {
-            if !self.cursor.rest().starts_with("\\u") {
-                return Err(invalid());
+            if self.chars.next() != Some('\\') || self.chars.next() != Some('u') {
+                return Err(self.escape_error(INVALID_ESCAPE));
             }
-            self.cursor.offset += 2;
             let low = self
                 .hex(4)
                 .filter(|v| (0xdc00..=0xdfff).contains(v))
-                .ok_or_else(|| self.escape_error(start, INVALID_ESCAPE))?;
+                .ok_or_else(|| self.escape_error(INVALID_ESCAPE))?;
             return char::from_u32(0x10000 + ((value - 0xd800) << 10) + low - 0xdc00)
-                .ok_or_else(|| self.escape_error(start, INVALID_ESCAPE));
+                .ok_or_else(|| self.escape_error(INVALID_ESCAPE));
         }
-        char::from_u32(value).ok_or_else(invalid)
+        char::from_u32(value).ok_or_else(|| self.escape_error(INVALID_ESCAPE))
     }
 
     /// Preserve existing quoted-scalar diagnostic templates.
-    fn escape_error(&self, start: usize, cause: &str) -> FrontmatterError {
-        self.cursor
-            .error_at(start, &format!("while parsing a quoted scalar, {cause}"))
+    fn escape_error(&self, cause: &str) -> FrontmatterError {
+        self.composer.error_at(
+            self.offset,
+            &format!("while parsing a quoted scalar, {cause}"),
+        )
     }
 }
