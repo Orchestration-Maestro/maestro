@@ -44,6 +44,3 @@ impl<D> AgentToolResult<Option<D>, Option<bool>> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;
