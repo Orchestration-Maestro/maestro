@@ -136,7 +136,9 @@ their terminal resources.
 
 Shell builders retain login-shell custom commands, plain pane commands and
 shell-evaluated scrollback editor selection. Foreground observations contain process
-facts rather than application classifications. Application wiring is described by the
+facts rather than application classifications. Their records are available through
+`maestro_process::foreground` on every platform; native lookup remains Linux-only.
+Application wiring is described by the
 [workspace daemon contract](specs/workspace-daemon.md).
 
 ## Pane terminals

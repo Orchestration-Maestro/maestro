@@ -1,7 +1,7 @@
 //! Foreground process history and theme policy.
 
 use super::*;
-use maestro_process::pty::foreground::ForegroundProcess;
+use maestro_process::foreground::ForegroundProcess;
 
 fn shell_job(shell_pid: u32) -> ForegroundJob {
     ForegroundJob {

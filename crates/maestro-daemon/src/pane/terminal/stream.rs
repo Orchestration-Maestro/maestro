@@ -5,7 +5,7 @@ use crate::pane::osc::{
     DefaultColorEvent, contains_scrollback_clear_sequence,
     maybe_filter_primary_screen_scrollback_clear, parse_reported_cwd,
 };
-use maestro_process::pty::foreground::ForegroundJob;
+use maestro_process::foreground::ForegroundJob;
 use maestro_terminal::Mode;
 use maestro_workspace::layout::PaneId;
 use std::time::{Duration, Instant};

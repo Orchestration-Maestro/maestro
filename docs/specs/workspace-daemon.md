@@ -230,7 +230,9 @@ The snapshot, the detection catalog and the announcements store use it.
 ### Foreground process facts
 
 - **Location.** Foreground jobs, process trees, argv, working directories and environment values are read in
-  `maestro-process::pty::foreground`.
+  the Linux-only `maestro-process::pty::foreground`. Its `ForegroundJob` and
+  `ForegroundProcess` records live in the platform-independent
+  `maestro-process::foreground` module, with re-exports at their Linux paths.
 - **Environment hint.** It is returned as the raw value, and the daemon parses it with the agent catalogue.
   That removes the cycle between process facts and agent recognition.
 

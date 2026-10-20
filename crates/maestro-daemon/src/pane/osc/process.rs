@@ -1,6 +1,6 @@
 //! Foreground process policies for history and host colours.
 
-use maestro_process::pty::foreground::ForegroundJob;
+use maestro_process::foreground::ForegroundJob;
 use std::borrow::Cow;
 
 /// Whether the observed group contains the shell.

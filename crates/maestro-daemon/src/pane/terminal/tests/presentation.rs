@@ -1,7 +1,7 @@
 //! Render suppression, cursor observations and host-theme restoration.
 
 use super::super::*;
-use maestro_process::pty::foreground::{ForegroundJob, ForegroundProcess};
+use maestro_process::foreground::{ForegroundJob, ForegroundProcess};
 use maestro_terminal::{CursorStyle, Terminal};
 use maestro_workspace::layout::PaneId;
 use std::time::{Duration, Instant};

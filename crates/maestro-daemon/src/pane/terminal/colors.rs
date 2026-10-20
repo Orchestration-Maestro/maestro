@@ -3,7 +3,7 @@
 use super::{PaneCore, PaneTerminal};
 use crate::pane::osc::{DefaultColorEvent, DefaultColorQuery};
 use crate::terminal_theme::{DefaultColorKind, HostAppearance, TerminalTheme};
-use maestro_process::pty::foreground::ForegroundJob;
+use maestro_process::foreground::ForegroundJob;
 use maestro_terminal::{Terminal, color::Rgb, screen_set::Key};
 
 impl PaneTerminal {
