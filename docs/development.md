@@ -273,9 +273,13 @@ elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `NEXTEST_PATH` through Git's
 shell on Windows. The example builds the author component, warms the Wasmtime
 compilation cache beside it and exports its path to the tests' processes.
-Plain Cargo tests retain their self-building fallback. Native OAuth callback
-tests that bind a fixed port belong in an `oauth_callback` module, which joins a single-thread nextest group
-because their redirect URIs require fixed ports. Browser author-build tests also
+Plain Cargo tests retain their self-building fallback. Response-account native
+callback tests use assigned listener addresses through the private binding seam;
+the advertised redirect URI remains unchanged. Public protocol, account and
+provider checks run in checked child processes with only the child's callback
+host set to a single space, exercising manual fallback without a listener.
+Callback tests that still bind a fixed port belong in an `oauth_callback` module,
+which joins a single-thread nextest group. Browser author-build tests also
 join a single-thread group because Trunk shares binding/optimizer intermediates;
 their file lock keeps plain Cargo tests safe. Other tests remain parallel.
 
