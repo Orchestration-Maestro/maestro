@@ -3,8 +3,8 @@ use super::{Driver, failure, read};
 use crate::types::AgentExecution;
 use crate::{AgentEvent, AgentMessage, AgentToolResult, CustomAgentMessages, SharedAgentTool};
 use maestro_models::{
-    AssistantContent, DiagnosticErrorInfo, SharedAssistantMessage, TextContent, ToolCall,
-    ToolResultMessage, UserBlock, timestamp_now,
+    AssistantContent, DiagnosticErrorInfo, SharedAssistantMessage, ToolCall, ToolResultMessage,
+    timestamp_now,
 };
 use std::sync::{Arc, RwLock};
 
@@ -322,14 +322,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
 }
 /// Construct the model-facing artifact from a preparation or execution failure.
 fn error_result(error: DiagnosticErrorInfo) -> AgentToolResult {
-    AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: error.message,
-            text_signature: None,
-        })],
-        details: Some(serde_json::json!({})),
-        terminate: None,
-    }
+    AgentToolResult::text_result(error.message, Some(serde_json::json!({})))
 }
 
 /// Replace supplied nonnull fields without merging details or discarding false flags.

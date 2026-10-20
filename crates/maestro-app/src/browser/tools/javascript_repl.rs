@@ -8,7 +8,7 @@ use crate::browser::components::sandboxed_iframe::{
 use base64::Engine;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
 use maestro_models::SharedHandle;
-use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Tool};
 use maestro_text::is_whitespace_scalar;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
@@ -226,14 +226,10 @@ async fn execute_tool<V: SandboxValue>(
         .into_iter()
         .map(encode_file)
         .collect();
-    Ok(AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: result.output,
-            text_signature: None,
-        })],
-        details: Some(JavaScriptReplToolResult { files: Some(files) }),
-        terminate: None,
-    })
+    Ok(AgentToolResult::text_result(
+        result.output,
+        Some(JavaScriptReplToolResult { files: Some(files) }),
+    ))
 }
 /// Invoke the current factory without holding the setting guard.
 fn runtime_providers<V: SandboxValue>(

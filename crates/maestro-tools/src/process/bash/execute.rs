@@ -1,10 +1,7 @@
 //! Per-call raw output and progress execution.
 use super::{BashExecOptions, BashExecution, BashOperations, BashSpawnContext, BashToolDetails};
 use crate::{
-    output::{
-        output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
-        text_block,
-    },
+    output::output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
     utils::diagnostics::diagnostic,
 };
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
@@ -73,14 +70,13 @@ impl Progress {
         self.dirty = false;
         self.last = Some(Instant::now());
         match self.output.snapshot(true) {
-            Ok(snapshot) => Some(AgentToolResult {
-                content: vec![text_block(snapshot.content)],
-                details: Some(BashToolDetails {
+            Ok(snapshot) => Some(AgentToolResult::text_result(
+                snapshot.content,
+                Some(BashToolDetails {
                     truncation: snapshot.truncation.truncated.then_some(snapshot.truncation),
                     full_output_path: snapshot.full_output_path,
                 }),
-                terminate: None,
-            }),
+            )),
             Err(error) => {
                 self.error = Some(error);
                 None

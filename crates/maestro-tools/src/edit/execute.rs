@@ -6,7 +6,6 @@ use crate::{
         access_failure, apply_edits_to_normalized_content, detect_line_ending,
         generate_diff_string, normalize_to_lf, restore_line_endings, strip_bom,
     },
-    output::text_block,
     read::{NativeReadOperations, ReadOperations, access_file},
     utils::diagnostics::{failure, guarded},
     write::{NativeWriteOperations, WriteOperations},
@@ -59,17 +58,16 @@ pub(super) async fn edit_file(
         restore_line_endings(&applied.new_content, ending)
     );
     guarded(signal, || operations.write_file(absolute, restored)).await?;
-    Ok(AgentToolResult {
-        content: vec![text_block(format!(
+    Ok(AgentToolResult::text_result(
+        format!(
             "Successfully replaced {} block(s) in {}.",
             input.edits.len(),
             input.path
-        ))],
-        details: Some(generate_diff_string(
+        ),
+        Some(generate_diff_string(
             &applied.base_content,
             &applied.new_content,
             None,
         )),
-        terminate: None,
-    })
+    ))
 }

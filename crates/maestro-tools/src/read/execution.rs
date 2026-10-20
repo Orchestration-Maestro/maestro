@@ -83,22 +83,16 @@ impl Reader {
         .await?;
         let model = context.and_then(|context| context.model());
         let bytes = guarded(signal, || operations.read_file(absolute_path)).await?;
-        let result =
-            match mime.filter(|mime| !mime.is_empty()) {
-                Some(mime) => Ok(image_result(
-                    &bytes,
-                    mime,
-                    self.auto_resize,
-                    model.as_deref(),
-                )),
-                None => read_text(&bytes, &input.path, input.offset, input.limit).map(
-                    |(text, details)| AgentToolResult {
-                        content: vec![text_block(text)],
-                        details,
-                        terminate: None,
-                    },
-                ),
-            };
+        let result = match mime.filter(|mime| !mime.is_empty()) {
+            Some(mime) => Ok(image_result(
+                &bytes,
+                mime,
+                self.auto_resize,
+                model.as_deref(),
+            )),
+            None => read_text(&bytes, &input.path, input.offset, input.limit)
+                .map(|(text, details)| AgentToolResult::text_result(text, details)),
+        };
         if signal.is_some_and(Cancellation::is_aborted) {
             return Err(aborted());
         }
