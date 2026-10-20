@@ -9,3 +9,5 @@ pub mod storage;
 pub mod render;
 
 pub mod exec;
+
+pub mod unicode;
