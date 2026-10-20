@@ -1,6 +1,6 @@
 //! Viewer-specific admission through the shared document walker.
 use super::{Policy, Prepared, Writer, escape, title};
-use maestro_app::{is_whitespace_scalar, markdown, normalize_to_lf};
+use maestro_app::{browser::script_scheme, is_whitespace_scalar, markdown, normalize_to_lf};
 use maestro_theme::{HighlightProfile, SyntaxHighlighter};
 
 /// Prepare standalone viewer markup without retained chat controls.
@@ -21,7 +21,7 @@ pub(crate) fn prepare_export(text: &str, highlighter: &dyn SyntaxHighlighter) ->
 pub(super) fn blocked(href: &str) -> bool {
     let selected = href.replace('\0', "\u{fffd}");
     url::Url::parse(&selected)
-        .is_ok_and(|url| matches!(url.scheme(), "javascript" | "vbscript" | "data"))
+        .is_ok_and(|url| script_scheme(url.scheme()) || url.scheme() == "data")
 }
 
 /// Emit literal image alternatives rather than formatted label children.
