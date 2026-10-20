@@ -39,6 +39,12 @@ pub(super) fn parse(source: &str) -> Result<Vec<Node>, FrontmatterError> {
         on_key_line: false,
     };
     for mut token in Lexer::lex(source) {
+        if token.kind == K::UnclosedQuotedScalar {
+            return Ok(vec![Node::new(
+                NodeKind::Error("Unclosed quoted scalar"),
+                &token,
+            )]);
+        }
         token.indent = parser.indent;
         parser.token = token;
         if parser.token.kind == K::Scalar {

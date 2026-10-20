@@ -486,3 +486,59 @@ fn frontmatter_implicit_key_limits_measure_text_units() {
     }
     assert!(failures.is_empty(), "{failures:?}");
 }
+
+/// The parser's result reaches both native resource consumers unchanged.
+#[cfg(not(target_arch = "wasm32"))]
+fn check_quoted_metadata(yaml: &str, expected: Option<&str>) {
+    let input = format!("---\n{yaml}\n---\nBody");
+    let parsed = maestro_resources::parse_frontmatter(&input);
+    let (skills, templates) = native_load(yaml);
+    if let Some(description) = expected {
+        assert!(parsed.is_ok(), "{yaml}: {parsed:?}");
+        assert!(
+            skills.diagnostics.is_empty(),
+            "{yaml}: {:?}",
+            skills.diagnostics
+        );
+        assert_eq!(skills.skills.len(), 1, "{yaml}");
+        assert_eq!(skills.skills[0].description, description, "{yaml}");
+        assert_eq!(templates.len(), 1, "{yaml}");
+        assert_eq!(templates[0].description, description, "{yaml}");
+    } else {
+        let error = parsed.unwrap_err();
+        assert!(
+            error.message.contains("Unclosed quoted scalar"),
+            "{yaml}: {error}"
+        );
+        assert!(skills.skills.is_empty(), "{yaml}");
+        assert_eq!(skills.diagnostics.len(), 1, "{yaml}");
+        assert!(
+            skills.diagnostics[0]
+                .message
+                .contains("Unclosed quoted scalar"),
+            "{yaml}"
+        );
+        assert!(templates.is_empty(), "{yaml}");
+    }
+}
+
+/// Escaped physical newlines follow the same block indentation rule as other lines.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn quoted_continuation_indentation_reaches_both_loaders() {
+    check_quoted_metadata("description: \"first\\\nsecond\"", None);
+    check_quoted_metadata("description: \"first\\\n  second\"", Some("firstsecond"));
+    check_quoted_metadata("{description: \"first\\\nsecond\"}", Some("firstsecond"));
+    check_quoted_metadata("{description: \"first\\\n  second\"}", Some("firstsecond"));
+}
+
+/// An escaped apostrophe cannot close a scalar, even when it is the last byte.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn quoted_termination_reaches_both_loaders() {
+    check_quoted_metadata("description: 'done''", None);
+    check_quoted_metadata("description: 'it''s'", Some("it's"));
+    check_quoted_metadata("{description: 'done''}", None);
+    check_quoted_metadata("{description: 'it''s'}", Some("it's"));
+    check_quoted_metadata("description: \"done\\\"", None);
+}

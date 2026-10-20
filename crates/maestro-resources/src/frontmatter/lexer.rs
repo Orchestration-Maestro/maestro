@@ -1,5 +1,7 @@
 //! Single lexical owner for document boundaries and scalar extent.
 
+mod quoted_scalar;
+
 use super::cst::{SourceToken, TokenKind as K};
 
 /// Context resumed after a complete lexical unit.
@@ -400,38 +402,6 @@ impl<'a> Lexer<'a> {
         } else {
             Some(at)
         }
-    }
-
-    /// Find a quoted token's extent without decoding its contents.
-    fn parse_quoted_scalar(&mut self) {
-        let quote = self.byte(self.pos);
-        let mut end = self.pos + 1;
-        while let Some(byte) = self.byte(end) {
-            if Some(byte) == quote && quote == Some(b'\'') && self.byte(end + 1) == quote {
-                end += 2;
-                continue;
-            }
-            if Some(byte) == quote {
-                end += 1;
-                break;
-            }
-            if byte == b'\\' && quote == Some(b'"') && self.byte(end + 1).is_some() {
-                end += 2;
-                continue;
-            }
-            if byte == b'\n' && self.continue_scalar(end + 1).is_none() {
-                break;
-            }
-            end += 1;
-        }
-        self.push(
-            if quote == Some(b'\'') {
-                K::SingleQuotedScalar
-            } else {
-                K::DoubleQuotedScalar
-            },
-            end,
-        );
     }
 
     /// Find plain scalar extent, retaining internal whitespace but no trailing blanks.

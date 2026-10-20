@@ -54,6 +54,8 @@ pub(super) enum TokenKind {
     SingleQuotedScalar,
     /// Double-quoted scalar text.
     DoubleQuotedScalar,
+    /// Quoted text whose closing delimiter was not consumed.
+    UnclosedQuotedScalar,
     /// Block scalar header.
     BlockScalarHeader,
 }
