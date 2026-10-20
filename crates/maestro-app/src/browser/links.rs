@@ -35,3 +35,22 @@ pub fn executable(target: &str) -> bool {
         _ => false,
     }
 }
+
+/// Whether `target` uses a script scheme or a non-image data media type.
+///
+/// Unparsable targets and other schemes are not refused.
+#[must_use]
+pub fn non_image(target: &str) -> bool {
+    let Ok(url) = url::Url::parse(target) else {
+        return false;
+    };
+    match url.scheme() {
+        "javascript" | "vbscript" => true,
+        "data" => !url
+            .path()
+            .trim_start()
+            .to_ascii_lowercase()
+            .starts_with("image/"),
+        _ => false,
+    }
+}

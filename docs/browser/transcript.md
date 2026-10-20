@@ -138,11 +138,13 @@ and a tight item only when it starts with one, while headings and table cells
 admit inline formulas. Code, images, plain URLs and angle autolinks remain opaque.
 Selected links retain literal destinations and titles while their labels may contain
 formulas. A formula that starts before authored link syntax consumes that syntax
-rather than creating an anchor. The renderer refuses link and image targets that
+rather than creating an anchor. The renderer refuses Markdown link targets that
 would run script: `javascript:` and `vbscript:` URLs, and `data:` URLs holding
-HTML, XML, SVG or script. It writes a refused link's label without an anchor and a
-refused image's alternative text; with escaping on, a refused angle autolink keeps
-its source as literal text. The spreadsheet preview applies the same rule.
+HTML, XML, SVG or script. Markdown images keep `data:image/*` targets, including
+SVG; they refuse `javascript:`, `vbscript:` and non-image `data:` targets. A refused link shows its label without
+an anchor, and a refused image shows its alternative text. With escaping on, a
+refused angle autolink keeps its source as literal text. The spreadsheet preview
+uses the same link rule.
 The selected pack's error role colors formula errors when painted, and the
 matching math stylesheet and fonts are inserted once per document.
 

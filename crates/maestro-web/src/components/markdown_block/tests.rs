@@ -206,6 +206,41 @@ fn executable_link_and_image_targets_keep_only_their_text() {
     }
 }
 
+#[test]
+fn encoded_executable_targets_keep_only_their_text() {
+    for (source, expected) in [
+        ("[x](javascript://^%0aalert(1))", "<p>x</p>\n"),
+        ("[r]\n\n[r]: javascript://^%0aalert(1)", "<p>r</p>\n"),
+        (
+            "<javascript://^%0aalert(1)>",
+            "<p>&lt;javascript://^%0aalert(1)&gt;</p>\n",
+        ),
+        ("![i](javascript://^%0aalert(1))", "<p>i</p>\n"),
+    ] {
+        assert_eq!(prepare(source, true).html, expected, "{source:?}");
+    }
+}
+
+#[test]
+fn image_data_targets_preserve_images_and_refuse_other_media() {
+    for target in [
+        "data:image/svg+xml;base64,PHN2Zy8+",
+        "DATA:IMAGE/SVG+XML;base64,PHN2Zy8+",
+    ] {
+        assert_eq!(
+            prepare(&format!("![i]({target})"), true).html,
+            format!("<p><img src=\"{target}\" alt=\"i\"></p>\n"),
+            "{target:?}",
+        );
+    }
+    for target in [
+        "data:text/html;base64,PHNjcmlwdD4=",
+        "data:text/plain,hello",
+    ] {
+        assert_eq!(prepare(&format!("![i]({target})"), true).html, "<p>i</p>\n");
+    }
+}
+
 /// Independent native spans following code whose surrounding structure changes.
 const SUFFIXES: [(&str, &str, Option<&str>); 5] = [
     ("`<i>`", "<p><code>&lt;i&gt;</code></p>\n", None),

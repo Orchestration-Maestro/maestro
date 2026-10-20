@@ -427,15 +427,16 @@ impl Writer<'_, '_> {
         else {
             return;
         };
-        // A refused target keeps the label; an angle autolink keeps the escaped source.
-        let refused = maestro_app::browser::executable(href);
-        if refused && escape_html && node.authored.starts_with('<') {
+        // A refused target keeps the label; with escaping on, an angle autolink keeps its source.
+        let href = utf8_percent_encode(href, URL_SAFE).to_string();
+        let refused = maestro_app::browser::executable(&href);
+        if refused && escape_html && meta.link_type == markdown::LinkType::Autolink {
             escape(&node.authored, out);
             return;
         }
         if !refused {
             out.push_str("<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"");
-            escape(&utf8_percent_encode(href, URL_SAFE).to_string(), out);
+            escape(&href, out);
             out.push('"');
             title(&meta.title, out);
             out.push('>');
@@ -513,14 +514,12 @@ fn task(checked: bool, out: &mut String) {
 }
 /// Write an image with its plain alternative text, or only that text for a refused target.
 fn image(meta: &markdown::ImageMetadata, out: &mut String) {
-    if maestro_app::browser::executable(&meta.destination) {
+    let destination = utf8_percent_encode(&meta.destination, URL_SAFE).to_string();
+    if maestro_app::browser::non_image(&destination) {
         return plain(&meta.children, out);
     }
     out.push_str("<img src=\"");
-    escape(
-        &utf8_percent_encode(&meta.destination, URL_SAFE).to_string(),
-        out,
-    );
+    escape(&destination, out);
     out.push_str("\" alt=\"");
     plain(&meta.children, out);
     out.push('"');
