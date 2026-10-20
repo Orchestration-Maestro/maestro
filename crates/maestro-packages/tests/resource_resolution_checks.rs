@@ -1,6 +1,7 @@
 //! Explicit resource resolution through the manager boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 use crate::native_support;
 use crate::resolution_support;
 use crate::resource_cases;

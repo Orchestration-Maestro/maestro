@@ -1,14 +1,18 @@
 //! Recorded resource recipes separated from reusable filesystem witnesses.
 #![cfg(test)]
+#[cfg(unix)]
+use super::resolution_support::manager;
 use super::{
-    resolution_support::{Filesystem, manager, output},
+    resolution_support::{Filesystem, output},
     scratch::Scratch,
     support,
 };
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, io, path::PathBuf, rc::Rc};
+use std::{collections::BTreeMap, rc::Rc};
+#[cfg(unix)]
+use std::{io, path::PathBuf};
 /// One recorded recipe and its independently observed output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -152,6 +156,7 @@ fn assert_calls(case: &Recipe, effects: &support::Effects) {
 }
 
 /// Later explicit files cannot overwrite metadata already admitted at the same authored path.
+#[cfg(unix)]
 pub async fn first_authored_metadata() {
     let dir = Scratch::new().unwrap();
     let folder = dir.0.join("extensions");

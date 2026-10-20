@@ -231,6 +231,7 @@ fn credentials_home(files: &super::Files, endpoint: &str) -> String {
 }
 
 #[test]
+#[cfg_attr(not(unix), allow(unused_mut))]
 fn adc_file_order_prefers_nonempty_explicit_paths() {
     const TEST: &str = "adc_file_order_prefers_nonempty_explicit_paths";
     if let Ok(expected) = std::env::var("MAESTRO_CHILD_CASE") {
@@ -419,6 +420,7 @@ fn credential_forms(files: &super::Files, base: &str) -> Vec<(&'static str, serd
     let subject = files.write("subject.json", br#"{"tok":"subject-file"}"#);
     let key = super::client_key_pem();
     let external = |source: serde_json::Value| serde_json::json!({"type":"external_account","audience":audience,"subject_token_type":"urn:ietf:params:oauth:token-type:jwt","token_url":token,"credential_source":source});
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut cases = vec![
         (
             "user",

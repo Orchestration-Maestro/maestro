@@ -214,6 +214,7 @@ fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> 
     Ok(())
 }
 
+#[cfg_attr(not(unix), allow(unused_variables))]
 fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> TestResult {
     vertex_run(
         directory,

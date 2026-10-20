@@ -190,6 +190,7 @@ mod simple_model_options;
 mod socks;
 mod streamed_arguments;
 mod subscription_accounts;
+#[cfg(target_os = "linux")]
 #[path = "support/tls.rs"]
 mod tls;
 #[path = "tool_images.rs"]

@@ -892,6 +892,7 @@ fn harness_modes_keep_existing_output_presentation() {
 
 /// Values with no text spelling in common: empty, spaced, non-ASCII and, on Unix, non-UTF-8.
 fn native_values() -> Vec<std::ffi::OsString> {
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut values: Vec<std::ffi::OsString> = ["", "a b", "é☃"].map(Into::into).into();
     #[cfg(unix)]
     values.push(
@@ -921,6 +922,7 @@ fn route_outputs(configure: impl Fn(TestProcess) -> TestProcess) -> Vec<String> 
     let process = configure(plain(&name).env("MTP_BEHAVIOR", "cwd"));
     process.status_with_stdout(file).unwrap();
     let from_file = std::fs::read(scratch.join("out")).unwrap();
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut outputs = vec![text(&captured.stdout), text(&live.stdout), text(&from_file)];
     #[cfg(unix)]
     outputs.push(text(
