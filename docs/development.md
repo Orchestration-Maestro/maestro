@@ -51,28 +51,57 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
   -D warnings -D clippy::missing_docs_in_private_items
 ```
 
-Build the same integration program for browser execution:
+Run the retained sandbox assertions with supplied browser tools:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo test \
-  -p maestro-web --test integration --target wasm32-unknown-unknown \
-  --locked --no-run --message-format=json
+export PLAYWRIGHT_MODULE=/absolute/path/to/playwright
+export CHROMIUM_PATH=/absolute/path/to/chrome
+# Put wasm-bindgen CLI 0.2.129 on PATH.
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just browser-test
 ```
 
-The libtest artifact also starts native `#[test]` cases when bindings initialize.
-To invoke browser exports alone, use a scratch cdylib manifest pointing at the
-same `tests/integration.rs`, with `--cfg test` applied only to its root crate.
-Keep that manifest outside the repository and retain the locked dependencies.
+The command installs nothing. It requires Node >=20, Playwright 1.64.1,
+Chromium 156.0.8078.4 (supplier revision 1248), and wasm-bindgen CLI 0.2.129,
+matching the locked Rust binding. The shared workflow owns tool acquisition.
+Observed versions, checkout SHA and Cargo's emitted artifact paths are printed.
 
-Bind the runtime artifact with the matching wasm-bindgen CLI version,
-`--target web` and `--split-linked-modules`. Fixture imports need packaged files:
-the default embedded module URLs do not preserve shared identity across link
-sites or resolve relative fixture imports. The shared test loader retains native
-module namespaces and passes native values directly to their exports.
+The registered integration target is compiled with the workspace lock but never
+loaded in the browser: its libtest startup would execute native tests. Runtime
+execution uses an unregistered temporary cdylib pointing at the unchanged
+`tests/integration.rs`, with `--cfg test` applied only to its root crate. Scratch
+dependencies come from the current manifests; offline lock preparation rejects
+new external package identities. The authored manifests and lock stay unchanged.
+Build outputs remain in Cargo's resolved target directory.
 
-These commands qualify the aggregate target locally. Shared CI's browser lint,
-build and Chromium execution rollout is separate; a local pass does not prove
-that the workflow selects or executes browser integration tests.
+Bindings use `--target web --split-linked-modules` to retain local snippets,
+relative fixture imports and native module identity. The runner serves only the
+packaged output on an ephemeral loopback port. It checks the entire selected
+inventory before invoking assertions, then awaits each export in a fresh page:
+26 execution exports and 19 loading exports. Logs identify each `START` and
+`PASS`, each `FAMILY` total, and `COMPLETE 45/45` on success. `PHASE` records
+identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
+so an interrupted run retains its last observed browser phase.
+
+Missing exports, synchronous throws, rejected promises, unexpected page errors,
+page crashes and unexpected browser disconnection fail the command. One deliberate
+policy-negative export, `inline_programs_preserve_text_policies_and_order`, must
+produce exactly one `TypeError` with message `window.complete is not a function`
+from `about:srcdoc`. Its ordinary assertions still run; absent, repeated or other
+errors fail. Error accounting stays attached until the page closes. Browser,
+server and temporary preparation are closed or removed on both outcomes; a
+cleanup failure does not skip the other resource or replace an assertion failure.
+
+Run the driver regressions with the same supplied environment:
+
+```sh
+node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
+```
+
+Canvas session-header tests and offline tool cards are not executed; the latter
+still depend on the canvas renderer. Transcript execution is tracked separately
+in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
+Browser execution is separate from native tests and coverage. Shared-job activation
+follows the workflow release and caller re-pin; a local pass is not hosted-CI proof.
 
 ## Feature unification
 

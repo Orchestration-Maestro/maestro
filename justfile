@@ -247,3 +247,7 @@ _browser-build output pack mode *args:
 [private]
 _browser-watch command pack mode *args:
     shift 3; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{command}} {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Build and execute the retained sandbox exports with supplied browser tools.
+browser-test:
+    node crates/maestro-web/tests/sandbox_loading_support/run.cjs
