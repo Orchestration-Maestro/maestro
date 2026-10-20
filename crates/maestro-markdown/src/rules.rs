@@ -120,6 +120,10 @@ pub(crate) static INLINE_EM_STRONG_R_DELIM_UND: LazyLock<Option<Regex>> = LazyLo
     Regex::with_flags(r"^[^_*]*?\*\*[^_*]*?_[^_*]*?(?=\*\*)|[^_]+(?=[^_])|(?!_)[\p{P}\p{S}](_+)(?=[\s]|$)|[^\s\p{P}\p{S}](_+)(?!_)(?=[\s\p{P}\p{S}]|$)|(?!_)[\s\p{P}\p{S}](_+)(?=[^\s\p{P}\p{S}])|[\s](_+)(?!_)(?=[\p{P}\p{S}])|(?!_)[\p{P}\p{S}](_+)(?!_)(?=[\p{P}\p{S}])", "u").ok()
 });
 
+/// Recognize a Unicode letter or number before an underscore delimiter.
+pub(crate) static INLINE_UNICODE_ALPHA_NUMERIC: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::with_flags(r"[\p{L}\p{N}]", "u").ok());
+
 /// Recognize inline punctuation syntax: whitespace, punctuation or symbols except `*` and `_`.
 pub(crate) static INLINE_PUNCTUATION: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^((?![*_])[\s\p{P}\p{S}])", "u").ok());

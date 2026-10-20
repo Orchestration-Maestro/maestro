@@ -8,7 +8,13 @@ impl Tokenizer<'_> {
     fn opening(&self, range: &Range<usize>, previous: Option<char>) -> Option<(usize, u8)> {
         let text = &self.source.text[range.clone()];
         let left = rules::inline_em_strong_l_delim(self.options)?.find(text)?;
-        if left.group(3).is_some() && previous.is_some_and(char::is_alphanumeric) {
+        if left.group(3).is_some()
+            && previous.is_some_and(|previous| {
+                rules::INLINE_UNICODE_ALPHA_NUMERIC
+                    .as_ref()
+                    .is_some_and(|rule| rule.find(previous.encode_utf8(&mut [0; 4])).is_some())
+            })
+        {
             return None;
         }
         let punctuation = capture(text, &left, 1);
