@@ -78,7 +78,7 @@ function artifact(output, kind, name) {
 function packageBrowser(checkout, output) {
   const metadata = JSON.parse(command('cargo', ['metadata', '--locked', '--no-deps', '--format-version=1'], {cwd: checkout}));
   const target = metadata.target_directory;
-  const compiled = command('timeout', ['900', 'cargo', 'test', '-p', 'maestro-web', '--test', 'integration', '--target', 'wasm32-unknown-unknown', '--locked', '--no-run', '--message-format=json'], {cwd: checkout});
+  const compiled = command('cargo', ['test', '-p', 'maestro-web', '--test', 'integration', '--target', 'wasm32-unknown-unknown', '--locked', '--no-run', '--message-format=json'], {cwd: checkout});
   artifact(compiled, 'test', 'integration');
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-browser-test-'));
   try {

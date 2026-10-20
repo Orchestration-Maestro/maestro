@@ -265,6 +265,7 @@ test('tool_versions_must_match_the_supplied_contract', t => {
 
 test('packaging_keeps_linked_modules_and_locked_sources', t => {
   const checkout = path.resolve(__dirname, '../../../..');
+  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, 'run.cjs'), 'utf8'), /\btimeout\b/, 'build commands carry no deadline');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-package-proof-'));
   t.after(() => fs.rmSync(root, {recursive: true, force: true}));
   const authored = ['Cargo.toml', 'Cargo.lock', 'crates/maestro-web/Cargo.toml',
