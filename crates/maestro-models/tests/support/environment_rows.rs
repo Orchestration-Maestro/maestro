@@ -1,6 +1,7 @@
 //! Checks of recorded rows, each in a process holding the environment its row records.
 
 use crate::chat::TestResult;
+use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Check each row in the process holding its environment.
@@ -49,4 +50,57 @@ pub fn check_by_environment<R>(
         };
     }
     Ok(())
+}
+
+/// Environment variables named by the scenario.
+pub fn json_environment(row: &Value) -> TestResult<Option<Vec<(&str, &str)>>> {
+    row["case"]
+        .get("env")
+        .map(|env| {
+            env.as_object()
+                .into_iter()
+                .flatten()
+                .map(|(k, v)| Ok((k.as_str(), v.as_str().ok_or("environment value")?)))
+                .collect()
+        })
+        .transpose()
+}
+/// The rows this process runs: none in the parent, which reruns the shared-environment rows
+/// together and each row with its own environment in an isolated child.
+pub fn selected<'a, R>(
+    test: &str,
+    rows: &'a [R],
+    identity: impl Fn(usize, &R) -> TestResult<String>,
+    environment: impl Fn(&R) -> TestResult<Option<Vec<(&str, &str)>>>,
+) -> TestResult<Vec<&'a R>> {
+    assert!(!rows.is_empty(), "{test} owns cases");
+    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "*")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
+        for (index, row) in rows.iter().enumerate() {
+            if let Some(variables) = environment(row)? {
+                let output = maestro_test_process::TestProcess::current(test)?
+                    .nocapture()
+                    .env_clear()
+                    .envs(variables.iter().copied())
+                    .env("MAESTRO_CHILD_CASE", identity(index, row)?)
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+            }
+        }
+        return Ok(Vec::new());
+    };
+    let mut owned = Vec::new();
+    for (index, row) in rows.iter().enumerate() {
+        if (selected == "*" && environment(row)?.is_none()) || selected == identity(index, row)? {
+            owned.push(row);
+        }
+    }
+    Ok(owned)
 }

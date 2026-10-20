@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use maestro_models::providers::chat::openai_completions::stream_simple_openai_completions;
 use maestro_models::{
-    AssistantMessageEventStream, Cancellation, DiagnosticErrorInfo, DiagnosticInput, Fetch,
-    FetchError, HttpResponse, OnPayload, OnResponse, OpenAICompletionsOptions, SimpleStreamOptions,
-    StreamOptions, extract_diagnostic_error, stream_openai_completions,
+    AssistantMessageEventStream, Cancellation, Fetch, FetchError, HttpResponse, OnPayload,
+    OnResponse, OpenAICompletionsOptions, SimpleStreamOptions, StreamOptions,
+    stream_openai_completions,
 };
 use serde_json::{Value, json};
 
@@ -131,11 +131,6 @@ fn controlled_fetch(case: &Value, log: &Log) -> TestResult<Fetch> {
     }))
 }
 
-/// The failure a hook reports for a scripted message.
-fn hook_failure(message: &str) -> DiagnosticErrorInfo {
-    extract_diagnostic_error(DiagnosticInput::Text(message))
-}
-
 /// A payload hook that logs, may fail and may replace the payload.
 fn payload_hook(case: &Value, log: &Log) -> OnPayload {
     let (log, replacement) = (log.clone(), case.get("replace").cloned());
@@ -148,7 +143,7 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
               _| {
             log.note("payload");
             let outcome = match &failure {
-                Some(message) => Err(hook_failure(message)),
+                Some(message) => Err(crate::response_support::failure(message)),
                 None => Ok(replacement.clone().unwrap_or(payload)),
             };
             Box::pin(std::future::ready(outcome.map(|payload| {
@@ -167,9 +162,9 @@ fn response_hook(case: &Value, log: &Log) -> OnResponse {
     let failure = case["responseError"].as_str().map(str::to_owned);
     Arc::new(move |_, _| {
         log.note("response");
-        let outcome = failure
-            .as_deref()
-            .map_or(Ok(()), |message| Err(hook_failure(message)));
+        let outcome = failure.as_deref().map_or(Ok(()), |message| {
+            Err(crate::response_support::failure(message))
+        });
         Box::pin(std::future::ready(outcome))
     })
 }
@@ -308,16 +303,6 @@ pub fn assert_observed(row: &Value, observed: &Observed) {
     assert_eq!(actual, expected, "{id}");
 }
 
-/// The environment variables a row's case names.
-fn environment(row: &Value) -> Vec<(&str, &str)> {
-    row["case"]["env"]
-        .as_object()
-        .into_iter()
-        .flatten()
-        .filter_map(|(name, value)| Some((name.as_str(), value.as_str()?)))
-        .collect()
-}
-
 /// Run every fixture row a test owns in child processes with controlled environments.
 ///
 /// Rows without an `env` object run together in one child with an empty environment;
@@ -325,32 +310,12 @@ fn environment(row: &Value) -> Vec<(&str, &str)> {
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
-    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .env("MAESTRO_CHILD_CASE", "*")
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
-        for row in owned.iter().filter(|row| row["case"].get("env").is_some()) {
-            {
-                let output = maestro_test_process::TestProcess::current(test)?
-                    .nocapture()
-                    .env_clear()
-                    .envs(environment(row).iter().copied())
-                    .env("MAESTRO_CHILD_CASE", row["id"].as_str().ok_or("row id")?)
-                    .output()?;
-                assert!(output.status.success(), "{output:?}");
-            };
-        }
-        return Ok(());
-    };
-    for row in owned.iter().filter(|row| {
-        let has_env = row["case"].get("env").is_some();
-        (selected == "*" && !has_env) || row["id"] == selected.as_str()
-    }) {
+    for row in crate::environment_rows::selected(
+        test,
+        &owned,
+        |_, row| Ok(row["id"].as_str().ok_or("row id")?.to_owned()),
+        crate::environment_rows::json_environment,
+    )? {
         assert_observed(row, &run_case(&row["case"]).await?);
     }
     Ok(())

@@ -154,6 +154,8 @@ mod reasoning_capabilities;
 mod reasoning_qualification;
 mod response_account_authorization;
 mod response_affinity;
+#[path = "support/response_case_schema.rs"]
+mod response_case_schema;
 #[path = "support/response_cases.rs"]
 mod response_cases;
 #[path = "support/response_endpoint.rs"]
@@ -170,6 +172,8 @@ mod response_reasoning_replay;
 mod response_runtime;
 mod response_session_affinity;
 mod response_session_surface;
+#[path = "support/response_support.rs"]
+mod response_support;
 mod response_tool_images;
 mod routed_cache_write;
 mod schema_checker_qualification;

@@ -1,16 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use maestro_models::records::diagnostics::{
-        DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
-    };
+    use crate::response_support::failure as error;
+    use maestro_models::DiagnosticErrorInfo;
     use maestro_models::records::session_resources::{
         cleanup_session_resources, register_session_resource_cleanup,
     };
     use std::sync::{Arc, Mutex};
-
-    fn error(text: &str) -> DiagnosticErrorInfo {
-        extract_diagnostic_error(DiagnosticInput::Text(text))
-    }
 
     #[test]
     fn maestro_cleanup_collects_failures_in_order() {
