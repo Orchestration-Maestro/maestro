@@ -121,6 +121,7 @@ shutil.copy(root/'rust-toolchain.toml', scratch/'rust-toolchain.toml')
 (scratch/'tests').symlink_to(root/'crates/maestro-web/tests', target_is_directory=True)
 `, checkout, scratch]);
     const env = {...process.env, CARGO_TARGET_DIR: target};
+    command('cargo', ['fetch', '--locked'], {cwd: checkout});
     command('cargo', ['metadata', '--offline', '--format-version=1'], {cwd: scratch, env});
     process.stdout.write(command('python3', ['-c', String.raw`
 import pathlib, sys, tomllib

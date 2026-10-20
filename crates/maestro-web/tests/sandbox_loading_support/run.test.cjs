@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const {once} = require('node:events');
+const {spawnSync} = require('node:child_process');
 const runner = require('./run.cjs');
 const inventory = require('./exports.json');
 const chromium = require(process.env.PLAYWRIGHT_MODULE).chromium;
@@ -271,7 +272,22 @@ test('packaging_keeps_linked_modules_and_locked_sources', t => {
   const authored = ['Cargo.toml', 'Cargo.lock', 'crates/maestro-web/Cargo.toml',
     ...['integration.rs', 'sandbox_execution_browser.rs', 'sandbox_loading_browser.rs'].map(file => `crates/maestro-web/tests/${file}`)];
   const before = authored.map(file => fs.readFileSync(path.join(checkout, file)));
-  runner.packageBrowser(checkout, root);
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-package-home-'));
+  t.after(() => fs.rmSync(home, {recursive: true, force: true}));
+  assert.deepEqual(fs.readdirSync(home), [], 'initial Cargo home is empty');
+  const child = spawnSync(process.execPath, ['-e',
+    'require(process.argv[1]).packageBrowser(process.argv[2], process.argv[3])',
+    require.resolve('./run.cjs'), checkout, root], {
+    env: {...process.env, CARGO_HOME: home}, encoding: 'utf8',
+  });
+  assert.ifError(child.error);
+  assert.equal(child.status, 0, child.stdout + child.stderr);
+  const lines = child.stdout.split('\n');
+  const fetch = lines.indexOf('COMMAND cargo fetch --locked');
+  const metadata = lines.indexOf('COMMAND cargo metadata --offline --format-version=1');
+  const identity = lines.indexOf('LOCK external identity additions: 0');
+  assert.equal(lines.filter(line => line === 'COMMAND cargo fetch --locked').length, 1);
+  assert(fetch >= 0 && metadata > fetch && identity > metadata, 'locked fetch precedes offline preparation and identity check');
   for (const [index, file] of authored.entries()) assert.deepEqual(fs.readFileSync(path.join(checkout, file)), before[index], file);
   const bindings = fs.readFileSync(path.join(root, 'sandbox.js'), 'utf8');
   for (const name of all) assert(bindings.includes(`export function ${name}(`), name);
