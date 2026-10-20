@@ -2,6 +2,35 @@
 use serde::Deserialize;
 use serde_json::Value;
 
+use crate::MarkedOptions;
+
+/// Select the callers associated with a recorded grammar version.
+fn options_for_recording(version: &str) -> &'static [MarkedOptions] {
+    match version {
+        "15.0.4" => &[MarkedOptions::Export],
+        "15.0.12" => &[MarkedOptions::Terminal],
+        "16.4.2" => &[
+            MarkedOptions::Browser { escape_html: false },
+            MarkedOptions::Browser { escape_html: true },
+        ],
+        _ => panic!("unrecognized recording version: {version}"),
+    }
+}
+
+#[test]
+fn recorded_versions_select_their_actual_callers() {
+    assert_eq!(options_for_recording("15.0.12"), &[MarkedOptions::Terminal]);
+    assert_eq!(options_for_recording("15.0.4"), &[MarkedOptions::Export]);
+    assert_eq!(
+        options_for_recording("16.4.2"),
+        &[
+            MarkedOptions::Browser { escape_html: false },
+            MarkedOptions::Browser { escape_html: true },
+        ]
+    );
+    assert!(std::panic::catch_unwind(|| options_for_recording("unknown")).is_err());
+}
+
 /// One recorded helper call and its independently recorded return value.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -65,18 +94,15 @@ fn balanced_closers_preserve_selected_utf8_boundary() {
         let input = case.args[0].as_str().unwrap();
         let mut pair = case.args[1].as_str().unwrap().chars();
         let pair = (pair.next().unwrap(), pair.next().unwrap());
-        let options = match case.version.as_str() {
-            "15.0.4" => crate::MarkedOptions::Export,
-            "15.0.12" => crate::MarkedOptions::Browser { escape_html: false },
-            _ => crate::MarkedOptions::Terminal,
-        };
-        let actual = crate::helpers::find_closing_bracket(input, pair, options);
         let expected = case.result.as_i64().unwrap();
         let expected = match expected {
             -1 => crate::helpers::ClosingBracket::Missing,
             -2 => crate::helpers::ClosingBracket::Unclosed,
             _ => crate::helpers::ClosingBracket::Found(case.byte_boundary.unwrap()),
         };
-        assert_eq!(actual, expected, "{} {}", case.version, case.id);
+        for &options in options_for_recording(&case.version) {
+            let actual = crate::helpers::find_closing_bracket(input, pair, options);
+            assert_eq!(actual, expected, "{} {} {options:?}", case.version, case.id);
+        }
     }
 }
