@@ -423,7 +423,36 @@ fn escapes_preserve_authored_and_decoded_units() {
 
 #[test]
 fn emphasis_respects_unicode_flanking_masks_and_runs() {
-    observations::check("emphasis", 12);
+    observations::check("emphasis", 17);
+}
+
+#[test]
+fn emphasis_flanking_distinguishes_combining_marks_from_letters_and_numbers() {
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        for (source, prefix, emphasized) in [
+            ("α\u{0345}__a_", "α\u{0345}_", true),
+            ("α__a_", "α__a_", false),
+            ("1__a_", "1__a_", false),
+            ("Ⅳ__a_", "Ⅳ__a_", false),
+            ("²__a_", "²__a_", false),
+        ] {
+            let document = parse_with_options(source.into(), options);
+            let Kind::Paragraph(children) = &document.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            assert_eq!(text(children), prefix, "{options:?} {source:?}");
+            assert_eq!(children.len(), if emphasized { 2 } else { 1 });
+            assert!(
+                !emphasized
+                    || matches!(&children[1].kind, Kind::Emphasis(content) if text(content) == "a")
+            );
+        }
+    }
 }
 
 #[test]
