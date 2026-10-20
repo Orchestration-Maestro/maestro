@@ -2,21 +2,37 @@
 use crate::{
     inline::ScopeKey,
     source::ScopeSource,
+    tokenizer::inline::LinkContext,
     types::{Document, Kind, MarkedOptions, Node, Text},
 };
 use regress::Regex;
 use std::{collections::HashMap, ops::Range, sync::LazyLock};
 
-/// Web candidates, validated before reserving any text.
-static WEB: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::new(r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[^\s<]+").ok()
+/// Web, earlier-grammar web and email candidate sources with their flags; earlier caller
+/// grammars fold the complete protocol and web prefix, and emails are scanned
+/// independently of rejected web spans.
+const SOURCES: [(&str, &str); 3] = [
+    (
+        r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[^\s<]+",
+        "",
+    ),
+    (r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i"),
+    (r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+", ""),
+];
+/// Candidate rules for scanning a text run, validated before reserving any text.
+static SCAN: LazyLock<[Option<Regex>; 3]> =
+    LazyLock::new(|| SOURCES.map(|(source, flags)| Regex::with_flags(source, flags).ok()));
+/// The same rules anchored at an inline token start.
+static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
+    SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
 });
-/// Earlier caller grammars fold the complete protocol and web prefix.
-static LEGACY_WEB: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::with_flags(r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i").ok());
-/// Email candidates scanned independently of rejected web spans.
-static EMAIL: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+").ok());
+/// Email local-part membership comes from the candidate's leading character class.
+static EMAIL_LOCAL_PART: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(&format!("^{}$", SOURCES[2].0.split_inclusive(']').next()?)).ok());
+/// Accepted URL prefixes exclude trailing punctuation and unmatched opening parentheses.
+static BACKPEDAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::new(r#"(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+"#).ok()
+});
 /// Domain labels permit Unicode letters and numbers.
 static DOMAIN: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+", "u").ok());
@@ -24,12 +40,7 @@ static DOMAIN: LazyLock<Option<Regex>> =
 /// Selects valid candidates before excluding overlaps with accepted links.
 fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
     let mut candidates = Vec::new();
-    let web = if matches!(options, MarkedOptions::Terminal | MarkedOptions::Export) {
-        LEGACY_WEB.as_ref()
-    } else {
-        WEB.as_ref()
-    };
-    for (regex, email) in [(web, false), (EMAIL.as_ref(), true)] {
+    for (regex, email) in candidate_rules(options, &SCAN) {
         let Some(regex) = regex else {
             continue;
         };
@@ -59,20 +70,56 @@ fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
         })
         .collect()
 }
+/// The grammar's web rule and the email rule from one rule set.
+fn candidate_rules(
+    options: MarkedOptions,
+    set: &'static [Option<Regex>; 3],
+) -> [(Option<&'static Regex>, bool); 2] {
+    let web = usize::from(matches!(
+        options,
+        MarkedOptions::Terminal | MarkedOptions::Export
+    ));
+    [(set[web].as_ref(), false), (set[2].as_ref(), true)]
+}
+
+/// Length of the web or email address the run scan would link at the start of `text`.
+///
+/// `previous` is the character before it in the same text run.
+pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions) -> Option<usize> {
+    candidate_rules(options, &START)
+        .into_iter()
+        .find_map(|(regex, email)| {
+            // A preceding local-part character would make this a suffix of an earlier candidate.
+            if email
+                && previous.is_some_and(|c| {
+                    EMAIL_LOCAL_PART
+                        .as_ref()
+                        .is_some_and(|rule| rule.find(c.encode_utf8(&mut [0; 4])).is_some())
+                })
+            {
+                return None;
+            }
+            let matched = regex?.find(text)?;
+            Some(accepted(previous, &text[matched.range()], email)?.0)
+        })
+}
+
 /// Validates one web or email match and retains its authored spelling.
 fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize>, String)> {
-    let authored = &run.authored[range.clone()];
+    let previous = run.authored[..range.start].chars().next_back();
+    let (length, href) = accepted(previous, &run.authored[range.clone()], email)?;
+    Some((range.start..range.start + length, href))
+}
+
+/// Accept a candidate after `previous`, returning its label length and destination.
+fn accepted(previous: Option<char>, authored: &str, email: bool) -> Option<(usize, String)> {
     let label = if email {
         if authored.ends_with(['-', '_']) {
             return None;
         }
         authored.trim_end_matches('.')
     } else {
-        if run.authored[..range.start]
-            .chars()
-            .next_back()
-            .is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c))
-        {
+        if previous.is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c)) {
             return None;
         }
         let label = suffix(authored);
@@ -88,32 +135,20 @@ fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize
     } else {
         label.to_owned()
     };
-    Some((range.start..range.start + label.len(), href))
+    Some((label.len(), href))
 }
-/// Reduces punctuation, unbalanced closing parentheses and entity tails.
+/// Backpedal repeatedly until the grammar accepts the complete remaining URL prefix.
 fn suffix(candidate: &str) -> &str {
     let mut label = candidate;
     loop {
-        let previous = label.len();
-        label = label.trim_end_matches(['?', '!', '.', ',', ':', '*', '_', '~']);
-        let opens = label.matches('(').count();
-        let mut closes = label.matches(')').count();
-        while label.ends_with(')') && closes > opens {
-            label = &label[..label.len() - 1];
-            closes -= 1;
-        }
-        if label.ends_with(';')
-            && let Some((head, tail)) = label.rsplit_once('&')
-            && tail[..tail.len() - 1]
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric())
-            && tail.len() > 1
-        {
-            label = head;
-        }
-        if label.len() == previous {
+        let next = BACKPEDAL
+            .as_ref()
+            .and_then(|rule| rule.find(label))
+            .map_or("", |matched| &label[matched.range()]);
+        if next == label {
             return label;
         }
+        label = next;
     }
 }
 
@@ -356,7 +391,7 @@ pub fn autolinks(document: &mut Document) {
         &document.scopes,
         None,
         document.options,
-        &mut false,
+        &mut LinkContext::new(false),
     );
 }
 
@@ -366,17 +401,17 @@ fn map_links(
     scopes: &HashMap<ScopeKey, ScopeSource>,
     mapping: Option<&ScopeSource>,
     options: MarkedOptions,
-    in_link: &mut bool,
+    context: &mut LinkContext,
 ) {
     let mut result = Vec::new();
     let mut parts = Vec::new();
     for mut node in std::mem::take(nodes) {
-        if matches!(node.kind, Kind::Text(_)) && !*in_link {
+        if matches!(node.kind, Kind::Text(_)) && !context.active() {
             parts.push(node);
             continue;
         }
         result.extend(extend(std::mem::take(&mut parts), mapping, options));
-        map_children(&mut node, scopes, mapping, options, in_link);
+        map_children(&mut node, scopes, mapping, options, context);
         result.push(node);
     }
     result.extend(extend(parts, mapping, options));
@@ -389,7 +424,7 @@ fn map_children(
     scopes: &HashMap<ScopeKey, ScopeSource>,
     mapping: Option<&ScopeSource>,
     options: MarkedOptions,
-    in_link: &mut bool,
+    context: &mut LinkContext,
 ) {
     let mapping = scopes
         .get(&(node.range.start, node.range.end, false))
@@ -403,7 +438,7 @@ fn map_children(
         | Kind::Item(children)
         | Kind::List(_, children)
         | Kind::Heading(_, children, _)
-        | Kind::Quote(children, _) => map_links(children, scopes, mapping, options, in_link),
+        | Kind::Quote(children, _) => map_links(children, scopes, mapping, options, context),
         Kind::Table(table) => {
             for cell in table
                 .header
@@ -415,28 +450,11 @@ fn map_children(
                     scopes,
                     scopes.get(&(cell.range.start, cell.range.end, false)),
                     options,
-                    in_link,
+                    context,
                 );
             }
         }
-        Kind::Html(text) => *in_link = anchor_state(text, *in_link),
         _ => {}
     }
-}
-
-/// Follow the grammar's raw opening and closing anchor transitions.
-fn anchor_state(text: &str, in_link: bool) -> bool {
-    if text
-        .get(..3)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<a "))
-    {
-        true
-    } else if text
-        .get(..4)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("</a>"))
-    {
-        false
-    } else {
-        in_link
-    }
+    context.track_anchor(&node.kind);
 }

@@ -9,6 +9,51 @@ use crate::{
 pub(crate) use entities::decode_operand;
 use std::{collections::HashMap, ops::Range};
 
+/// Link-label and raw-anchor state used by tokenization and mapped link selection.
+#[derive(Clone, Copy)]
+pub(crate) struct LinkContext(bool);
+
+impl LinkContext {
+    /// Enter an inline scope, including an authored link or image label.
+    pub(crate) fn new(label: bool) -> Self {
+        Self(label)
+    }
+
+    /// Whether bare address recognition is inside a link context.
+    pub(crate) fn active(self) -> bool {
+        self.0
+    }
+
+    /// Follow raw anchors and completed authored labels; angle links leave context unchanged.
+    pub(crate) fn track_anchor(&mut self, kind: &Kind) {
+        match kind {
+            Kind::Html(html) => {
+                if html
+                    .get(..3)
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<a "))
+                {
+                    self.0 = true;
+                } else if html
+                    .get(..4)
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case("</a>"))
+                {
+                    self.0 = false;
+                }
+            }
+            Kind::Image(..) => self.0 = false,
+            Kind::Link(_, _, _, meta)
+                if !matches!(
+                    meta.link_type,
+                    crate::LinkType::Autolink | crate::LinkType::Email
+                ) =>
+            {
+                self.0 = false;
+            }
+            _ => {}
+        }
+    }
+}
+
 /// One inline invocation; original definitions and policy are never reconstructed.
 pub(crate) struct Tokenizer<'a> {
     /// Framed authored source.
@@ -19,6 +64,10 @@ pub(crate) struct Tokenizer<'a> {
     pub(crate) definitions: &'a HashMap<String, Definition>,
     /// Optional document scope collector, absent during local interpretation.
     pub(crate) scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
+    /// Original operand identities for local interpretation, indexed like the atom ranges.
+    pub(crate) retained_atoms: Option<&'a [crate::InlineAtom<'a>]>,
+    /// Link-label and raw-anchor context shared by recursive inline spans.
+    context: LinkContext,
     /// Local interpretation has no document scope collector.
     #[cfg(test)]
     local: bool,
@@ -30,6 +79,7 @@ impl<'a> Tokenizer<'a> {
         options: MarkedOptions,
         definitions: &'a HashMap<String, Definition>,
         scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
+        in_link: bool,
     ) -> Self {
         #[cfg(test)]
         let local = scopes.is_none();
@@ -38,6 +88,8 @@ impl<'a> Tokenizer<'a> {
             options,
             definitions,
             scopes,
+            context: LinkContext::new(in_link),
+            retained_atoms: None,
             #[cfg(test)]
             local,
         }
@@ -45,16 +97,11 @@ impl<'a> Tokenizer<'a> {
 
     /// Admit inline constructs with typed atoms ahead of ordinary grammar.
     pub(crate) fn parse(&mut self, atoms: &[Range<usize>]) -> Vec<Node> {
-        self.tokens(0..self.source.text.len(), atoms, false)
+        self.tokens(0..self.source.text.len(), atoms)
     }
 
     /// Interpret one inline span without admitting block constructs.
-    pub(crate) fn tokens(
-        &mut self,
-        extent: Range<usize>,
-        atoms: &[Range<usize>],
-        in_link: bool,
-    ) -> Vec<Node> {
+    pub(crate) fn tokens(&mut self, extent: Range<usize>, atoms: &[Range<usize>]) -> Vec<Node> {
         #[cfg(test)]
         if self.local {
             crate::tests::WORK.with_borrow_mut(|work| work.local_bytes += extent.len());
@@ -70,7 +117,7 @@ impl<'a> Tokenizer<'a> {
             let previous = kept.take();
             let atom = atoms.partition_point(|range| range.end <= cursor);
             if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
-                output.push(node(self.source, range.clone(), Kind::Atom(atom)));
+                self.push_atom(range.clone(), atom, &mut output);
                 cursor = range.end;
                 continue;
             }
@@ -80,23 +127,24 @@ impl<'a> Tokenizer<'a> {
             let text = &self.source.text[cursor..extent.end];
             let token = self
                 .soft_break(text)
-                .or_else(|| self.admit_operand(cursor..extent.end, atoms, in_link))
+                .or_else(|| self.admit_operand(cursor..extent.end, atoms))
                 .or_else(|| {
                     let masked = (masked.as_str(), extent.start, previous);
-                    self.emphasis(cursor..extent.end, masked, atoms, in_link)
+                    self.emphasis(cursor..extent.end, masked, atoms)
                 })
                 .or_else(|| self.line_break(text))
-                .or_else(|| self.deletion(cursor..extent.end, atoms, in_link));
-            if let Some((size, kind)) = token.filter(|(size, kind)| {
-                // A span may contain whole atoms but never end inside one.
-                let end = cursor + size;
-                let enclosing = atoms.get(atoms.partition_point(|range| range.end <= end));
-                *size > 0
-                    && (end <= limit
-                        || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_))
-                            && enclosing.is_none_or(|range| range.start >= end))
-            }) {
+                .or_else(|| self.deletion(cursor..extent.end, atoms));
+            if let Some((size, kind)) =
+                token.filter(|(size, kind)| *size > 0 && fits(atoms, cursor + size, limit, kind))
+            {
+                self.context.track_anchor(&kind);
                 output.push(node(self.source, cursor..cursor + size, kind));
+                cursor += size;
+                continue;
+            }
+            let address = self.address(text, &output);
+            if let Some(size) = address.filter(|size| cursor + size <= limit) {
+                self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
                 cursor += size;
                 continue;
             }
@@ -116,6 +164,27 @@ impl<'a> Tokenizer<'a> {
             cursor += size;
         }
         output
+    }
+
+    /// Retain operand identity and apply link-context transitions, never caller-opaque contents.
+    fn push_atom(&mut self, range: Range<usize>, index: usize, output: &mut Vec<Node>) {
+        if let Some(crate::InlineAtom::Resolved(original)) =
+            self.retained_atoms.and_then(|atoms| atoms.get(index))
+        {
+            self.context.track_anchor(&original.kind);
+        }
+        output.push(node(self.source, range, Kind::Atom(index)));
+    }
+
+    /// Keep accepted bare addresses whole where the grammar enables URL tokens.
+    fn address(&self, text: &str, output: &[Node]) -> Option<usize> {
+        let previous = match output.last().map(|node| &node.kind) {
+            Some(Kind::Text(text)) => text.authored.chars().next_back(),
+            _ => None,
+        };
+        (!self.context.active() && self.options != MarkedOptions::Documentation)
+            .then(|| crate::autolinks::address(text, previous, self.options))
+            .flatten()
     }
 
     /// Emit decoded units with their original source boundaries.
@@ -241,12 +310,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     /// Caller-selected deletion uses the same recursive inline grammar.
-    fn deletion(
-        &mut self,
-        range: Range<usize>,
-        atoms: &[Range<usize>],
-        in_link: bool,
-    ) -> Option<(usize, Kind)> {
+    fn deletion(&mut self, range: Range<usize>, atoms: &[Range<usize>]) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
         if !text.starts_with('~') {
             return None;
@@ -255,11 +319,7 @@ impl<'a> Tokenizer<'a> {
         crate::tests::WORK.with_borrow_mut(|work| work.deletion_bytes += text.len());
         let matched = rules::inline_del(self.options)?.find(text)?;
         let body = matched.group(2)?;
-        let children = self.tokens(
-            range.start + body.start..range.start + body.end,
-            atoms,
-            in_link,
-        );
+        let children = self.tokens(range.start + body.start..range.start + body.end, atoms);
         Some((matched.end(), Kind::Strike(children)))
     }
 
@@ -268,15 +328,14 @@ impl<'a> Tokenizer<'a> {
         &mut self,
         range: Range<usize>,
         atoms: &[Range<usize>],
-        in_link: bool,
     ) -> Option<(usize, Kind)> {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.operand_admissions += 1);
         let text = &self.source.text[range.clone()];
         match text.as_bytes().first()? {
             b'\\' => Self::escape(text),
-            b'<' => self.tag(text).or_else(|| self.angle(range, in_link)),
-            b'[' | b'!' => self.link(range, atoms, in_link),
+            b'<' => self.tag(text).or_else(|| self.angle(range)),
+            b'[' | b'!' => self.link(range, atoms),
             b'`' => Self::code(text),
             _ => None,
         }
@@ -490,4 +549,13 @@ fn mask_source(
     } else {
         (std::borrow::Cow::Borrowed(text), Vec::new())
     }
+}
+
+/// Whether a token fits before the next atom: a span may contain whole atoms but never
+/// end inside one.
+fn fits(atoms: &[Range<usize>], end: usize, limit: usize, kind: &Kind) -> bool {
+    let enclosing = atoms.get(atoms.partition_point(|range| range.end <= end));
+    end <= limit
+        || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_))
+            && enclosing.is_none_or(|range| range.start >= end)
 }

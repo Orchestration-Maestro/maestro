@@ -42,7 +42,6 @@ impl Tokenizer<'_> {
         range: Range<usize>,
         masked: (&str, usize, Option<char>),
         atoms: &[Range<usize>],
-        in_link: bool,
     ) -> Option<(usize, Kind)> {
         let (masked, origin, previous) = masked;
         let (width, delimiter) = self.opening(&range, previous)?;
@@ -81,8 +80,7 @@ impl Tokenizer<'_> {
             if end > range.len() || end < trim * 2 {
                 return None;
             }
-            let children =
-                self.tokens(range.start + trim..range.start + end - trim, atoms, in_link);
+            let children = self.tokens(range.start + trim..range.start + end - trim, atoms);
             return Some((
                 end,
                 if trim == 1 {

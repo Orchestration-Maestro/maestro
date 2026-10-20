@@ -352,7 +352,7 @@ fn hrefs(nodes: &[Node]) -> Vec<&str> {
 
 #[test]
 fn mapped_links_share_one_policy_aware_scanner() {
-    observations::check("url", 10);
+    observations::check("url", 17);
     for (options, expected) in [
         (
             MarkedOptions::Terminal,
@@ -795,6 +795,199 @@ fn deletion_reads_raw_source_after_unmatched_ticks() {
                 deletion_leaves(&document.nodes).0,
                 strikes,
                 "{options:?} {source:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn bare_addresses_follow_raw_anchor_transitions() {
+    observations::check_with_options(
+        "address-context",
+        5,
+        &[
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+        ],
+    );
+}
+
+#[test]
+fn documentation_grammar_keeps_emphasis_inside_bare_addresses() {
+    let document = parse_with_options("https://a.b/_x_".into(), MarkedOptions::Documentation);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(&node.kind, Kind::Emphasis(children) if text(children) == "x"))
+    );
+}
+
+#[test]
+fn unmatched_opening_parentheses_end_bare_addresses() {
+    observations::check("url-backpedal", 3);
+}
+
+#[test]
+fn retained_raw_anchor_operands_keep_address_context() {
+    let document = parse("<a href=\"x\">https://a.b/_x_</a>".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(&node.kind, Kind::Emphasis(children) if text(children) == "x"))
+    );
+}
+
+#[test]
+fn caller_opaque_anchor_text_does_not_disable_bare_addresses() {
+    let document = parse("<a href=\"x\"> https://a.b/_x_ </a>".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), std::slice::from_ref(&(0..12)));
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(matches!(run.atoms[0], InlineAtom::Opaque(0)));
+    assert!(
+        !children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Emphasis(_)))
+    );
+    assert!(text(children).contains("https://a.b/_x_"));
+}
+
+#[test]
+fn bare_addresses_follow_link_label_context() {
+    observations::check("address-label", 7);
+}
+
+#[test]
+fn mapped_addresses_resume_after_link_and_image_labels() {
+    observations::check_with_options(
+        "address-completion",
+        2,
+        &[
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+        ],
+    );
+}
+
+#[test]
+fn image_labels_disable_address_tokens() {
+    let document = parse("![https://a.b/_x_](y)".into());
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let Kind::Image(_, metadata) = &children[0].kind else {
+        panic!("image")
+    };
+    assert!(
+        matches!(&metadata.children[1].kind, Kind::Emphasis(children) if text(children) == "x")
+    );
+}
+
+#[test]
+fn link_label_scopes_disable_address_tokens() {
+    let document = parse("[https://a.b/_x_](y)".into());
+    let context = InlineContext::new(&document);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let scope = context.scope(&children[0].range, true).unwrap();
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(matches!(&children[1].kind, Kind::Emphasis(children) if text(children) == "x"));
+}
+
+#[test]
+fn image_label_link_completion_resumes_address_tokens() {
+    let document = parse("![[b](z) https://a.b/_x_](y)".into());
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let Kind::Image(_, metadata) = &children[0].kind else {
+        panic!("image")
+    };
+    assert!(matches!(&metadata.children[0].kind, Kind::Link(_, _, href, _) if href == "z"));
+    assert_eq!(text(&metadata.children), "b https://a.b/_x_");
+    assert!(
+        !metadata
+            .children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Emphasis(_)))
+    );
+}
+
+#[test]
+fn retained_labels_and_display_splits_share_address_context() {
+    for (source, label, emphasis) in [
+        (
+            "<a href=\"x\">[l](y) $$x$$ https://a.b/_x_</a>",
+            false,
+            false,
+        ),
+        (
+            "<a href=\"x\">![l](y) $$x$$ https://a.b/_x_</a>",
+            false,
+            false,
+        ),
+        ("[![b](z) $$x$$ https://a.b/_x_](y)", true, false),
+        ("<a href=\"x\"> $$x$$ https://a.b/_x_</a>", false, true),
+        (
+            "<a href=\"x\"><https://c.d> $$x$$ https://a.b/_x_</a>",
+            false,
+            true,
+        ),
+        (
+            "<a href=\"x\"><b@c.d> $$x$$ https://a.b/_x_</a>",
+            false,
+            true,
+        ),
+    ] {
+        let document = parse(source.into());
+        let context = InlineContext::new(&document);
+        let Kind::Paragraph(children) = &document.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        let owner = if label {
+            &children[0]
+        } else {
+            &document.nodes[0]
+        };
+        let scope = context.scope(&owner.range, label).unwrap();
+        let start = scope.text().find("$$x$$").unwrap();
+        let formula = start..start + 5;
+        for range in [0..scope.text().len(), formula.end..scope.text().len()] {
+            let opaque = if range.start == 0 {
+                vec![formula.clone()]
+            } else {
+                vec![]
+            };
+            let run = scope.interpret(range.clone(), &opaque);
+            let Kind::Paragraph(children) = &run.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            assert_eq!(
+                children
+                    .iter()
+                    .any(|node| matches!(node.kind, Kind::Emphasis(_))),
+                emphasis,
+                "{source:?} {range:?}"
+            );
+            assert!(
+                emphasis || text(children).contains("https://a.b/_x_"),
+                "{source:?} {range:?}"
             );
         }
     }

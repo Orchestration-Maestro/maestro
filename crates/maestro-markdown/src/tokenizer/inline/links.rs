@@ -30,12 +30,8 @@ impl Tokenizer<'_> {
         &mut self,
         range: Range<usize>,
         atoms: &[Range<usize>],
-        in_link: bool,
     ) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
-        if in_link && !text.starts_with('!') {
-            return None;
-        }
         let link = self.inline_link(text).or_else(|| self.reference(text))?;
         let label = range.start + link.label.start..range.start + link.label.end;
         let label_source = self.source.select(std::iter::once(label));
@@ -49,6 +45,7 @@ impl Tokenizer<'_> {
             self.options,
             self.definitions,
             self.scopes.as_deref_mut(),
+            true,
         )
         .parse(&atoms);
         if !text.starts_with('!') && contains_link(&children) {
@@ -149,10 +146,7 @@ impl Tokenizer<'_> {
     }
 
     /// Angle autolinks retain literal operands, including entity spellings.
-    pub(super) fn angle(&self, range: Range<usize>, in_link: bool) -> Option<(usize, Kind)> {
-        if in_link {
-            return None;
-        }
+    pub(super) fn angle(&self, range: Range<usize>) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
         let matched = rules::INLINE_AUTOLINK.as_ref()?.find(text)?;
         let label = capture(text, &matched, 1);
