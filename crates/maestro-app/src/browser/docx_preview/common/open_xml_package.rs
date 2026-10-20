@@ -11,11 +11,19 @@ const ENTRY_LIMIT: u64 = 512 << 20;
 /// Indexed archive with a privately serialized seek cursor.
 pub(crate) struct OpenXmlPackage {
     /// Supplied archive bytes and native metadata.
-    archive: Mutex<zip::ZipArchive<Cursor<Vec<u8>>>>,
+    archive: Mutex<PackageState>,
     /// Sanitized archive spelling to last central-directory entry index.
     entries: indexmap::IndexMap<String, usize>,
     /// XML admission policy.
     options: Options,
+}
+
+/// Archive cursor and cumulative declared-byte allowance serialized together.
+struct PackageState {
+    /// Supplied archive bytes and native metadata.
+    archive: zip::ZipArchive<Cursor<Vec<u8>>>,
+    /// Expanded bytes still available for requested parts, including repeated reads.
+    remaining: u64,
 }
 
 impl OpenXmlPackage {
@@ -33,7 +41,10 @@ impl OpenXmlPackage {
                 .or_insert(candidate);
         }
         Ok(Self {
-            archive: Mutex::new(archive),
+            archive: Mutex::new(PackageState {
+                archive,
+                remaining: ENTRY_LIMIT,
+            }),
             entries: entries
                 .into_iter()
                 .map(|(name, (_, index))| (name, index))
@@ -72,18 +83,25 @@ impl OpenXmlPackage {
         let Some(index) = index else {
             return Ok(None);
         };
-        let mut archive = self
+        let mut state = self
             .archive
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let PackageState { archive, remaining } = &mut *state;
         let mut entry = archive.by_index(index).map_err(archive_error)?;
         // The archive reader fails an entry once it passes its declared size.
         if entry.size() > ENTRY_LIMIT {
             return Err(archive_error("entry is larger than 512 MiB"));
         }
+        *remaining = remaining
+            .checked_sub(entry.size())
+            .ok_or_else(|| archive_error("package reads exceed 512 MiB"))?;
+        // The archive reader may read one extra byte to detect understated sizes.
+        let capacity = usize::try_from(entry.size() + 1).map_err(archive_error)?;
         let mut bytes = Vec::new();
+        bytes.try_reserve_exact(capacity).map_err(archive_error)?;
         entry.read_to_end(&mut bytes).map_err(archive_error)?;
-        Ok(Some(bytes))
+        Ok(Some(bytes.into_boxed_slice().into_vec()))
     }
     /// Read decoded source XML, retaining replacement characters.
     pub(crate) fn text(&self, path: &str) -> Result<Option<String>, DocxError> {

@@ -7,17 +7,34 @@ use maestro_models::Fetch;
 use std::io::{Cursor, Write};
 use std::sync::Arc;
 
-/// One deflated slide whose headers declare `declared` expanded bytes.
-fn slide_package(declared: u32) -> Vec<u8> {
+/// Deflated slides whose headers each declare `declared` expanded bytes.
+fn slide_package(declared: u32, slides: usize, corrupt: bool) -> Vec<u8> {
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let options = zip::write::SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated);
-    writer.start_file("ppt/slides/slide1.xml", options).unwrap();
-    writer.write_all(b"<a:t>hi</a:t>").unwrap();
+    for index in 1..=slides {
+        writer
+            .start_file(format!("ppt/slides/slide{index}.xml"), options)
+            .unwrap();
+        writer.write_all(b"<a:t>hi</a:t>").unwrap();
+    }
     let mut bytes = writer.finish().unwrap().into_inner();
     for (signature, offset) in [(b"PK\x03\x04", 22), (b"PK\x01\x02", 24)] {
-        let at = bytes.windows(4).position(|w| w == signature).unwrap() + offset;
-        bytes[at..at + 4].copy_from_slice(&declared.to_le_bytes());
+        let positions: Vec<_> = bytes
+            .windows(4)
+            .enumerate()
+            .filter_map(|(at, w)| (w == signature).then_some(at + offset))
+            .collect();
+        for at in positions {
+            bytes[at..at + 4].copy_from_slice(&declared.to_le_bytes());
+        }
+    }
+    if corrupt {
+        // BFINAL plus reserved BTYPE makes the deflate stream invalid.
+        let start = 30
+            + usize::from(u16::from_le_bytes([bytes[26], bytes[27]]))
+            + usize::from(u16::from_le_bytes([bytes[28], bytes[29]]));
+        bytes[start] = 7;
     }
     bytes
 }
@@ -35,7 +52,7 @@ fn pptx_entries_past_the_size_bound_fail_without_inflating() {
             .build()
             .unwrap()
             .block_on(load_attachment(
-                AttachmentSource::Buffer(&slide_package(declared)),
+                AttachmentSource::Buffer(&slide_package(declared, 1, declared > BOUND)),
                 Some("a.pptx"),
                 &fetch,
             ));
@@ -51,6 +68,24 @@ fn pptx_entries_past_the_size_bound_fail_without_inflating() {
             ),
         }
     }
+}
+
+#[test]
+fn pptx_parts_share_one_expanded_byte_budget() {
+    let bytes = slide_package((512 << 20) - 1, 4, false);
+    let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
+    let result = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(load_attachment(
+            AttachmentSource::Buffer(&bytes),
+            Some("a.pptx"),
+            &fetch,
+        ));
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "Failed to process PPTX: package reads exceed 512 MiB"
+    );
 }
 
 #[test]
