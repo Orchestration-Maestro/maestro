@@ -2,10 +2,25 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+use maestro_app::browser::utils::attachment_utils::{
+    Attachment, AttachmentError, AttachmentSource, load_attachment,
+};
 use maestro_models::Fetch;
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Read, Write};
 use std::sync::Arc;
+
+/// Run the public loader without allowing a local package to fetch.
+fn load(bytes: &[u8]) -> Result<Attachment, AttachmentError> {
+    let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(load_attachment(
+            AttachmentSource::Buffer(bytes),
+            Some("a.pptx"),
+            &fetch,
+        ))
+}
 
 /// Deflated slides whose headers each declare `declared` expanded bytes.
 fn slide_package(declared: u32, slides: usize, corrupt: bool) -> Vec<u8> {
@@ -47,15 +62,7 @@ fn pptx_entries_past_the_size_bound_fail_without_inflating() {
         (1, Err("File is larger than its declared uncompressed size")),
         (BOUND + 1, Err("entry is larger than 512 MiB")),
     ] {
-        let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
-        let result = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(load_attachment(
-                AttachmentSource::Buffer(&slide_package(declared, 1, declared > BOUND)),
-                Some("a.pptx"),
-                &fetch,
-            ));
+        let result = load(&slide_package(declared, 1, declared > BOUND));
         match expected {
             Ok(text) => assert!(
                 result.unwrap().extracted_text.unwrap().contains(text),
@@ -71,20 +78,43 @@ fn pptx_entries_past_the_size_bound_fail_without_inflating() {
 }
 
 #[test]
-fn pptx_parts_share_one_expanded_byte_budget() {
-    let bytes = slide_package((512 << 20) - 1, 4, false);
-    let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
-    let result = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(load_attachment(
-            AttachmentSource::Buffer(&bytes),
-            Some("a.pptx"),
-            &fetch,
-        ));
+fn pptx_large_part_total_with_small_output_extracts() {
+    let bytes = large_slide_package(false);
+    let result = load(&bytes);
+    assert_eq!(
+        result.unwrap().extracted_text.unwrap(),
+        "<pptx filename=\"a.pptx\">\n<slide number=\"1\">\nhi\n</slide>\n<slide number=\"2\">\nhi\n</slide>\n<slide number=\"3\">\nhi\n</slide>\n<slide number=\"4\">\nhi\n</slide>\n</pptx>"
+    );
+}
+
+/// Four genuinely inflated slides with either large text runs or large comments.
+fn large_slide_package(text: bool) -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for index in 1..=4 {
+        writer
+            .start_file(format!("ppt/slides/slide{index}.xml"), options)
+            .unwrap();
+        writer
+            .write_all(if text { b"<a:t>" } else { b"<!--" })
+            .unwrap();
+        std::io::copy(&mut std::io::repeat(b'x').take(128 << 20), &mut writer).unwrap();
+        writer
+            .write_all(if text { b"</a:t>" } else { b"--><a:t>hi</a:t>" })
+            .unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+
+#[test]
+fn pptx_extracted_output_past_the_bound_fails() {
+    let bytes = large_slide_package(true);
+    let result = load(&bytes);
+    assert!(result.is_err(), "oversized extracted output was accepted");
     assert_eq!(
         result.unwrap_err().to_string(),
-        "Failed to process PPTX: package reads exceed 512 MiB"
+        "Failed to process PPTX: extracted text exceeds 512 MiB"
     );
 }
 

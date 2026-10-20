@@ -235,10 +235,11 @@ retaining the supplied part folder; an empty list does not fall back. External
 relationship paths retain their resolved absolute URLs. Resource lookup reads
 bytes on demand without network requests or filesystem writes. XML entry decoding uses lossy UTF-8. DOCTYPE is rejected.
 Before inflation, the reader returns an archive error if an entry declares more
-than 512 MiB expanded or its declared size would bring the package's cumulative
-reads above 512 MiB. Repeated reads count again. The archive library rejects data
-that exceeds its declared size. These bounds cover expanded bytes, not decoded
-text, parsed document structures or archive metadata.
+than 512 MiB expanded. The archive library rejects data that exceeds its declared
+size. Presentation and spreadsheet attachment builders also reject extracted
+output above 512 MiB with a document processing error. The reader has no
+cumulative read quota. These bounds do not cover parsed document structures,
+archive metadata or lossy UTF-8 expansion.
 
 `parse_xml_string` provides borrowed element/attribute queries and descendant
 text. Element selection uses immediate children and local names; attribute
