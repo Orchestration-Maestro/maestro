@@ -191,3 +191,49 @@ fn item_framing_preserves_measurement_spelling_and_history() {
         include_str!("fixtures/container_accumulation.json"),
     );
 }
+
+#[test]
+fn code_merges_exclude_unconsumed_indented_blank_lines() {
+    use maestro_markdown::{MarkedOptions, parse_with_options};
+    use serde_json::json;
+
+    let mut failures = Vec::new();
+    let inputs = [(0, 0), (4, 4), (6, 8)]
+        .into_iter()
+        .flat_map(|(quote, list)| {
+            [
+                format!("> q\n    code\n> {}\n> y", " ".repeat(quote)),
+                format!("- q\n      code\n{}\n  y", " ".repeat(list)),
+            ]
+        });
+    for source in inputs {
+        for options in [
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+            MarkedOptions::Browser { escape_html: true },
+            MarkedOptions::Export,
+        ] {
+            let merged = match options {
+                MarkedOptions::Export => json!([["text", "q"], ["break"], ["text", "code"]]),
+                _ => json!([["text", "q\ncode"]]),
+            };
+            let blocks = json!([
+                ["paragraph", merged],
+                ["gap"],
+                ["paragraph", [["text", "y"]]]
+            ]);
+            let expected = if source.starts_with('>') {
+                json!([["quote", blocks]])
+            } else {
+                json!([["list", null, [["item", blocks]]]])
+            };
+            let document = parse_with_options(source.clone(), options);
+            let actual = observations::nodes(&document.nodes, true);
+            if actual != expected {
+                failures.push(format!("{source:?} {options:?}: {actual} != {expected}"));
+            }
+            assert_eq!(document.nodes[0].authored, source);
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

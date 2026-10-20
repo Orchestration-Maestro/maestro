@@ -216,3 +216,19 @@ fn item_framing_keeps_first_line_history_and_blank_admission() {
         assert_eq!(parse(input.into()).nodes.len(), count, "{input:?}");
     }
 }
+
+#[test]
+fn merged_code_scope_ends_at_consumed_source_prefix() {
+    let source = "> q\n    code\n>       \n> y";
+    let document = parse(source.into());
+    let Kind::Quote(children, _) = &document.nodes[0].kind else {
+        panic!("quote")
+    };
+    let paragraph = &children[0];
+    let scope = &document.scopes[&(paragraph.range.start, paragraph.range.end, false)];
+    assert_eq!(scope.text, "q\ncode");
+    assert_eq!(&document.source[paragraph.range.clone()], "q\n    code");
+    assert_eq!(scope.native(&(2..6)), Some(8..12));
+    assert!(matches!(children[1].kind, Kind::Gap));
+    assert_eq!(paragraph_text(&children[2]).as_deref(), Some("y"));
+}

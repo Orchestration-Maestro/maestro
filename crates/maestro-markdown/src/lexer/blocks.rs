@@ -167,7 +167,8 @@ impl<E> Lexer<'_, E> {
         {
             let end = code_merge_end(source, block.consumed);
             let body = block.inline?;
-            let end_text = body.text.trim_end_matches('\n').len();
+            let end_text = body.local(&source.extent(0..end))?.end;
+            let end_text = body.text[..end_text].trim_end_matches('\n').len();
             self.merge_source(
                 output,
                 source,
