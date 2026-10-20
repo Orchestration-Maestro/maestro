@@ -1891,3 +1891,229 @@ fn browser_author_bootstraps_from_empty_build_state() {
     success(&command("browser-library-build").output().unwrap());
     assert_eq!(browser_support::authored(&browser), before);
 }
+
+#[test]
+fn browser_native_checks_keep_inputs_and_refuse_bad_sources() {
+    let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
+    let locks = [browser.path("Cargo.lock"), browser.fixture("Cargo.lock")];
+    let before = locks.each_ref().map(|path| fs::read(path).unwrap());
+    let check = |operation| {
+        browser
+            .native_command(operation)
+            .args(["assets/brand/packs/signal.json", "light"])
+            .output()
+            .unwrap()
+    };
+    success(&check("example-check"));
+    let directory = browser.path("target/maestro-browser/.author/example");
+    assert_authored_target(&browser, &directory.join("Trunk.json"), "index.html");
+    for file in ["wordmark.txt", "text.txt", "watch-dirs.json"] {
+        assert!(
+            !fs::read(directory.join("inputs").join(file))
+                .unwrap()
+                .is_empty()
+        );
+    }
+    let pack: serde_json::Value =
+        serde_json::from_slice(&fs::read(browser.path("assets/brand/packs/signal.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        fs::read_to_string(directory.join("inputs/wordmark.txt")).unwrap(),
+        pack["wordmark"].as_str().unwrap()
+    );
+    assert!(!browser.path("target/maestro-browser/example").exists());
+    let library = browser.path("crates/maestro-web/src/lib.rs");
+    let source = browser.fixture("src/main.rs");
+    let original = fs::read(&source).unwrap();
+    let unformatted_library = format!("{}\n\n\n", fs::read_to_string(&library).unwrap());
+    fs::write(&library, &unformatted_library).unwrap();
+    fs::write(&source, b"fn main( ){ }\n").unwrap();
+    success(&check("check"));
+    assert_ne!(fs::read(&library).unwrap(), unformatted_library.as_bytes());
+    assert_eq!(fs::read(&source).unwrap(), b"fn main() {}\n");
+    fs::write(&source, "fn main() { missing(); }\n").unwrap();
+    assert!(!check("example-check").status.success());
+    fs::write(source, original).unwrap();
+    success(&check("example-check"));
+    for (path, bytes) in locks.iter().zip(before) {
+        assert_eq!(fs::read(path).unwrap(), bytes);
+    }
+}
+
+#[test]
+fn browser_native_build_routes_preserve_authored_configuration() {
+    let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
+    let marker = install_authored_hook(&browser);
+    let authored = browser.fixture("Trunk.json");
+    let mut config: serde_json::Value =
+        serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
+    config["watch"]["ignore"] = serde_json::json!(["ignored.txt"]);
+    fs::write(authored, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    let pack: serde_json::Value =
+        serde_json::from_slice(&fs::read(browser.path("assets/brand/packs/signal.json")).unwrap())
+            .unwrap();
+    let wordmark = pack["wordmark"].as_str().unwrap().as_bytes();
+    let mut retained = Vec::new();
+    for (operation, route, mode, target) in [
+        ("library-build", "library", "dark", "index.html"),
+        ("example-build", "example", "light", "index.html"),
+        ("debug-build", "debug", "dark", "debug.html"),
+    ] {
+        if marker.exists() {
+            fs::remove_file(&marker).unwrap();
+        }
+        success(
+            &browser
+                .native_command(operation)
+                .args(["assets/brand/packs/signal.json", mode])
+                .output()
+                .unwrap(),
+        );
+        assert_eq!(
+            fs::read(&marker).unwrap(),
+            fs::read(browser.fixture("assets/app.css")).unwrap()
+        );
+        let directory = browser.path(&format!("target/maestro-browser/.author/{route}"));
+        let generated = directory.join("Trunk.json");
+        assert_authored_target(&browser, &generated, target);
+        let value: serde_json::Value =
+            serde_json::from_slice(&fs::read(generated).unwrap()).unwrap();
+        let root = browser.fixture("").canonicalize().unwrap();
+        let watch: Vec<std::path::PathBuf> =
+            serde_json::from_value(value["watch"]["watch"].clone()).unwrap();
+        assert!(watch.contains(&root));
+        assert!(watch.contains(&root.join("../../../../../assets/brand")));
+        assert!(watch.contains(&browser.path("assets/brand/packs")));
+        assert!(watch.contains(&browser.path("assets/brand")));
+        let ignore: Vec<std::path::PathBuf> =
+            serde_json::from_value(value["watch"]["ignore"].clone()).unwrap();
+        assert!(ignore.contains(&root.join("ignored.txt")));
+        assert!(ignore.contains(
+            &browser.path("crates/maestro-tooling/../../target/maestro-browser/.author")
+        ));
+        let bytes = browser_support::wasm(&browser, route);
+        assert_eq!(&bytes[..8], b"\0asm\x01\0\0\0");
+        assert!(bytes.windows(wordmark.len()).any(|part| part == wordmark));
+        let inputs = directory.join("inputs/text.txt");
+        retained.push((inputs.clone(), fs::read(inputs).unwrap()));
+        for (path, bytes) in &retained {
+            assert_eq!(&fs::read(path).unwrap(), bytes);
+        }
+    }
+}
+
+#[test]
+fn browser_native_preparation_refuses_invalid_hook_configuration() {
+    let browser = Browser::new();
+    browser_support::bootstrap_source(&browser);
+    let check = || {
+        browser
+            .native_command("example-check")
+            .args(["assets/brand/brand.json", "dark"])
+            .output()
+            .unwrap()
+    };
+    success(&check());
+    let generated = browser.path("target/maestro-browser/.author/example/Trunk.json");
+    let before = fs::read(&generated).unwrap();
+    let authored = browser.fixture("Trunk.json");
+    let mut config: serde_json::Value =
+        serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
+    config["hooks"] = serde_json::json!({});
+    fs::write(&authored, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    let output = check();
+    assert!(!output.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&output.stderr).lines().last(),
+        Some("Trunk hooks must be an array")
+    );
+    assert_eq!(fs::read(&generated).unwrap(), before);
+    fs::remove_file(&generated).unwrap();
+    config["hooks"] = serde_json::json!([{"stage": "pre_build", "command": 7}]);
+    fs::write(authored, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    let output = check();
+    assert!(!output.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&output.stderr).lines().last(),
+        Some("Trunk hook command must be a string")
+    );
+    assert!(!generated.exists());
+}
+
+#[test]
+fn browser_native_hooks_keep_files_and_exit_status() {
+    let browser = Browser::new();
+    let directory = browser.path("literal hook directory 東京");
+    fs::create_dir(&directory).unwrap();
+    let shell = std::process::Command::new("which")
+        .arg("sh")
+        .output()
+        .unwrap();
+    success(&shell);
+    let shell = String::from_utf8(shell.stdout).unwrap();
+    assert!(std::path::Path::new(shell.trim()).is_absolute());
+    for status in [0, 17] {
+        let literal = format!("literal ' $value ; 東京 {status}");
+        let output = browser
+            .native_command("hook")
+            .arg(&directory)
+            .args([
+                shell.trim(),
+                "-c",
+                "printf '%s' \"$1\" > observed; exit \"$2\"",
+                "native-hook",
+                &literal,
+                &status.to_string(),
+            ])
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(status));
+        assert_eq!(
+            fs::read(directory.join("observed")).unwrap(),
+            literal.as_bytes()
+        );
+    }
+}
+
+#[test]
+fn browser_native_refusals_preserve_errors_and_adapter_status() {
+    let browser = Browser::new();
+    let before: Vec<_> = std::env::vars_os().collect();
+    for (operation, args, diagnostic) in [
+        ("unknown", vec![], "unknown browser operation"),
+        ("example-check", vec![], "missing pack parameter"),
+        (
+            "example-check",
+            vec!["assets/brand/brand.json"],
+            "missing mode parameter",
+        ),
+    ] {
+        let output = browser
+            .native_command(operation)
+            .args(args)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert_eq!(
+            String::from_utf8_lossy(&output.stderr).lines().last(),
+            Some(diagnostic)
+        );
+    }
+    let error = maestro_tooling::run(
+        &["browser-author".into()],
+        std::path::Path::new(env!("CARGO")),
+        &browser.workspace.0,
+    )
+    .unwrap_err();
+    assert_eq!(error.to_string(), "missing browser operation");
+    let output = toolchain_support::command(env!("CARGO_BIN_EXE_browser-cargo-locked"))
+        .arg("metadata")
+        .env("MAESTRO_BROWSER_CARGO", browser.path("nonexistent-cargo"))
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(!output.stderr.is_empty());
+    assert_eq!(std::env::vars_os().collect::<Vec<_>>(), before);
+}

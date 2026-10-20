@@ -86,9 +86,28 @@ impl Browser {
 
     pub fn command(&self, recipe: &str) -> Command {
         let mut command = super::toolchain_support::command("just");
+        command.arg(recipe);
+        self.configure(&mut command);
+        command
+    }
+
+    /// Execute the built native helper without instrumenting its compiler children.
+    pub fn native_command(&self, operation: &str) -> Command {
+        let mut command = super::toolchain_support::command(env!("CARGO_BIN_EXE_development"));
+        command
+            .args(["browser-author", operation])
+            .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"));
+        self.configure(&mut command);
+        if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
+            command.env("LLVM_PROFILE_FILE", profile);
+        }
+        command
+    }
+
+    /// Share output ownership and native tool settings between recipe and helper calls.
+    fn configure(&self, command: &mut Command) {
         command
             .current_dir(&self.workspace.0)
-            .arg(recipe)
             .env("CARGO_BUILD_JOBS", "3")
             .env(
                 "CARGO_TARGET_DIR",
@@ -97,7 +116,6 @@ impl Browser {
             .env("TRUNK_SKIP_VERSION_CHECK", "true")
             // Trunk's completion emoji depends on LANG, even with piped output.
             .env("LANG", "C.UTF-8");
-        command
     }
 
     pub fn run(&self, recipe: &str) -> Output {
