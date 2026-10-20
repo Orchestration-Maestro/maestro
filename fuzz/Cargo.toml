@@ -1,0 +1,55 @@
+[package]
+name = "maestro-test-fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "=0.4.13"
+maestro-markdown = { path = "../crates/maestro-markdown" }
+maestro-models = { path = "../crates/maestro-models" }
+maestro-protocol = { path = "../crates/maestro-protocol" }
+maestro-resources = { path = "../crates/maestro-resources" }
+maestro-terminal = { path = "../crates/maestro-terminal" }
+maestro-tui = { path = "../crates/maestro-tui" }
+
+[[bin]]
+name = "markdown"
+path = "fuzz_targets/markdown.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "frontmatter"
+path = "fuzz_targets/frontmatter.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "terminal-escapes"
+path = "fuzz_targets/terminal_escapes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "protocol-frames"
+path = "fuzz_targets/protocol_frames.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tool-call-arguments"
+path = "fuzz_targets/tool_call_arguments.rs"
+test = false
+doc = false
+bench = false
