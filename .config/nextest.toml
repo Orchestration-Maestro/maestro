@@ -20,3 +20,5 @@ max-threads = 1
 [[profile.default.overrides]]
 filter = "package(maestro-tooling) & test(/^browser_author_build::/)"
 test-group = "browser-author"
+# The serial chain overlaps the parallel tests only when it starts first.
+priority = 100
