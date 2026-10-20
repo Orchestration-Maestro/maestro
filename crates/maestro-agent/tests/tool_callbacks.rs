@@ -25,7 +25,10 @@ struct Details {
     doubled: u32,
 }
 /// Poll the controlled ready callbacks without a runtime dependency.
-fn completed<T>(mut future: BoxFuture<T>) -> T {
+///
+/// # Panics
+/// Panics if the callback is still pending after one poll.
+pub fn completed<T>(mut future: BoxFuture<T>) -> T {
     match future
         .as_mut()
         .poll(&mut Context::from_waker(Waker::noop()))
