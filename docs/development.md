@@ -163,8 +163,11 @@ for fresh input-specific markers printed by compiled binaries to prove rebuilds
 for source, sibling dependency and Cargo configuration changes. They also observe
 a marker from a rebuilt development binary, then a fresh sibling marker after
 that replacement. Queued unrelated successful builds cannot satisfy these checks.
-They retain both output streams in one ordered transcript; a controlled-output
-test observes them through command completion. There are no exact build counts
+They retain both output streams in one ordered transcript. Browser author child
+lines and blocking-operation phases are also flushed to per-test files under
+`target/browser-author-diagnostics/`, outside disposable fixtures and isolated
+home directories. A forced-kill test checks that child lines survive termination
+while still reaching stderr and the watch consumer. There are no exact build counts
 or negative observation windows. Their watch processes share a test-owned
 process group, stopped on completion or panic. Before starting a watch-test
 process group, the harness directs its LLVM profiles into that fixture's target

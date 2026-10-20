@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::recipe_support::Workspace;
+use super::recipe_support::{Workspace, record};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -17,6 +17,7 @@ pub struct Browser {
 
 impl Browser {
     pub fn new() -> Self {
+        record("phase: browser setup / lock open");
         let lock_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-tests.lock");
         let lock = fs::OpenOptions::new()
@@ -25,7 +26,9 @@ impl Browser {
             .write(true)
             .open(lock_path)
             .unwrap();
+        record("phase: browser lock waiting");
         lock.lock().unwrap();
+        record("phase: browser lock acquired / fixture copy");
         let mut workspace = Workspace::new();
         let renamed = workspace.0.with_file_name(format!(
             "Maestro's browser 東京 {}",
@@ -64,18 +67,23 @@ impl Browser {
             workspace,
             _build_lock: lock,
         };
+        record("phase: workspace source preparation");
         browser.workspace_sources();
+        record("phase: browser setup complete");
         browser
     }
 
     pub fn generate_lockfile(&self) {
-        success(
-            &super::toolchain_support::command("cargo")
-                .args(["generate-lockfile", "--offline", "--manifest-path"])
-                .arg(self.fixture("Cargo.toml"))
-                .output()
-                .unwrap(),
-        );
+        record("phase: cargo generate-lockfile");
+        let status = super::toolchain_support::command("cargo")
+            .args(["generate-lockfile", "--offline", "--manifest-path"])
+            .arg(self.fixture("Cargo.toml"))
+            .stdout(super::recipe_support::transcript())
+            .stderr(super::recipe_support::transcript())
+            .status()
+            .unwrap();
+        record(format!("phase: cargo generate-lockfile complete {status}"));
+        assert!(status.success());
     }
 
     pub fn command(&self, recipe: &str) -> Command {
@@ -165,12 +173,14 @@ impl Browser {
 pub use super::recipe_support::start_output;
 
 pub fn wait_for(receive: &std::sync::mpsc::Receiver<String>, needle: &str) -> String {
+    record(format!("phase: waiting for {needle:?}"));
     let mut transcript = String::new();
     loop {
         let line = receive.recv().expect(&transcript);
         transcript.push_str(&line);
         transcript.push('\n');
         if line.contains(needle) {
+            record(format!("phase: observed {needle:?}"));
             return transcript;
         }
         assert!(
@@ -182,10 +192,13 @@ pub fn wait_for(receive: &std::sync::mpsc::Receiver<String>, needle: &str) -> St
 
 pub fn get(port: u16, path: &str) -> (String, Vec<u8>) {
     use std::io::{Read, Write};
+    record(format!("phase: HTTP request 127.0.0.1:{port}/{path}"));
     let mut socket = std::net::TcpStream::connect(("127.0.0.1", port)).unwrap();
     write!(socket, "GET /{path} HTTP/1.0\r\nHost: localhost\r\n\r\n").unwrap();
     let mut bytes = Vec::new();
+    record("phase: HTTP waiting for EOF");
     socket.read_to_end(&mut bytes).unwrap();
+    record(format!("phase: HTTP complete {} bytes", bytes.len()));
     let end = bytes
         .windows(4)
         .position(|part| part == b"\r\n\r\n")
@@ -291,13 +304,20 @@ fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>
 /// Stage complete locked sources and create initially empty cold compilation directories.
 pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
     let sources = browser.path("local-sources");
+    record("phase: cargo vendor cold sources");
     let staged = super::toolchain_support::command(env!("CARGO"))
         .current_dir(&browser.workspace.0)
         .args(["vendor", "--locked", "--offline", "--sync"])
         .arg(browser.fixture("Cargo.toml"))
         .arg(&sources)
+        .stderr(super::recipe_support::transcript())
         .output()
         .unwrap();
+    record(format!(
+        "phase: cargo vendor complete {}\n{}",
+        staged.status,
+        String::from_utf8_lossy(&staged.stderr)
+    ));
     success(&staged);
     let home = browser.path("cold-home");
     let target = browser.path("cold-target");
@@ -318,6 +338,7 @@ pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
 
 /// Wait for the native rejected pipeline, which may leave its watcher running.
 pub fn rejected_pipeline(receive: &std::sync::mpsc::Receiver<String>) -> String {
+    record("phase: waiting for rejected pipeline");
     let mut transcript = String::new();
     loop {
         let line = receive.recv().expect(&transcript);

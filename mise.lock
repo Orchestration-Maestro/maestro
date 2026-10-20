@@ -132,8 +132,17 @@ backend = "github:WebAssembly/binaryen"
 specifiers = ["133"]
 
 [tools."github:WebAssembly/binaryen".options]
-matching = "x86_64-linux"
 version_prefix = "version_"
+
+[tools."github:WebAssembly/binaryen"."platforms.linux-arm64"]
+checksum = "sha256:89c07ea56faf38d0fbecf36ca8ec0721756716185f265b568e133d427f299bf8"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-aarch64-linux.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580038503"
+
+[tools."github:WebAssembly/binaryen"."platforms.linux-arm64-musl"]
+checksum = "sha256:89c07ea56faf38d0fbecf36ca8ec0721756716185f265b568e133d427f299bf8"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-aarch64-linux.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580038503"
 
 [tools."github:WebAssembly/binaryen"."platforms.linux-x64"]
 checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
@@ -145,49 +154,117 @@ checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050094"
 
+[tools."github:WebAssembly/binaryen"."platforms.macos-arm64"]
+checksum = "sha256:ad66da82ac13f163e424b1643f16c6dfcccc98b5966296b43e52d3cab04f84a8"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-arm64-macos.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580039733"
+
+[tools."github:WebAssembly/binaryen"."platforms.macos-x64"]
+checksum = "sha256:13a9b90be775c6389ce3d1f879cb8627bea56708ba8c122983941d53a8199b95"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-macos.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580039734"
+
+[tools."github:WebAssembly/binaryen"."platforms.windows-x64"]
+checksum = "sha256:17a2cbeac6b5693c5fbafab3838d3c65fd9c1eb38b05f5baec6c657e8c84995b"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-windows.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050907"
+
 [[tools."github:svenstaro/miniserve"]]
 version = "0.35.0"
 backend = "github:svenstaro/miniserve"
 specifiers = ["0.35.0"]
 
-[tools."github:svenstaro/miniserve".options]
-matching = "x86_64-unknown-linux-musl"
+[tools."github:svenstaro/miniserve"."platforms.linux-arm64"]
+checksum = "sha256:f50b296a36e2d8b38ca4ec69f1972f9f41600abacf6b7e72fedf921c48b1ee50"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-aarch64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553201"
+
+[tools."github:svenstaro/miniserve"."platforms.linux-arm64-musl"]
+checksum = "sha256:732b1d5b30a3903580cee9ca24b2ff04ba2a5c78fa1ba6579dc5154fc431b40a"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-aarch64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553322"
 
 [tools."github:svenstaro/miniserve"."platforms.linux-x64"]
-checksum = "sha256:c630ee030d5d9d83c88c5cc72f43ae215b0c214d64fd7afc92244fe369af2964"
-url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553375"
+checksum = "sha256:3b43ec6cb8ef5d5cc72a216b2309ef77c90952fd2c3e3c6eb9010dec39f3a086"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553074"
 
 [tools."github:svenstaro/miniserve"."platforms.linux-x64-musl"]
 checksum = "sha256:c630ee030d5d9d83c88c5cc72f43ae215b0c214d64fd7afc92244fe369af2964"
 url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-unknown-linux-musl"
 url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553375"
 
+[tools."github:svenstaro/miniserve"."platforms.macos-arm64"]
+checksum = "sha256:8e8dc916b1dc3bc2a46bf5a44308caf7db153e6940db178668929e1de40d1fbb"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-aarch64-apple-darwin"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391554254"
+
+[tools."github:svenstaro/miniserve"."platforms.macos-x64"]
+checksum = "sha256:63a99448bf7c450f1264a1af313646df30251bdbc3284b8f4d2d55cee2b98c55"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-apple-darwin"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391554369"
+
+[tools."github:svenstaro/miniserve"."platforms.windows-x64"]
+checksum = "sha256:3229e75b40b3870382d23c9a0ecec880b9bd5f6e49160ce602bb15d00f275b6a"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-pc-windows-msvc.exe"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391555761"
+
 [[tools."github:trunk-rs/trunk"]]
 version = "0.21.14"
 backend = "github:trunk-rs/trunk"
 specifiers = ["0.21.14"]
 
-[tools."github:trunk-rs/trunk".options]
-matching = "x86_64-unknown-linux-musl"
+[tools."github:trunk-rs/trunk"."platforms.linux-arm64"]
+checksum = "sha256:b1d8e60e454f7fc182d9a4d95d1506ffbae947d8ba90f8f6f02da93b60f980f9"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890618"
+
+[tools."github:trunk-rs/trunk"."platforms.linux-arm64-musl"]
+checksum = "sha256:e8e2a2bb423ce6702ab9f4f02f8c9ae99d790f0301f7634e986b2dd8706019cc"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890619"
 
 [tools."github:trunk-rs/trunk"."platforms.linux-x64"]
-checksum = "sha256:a67f4054b249fe9acc5fabc25de1aebf19783aca3ad6ff64bf34d7da44d0ea20"
-url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890638"
+checksum = "sha256:f2b4680cd239693a646a2795e4633c625328d7b2a044fbe749fa3a2fe9e7036b"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890635"
 
 [tools."github:trunk-rs/trunk"."platforms.linux-x64-musl"]
 checksum = "sha256:a67f4054b249fe9acc5fabc25de1aebf19783aca3ad6ff64bf34d7da44d0ea20"
 url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890638"
 
+[tools."github:trunk-rs/trunk"."platforms.macos-arm64"]
+checksum = "sha256:764e299dd50d89442a4e96a236349f57961984b701e74d3dbdb39cd1c9f5101e"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890616"
+
+[tools."github:trunk-rs/trunk"."platforms.macos-x64"]
+checksum = "sha256:f1ba0e3bbe24e0ae219c6d22c33e24e2825c1608dd27c2556e323495110f1a95"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890623"
+
+[tools."github:trunk-rs/trunk"."platforms.windows-x64"]
+checksum = "sha256:cd6ac15b9daff0365e5695036791ef2ce3c63f61c014f5a8c532363266e4569c"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890632"
+
 [[tools."github:wasm-bindgen/wasm-bindgen"]]
 version = "0.2.129"
 backend = "github:wasm-bindgen/wasm-bindgen"
 specifiers = ["0.2.129"]
 
-[tools."github:wasm-bindgen/wasm-bindgen".options]
-matching = "x86_64-unknown-linux-musl"
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.linux-arm64"]
+checksum = "sha256:1797c349a0f45d30946e8986b184135e12839ab576c9a04203e85febfc5dcb35"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769532"
+provenance = "github-attestations"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.linux-arm64-musl"]
+checksum = "sha256:2ed4351c35dd9440308bbb02767d47ea278efe851a52465300f3c94f5b6c2a87"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769523"
+provenance = "github-attestations"
 
 [tools."github:wasm-bindgen/wasm-bindgen"."platforms.linux-x64"]
 checksum = "sha256:82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e"
@@ -199,6 +276,24 @@ provenance = "github-attestations"
 checksum = "sha256:82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e"
 url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769529"
+provenance = "github-attestations"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.macos-arm64"]
+checksum = "sha256:81d4a23d56b3c3eb8187658329116d50e0b228a93b343825fb71f70179051cd1"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769526"
+provenance = "github-attestations"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.macos-x64"]
+checksum = "sha256:7e028879a68ec53dae14048b55cc5215f6df75b17a9c1426fac8fa086d3202fd"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769520"
+provenance = "github-attestations"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.windows-x64"]
+checksum = "sha256:79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769522"
 provenance = "github-attestations"
 
 [[tools.just]]

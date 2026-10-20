@@ -270,12 +270,14 @@ fn browser_example_development_serves_rebuilt_external_assets() {
         "ui.label(&self.0)",
         "ui.label(format!(\"edited echo: {}\", self.0))",
     );
+    crate::recipe_support::record(format!("phase: authored edit {source:?}"));
     fs::write(source, text).unwrap();
     wait_for(&receive, "✅ success");
     let (_, changed) = get(port, wasm.file_name().unwrap().to_str().unwrap());
     assert_ne!(changed, original);
     let css = browser.fixture("assets/app.css");
     let original = fs::read_to_string(&css).unwrap();
+    crate::recipe_support::record(format!("phase: authored edit {css:?}"));
     fs::write(css, format!("{original}\ncanvas{{outline-style:dotted}}\n")).unwrap();
     wait_for(&receive, "✅ success");
     let (_, changed) = get(port, "app.css");
@@ -294,7 +296,9 @@ fn browser_example_development_serves_rebuilt_external_assets() {
     });
     drop(child);
     drop(receive);
+    crate::recipe_support::record("phase: reader join");
     thread.join().unwrap();
+    crate::recipe_support::record("phase: reader joined");
 }
 
 #[test]
@@ -317,7 +321,9 @@ fn browser_compile_watch_rebuilds_external_identity() {
     });
     drop(child);
     drop(receive);
+    crate::recipe_support::record("phase: reader join");
     thread.join().unwrap();
+    crate::recipe_support::record("phase: reader joined");
 }
 
 /// Start with linked files whose targets are outside every authored watch root.
@@ -332,6 +338,7 @@ fn linked_identity(browser: &Browser) -> (std::path::PathBuf, Workspace, Workspa
             mark_target.0.join("mark.svg"),
         ),
     ] {
+        crate::recipe_support::record(format!("phase: authored edit {authored:?}"));
         fs::rename(&authored, &target).unwrap();
         std::os::unix::fs::symlink(target, authored).unwrap();
     }
@@ -347,6 +354,7 @@ fn edit_linked_targets(
     let pack = pack_directory.join("pack.json");
     let mut data: serde_json::Value = serde_json::from_slice(&fs::read(&pack).unwrap()).unwrap();
     data["wordmark"] = "linked target wordmark".into();
+    crate::recipe_support::record(format!("phase: authored edit {pack:?}"));
     fs::write(pack, serde_json::to_string_pretty(&data).unwrap()).unwrap();
     eprintln!("waiting for linked pack target rebuild");
     assert!(String::from_utf8_lossy(&rebuilt()).contains("linked target wordmark"));
@@ -354,6 +362,7 @@ fn edit_linked_targets(
     let svg = fs::read_to_string(&mark)
         .unwrap()
         .replace("<svg", "<svg data-revision=\"linked\"");
+    crate::recipe_support::record(format!("phase: authored edit {mark:?}"));
     fs::write(mark, svg).unwrap();
     eprintln!("waiting for linked mark target rebuild");
     assert!(String::from_utf8_lossy(&rebuilt()).contains("data-revision=\"linked\""));
@@ -370,7 +379,9 @@ fn replace_identity_twice(
         let mut data: serde_json::Value = serde_json::from_slice(&fs::read(pack).unwrap()).unwrap();
         data["wordmark"] = format!("{revision} author wordmark").into();
         let temporary = pack.with_extension("tmp");
+        crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
         fs::write(&temporary, serde_json::to_string_pretty(&data).unwrap()).unwrap();
+        crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
         fs::rename(temporary, pack).unwrap();
         eprintln!("waiting for {revision} pack replacement rebuild");
         assert!(
@@ -380,7 +391,9 @@ fn replace_identity_twice(
         let svg = fs::read_to_string(browser.path("assets/brand/mark.svg"))
             .unwrap()
             .replace("<svg", &format!("<svg data-revision=\"{revision}\""));
+        crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
         fs::write(&temporary, svg).unwrap();
+        crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
         fs::rename(temporary, &mark).unwrap();
         eprintln!("waiting for {revision} mark replacement rebuild");
         assert!(
@@ -392,11 +405,13 @@ fn replace_identity_twice(
     fs::copy(&mark, &replacement).unwrap();
     let mut data: serde_json::Value = serde_json::from_slice(&fs::read(pack).unwrap()).unwrap();
     data["mark"]["template"] = "../new dependency/mark.svg".into();
+    crate::recipe_support::record(format!("phase: authored edit {pack:?}"));
     fs::write(pack, serde_json::to_string_pretty(&data).unwrap()).unwrap();
     rebuilt();
     let contents = fs::read_to_string(&replacement)
         .unwrap()
         .replace("second", "replacement");
+    crate::recipe_support::record(format!("phase: authored edit {replacement:?}"));
     fs::write(replacement, contents).unwrap();
     assert!(String::from_utf8_lossy(&rebuilt()).contains("data-revision=\"replacement\""));
 }
@@ -411,6 +426,7 @@ fn external_identity(browser: &Browser) -> std::path::PathBuf {
         serde_json::from_slice(&fs::read(browser.path("assets/brand/brand.json")).unwrap())
             .unwrap();
     data["mark"]["template"] = "../external mark.svg".into();
+    crate::recipe_support::record(format!("phase: authored edit {pack:?}"));
     fs::write(&pack, serde_json::to_string_pretty(&data).unwrap()).unwrap();
     pack
 }
@@ -489,7 +505,9 @@ fn browser_preview_serves_without_author_tools() {
     assert_eq!(get(port, "nested/route").1, files[0].1);
     drop(child);
     drop(receive);
+    crate::recipe_support::record("phase: reader join");
     thread.join().unwrap();
+    crate::recipe_support::record("phase: reader joined");
     preview_failures(&browser);
 }
 
@@ -1283,12 +1301,12 @@ fn install_authored_hook(browser: &Browser) -> std::path::PathBuf {
 
 #[test]
 fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
-    use browser_support::{start_output, wait_for};
     let browser = Browser::new();
     let pack = external_identity(&browser);
     let extra = browser.path("authored-extra");
     fs::create_dir(&extra).unwrap();
     let ignored = browser.fixture("ignored.txt");
+    crate::recipe_support::record(format!("phase: authored edit {ignored:?}"));
     fs::write(&ignored, "ignored input").unwrap();
     let authored = browser.fixture("Trunk.json");
     let mut config: serde_json::Value =
@@ -1298,7 +1316,19 @@ fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
         .unwrap()
         .push("../../../../../authored-extra".into());
     config["watch"]["ignore"] = serde_json::json!(["ignored.txt"]);
+    crate::recipe_support::record(format!("phase: authored edit {authored:?}"));
     fs::write(authored, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    assert_authored_watch_routes(&browser, &pack, &ignored, &extra);
+}
+
+/// Check both native watch routes with generated, ignored and authored input writes.
+fn assert_authored_watch_routes(
+    browser: &Browser,
+    pack: &std::path::Path,
+    ignored: &std::path::Path,
+    extra: &std::path::Path,
+) {
+    use browser_support::{start_output, wait_for};
     for (recipe, route) in [
         ("browser-dev-compile", "library"),
         ("browser-example-dev", "example"),
@@ -1318,17 +1348,24 @@ fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
         for file in ["Trunk.json", "inputs/text.txt"] {
             let relative = format!("target/maestro-browser/.author/{route}/{file}");
             let path = browser.path(&relative);
+            crate::recipe_support::record(format!("phase: authored edit {path:?}"));
             fs::write(&path, fs::read(&path).unwrap()).unwrap();
             assert_ignored_event(&receive, &relative);
         }
-        fs::write(&ignored, format!("ignored {route}")).unwrap();
+        crate::recipe_support::record(format!("phase: authored edit {ignored:?}"));
+        fs::write(ignored, format!("ignored {route}")).unwrap();
         assert_ignored_event(&receive, "ignored.txt");
+        crate::recipe_support::record(format!(
+            "phase: authored edit {:?}",
+            extra.join("source.txt")
+        ));
         fs::write(extra.join("source.txt"), route).unwrap();
         wait_for(&receive, "accepted change in");
         wait_for(&receive, "✅ success");
         let css = browser.fixture("assets/app.css");
         let text =
             fs::read_to_string(&css).unwrap() + &format!("\ncanvas{{outline-{route}:dotted}}\n");
+        crate::recipe_support::record(format!("phase: authored edit {css:?}"));
         fs::write(css, text).unwrap();
         wait_for(&receive, "accepted change in");
         wait_for(&receive, "✅ success");
@@ -1339,18 +1376,22 @@ fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
         );
         drop(child);
         drop(receive);
+        crate::recipe_support::record("phase: reader join");
         thread.join().unwrap();
+        crate::recipe_support::record("phase: reader joined");
     }
 }
 
 /// Observe the native watcher's completed relevance decision for one actual write.
 fn assert_ignored_event(receive: &std::sync::mpsc::Receiver<String>, path: &str) {
+    crate::recipe_support::record(format!("phase: waiting for ignored-event decision {path}"));
     loop {
         let line = receive.recv().unwrap();
         if line.contains("change detected in")
             && line.contains(path)
             && (line.contains("Modify(Data(") || line.contains("Create("))
         {
+            crate::recipe_support::record("phase: waiting for adjacent relevance decision");
             let decision = receive.recv().unwrap();
             assert!(
                 decision.contains("Event not relevant, skipping"),
@@ -1528,7 +1569,9 @@ fn browser_author_trunk_rejects_stale_lock_without_writes() {
             let transcript = browser_support::rejected_pipeline(&receive);
             assert!(transcript.contains("--locked"), "{transcript}");
             drop(child);
+            crate::recipe_support::record("phase: reader join");
             thread.join().unwrap();
+            crate::recipe_support::record("phase: reader joined");
         } else {
             let failed = browser.run(recipe);
             assert!(!failed.status.success());

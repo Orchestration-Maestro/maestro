@@ -671,11 +671,14 @@ fn close_watch_output(
     receive: std::sync::mpsc::Receiver<String>,
     threads: [std::thread::JoinHandle<()>; 1],
 ) {
+    recipe_support::record("phase: draining watch output");
     while receive.recv().is_ok() {}
     drop(receive);
+    recipe_support::record("phase: reader join");
     for thread in threads {
         thread.join().unwrap();
     }
+    recipe_support::record("phase: reader joined");
 }
 
 #[cfg(unix)]
@@ -1538,30 +1541,64 @@ fn catalog_cargo_tests_and_watch_routes_stay_offline() {
     assert!(!log.contains("models-generate"));
 }
 
-/// Child output must remain visible while the watch consumer receives its lines.
+/// A killed test leaves child output on disk without losing channel delivery.
+#[cfg(unix)]
 #[test]
-fn watch_child_lines_reach_test_output() {
+fn watch_child_transcript_survives_forced_kill() {
+    use std::io::{BufRead, Read, Write};
     if std::env::var_os("MAESTRO_CAPTURE_CONTROL").is_some() {
+        let (reader, mut writer) = std::os::unix::net::UnixStream::pair().unwrap();
         let (send, receive) = std::sync::mpsc::channel();
-        let reader = recipe_support::capture_lines(
-            || std::io::Cursor::new(b"watch phase: compiling\nwatch phase: ready\n"),
-            send,
-        );
+        let _reader = recipe_support::capture_lines(move || reader, send);
+        writer
+            .write_all(b"watch phase: compiling\nwatch phase: ready\n")
+            .unwrap();
         assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
         assert_eq!(receive.recv().unwrap(), "watch phase: ready");
-        reader.join().unwrap();
-        return;
+        recipe_support::record("phase: blocked waiting for controller");
+        println!("READY {}", std::process::id());
+        std::io::stdout().flush().unwrap();
+        let _ = std::io::stdin().read(&mut [0]).unwrap();
+        panic!("controller must kill the blocked test");
     }
-    let output = maestro_test_process::TestProcess::current("watch_child_lines_reach_test_output")
-        .unwrap()
+    let process =
+        maestro_test_process::TestProcess::current("watch_child_transcript_survives_forced_kill")
+            .unwrap();
+    let name = process.name().replace("::", "_");
+    let mut child = process
         .nocapture()
         .env("MAESTRO_CAPTURE_CONTROL", "1")
-        .output()
+        .stdin(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .unwrap();
-    assert!(output.status.success());
-    let transcript = String::from_utf8(output.stderr).unwrap();
+    let mut output = std::io::BufReader::new(child.stdout.take().unwrap());
+    let pid = output
+        .by_ref()
+        .lines()
+        .map(Result::unwrap)
+        .find_map(|line| line.strip_prefix("READY ").map(str::to_owned))
+        .unwrap();
     assert!(
-        transcript.contains("watch phase: compiling\nwatch phase: ready\n"),
-        "{transcript}"
+        Command::new("kill")
+            .args(["-KILL", "--", &pid])
+            .status()
+            .unwrap()
+            .success()
     );
+    let output = child.wait_with_output().unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("watch phase: compiling\nwatch phase: ready\n"),
+        "{stderr}"
+    );
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../target/browser-author-diagnostics")
+        .join(format!("{pid}-{name}.log"));
+    let transcript =
+        fs::read_to_string(&path).expect("killed test must leave a durable transcript");
+    assert!(transcript.contains("watch phase: compiling\n"));
+    assert!(transcript.contains("watch phase: ready\n"));
+    assert!(transcript.contains("phase: blocked waiting for controller\n"));
 }
