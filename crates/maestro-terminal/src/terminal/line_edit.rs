@@ -87,6 +87,7 @@ impl Terminal {
         if count == 0 || start < r.top || start > r.bottom || c.x < r.left || c.x > r.right {
             return Ok(());
         }
+        self.screens.active_mut().kitty_images.dirty = true;
         let count = u16::try_from(count.min(usize::from(r.bottom - start + 1)))
             .unwrap_or(r.bottom - start + 1);
         let result = self.shift_rows(start, count, insert);
@@ -262,6 +263,9 @@ impl Terminal {
             && r.right == self.cols - 1
             && (!self.screens.active().no_scrollback || r.bottom == self.rows - 1);
         let screen = self.screens.active_mut();
+        if history && count != 0 {
+            screen.kitty_images.dirty = true;
+        }
         screen.cursor_absolute(r.left, if history { r.bottom } else { r.top });
         let result = if history {
             (0..count.min(usize::from(r.bottom + 1))).try_for_each(|_| {

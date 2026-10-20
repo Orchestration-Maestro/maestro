@@ -127,6 +127,8 @@ impl Default for Flags {
 
 /// Retained terminal screens with direct text and cursor operations.
 pub struct Terminal {
+    /// Whether this terminal admits PNG decoding during image execution.
+    pub(crate) kitty_png_enabled: bool,
     /// APC routing and caller-selected image payload limit.
     pub apc_handler: crate::apc::Handler,
     /// Caller-selected scheme for status reports.
@@ -186,6 +188,7 @@ impl Terminal {
         modes.set(Mode::GraphemeCluster, true);
         modes.defaults[Mode::GraphemeCluster as usize] = true;
         Ok(Self {
+            kitty_png_enabled: false,
             apc_handler: crate::apc::Handler::default(),
             color_scheme: None,
             size_report: crate::size_report::Size {

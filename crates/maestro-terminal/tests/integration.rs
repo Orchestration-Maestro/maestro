@@ -200,3 +200,5 @@ mod render;
 mod terminal_read;
 
 mod kitty_graphics_storage;
+
+mod graphics_exec;

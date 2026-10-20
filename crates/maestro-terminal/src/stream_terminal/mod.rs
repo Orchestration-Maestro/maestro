@@ -18,7 +18,7 @@ use crate::{
 /// Terminal consumer with retained cursor appearance defaults.
 ///
 /// Applies screen state synchronously and captures replies and bells for draining.
-/// APC strings are parsed with image execution disabled; DCS has no effects.
+/// APC strings execute images only when enabled by the host; DCS has no effects.
 /// Each storage refusal ends only the current action; later input remains usable.
 pub struct Handler<'a> {
     /// Terminal updated by each callback.
@@ -314,15 +314,19 @@ impl Handler<'_> {
             PayloadAction::ApcPut(byte) => self.terminal.apc_handler.feed(*byte),
             PayloadAction::ApcEnd => {
                 if let Some(command) = self.terminal.apc_handler.end() {
-                    Self::execute_apc(command);
+                    self.execute_apc(&command);
                 }
             }
             PayloadAction::DcsHook(_) | PayloadAction::DcsPut(_) | PayloadAction::DcsUnhook => {}
         }
     }
 
-    /// Consume parsed image commands without execution or replies while images are disabled.
-    fn execute_apc(_command: crate::kitty::graphics::command::Command) {}
+    /// Execute one completed image command and queue its admitted protocol reply.
+    fn execute_apc(&mut self, command: &crate::kitty::graphics::command::Command) {
+        if let Some(response) = self.terminal.kitty_graphics(command) {
+            let _ = response.encode(&mut self.terminal.effects.pty_reply);
+        }
+    }
 
     /// Resolve the parameterless horizontal-margin and cursor-save ambiguity.
     fn margin_or_save(&mut self) {

@@ -16,28 +16,9 @@ impl Terminal {
                 let screen = self.screens.active_mut();
                 screen.scroll_clear();
                 screen.cursor.pending_wrap = false;
+                self.erase_images();
             }
-            EraseDisplay::Complete => {
-                let screen = self.screens.active_mut();
-                let at_prompt = screen
-                    .pages
-                    .last_nonempty_active_row()
-                    .and_then(|(pin, _)| pin.row_and_cell(&screen.pages))
-                    .is_some_and(|(row, _)| {
-                        row.semantic_prompt() != crate::page::row::SemanticPrompt::None
-                    });
-                if self.screens.active_key() == crate::screen_set::Key::Primary && at_prompt {
-                    self.screens.active_mut().scroll_clear();
-                }
-                let screen = self.screens.active_mut();
-                screen.clear_rows(
-                    crate::Point::Active(crate::Coordinate::default()),
-                    None,
-                    selective,
-                );
-                screen.cursor.pending_wrap = false;
-                self.flags.dirty.clear = true;
-            }
+            EraseDisplay::Complete => self.erase_complete(selective),
             EraseDisplay::Below => {
                 self.erase_line(EraseLine::Right, protected);
                 let screen = self.screens.active_mut();
@@ -70,6 +51,41 @@ impl Terminal {
             }
             EraseDisplay::Scrollback => self.screens.active_mut().erase_history(None),
         }
+    }
+
+    /// Erase physical image placements and their now-unused image payloads.
+    fn erase_images(&mut self) {
+        let screen = self.screens.active_mut();
+        screen.kitty_images.delete(
+            &mut screen.pages,
+            (0, 0),
+            crate::Coordinate::default(),
+            crate::kitty::graphics::command::Delete::All(true),
+        );
+    }
+
+    /// Preserve primary prompt history before clearing the entire active area.
+    fn erase_complete(&mut self, selective: bool) {
+        let screen = self.screens.active_mut();
+        let at_prompt = screen
+            .pages
+            .last_nonempty_active_row()
+            .and_then(|(pin, _)| pin.row_and_cell(&screen.pages))
+            .is_some_and(|(row, _)| {
+                row.semantic_prompt() != crate::page::row::SemanticPrompt::None
+            });
+        if self.screens.active_key() == crate::screen_set::Key::Primary && at_prompt {
+            self.screens.active_mut().scroll_clear();
+        }
+        let screen = self.screens.active_mut();
+        screen.clear_rows(
+            crate::Point::Active(crate::Coordinate::default()),
+            None,
+            selective,
+        );
+        screen.cursor.pending_wrap = false;
+        self.erase_images();
+        self.flags.dirty.clear = true;
     }
 
     /// Erase the selected line range, respecting ISO or explicitly requested protection.

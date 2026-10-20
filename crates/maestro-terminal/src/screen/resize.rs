@@ -30,6 +30,7 @@ impl Screen {
     /// Returns a managed-copy refusal. Earlier storage changes remain applied;
     /// reset the screen before using content after a failed resize.
     pub fn resize(&mut self, opts: Resize) -> Result<(), StorageError> {
+        self.kitty_images.dirty = true;
         self.with_cursor_detached(LinkRestore::Reidentify, |screen| {
             let style = std::mem::take(&mut screen.cursor.style);
             let result = screen.resize_detached(opts);
