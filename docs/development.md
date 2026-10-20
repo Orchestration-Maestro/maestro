@@ -226,9 +226,14 @@ parent runner's coverage flags, profile output path and coverage-wrapper state
 only from the child command, leaving the parent's environment unchanged.
 It restores the wrapper that preceded coverage, when present. This keeps nested
 native and WebAssembly builds independent of parent instrumentation without
-changing measurement of the test runner. Profile-writer fixtures still request
-their own instrumentation explicitly. Fresh tooling and conventions fixture roots
-carry the checkout's complete `rust-toolchain.toml` declaration before their first
+changing measurement of the test runner. Native browser-author behavior tests
+run the already-built development executable and restore only the caller's
+`LLVM_PROFILE_FILE`, when present, to collect its runtime counters. Compiler
+flags and coverage wrappers remain removed; real recipe tests and forcibly
+terminated watch groups do not use this exception. See the
+[browser author guide](browser-build.md) for the fixture-only build contract.
+Profile-writer fixtures still request their own instrumentation explicitly.
+Fresh tooling and conventions fixture roots carry the checkout's complete `rust-toolchain.toml` declaration before their first
 compiler child. Compiler, Cargo and recipe children run beneath that declaration;
 the shared command builder sets `RUSTUP_TOOLCHAIN` to the resolved toolchain
 recorded when the test was compiled, overriding ambient selectors for every
