@@ -62,6 +62,25 @@ impl MappedText {
         }
     }
 
+    /// Count live shared bytes and concatenation metadata without flattening a view.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        let mut pending = vec![self];
+        while let Some(text) = pending.pop() {
+            if !retained.arc(&text.storage, 0) {
+                continue;
+            }
+            match text.storage.as_ref() {
+                Storage::Bytes(bytes, _) => {
+                    retained.text(bytes);
+                }
+                Storage::Joined(left, right) => {
+                    pending.extend([left, right]);
+                }
+            }
+        }
+    }
+
     /// Whether the authored value already ends in a semantic line separator.
     pub(crate) fn ends_with_newline(&self) -> bool {
         self.last_byte == Some(b'\n')

@@ -8,6 +8,8 @@ use crate::{
 impl<E> Lexer<'_, E> {
     /// Recognize raw framing independently of the transformed quote body.
     pub(super) fn quote(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         let matched = rules::block_blockquote(self.options)?.find(source.text)?;
         let limit = helpers::rtrim(&source.text[matched.range()], '\n').len();
         let mut pending = source.select(std::iter::once(0..limit));

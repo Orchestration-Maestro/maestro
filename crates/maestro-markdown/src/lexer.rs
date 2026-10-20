@@ -143,14 +143,17 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Register a recognized definition only once, reporting whether it is new.
-    fn definition(&mut self, source: &Source<'_>, matched: &regress::Match) -> bool {
-        let id = reference_key(capture(source.text, matched, 1));
-        let destination = capture(source.text, matched, 2);
+    fn definition(&mut self, source: &Source<'_>, matched: &rules::definition::Definition) -> bool {
+        let id = reference_key(&source.text[matched.label.clone()]);
+        let destination = &source.text[matched.destination.clone()];
         let destination = destination
             .strip_prefix('<')
             .and_then(|text| text.strip_suffix('>'))
             .unwrap_or(destination);
-        let title = capture(source.text, matched, 3);
+        let title = matched
+            .title
+            .as_ref()
+            .map_or("", |range| &source.text[range.clone()]);
         let title = title.get(1..title.len().saturating_sub(1)).unwrap_or("");
         let Entry::Vacant(entry) = self.definitions.entry(id) else {
             return false;
@@ -164,6 +167,8 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Capture setext headings before selecting top-level paragraphs or item text.
     fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         let heading = rules::block_lheading(self.options).and_then(|rule| rule.find(source.text));
         let limit = if heading.is_none() {
             self.extension_start(source)
@@ -184,6 +189,8 @@ impl<'a, E> Lexer<'a, E> {
                 Kind::Heading(level, Vec::new(), label),
             )
         } else if self.top {
+            #[cfg(test)]
+            crate::tests::block_operand(window.text);
             let matched = rules::block_paragraph(self.options)?.find(window.text)?;
             (
                 matched.end(),
@@ -207,6 +214,8 @@ impl<'a, E> Lexer<'a, E> {
         if self.options == MarkedOptions::Documentation {
             return None;
         }
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         let matched = rules::block_table(self.options)?.find(source.text)?;
         let delimiter = capture(source.text, &matched, 2);
         if !delimiter.contains(['|', ':']) {
@@ -348,6 +357,8 @@ pub(crate) fn reference_id(source: &str) -> String {
 pub(crate) fn lines(source: &str) -> impl Iterator<Item = Range<usize>> {
     let mut offset = 0;
     source.split_inclusive('\n').map(move |line| {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += line.len());
         let start = offset;
         offset += line.len();
         start..offset

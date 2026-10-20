@@ -12,6 +12,8 @@ pub(crate) fn leaf(source: &Source<'_>) -> Option<Block> {
 
 /// Remove one indentation unit on every indented-code line.
 pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
+    #[cfg(test)]
+    crate::tests::block_operand(source.text);
     let matched = rules::BLOCK_CODE.as_ref()?.find(source.text)?;
     let pieces = crate::lexer::lines(&source.text[matched.range()]).map(|range| {
         let line = &source.text[range.clone()];
@@ -42,6 +44,8 @@ pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
 
 /// Retain full fence information and compensate only the opening indentation.
 fn fences(source: &Source<'_>) -> Option<Block> {
+    #[cfg(test)]
+    crate::tests::block_operand(source.text);
     let matched = rules::BLOCK_FENCES.as_ref()?.find(source.text)?;
     let indent = source.text.bytes().take_while(|byte| *byte == b' ').count();
     let body = capture(source.text, &matched, 3);
@@ -73,6 +77,8 @@ fn fences(source: &Source<'_>) -> Option<Block> {
 
 /// Select ATX content, removing only an eligible trailing hash run.
 fn heading(source: &Source<'_>) -> Option<Block> {
+    #[cfg(test)]
+    crate::tests::block_operand(source.text);
     let matched = rules::BLOCK_HEADING.as_ref()?.find(source.text)?;
     let body = capture(source.text, &matched, 2);
     let mut text = body.trim_matches(is_whitespace_scalar);
@@ -97,6 +103,8 @@ fn heading(source: &Source<'_>) -> Option<Block> {
 
 /// Keep horizontal-rule terminators available to block spacing.
 fn rule(source: &Source<'_>) -> Option<Block> {
+    #[cfg(test)]
+    crate::tests::block_operand(source.text);
     let matched = rules::BLOCK_HR.as_ref()?.find(source.text)?;
     let consumed = rtrim(&source.text[matched.range()], '\n').len();
     Some(Block {
@@ -112,6 +120,8 @@ pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block>
         return None;
     }
     if options == (MarkedOptions::Browser { escape_html: true }) {
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         let html = super::html::block(source.text)?;
         return Some(Block {
             consumed: html.consumed,
@@ -119,6 +129,8 @@ pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block>
             inline: None,
         });
     }
+    #[cfg(test)]
+    crate::tests::block_operand(source.text);
     let matched = rules::BLOCK_HTML.as_ref()?.find(source.text)?;
     Some(Block {
         consumed: matched.end(),

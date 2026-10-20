@@ -1,4 +1,5 @@
-//! Immutable block and inline recognizers.
+//! Block and inline grammar recognizers.
+pub(crate) mod definition;
 use crate::MarkedOptions;
 use regress::Regex;
 use std::sync::LazyLock;
@@ -132,11 +133,6 @@ pub(crate) static BLOCK_HTML_SOURCE: LazyLock<String> = LazyLock::new(|| {
 pub(crate) static BLOCK_HTML: LazyLock<Option<Regex>> =
     LazyLock::new(|| stepwise(&BLOCK_HTML_SOURCE, "i"));
 
-/// Recognize block def syntax without a mutable match cursor.
-pub(crate) static BLOCK_DEF: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r#"^ {0,3}\[((?!\s*\])(?:\\[\s\S]|[^\[\]\\])+)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)((?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))))? *(?:\n+|$)"#, "").ok()
-});
-
 /// Recognize block table syntax without a mutable match cursor.
 pub(crate) static BLOCK_TABLE: LazyLock<Option<Regex>> =
     LazyLock::new(|| anchored(&table(&html_openers())));
@@ -243,19 +239,6 @@ static INLINE_TEXT: LazyLock<Option<Regex>> = LazyLock::new(|| {
         "",
     )
 });
-
-/// Immutable caller-specific block def terminal recognizer.
-static BLOCK_DEF_TERMINAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r#"^ {0,3}\[((?!\s*\])(?:\\.|[^\[\]\\])+)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)((?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))))? *(?:\n+|$)"#, "").ok()
-});
-
-/// Select block def syntax from the immutable caller grammar.
-pub(crate) fn block_def(options: MarkedOptions) -> Option<&'static Regex> {
-    match options {
-        MarkedOptions::Terminal | MarkedOptions::Export => BLOCK_DEF_TERMINAL.as_ref(),
-        MarkedOptions::Browser { .. } | MarkedOptions::Documentation => BLOCK_DEF.as_ref(),
-    }
-}
 
 /// Immutable caller-specific block lheading export recognizer.
 static BLOCK_LHEADING_EXPORT: LazyLock<Option<Regex>> = LazyLock::new(|| {

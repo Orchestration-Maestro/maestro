@@ -5,6 +5,8 @@ use std::cell::RefCell;
 mod container_frames;
 mod shared_text;
 
+pub(crate) use shared_text::Retained;
+
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
@@ -12,6 +14,12 @@ pub(crate) struct Work {
     pub(crate) mask_operands: usize,
     /// Operand visits inside cursor-generated label windows.
     pub(crate) cursor_label_operands: usize,
+    /// Bytes supplied to block recognizers, including failed admission.
+    pub(crate) block_recognizer_bytes: usize,
+    /// Bytes supplied to the definition grammar, including failed admission.
+    pub(crate) definition_bytes: usize,
+    /// Bytes visited by physical-line framing, including repeated visits.
+    pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.
     pub(crate) quote_lines: usize,
     /// Actual list continuation line visits.
@@ -60,6 +68,11 @@ pub(crate) struct Work {
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
     pub(crate) static WORK: RefCell<Work> = RefCell::default();
+}
+
+/// Charge the exact operand supplied to one block recognizer.
+pub(crate) fn block_operand(source: &str) {
+    WORK.with_borrow_mut(|work| work.block_recognizer_bytes += source.len());
 }
 
 /// Exercise original scopes and labels without walking the document per fragment.

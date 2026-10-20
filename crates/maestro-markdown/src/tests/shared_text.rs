@@ -1,5 +1,35 @@
 //! Shared authored values at the parser boundary.
 use crate::{MappedText, parse};
+use std::{collections::HashSet, mem::size_of_val, sync::Arc};
+
+/// Unique live allocation payloads, excluding allocator headers and hash control bytes.
+#[derive(Default)]
+pub(crate) struct Retained {
+    /// Allocation addresses already charged while the complete document stays live.
+    seen: HashSet<usize>,
+    /// Shared allocation payloads plus independently owned native capacities.
+    pub(crate) bytes: usize,
+    /// Unique backing string capacity, separate from view and native metadata.
+    pub(crate) source_bytes: usize,
+}
+
+impl Retained {
+    /// Charge shared string capacity without counting overlapping selected windows twice.
+    pub(crate) fn text(&mut self, value: &Arc<String>) {
+        if self.arc(value, value.capacity()) {
+            self.source_bytes += value.capacity();
+        }
+    }
+
+    /// Charge shared metadata and its backing capacity once, returning whether it is new.
+    pub(crate) fn arc<T>(&mut self, value: &Arc<T>, capacity: usize) -> bool {
+        if !self.seen.insert(Arc::as_ptr(value) as usize) {
+            return false;
+        }
+        self.bytes += size_of_val(value.as_ref()) + capacity;
+        true
+    }
+}
 
 #[test]
 fn mapped_text_preserves_owned_empty_and_unicode_values() {
@@ -53,10 +83,20 @@ fn mapped_text_repeated_reads_keep_storage_shared() {
     let chunks = text.chunks().map(str::as_ptr).collect::<Vec<_>>();
     let clone = text.clone();
     drop(document);
+    let mut retained = Retained::default();
+    text.retained(&mut retained);
+    let before = retained.bytes;
+    clone.retained(&mut retained);
+    assert_eq!(retained.bytes, before);
+    assert_eq!(retained.source_bytes, source.len());
     for _ in 0..4 {
         assert_eq!(text.len(), source.len());
         assert_eq!(text.chunks().map(str::as_ptr).collect::<Vec<_>>(), chunks);
         assert_eq!(clone.chunks().map(str::as_ptr).collect::<Vec<_>>(), chunks);
         assert_eq!(text.to_owned_string(), source);
+        let mut after = Retained::default();
+        text.retained(&mut after);
+        clone.retained(&mut after);
+        assert_eq!(after.bytes, before);
     }
 }

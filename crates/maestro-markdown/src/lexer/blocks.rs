@@ -133,6 +133,8 @@ impl<E> Lexer<'_, E> {
 
     /// Consume spacing while keeping the visible tail's raw and scope in sync.
     fn space_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         let gap = rules::BLOCK_NEWLINE
             .as_ref()?
             .find(source.text)
@@ -186,7 +188,9 @@ impl<E> Lexer<'_, E> {
 
     /// Merge literal definitions before registering otherwise first-wins references.
     fn definition_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        let matched = rules::block_def(self.options)?.find(source.text)?;
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
+        let matched = rules::definition::recognize(source.text, self.options)?;
         if output
             .last()
             .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
@@ -194,15 +198,15 @@ impl<E> Lexer<'_, E> {
             self.merge_source(
                 output,
                 source,
-                matched.end(),
-                source.select(std::iter::once(matched.range())),
+                matched.consumed,
+                source.select(std::iter::once(0..matched.consumed)),
             );
         } else if self.definition(source, &matched)
             && matches!(self.options, MarkedOptions::Browser { .. })
         {
             output.tail = Tail::Definition;
         }
-        Some(matched.end())
+        Some(matched.consumed)
     }
 
     /// Join inline operands without reconstructing them from bounding node ranges.

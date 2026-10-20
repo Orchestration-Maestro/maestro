@@ -68,6 +68,16 @@ pub(crate) struct ScopeSource {
     units: Arc<Vec<(Range<usize>, Range<usize>)>>,
 }
 impl ScopeSource {
+    /// Count backing source and provenance allocations once across all retained views.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        retained.text(&self.text.bytes);
+        retained.arc(
+            &self.units,
+            self.units.capacity() * std::mem::size_of::<(Range<usize>, Range<usize>)>(),
+        );
+    }
+
     /// Project a native operand through captured framing, not string-offset subtraction.
     pub(crate) fn local(&self, range: &Range<usize>) -> Option<Range<usize>> {
         self.project(range, false)
