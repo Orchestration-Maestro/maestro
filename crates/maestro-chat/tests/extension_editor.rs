@@ -1182,7 +1182,7 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
 /// Controlled native process scenario, not a simulated bridge response.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 struct NativeInput {
     /// Recording protocol.
     mode: String,
@@ -1197,7 +1197,7 @@ struct NativeInput {
 /// Independent child observations in the native corpus.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 struct Observation {
     /// Exact file bytes before edit.
     before: String,
@@ -1209,7 +1209,7 @@ struct Observation {
 /// Native error, cleanup, child observation and full output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 struct NativeExpected {
     /// Whether a filesystem error escaped the action.
     failed: bool,
