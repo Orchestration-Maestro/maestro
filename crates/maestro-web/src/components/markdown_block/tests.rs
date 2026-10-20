@@ -656,14 +656,6 @@ fn spans_closing_inside_a_formula_keep_their_markup() {
 }
 
 #[test]
-fn admission_skips_a_formula_that_a_span_closes_inside() {
-    let document = escaped_document("~~a $b~~ c$ d".to_owned());
-    let context = markdown::InlineContext::new(&document);
-    let scope = context.scope(&document.nodes[0].range, false).unwrap();
-    assert!(super::admission::scan(scope, scope.content_range(), false).is_empty());
-}
-
-#[test]
 fn strike_emphasis_and_dollar_mixtures_never_panic() {
     // A strike opening after a formula that swallowed an earlier strike opener.
     prepare("$a ~~$ ~~b $c~~ d$", true);
@@ -684,5 +676,287 @@ fn strike_emphasis_and_dollar_mixtures_never_panic() {
             // A panic fails the test; rendered HTML is compared by the exact cases above.
             prepare(&source, escape);
         }
+    }
+}
+
+/// Complete HTML targets with formula bodies recorded independently of this renderer.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FormulaCorpus {
+    /// Cases for both escaping policies.
+    rows: Vec<FormulaCase>,
+}
+
+/// One source and its complete surrounding markup.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct FormulaCase {
+    /// Assertion label.
+    id: String,
+    /// Authored Markdown.
+    input: String,
+    /// Browser escaping policy.
+    escape_html: bool,
+    /// Expected HTML with selected formula bodies in place of math HTML.
+    expected: String,
+}
+
+/// Recorded math selection, before the existing math library formats it.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SelectedFormula {
+    /// Selected body after whitespace handling.
+    tex: String,
+    /// Inline or display formatting.
+    display: bool,
+}
+
+/// Order only the math library's two unordered error attributes, preserving both values.
+fn stable_error_attributes(html: &str) -> String {
+    regress::Regex::new(r#"<span class="katex-error" title="([^"]*)" style="([^"]*)">"#)
+        .unwrap()
+        .replace_all(html, r#"<span class="katex-error" style="$2" title="$1">"#)
+}
+
+/// Expand only recorded formula payloads, ignoring error-attribute serialization order.
+fn formula_target(expected: &str) -> String {
+    let mut rest = expected;
+    let mut result = String::new();
+    while let Some((prefix, formula)) = rest.split_once("<formula>") {
+        result.push_str(prefix);
+        let (payload, suffix) = formula.split_once("</formula>").unwrap();
+        let selected: SelectedFormula = serde_json::from_str(payload).unwrap();
+        let settings = katex::Settings::builder()
+            .display_mode(selected.display)
+            .output(katex::OutputFormat::Html)
+            .throw_on_error(false)
+            .error_color("var(--maestro-color-error)".to_owned())
+            .build();
+        let html =
+            katex::render_to_string(&katex::KatexContext::default(), &selected.tex, &settings)
+                .unwrap();
+        result.push_str(&html);
+        rest = suffix;
+    }
+    result.push_str(rest);
+    stable_error_attributes(&result)
+}
+
+/// Assert every named case independently under both escaping policies.
+fn formula_cases(ids: &[&str]) {
+    let corpus: FormulaCorpus =
+        serde_json::from_str(include_str!("fixtures/inline_formulas.json")).unwrap();
+    for id in ids {
+        for escaping in [true, false] {
+            let row = corpus
+                .rows
+                .iter()
+                .find(|row| row.id == *id && row.escape_html == escaping)
+                .unwrap();
+            assert_eq!(
+                stable_error_attributes(&prepare(&row.input, row.escape_html).html),
+                formula_target(&row.expected),
+                "{id}, escaping={escaping}"
+            );
+        }
+    }
+}
+
+#[test]
+fn transcript_inline_formulas_follow_cursor_precedence() {
+    formula_cases(&[
+        "strike-emerges",
+        "formula-before-span",
+        "two-formulas",
+        "no-formula",
+    ]);
+}
+
+#[test]
+fn transcript_formula_delimiters_remain_in_emphasis_masks() {
+    formula_cases(&["asterisk-mask", "underscore-mask"]);
+}
+
+#[test]
+fn transcript_formula_recursion_stays_within_selected_spans() {
+    formula_cases(&[
+        "span-strike",
+        "span-strong",
+        "span-em",
+        "nested-emphasis",
+        "nested-deletion",
+    ]);
+}
+
+#[test]
+fn transcript_formula_hints_preserve_plain_text_boundaries() {
+    formula_cases(&[
+        "simple",
+        "paren",
+        "dollars-and-parens",
+        "space-body",
+        "adjacent",
+        "plain-dollar",
+        "empty-dollar",
+        "empty-paren",
+        "dollar-newline",
+        "paren-newline",
+        "escaped-dollar",
+        "even-slashes",
+        "odd-slashes",
+        "feff",
+        "nel",
+        "unicode",
+        "invalid-tex",
+    ]);
+}
+
+#[test]
+fn transcript_formulas_release_consumed_link_syntax() {
+    formula_cases(&["formula-before-link", "partial-retained-link"]);
+}
+
+#[test]
+fn transcript_new_links_retain_formula_children() {
+    formula_cases(&[
+        "label",
+        "reference",
+        "destination",
+        "new-link-after-consumption",
+        "new-link-label",
+        "escaped-label-brackets",
+    ]);
+}
+
+#[test]
+fn transcript_formula_barriers_keep_existing_operands() {
+    formula_cases(&["code", "cross-code", "image", "reference-image"]);
+    for escaping in [true, false] {
+        let crossing = prepare("$a [b `c$`](u) $y$", escaping).html;
+        assert!(
+            crossing.contains("<code>c$</code>"),
+            "code crossing, escaping={escaping}"
+        );
+        assert_eq!(
+            crossing.matches("class=\"katex\"").count(),
+            1,
+            "code crossing, escaping={escaping}"
+        );
+        assert!(crossing.ends_with(&formula_target(
+            " <formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+        )));
+        let angle = prepare("<https://example.test/$x$> $y$", escaping).html;
+        assert!(
+            angle.contains("href=\"https://example.test/$x$\""),
+            "angle, escaping={escaping}"
+        );
+        assert_eq!(
+            angle.matches("class=\"katex\"").count(),
+            1,
+            "angle, escaping={escaping}"
+        );
+        assert!(angle.ends_with(&formula_target(
+            " <formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+        )));
+        assert_formula_anchor_context(escaping);
+    }
+}
+
+/// Escaping exposes address tokens; live raw anchors suppress them until their close.
+fn assert_formula_anchor_context(escaping: bool) {
+    for (source, body, address) in [
+        (
+            "<a href=\"/u\">a $x$ https://example.org</a>",
+            "x",
+            "https://example.org",
+        ),
+        (
+            "<a href=\"u\">x $a$ https://example.test</a> https://after.test",
+            "a",
+            "https://example.test",
+        ),
+    ] {
+        let actual = prepare(source, escaping).html;
+        assert_eq!(
+            actual.matches("class=\"katex\"").count(),
+            1,
+            "raw anchor, escaping={escaping}"
+        );
+        assert_eq!(
+            actual.contains(&format!("href=\"{address}\"")),
+            escaping,
+            "raw address context, escaping={escaping}"
+        );
+        assert!(actual.contains(&formula_target(&format!(
+            "<formula>{{\"tex\":\"{body}\",\"display\":false}}</formula>"
+        ))));
+        if source.contains("after.test") {
+            assert!(
+                actual.contains("href=\"https://after.test\""),
+                "resumed address, escaping={escaping}"
+            );
+        }
+    }
+}
+
+#[test]
+fn transcript_formula_containers_keep_display_boundaries() {
+    formula_cases(&["quote", "list", "heading"]);
+    for escaping in [true, false] {
+        let table = prepare("| a |\n| - |\n| $a ~~$ ~~b $c~~ d$ |", escaping).html;
+        assert!(
+            table.contains("maestro-table-scroll"),
+            "table, escaping={escaping}"
+        );
+        assert!(table.contains(&formula_target("<td><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> <del>b $c</del> d$</td>")), "table, escaping={escaping}");
+        for (source, prefix, suffix) in [
+            (
+                "$$x$$\n\n_$__a**$ bx y a_",
+                "<div class=\"maestro-math-block\">",
+                "<p>_<formula>{\"tex\":\"__a**\",\"display\":false}</formula> bx y a_</p>\n",
+            ),
+            (
+                "before $$x$$ _$__a**$ bx y a_",
+                "<p>before </p>\n<div class=\"maestro-math-block\">",
+                "<p> _<formula>{\"tex\":\"__a**\",\"display\":false}</formula> bx y a_</p>\n",
+            ),
+        ] {
+            let actual = stable_error_attributes(&prepare(source, escaping).html);
+            assert!(
+                actual.starts_with(prefix),
+                "display prefix, escaping={escaping}"
+            );
+            assert!(
+                actual.ends_with(&formula_target(suffix)),
+                "display suffix, escaping={escaping}"
+            );
+            assert!(
+                actual.contains(&formula_target(
+                    "<formula>{\"tex\":\"x\",\"display\":true}</formula>"
+                )),
+                "display body, escaping={escaping}"
+            );
+        }
+        let context = prepare(
+            "<a href=\"u\">x $$a$$ https://inside.test</a> https://after.test",
+            escaping,
+        )
+        .html;
+        assert!(
+            context.contains("maestro-math-block"),
+            "display context, escaping={escaping}"
+        );
+        assert!(context.contains(&formula_target(
+            "<formula>{\"tex\":\"a\",\"display\":true}</formula>"
+        )));
+        assert_eq!(
+            context.contains("href=\"https://inside.test\""),
+            escaping,
+            "retained anchor, escaping={escaping}"
+        );
+        assert!(
+            context.contains("href=\"https://after.test\""),
+            "resumed anchor, escaping={escaping}"
+        );
     }
 }

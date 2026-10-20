@@ -2,6 +2,7 @@
 mod emphasis;
 mod entities;
 mod links;
+mod tokens;
 use super::{capture, node};
 use crate::{
     Definition, Kind, MarkedOptions, Node, Text, inline::ScopeKey, rules, source::ScopeSource,
@@ -66,6 +67,8 @@ pub(crate) struct Tokenizer<'a> {
     pub(crate) scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
     /// Original operand identities for local interpretation, indexed like the atom ranges.
     pub(crate) retained_atoms: Option<&'a [crate::InlineAtom<'a>]>,
+    /// Parent run slots for remapped label atoms.
+    pub(crate) atom_indices: Option<&'a [usize]>,
     /// Link-label and raw-anchor context shared by recursive inline spans.
     context: LinkContext,
     /// Local interpretation has no document scope collector.
@@ -90,84 +93,28 @@ impl<'a> Tokenizer<'a> {
             scopes,
             context: LinkContext::new(in_link),
             retained_atoms: None,
+            atom_indices: None,
             #[cfg(test)]
             local,
         }
     }
 
     /// Admit inline constructs with typed atoms ahead of ordinary grammar.
-    pub(crate) fn parse(&mut self, atoms: &[Range<usize>]) -> Vec<Node> {
-        self.tokens(0..self.source.text.len(), atoms)
-    }
-
-    /// Interpret one inline span without admitting block constructs.
-    pub(crate) fn tokens(&mut self, extent: Range<usize>, atoms: &[Range<usize>]) -> Vec<Node> {
-        #[cfg(test)]
-        if self.local {
-            crate::tests::WORK.with_borrow_mut(|work| work.local_bytes += extent.len());
-        }
-        let mut output = Vec::new();
-        let mut plain_tail = None;
-        let mut cursor = extent.start;
-        let mut line_end = cursor;
-        // Only a text run keeps the previous character; a run ending in '_' keeps the earlier one.
-        let mut kept = None;
-        let masked = self.mask(extent.clone(), atoms);
-        while cursor < extent.end {
-            let previous = kept.take();
-            let atom = atoms.partition_point(|range| range.end <= cursor);
-            if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
-                self.push_atom(range.clone(), atom, &mut output);
-                cursor = range.end;
-                continue;
-            }
-            let limit = atoms
-                .get(atom)
-                .map_or(extent.end, |range| range.start.min(extent.end));
-            let text = &self.source.text[cursor..extent.end];
-            let token = self
-                .soft_break(text)
-                .or_else(|| self.admit_operand(cursor..extent.end, atoms))
-                .or_else(|| {
-                    let masked = (masked.as_str(), extent.start, previous);
-                    self.emphasis(cursor..extent.end, masked, atoms)
-                })
-                .or_else(|| self.line_break(text))
-                .or_else(|| self.deletion(cursor..extent.end, atoms));
-            if let Some((size, kind)) =
-                token.filter(|(size, kind)| *size > 0 && fits(atoms, cursor + size, limit, kind))
-            {
-                self.context.track_anchor(&kind);
-                output.push(node(self.source, cursor..cursor + size, kind));
-                cursor += size;
-                continue;
-            }
-            let address = self.address(text, &output);
-            if let Some(size) = address.filter(|size| cursor + size <= limit) {
-                self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
-                cursor += size;
-                continue;
-            }
-            if cursor >= line_end {
-                line_end = self.line_end(cursor..extent.end);
-            }
-            // Only the first line is kept, so the recognizer never reads past its newline.
-            let line = &text[..line_end.min(limit) - cursor];
-            let size = self.text(line);
-            let size = line[..size].find('\n').unwrap_or(size);
-            self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
-            kept = line[..size]
-                .chars()
-                .next_back()
-                .filter(|&c| c != '_')
-                .or(previous);
-            cursor += size;
-        }
-        output
+    pub(crate) fn parse(
+        &mut self,
+        atoms: &[Range<usize>],
+        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
+    ) -> Vec<Node> {
+        self.tokens(0..self.source.text.len(), atoms, admission)
     }
 
     /// Retain operand identity and apply link-context transitions, never caller-opaque contents.
     fn push_atom(&mut self, range: Range<usize>, index: usize, output: &mut Vec<Node>) {
+        let index = self
+            .atom_indices
+            .and_then(|ids| ids.get(index))
+            .copied()
+            .unwrap_or(index);
         if let Some(crate::InlineAtom::Resolved(original)) =
             self.retained_atoms.and_then(|atoms| atoms.get(index))
         {
@@ -310,7 +257,12 @@ impl<'a> Tokenizer<'a> {
     }
 
     /// Caller-selected deletion uses the same recursive inline grammar.
-    fn deletion(&mut self, range: Range<usize>, atoms: &[Range<usize>]) -> Option<(usize, Kind)> {
+    fn deletion(
+        &mut self,
+        range: Range<usize>,
+        atoms: &[Range<usize>],
+        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
+    ) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
         if !text.starts_with('~') {
             return None;
@@ -319,7 +271,11 @@ impl<'a> Tokenizer<'a> {
         crate::tests::WORK.with_borrow_mut(|work| work.deletion_bytes += text.len());
         let matched = rules::inline_del(self.options)?.find(text)?;
         let body = matched.group(2)?;
-        let children = self.tokens(range.start + body.start..range.start + body.end, atoms);
+        let children = self.tokens(
+            range.start + body.start..range.start + body.end,
+            atoms,
+            admission,
+        );
         Some((matched.end(), Kind::Strike(children)))
     }
 
@@ -328,6 +284,7 @@ impl<'a> Tokenizer<'a> {
         &mut self,
         range: Range<usize>,
         atoms: &[Range<usize>],
+        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Option<(usize, Kind)> {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.operand_admissions += 1);
@@ -335,7 +292,7 @@ impl<'a> Tokenizer<'a> {
         match text.as_bytes().first()? {
             b'\\' => Self::escape(text),
             b'<' => self.tag(text).or_else(|| self.angle(range)),
-            b'[' | b'!' => self.link(range, atoms),
+            b'[' | b'!' => self.link(range, atoms, admission),
             b'`' => Self::code(text),
             _ => None,
         }
@@ -380,10 +337,13 @@ impl<'a> Tokenizer<'a> {
         if self.options != MarkedOptions::Export {
             self.mask_matches(&mut bytes, rules::inline_block_skip(self.options), true);
         }
-        for atom in atoms
-            .iter()
-            .filter(|range| range.start >= extent.start && range.end <= extent.end)
-        {
+        let first = atoms.partition_point(|atom| atom.end <= extent.start);
+        let last = atoms.partition_point(|atom| atom.start < extent.end);
+        for atom in atoms[first..last].iter().filter(|range| {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.mask_operands += 1);
+            range.start >= extent.start && range.end <= extent.end
+        }) {
             mask_barrier(
                 &mut bytes,
                 atom.start - extent.start..atom.end - extent.start,
@@ -553,8 +513,11 @@ fn mask_source(
 
 /// Whether a token fits before the next atom: a span may contain whole atoms but never
 /// end inside one.
-fn fits(atoms: &[Range<usize>], end: usize, limit: usize, kind: &Kind) -> bool {
-    let enclosing = atoms.get(atoms.partition_point(|range| range.end <= end));
+fn fits(atoms: &[Range<usize>], token: Range<usize>, limit: usize, kind: &Kind) -> bool {
+    let end = token.end;
+    let enclosing = atoms
+        .get(atoms.partition_point(|range| range.end <= end))
+        .filter(|range| range.start >= token.start);
     end <= limit
         || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_))
             && enclosing.is_none_or(|range| range.start >= end)

@@ -125,7 +125,11 @@ The browser grammar receives the component's escaping policy and parses authored
 source once per document. Display formulas enter the
 block phase through the component's tokenizer, before reference resolution.
 One document-scoped context retains resolved operands and original label scopes;
-formula atoms precede ordinary inline grammar without resolving rewritten labels.
+inline formulas are selected at each reached cursor before ordinary inline grammar.
+Formula contents remain visible to emphasis matching, and each recursive span admits
+formulas only within its selected child window. A consumed link opener cannot be
+replayed as an anchor. Retained and newly parsed labels unescape brackets before
+formula admission, keeping their original source ranges, destinations and titles.
 Link labels use inline-only grammar, keeping list, heading and quote punctuation literal.
 Tag-like text outside code and angle autolinks is
 shown literally when escaping is on, including a tag start that never closes.

@@ -1,9 +1,11 @@
 //! Shared owned document to transcript HTML, with contextual math.
-use super::admission::{Formula, MathBlocks, block_formula, scan, starts_display};
+use super::admission::{
+    Formula, MathBlocks, MathInline, block_formula, matching, scan, starts_display,
+};
+use maestro_app::markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node};
 use maestro_app::{
     browser::script_scheme,
     is_whitespace_scalar,
-    markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node},
     markup::{EscapeMode, escape_into},
     normalize_to_lf,
 };
@@ -120,8 +122,8 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     writer.prepared
 }
 
-/// Local atom operands paired with their caller-admitted formulas.
-type Atoms<'a, 'b> = Option<(&'b [InlineAtom<'a>], &'b [Formula])>;
+/// Local atom operands; generated node source retains selected formula spelling.
+type Atoms<'a, 'b> = Option<&'b [InlineAtom<'a>]>;
 
 /// Rendering behavior selected by the containing surface.
 enum Policy<'a, 'd> {
@@ -281,20 +283,13 @@ impl Writer<'_, '_> {
         let block = flow == Flow::Paragraph
             || (flow == Flow::Item && starts_display(&source[content.clone()]));
         let displays = if block {
-            scan(scope, content.clone(), true)
+            scan(scope, content.clone())
         } else {
             Vec::new()
         };
         let wrap = flow == Flow::Paragraph;
         if displays.is_empty() {
-            let formulas = scan(scope, content.clone(), false);
-            if formulas.is_empty() {
-                let mut body = String::new();
-                self.inline(children, None, &mut body);
-                wrapped(&body, wrap, out);
-            } else {
-                self.piece(scope, content, (&formulas, wrap), out);
-            }
+            self.piece(scope, content, wrap, out);
             return;
         }
         let mut begin = content.start;
@@ -303,33 +298,25 @@ impl Writer<'_, '_> {
                 .trim_end_matches('\n')
                 .len();
             let range = begin..begin + trimmed;
-            let formulas = scan(scope, range.clone(), false);
-            self.piece(scope, range, (&formulas, wrap), out);
+            self.piece(scope, range, wrap, out);
             out.push_str(&self.math(formula));
             begin = formula.range.end;
         }
-        let formulas = scan(scope, begin..end, false);
-        self.piece(scope, begin..end, (&formulas, wrap), out);
+        self.piece(scope, begin..end, wrap, out);
     }
     /// Interpret a local slice with admitted formulas and retained native operands as atoms.
     fn piece(
         &mut self,
         scope: &InlineScope<'_>,
         range: Range<usize>,
-        (formulas, wrap): (&[Formula], bool),
+        wrap: bool,
         out: &mut String,
     ) {
         if range.is_empty() {
             return;
         }
-        let first = formulas.partition_point(|formula| formula.range.start < range.start);
-        let last = formulas.partition_point(|formula| formula.range.end <= range.end);
-        let formulas = &formulas[first.min(last)..last];
-        let spans: Vec<_> = formulas
-            .iter()
-            .map(|formula| formula.range.clone())
-            .collect();
-        let run = scope.interpret(range, &spans);
+        let mut extension = MathInline;
+        let run = scope.interpret_with_tokenizer(range, &mut extension);
         let inline = run
             .nodes
             .iter()
@@ -338,9 +325,9 @@ impl Writer<'_, '_> {
         for node in &run.nodes {
             match &node.kind {
                 Kind::Paragraph(c) => {
-                    self.inline(c, Some((&run.atoms, formulas)), &mut body);
+                    self.inline(c, Some(&run.atoms), &mut body);
                 }
-                _ => self.block(node, Some((&run.atoms, formulas)), &mut body),
+                _ => self.block(node, Some(&run.atoms), &mut body),
             }
         }
         wrapped(&body, wrap && inline, out);
@@ -371,7 +358,7 @@ impl Writer<'_, '_> {
             Kind::Strong(c) => self.tagged("strong", c, atoms, out),
             Kind::Strike(c) => self.tagged("del", c, atoms, out),
             Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
-            Kind::Link(..) => self.link(node, out),
+            Kind::Link(..) => self.link(node, atoms, out),
             Kind::Image(alt, meta) => match self.policy {
                 Policy::Transcript { .. } => image(meta, out),
                 Policy::Export(_) => export::image(alt, meta, out),
@@ -381,12 +368,12 @@ impl Writer<'_, '_> {
                 Policy::Transcript { .. } => out.push_str(html),
                 Policy::Export(_) => escape(html, out),
             },
-            Kind::Atom(index) => self.atom(*index, atoms, out),
+            Kind::Atom(index) => self.atom((node, *index), atoms, out),
             _ => {}
         }
     }
     /// Write an anchor that opens separately with the safe relation.
-    fn link(&mut self, node: &Node, out: &mut String) {
+    fn link(&mut self, node: &Node, atoms: Atoms<'_, '_>, out: &mut String) {
         let Kind::Link(children, _, href, meta) = &node.kind else {
             return;
         };
@@ -429,14 +416,9 @@ impl Writer<'_, '_> {
         }
         if let Some(scope) = inline.scope(&node.range, true) {
             let content = scope.content_range();
-            let formulas = scan(scope, content.clone(), false);
-            if formulas.is_empty() {
-                self.inline(children, None, out);
-            } else {
-                self.piece(scope, content, (&formulas, false), out);
-            }
+            self.piece(scope, content, false, out);
         } else {
-            self.inline(children, None, out);
+            self.inline(children, atoms, out);
         }
         out.push_str(if refused { "" } else { "</a>" });
     }
@@ -447,14 +429,14 @@ impl Writer<'_, '_> {
         let _ = write!(out, "</{tag}>");
     }
     /// Emit a typed local atom, preserving resolved operands without lookup by display text.
-    fn atom(&mut self, index: usize, atoms: Atoms<'_, '_>, out: &mut String) {
-        let Some((atoms, formulas)) = atoms else {
+    fn atom(&mut self, (node, index): (&Node, usize), atoms: Atoms<'_, '_>, out: &mut String) {
+        let Some(atoms) = atoms else {
             return;
         };
         match atoms.get(index) {
-            Some(InlineAtom::Opaque(id)) => {
-                if let Some(formula) = formulas.get(*id) {
-                    out.push_str(&self.math(formula));
+            Some(InlineAtom::Opaque(_)) => {
+                if let Some(formula) = matching(&node.authored, 0, false) {
+                    out.push_str(&self.math(&formula));
                 }
             }
             Some(InlineAtom::Resolved(node)) => {
@@ -465,7 +447,7 @@ impl Writer<'_, '_> {
     }
 
     /// Render one formula; a reached renderer failure keeps the delimiter-spelled source.
-    fn math(&self, formula: &Formula) -> String {
+    fn math(&self, formula: &Formula<'_>) -> String {
         let display = formula.delimiter.display();
         let settings = katex::Settings::builder()
             .display_mode(display)
@@ -476,7 +458,7 @@ impl Writer<'_, '_> {
         let Policy::Transcript { math, .. } = &self.policy else {
             return String::new();
         };
-        let rendered = katex::render_to_string(math, &formula.tex, &settings);
+        let rendered = katex::render_to_string(math, formula.tex, &settings);
         match (rendered, display) {
             (Ok(html), true) => format!("<div class=\"maestro-math-block\">{html}</div>"),
             (Ok(html), false) => html,

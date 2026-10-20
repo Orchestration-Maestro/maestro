@@ -10,7 +10,7 @@ mod tokenizer;
 mod types;
 
 pub use autolinks::autolinks;
-pub use inline::{InlineAtom, InlineContext, InlineRun, InlineScope};
+pub use inline::{InlineAtom, InlineContext, InlineRun, InlineScope, InlineToken, InlineTokenizer};
 pub use parse::{
     BlockTokenizer, InvalidBlockToken, parse, parse_with_options, parse_with_tokenizer,
 };

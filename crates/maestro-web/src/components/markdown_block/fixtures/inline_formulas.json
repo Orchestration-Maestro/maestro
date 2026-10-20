@@ -1,0 +1,520 @@
+{
+  "rows": [
+    {
+      "id": "strike-emerges",
+      "input": "$a ~~$ ~~b $c~~ d$",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> <del>b $c</del> d$</p>\n"
+    },
+    {
+      "id": "strike-emerges",
+      "input": "$a ~~$ ~~b $c~~ d$",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> <del>b $c</del> d$</p>\n"
+    },
+    {
+      "id": "underscore-mask",
+      "input": "_$__a**$ bx y a_",
+      "escapeHtml": true,
+      "expected": "<p>_<formula>{\"tex\":\"__a**\",\"display\":false}</formula> bx y a_</p>\n"
+    },
+    {
+      "id": "underscore-mask",
+      "input": "_$__a**$ bx y a_",
+      "escapeHtml": false,
+      "expected": "<p>_<formula>{\"tex\":\"__a**\",\"display\":false}</formula> bx y a_</p>\n"
+    },
+    {
+      "id": "asterisk-mask",
+      "input": "x y~~*$**$**",
+      "escapeHtml": true,
+      "expected": "<p>x y~~<em><formula>{\"tex\":\"**\",\"display\":false}</formula>*</em></p>\n"
+    },
+    {
+      "id": "asterisk-mask",
+      "input": "x y~~*$**$**",
+      "escapeHtml": false,
+      "expected": "<p>x y~~<em><formula>{\"tex\":\"**\",\"display\":false}</formula>*</em></p>\n"
+    },
+    {
+      "id": "span-strike",
+      "input": "~~a $b~~ c$ d",
+      "escapeHtml": true,
+      "expected": "<p><del>a $b</del> c$ d</p>\n"
+    },
+    {
+      "id": "span-strike",
+      "input": "~~a $b~~ c$ d",
+      "escapeHtml": false,
+      "expected": "<p><del>a $b</del> c$ d</p>\n"
+    },
+    {
+      "id": "span-strong",
+      "input": "**a $b** c$",
+      "escapeHtml": true,
+      "expected": "<p><strong>a $b</strong> c$</p>\n"
+    },
+    {
+      "id": "span-strong",
+      "input": "**a $b** c$",
+      "escapeHtml": false,
+      "expected": "<p><strong>a $b</strong> c$</p>\n"
+    },
+    {
+      "id": "span-em",
+      "input": "*a $*$ b*",
+      "escapeHtml": true,
+      "expected": "<p><em>a $</em>$ b*</p>\n"
+    },
+    {
+      "id": "span-em",
+      "input": "*a $*$ b*",
+      "escapeHtml": false,
+      "expected": "<p><em>a $</em>$ b*</p>\n"
+    },
+    {
+      "id": "formula-before-span",
+      "input": "$a ~~$ b $c~~ d$",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> b <formula>{\"tex\":\"c~~ d\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "formula-before-span",
+      "input": "$a ~~$ b $c~~ d$",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> b <formula>{\"tex\":\"c~~ d\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "simple",
+      "input": "a $x$ b",
+      "escapeHtml": true,
+      "expected": "<p>a <formula>{\"tex\":\"x\",\"display\":false}</formula> b</p>\n"
+    },
+    {
+      "id": "simple",
+      "input": "a $x$ b",
+      "escapeHtml": false,
+      "expected": "<p>a <formula>{\"tex\":\"x\",\"display\":false}</formula> b</p>\n"
+    },
+    {
+      "id": "adjacent",
+      "input": "$x$$y$",
+      "escapeHtml": true,
+      "expected": "<p>$x\n$<formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "adjacent",
+      "input": "$x$$y$",
+      "escapeHtml": false,
+      "expected": "<p>$x\n$<formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "paren",
+      "input": "a \\( x \\) b",
+      "escapeHtml": true,
+      "expected": "<p>a <formula>{\"tex\":\"x\",\"display\":false}</formula> b</p>\n"
+    },
+    {
+      "id": "paren",
+      "input": "a \\( x \\) b",
+      "escapeHtml": false,
+      "expected": "<p>a <formula>{\"tex\":\"x\",\"display\":false}</formula> b</p>\n"
+    },
+    {
+      "id": "escaped-dollar",
+      "input": "\\$x$",
+      "escapeHtml": true,
+      "expected": "<p>$x$</p>\n"
+    },
+    {
+      "id": "escaped-dollar",
+      "input": "\\$x$",
+      "escapeHtml": false,
+      "expected": "<p>$x$</p>\n"
+    },
+    {
+      "id": "even-slashes",
+      "input": "\\\\$x$",
+      "escapeHtml": true,
+      "expected": "<p>\\<formula>{\"tex\":\"x\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "even-slashes",
+      "input": "\\\\$x$",
+      "escapeHtml": false,
+      "expected": "<p>\\<formula>{\"tex\":\"x\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "odd-slashes",
+      "input": "\\\\\\$x$",
+      "escapeHtml": true,
+      "expected": "<p>\\$x$</p>\n"
+    },
+    {
+      "id": "odd-slashes",
+      "input": "\\\\\\$x$",
+      "escapeHtml": false,
+      "expected": "<p>\\$x$</p>\n"
+    },
+    {
+      "id": "dollar-newline",
+      "input": "$x\ny$",
+      "escapeHtml": true,
+      "expected": "<p>$x\ny$</p>\n"
+    },
+    {
+      "id": "dollar-newline",
+      "input": "$x\ny$",
+      "escapeHtml": false,
+      "expected": "<p>$x\ny$</p>\n"
+    },
+    {
+      "id": "paren-newline",
+      "input": "\\(x\ny\\)",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"x\\ny\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "paren-newline",
+      "input": "\\(x\ny\\)",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"x\\ny\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "empty-dollar",
+      "input": "$$",
+      "escapeHtml": true,
+      "expected": "<p>$$</p>\n"
+    },
+    {
+      "id": "empty-dollar",
+      "input": "$$",
+      "escapeHtml": false,
+      "expected": "<p>$$</p>\n"
+    },
+    {
+      "id": "empty-paren",
+      "input": "\\(\\)",
+      "escapeHtml": true,
+      "expected": "<p>()</p>\n"
+    },
+    {
+      "id": "empty-paren",
+      "input": "\\(\\)",
+      "escapeHtml": false,
+      "expected": "<p>()</p>\n"
+    },
+    {
+      "id": "space-body",
+      "input": "$ $",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "space-body",
+      "input": "$ $",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "feff",
+      "input": "$﻿x﻿$",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"x\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "feff",
+      "input": "$﻿x﻿$",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"x\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "nel",
+      "input": "$x$",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"x\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "nel",
+      "input": "$x$",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"x\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "unicode",
+      "input": "雪 $é$ 雪",
+      "escapeHtml": true,
+      "expected": "<p>雪 <formula>{\"tex\":\"é\",\"display\":false}</formula> 雪</p>\n"
+    },
+    {
+      "id": "unicode",
+      "input": "雪 $é$ 雪",
+      "escapeHtml": false,
+      "expected": "<p>雪 <formula>{\"tex\":\"é\",\"display\":false}</formula> 雪</p>\n"
+    },
+    {
+      "id": "code",
+      "input": "`$x$` $y$",
+      "escapeHtml": true,
+      "expected": "<p><code>$x$</code> <formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "code",
+      "input": "`$x$` $y$",
+      "escapeHtml": false,
+      "expected": "<p><code>$x$</code> <formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "cross-code",
+      "input": "$x `y$`",
+      "escapeHtml": true,
+      "expected": "<p>$x <code>y$</code></p>\n"
+    },
+    {
+      "id": "cross-code",
+      "input": "$x `y$`",
+      "escapeHtml": false,
+      "expected": "<p>$x <code>y$</code></p>\n"
+    },
+    {
+      "id": "image",
+      "input": "![a $x$](/u) $y$",
+      "escapeHtml": true,
+      "expected": "<p><img src=\"/u\" alt=\"a $x$\"> <formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "image",
+      "input": "![a $x$](/u) $y$",
+      "escapeHtml": false,
+      "expected": "<p><img src=\"/u\" alt=\"a $x$\"> <formula>{\"tex\":\"y\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "formula-before-link",
+      "input": "$x [a](u)$",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"x [a](u)\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "formula-before-link",
+      "input": "$x [a](u)$",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"x [a](u)\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "label",
+      "input": "[x $y$](/u \"tip\")",
+      "escapeHtml": true,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\" title=\"tip\">x <formula>{\"tex\":\"y\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "label",
+      "input": "[x $y$](/u \"tip\")",
+      "escapeHtml": false,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\" title=\"tip\">x <formula>{\"tex\":\"y\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "reference",
+      "input": "[x $y$][r]\n\n[r]: /u \"tip\"",
+      "escapeHtml": true,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\" title=\"tip\">x <formula>{\"tex\":\"y\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "reference",
+      "input": "[x $y$][r]\n\n[r]: /u \"tip\"",
+      "escapeHtml": false,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\" title=\"tip\">x <formula>{\"tex\":\"y\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "destination",
+      "input": "[x](/u$x$ \"tip $y$\")",
+      "escapeHtml": true,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u$x$\" title=\"tip $y$\">x</a></p>\n"
+    },
+    {
+      "id": "destination",
+      "input": "[x](/u$x$ \"tip $y$\")",
+      "escapeHtml": false,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u$x$\" title=\"tip $y$\">x</a></p>\n"
+    },
+    {
+      "id": "quote",
+      "input": "> $a ~~$ ~~b $c~~ d$",
+      "escapeHtml": true,
+      "expected": "<blockquote>\n<p><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> <del>b $c</del> d$</p>\n</blockquote>\n"
+    },
+    {
+      "id": "quote",
+      "input": "> $a ~~$ ~~b $c~~ d$",
+      "escapeHtml": false,
+      "expected": "<blockquote>\n<p><formula>{\"tex\":\"a ~~\",\"display\":false}</formula> <del>b $c</del> d$</p>\n</blockquote>\n"
+    },
+    {
+      "id": "list",
+      "input": "- _$__a**$ bx y a_",
+      "escapeHtml": true,
+      "expected": "<ul>\n<li>_<formula>{\"tex\":\"__a**\",\"display\":false}</formula> bx y a_</li>\n</ul>\n"
+    },
+    {
+      "id": "list",
+      "input": "- _$__a**$ bx y a_",
+      "escapeHtml": false,
+      "expected": "<ul>\n<li>_<formula>{\"tex\":\"__a**\",\"display\":false}</formula> bx y a_</li>\n</ul>\n"
+    },
+    {
+      "id": "heading",
+      "input": "# x y~~*$**$**",
+      "escapeHtml": true,
+      "expected": "<h1>x y~~<em><formula>{\"tex\":\"**\",\"display\":false}</formula>*</em></h1>\n"
+    },
+    {
+      "id": "heading",
+      "input": "# x y~~*$**$**",
+      "escapeHtml": false,
+      "expected": "<h1>x y~~<em><formula>{\"tex\":\"**\",\"display\":false}</formula>*</em></h1>\n"
+    },
+    {
+      "id": "invalid-tex",
+      "input": "a $\\frac{$ b",
+      "escapeHtml": true,
+      "expected": "<p>a <formula>{\"tex\":\"\\\\frac{\",\"display\":false}</formula> b</p>\n"
+    },
+    {
+      "id": "invalid-tex",
+      "input": "a $\\frac{$ b",
+      "escapeHtml": false,
+      "expected": "<p>a <formula>{\"tex\":\"\\\\frac{\",\"display\":false}</formula> b</p>\n"
+    },
+    {
+      "id": "no-formula",
+      "input": "a ~~b~~ *c* **d** _e_",
+      "escapeHtml": true,
+      "expected": "<p>a <del>b</del> <em>c</em> <strong>d</strong> <em>e</em></p>\n"
+    },
+    {
+      "id": "no-formula",
+      "input": "a ~~b~~ *c* **d** _e_",
+      "escapeHtml": false,
+      "expected": "<p>a <del>b</del> <em>c</em> <strong>d</strong> <em>e</em></p>\n"
+    },
+    {
+      "id": "plain-dollar",
+      "input": "a $b",
+      "escapeHtml": true,
+      "expected": "<p>a $b</p>\n"
+    },
+    {
+      "id": "plain-dollar",
+      "input": "a $b",
+      "escapeHtml": false,
+      "expected": "<p>a $b</p>\n"
+    },
+    {
+      "id": "two-formulas",
+      "input": "$a$ ~~b~~ $c$",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"a\",\"display\":false}</formula> <del>b</del> <formula>{\"tex\":\"c\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "two-formulas",
+      "input": "$a$ ~~b~~ $c$",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"a\",\"display\":false}</formula> <del>b</del> <formula>{\"tex\":\"c\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "nested-emphasis",
+      "input": "***a $b$ c***",
+      "escapeHtml": true,
+      "expected": "<p><em><strong>a <formula>{\"tex\":\"b\",\"display\":false}</formula> c</strong></em></p>\n"
+    },
+    {
+      "id": "nested-emphasis",
+      "input": "***a $b$ c***",
+      "escapeHtml": false,
+      "expected": "<p><em><strong>a <formula>{\"tex\":\"b\",\"display\":false}</formula> c</strong></em></p>\n"
+    },
+    {
+      "id": "nested-deletion",
+      "input": "~~*a $b$ c*~~",
+      "escapeHtml": true,
+      "expected": "<p><del><em>a <formula>{\"tex\":\"b\",\"display\":false}</formula> c</em></del></p>\n"
+    },
+    {
+      "id": "nested-deletion",
+      "input": "~~*a $b$ c*~~",
+      "escapeHtml": false,
+      "expected": "<p><del><em>a <formula>{\"tex\":\"b\",\"display\":false}</formula> c</em></del></p>\n"
+    },
+    {
+      "id": "partial-retained-link",
+      "input": "$a [b$ c](u)",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"a [b\",\"display\":false}</formula> c](u)</p>\n"
+    },
+    {
+      "id": "partial-retained-link",
+      "input": "$a [b$ c](u)",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"a [b\",\"display\":false}</formula> c](u)</p>\n"
+    },
+    {
+      "id": "new-link-after-consumption",
+      "input": "$x [$ [a $y$](u \"tip\")",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"x [\",\"display\":false}</formula> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"u\" title=\"tip\">a <formula>{\"tex\":\"y\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "new-link-after-consumption",
+      "input": "$x [$ [a $y$](u \"tip\")",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"x [\",\"display\":false}</formula> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"u\" title=\"tip\">a <formula>{\"tex\":\"y\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "new-link-label",
+      "input": "[$x [$a]$ $b$](u)",
+      "escapeHtml": true,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"u\"><formula>{\"tex\":\"x [\",\"display\":false}</formula>a]<formula>{\"tex\":\"\",\"display\":false}</formula>b$</a></p>\n"
+    },
+    {
+      "id": "new-link-label",
+      "input": "[$x [$a]$ $b$](u)",
+      "escapeHtml": false,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"u\"><formula>{\"tex\":\"x [\",\"display\":false}</formula>a]<formula>{\"tex\":\"\",\"display\":false}</formula>b$</a></p>\n"
+    },
+    {
+      "id": "reference-image",
+      "input": "![x $y$][r] $a$\n\n[r]: /u \"tip\"",
+      "escapeHtml": true,
+      "expected": "<p><img src=\"/u\" alt=\"x $y$\" title=\"tip\"> <formula>{\"tex\":\"a\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "reference-image",
+      "input": "![x $y$][r] $a$\n\n[r]: /u \"tip\"",
+      "escapeHtml": false,
+      "expected": "<p><img src=\"/u\" alt=\"x $y$\" title=\"tip\"> <formula>{\"tex\":\"a\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "dollars-and-parens",
+      "input": "$a$ \\(b\\)",
+      "escapeHtml": true,
+      "expected": "<p><formula>{\"tex\":\"a\",\"display\":false}</formula> <formula>{\"tex\":\"b\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "dollars-and-parens",
+      "input": "$a$ \\(b\\)",
+      "escapeHtml": false,
+      "expected": "<p><formula>{\"tex\":\"a\",\"display\":false}</formula> <formula>{\"tex\":\"b\",\"display\":false}</formula></p>\n"
+    },
+    {
+      "id": "escaped-label-brackets",
+      "input": "[$a\\]b$](u)",
+      "escapeHtml": true,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"u\"><formula>{\"tex\":\"a]b\",\"display\":false}</formula></a></p>\n"
+    },
+    {
+      "id": "escaped-label-brackets",
+      "input": "[$a\\]b$](u)",
+      "escapeHtml": false,
+      "expected": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"u\"><formula>{\"tex\":\"a]b\",\"display\":false}</formula></a></p>\n"
+    }
+  ]
+}

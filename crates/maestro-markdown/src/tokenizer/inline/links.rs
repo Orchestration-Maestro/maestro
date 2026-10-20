@@ -26,24 +26,14 @@ impl Tokenizer<'_> {
         &mut self,
         range: Range<usize>,
         atoms: &[Range<usize>],
+        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
         let link = self.inline_link(text).or_else(|| self.reference(text))?;
         let label = range.start + link.label.start..range.start + link.label.end;
-        let label_source = self.source.select(std::iter::once(label));
+        let label_source = self.source.select(std::iter::once(label.clone()));
         let source = label_source.brackets();
-        let atoms: Vec<_> = atoms
-            .iter()
-            .filter_map(|atom| source.local(&self.source.extent(atom.clone())))
-            .collect();
-        let children = Tokenizer::new(
-            &source,
-            self.options,
-            self.definitions,
-            self.scopes.as_deref_mut(),
-            true,
-        )
-        .parse(&atoms);
+        let children = self.label_children((&source, label), atoms, admission);
         if !text.starts_with('!') && contains_link(&children) {
             return None;
         }
@@ -73,6 +63,43 @@ impl Tokenizer<'_> {
             )
         };
         Some((link.consumed, kind))
+    }
+
+    /// Rebase selected label slots without losing their root identities or context.
+    fn label_children(
+        &mut self,
+        (source, label): (&crate::source::ScopeSource, Range<usize>),
+        atoms: &[Range<usize>],
+        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
+    ) -> Vec<crate::Node> {
+        let first = atoms.partition_point(|atom| atom.end <= label.start);
+        let last = atoms.partition_point(|atom| atom.start < label.end);
+        let (atoms, indices): (Vec<_>, Vec<_>) = atoms[first..last]
+            .iter()
+            .enumerate()
+            .filter_map(|(index, atom)| {
+                #[cfg(test)]
+                crate::tests::WORK.with_borrow_mut(|work| work.cursor_label_operands += 1);
+                let range = source.local(&self.source.extent(atom.clone()))?;
+                let index = first + index;
+                let index = self
+                    .atom_indices
+                    .and_then(|ids| ids.get(index))
+                    .copied()
+                    .unwrap_or(index);
+                Some((range, index))
+            })
+            .unzip();
+        let mut tokenizer = Tokenizer::new(
+            source,
+            self.options,
+            self.definitions,
+            self.scopes.as_deref_mut(),
+            true,
+        );
+        tokenizer.retained_atoms = self.retained_atoms;
+        tokenizer.atom_indices = Some(&indices);
+        tokenizer.parse(&atoms, admission)
     }
 
     /// Balance a direct destination and retain the selected title boundary.

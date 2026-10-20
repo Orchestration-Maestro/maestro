@@ -18,8 +18,16 @@ original document; label interpretation uses inline-only grammar and does not
 resolve them again. Subrange lookup selects source-ordered operands by
 start offset rather than scanning the entire scope. Captured table-pipe provenance
 also keeps mapped URLs separate from their neighboring inline source. Link-label
-scopes retain authored escapes for caller admission; export interpretation unescapes
+scopes retain authored escapes. Export and cursor interpretation unescape label
 brackets before applying inline grammar, with ranges still pointing to the original source.
+
+`InlineScope::interpret_with_tokenizer` tries an `InlineTokenizer` at each reached
+inline cursor, before built-in grammar. Its `InlineToken` selects a nonempty UTF-8
+prefix and a caller identity; invalid prefixes and hint boundaries are ignored.
+Unlike static caller spans, cursor tokens leave their contents visible to emphasis
+matching. Recursive spans and labels use their selected child windows. Generated
+nodes own their source, while returned runs retain original document operands,
+not the temporary tokenizer. Code, image, HTML and autolink ranges remain barriers.
 
 Parsing keeps accepted bare addresses whole outside link labels and raw anchors in
 the terminal, browser and export grammars. Raw-anchor context is local to each

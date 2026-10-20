@@ -1005,3 +1005,224 @@ fn retained_labels_and_display_splits_share_address_context() {
         }
     }
 }
+
+/// Dollar prefixes used to observe the shared admission contract, not math rendering.
+#[derive(Default)]
+struct CursorDollar {
+    /// Selected authored prefixes in callback order.
+    selected: Vec<String>,
+}
+impl maestro_markdown::InlineTokenizer for CursorDollar {
+    fn start(&self, source: &str) -> Option<usize> {
+        source.find('$')
+    }
+    fn tokenize(&mut self, source: &str) -> Option<maestro_markdown::InlineToken> {
+        let end = 1 + source.strip_prefix('$')?.find('$')?;
+        if end == 1 {
+            return None;
+        }
+        let index = self.selected.len();
+        self.selected.push(source[..=end].to_owned());
+        Some(maestro_markdown::InlineToken {
+            length: end + 1,
+            index,
+        })
+    }
+}
+
+/// Observe selected spans, literal neighbors and caller identities without rendering math.
+fn cursor_shape(nodes: &[Node]) -> String {
+    nodes
+        .iter()
+        .map(|node| match &node.kind {
+            Kind::Paragraph(children) => cursor_shape(children),
+            Kind::Text(text) => text.decoded.clone(),
+            Kind::Atom(index) => format!("@{index}"),
+            Kind::Emphasis(children) => format!("<em>{}</em>", cursor_shape(children)),
+            Kind::Strong(children) => format!("<strong>{}</strong>", cursor_shape(children)),
+            Kind::Strike(children) => format!("<del>{}</del>", cursor_shape(children)),
+            _ => panic!("unexpected inline kind"),
+        })
+        .collect()
+}
+
+#[test]
+fn cursor_admission_leaves_delimiters_visible() {
+    for (source, expected, selected) in [
+        ("_$__a**$ bx y a_", "_@0 bx y a_", "$__a**$"),
+        ("x y~~*$**$**", "x y~~<em>@0*</em>", "$**$"),
+    ] {
+        let document =
+            parse_with_options(source.into(), MarkedOptions::Browser { escape_html: true });
+        let context = InlineContext::new(&document);
+        let scope = context.scope(&document.nodes[0].range, false).unwrap();
+        let mut tokenizer = CursorDollar::default();
+        let run = scope.interpret_with_tokenizer(scope.content_range(), &mut tokenizer);
+        assert_eq!(cursor_shape(&run.nodes), expected, "{source}");
+        assert_eq!(tokenizer.selected, [selected], "{source}");
+        assert!(matches!(run.atoms.as_slice(), [InlineAtom::Opaque(0)]));
+    }
+}
+
+#[test]
+fn cursor_admission_respects_recursive_windows() {
+    for (source, expected, selected) in [
+        ("~~a $b~~ c$ d", "<del>a $b</del> c$ d", Vec::<&str>::new()),
+        ("**a $b** c$", "<strong>a $b</strong> c$", vec![]),
+        ("*a $*$ b*", "<em>a $</em>$ b*", vec![]),
+        (
+            "***a $b$ c***",
+            "<em><strong>a @0 c</strong></em>",
+            vec!["$b$"],
+        ),
+        ("~~*a $b$ c*~~", "<del><em>a @0 c</em></del>", vec!["$b$"]),
+    ] {
+        let document =
+            parse_with_options(source.into(), MarkedOptions::Browser { escape_html: true });
+        let context = InlineContext::new(&document);
+        let scope = context.scope(&document.nodes[0].range, false).unwrap();
+        let mut tokenizer = CursorDollar::default();
+        let run = scope.interpret_with_tokenizer(scope.content_range(), &mut tokenizer);
+        assert_eq!(cursor_shape(&run.nodes), expected, "{source}");
+        assert_eq!(tokenizer.selected, selected, "{source}");
+    }
+}
+
+#[test]
+fn static_caller_atoms_keep_their_contents_hidden() {
+    let document = parse_with_options(
+        "_$__a**$ bx y a_".into(),
+        MarkedOptions::Browser { escape_html: true },
+    );
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(scope.content_range(), std::slice::from_ref(&(1..8)));
+    assert_eq!(cursor_shape(&run.nodes), "<em>@0 bx y a</em>");
+}
+
+/// Return a run after its temporary context and caller grammar have been released.
+fn retained_cursor_run(document: &maestro_markdown::Document) -> maestro_markdown::InlineRun<'_> {
+    let context = InlineContext::new(document);
+    let mut tokenizer = CursorDollar::default();
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    scope.interpret_with_tokenizer(scope.content_range(), &mut tokenizer)
+}
+
+#[test]
+fn cursor_runs_keep_independent_retained_operands() {
+    let first = parse("$a$ [r](u)".into());
+    let second = parse("$b$ [s](v)".into());
+    let a = retained_cursor_run(&first);
+    let b = retained_cursor_run(&second);
+    for (result, destination, document) in [(&a, "u", &first), (&b, "v", &second)] {
+        let original = result
+            .atoms
+            .iter()
+            .find_map(|atom| match atom {
+                InlineAtom::Resolved(node) => Some(*node),
+                InlineAtom::Opaque(_) => None,
+            })
+            .unwrap();
+        assert!(matches!(&original.kind, Kind::Link(_, _, href, _) if href == destination));
+        let Kind::Paragraph(children) = &document.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        let retained = children
+            .iter()
+            .find(|node| matches!(node.kind, Kind::Link(..)))
+            .unwrap();
+        assert!(std::ptr::eq(original, retained));
+        assert!(
+            result
+                .atoms
+                .iter()
+                .any(|atom| matches!(atom, InlineAtom::Opaque(0)))
+        );
+    }
+}
+
+#[test]
+fn cursor_label_source_uses_unescaped_brackets() {
+    for escape_html in [true, false] {
+        let document = parse_with_options(
+            r"[$a\]b$](u)".into(),
+            MarkedOptions::Browser { escape_html },
+        );
+        let Kind::Paragraph(children) = &document.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        let link = children
+            .iter()
+            .find(|node| matches!(node.kind, Kind::Link(..)))
+            .unwrap();
+        let context = InlineContext::new(&document);
+        let scope = context.scope(&link.range, true).unwrap();
+        let mut tokenizer = CursorDollar::default();
+        let run = scope.interpret_with_tokenizer(scope.content_range(), &mut tokenizer);
+        assert_eq!(tokenizer.selected, ["$a]b$"]);
+        let Kind::Paragraph(children) = &run.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        assert_eq!(children[0].authored, "$a]b$");
+        assert_eq!(children[0].range, 1..7);
+        assert!(matches!(&link.kind, Kind::Link(_, _, href, _) if href == "u"));
+    }
+}
+
+/// Deliberately invalid native byte lengths and hints.
+struct CursorPrefix {
+    /// Requested length, without a producer guarantee.
+    length: usize,
+    /// Requested hint offset.
+    hint: Option<usize>,
+}
+impl maestro_markdown::InlineTokenizer for CursorPrefix {
+    fn start(&self, _: &str) -> Option<usize> {
+        self.hint
+    }
+    fn tokenize(&mut self, _: &str) -> Option<maestro_markdown::InlineToken> {
+        Some(maestro_markdown::InlineToken {
+            length: self.length,
+            index: 0,
+        })
+    }
+}
+
+#[test]
+fn cursor_admission_checks_native_prefix_boundaries() {
+    let document = parse("é".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    for (length, hint) in [
+        (0, None),
+        (1, None),
+        (3, None),
+        (usize::MAX, Some(usize::MAX)),
+    ] {
+        let run = scope
+            .interpret_with_tokenizer(scope.content_range(), &mut CursorPrefix { length, hint });
+        assert!(run.atoms.is_empty());
+        assert_eq!(cursor_shape(&run.nodes), "é");
+    }
+    let run = scope.interpret_with_tokenizer(
+        scope.content_range(),
+        &mut CursorPrefix {
+            length: 2,
+            hint: None,
+        },
+    );
+    assert_eq!(cursor_shape(&run.nodes), "@0");
+    assert_eq!(run.atoms.len(), 1);
+    let document = parse("xé".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret_with_tokenizer(
+        scope.content_range(),
+        &mut CursorPrefix {
+            length: 0,
+            hint: Some(1),
+        },
+    );
+    assert!(run.atoms.is_empty());
+    assert_eq!(cursor_shape(&run.nodes), "xé");
+}

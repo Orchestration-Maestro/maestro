@@ -2,6 +2,31 @@
 use crate::{Document, Kind, Node, source::ScopeSource, tokenizer::inline::LinkContext};
 use std::{collections::HashMap, ops::Range};
 
+/// A requested caller token with its caller-owned identity.
+pub struct InlineToken {
+    /// Requested UTF-8 prefix length; zero or invalid boundaries are ignored.
+    pub length: usize,
+    /// Caller-owned payload identity.
+    pub index: usize,
+}
+/// Caller-owned inline grammar tried before built-in grammar at each reached cursor.
+pub trait InlineTokenizer {
+    /// Locate a possible start in fallback text, as a UTF-8 byte offset.
+    fn start(&self, source: &str) -> Option<usize>;
+    /// Select a nonempty input prefix and its caller-owned payload identity.
+    fn tokenize(&mut self, source: &str) -> Option<InlineToken>;
+}
+/// Per-interpretation admission state shared by recursive child windows.
+pub(crate) struct InlineAdmission<'a> {
+    /// Caller implementation.
+    pub tokenizer: &'a mut dyn InlineTokenizer,
+    /// Opaque native source intervals, including barriers in authored labels.
+    pub barriers: Vec<Range<usize>>,
+    /// Caller identities admitted into generated slots.
+    pub ids: Vec<usize>,
+    /// Fixed retained slots preceding generated slots.
+    pub offset: usize,
+}
 /// Native scope identity: start, end and whether this is an authored link label.
 pub(crate) type ScopeKey = (usize, usize, bool);
 
@@ -194,6 +219,43 @@ impl<'a> InlineScope<'a> {
     /// each span must be contained in the range.
     #[must_use]
     pub fn interpret(&self, range: Range<usize>, opaque: &[Range<usize>]) -> InlineRun<'a> {
+        self.interpret_inner(range, opaque, None)
+    }
+
+    /// Interpret a selected window with cursor-time caller admission.
+    /// Caller tokens keep their contents visible to delimiter matching, unlike static atoms.
+    /// Code, image, HTML and autolink barriers cannot be consumed by caller tokens.
+    /// The range must name valid UTF-8 boundaries in `text()`.
+    #[must_use]
+    pub fn interpret_with_tokenizer(
+        &self,
+        range: Range<usize>,
+        tokenizer: &mut dyn InlineTokenizer,
+    ) -> InlineRun<'a> {
+        let first = self.opaque.partition_point(|r| r.end <= range.start);
+        let last = self.opaque.partition_point(|r| r.start < range.end);
+        let mut admission = InlineAdmission {
+            tokenizer,
+            barriers: self.opaque[first..last]
+                .iter()
+                .map(|r| self.source.extent(r.clone()))
+                .collect(),
+            ids: Vec::new(),
+            offset: 0,
+        };
+        let mut run = self.interpret_inner(range, &[], Some(&mut admission));
+        run.atoms
+            .extend(admission.ids.into_iter().map(InlineAtom::Opaque));
+        run
+    }
+
+    /// Share mapped source and retained operand selection between both admission policies.
+    fn interpret_inner(
+        &self,
+        range: Range<usize>,
+        opaque: &[Range<usize>],
+        mut admission: Option<&mut InlineAdmission<'_>>,
+    ) -> InlineRun<'a> {
         let mut selected: Vec<_> = opaque
             .iter()
             .enumerate()
@@ -219,7 +281,9 @@ impl<'a> InlineScope<'a> {
             .last()
             .map_or(self.label, |(_, context)| context.active());
         let source = self.source.select(std::iter::once(range));
-        let source = if self.label && self.options == crate::MarkedOptions::Export {
+        let source = if self.label
+            && (self.options == crate::MarkedOptions::Export || admission.is_some())
+        {
             source.brackets()
         } else {
             source
@@ -240,7 +304,10 @@ impl<'a> InlineScope<'a> {
             in_link,
         );
         tokenizer.retained_atoms = Some(&atoms);
-        let children = tokenizer.parse(&slots);
+        if let Some(admission) = admission.as_deref_mut() {
+            admission.offset = atoms.len();
+        }
+        let children = tokenizer.parse(&slots, admission);
         InlineRun {
             nodes: vec![crate::tokenizer::node(
                 &source,

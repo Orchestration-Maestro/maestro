@@ -332,7 +332,7 @@ impl<'a, E> Lexer<'a, E> {
             Some(&mut self.scopes),
             false,
         )
-        .parse(&[])
+        .parse(&[], None)
     }
 }
 
