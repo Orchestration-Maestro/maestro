@@ -1,6 +1,8 @@
 //! Agent classification from foreground process facts and environment hints.
 
-use maestro_detection::agents::{Agent, agent_label, identify_agent_in_job, parse_agent_label};
+use maestro_detection::agents::{
+    Agent, agent_label, identify_agent_in_job, identify_agent_in_process, parse_agent_label,
+};
 use maestro_process::pty::foreground::{self, ForegroundJob, ProcessDetectionMode};
 
 /// Agent identity confirmation.
@@ -54,10 +56,7 @@ fn identify_process_group_leader_in_job(job: &ForegroundJob) -> Option<(Agent, S
         .processes
         .iter()
         .find(|process| process.pid == job.process_group_id)?;
-    identify_agent_in_job(&ForegroundJob {
-        process_group_id: job.process_group_id,
-        processes: vec![leader.clone()],
-    })
+    identify_agent_in_process(leader)
 }
 
 /// Attaches job facts to a classification result.

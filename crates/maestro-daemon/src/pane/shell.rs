@@ -82,20 +82,26 @@ fn is_executable_file(path: &Path) -> bool {
 /// # Errors
 /// Returns `NotFound` for a missing or non-executable shell.
 pub fn resolve_shell_for_login_mode(shell: &str, path: Option<&OsStr>) -> io::Result<String> {
-    let resolved = if shell.contains(std::path::MAIN_SEPARATOR) {
-        is_executable_file(Path::new(shell)).then(|| shell.to_owned())
-    } else {
-        path.and_then(|path| {
-            std::env::split_paths(path)
-                .map(|dir| dir.join(shell))
-                .find(|candidate| is_executable_file(candidate))
-                .and_then(|candidate| candidate.into_os_string().into_string().ok())
-        })
-    };
-    resolved.ok_or_else(|| {
+    if shell.contains(std::path::MAIN_SEPARATOR) {
+        return is_executable_file(Path::new(shell))
+            .then(|| shell.to_owned())
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("login shell {shell:?} is not executable"),
+                )
+            });
+    }
+    path.and_then(|path| {
+        std::env::split_paths(path)
+            .map(|dir| dir.join(shell))
+            .find(|candidate| is_executable_file(candidate))
+            .and_then(|candidate| candidate.into_os_string().into_string().ok())
+    })
+    .ok_or_else(|| {
         io::Error::new(
             io::ErrorKind::NotFound,
-            format!("login shell {shell:?} is not executable or was not found on PATH"),
+            format!("login shell {shell:?} was not found on PATH"),
         )
     })
 }

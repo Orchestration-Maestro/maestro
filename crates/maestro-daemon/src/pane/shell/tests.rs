@@ -166,6 +166,24 @@ fn missing_login_shell_is_an_error_not_a_fallback() {
 }
 
 #[test]
+fn login_shell_builder_distinguishes_path_and_name_failures() {
+    for (shell, message) in [
+        (
+            "/no/such/maestro-shell",
+            "login shell \"/no/such/maestro-shell\" is not executable",
+        ),
+        (
+            "maestro-missing-shell",
+            "login shell \"maestro-missing-shell\" was not found on PATH",
+        ),
+    ] {
+        let error = build(shell, Login, OtherUnix).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+        assert_eq!(error.to_string(), message);
+    }
+}
+
+#[test]
 fn bare_login_shell_is_resolved_using_supplied_path() {
     let command = pane_shell_command_builder_for_target(
         PaneShellConfig::new("sh", Login),

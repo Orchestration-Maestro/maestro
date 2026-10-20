@@ -11,18 +11,15 @@ pub fn identify_agent_in_job(
         .processes
         .iter()
         .find(|process| process.pid == job.process_group_id)
+        && let Some(identity) = identify_agent_in_process(process)
     {
-        let candidate = normalized_process_name(process);
-        if let Some(agent) = identify_agent(&candidate) {
-            return Some((agent, candidate));
-        }
+        return Some(identity);
     }
 
     let mut best: Option<(u8, Agent, String)> = None;
 
     for process in &job.processes {
-        let candidate = normalized_process_name(process);
-        let Some(agent) = identify_agent(&candidate) else {
+        let Some((agent, candidate)) = identify_agent_in_process(process) else {
             continue;
         };
         let score = process_priority(process, &candidate);
@@ -34,6 +31,15 @@ pub fn identify_agent_in_job(
     }
 
     best.map(|(_, agent, name)| (agent, name))
+}
+
+/// Identifies a borrowed process, including runtime scripts and executable paths.
+#[must_use]
+pub fn identify_agent_in_process(
+    process: &maestro_process::pty::foreground::ForegroundProcess,
+) -> Option<(Agent, String)> {
+    let candidate = normalized_process_name(process);
+    identify_agent(&candidate).map(|agent| (agent, candidate))
 }
 
 /// Selects the observed identity, including runtime scripts and executable paths.

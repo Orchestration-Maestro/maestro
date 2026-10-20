@@ -297,4 +297,4 @@ pub fn session_identity_only_integration(source: &str, agent_label: &str) -> boo
 #[cfg(target_os = "linux")]
 mod process;
 #[cfg(target_os = "linux")]
-pub use process::identify_agent_in_job;
+pub use process::{identify_agent_in_job, identify_agent_in_process};
