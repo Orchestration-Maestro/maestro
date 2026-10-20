@@ -32,3 +32,7 @@ pub mod shell;
 /// Pane terminal identity and launch environment.
 #[cfg(target_os = "linux")]
 pub mod launch_env;
+
+/// Foreground process probing policy.
+#[cfg(target_os = "linux")]
+pub mod probe;

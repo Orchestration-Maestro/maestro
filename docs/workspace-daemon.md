@@ -208,6 +208,20 @@ only the pane id. Existing replacement environments remain replacements.
 The native PTY adapter is currently available on Linux; shell policy branches for
 Windows and macOS are exercised with supplied target and environment observations.
 
+`maestro_daemon::pane::probe` classifies foreground jobs using the shared process
+observations and agent catalogue. A leader environment hint wins over its name;
+an identifiable leader wins over a non-leader hint. Unidentified jobs retain the
+observed group without inventing an agent. Raw `MAESTRO_AGENT` values are read by
+`maestro-process` and classified here.
+
+Probe scheduling reacts to group changes, pending completion and restore checks.
+Unidentified same-group acquisition lasts up to eight seconds, checking every
+500 ms for the first 1.5 seconds and every two seconds afterward. Identified agents
+receive five-second safety checks; unidentified panes without a group receive
+30-second checks. Lifecycle authority skips stable routine scans but preserves
+exit and pending-release checks. Six consecutive misses release a retained
+identity; returning to the pane shell publishes completion before clearing it.
+
 ## Pane agents
 
 [`maestro_detection::agents`](../crates/maestro-detection/src/agents.rs) owns the

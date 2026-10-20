@@ -795,10 +795,10 @@ also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
 noninteractive process builder, Linux platform operations, shared Unix quoting
 and PTY backend, descriptor and actor modules.
 
-The pane launch environment and shell policy in
-`crates/maestro-daemon/src/pane/{launch_env,shell}.rs` and their tests derive from
-the pane and integration environment sources under the same license. Native
-login argument zero follows the terminal command builder
+The pane launch environment, shell and foreground probe policy in
+`crates/maestro-daemon/src/pane/{launch_env,shell,probe}.rs`, their submodules and
+their tests derive from the pane, platform and integration environment sources
+under the same license. Native login argument zero follows the terminal command builder
 (`vendor/portable-pty/src/cmdbuilder.rs`, MIT). The adapter uses Rust
 `CommandExt::arg0` rather than incorporating that library or its native calls.
 
