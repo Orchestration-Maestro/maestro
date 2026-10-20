@@ -543,6 +543,11 @@ remains subject to both cycle checks. A live pipe-closure transaction first uses
 `run_alone` to run in a fresh single-test process, avoiding sibling forks that
 could inherit its pipe ends. File-backed proof accepts only an empty file with
 its cursor at zero, so earlier bytes cannot prove that the selected test started.
+`TestProcess::invoke_with` checks eligibility and supplies exact harness arguments
+to a caller-owned invoker without claiming startup. Such callers observe the
+one-test prologue through their own transport, followed by product readiness and
+completion. `output_with` uses this same selection operation and additionally
+checks its returned output's prologue.
 
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The

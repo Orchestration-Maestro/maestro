@@ -3351,6 +3351,7 @@ dependencies = [
  "maestro-protocol",
  "maestro-settings",
  "maestro-terminal",
+ "maestro-test-process",
  "maestro-tui",
  "maestro-workspace",
  "regex",

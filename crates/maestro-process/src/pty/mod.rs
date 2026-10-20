@@ -3,8 +3,10 @@
 pub mod foreground;
 
 mod backend;
+mod entry;
 mod fd;
 pub use backend::{setup_and_exec, spawn};
+pub use entry::{PtySetupEntry, setup_entry};
 
 use std::{ffi::OsString, io, os::fd::OwnedFd, path::PathBuf};
 

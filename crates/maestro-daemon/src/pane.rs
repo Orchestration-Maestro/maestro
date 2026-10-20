@@ -43,3 +43,10 @@ pub mod probe;
 /// Asynchronous foreground and screen detection.
 #[cfg(target_os = "linux")]
 pub mod detection_task;
+
+/// Owned native pane processes and terminal I/O.
+#[cfg(target_os = "linux")]
+pub mod runtime;
+
+#[cfg(target_os = "linux")]
+pub use runtime::{AgentDetection, FocusEvent, PaneRuntime, PaneRuntimeConfig, SpawnInitialState};

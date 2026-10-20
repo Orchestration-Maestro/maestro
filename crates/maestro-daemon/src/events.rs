@@ -9,6 +9,30 @@ use tokio::sync::mpsc;
 /// An observation from a background pane task.
 #[derive(Debug)]
 pub enum AppEvent {
+    /// The pane's child or imported terminal reader has exited.
+    PaneDied {
+        /// Pane whose runtime ended.
+        pane_id: PaneId,
+    },
+    /// Bells aggregated from one terminal read.
+    TerminalBell {
+        /// Pane requesting attention.
+        pane_id: PaneId,
+        /// Bell count from this read.
+        count: u16,
+    },
+    /// A newly admitted absolute working directory report.
+    TerminalCwdReported {
+        /// Pane reporting its working directory.
+        pane_id: PaneId,
+        /// Accepted directory spelling.
+        cwd: std::path::PathBuf,
+    },
+    /// Clipboard content emitted by the child terminal.
+    ClipboardWrite {
+        /// Decoded clipboard bytes.
+        content: Vec<u8>,
+    },
     /// A foreground agent was identified before screen state confirmation.
     AgentProcessDetected {
         /// Pane that owns the process.

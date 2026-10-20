@@ -47,3 +47,7 @@ pub mod events;
 
 #[cfg(test)]
 mod tests;
+
+/// Native terminal state transferred between workspace servers.
+#[cfg(unix)]
+pub mod handoff_runtime;

@@ -189,7 +189,7 @@ fn screen_content_change_drives_the_tasks_same_group_acquisition_schedule() {
         config
             .terminal
             .process_pty_bytes(config.pane_id, 0, b"starting wrapper", || None);
-        detector.tick(&config, now).await;
+        detector.tick(&config, now, None).await;
         let due = now + super::super::probe::schedule::PROCESS_ACQUISITION_FAST_RECHECK;
         assert!(should_probe_foreground_job(
             detector.probe_input(None, None, due)

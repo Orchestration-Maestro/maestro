@@ -197,8 +197,37 @@ second. The caller must cancel and join the returned task on teardown.
 
 `maestro_daemon::events::AppEvent` carries process observations and screen state
 changes. Its async publisher waits for queue space rather than dropping these
-transitions; a closed receiver produces a warning. Spawned-pane wiring, child
-watching and runtime handoff are not yet delivered.
+transitions and pane death; a closed receiver produces a warning. Bell, clipboard
+and cwd metadata from the reader use nonblocking delivery.
+
+On Linux, `maestro_daemon::pane::PaneRuntime` owns the live terminal, child watcher,
+I/O actor and optional fallback detector. `PaneRuntimeConfig` supplies geometry,
+theme, manifest cache, event and render destinations, and a process-owned
+`PtySetupEntry`. The entry executable must call `maestro_process::pty::setup_entry`
+before its ordinary argument parser. The composition-root binary is separate from
+these library interfaces.
+
+Runtime constructors accept a configured shell, a shell command or literal argv.
+History is seeded before live reads. Spawned detectors use a 50 ms initial delay,
+then 500 ms for unidentified panes or 300 ms for identified panes; release or
+transient child colours use 50 ms rechecks. Imported panes reuse the same detector
+with the imported-pane cadence. Terminal reads aggregate bells, retain admitted
+cwd reports, send terminal replies through the actor and coalesce render requests.
+Focus reporting and bracketed paste use the destination's live modes.
+
+Explicit shutdown cancels and joins detection and delayed work, stops the I/O
+actor and escalates hangup, terminate and kill across the child's session, with
+250 ms per signal. Keep consuming events during shutdown: child reaping and
+imported-reader exit wait for queue capacity to deliver pane death. Dropping a
+runtime requests the same stop and session escalation but cannot await tasks.
+
+Handoff pauses readers after accepted input drains and duplicates the owned
+master. Export retains terminal modes, keyboard negotiation and the display title;
+primary-screen replay keeps up to 8 KiB of complete recent lines. Import starts
+paused without taking process ownership. Commit releases the old reader;
+`assume_handoff_ownership` makes the imported owner responsible for session shutdown.
+`terminal::runtime_registry::TerminalRuntimeRegistry` stores runtimes directly by
+durable terminal identity and coordinates reader pause, ownership and redraw.
 
 `maestro_daemon::render_signal::RenderSignal` coalesces render work while retaining
 its origins: generic requests, pane terminal damage and terminal-title changes.

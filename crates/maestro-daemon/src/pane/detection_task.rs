@@ -104,7 +104,7 @@ impl DetectionControl {
 pub struct DetectionTaskConfig {
     /// Pane receiving the observations.
     pub pane_id: PaneId,
-    /// Live child identity, cleared by the watcher on exit.
+    /// Direct child session identity retained for native probes.
     pub child_pid: Arc<AtomicU32>,
     /// Retained terminal and OSC evidence.
     pub terminal: Arc<PaneTerminal>,
@@ -120,18 +120,46 @@ pub struct DetectionTaskConfig {
     pub process_detection_mode: ProcessDetectionMode,
 }
 
+/// Initial identity and render effects for a newly spawned pane.
+pub struct SpawnedDetection {
+    /// Restored foreground identity, if supplied by the caller.
+    pub detected_agent: Option<Agent>,
+    /// Coalesced workspace render origins.
+    pub render_dirty: Arc<crate::render_signal::RenderSignal>,
+    /// Workspace render wakeup.
+    pub render_notify: Arc<Notify>,
+}
+
 /// Starts fallback detection for an imported pane without an initial identity.
-/// The runtime owns cancellation and must abort and join the returned task on teardown.
+/// The runtime must abort and join the returned task on teardown.
 #[must_use]
 pub fn spawn_basic_detection_task(config: DetectionTaskConfig) -> tokio::task::JoinHandle<()> {
+    spawn_detection_task(config, None)
+}
+
+/// Starts the shared detector with optional spawned-pane scheduling and render effects.
+/// The runtime must abort and join the returned task on teardown.
+#[must_use]
+pub fn spawn_detection_task(
+    config: DetectionTaskConfig,
+    spawned: Option<SpawnedDetection>,
+) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut detector = Detector::new(tokio::time::Instant::now().into_std());
-        loop {
-            let delay = if detector.pending_idle.active() {
-                AGENT_PENDING_IDLE_RECHECK
-            } else {
-                Duration::from_millis(300)
+        if let Some(initial) = &spawned {
+            detector.presence = AgentDetectionPresence::from_agent(initial.detected_agent);
+            detector.published = DetectionPublishState {
+                state: AgentState::Idle,
+                visible: AgentVisibility {
+                    visible_idle: initial.detected_agent.is_some(),
+                    ..AgentVisibility::default()
+                },
             };
+            detector.pending_restore_probe = initial.detected_agent.is_some();
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+        loop {
+            let delay = detector.delay(&config, spawned.is_some());
             tokio::select! {
                 () = tokio::time::sleep(delay) => {},
                 () = config.control.reset.notified() => {
@@ -139,10 +167,30 @@ pub fn spawn_basic_detection_task(config: DetectionTaskConfig) -> tokio::task::J
                 }
             }
             detector
-                .tick(&config, tokio::time::Instant::now().into_std())
+                .tick(
+                    &config,
+                    tokio::time::Instant::now().into_std(),
+                    spawned.as_ref(),
+                )
                 .await;
         }
     })
+}
+
+/// Restores transient child colours before notifying the workspace renderer.
+fn restore_theme(config: &DetectionTaskConfig, effects: &SpawnedDetection) {
+    let pid = config.child_pid.load(Ordering::Acquire);
+    if pid == 0 || !config.terminal.should_probe_host_terminal_theme_restore() {
+        return;
+    }
+    let job = foreground::foreground_job(pid, config.process_detection_mode);
+    if config
+        .terminal
+        .maybe_restore_host_terminal_theme(pid, job.as_ref())
+        && effects.render_dirty.request_pty(config.pane_id)
+    {
+        effects.render_notify.notify_one();
+    }
 }
 
 /// Retained process, acquisition and publication observations for one detector.
@@ -153,6 +201,8 @@ struct Detector {
     published: DetectionPublishState,
     /// Last publication with working or blocking evidence.
     last_visible_signal_refresh: Option<Instant>,
+    /// Whether a restored identity still needs native confirmation.
+    pending_restore_probe: bool,
     /// Last full native scan.
     last_process_check: Instant,
     /// Previously observed foreground group.
@@ -185,6 +235,7 @@ impl Detector {
                 visible: AgentVisibility::default(),
             },
             last_visible_signal_refresh: None,
+            pending_restore_probe: false,
             last_process_check: now,
             last_foreground_pgid: None,
             has_process_probe: false,
@@ -198,8 +249,32 @@ impl Detector {
         }
     }
 
+    /// Selects the reference cadence from live release, colour and identity state.
+    fn delay(&self, config: &DetectionTaskConfig, spawned: bool) -> Duration {
+        if spawned
+            && (config
+                .control
+                .active_pending_release(tokio::time::Instant::now().into_std())
+                .is_some()
+                || config.terminal.has_transient_default_color_override())
+        {
+            Duration::from_millis(50)
+        } else if self.pending_idle.active() {
+            AGENT_PENDING_IDLE_RECHECK
+        } else if spawned && self.presence.current_agent().is_none() {
+            Duration::from_millis(500)
+        } else {
+            Duration::from_millis(300)
+        }
+    }
+
     /// Combines native process observations with screen publication policy.
-    async fn tick(&mut self, config: &DetectionTaskConfig, now: Instant) {
+    async fn tick(
+        &mut self,
+        config: &DetectionTaskConfig,
+        now: Instant,
+        effects: Option<&SpawnedDetection>,
+    ) {
         let suppressed = config.control.active_pending_release(now);
         if suppressed.is_none() && self.release_was_active {
             self.has_process_probe = false;
@@ -224,6 +299,9 @@ impl Detector {
                 probe_foreground_process(pid, foreground_group, config.process_detection_mode);
             agent_changed = self.apply_probe(config, probe, input, now).await;
         }
+        if let Some(effects) = effects {
+            restore_theme(config, effects);
+        }
         if self.screen_allowed(lifecycle_authority, now) {
             self.scan_screen(config, input, agent_changed, now).await;
         }
@@ -247,7 +325,7 @@ impl Detector {
                 .started_at
                 .map(|started| now.duration_since(started)),
             pending_foreground_shell_clear: self.shell.pending_clear,
-            pending_restore_probe: false,
+            pending_restore_probe: self.pending_restore_probe,
             elapsed_since_process_check: now.duration_since(self.last_process_check),
         }
     }
@@ -262,6 +340,7 @@ impl Detector {
     ) -> bool {
         self.last_process_check = now;
         self.has_process_probe = true;
+        self.pending_restore_probe = false;
         if let Some(suppressed) = input.suppressed_agent {
             if probe.agent == Some(suppressed) {
                 probe.agent = None;

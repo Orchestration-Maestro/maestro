@@ -319,16 +319,7 @@ impl PtyIoActorHandle {
             "timed out waiting for PTY actor release",
         )
         .await?;
-        let task = self
-            .owner
-            .task
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take();
-        if let Some(task) = task {
-            task.await.map_err(io::Error::other)?;
-        }
-        Ok(())
+        self.wait_closed().await.map_err(io::Error::other)
     }
 
     /// Sends a capacity-independent control and awaits its supplied reply budget.
@@ -347,5 +338,24 @@ impl PtyIoActorHandle {
             .await
             .map_err(|_| io::Error::new(io::ErrorKind::TimedOut, text))?
             .map_err(|_| io::Error::new(io::ErrorKind::TimedOut, text))?
+    }
+}
+
+impl PtyIoActorHandle {
+    /// Joins the retained worker after shutdown or natural terminal exit.
+    ///
+    /// # Errors
+    /// Returns the original worker join error.
+    pub async fn wait_closed(&self) -> Result<(), tokio::task::JoinError> {
+        let task = self
+            .owner
+            .task
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+        if let Some(task) = task {
+            task.await?;
+        }
+        Ok(())
     }
 }

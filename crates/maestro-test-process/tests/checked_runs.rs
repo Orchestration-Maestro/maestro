@@ -1002,3 +1002,25 @@ fn checked_child_waits_keep_exit_and_raw_streams() {
     assert!(contains(&output.stdout, b"out\0\xff") && contains(&output.stderr, b"err\0\xfe"));
     assert!(output.status.success());
 }
+
+#[test]
+fn argument_invoker_keeps_exact_selection_and_caller_result() {
+    let selected =
+        TestProcess::current("argument_invoker_keeps_exact_selection_and_caller_result").unwrap();
+    let name = selected.name().to_owned();
+    let arguments = selected
+        .nocapture()
+        .invoke_with(|arguments| Ok::<_, std::io::Error>(arguments.to_vec()))
+        .unwrap();
+    assert_eq!(arguments, ["--exact", &name, "--nocapture"]);
+    let mut invoked = false;
+    let result = TestProcess::current("argument_invoker_keeps_exact_selection_and_caller_result")
+        .unwrap()
+        .env("UNUSED", "value")
+        .invoke_with(|_| {
+            invoked = true;
+            Ok::<_, std::io::Error>(())
+        });
+    assert!(result.is_err());
+    assert!(!invoked);
+}

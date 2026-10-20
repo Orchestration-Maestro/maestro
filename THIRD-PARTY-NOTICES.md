@@ -757,6 +757,12 @@ the pane keyboard tracker. The encoder retains Unicode codepoints rather than
 truncating unmapped control characters to a byte.
 Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its
 tests derives from the render signal module under the same license.
+The pane runtime, launch environment, shell selection, foreground probing and
+agent detection under `crates/maestro-daemon/src/pane/`, `events.rs`,
+`handoff_runtime.rs` and `terminal/runtime_registry.rs` derive from the pane,
+event, handoff-runtime and terminal-runtime-registry modules under the same
+license. The native child setup entry in `crates/maestro-process/src/pty/` uses
+safe re-execution in place of the source's post-fork setup.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
 conversions derive from the client input and protocol wire modules. The structured
