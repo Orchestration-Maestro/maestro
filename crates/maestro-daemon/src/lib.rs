@@ -35,3 +35,6 @@ pub mod pane;
 
 /// Absolute-row text selections within a pane.
 pub mod selection;
+
+/// Opt-in render profiling through structured tracing.
+pub mod render_prof;

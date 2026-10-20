@@ -27,6 +27,14 @@ impl Default for WriteState {
 }
 
 impl Terminal {
+    /// Whether the current DECSCUSR appearance still uses configured defaults.
+    #[must_use]
+    pub fn cursor_style_is_default(&self) -> bool {
+        self.write_state
+            .as_ref()
+            .is_none_or(|state| state.default_cursor)
+    }
+
     /// Consume terminal bytes synchronously, retaining incomplete sequences between writes.
     ///
     /// The stream is temporarily taken out of the terminal while its handler borrows
