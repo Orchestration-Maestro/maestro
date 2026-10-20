@@ -1,5 +1,5 @@
 //! Shared ownership of authored UTF-8 text.
-use std::sync::Arc;
+use std::{ops::Range, sync::Arc};
 
 /// Owned authored text whose clones retain shared storage.
 ///
@@ -19,7 +19,7 @@ pub struct MappedText {
 #[derive(Debug)]
 enum Storage {
     /// Caller-owned contiguous bytes.
-    Bytes(String),
+    Bytes(Arc<String>, Range<usize>),
     /// Shared earlier values in logical order.
     Joined(MappedText, MappedText),
 }
@@ -53,6 +53,15 @@ impl MappedText {
         output
     }
 
+    /// Retain a UTF-8 window of an existing source allocation.
+    pub(crate) fn shared(bytes: Arc<String>, range: Range<usize>) -> Self {
+        Self {
+            length: range.len(),
+            last_byte: bytes[range.clone()].as_bytes().last().copied(),
+            storage: Arc::new(Storage::Bytes(bytes, range)),
+        }
+    }
+
     /// Whether the authored value already ends in a semantic line separator.
     pub(crate) fn ends_with_newline(&self) -> bool {
         self.last_byte == Some(b'\n')
@@ -79,8 +88,10 @@ impl MappedText {
 fn next_chunk<'a>(pending: &mut Vec<&'a MappedText>) -> Option<&'a str> {
     while let Some(text) = pending.pop() {
         match text.storage.as_ref() {
-            Storage::Bytes(bytes) if !bytes.is_empty() => return Some(bytes.as_str()),
-            Storage::Bytes(_) => {}
+            Storage::Bytes(bytes, range) if !range.is_empty() => {
+                return Some(&bytes[range.clone()]);
+            }
+            Storage::Bytes(..) => {}
             Storage::Joined(left, right) => {
                 pending.push(right);
                 pending.push(left);
@@ -98,10 +109,7 @@ impl Default for MappedText {
 
 impl From<String> for MappedText {
     fn from(value: String) -> Self {
-        Self {
-            length: value.len(),
-            last_byte: value.as_bytes().last().copied(),
-            storage: Arc::new(Storage::Bytes(value)),
-        }
+        let length = value.len();
+        Self::shared(Arc::new(value), 0..length)
     }
 }

@@ -96,11 +96,7 @@ impl<'a, E> Lexer<'a, E> {
         };
         let BlockToken { raw, kind, text } = token;
         let consumed = raw.len();
-        output.push(Node {
-            range: source.extent(0..consumed),
-            authored: raw.into(),
-            kind: Kind::CustomBlock(kind, text),
-        });
+        output.push(source.node(0..consumed, Kind::CustomBlock(kind, text)));
         Some(consumed)
     }
 
@@ -109,11 +105,11 @@ impl<'a, E> Lexer<'a, E> {
     fn extension_start(&mut self, source: &Source<'_>) -> usize {
         let (whole, offset) = source.whole();
         let source = source.text;
-        if !self.top || self.tokenizer.is_none() {
+        if self.tokenizer.is_none() {
             return source.len();
         }
         let mut begin = source.chars().next().map_or(0, char::len_utf8);
-        while begin < source.len() {
+        while begin <= source.len() {
             let Some(tokenizer) = self.tokenizer.as_mut() else {
                 break;
             };
@@ -134,7 +130,7 @@ impl<'a, E> Lexer<'a, E> {
             if let Some(range) = barrier {
                 begin = range.end - offset;
             } else {
-                self.clipped = true;
+                self.clipped = start < source.len();
                 return start;
             }
         }

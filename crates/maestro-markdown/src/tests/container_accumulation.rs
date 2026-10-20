@@ -123,7 +123,7 @@ fn measured_suffixes(unit: &str, n: usize, copy: bool) -> super::Work {
     super::WORK.with_borrow_mut(|work| *work = super::Work::default());
     for start in (0..source.text.len()).step_by(unit.len()) {
         if copy {
-            let _piece = source.select(std::iter::once(start..source.text.len()));
+            let _piece = crate::source::ScopeSource::identity(&source.text[start..]);
         } else {
             let _view = source.view(start..source.text.len());
         }
@@ -225,7 +225,7 @@ fn merged_code_scope_ends_at_consumed_source_prefix() {
     };
     let paragraph = &children[0];
     let scope = &document.scopes[&(paragraph.range.start, paragraph.range.end, false)];
-    assert_eq!(scope.text, "q\ncode");
+    assert_eq!(&*scope.text, "q\ncode");
     assert_eq!(&document.source[paragraph.range.clone()], "q\n    code");
     assert_eq!(scope.native(&(2..6)), Some(8..12));
     assert!(matches!(children[1].kind, Kind::Gap));

@@ -2,6 +2,7 @@
 use crate::{InlineAtom, InlineContext, Kind, Node, parse};
 use std::cell::RefCell;
 
+mod container_frames;
 mod shared_text;
 
 /// Per-thread counters so independent parser tests cannot affect the witness.

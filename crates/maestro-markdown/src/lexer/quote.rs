@@ -64,7 +64,7 @@ impl<E> Lexer<'_, E> {
         }
         Some((
             consumed,
-            source.node(0..consumed, Kind::Quote(output.nodes, text.text.into())),
+            source.node(0..consumed, Kind::Quote(output.nodes, text.text.mapped())),
         ))
     }
 

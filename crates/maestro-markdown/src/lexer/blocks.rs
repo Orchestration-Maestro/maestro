@@ -145,7 +145,7 @@ impl<E> Lexer<'_, E> {
             let scope = self
                 .scopes
                 .remove(&(last.range.start, last.range.end, false));
-            last.authored.append(&source.text[..1].to_owned().into());
+            last.authored.append(&source.authored(0..1));
             last.range.end = source.extent(0..1).end;
             if let Some(scope) = scope {
                 self.scopes
