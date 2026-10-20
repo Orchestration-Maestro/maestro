@@ -29,3 +29,9 @@ pub mod persist;
 
 /// Environment names grouped by their runtime consumers.
 pub mod environment;
+
+/// Process pane terminal state.
+pub mod pane;
+
+/// Absolute-row text selections within a pane.
+pub mod selection;
