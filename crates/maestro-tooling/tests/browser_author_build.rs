@@ -356,9 +356,7 @@ fn browser_example_development_serves_rebuilt_external_assets() {
     });
     drop(child);
     drop(receive);
-    crate::recipe_support::record("phase: reader join");
-    thread.join().unwrap();
-    crate::recipe_support::record("phase: reader joined");
+    crate::recipe_support::join_reader(thread);
 }
 
 #[test]
@@ -381,9 +379,7 @@ fn browser_compile_watch_rebuilds_external_identity() {
     });
     drop(child);
     drop(receive);
-    crate::recipe_support::record("phase: reader join");
-    thread.join().unwrap();
-    crate::recipe_support::record("phase: reader joined");
+    crate::recipe_support::join_reader(thread);
 }
 
 /// Start with linked files whose targets are outside every authored watch root.
@@ -398,7 +394,7 @@ fn linked_identity(browser: &Browser) -> (std::path::PathBuf, Workspace, Workspa
             mark_target.0.join("mark.svg"),
         ),
     ] {
-        crate::recipe_support::record(format!("phase: authored edit {authored:?}"));
+        crate::recipe_support::record(format!("phase: authored rename {authored:?} -> {target:?}"));
         fs::rename(&authored, &target).unwrap();
         std::os::unix::fs::symlink(target, authored).unwrap();
     }
@@ -441,7 +437,7 @@ fn replace_identity_twice(
         let temporary = pack.with_extension("tmp");
         crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
         fs::write(&temporary, serde_json::to_string_pretty(&data).unwrap()).unwrap();
-        crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
+        crate::recipe_support::record(format!("phase: authored rename {temporary:?} -> {pack:?}"));
         fs::rename(temporary, pack).unwrap();
         eprintln!("waiting for {revision} pack replacement rebuild");
         assert!(
@@ -453,7 +449,7 @@ fn replace_identity_twice(
             .replace("<svg", &format!("<svg data-revision=\"{revision}\""));
         crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
         fs::write(&temporary, svg).unwrap();
-        crate::recipe_support::record(format!("phase: authored edit {temporary:?}"));
+        crate::recipe_support::record(format!("phase: authored rename {temporary:?} -> {mark:?}"));
         fs::rename(temporary, &mark).unwrap();
         eprintln!("waiting for {revision} mark replacement rebuild");
         assert!(
@@ -565,9 +561,7 @@ fn browser_preview_serves_without_author_tools() {
     assert_eq!(get(port, "nested/route").1, files[0].1);
     drop(child);
     drop(receive);
-    crate::recipe_support::record("phase: reader join");
-    thread.join().unwrap();
-    crate::recipe_support::record("phase: reader joined");
+    crate::recipe_support::join_reader(thread);
     preview_failures(&browser);
 }
 
@@ -1366,7 +1360,7 @@ fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
     let extra = browser.path("authored-extra");
     fs::create_dir(&extra).unwrap();
     let ignored = browser.fixture("ignored.txt");
-    crate::recipe_support::record(format!("phase: authored edit {ignored:?}"));
+    crate::recipe_support::record(format!("phase: ignored edit {ignored:?}"));
     fs::write(&ignored, "ignored input").unwrap();
     let authored = browser.fixture("Trunk.json");
     let mut config: serde_json::Value =
@@ -1408,11 +1402,11 @@ fn assert_authored_watch_routes(
         for file in ["Trunk.json", "inputs/text.txt"] {
             let relative = format!("target/maestro-browser/.author/{route}/{file}");
             let path = browser.path(&relative);
-            crate::recipe_support::record(format!("phase: authored edit {path:?}"));
+            crate::recipe_support::record(format!("phase: generated edit {path:?}"));
             fs::write(&path, fs::read(&path).unwrap()).unwrap();
             assert_ignored_event(&receive, &relative);
         }
-        crate::recipe_support::record(format!("phase: authored edit {ignored:?}"));
+        crate::recipe_support::record(format!("phase: ignored edit {ignored:?}"));
         fs::write(ignored, format!("ignored {route}")).unwrap();
         assert_ignored_event(&receive, "ignored.txt");
         crate::recipe_support::record(format!(
@@ -1436,9 +1430,7 @@ fn assert_authored_watch_routes(
         );
         drop(child);
         drop(receive);
-        crate::recipe_support::record("phase: reader join");
-        thread.join().unwrap();
-        crate::recipe_support::record("phase: reader joined");
+        crate::recipe_support::join_reader(thread);
     }
 }
 
@@ -1629,9 +1621,7 @@ fn browser_author_trunk_rejects_stale_lock_without_writes() {
             let transcript = browser_support::rejected_pipeline(&receive);
             assert!(transcript.contains("--locked"), "{transcript}");
             drop(child);
-            crate::recipe_support::record("phase: reader join");
-            thread.join().unwrap();
-            crate::recipe_support::record("phase: reader joined");
+            crate::recipe_support::join_reader(thread);
         } else {
             let failed = browser.run(recipe);
             assert!(!failed.status.success());
@@ -1797,10 +1787,9 @@ fn assert_fixture_independent(browser: &Browser) {
 fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let target = root
-        .join("target/browser-author-tests")
-        .canonicalize()
-        .unwrap();
+    let target = root.join("target/browser-author-tests");
+    fs::create_dir_all(&target).unwrap();
+    let target = target.canonicalize().unwrap();
     success(
         &toolchain_support::command(env!("CARGO"))
             .current_dir(&root)

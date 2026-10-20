@@ -429,9 +429,7 @@ fn assert_watch_rebuild(recipe: &str, changed: &str) {
     assert_watch_events(&workspace, changed, &receive, &diagnostics);
     drop(child);
     drop(receive);
-    for thread in threads {
-        thread.join().unwrap();
-    }
+    threads.into_iter().for_each(recipe_support::join_reader);
 }
 
 /// Isolates profiles before launch because cleanup can forcibly stop the owned group.
@@ -484,9 +482,7 @@ fn maestro_watch_completion_retains_both_output_streams() {
     );
     drop(child);
     drop(receive);
-    for thread in threads {
-        thread.join().unwrap();
-    }
+    threads.into_iter().for_each(recipe_support::join_reader);
 }
 
 /// Panic cleanup closes every descendant's output pipe, not just the recipe leader's.
@@ -674,11 +670,7 @@ fn close_watch_output(
     recipe_support::record("phase: draining watch output");
     while receive.recv().is_ok() {}
     drop(receive);
-    recipe_support::record("phase: reader join");
-    for thread in threads {
-        thread.join().unwrap();
-    }
-    recipe_support::record("phase: reader joined");
+    threads.into_iter().for_each(recipe_support::join_reader);
 }
 
 #[cfg(unix)]
@@ -894,6 +886,7 @@ fn wait_for_marker(
     marker: &str,
     diagnostics: &str,
 ) {
+    recipe_support::record(format!("phase: waiting for marker {marker:?}"));
     while !has_rebuild_marker(transcript, marker) {
         let line = receive.recv().unwrap_or_else(|error| {
             panic!("marker {marker}: {error}; {diagnostics}; watcher output:\n{transcript}")
@@ -901,6 +894,7 @@ fn wait_for_marker(
         transcript.push_str(&line);
         transcript.push('\n');
     }
+    recipe_support::record(format!("phase: observed marker {marker:?}"));
 }
 
 /// Unrelated successful builds cannot witness a changed input.
@@ -950,6 +944,7 @@ fn wait_for_build(
     phase: &str,
     diagnostics: &str,
 ) {
+    recipe_support::record(format!("phase: waiting for build {phase:?}"));
     let started = std::time::Instant::now();
     let mut compiled = false;
     loop {
@@ -963,6 +958,7 @@ fn wait_for_build(
         transcript.push('\n');
         compiled |= line.contains("Finished `dev`");
         if compiled && line.contains("[Command was successful]") {
+            recipe_support::record(format!("phase: observed build {phase:?}"));
             eprintln!("{phase}: {} ms", started.elapsed().as_millis());
             return;
         }
