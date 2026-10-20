@@ -1,15 +1,21 @@
 //! Measure browser prompt descriptions through the provider's token-counting endpoint.
 
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::TryStreamExt;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
     ATTACHMENTS_RUNTIME_DESCRIPTION, artifacts_tool_description, javascript_repl_tool_description,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{Fetch, HttpRequest, LocaleNumberFormat, decode_utf8};
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{error::Error, io::Write, process::ExitCode};
 
 /// Successful provider response; unrelated fields are ignored.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 struct TokenCountResponse {
     /// Number returned by the provider, without local estimation.
@@ -17,6 +23,7 @@ struct TokenCountResponse {
 }
 
 /// Sends one prompt and collects the complete response before decoding its numeric count.
+#[cfg(not(target_arch = "wasm32"))]
 async fn count_tokens(text: &str, api_key: &str, fetch: &Fetch) -> Result<f64, Box<dyn Error>> {
     let response = fetch(HttpRequest {
         method: "POST".into(),
@@ -44,6 +51,7 @@ async fn count_tokens(text: &str, api_key: &str, fetch: &Fetch) -> Result<f64, B
 }
 
 /// Reports five descriptions sequentially, retaining successes when individual requests fail.
+#[cfg(not(target_arch = "wasm32"))]
 async fn run(
     api_key: &str,
     fetch: &Fetch,
@@ -91,6 +99,7 @@ async fn run(
 }
 
 /// Supplies native environment, HTTP, runtime and output owners to the report.
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or_default();
     if api_key.is_empty() {
@@ -111,7 +120,12 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
     Ok(ExitCode::SUCCESS)
 }
 
+/// The token measurement has no browser entry effects.
+#[cfg(target_arch = "wasm32")]
+fn main() {}
+
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
     use super::*;
     use futures_util::stream;
