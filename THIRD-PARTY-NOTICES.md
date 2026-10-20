@@ -755,6 +755,8 @@ caller-owned rendering and scheduling. Semantic character-key policy in
 keyboard-stack replay in `src/kitty/key.rs` and `src/formatter/vt.rs` derives from
 the pane keyboard tracker. The encoder retains Unicode codepoints rather than
 truncating unmapped control characters to a byte.
+Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its
+tests derives from the render signal module under the same license.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
 conversions derive from the client input and protocol wire modules. The structured

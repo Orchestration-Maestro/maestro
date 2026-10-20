@@ -38,3 +38,6 @@ pub mod selection;
 
 /// Opt-in render profiling through structured tracing.
 pub mod render_prof;
+
+/// Coalesced pane render and metadata requests.
+pub mod render_signal;

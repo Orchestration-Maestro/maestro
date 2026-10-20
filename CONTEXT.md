@@ -253,6 +253,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Image placement:** An image's position on a pane terminal's grid, given directly or through placeholder cells.
 - **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active screen; zero disables history.
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
+- **Pane runtime:** The daemon's live object for one pane terminal: the PTY child, its emulator and its agent detection task.
 - **Pane agent:** A coding agent recognized in, or reporting from, a pane, with status idle, working, blocked, done or unknown; distinct from **Agent**, the conversation runner.
 - **Detection catalog:** The downloaded, version-checked cache of detection manifests, used ahead of the bundled set when newer.
 - **Detection manifest:** Bundled or downloaded data rules recognizing an agent and its status from a pane's screen, title or progress reports.

@@ -177,6 +177,19 @@ through the engine; highlighting and clipboard policy stay with the caller.
 Native Windows input fallback and recent-text qualification are tracked in
 [Windows qualification](https://github.com/Orchestration-Maestro/maestro/issues/1473).
 
+## Pane runtime
+
+`maestro_daemon::render_signal::RenderSignal` coalesces render work while retaining
+its origins: generic requests, pane terminal damage and terminal-title changes.
+Hidden panes share one pending wakeup. A newly damaged visible pane or a new title
+source requests another wakeup even while hidden damage is pending. The caller
+supplies the visible pane set and performs the wakeup; the signal starts no task.
+
+`has_immediate_work` distinguishes visible damage, titles and generic work from
+hidden-only damage. `take` drains all accumulated origins together and clears the
+pending flag while retaining the supplied visibility policy. Reading title origins
+does not drain them or mark those panes as damaged.
+
 ## Pane agents
 
 [`maestro_detection::agents`](../crates/maestro-detection/src/agents.rs) owns the
