@@ -429,30 +429,10 @@ fn maestro_response_sessions_select_socket_events() {
         super::fixture_rows(include_str!("fixtures/socket_events.json"), &["scenario"]).unwrap();
     block_on(async {
         for row in rows {
-            let signal = Cancellation::new();
             let incoming = row.packets.iter().map(Packet::incoming).collect();
-            let mut socket = Scripted::new(incoming, &signal);
-            let (model, _, _) = super::invocation();
-            let output = Arc::new(std::sync::RwLock::new(
-                crate::providers::assistant_output::initial_message(&model),
-            ));
-            let events = AssistantMessageEventStream::new();
-            let mut on_start = || {};
-            let mut receiver = Receiver::new(
-                &mut socket,
-                Some(&signal),
-                WebSocketOutput {
-                    output: &output,
-                    stream: &events,
-                    on_start: &mut on_start,
-                },
-            );
-            let mut selected = Vec::new();
-            while let Some(Ok(text)) = receiver.next().await {
-                selected.push(text);
-            }
+            let (selected, failure) = select_all(incoming).await;
             assert_eq!(selected, row.events, "{}", row.scenario);
-            match (&row.error, receiver.failure.take()) {
+            match (&row.error, failure) {
                 (Some(expected), Some(error)) => expected.assert_matches(&error, &row.scenario),
                 (None, None) => {}
                 (expected, actual) => {
