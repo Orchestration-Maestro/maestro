@@ -6,11 +6,13 @@ use crate::{Coordinate, Point, page::StorageError, page_list::Scroll, style::Col
 impl Screen {
     /// Move the viewport within existing retained history.
     pub fn scroll(&mut self, behavior: Scroll) {
+        self.kitty_images.dirty = true;
         self.pages.scroll(behavior);
     }
 
     /// Move nonempty active rows into history and reload the tracked cursor.
     pub fn scroll_clear(&mut self) {
+        self.kitty_images.dirty = true;
         self.with_cursor_detached(LinkRestore::PageChange, |screen| {
             screen.pages.scroll_clear();
             screen.cursor_reload();
@@ -47,6 +49,7 @@ impl Screen {
     /// # Panics
     /// Panics if the cursor is not on the active area's last row.
     pub fn cursor_down_scroll(&mut self) -> Result<(), StorageError> {
+        self.kitty_images.dirty = true;
         self.with_cursor_detached(LinkRestore::PageChange, Self::cursor_down_scroll_detached)
     }
 

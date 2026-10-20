@@ -33,7 +33,19 @@ impl Terminal {
                 0
             },
         };
-        self.screens.get_init(key, opts).charset = charset;
+        if self.screens.get(key).is_none() {
+            let primary = self.screens.get(Key::Primary)?;
+            let (limit, permissions) = (
+                primary.kitty_images.total_limit,
+                primary.kitty_images.image_limits,
+            );
+            let new = self.screens.get_init(key, opts);
+            new.kitty_images.total_limit = limit;
+            new.kitty_images.image_limits = permissions;
+        }
+        let new = self.screens.get_init(key, opts);
+        new.charset = charset;
+        new.kitty_images.dirty = true;
         // Initialization above guarantees that the destination is resident.
         let _ = self.screens.switch_to(key);
         self.flags.dirty.clear = true;

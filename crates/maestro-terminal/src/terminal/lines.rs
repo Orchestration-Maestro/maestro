@@ -111,6 +111,7 @@ impl Terminal {
                 screen.cursor_down(1);
             }
         } else if y == r.bottom && x >= r.left && x <= r.right {
+            screen.kitty_images.dirty = true;
             if r.top == 0
                 && r.left == 0
                 && r.right == self.cols - 1

@@ -198,3 +198,12 @@ mod formatter_vt;
 mod render;
 
 mod terminal_read;
+
+mod kitty_graphics_storage;
+
+mod graphics_exec;
+
+mod graphics_render;
+mod graphics_unicode;
+
+mod graphics_placements;

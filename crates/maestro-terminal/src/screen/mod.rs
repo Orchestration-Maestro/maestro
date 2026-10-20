@@ -30,6 +30,8 @@ pub use crate::page_list::Scroll;
 
 /// Page storage and protocol state for one terminal screen.
 pub struct Screen {
+    /// Screen-local image payloads, placements and transmission state.
+    pub kitty_images: crate::kitty::graphics::storage::ImageStorage,
     /// Retained content and tracked positions.
     pub pages: PageList,
     /// Disable history even when the active-area storage budget has spare room.
@@ -204,7 +206,10 @@ impl Screen {
     pub fn init(opts: Options) -> Self {
         let mut pages = PageList::init(opts.cols, opts.rows, Some(opts.max_scrollback));
         let page_pin = pages.track_origin();
+        let mut kitty_images = crate::kitty::graphics::storage::ImageStorage::default();
+        kitty_images.total_limit = 0;
         Self {
+            kitty_images,
             pages,
             no_scrollback: opts.max_scrollback == 0,
             cursor: Cursor::new(page_pin),
@@ -218,6 +223,9 @@ impl Screen {
 
     /// Clear content and protocol state, preserving dimensions and cursor handle.
     pub fn reset(&mut self) {
+        let limit = self.kitty_images.total_limit;
+        self.kitty_images.clear(&mut self.pages);
+        self.kitty_images.total_limit = limit;
         self.detach_cursor();
         self.pages.reset();
         self.cursor = Cursor::new(self.cursor.page_pin);
