@@ -400,12 +400,7 @@ fn cwd_binding() {
         let ops = Arc::new(Operations::new(b"hello"));
         let absolute = original.0.join("file").to_str().unwrap().to_owned();
         if wrapped {
-            let tool = maestro_tools::create_edit_tool(
-                ".".into(),
-                EditToolOptions {
-                    operations: Some(ops.clone()),
-                },
-            );
+            let tool = agent_tool(&ops, ".");
             let future = (tool.execute)(
                 "id".into(),
                 json!({"path":"file","edits":[{"oldText":"hello","newText":"world"}]}),
@@ -478,16 +473,6 @@ impl maestro_tools::EditOperations for GatedNative {
         })
     }
 }
-/// A tool over the gated native adapter.
-fn gated_tool(ops: &Arc<GatedNative>, cwd: &str) -> Tool {
-    create_edit_tool_definition(
-        cwd.into(),
-        EditToolOptions {
-            operations: Some(ops.clone()),
-        },
-    )
-}
-
 #[test]
 fn edit_parallel_calls_preserve_both_changes() {
     #[derive(Deserialize)]
@@ -502,7 +487,7 @@ fn edit_parallel_calls_preserve_both_changes() {
     let dir = TempDir::new();
     let path = dir.file("queued.txt", b"alpha\nbeta\n");
     let (ops, gate) = GatedNative::new();
-    let tool = gated_tool(&ops, &dir.text());
+    let tool = tool(&ops, &dir.text());
     let mut a = start(&tool, input("queued.txt", "alpha", "ALPHA"), None);
     assert!(poll_once(&mut a).is_pending());
     assert_eq!(ops.journal.entries(), ["access", "read:captured"]);
@@ -533,7 +518,7 @@ fn edit_and_write_use_one_queue() {
         let dir = TempDir::new();
         dir.file("mixed.txt", b"hello\n");
         let (ops, gate) = GatedNative::new();
-        let edit = gated_tool(&ops, &dir.text());
+        let edit = tool(&ops, &dir.text());
         let replacement = write_support::input("mixed.txt", "replacement\n");
         if args.order == "edit-write" {
             let (writer, release) = GatedNative::new();
@@ -615,12 +600,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
         .err()
         .unwrap();
     assert!(error.message.contains("edits must contain"));
-    let wrapped = maestro_tools::create_edit_tool(
-        ".".into(),
-        EditToolOptions {
-            operations: Some(ops.clone()),
-        },
-    );
+    let wrapped = agent_tool(&ops, ".");
     let error = run((wrapped.execute)(
         "id".into(),
         json!({"path":"relative","edits":[]}),
@@ -640,12 +620,7 @@ fn edit_definition_and_wrapper_share_operations() {
     for wrapped in [false, true] {
         let ops = Arc::new(Operations::new(b"supplied"));
         if wrapped {
-            let tool = maestro_tools::create_edit_tool(
-                dir.text(),
-                EditToolOptions {
-                    operations: Some(ops.clone()),
-                },
-            );
+            let tool = agent_tool(&ops, &dir.text());
             let result = run((tool.execute)(
                 "id".into(),
                 json!({"path":"target","edits":[{"oldText":"supplied","newText":"changed"}]}),
@@ -763,7 +738,7 @@ fn edit_queued_abort_waits_for_predecessor() {
     let dir = TempDir::new();
     let path = dir.file("file", b"hello");
     let (ops, release) = GatedNative::new();
-    let first = gated_tool(&ops, &dir.text());
+    let first = tool(&ops, &dir.text());
     let mut a = start(&first, input("file", "hello", "world"), None);
     assert!(poll_once(&mut a).is_pending());
     let signal = Cancellation::new();
@@ -801,7 +776,7 @@ fn edit_queue_preserves_aliases_and_independent_files() {
     dir.file("other", b"hello");
     std::os::unix::fs::symlink("file", dir.0.join("alias")).unwrap();
     let (ops, release) = GatedNative::new();
-    let tool = gated_tool(&ops, &dir.text());
+    let tool = tool(&ops, &dir.text());
     let mut a = start(&tool, input("file", "hello", "world"), None);
     assert!(poll_once(&mut a).is_pending());
     let mut b = start(&tool, input("alias", "world", "aliased"), None);
@@ -837,12 +812,7 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
         ] {
             let ops = Arc::new(Operations::new(b"hello"));
             let ok = if wrapped {
-                let tool = maestro_tools::create_edit_tool(
-                    cwd,
-                    EditToolOptions {
-                        operations: Some(ops.clone()),
-                    },
-                );
+                let tool = agent_tool(&ops, &cwd);
                 run((tool.execute)(
                     "id".into(),
                     json!({"path":path,"edits":[{"oldText":"hello","newText":"world"}]}),

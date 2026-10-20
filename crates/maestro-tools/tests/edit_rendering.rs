@@ -403,12 +403,7 @@ async fn native(name: &str) {
     let definition_dir = TempDir::new();
     definition_dir.file("file", b"definition decoy\n");
     let operations = Arc::new(edit_support::Operations::new(b"execution decoy\n"));
-    row.tool = create_edit_tool_definition(
-        definition_dir.text(),
-        EditToolOptions {
-            operations: Some(operations.clone()),
-        },
-    );
+    row.tool = edit_support::tool(&operations, &definition_dir.text());
     if let Some(file) = &case.file {
         row.dir.file("file", file.as_bytes());
     } else {

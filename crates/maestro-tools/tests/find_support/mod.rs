@@ -13,8 +13,7 @@ use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch};
 use maestro_tools::{
     FindGlobOptions, FindOperations, FindToolDetails, FindToolInput, FindToolOptions, ToolsManager,
-    create_find_tool, create_find_tool_definition,
-    output::truncate::{TruncationBy, TruncationResult},
+    create_find_tool, create_find_tool_definition, output::truncate::TruncationBy,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -263,19 +262,7 @@ fn result(value: &Value) -> AgentToolResult<FindToolDetails> {
     let recorded: RecordedResult = serde_json::from_value(value.clone()).unwrap();
     let details = recorded.details.map(|d| FindToolDetails {
         result_limit_reached: d.result_limit_reached,
-        truncation: d.truncation.map(|c| TruncationResult {
-            content: String::new(),
-            truncated: c.truncated,
-            max_bytes: c.max_bytes,
-            truncated_by: Some(TruncationBy::Bytes),
-            total_lines: 0,
-            total_bytes: 0,
-            output_lines: 0,
-            output_bytes: 0,
-            last_line_partial: false,
-            first_line_exceeds_limit: false,
-            max_lines: 0,
-        }),
+        truncation: d.truncation.map(|c| c.result(Some(TruncationBy::Bytes))),
     });
     AgentToolResult {
         content: recorded.content,
