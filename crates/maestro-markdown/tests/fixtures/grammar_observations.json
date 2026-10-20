@@ -13644,6 +13644,57 @@
     ]
   },
   {
+    "id": "emphasis:previous-underscore-pair",
+    "group": "emphasis",
+    "input": "a__*.b*",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a__*.b*"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a__*.b*"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a__*.b*"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a__*.b*"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
     "id": "emphasis:previous-underscore-run",
     "group": "emphasis",
     "input": "__.a_",

@@ -455,7 +455,7 @@ fn escapes_preserve_authored_and_decoded_units() {
 
 #[test]
 fn emphasis_respects_unicode_flanking_masks_and_runs() {
-    check("emphasis", 17);
+    check("emphasis", 18);
 }
 
 #[test]
