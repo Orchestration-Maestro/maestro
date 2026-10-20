@@ -193,14 +193,11 @@ fn cases(test: &str) {
         })
         .collect();
     assert!(!rows.is_empty(), "test must own recorded cases");
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async move {
-            for row in rows {
-                run_case(row).await;
-            }
-        });
+    crate::runtime::run(async move {
+        for row in rows {
+            run_case(row).await;
+        }
+    });
 }
 /// Drives one recipe and checks only its completed invocation.
 async fn run_case(row: Row) {

@@ -582,9 +582,7 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
         },
         Controlled(Rc::new(Effects::default())),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     assert!(
         manager
             .add_source_to_settings("npm: pkg@latest ", None)

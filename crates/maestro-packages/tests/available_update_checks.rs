@@ -105,10 +105,7 @@ fn check(
 ) -> std::io::Result<Vec<maestro_packages::PackageUpdate>> {
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let result = runtime.block_on(local.run_until(manager.check_for_available_updates()));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     result
@@ -1015,10 +1012,7 @@ fn native_git_availability_leaves_head_and_contents_unchanged() {
         )]);
     let before = settings.borrow().get_project_settings();
     let local = Rc::new(tokio::task::LocalSet::new());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let captured = Rc::new(RefCell::new(Vec::new()));
     let manager = recording_manager(root.to_str().unwrap(), &settings, &local, &captured);
     std::fs::write(install.join("untracked"), "mine").unwrap();

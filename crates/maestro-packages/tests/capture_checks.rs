@@ -6,13 +6,7 @@ use crate::scratch;
 use maestro_packages::{CommandCaptureOptions, NativePackageOperations, PackageOperations};
 use std::{io, rc::Rc, time::Duration};
 
-/// A native runtime with process and timer support.
-pub(crate) fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-}
+use crate::runtime::runtime;
 /// Captures an owned shell fixture through the native adapter.
 fn shell(script: &str, timeout: Option<Duration>) -> io::Result<String> {
     let local = Rc::new(tokio::task::LocalSet::new());

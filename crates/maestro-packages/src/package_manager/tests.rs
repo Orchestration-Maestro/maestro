@@ -4,6 +4,10 @@
 use super::operations::{home, recover_environment};
 use std::{cell::Cell, collections::BTreeMap, io};
 
+#[cfg(unix)]
+#[path = "../../tests/support/runtime.rs"]
+pub(super) mod runtime;
+
 #[test]
 fn empty_linux_environment_recovery_preserves_entries() {
     let reads = Cell::new(0);
@@ -148,11 +152,7 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
                 .clone(),
         );
         let manager = native_manager(settings);
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let result = runtime.block_on(manager.latest_npm_version("x"));
+        let result = runtime::run(manager.latest_npm_version("x"));
         if let Some(expected) = expected {
             assert_eq!(result.unwrap(), expected);
         } else if output.is_empty() {
@@ -171,13 +171,8 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
             .clone(),
     );
     let manager = native_manager(settings);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
     assert_eq!(
-        runtime
-            .block_on(manager.latest_npm_version("example"))
+        runtime::run(manager.latest_npm_version("example"))
             .unwrap_err()
             .to_string(),
         "Empty response from npm view"
@@ -218,11 +213,7 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
         );
     }
     let manager = native_manager(maestro_settings::Settings::default());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let result = runtime.block_on(manager.remote_git_head(path.to_str().unwrap()));
+    let result = runtime::run(manager.remote_git_head(path.to_str().unwrap()));
     std::fs::remove_dir_all(path).unwrap();
     assert_eq!(
         result.unwrap_err().to_string(),

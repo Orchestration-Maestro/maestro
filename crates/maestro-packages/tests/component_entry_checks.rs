@@ -44,9 +44,7 @@ fn cases(names: &[&str]) {
         assert!(ids.insert(value["id"].to_string()));
         assert!(inputs.insert(value["input"].to_string()));
     }
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     for name in names {
         let case = all.iter().find(|c| c.id == *name).unwrap();
         let dir = scratch::Scratch::new().unwrap();

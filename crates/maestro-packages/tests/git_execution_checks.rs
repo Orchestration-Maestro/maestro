@@ -22,10 +22,7 @@ fn run(responses: &[&str]) -> Rc<support::Effects> {
         .extend(responses.iter().map(|text| Ok((*text).into())));
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     runtime
         .block_on(local.run_until(Rc::new(manager).update(None)))
         .unwrap();
@@ -204,10 +201,7 @@ fn controlled_refresh(
     configure(&effects, &settings);
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let result = runtime.block_on(local.run_until(Rc::new(manager).update(None)));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     (effects, result)
@@ -342,10 +336,7 @@ fn missing_unpinned_git_content_uses_existing_install() {
         }
         let local = Rc::new(tokio::task::LocalSet::new());
         *effects.local.borrow_mut() = Rc::downgrade(&local);
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::runtime::runtime();
         let result = runtime.block_on(local.run_until(Rc::new(manager).update(None)));
         runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
         assert_eq!(result.is_err(), failure);

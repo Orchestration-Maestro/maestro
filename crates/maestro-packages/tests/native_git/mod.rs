@@ -100,10 +100,7 @@ impl Repository {
             },
             NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
         ));
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::runtime::runtime();
         runtime
             .block_on(local.run_until(manager.update(source)))
             .unwrap();

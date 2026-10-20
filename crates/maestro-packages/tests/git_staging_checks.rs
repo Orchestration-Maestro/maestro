@@ -482,12 +482,8 @@ fn acquisition_route(fixture: &Fixture, route: &str, source: &str) -> io::Result
         ))
         .map(drop),
         "update" => {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
             let future = fixture.manager.clone().update(Some(source));
-            runtime.block_on(fixture.local.run_until(future))
+            crate::runtime::run(fixture.local.run_until(future))
         }
         _ => unreachable!(),
     }
@@ -1008,10 +1004,7 @@ fn check_settings_case(case: &SettingsCase, index: usize) {
         "row {index}"
     );
     assert_eq!(untouched, other);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    runtime.block_on(settings.borrow().flush());
+    crate::runtime::run(settings.borrow().flush());
     assert_eq!(
         *storage.scopes.lock().unwrap(),
         case.expected.writes,

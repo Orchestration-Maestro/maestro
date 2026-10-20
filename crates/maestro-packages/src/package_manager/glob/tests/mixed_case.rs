@@ -135,9 +135,7 @@ impl Drop for Policy {
 /// Promotion matches comparison keys but retains the authored path and metadata.
 #[test]
 fn manifest_mixed_case_promotion_keeps_authored_alias() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::package_manager::tests::runtime::runtime();
     for (policy, name) in [(Platform::Darwin, "darwin"), (Platform::Windows, "windows")] {
         super::super::TEST_PLATFORM.with(|selected| selected.set(Some(policy)));
         let _policy = Policy;

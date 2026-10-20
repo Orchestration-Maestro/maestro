@@ -43,10 +43,7 @@ fn updates_selected_unpinned_source_beside_pin() {
         },
         NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
     ));
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     runtime.block_on(local.run_until(async {
         Rc::new(manager).update(Some("npm:example")).await.unwrap();
         native.update(Some("npm:example")).await.unwrap();
@@ -101,10 +98,7 @@ fn update(
 ) -> std::io::Result<()> {
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime::runtime();
     let result = runtime.block_on(local.run_until(manager.update(source)));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
     result
@@ -743,10 +737,7 @@ fn project_batch_preparation_keeps_existing_files() {
             },
             NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
         ));
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::runtime::runtime();
         runtime
             .block_on(local.run_until(manager.update(None)))
             .unwrap();
@@ -807,10 +798,7 @@ fn runtime_admission_errors_keep_accepted_work() {
     );
     let (manager, _, effects) = configured(json!([]), json!(["npm:a"]));
     assert_eq!(
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(manager.update(None))
+        crate::runtime::run(manager.update(None))
             .unwrap_err()
             .to_string(),
         "stopped runtime"

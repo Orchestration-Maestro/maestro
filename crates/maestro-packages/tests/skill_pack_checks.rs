@@ -116,12 +116,10 @@ fn resolve_paths(package: &Path, root: &str) -> Vec<String> {
         },
         support::Controlled(Rc::clone(&effects)),
     );
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    let resolved = runtime
-        .block_on(manager.resolve_extension_sources(&[package.to_str().unwrap().into()], None))
-        .unwrap();
+    let resolved = crate::runtime::run(
+        manager.resolve_extension_sources(&[package.to_str().unwrap().into()], None),
+    )
+    .unwrap();
     assert!(resolved.extensions.is_empty());
     assert!(resolved.prompts.is_empty());
     assert!(resolved.themes.is_empty());

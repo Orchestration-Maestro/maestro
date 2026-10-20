@@ -563,13 +563,5 @@ fn assert_reads(case: &Recorded, effects: &support::Effects) {
     }
 }
 
-/// Drives a recipe on a caller-owned runtime without generated test hooks.
-pub fn block_on(operation: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(operation);
-}
-
 #[cfg(unix)]
 pub mod native;
