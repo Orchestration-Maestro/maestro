@@ -3,6 +3,92 @@
 use super::*;
 
 #[test]
+fn runtime_state_changed_event_waits_for_queue_space_instead_of_dropping() {
+    crate::tests::block_on(async {
+        use crate::events::AppEvent;
+        use maestro_workspace::layout::PaneId;
+        use std::{
+            future::Future,
+            task::{Context, Poll, Waker},
+        };
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let pane_id = PaneId::from_raw(42);
+        let observed_at = Instant::now();
+        tx.send(AppEvent::AgentProcessDetected {
+            pane_id,
+            agent: Agent::Codex,
+            observed_at,
+        })
+        .await
+        .unwrap();
+        let expected = AppEvent::StateChanged {
+            pane_id,
+            agent: Some(Agent::Codex),
+            state: AgentState::Idle,
+            visible_blocker: false,
+            visible_working: false,
+            process_exited: true,
+            observed_at,
+        };
+        let publish = expected.publish(&tx);
+        tokio::pin!(publish);
+        assert!(matches!(
+            publish
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Pending
+        ));
+        assert!(matches!(
+            rx.recv().await,
+            Some(AppEvent::AgentProcessDetected { .. })
+        ));
+        publish.await;
+        assert!(matches!(rx.recv().await, Some(AppEvent::StateChanged {
+        pane_id: actual,
+        agent: Some(Agent::Codex),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: true,
+        observed_at: actual_time,
+    }) if actual == pane_id && actual_time == observed_at));
+    });
+}
+
+#[test]
+fn osc_detection_uses_supplied_cache_and_process_exit_overrides_transcript() {
+    use maestro_detection::manifest::{DetectionInput, ManifestCache};
+    let cache = ManifestCache::new(None, None).unwrap();
+    let transcript = "showing detailed transcript\nctrl+o to toggle";
+    let input = DetectionInput {
+        screen: transcript,
+        osc_title: "",
+        osc_progress: "",
+    };
+    assert!(
+        detection_update_for_publish_with_osc(&cache, Some(Agent::Claude), input, false).is_none()
+    );
+    let exited =
+        detection_update_for_publish_with_osc(&cache, Some(Agent::Claude), input, true).unwrap();
+    assert_eq!(exited.state, AgentState::Idle);
+    assert!(exited.visible.visible_idle);
+    let active = detection_update_for_publish_with_osc(
+        &cache,
+        Some(Agent::Claude),
+        DetectionInput {
+            screen: "",
+            osc_title: "⠋ Working",
+            osc_progress: "",
+        },
+        false,
+    )
+    .unwrap();
+    assert_eq!(active.state, AgentState::Working);
+    assert!(active.visible.visible_working);
+}
+
+#[test]
 fn runtime_screen_read_skips_unchanged_idle_bottom_buffer() {
     assert_eq!(
         decide_detection_screen_read(DetectionScreenReadInput {

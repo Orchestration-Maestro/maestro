@@ -236,6 +236,34 @@ pub fn decide_screen_detection_publish(
     }
 }
 
+/// Evaluates supplied screen and OSC evidence, unless completion forces visible idle.
+#[must_use]
+pub fn detection_update_for_publish_with_osc(
+    cache: &maestro_detection::manifest::ManifestCache,
+    agent: Option<Agent>,
+    input: maestro_detection::manifest::DetectionInput<'_>,
+    process_exited: bool,
+) -> Option<AgentDetection> {
+    if process_exited {
+        return Some(AgentDetection {
+            state: AgentState::Idle,
+            skip_state_update: false,
+            visible: AgentVisibility {
+                visible_idle: true,
+                ..AgentVisibility::default()
+            },
+        });
+    }
+    let detection = maestro_detection::detect_agent_with_osc(
+        cache,
+        agent,
+        input.screen,
+        input.osc_title,
+        input.osc_progress,
+    );
+    (!detection.skip_state_update).then_some(detection)
+}
+
 /// Invalidates detection scan reuse after any nonempty raw PTY read.
 pub fn observe_detection_content_change(
     bytes: &[u8],

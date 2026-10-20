@@ -41,3 +41,9 @@ pub mod render_prof;
 
 /// Coalesced pane render and metadata requests.
 pub mod render_signal;
+
+/// Lossless background pane event delivery.
+pub mod events;
+
+#[cfg(test)]
+mod tests;

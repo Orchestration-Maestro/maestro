@@ -39,3 +39,7 @@ pub mod launch_env;
 /// Foreground process probing policy.
 #[cfg(target_os = "linux")]
 pub mod probe;
+
+/// Asynchronous foreground and screen detection.
+#[cfg(target_os = "linux")]
+pub mod detection_task;

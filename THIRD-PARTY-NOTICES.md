@@ -795,10 +795,12 @@ also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
 noninteractive process builder, Linux platform operations, shared Unix quoting
 and PTY backend, descriptor and actor modules.
 
-The pane launch environment, shell, foreground probe and screen detection policy in
-`crates/maestro-daemon/src/pane/{launch_env,shell,probe,agent_detection}.rs`, their submodules and
-their tests derive from the pane, platform and integration environment sources
-under the same license. Native login argument zero follows the terminal command builder
+The pane launch environment, shell, foreground probe, screen detection policy and
+async detector in
+`crates/maestro-daemon/src/pane/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
+their submodules and their tests derive from the pane, platform and integration
+environment sources under the same license. Background pane records and delivery
+in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources. Native login argument zero follows the terminal command builder
 (`vendor/portable-pty/src/cmdbuilder.rs`, MIT). The adapter uses Rust
 `CommandExt::arg0` rather than incorporating that library or its native calls.
 

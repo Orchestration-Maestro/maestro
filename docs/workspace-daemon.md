@@ -187,6 +187,19 @@ a changed identity or process exit bypasses that hold. Unchanged visible blocker
 evidence is refreshed after 800 ms. The caller owns observation times and applies
 the returned decision; these helpers do not start the detection task.
 
+On Linux, `maestro_daemon::pane::detection_task::spawn_basic_detection_task`
+starts fallback detection for an imported pane. The caller supplies the terminal,
+child identity, content revision, compiled manifest cache and event queue. The
+detector reports a newly identified process before a three-second startup grace
+and clears the previous process's OSC evidence. Lifecycle activation resets
+fallback tracking, while an explicit release suppresses reacquisition for one
+second. The caller must cancel and join the returned task on teardown.
+
+`maestro_daemon::events::AppEvent` carries process observations and screen state
+changes. Its async publisher waits for queue space rather than dropping these
+transitions; a closed receiver produces a warning. Spawned-pane wiring, child
+watching and runtime handoff are not yet delivered.
+
 `maestro_daemon::render_signal::RenderSignal` coalesces render work while retaining
 its origins: generic requests, pane terminal damage and terminal-title changes.
 Hidden panes share one pending wakeup. A newly damaged visible pane or a new title
