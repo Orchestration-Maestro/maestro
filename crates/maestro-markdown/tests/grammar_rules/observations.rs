@@ -19,7 +19,7 @@ struct Row {
     targets: Vec<Value>,
     /// Recorded joined authored spellings at block inline scopes.
     ///
-    /// Absent for families recorded without metadata; a null target is deliberately
+    /// Absent for rows recorded without metadata; a null target is deliberately
     /// excluded. Absence and null targets match those of `link_labels`.
     inline_authored: Option<[Option<Vec<String>>; 4]>,
     /// Recorded link labels, absent and excluded exactly where `inline_authored` is.
