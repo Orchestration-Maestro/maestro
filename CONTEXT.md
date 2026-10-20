@@ -138,6 +138,20 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **File pattern:** A glob or ignore rule matched against relative file paths.
 - **Resource:** Discovered instruction material, such as skills, prompt templates or context files, with source/provenance data and entry-point-specific ordering.
 
+Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Native callers use its default JSON schema through models; guest authoring keeps
+its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
+and extension error delivery reuse it; dispatch and lifecycle policy remain with
+their callers. The collection returns removed ownership for release outside guards.
+
+- **Registered tool:** A retained typed definition with shared provenance in the
+  extension's ordered owner. Callback ownership follows the facade; invocation is
+  local with a fresh concrete context. SDK standalone defaults remain threaded.
+- **Shared extension events:** Generic event/result schemas and assembled prompt
+  records owned by request, re-exported by models and specialized by native/guest
+  aliases; adapter capabilities and stream snapshots remain adapter-owned.
+
 ### Interfaces
 
 - **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends. Its read-only contract and live status view belong to `maestro-extensions`, whose footer factories receive them.
@@ -194,6 +208,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination, reaping, Linux pane terminals and their shared retained-front byte queue) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
 - **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native, std-only test-support leaf that owns one named test's isolated execution: it starts a libtest child for that test and proves the child started exactly that test; distinct from product process execution (**Process**). It is reached only through native development dependencies of its declared callers. See the [contract](docs/specs/maestro-port.md#test-process-owner).
 - **Foundation utility:** The `maestro-path` library of lexical path operations and of home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
+- **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
 - **Dependencies:** The generated `maestro-dependencies` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
@@ -244,23 +259,6 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Workspace action:** A declarative command, pane or hook delivered as package content and run by the daemon's command runner.
 - **Multiplexer:** The full-screen frontend attaching to a workspace daemon to show its frames.
 - **Attach / detach:** Connecting a multiplexer client to a daemon, and leaving the daemon running.
-
-Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
-and extension error delivery reuse it; dispatch and lifecycle policy remain with
-their callers. The collection returns removed ownership for release outside guards.
-
-
-- **Registered tool:** A retained typed definition with shared provenance in the
-  extension's ordered owner. Callback ownership follows the facade; invocation is
-  local with a fresh concrete context. SDK standalone defaults remain threaded.
-- **Shared extension events:** Generic event/result schemas and assembled prompt
-  records owned by request, re-exported by models and specialized by native/guest
-  aliases; adapter capabilities and stream snapshots remain adapter-owned.
-
-- **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
 
 ## Packages
 
