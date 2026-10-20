@@ -62,6 +62,10 @@ pub fn spawn(
 /// Builds the native command once from its owned launch policy.
 fn native_command(description: PtyCommand) -> Command {
     let mut command = Command::new(description.program);
+    if let Some(argv0) = description.argv0 {
+        use std::os::unix::process::CommandExt;
+        command.arg0(argv0);
+    }
     command.args(description.args);
     if let Some(cwd) = description.cwd {
         command.current_dir(cwd);
@@ -134,3 +138,6 @@ fn exec_target(command: Command) -> io::Result<Infallible> {
     command.stderr(Stdio::from(fd::duplicate(io::stdin())?));
     Err(command.into_std().exec())
 }
+
+#[cfg(test)]
+mod tests;

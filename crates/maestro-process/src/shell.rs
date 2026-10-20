@@ -237,6 +237,7 @@ pub fn scrollback_editor_argv(path: &std::path::Path) -> std::io::Result<Vec<Str
 pub fn pane_custom_command_pty_builder(text: &str) -> crate::pty::PtyCommand {
     crate::pty::PtyCommand {
         program: "/bin/sh".into(),
+        argv0: None,
         args: vec!["-c".into(), text.into()],
         cwd: None,
         environment: crate::pty::PtyEnvironment::Inherit(Vec::new()),

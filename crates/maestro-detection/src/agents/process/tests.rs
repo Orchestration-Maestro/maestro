@@ -28,6 +28,19 @@ fn temp_detection_path(name: &str) -> std::path::PathBuf {
 }
 
 #[test]
+fn borrowed_process_recognizes_wrapped_agent_without_a_job_copy() {
+    let process = foreground_process(42, "node", &["node", "/path/to/bin/codex"]);
+    assert_eq!(
+        identify_agent_in_process(&process),
+        Some((Agent::Codex, "codex".into()))
+    );
+    assert_eq!(
+        identify_agent_in_process(&foreground_process(43, "bash", &["bash"])),
+        None
+    );
+}
+
+#[test]
 fn job_selection_recognizes_a_wrapped_agent() {
     let job = maestro_process::pty::foreground::ForegroundJob {
         process_group_id: 123,

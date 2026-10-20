@@ -246,8 +246,13 @@ native operation implementations share one driver. The process leaf's
 ## PTY children
 
 On Linux, `maestro_process::pty::spawn` returns separate terminal-master and child
-owners. Its caller supplies a setup-entry adapter that preserves native arguments,
-working directory and explicit inherited or replacement environment policy.
+owners. `PtySetupEntry` supplies the executable and arguments that invoke the
+process-owned child setup entry. Its `spawn` operation preserves native target
+arguments, working directory and inherited or replacement environment policy.
+The entry executable calls `setup_entry` before ordinary argument parsing; that
+function returns `None` for ordinary startup and replaces a setup invocation with
+its target. A returning setup error requires an unsuccessful process exit.
+The lower-level `spawn` also accepts a caller-owned setup adapter.
 `setup_and_exec` resets terminal signals, creates a session, acquires the controlling
 terminal and replaces the setup process with the target. Setup failures retain their
 original error text; the parent keeps one close-on-exec master after startup.
@@ -257,6 +262,7 @@ callback, queues ordered replies and applies resizes before their attached repli
 User input has bounded capacity; geometry and handoff controls use an independent
 route. Handoff drains accepted input before pausing reads and rejecting new input.
 Rollback reopens admission; successful committed release stops I/O and joins the worker.
+After an ordinary shutdown or natural exit, `wait_closed` joins that same worker.
 The optional reader-exit hook returns an owned future. The actor awaits it before
 releasing its master. Graceful shutdown keeps the runtime and notification consumers
 alive until pending hooks finish; destroying the runtime cancels them and closes
@@ -266,5 +272,7 @@ The platform-independent `foreground` module owns `ForegroundJob` and
 `ForegroundProcess` observations. Linux retains their existing `pty::foreground`
 paths as re-exports. The Linux-only `pty::foreground` module reads live process
 groups, arguments, native working directories, raw environment values and session
-membership. Detection mode and the
-environment-variable name come from the caller. See [pane processes](workspace-daemon.md#pane-processes).
+membership. `session_processes_by_id` takes the original session identity, which terminal
+setup establishes as the spawned child's PID; it does not need a live leader.
+`session_processes` instead resolves a live member's session before enumerating it.
+Detection mode and the environment-variable name come from the caller. See [pane processes](workspace-daemon.md#pane-processes).

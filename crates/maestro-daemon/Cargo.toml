@@ -6,6 +6,7 @@ license = "Apache-2.0"
 repository.workspace = true
 
 [dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "time", "macros"] }
 regex.workspace = true
 tracing-subscriber = { version = "=0.3.23", features = ["env-filter"] }
 sha2 = { version = "=0.11.0", default-features = false }
@@ -25,6 +26,9 @@ maestro-terminal = { path = "../maestro-terminal" }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-process = { path = "../maestro-process" }
 maestro-dependencies.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
 
 [dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt"] }

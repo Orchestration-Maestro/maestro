@@ -2,6 +2,9 @@
 
 mod input;
 
+/// Screen scan and publication policy for pane detection.
+pub mod agent_detection;
+
 /// Cursor position settling.
 pub mod cursor;
 
@@ -24,3 +27,26 @@ pub enum WheelRouting {
     /// Navigate retained host scrollback.
     HostScroll,
 }
+
+/// Pane launch environment and shell selection.
+#[cfg(target_os = "linux")]
+pub mod shell;
+
+/// Pane terminal identity and launch environment.
+#[cfg(target_os = "linux")]
+pub mod launch_env;
+
+/// Foreground process probing policy.
+#[cfg(target_os = "linux")]
+pub mod probe;
+
+/// Asynchronous foreground and screen detection.
+#[cfg(target_os = "linux")]
+pub mod detection_task;
+
+/// Owned native pane processes and terminal I/O.
+#[cfg(target_os = "linux")]
+pub mod runtime;
+
+#[cfg(target_os = "linux")]
+pub use runtime::{AgentDetection, FocusEvent, PaneRuntime, PaneRuntimeConfig, SpawnInitialState};

@@ -34,6 +34,7 @@ fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> Foreg
         .output_with(|harness| {
             let command = PtyCommand {
                 program: std::env::current_exe()?.into_os_string(),
+                argv0: None,
                 args: harness.iter().map(Into::into).collect(),
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![(

@@ -511,6 +511,18 @@ These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
 
+### Terminal child setup entry
+
+`maestro-process` owns the parent-side terminal launch and the child-side setup
+entry. The composition root calls `maestro_process::pty::setup_entry` before
+ordinary argument parsing. A setup invocation acquires its terminal session,
+resets signals and replaces itself with the requested command. The parent passes
+an explicit executable and entry arguments; libraries never assume the current
+executable implements the entry. Re-execution avoids an unsafe post-fork hook.
+
+Daemon runtime tests use the checked test-process owner to select a child test
+that calls this same entry. The test-process leaf does not depend on process.
+
 ### Test process owner
 
 `maestro-test-process` is a dedicated, unpublished, native, std-only test-support
@@ -519,7 +531,7 @@ test. It has no workspace dependencies except the native feature unifier, and it
 excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-credentials`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
@@ -531,6 +543,11 @@ remains subject to both cycle checks. A live pipe-closure transaction first uses
 `run_alone` to run in a fresh single-test process, avoiding sibling forks that
 could inherit its pipe ends. File-backed proof accepts only an empty file with
 its cursor at zero, so earlier bytes cannot prove that the selected test started.
+`TestProcess::invoke_with` checks eligibility and supplies exact harness arguments
+to a caller-owned invoker without claiming startup. Such callers observe the
+one-test prologue through their own transport, followed by product readiness and
+completion. `output_with` uses this same selection operation and additionally
+checks its returned output's prologue.
 
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The

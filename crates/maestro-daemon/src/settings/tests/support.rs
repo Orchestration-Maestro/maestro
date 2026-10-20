@@ -1,7 +1,6 @@
 //! Controlled settings-owner and warning fixtures.
 
 use std::{
-    future::Future,
     io::{self, Write},
     sync::{Arc, Mutex},
 };
@@ -9,13 +8,7 @@ use std::{
 use maestro_settings::{InMemorySettingsStorage, SettingsManager, SettingsScope, SettingsStorage};
 use serde_json::Value;
 
-/// Drive the settings owner's barrier without test deadlines.
-pub fn block_on<T>(future: impl Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
+pub(crate) use crate::tests::block_on;
 
 /// Replace raw storage through its existing seam.
 pub fn put(storage: &dyn SettingsStorage, scope: SettingsScope, text: &str) {

@@ -3,8 +3,10 @@
 pub mod foreground;
 
 mod backend;
+mod entry;
 mod fd;
 pub use backend::{setup_and_exec, spawn};
+pub use entry::{PtySetupEntry, setup_entry};
 
 use std::{ffi::OsString, io, os::fd::OwnedFd, path::PathBuf};
 
@@ -33,6 +35,8 @@ pub struct PtySize {
 pub struct PtyCommand {
     /// Native executable operand.
     pub program: OsString,
+    /// Optional Unix argument zero, independent of the executable path.
+    pub argv0: Option<OsString>,
     /// Ordered native arguments.
     pub args: Vec<OsString>,
     /// Working directory selected before launch.

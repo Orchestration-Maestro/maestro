@@ -130,9 +130,16 @@ impl Procfs<'_> {
         })
     }
 
-    /// Lists processes sharing the child's current session.
+    /// Lists processes sharing a live member's session.
     pub(super) fn session_processes(&self, child: u32) -> Vec<u32> {
-        let Some(session) = self.stat_field(child, 3) else {
+        self.stat_field(child, 3)
+            .and_then(|session| u32::try_from(session).ok())
+            .map_or_else(Vec::new, |session| self.session_processes_by_id(session))
+    }
+
+    /// Lists members by their original session identity, without reading its leader.
+    pub(super) fn session_processes_by_id(&self, session: u32) -> Vec<u32> {
+        let Some(session) = i32::try_from(session).ok().filter(|session| *session > 0) else {
             return Vec::new();
         };
         numeric_entries(self.0)
@@ -240,8 +247,17 @@ pub fn process_environment_value(pid: u32, name: &str) -> Option<String> {
     environment_value(&bytes, name)
 }
 
-/// Lists readable processes in the child's session.
+/// Lists readable processes in a live member's session.
 #[must_use]
 pub fn session_processes(child_pid: u32) -> Vec<u32> {
     Procfs::native().session_processes(child_pid)
+}
+
+/// Lists readable members of a retained terminal session, even after its leader is reaped.
+///
+/// Terminal setup creates a new session whose identity is the spawned child's PID.
+/// Pass that original identity, not the PID of an arbitrary member.
+#[must_use]
+pub fn session_processes_by_id(session_id: u32) -> Vec<u32> {
+    Procfs::native().session_processes_by_id(session_id)
 }

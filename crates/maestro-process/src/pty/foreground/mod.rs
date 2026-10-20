@@ -109,7 +109,7 @@ mod linux;
 pub use linux::{
     foreground_group_leader_job, foreground_job, foreground_process_group_id,
     foreground_process_group_id_for_tty_fd, process_cwd, process_environment_value,
-    session_processes,
+    session_processes, session_processes_by_id,
 };
 
 pub use crate::foreground::{ForegroundJob, ForegroundProcess};

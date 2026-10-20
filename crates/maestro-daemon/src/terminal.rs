@@ -8,3 +8,7 @@ pub mod state;
 
 /// Per-source presentation metadata.
 pub mod metadata;
+
+/// Native live runtime ownership separate from retained workspace state.
+#[cfg(target_os = "linux")]
+pub mod runtime_registry;

@@ -755,6 +755,14 @@ caller-owned rendering and scheduling. Semantic character-key policy in
 keyboard-stack replay in `src/kitty/key.rs` and `src/formatter/vt.rs` derives from
 the pane keyboard tracker. The encoder retains Unicode codepoints rather than
 truncating unmapped control characters to a byte.
+Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its
+tests derives from the render signal module under the same license.
+The pane runtime, launch environment, shell selection, foreground probing and
+agent detection under `crates/maestro-daemon/src/pane/`, `events.rs`,
+`handoff_runtime.rs` and `terminal/runtime_registry.rs` derive from the pane,
+event, handoff-runtime and terminal-runtime-registry modules under the same
+license. The native child setup entry in `crates/maestro-process/src/pty/` uses
+safe re-execution in place of the source's post-fork setup.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
 conversions derive from the client input and protocol wire modules. The structured
@@ -792,6 +800,15 @@ The pane terminal, shell and foreground process code in `crates/maestro-process/
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
 noninteractive process builder, Linux platform operations, shared Unix quoting
 and PTY backend, descriptor and actor modules.
+
+The pane launch environment, shell, foreground probe, screen detection policy and
+async detector in
+`crates/maestro-daemon/src/pane/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
+their submodules and their tests derive from the pane, platform and integration
+environment sources under the same license. Background pane records and delivery
+in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources. Native login argument zero follows the terminal command builder
+(`vendor/portable-pty/src/cmdbuilder.rs`, MIT). The adapter uses Rust
+`CommandExt::arg0` rather than incorporating that library or its native calls.
 
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations, owned identity allocation and separation of
@@ -1004,6 +1021,36 @@ The original licence follows.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```
+
+## Native login shell arguments
+
+The native pane launch adapter follows the login argument-zero behavior of
+portable-pty 0.9.0 (`src/cmdbuilder.rs`), copyright Wez Furlong, licensed under MIT.
+It uses the standard Rust command API without adding portable-pty as a dependency.
+
+```text
+MIT License
+
+Copyright (c) 2018 Wez Furlong
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ## Terminal emulator engine

@@ -128,10 +128,10 @@ geometry updates remain independent of that queue. During handoff, accepted inpu
 drains before reads pause. Only a quiesced actor can duplicate its master. Rollback
 resumes it; successful committed release closes the old owner without closing an
 owned duplicate. An optional asynchronous exit hook finishes before the old master
-is released. Graceful shutdown must keep draining critical notifications until
-pending hooks finish, before destroying the runtime. The
+is released. Before destroying the async runtime, drain critical notifications
+until pending hooks finish. Pane shutdown itself does not wait for event capacity. The
 [daemon loop delivery](https://github.com/Orchestration-Maestro/maestro/issues/1445)
-owns that integration; destroying the runtime cancels outstanding hooks and releases
+owns that integration; destroying the async runtime cancels outstanding hooks and releases
 their terminal resources.
 
 Shell builders retain login-shell custom commands, plain pane commands and
@@ -176,6 +176,107 @@ through the engine; highlighting and clipboard policy stay with the caller.
 
 Native Windows input fallback and recent-text qualification are tracked in
 [Windows qualification](https://github.com/Orchestration-Maestro/maestro/issues/1473).
+
+## Pane runtime
+
+`maestro_daemon::pane::agent_detection` supplies screen-scan and publication
+decisions. An identified idle pane can skip a scan when its content revision is
+unchanged and no identity, exit or pending-idle transition requires a read. Plain
+idle after working is held for three further observations or 700 ms; visible idle,
+a changed identity or process exit bypasses that hold. Unchanged visible blocker
+evidence is refreshed after 800 ms. The caller owns observation times and applies
+the returned decision; these helpers do not start the detection task.
+
+On Linux, `maestro_daemon::pane::detection_task::spawn_basic_detection_task`
+starts fallback detection for an imported pane. The caller supplies the terminal,
+child identity, content revision, compiled manifest cache and event queue. The
+detector reports a newly identified process before a three-second startup grace
+and clears the previous process's OSC evidence. Lifecycle activation resets
+fallback tracking, while an explicit release suppresses reacquisition for one
+second. The caller must cancel and join the returned task on teardown.
+
+`maestro_daemon::events::AppEvent` carries process observations and screen state
+changes. Its async publisher waits for queue space rather than dropping these
+transitions and pane death; a closed receiver produces a warning. Bell, clipboard
+and cwd metadata from the reader use nonblocking delivery.
+
+On Linux, `maestro_daemon::pane::PaneRuntime` owns the live terminal, child watcher,
+I/O actor and optional fallback detector. `PaneRuntimeConfig` supplies geometry,
+theme, manifest cache, event and render destinations, and a process-owned
+`PtySetupEntry`. The entry executable must call `maestro_process::pty::setup_entry`
+before its ordinary argument parser. The composition-root binary is separate from
+these library interfaces.
+
+Runtime constructors accept a configured shell, a shell command or literal argv.
+History is seeded before live reads. Spawned detectors use a 50 ms initial delay,
+then 500 ms for unidentified panes or 300 ms for identified panes; release or
+transient child colours use 50 ms rechecks. Imported panes reuse the same detector
+with the imported-pane cadence. Terminal reads aggregate bells, retain admitted
+cwd reports, send terminal replies through the actor and coalesce render requests.
+Focus reporting and bracketed paste use the destination's live modes. Runtime
+cursor reads gate visibility, clip to the supplied viewport and translate its
+coordinates. Pixel size requires nonzero dimensions without multiplication
+overflow. Alternate-screen wheel input becomes vertical cursor keys only when
+alternate-scroll routing is selected, using the live keyboard modes.
+
+Explicit shutdown cancels and joins detection and delayed work, requests I/O
+shutdown and escalates hangup, terminate and kill across the original terminal
+session, with 250 ms per signal. Session lookup uses the original session leader's
+identity even after that child is reaped. Shutdown returns without waiting for
+event capacity; the child watcher and imported-reader exit hook retain lossless
+pane-death delivery until the consumer reads. Dropping a runtime requests the
+same stop and session escalation but cannot await tasks.
+
+Handoff pauses readers after accepted input drains and duplicates the owned
+master. Export retains terminal modes, keyboard negotiation and the display title;
+primary-screen replay keeps up to 8 KiB of complete recent lines. Import starts
+paused without taking process ownership. Commit releases the old reader;
+`assume_handoff_ownership` makes the imported owner responsible for session shutdown.
+`terminal::runtime_registry::TerminalRuntimeRegistry` stores runtimes directly by
+durable terminal identity and coordinates reader pause, ownership and redraw.
+
+`maestro_daemon::render_signal::RenderSignal` coalesces render work while retaining
+its origins: generic requests, pane terminal damage and terminal-title changes.
+Hidden panes share one pending wakeup. A newly damaged visible pane or a new title
+source requests another wakeup even while hidden damage is pending. The caller
+supplies the visible pane set and performs the wakeup; the signal starts no task.
+
+`has_immediate_work` distinguishes visible damage, titles and generic work from
+hidden-only damage. `take` drains all accumulated origins together and clears the
+pending flag while retaining the supplied visibility policy. Reading title origins
+does not drain them or mark those panes as damaged.
+
+`maestro_daemon::pane::shell` builds native shell operands from supplied settings
+and environment observations. A configured shell wins over `SHELL`; blank values
+use `/bin/sh` on Unix or `powershell.exe` on Windows. Automatic mode uses a login
+shell only on macOS. Login mode resolves an executable path before launch and
+sets `SHELL`; on Unix, argument zero is `-` followed by the shell basename.
+Windows direct PowerShell launches wrap the profile prompt to report filesystem
+cwd without changing the status observed by the original prompt.
+
+`maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
+(`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
+id, and applies user environment pairs. User pairs can override terminal defaults.
+The daemon marker, supplied socket/binary paths and managed workspace/tab/pane
+identity then override user pairs. Callers may retain inherited identity or remove
+only the pane id. Existing replacement environments remain replacements.
+
+The native PTY adapter is currently available on Linux; shell policy branches for
+Windows and macOS are exercised with supplied target and environment observations.
+
+`maestro_daemon::pane::probe` classifies foreground jobs using the shared process
+observations and agent catalogue. A leader environment hint wins over its name;
+an identifiable leader wins over a non-leader hint. Unidentified jobs retain the
+observed group without inventing an agent. Raw `MAESTRO_AGENT` values are read by
+`maestro-process` and classified here.
+
+Probe scheduling reacts to group changes, pending completion and restore checks.
+Unidentified same-group acquisition lasts up to eight seconds, checking every
+500 ms for the first 1.5 seconds and every two seconds afterward. Identified agents
+receive five-second safety checks; unidentified panes without a group receive
+30-second checks. Lifecycle authority skips stable routine scans but preserves
+exit and pending-release checks. Six consecutive misses release a retained
+identity; returning to the pane shell publishes completion before clearing it.
 
 ## Pane agents
 

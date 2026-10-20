@@ -2083,12 +2083,13 @@ const OWNER: &str = "maestro-test-process";
 const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
 /// Callers allowed to declare the test-process owner as a native development dependency.
-const OWNER_CALLERS: [&str; 19] = [
+const OWNER_CALLERS: [&str; 20] = [
     "maestro-agent",
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
+    "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
     "maestro-ipc",

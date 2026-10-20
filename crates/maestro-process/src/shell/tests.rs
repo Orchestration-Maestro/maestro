@@ -214,6 +214,7 @@ fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
 fn pane_custom_commands_keep_the_plain_command_flag() {
     let command = super::pane_custom_command_pty_builder("printf 'a,b'");
     assert_eq!(command.program, "/bin/sh");
+    assert!(command.argv0.is_none());
     assert_eq!(command.args, ["-c", "printf 'a,b'"]);
     assert!(command.cwd.is_none());
     assert!(

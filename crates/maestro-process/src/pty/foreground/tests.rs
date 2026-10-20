@@ -192,6 +192,23 @@ fn procfs_operations_select_live_foreground_and_session_results() {
     assert!(procfs.session_processes(9999).is_empty());
 }
 
+#[test]
+fn session_members_survive_the_reaped_session_leader() {
+    let tree = ProcTree::new();
+    tree.process(100, (100, 100, 100), "shell");
+    tree.process(200, (200, 100, 200), "survivor");
+    tree.process(300, (300, 300, 300), "foreign");
+    let procfs = super::linux::Procfs(&tree.0);
+    let mut members = procfs.session_processes_by_id(100);
+    members.sort_unstable();
+    assert_eq!(members, [100, 200]);
+    std::fs::remove_file(tree.0.join("100/stat")).unwrap();
+    assert_eq!(procfs.session_processes_by_id(100), [200]);
+    assert_eq!(procfs.session_processes(200), [200]);
+    assert!(procfs.session_processes_by_id(0).is_empty());
+    assert!(procfs.session_processes_by_id(u32::MAX).is_empty());
+}
+
 use super::linux::{environment_value, process_argv_from_bytes, process_pgrp_and_comm_from_stat};
 use std::{cell::RefCell, collections::HashMap};
 

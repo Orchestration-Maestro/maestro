@@ -22,29 +22,11 @@ fn size() -> PtySize {
 /// Carries native launch policy through one checked setup entry.
 fn wrap(mut command: PtyCommand, harness: &[String]) -> io::Result<PtyCommand> {
     let signals = command.args.iter().any(|arg| arg == "case:signals");
-    let program = std::mem::replace(
-        &mut command.program,
-        std::env::current_exe()?.into_os_string(),
-    );
-    let args = std::mem::replace(
-        &mut command.args,
-        harness.iter().map(OsString::from).collect(),
-    );
-    let mut transport = vec![
-        (OsString::from("MAESTRO_PTY_PROGRAM"), program),
-        ("MAESTRO_PTY_COUNT".into(), args.len().to_string().into()),
-    ];
-    transport.extend(
-        args.into_iter()
-            .enumerate()
-            .map(|(index, arg)| (format!("MAESTRO_PTY_ARG_{index}").into(), arg)),
-    );
-    match &mut command.environment {
-        PtyEnvironment::Inherit(edits) => {
-            edits.extend(transport.into_iter().map(|(key, value)| (key, Some(value))));
-        }
-        PtyEnvironment::Replace(values) => values.extend(transport),
+    command = pty::PtySetupEntry {
+        executable: std::env::current_exe()?,
+        args: harness.iter().map(OsString::from).collect(),
     }
+    .prepare(command);
     if signals {
         command.program = "/usr/bin/python3".into();
         command.args=vec!["-c".into(), "import os,signal,sys; s={signal.SIGHUP,signal.SIGINT,signal.SIGQUIT,signal.SIGALRM,signal.SIGTERM,signal.SIGCHLD}; [signal.signal(v,signal.SIG_IGN) for v in s]; signal.pthread_sigmask(signal.SIG_BLOCK,s); os.execv(sys.argv[1],sys.argv[1:])".into(),std::env::current_exe()?.into_os_string()];
@@ -55,28 +37,16 @@ fn wrap(mut command: PtyCommand, harness: &[String]) -> io::Result<PtyCommand> {
 
 #[test]
 fn setup_entry() {
-    let Some(program) = std::env::var_os("MAESTRO_PTY_PROGRAM") else {
-        return;
-    };
-    let count: usize = std::env::var("MAESTRO_PTY_COUNT").unwrap().parse().unwrap();
-    let mut command = Command::new(program);
-    command
-        .env_remove("MAESTRO_PTY_PROGRAM")
-        .env_remove("MAESTRO_PTY_COUNT");
-    for index in 0..count {
-        let key = format!("MAESTRO_PTY_ARG_{index}");
-        command.arg(std::env::var_os(&key).unwrap()).env_remove(key);
-    }
     if std::env::var_os("MAESTRO_PTY_DUP_FAILURE").is_some() {
         let original = rustix::process::getrlimit(rustix::process::Resource::Nofile);
         let mut limit = original;
         limit.current = Some(3);
         rustix::process::setrlimit(rustix::process::Resource::Nofile, limit).unwrap();
-        let error = pty::setup_and_exec(command);
+        let error = pty::setup_entry().unwrap();
         rustix::process::setrlimit(rustix::process::Resource::Nofile, original).unwrap();
         assert_eq!(error.raw_os_error(), Some(22));
-    } else {
-        let _ = pty::setup_and_exec(command);
+    } else if pty::setup_entry().is_none() {
+        return;
     }
     std::process::exit(1);
 }
@@ -130,9 +100,10 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
         .output_with(|harness| {
             let command = PtyCommand {
                 program: "/bin/sh".into(),
+                argv0: Some("-sh".into()),
                 args: vec![
                     "-ic".into(),
-                    r#"printf 'SHELL %s\n' "$$"; read -r token; printf 'GOT %s\n' "$token""#.into(),
+                    r#"printf 'ARG0 %s\n' "$0"; printf 'SHELL %s\n' "$$"; read -r token; printf 'GOT %s\n' "$token""#.into(),
                 ],
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![]),
@@ -160,6 +131,10 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
                     .any(|part| part == b"GOT literal input\r\n")
             );
             assert!(!String::from_utf8_lossy(&raw).contains("job control"));
+            assert!(
+                raw.windows(b"ARG0 -sh\r\n".len()).any(|part| part == b"ARG0 -sh\r\n"),
+                "{}", String::from_utf8_lossy(&raw)
+            );
             Ok::<_, io::Error>(Output {
                 status,
                 stdout: normalized(&raw),
@@ -317,6 +292,7 @@ fn assert_launch_policies() {
             .output_with(|harness| {
                 let command = PtyCommand {
                     program: std::env::current_exe()?.into_os_string(),
+                    argv0: None,
                     args: harness.iter().map(OsString::from).collect(),
                     cwd: Some("/".into()),
                     environment,
@@ -345,6 +321,7 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
         });
         let mut command = PtyCommand {
             program: native.get_program().to_owned(),
+            argv0: None,
             args: vec![],
             cwd: None,
             environment: PtyEnvironment::Inherit(vec![]),

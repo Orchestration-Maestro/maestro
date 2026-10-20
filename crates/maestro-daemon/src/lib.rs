@@ -38,3 +38,16 @@ pub mod selection;
 
 /// Opt-in render profiling through structured tracing.
 pub mod render_prof;
+
+/// Coalesced pane render and metadata requests.
+pub mod render_signal;
+
+/// Lossless background pane event delivery.
+pub mod events;
+
+#[cfg(test)]
+mod tests;
+
+/// Native terminal state transferred between workspace servers.
+#[cfg(unix)]
+pub mod handoff_runtime;
