@@ -406,39 +406,18 @@ pub fn rows_of(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 /// with one runs alone in a child holding exactly those variables.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows_of(fixture, test)?;
-    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .env("MAESTRO_CHILD_CASE", "*")
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
-        for row in owned.iter().filter(|row| row.case.env.is_some()) {
-            let variables: Vec<(&str, &str)> = row
-                .case
-                .env
-                .iter()
-                .flatten()
-                .map(|(name, value)| (name.as_str(), value.as_str()))
-                .collect();
-            {
-                let output = maestro_test_process::TestProcess::current(test)?
-                    .nocapture()
-                    .env_clear()
-                    .envs(variables.iter().copied())
-                    .env("MAESTRO_CHILD_CASE", &row.id)
-                    .output()?;
-                assert!(output.status.success(), "{output:?}");
-            };
-        }
-        return Ok(());
-    };
-    for row in owned
-        .iter()
-        .filter(|row| (selected == "*" && row.case.env.is_none()) || row.id == selected)
-    {
+    for row in crate::environment_rows::selected(
+        test,
+        &owned,
+        |_, row| Ok(row.id.clone()),
+        |row| {
+            Ok(row.case.env.as_ref().map(|env| {
+                env.iter()
+                    .map(|(name, value)| (name.as_str(), value.as_str()))
+                    .collect()
+            }))
+        },
+    )? {
         assert_run(row, &run_case(&row.case).await?);
     }
     Ok(())
