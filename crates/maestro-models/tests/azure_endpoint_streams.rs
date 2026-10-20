@@ -6,58 +6,51 @@ use serde_json::{Value, json};
 
 #[test]
 fn azure_sequence_hooks_and_preserve_failures() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_sequence_hooks_and_preserve_failures"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_sequence_hooks_and_preserve_failures",
+    ))
 }
 
 #[test]
 fn azure_keep_failure_precedence_before_transport() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_keep_failure_precedence_before_transport"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_keep_failure_precedence_before_transport",
+    ))
 }
 
 #[test]
 fn azure_finish_terminal_outcomes_with_partial_identity() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_finish_terminal_outcomes_with_partial_identity"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_finish_terminal_outcomes_with_partial_identity",
+    ))
 }
 
 #[test]
 fn azure_retain_model_identity_usage_and_unscaled_cost() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_retain_model_identity_usage_and_unscaled_cost"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_retain_model_identity_usage_and_unscaled_cost",
+    ))
 }
 
 #[test]
 fn azure_preserve_abort_stage_and_competing_error() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_preserve_abort_stage_and_competing_error"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_preserve_abort_stage_and_competing_error",
+    ))
 }
 
 #[test]
 fn azure_reuse_response_framing_and_error_selection() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_reuse_response_framing_and_error_selection"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_reuse_response_framing_and_error_selection",
+    ))
 }
 
 #[test]
 fn azure_return_http_errors_and_detect_overflow() -> chat::TestResult {
-    chat::block_on(
-        false,
-        endpoint::assert_rows("azure_return_http_errors_and_detect_overflow"),
-    )
+    crate::runtime::run(endpoint::assert_rows(
+        "azure_return_http_errors_and_detect_overflow",
+    ))
 }
 
 use crate::azure_cases;
@@ -66,17 +59,17 @@ use crate::response_runtime as runtime;
 
 #[test]
 fn azure_gate_hooks_and_cancel_partial_output() -> chat::TestResult {
-    chat::block_on(false, runtime::gated(runtime::Endpoint::Azure))
+    crate::runtime::run(runtime::gated(runtime::Endpoint::Azure))
 }
 
 #[test]
 fn azure_use_default_transport_for_native_results() -> chat::TestResult {
-    chat::block_on(false, runtime::native(runtime::Endpoint::Azure))
+    crate::runtime::run(runtime::native(runtime::Endpoint::Azure))
 }
 
 #[test]
 fn azure_forward_retry_timeout_and_signal_options() -> chat::TestResult {
-    chat::block_on(true, runtime::transport_options(runtime::Endpoint::Azure))
+    crate::runtime::run_paused(runtime::transport_options(runtime::Endpoint::Azure))
 }
 
 #[test]

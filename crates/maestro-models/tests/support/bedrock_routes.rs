@@ -8,7 +8,7 @@ use maestro_models::StreamOptions;
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 
 use crate::bedrock;
-use crate::chat::{TestResult, block_on};
+use crate::chat::TestResult;
 use crate::loopback::{Loopback, Step, serve};
 use crate::transport;
 
@@ -68,7 +68,7 @@ pub struct Route {
 /// Send one conversation to the origin the environment names; with `MAESTRO_REFUSED` set the
 /// conversation must end in an error without the response hook having run.
 fn converse() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let origin = std::env::var("MAESTRO_ORIGIN")?;
         let refused = std::env::var_os("MAESTRO_REFUSED").is_some();
         let hooked = Arc::new(AtomicBool::new(false));

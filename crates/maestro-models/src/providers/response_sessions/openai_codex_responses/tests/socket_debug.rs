@@ -9,7 +9,8 @@ use super::super::debug::{
 };
 use super::super::sessions::{cached_entry, close_openai_codex_web_socket_sessions as close};
 use super::loopback::{Conversation, answer, read_request, respond};
-use super::socket_transport::{accept, acknowledged, listen, run_native, until_released};
+use super::socket_transport::{accept, acknowledged, listen, until_released};
+use crate::tests::runtime::run;
 use crate::{DiagnosticErrorInfo, DiagnosticInput, Transport};
 use futures_util::future::{join, join3};
 use serde_json::Value;
@@ -250,7 +251,7 @@ async fn failures_count_by_timing(listener: &TcpListener, url: &str) {
 #[test]
 fn maestro_response_sessions_count_socket_request_modes() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let session = "count";
         let (mut chat, knob) = editable(&url, session).await;
@@ -466,7 +467,7 @@ async fn reset_while_in_flight(listener: &TcpListener, url: &str) {
 #[test]
 fn maestro_response_sessions_separate_socket_reset_and_close() {
     let _isolated = super::exclusive();
-    run_native(async {
+    run(async {
         let (listener, url) = listen().await;
         let peer_b = reset_then_close_one_session(&listener, &url).await;
         reset_all_then_close_all(peer_b).await;

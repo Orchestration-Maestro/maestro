@@ -419,7 +419,7 @@ pub fn no_runtime() -> TestResult {
             ..Default::default()
         }),
     )?;
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for stream in [raw, simple] {
             assert_eq!(
                 stream

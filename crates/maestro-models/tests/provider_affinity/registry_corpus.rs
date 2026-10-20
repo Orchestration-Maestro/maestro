@@ -58,7 +58,7 @@ fn register(api: &str, label: &'static str, source: &str) {
 #[test]
 fn recorded_registry_corpus_keeps_all_fields() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(false, async {
+    crate::runtime::run(async {
         for local in [true, false] {
             clear_api_providers();
             let mut retained = None;

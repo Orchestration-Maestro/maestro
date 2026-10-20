@@ -52,11 +52,7 @@ struct BodyCase {
 
 #[test]
 fn maestro_response_sessions_build_request_defaults() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let rows = body_cases("defaults").unwrap();
         for row in rows {
             let options = row.options.into();
@@ -165,11 +161,7 @@ impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
 #[test]
 fn maestro_response_sessions_select_text_verbosity() {
     use super::super::OpenAICodexTextVerbosity as Verbosity;
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let row: BodyCase = body_cases("defaults").unwrap().remove(0);
         let model = std::sync::Arc::new(row.model);
         let mut options: super::super::OpenAICodexResponsesOptions = row.options.into();
@@ -311,11 +303,7 @@ fn maestro_response_sessions_apply_sse_headers() {
 
 #[test]
 fn maestro_response_sessions_convert_history_and_tools() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         let rows = body_cases("history").unwrap();
         for row in rows {
             let options = row.options.into();
@@ -357,29 +345,17 @@ async fn assert_bodies(text: &str) {
 
 #[test]
 fn maestro_response_sessions_map_reasoning_from_descriptor() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(assert_bodies("reasoning"));
+    crate::tests::runtime::run(assert_bodies("reasoning"));
 }
 
 #[test]
 fn maestro_response_sessions_keep_raw_minimal_without_mapping() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(assert_bodies("minimal"));
+    crate::tests::runtime::run(assert_bodies("minimal"));
 }
 
 #[test]
 fn maestro_response_sessions_default_reasoning_summary() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(assert_bodies("summary"));
+    crate::tests::runtime::run(assert_bodies("summary"));
 }
 
 /// Status/body classification observed at the request setup boundary.
@@ -532,11 +508,7 @@ fn maestro_response_sessions_price_all_cost_categories() {
 
 #[test]
 fn maestro_response_sessions_validate_headers_before_fetch() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
+    crate::tests::runtime::run(async {
         for (name, value, replaced, expected) in [
             ("Bad Header", "x", false, "Header bad header:"),
             (

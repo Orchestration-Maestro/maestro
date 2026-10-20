@@ -50,19 +50,16 @@ fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
         };
     }
     reset_api_providers();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for protocol in crate::bundled::registered_apis()
-                .into_iter()
-                .filter(|api| *api != "google-vertex")
-            {
-                affinity(protocol).await?;
-            }
-            super::controls::injected_client().await?;
-            Ok(())
-        }),
-    )
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for protocol in crate::bundled::registered_apis()
+            .into_iter()
+            .filter(|api| *api != "google-vertex")
+        {
+            affinity(protocol).await?;
+        }
+        super::controls::injected_client().await?;
+        Ok(())
+    }))
 }
 /// Keep the cloud SDK's envelope and all other protocol fixtures at their owning seams.
 pub(super) fn transport(protocol: &str) -> crate::TestResult<crate::transport::Transport> {
@@ -302,21 +299,18 @@ fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
     }
     let registration = register_faux_provider(RegisterFauxProviderOptions::default());
     let first = default_scripted(&registration)?;
-    crate::chat::block_on(false, async { check_default_scripted(&first).await })?;
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            let second = default_scripted(&registration)?;
-            check_default_scripted(&second).await?;
-            for protocol in crate::bundled::registered_apis() {
-                for simple in [false, true] {
-                    local(protocol, simple, Observation::Dropped, Entry::Registered).await?;
-                    threaded(protocol, simple, Observation::Dropped, Entry::Registered).await?;
-                }
+    crate::runtime::run(async { check_default_scripted(&first).await })?;
+    crate::runtime::run::<crate::TestResult<_>>(tokio::task::LocalSet::new().run_until(async {
+        let second = default_scripted(&registration)?;
+        check_default_scripted(&second).await?;
+        for protocol in crate::bundled::registered_apis() {
+            for simple in [false, true] {
+                local(protocol, simple, Observation::Dropped, Entry::Registered).await?;
+                threaded(protocol, simple, Observation::Dropped, Entry::Registered).await?;
             }
-            Ok(())
-        }),
-    )?;
+        }
+        Ok(())
+    }))?;
     registration.unregister();
     Ok(())
 }
@@ -329,7 +323,7 @@ fn missing_runtime(protocol: &str, simple: bool) -> crate::TestResult {
         super::threaded_common_options(phases.clone(), transport.fetch.clone()),
     );
     let stream = registered::<Threaded>(protocol, simple, common, None)?;
-    crate::chat::block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         let (events, result) = crate::transport::drain(&stream).await?;
         assert_eq!(events, ["error"]);
         assert_eq!(

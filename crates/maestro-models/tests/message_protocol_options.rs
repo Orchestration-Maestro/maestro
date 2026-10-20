@@ -5,55 +5,45 @@ use crate::messages;
 
 #[test]
 fn messages_select_subscription_auth() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_select_subscription_auth"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_select_subscription_auth",
+    ))
 }
 
 #[test]
 fn messages_select_account_auth() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_select_account_auth"),
-    )
+    crate::runtime::run(message_options::assert_rows("messages_select_account_auth"))
 }
 
 #[test]
 fn messages_select_gateway_auth() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_select_gateway_auth"),
-    )
+    crate::runtime::run(message_options::assert_rows("messages_select_gateway_auth"))
 }
 
 #[test]
 fn messages_preserve_auth_header_precedence() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_preserve_auth_header_precedence"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_preserve_auth_header_precedence",
+    ))
 }
 
 #[test]
 fn messages_freeze_auth_before_payload_hook() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_freeze_auth_before_payload_hook"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_freeze_auth_before_payload_hook",
+    ))
 }
 
 #[test]
 fn messages_normalize_subscription_tool_names() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_normalize_subscription_tool_names"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_normalize_subscription_tool_names",
+    ))
 }
 
 #[test]
 fn messages_restore_subscription_tool_names() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         message_options::assert_rows("messages_restore_subscription_tool_names").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
             subscription_name_is_visible_at_open().await?;
@@ -64,106 +54,89 @@ fn messages_restore_subscription_tool_names() -> chat::TestResult {
 
 #[test]
 fn messages_align_subscription_named_tool_choice() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_align_subscription_named_tool_choice"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_align_subscription_named_tool_choice",
+    ))
 }
 
 #[test]
 fn messages_place_subscription_identity() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_place_subscription_identity"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_place_subscription_identity",
+    ))
 }
 
 #[test]
 fn messages_select_thinking_policy() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_select_thinking_policy"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_select_thinking_policy",
+    ))
 }
 
 #[test]
 fn messages_bypass_auth_for_injected_client() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_bypass_auth_for_injected_client"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_bypass_auth_for_injected_client",
+    ))
 }
 
 #[test]
 fn messages_select_thinking_display() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_select_thinking_display"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_select_thinking_display",
+    ))
 }
 
 #[test]
 fn messages_select_raw_effort() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_select_raw_effort"),
-    )
+    crate::runtime::run(message_options::assert_rows("messages_select_raw_effort"))
 }
 
 #[test]
 fn messages_map_simple_effort() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_map_simple_effort"),
-    )
+    crate::runtime::run(message_options::assert_rows("messages_map_simple_effort"))
 }
 
 #[test]
 fn messages_keep_raw_and_simple_budgets_distinct() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_keep_raw_and_simple_budgets_distinct"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_keep_raw_and_simple_budgets_distinct",
+    ))
 }
 
 #[test]
 fn messages_keep_adjusted_zero_budget() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_keep_adjusted_zero_budget"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_keep_adjusted_zero_budget",
+    ))
 }
 
 #[test]
 fn messages_disable_unrequested_thinking() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_disable_unrequested_thinking"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_disable_unrequested_thinking",
+    ))
 }
 
 #[test]
 fn messages_fail_simple_auth_before_stream() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_fail_simple_auth_before_stream"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_fail_simple_auth_before_stream",
+    ))
 }
 
 #[test]
 fn messages_forward_simple_callbacks() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_forward_simple_callbacks"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_forward_simple_callbacks",
+    ))
 }
 
 #[test]
 fn messages_preserve_callback_failures() -> chat::TestResult {
-    chat::block_on(
-        false,
-        message_options::assert_rows("messages_preserve_callback_failures"),
-    )
+    crate::runtime::run(message_options::assert_rows(
+        "messages_preserve_callback_failures",
+    ))
 }
 
 /// A paused producer proves restored spelling before argument updates can happen.
@@ -257,7 +230,7 @@ async fn subscription_name_result(members: &str) -> chat::TestResult<messages::R
 
 #[test]
 fn messages_report_native_subscription_name_error() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let run = subscription_name_result(r#""name":"\ud800""#).await?;
         assert!(
             run.result["errorMessage"]
@@ -278,7 +251,7 @@ fn messages_report_native_subscription_name_error() -> chat::TestResult {
 
 #[test]
 fn messages_restore_replacement_character_subscription_name() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let run = subscription_name_result(r#""name":"\ufffdCUSTOM""#).await?;
         assert_eq!(run.result["content"][0]["name"], "�CuStOm");
         assert_eq!(
@@ -294,7 +267,7 @@ fn messages_restore_replacement_character_subscription_name() -> chat::TestResul
 
 #[test]
 fn messages_report_native_error_for_last_duplicate_subscription_name() -> chat::TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let run = subscription_name_result(r#""name":"Read","name":"\ud800""#).await?;
         assert!(
             run.result["errorMessage"]

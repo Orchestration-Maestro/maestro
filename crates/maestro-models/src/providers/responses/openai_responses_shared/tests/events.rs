@@ -1,7 +1,7 @@
 //! Reduction of response events into the shared assistant message.
 
 use super::super::{OpenAIResponsesStreamOptions, process_responses_stream};
-use super::{TestResult, block_on, responses};
+use super::{TestResult, responses};
 use crate as maestro_models;
 use std::sync::{Arc, Mutex};
 
@@ -19,7 +19,7 @@ const EVENTS: &str = include_str!("fixtures/events.json");
 
 /// Reduce every event row a test owns.
 fn event_rows(test: &str, count: usize) -> TestResult {
-    block_on(false, async {
+    crate::tests::runtime::run(async {
         for row in responses::rows(EVENTS, test, count)? {
             responses::check_events(row).await?;
         }
@@ -53,7 +53,7 @@ fn maestro_responses_events_encode_text_signature() -> TestResult {
             ),
             r#"{"type":"response.completed"}"#.to_owned(),
         ];
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         run.outcome?;
         assert_eq!(
             serde_json::to_value(&run.message.content)?[0]["textSignature"],
@@ -134,7 +134,7 @@ fn maestro_responses_events_map_completion_status() -> TestResult {
         ),
     ] {
         let event = format!(r#"{{"type":"response.completed","response":{{"status":{status}}}}}"#);
-        let run = block_on(false, responses::reduce(Script::of(vec![event])?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![event])?))?;
         assert_eq!(run.outcome.err().map(|e| e.message).as_deref(), error);
     }
     Ok(())
@@ -250,7 +250,7 @@ fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
             r#"{{"type":"response.completed","response":{{"id":"done","status":"completed","output":{deep},"usage":{{"input_tokens":1,"ignored":{deep}}}}}}}"#
         ),
     ];
-    let run = block_on(false, responses::reduce(Script::of(events)?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
     run.outcome?;
     assert_eq!(run.message.response_id.as_deref(), Some("done"));
     let message = serde_json::to_value(&run.message)?;
@@ -269,7 +269,7 @@ fn arguments_kept(text: &str) -> TestResult<JsonObject> {
     }});
     let completed = json!({"type": "response.completed", "response": {"status": "completed"}});
     let events = [added, delta, done, completed].map(|event| event.to_string());
-    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events.to_vec())?))?;
     run.outcome?;
     match run.message.content.first() {
         Some(maestro_models::AssistantContent::ToolCall(call)) => Ok(call.arguments.clone()),
@@ -389,7 +389,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
     let stream = AssistantMessageEventStream::new();
     let kept = KeptUpdate::default();
     let source = watching_source(events, &output, &stream, &kept);
-    block_on(false, async {
+    crate::tests::runtime::run::<TestResult<_>>(async {
         process_responses_stream(source, &output, &stream, &model, None).await?;
         Ok(())
     })?;
@@ -403,7 +403,7 @@ fn maestro_responses_events_share_live_output() -> TestResult {
         seen["content"][0]["text"], "final",
         "the handle shows later reductions"
     );
-    let tail = block_on(false, async { Ok(stream.next().await) })?;
+    let tail = crate::tests::runtime::run::<TestResult<_>>(async { Ok(stream.next().await) })?;
     let Some(AssistantMessageEvent::TextEnd {
         partial, content, ..
     }) = tail
@@ -431,7 +431,7 @@ fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
         r#"{"type":"response.function_call_arguments.done","arguments":"\ud800"}"#,
         r#"{"type":"response.completed","response":{"id":"kept","service_tier":"\ud800"}}"#,
     ].map(str::to_owned);
-    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events.to_vec())?))?;
     run.outcome?;
     assert_eq!(run.message.response_id.as_deref(), Some("kept"));
     let message = serde_json::to_value(&run.message)?;
@@ -517,7 +517,7 @@ fn maestro_responses_events_keep_started_block_identity() -> TestResult {
         ]
         .map(|event| event.to_string());
         let source = appending_source(&events, &output, &queue);
-        block_on(false, async {
+        crate::tests::runtime::run::<TestResult<_>>(async {
             process_responses_stream(source, &output, &queue, &model, None).await?;
             Ok(())
         })?;
@@ -574,7 +574,7 @@ fn maestro_responses_events_publish_completion_before_callbacks() -> TestResult 
             r#"{{"type":"response.completed","response":{{"id":"final","status":{status},"usage":{{"input_tokens":10}},"service_tier":"flex"}}}}"#
         );
         let source = futures_util::stream::iter([Ok(event)]);
-        let outcome = block_on(false, async {
+        let outcome = crate::tests::runtime::run::<TestResult<_>>(async {
             Ok(process_responses_stream(source, &output, &updates, &model, Some(&options)).await)
         })?;
         match status {
@@ -613,7 +613,7 @@ fn maestro_responses_events_ignore_unused_final_call_members() -> TestResult {
         r#"{"type":"response.output_item.done","item":{"type":"function_call","id":"\ud800","name":"\ud800","arguments":"\ud800"}}"#,
         r#"{"type":"response.completed"}"#,
     ].map(str::to_owned);
-    let run = block_on(false, responses::reduce(Script::of(events.to_vec())?))?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(events.to_vec())?))?;
     run.outcome?;
     let message = serde_json::to_value(&run.message)?;
     assert_eq!(message["content"][0]["arguments"], json!({"x":1}));
@@ -630,7 +630,7 @@ fn maestro_responses_events_defer_initial_part_decoding() -> TestResult {
             events.push(r#"{"type":"response.output_text.delta","delta":"selected"}"#.to_owned());
         }
         events.push(r#"{"type":"response.completed"}"#.to_owned());
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         if selected {
             assert_eq!(run.outcome.unwrap_err().name, None);
         } else {
@@ -670,12 +670,9 @@ fn maestro_responses_events_reject_mistyped_final_values() -> TestResult {
         let mut done = json!({"type":"response.output_item.done","item":{"type":kind,"id":"m"}});
         done["item"][field] = parts;
         let completed = json!({"type":"response.completed"});
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(
-                [added, done, completed].map(|e| e.to_string()).to_vec(),
-            )?),
-        )?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(
+            [added, done, completed].map(|e| e.to_string()).to_vec(),
+        )?))?;
         let error = run.outcome.unwrap_err();
         assert_eq!(error.name, None);
         assert!(error.message.contains("expected a string"));
@@ -699,10 +696,9 @@ fn maestro_responses_events_preserve_phase_before_missing_call_identity() -> Tes
         r#"{"type":"response.output_item.done","item":{"type":"function_call","name":"lookup"}}"#,
         r#"{"type":"response.completed"}"#,
     ];
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(events.map(str::to_owned).to_vec())?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(
+        events.map(str::to_owned).to_vec(),
+    )?))?;
     assert!(
         run.outcome
             .unwrap_err()
@@ -729,13 +725,10 @@ fn maestro_responses_events_require_selected_containers() -> TestResult {
         r#"{"type":"response.output_item.done"}"#,
         r#"{"type":"response.output_item.done","item":null}"#,
     ] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![
-                event.to_owned(),
-                r#"{"type":"response.completed"}"#.to_owned(),
-            ])?),
-        )?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+            event.to_owned(),
+            r#"{"type":"response.completed"}"#.to_owned(),
+        ])?))?;
         assert!(run.outcome.is_err(), "{event}");
         assert!(run.events.is_empty());
     }
@@ -746,7 +739,7 @@ fn maestro_responses_events_require_selected_containers() -> TestResult {
                 r#"{{"type":"response.output_item.done","item":{{"type":"message"{content}}}}}"#
             ),
         ];
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         let error = run
             .outcome
             .err()
@@ -793,7 +786,7 @@ fn maestro_responses_events_reject_mistyped_deltas() -> TestResult {
                 json!({"type":delta,"delta":"kept"}).to_string(),
                 malformed.to_string(),
             ];
-            let run = block_on(false, responses::reduce(Script::of(events)?))?;
+            let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
             let error = run.outcome.unwrap_err();
             assert_eq!(error.name, None);
             assert!(error.message.contains("expected a string"));
@@ -814,10 +807,9 @@ fn maestro_responses_events_keep_final_text_when_signature_fails() -> TestResult
         r#"{"type":"response.output_text.delta","delta":"draft"}"#,
         r#"{"type":"response.output_item.done","item":{"type":"message","id":"\ud800","content":[{"type":"output_text","text":"final"}]}}"#,
     ];
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(events.map(str::to_owned).to_vec())?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(
+        events.map(str::to_owned).to_vec(),
+    )?))?;
     assert!(run.outcome.is_err());
     assert_eq!(
         serde_json::to_value(&run.message.content)?,
@@ -842,19 +834,16 @@ fn maestro_responses_events_reject_unrepresentable_assigned_strings() -> TestRes
         r#"{"type":"response.completed","response":{"id":true}}"#,
         r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":[]}}"#,
     ] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![
-                event.to_owned(),
-                r#"{"type":"response.completed"}"#.to_owned(),
-            ])?),
-        )?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+            event.to_owned(),
+            r#"{"type":"response.completed"}"#.to_owned(),
+        ])?))?;
         assert!(run.outcome.is_err(), "{event}");
         assert!(run.message.content.is_empty());
         assert!(run.events.is_empty());
     }
     for value in [Value::Null, json!(false), json!(0), json!("")] {
-        let run = block_on(false, responses::reduce(Script::of(vec![json!({"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":value}}).to_string(),
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![json!({"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":value}}).to_string(),
             r#"{"type":"response.completed","response":{"id":false}}"#.to_owned()])?))?;
         run.outcome?;
         assert!(run.message.response_id.is_none());
@@ -897,7 +886,7 @@ fn maestro_responses_events_validate_initial_arrays_only_when_used() -> TestResu
                 )];
                 events.extend(use_container.then(|| selected.to_owned()));
                 events.push(r#"{"type":"response.completed"}"#.to_owned());
-                let run = block_on(false, responses::reduce(Script::of(events)?))?;
+                let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
                 assert_eq!(run.outcome.is_err(), use_container);
                 assert_eq!(run.events.len(), 1);
                 assert_eq!(
@@ -924,7 +913,7 @@ fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestRes
             r#"{"type":"response.completed","response":{"service_tier":42}}"#.to_owned(),
         ])?;
         script.options = json!({"pricing":pricing});
-        let run = block_on(false, responses::reduce(script))?;
+        let run = crate::tests::runtime::run(responses::reduce(script))?;
         assert_eq!(run.outcome.is_err(), pricing);
         assert!(run.tiers.is_empty());
     }
@@ -932,7 +921,7 @@ fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestRes
         let events = vec![r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup"}}"#.to_owned(),
             r#"{"type":"response.function_call_arguments.delta","delta":"{\"x\":1}"}"#.to_owned(),
             format!(r#"{{"type":"response.function_call_arguments.done","arguments":{arguments}}}"#)];
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         let error = run
             .outcome
             .err()
@@ -966,10 +955,8 @@ fn maestro_responses_events_reject_selected_identity_and_error_strings() -> Test
         json!({"type":"response.output_item.added","item":{"type":"function_call","call_id":"c","id":42,"name":"lookup"}}),
         json!({"type":"response.output_item.done","item":{"type":"function_call","call_id":"c","id":null,"name":"lookup"}}),
     ] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![event.to_string()])?),
-        )?;
+        let run =
+            crate::tests::runtime::run(responses::reduce(Script::of(vec![event.to_string()])?))?;
         let error = run.outcome.unwrap_err();
         assert_eq!(error.name, None);
         assert!(error.message.contains("expected a string"));
@@ -981,24 +968,18 @@ fn maestro_responses_events_reject_selected_identity_and_error_strings() -> Test
 
 #[test]
 fn maestro_responses_events_accept_nullable_error_code() -> TestResult {
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(vec![
-            r#"{"type":"error","code":null,"message":"quota"}"#.to_owned(),
-        ])?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+        r#"{"type":"error","code":null,"message":"quota"}"#.to_owned(),
+    ])?))?;
     assert_eq!(run.outcome.unwrap_err().message, "Error Code null: quota");
     Ok(())
 }
 
 #[test]
 fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
-    let run = block_on(
-        false,
-        responses::reduce(Script::of(vec![
-            json!({"type":"response.completed","response":{"usage":{}}}).to_string(),
-        ])?),
-    )?;
+    let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+        json!({"type":"response.completed","response":{"usage":{}}}).to_string(),
+    ])?))?;
     run.outcome?;
     assert_eq!(
         json!([
@@ -1021,12 +1002,9 @@ fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
             if key == "cached_tokens" {
                 usage = json!({"input_tokens_details": usage});
             }
-            let run = block_on(
-                false,
-                responses::reduce(Script::of(vec![
-                    json!({"type": "response.completed", "response": {"usage": usage}}).to_string(),
-                ])?),
-            )?;
+            let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+                json!({"type": "response.completed", "response": {"usage": usage}}).to_string(),
+            ])?))?;
             if value.is_string() {
                 assert_eq!(
                     run.outcome.unwrap_err().message,
@@ -1065,7 +1043,7 @@ fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
             );
         }
         events.push(json!({"type": "response.completed"}).to_string());
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         run.outcome?;
         let maestro_models::AssistantContent::ToolCall(call) = &run.message.content[0] else {
             panic!("missing tool call");
@@ -1093,15 +1071,12 @@ fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
 #[test]
 fn maestro_responses_events_reject_ambiguous_call_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
-        let run = block_on(
-            false,
-            responses::reduce(Script::of(vec![
-                json!({"type":event_kind,"item":{"type":"function_call",
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
+            json!({"type":event_kind,"item":{"type":"function_call",
                 "call_id":"c|i","name":"lookup","arguments":"{}"}})
-                .to_string(),
-                json!({"type":"response.completed"}).to_string(),
-            ])?),
-        )?;
+            .to_string(),
+            json!({"type":"response.completed"}).to_string(),
+        ])?))?;
         let error = run.outcome.unwrap_err();
         assert_eq!(error.name, None);
         assert_eq!(
@@ -1129,7 +1104,7 @@ fn maestro_responses_events_replay_complete_item_identity() -> TestResult {
             );
         }
         events.push(json!({"type":"response.completed"}).to_string());
-        let run = block_on(false, responses::reduce(Script::of(events)?))?;
+        let run = crate::tests::runtime::run(responses::reduce(Script::of(events)?))?;
         run.outcome?;
         let context = maestro_models::Context {
             system_prompt: None,

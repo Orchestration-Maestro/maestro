@@ -3,7 +3,7 @@ use super::{
     callback::{AuthorizationCode, parse_authorization_input, route},
     exchange,
 };
-use crate::oauth::tests::run;
+use crate::tests::runtime::run;
 use crate::{
     DiagnosticCode, DiagnosticErrorInfo, Fetch, FetchError, HttpResponse, OAuthCredentials,
     OAuthError,

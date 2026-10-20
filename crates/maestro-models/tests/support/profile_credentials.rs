@@ -9,7 +9,6 @@ use serde::Deserialize;
 
 use crate::TestResult;
 use crate::bedrock;
-use crate::chat::block_on;
 use crate::profile_files::Workdir;
 use crate::profile_services::{Log, RoleRequest, Sent, SigninRequest, SsoRequest, serve};
 use crate::transport;
@@ -301,7 +300,7 @@ pub fn check_rows(test: &str) -> TestResult {
             .iter()
             .find(|row| row.id == case)
             .ok_or("unknown row")?;
-        return block_on(false, converse(row));
+        return crate::runtime::run(converse(row));
     }
     owned.iter().try_for_each(|row| check_outside(test, row))
 }

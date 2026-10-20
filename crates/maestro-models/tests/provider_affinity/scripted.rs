@@ -133,31 +133,28 @@ fn observation(
 #[test]
 fn scripted_factories_keep_hooks_across_suspension() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for row in super::corpus::load().scripted.rows {
-                let input: CallbackInput = serde_json::from_value(row.input)?;
-                for local in [true, false] {
-                    let trace = Trace::default();
-                    let registration = registration();
-                    let weak = enqueue(&registration, &trace, &input.outcome);
-                    let retained = get_api_provider(&registration.api).unwrap();
-                    registration.unregister();
-                    assert!(trace.lock().unwrap().is_empty());
-                    let result = run(&registration, &retained, &trace, &input, local).await?;
-                    assert_eq!(
-                        crate::json::canonical(observation(&trace, &registration, result)),
-                        row.expected,
-                        "{} local={local}",
-                        row.name
-                    );
-                    assert!(weak.upgrade().is_none());
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for row in super::corpus::load().scripted.rows {
+            let input: CallbackInput = serde_json::from_value(row.input)?;
+            for local in [true, false] {
+                let trace = Trace::default();
+                let registration = registration();
+                let weak = enqueue(&registration, &trace, &input.outcome);
+                let retained = get_api_provider(&registration.api).unwrap();
+                registration.unregister();
+                assert!(trace.lock().unwrap().is_empty());
+                let result = run(&registration, &retained, &trace, &input, local).await?;
+                assert_eq!(
+                    crate::json::canonical(observation(&trace, &registration, result)),
+                    row.expected,
+                    "{} local={local}",
+                    row.name
+                );
+                assert!(weak.upgrade().is_none());
             }
-            Ok(())
-        }),
-    )
+        }
+        Ok(())
+    }))
 }
 /// Local and supplied threaded routes both close admission before counting the queue.
 async fn run(
@@ -276,41 +273,37 @@ fn invoke<E: ProviderExecution>(
 #[test]
 fn scripted_queue_and_registration_survive_cleanup_across_families() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            let trace = Trace::default();
-            let registration = registration();
-            let factory = Arc::new(Factory {
-                trace: trace.clone(),
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        let trace = Trace::default();
+        let registration = registration();
+        let factory = Arc::new(Factory {
+            trace: trace.clone(),
+            outcome: "success".into(),
+        });
+        let weak = Arc::downgrade(&factory);
+        registration.set_responses(vec![FauxResponseStep::Factory(factory.clone())]);
+        registration.append_responses(vec![FauxResponseStep::Factory(factory)]);
+        let retained = get_api_provider(&registration.api).unwrap();
+        registration.unregister();
+        assert!(get_api_provider(&registration.api).is_none());
+        let corpus = super::corpus::load().retained_sequence;
+        assert_eq!(corpus.observations.len(), 2);
+        for (index, (form, local)) in [("raw", true), ("simple", false)].into_iter().enumerate() {
+            trace.lock().unwrap().clear();
+            let input = CallbackInput {
+                form: form.into(),
                 outcome: "success".into(),
-            });
-            let weak = Arc::downgrade(&factory);
-            registration.set_responses(vec![FauxResponseStep::Factory(factory.clone())]);
-            registration.append_responses(vec![FauxResponseStep::Factory(factory)]);
-            let retained = get_api_provider(&registration.api).unwrap();
-            registration.unregister();
-            assert!(get_api_provider(&registration.api).is_none());
-            let corpus = super::corpus::load().retained_sequence;
-            assert_eq!(corpus.observations.len(), 2);
-            for (index, (form, local)) in [("raw", true), ("simple", false)].into_iter().enumerate()
-            {
-                trace.lock().unwrap().clear();
-                let input = CallbackInput {
-                    form: form.into(),
-                    outcome: "success".into(),
-                };
-                let result = run(&registration, &retained, &trace, &input, local).await?;
-                let mut observed = observation(&trace, &registration, result);
-                observed.as_object_mut().unwrap().shift_remove("events");
-                assert_eq!(crate::json::canonical(observed), corpus.observations[index]);
-                assert_eq!(weak.upgrade().is_some(), index == 0);
-            }
-            check_last_alias(registration, retained, trace);
-            assert!(weak.upgrade().is_none());
-            Ok(())
-        }),
-    )
+            };
+            let result = run(&registration, &retained, &trace, &input, local).await?;
+            let mut observed = observation(&trace, &registration, result);
+            observed.as_object_mut().unwrap().shift_remove("events");
+            assert_eq!(crate::json::canonical(observed), corpus.observations[index]);
+            assert_eq!(weak.upgrade().is_some(), index == 0);
+        }
+        check_last_alias(registration, retained, trace);
+        assert!(weak.upgrade().is_none());
+        Ok(())
+    }))
 }
 
 /// Pending captures survive each raw/simple alias and release only after the last owner.
@@ -381,34 +374,31 @@ async fn source_body<E: ProviderExecution>(
 #[test]
 fn recorded_source_factories_keep_all_fields() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    crate::chat::block_on(
-        false,
-        tokio::task::LocalSet::new().run_until(async {
-            for row in super::corpus::load()
-                .dispatch
-                .rows
-                .into_iter()
-                .filter(|row| row.input.get("outcome").is_some())
-            {
-                let input: SourceInput = serde_json::from_value(row.input)?;
-                for local in [true, false] {
-                    let registration = registration();
-                    queue_source(&registration, &input.outcome);
-                    let provider = get_api_provider(&registration.api).unwrap();
-                    let trace = Trace::default();
-                    let call = CallbackInput {
-                        form: "raw".into(),
-                        outcome: "success".into(),
-                    };
-                    let result = run(&registration, &provider, &trace, &call, local).await?;
-                    let observed = source_observation(&trace, &registration, result);
-                    assert_eq!(observed, row.expected, "{} local={local}", row.name);
-                    registration.unregister();
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for row in super::corpus::load()
+            .dispatch
+            .rows
+            .into_iter()
+            .filter(|row| row.input.get("outcome").is_some())
+        {
+            let input: SourceInput = serde_json::from_value(row.input)?;
+            for local in [true, false] {
+                let registration = registration();
+                queue_source(&registration, &input.outcome);
+                let provider = get_api_provider(&registration.api).unwrap();
+                let trace = Trace::default();
+                let call = CallbackInput {
+                    form: "raw".into(),
+                    outcome: "success".into(),
+                };
+                let result = run(&registration, &provider, &trace, &call, local).await?;
+                let observed = source_observation(&trace, &registration, result);
+                assert_eq!(observed, row.expected, "{} local={local}", row.name);
+                registration.unregister();
             }
-            Ok(())
-        }),
-    )
+        }
+        Ok(())
+    }))
 }
 /// Exhaustion is represented by an empty real queue, not by a fabricated factory error.
 fn queue_source(registration: &FauxProviderRegistration, outcome: &str) {

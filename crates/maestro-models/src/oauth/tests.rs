@@ -1,6 +1,7 @@
 //! Numeric expiry and lazy clock selection through the production operation.
 #![cfg(test)]
 use super::*;
+use crate::tests::runtime::run;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 /// Serialize observations of this binary's registry.
@@ -71,14 +72,6 @@ fn record(expires: f64) -> OAuthCredentials {
             serde_json::json!({"value": [2, "kept"]}),
         )]),
     }
-}
-/// Drive the controlled operation to completion on one current-thread runtime.
-pub(super) fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 /// Assert one numeric decision and the resulting credential selection.
 fn check_expiry(now: f64, expiry: f64, refresh: bool, events: &Arc<Mutex<Vec<&'static str>>>) {

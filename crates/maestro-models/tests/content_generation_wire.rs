@@ -55,7 +55,7 @@ fn hook_replacement_changes_model_content_and_configuration() -> TestResult {
             },
         )
     };
-    let returned = chat::block_on(false, async {
+    let returned = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(hook(
             maestro_models::PayloadHookInput {
                 payload: prepared.clone(),

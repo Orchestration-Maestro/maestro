@@ -114,7 +114,7 @@ async fn connection_failures_are_retried() -> TestResult {
 
 #[test]
 fn maestro_http_retries_transient_failures() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         statuses_follow_the_retry_table().await?;
         connection_failures_are_retried().await?;
         for (retries, attempts) in [
@@ -193,7 +193,7 @@ fn hint_cases<'a>(future: &'a str, past: &'a str) -> Vec<(Vec<(&'a str, &'a str)
 
 #[test]
 fn maestro_http_honors_retry_headers() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let (future, past) = (http_date(90), http_date(-60));
         let ms = Duration::from_millis;
         for (headers, wait) in hint_cases(&future, &past) {
@@ -230,7 +230,7 @@ fn assert_backoff_schedule(gaps: &[Duration]) -> TestResult {
 
 #[test]
 fn maestro_http_bounds_retry_backoff() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let target = transport(vec![Attempt::status(503, &[])]);
         run(&target, |options| options.max_retries = Some(7.0)).await?;
         assert_eq!(target.gaps().len(), 7);
@@ -261,7 +261,7 @@ fn timeout_value(value: &Value) -> TestResult<f64> {
 
 #[test]
 fn maestro_http_preserves_setup_timeout() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for row in rows(FIXTURE, "maestro_http_preserves_setup_timeout")? {
             let target = transport(vec![Attempt::success()]);
             let timeout = timeout_value(&row["timeout"])?;
@@ -309,7 +309,7 @@ fn maestro_http_preserves_setup_timeout() -> TestResult {
 
 #[test]
 fn maestro_http_stops_retries_on_abort() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let target = transport(vec![Attempt::success()]);
         let signal = Cancellation::new();
         signal.abort();
@@ -366,7 +366,7 @@ fn maestro_http_stops_retries_on_abort() -> TestResult {
 
 #[test]
 fn maestro_http_rejects_unbounded_retry_counts() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for (retries, message) in [
             (-1.0, "maxRetries must be a positive integer"),
             (0.5, "maxRetries must be an integer"),
@@ -477,9 +477,9 @@ async fn production_client_failures() -> TestResult {
 #[test]
 fn maestro_http_reports_fetch_failures() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return chat::block_on(false, production_client_failures());
+        return crate::runtime::run(production_client_failures());
     }
-    chat::block_on(true, scripted_failures())?;
+    crate::runtime::run_paused(scripted_failures())?;
     {
         let output =
             maestro_test_process::TestProcess::current("maestro_http_reports_fetch_failures")?
@@ -526,7 +526,7 @@ async fn default_fetch_exchange() -> TestResult {
 #[test]
 fn maestro_http_default_fetch_sends_requests() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return chat::block_on(false, default_fetch_exchange());
+        return crate::runtime::run(default_fetch_exchange());
     }
     {
         let output = maestro_test_process::TestProcess::current(
@@ -613,7 +613,7 @@ async fn wide_header_values_are_not_sent() -> TestResult {
 #[test]
 fn maestro_http_preserves_header_octets() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return chat::block_on(false, async {
+        return crate::runtime::run(async {
             header_values_are_octets().await?;
             wide_header_values_are_not_sent().await
         });
@@ -632,7 +632,7 @@ fn maestro_http_preserves_header_octets() -> TestResult {
 
 #[test]
 fn maestro_http_joins_endpoint_urls() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for row in rows(FIXTURE, "maestro_http_joins_endpoint_urls")? {
             let target = transport(vec![Attempt::success()]);
             let (mut model, context, options) = call_inputs(&target)?;
@@ -702,7 +702,7 @@ async fn native_header_rejections_are_connection_failures() -> TestResult {
 #[test]
 fn maestro_http_retries_native_header_rejections() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return chat::block_on(true, native_header_rejections_are_connection_failures());
+        return crate::runtime::run_paused(native_header_rejections_are_connection_failures());
     }
     {
         let output = maestro_test_process::TestProcess::current(
@@ -719,7 +719,7 @@ fn maestro_http_retries_native_header_rejections() -> TestResult {
 
 #[test]
 fn maestro_http_reports_unrepresentable_failure_details() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         for error in [
             r#"{"\ud800":7,"keep":1}"#,
             r#"{"message":{"\ud800":7,"keep":1}}"#,

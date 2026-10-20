@@ -1,7 +1,7 @@
 //! Direct reasoning conversation stream behavior.
 use crate::chat;
 
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
 use maestro_models::stream_mistral;
 use serde_json::json;
@@ -18,7 +18,7 @@ fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
         "No API key for provider: oracle-no-env"
     );
     lifecycle::no_runtime()?;
-    block_on(false, async {
+    crate::runtime::run(async {
         lifecycle::dropped_reader().await?;
         lifecycle::simple_controls().await?;
         lifecycle::mapped_simple_controls().await?;
@@ -45,7 +45,7 @@ mod corpus;
 
 #[test]
 fn conversation_streams_share_message_updates_after_admission() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         corpus::rows("conversation_streams_share_message_updates_after_admission").await?;
         lifecycle::headers_gate().await?;
         lifecycle::shared_admission().await?;
@@ -55,39 +55,33 @@ fn conversation_streams_share_message_updates_after_admission() -> TestResult {
 
 #[test]
 fn conversation_streams_retain_first_id_and_usage() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_retain_first_id_and_usage"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_retain_first_id_and_usage",
+    ))
 }
 
 #[test]
 fn conversation_streams_map_finish_outcomes() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_map_finish_outcomes"),
-    )
+    crate::runtime::run(corpus::rows("conversation_streams_map_finish_outcomes"))
 }
 
 #[test]
 fn conversation_streams_order_text_and_thinking_blocks() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_order_text_and_thinking_blocks"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_order_text_and_thinking_blocks",
+    ))
 }
 
 #[test]
 fn conversation_streams_accumulate_and_finalize_tool_calls() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_accumulate_and_finalize_tool_calls"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_accumulate_and_finalize_tool_calls",
+    ))
 }
 
 #[test]
 fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         corpus::rows("conversation_streams_preserve_partial_results_on_failure").await?;
         lifecycle::lifetime_failures().await?;
         lifecycle::failure_causes().await?;
@@ -97,18 +91,16 @@ fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
 
 #[test]
 fn conversation_streams_respect_framing_and_completion() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_respect_framing_and_completion"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_respect_framing_and_completion",
+    ))
 }
 
 #[test]
 fn conversation_streams_validate_complete_events_before_reduction() -> TestResult {
-    block_on(
-        false,
-        corpus::rows("conversation_streams_validate_complete_events_before_reduction"),
-    )
+    crate::runtime::run(corpus::rows(
+        "conversation_streams_validate_complete_events_before_reduction",
+    ))
 }
 
 #[path = "conversation_streams/lifecycle.rs"]

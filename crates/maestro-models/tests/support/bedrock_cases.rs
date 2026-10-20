@@ -8,7 +8,7 @@ use maestro_models::StreamOptions;
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 
 use crate::bedrock;
-use crate::chat::{TestResult, block_on};
+use crate::chat::TestResult;
 use crate::transport;
 
 /// What a case expects the SDK to do.
@@ -126,7 +126,7 @@ pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
             .iter()
             .find(|case| case.id == id)
             .ok_or("unknown case")?;
-        return block_on(true, check(case));
+        return crate::runtime::run_paused(check(case));
     }
     let files = AwsFiles::create(test)?;
     for case in cases {

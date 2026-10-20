@@ -7,7 +7,7 @@
 use crate::bundled;
 use crate::chat;
 
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::{
     FetchError, HttpResponse, Model, ProviderStreamOptions, StopReason, StreamOptions, get_model,
     reset_api_providers, stream,
@@ -76,7 +76,7 @@ fn maestro_raw_xhigh_returns_thinking() -> TestResult {
     reset_api_providers();
     let (fetch, bodies) = answering(200, thinking_body());
     let model = catalog("openai", "gpt-5.1-codex-max")?;
-    let result = block_on(false, async {
+    let result = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(
             stream(model, bundled::conversation()?, Some(raw_xhigh(fetch)?))?
                 .result()
@@ -116,7 +116,7 @@ fn maestro_raw_xhigh_preserves_server_rejection() -> TestResult {
     ] {
         let api = model.api.clone();
         let (fetch, bodies) = answering(400, rejection.clone());
-        let result = block_on(false, async {
+        let result = crate::runtime::run::<crate::TestResult<_>>(async {
             Ok(
                 stream(model, bundled::conversation()?, Some(raw_xhigh(fetch)?))?
                     .result()

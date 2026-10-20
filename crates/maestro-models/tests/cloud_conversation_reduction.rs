@@ -3,20 +3,19 @@ use crate::bedrock;
 use crate::chat;
 use crate::transport;
 
-use chat::{TestResult, block_on};
+use chat::TestResult;
 
 use bedrock::corpus;
 #[test]
 fn thinking_text_and_signatures_follow_separate_updates() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/thinking.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/thinking.json"
+    )))
 }
 
 #[test]
 fn tool_arguments_repair_each_fragment_and_finalize() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         corpus(include_str!("fixtures/cloud_conversation/tools.json")).await?;
         canonical_argument_keys()?;
         partial_arguments().await
@@ -25,66 +24,58 @@ fn tool_arguments_repair_each_fragment_and_finalize() -> TestResult {
 
 #[test]
 fn interleaved_blocks_keep_content_indices_and_shared_result() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/interleaved.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/interleaved.json"
+    )))
 }
 
 #[test]
 fn text_blocks_keep_arrival_order_and_reused_numbers() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/text.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/text.json"
+    )))
 }
 
 #[test]
 fn unmatched_deltas_and_stops_do_not_create_tool_calls() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/unmatched.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/unmatched.json"
+    )))
 }
 
 #[test]
 fn usage_replaces_reports_without_inventing_cache_totals() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/usage.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/usage.json"
+    )))
 }
 
 #[test]
 fn stop_reasons_preserve_the_terminal_outcome() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/stops.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/stops.json"
+    )))
 }
 
 #[test]
 fn failures_keep_thinking_and_tool_arguments_without_scratch() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/failures.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/failures.json"
+    )))
 }
 
 #[test]
 fn empty_and_unknown_streams_conclude_without_synthetic_blocks() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/empty.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/empty.json"
+    )))
 }
 
 #[test]
 fn stream_fields_keep_sdk_selection_and_failure_phases() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!("fixtures/cloud_conversation/fields.json")),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/fields.json"
+    )))
 }
 
 /// Frames opening a thinking block and a tool with an incomplete argument.
@@ -162,12 +153,9 @@ async fn partial_arguments() -> TestResult {
 
 #[test]
 fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
-    block_on(
-        false,
-        corpus(include_str!(
-            "fixtures/cloud_conversation/cancellation.json"
-        )),
-    )
+    crate::runtime::run(corpus(include_str!(
+        "fixtures/cloud_conversation/cancellation.json"
+    )))
 }
 
 #[test]
@@ -190,10 +178,9 @@ fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
             Ok(())
         };
     }
-    block_on(
-        false,
-        bedrock::replay_corpus(include_str!("fixtures/cloud_conversation/replay.json")),
-    )
+    crate::runtime::run(bedrock::replay_corpus(include_str!(
+        "fixtures/cloud_conversation/replay.json"
+    )))
 }
 
 /// Complete, unfinished and nested objects retain canonical numeric keys without sorting text keys.

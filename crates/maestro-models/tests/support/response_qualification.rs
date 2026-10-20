@@ -481,7 +481,7 @@ pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) ->
     }
     let owned = owned_here;
     maestro_models::reset_api_providers();
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let mut results = histories::Results::new();
         for row in owned {
             match &row.input {

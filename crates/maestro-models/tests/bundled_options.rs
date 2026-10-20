@@ -9,7 +9,7 @@ use crate::chat;
 use crate::key_selection;
 
 use bundled::{PROTOCOLS, Protocol, Seen};
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::{
     Model, ProviderStreamOptions, SimpleStreamOptions, StreamOptions, ThinkingBudgets,
     ThinkingLevel, reset_api_providers, stream, stream_simple,
@@ -83,7 +83,7 @@ fn sent_while_registered(api: &str, overrides: &Value, extra: &Value) -> TestRes
         ..ProviderStreamOptions::default()
     };
     let model = description(api, overrides)?;
-    let result = block_on(false, async {
+    let result = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(stream(model, bundled::conversation()?, Some(options))?
             .result()
             .await)
@@ -326,7 +326,7 @@ fn simple_requests(
 ) -> TestResult<(Seen, Seen)> {
     let (generic_options, generic_requests) = simple_settings(protocol.api, reasoning);
     let (root_options, root_requests) = simple_settings(protocol.api, reasoning);
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         let context = bundled::conversation()?;
         stream_simple(model.clone(), context, Some(generic_options))?
             .result()
@@ -433,7 +433,7 @@ fn assert_selected_key(row: &key_selection::Row) -> TestResult {
         .common
         .api_key
         .clone_from(&row.input.options.api_key);
-    block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         root_simple(api, model, options)?.result().await;
         Ok(())
     })?;
@@ -487,7 +487,7 @@ fn later_header_spelling_wins_over_older_alias() -> TestResult {
             let (mut common, requests) = common(api);
             common.headers = Some(serde_json::from_value(layers[1].clone())?);
             let model = description(api, &json!({"headers": layers[0]}))?;
-            let result = block_on(false, async {
+            let result = crate::runtime::run::<crate::TestResult<_>>(async {
                 Ok(stream(
                     model,
                     bundled::conversation()?,

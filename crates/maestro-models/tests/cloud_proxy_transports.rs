@@ -79,7 +79,7 @@ fn converse_peer(
 #[test]
 fn bedrock_socks_routes_reach_conversation_stream() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return chat::block_on(false, async {
+        return crate::runtime::run(async {
             let (labels, message) = conversation(StreamOptions::default()).await?;
             completed(&labels, &message)
         });
@@ -200,7 +200,7 @@ fn cancellation_peer(
 #[test]
 fn socks_cancel_closes_inflight_connection() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
-        return chat::block_on(false, cancel_conversation());
+        return crate::runtime::run(cancel_conversation());
     }
     for after_request in [false, true] {
         let (ready, gate) = std::sync::mpsc::channel();
@@ -280,7 +280,7 @@ async fn bypass_conversation(case: &str) -> TestResult {
 #[test]
 fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
     if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        return chat::block_on(false, bypass_conversation(&case));
+        return crate::runtime::run(bypass_conversation(&case));
     }
     for case in ["selected", "bypass", "replacement"] {
         let body = bedrock::answer("answer")?.concat();

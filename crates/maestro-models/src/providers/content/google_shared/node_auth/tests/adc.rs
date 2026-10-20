@@ -10,24 +10,49 @@ use std::sync::{
 
 #[test]
 fn native_metadata_acquires_and_refreshes_controlled_tokens() {
-    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    super::run(async {
         let calls = Arc::new(AtomicUsize::new(0));
         let observed = calls.clone();
         let fetch: crate::Fetch = Arc::new(move |request| {
             observed.fetch_add(1, Ordering::SeqCst);
-            assert_eq!(request.url,"http://controlled.invalid/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform");
-            assert!(request.headers.get("metadata-flavor").is_some_and(|value| value == "Google"));
-            let mut response = super::response(&serde_json::json!({"access_token":"controlled-access","expires_in":3600,"token_type":"Bearer"}));
-            response.headers.insert("metadata-flavor".into(),"Google".into());
+            assert_eq!(
+                request.url,
+                "http://controlled.invalid/computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform"
+            );
+            assert!(
+                request
+                    .headers
+                    .get("metadata-flavor")
+                    .is_some_and(|value| value == "Google")
+            );
+            let mut response = super::response(
+                &serde_json::json!({"access_token":"controlled-access","expires_in":3600,"token_type":"Bearer"}),
+            );
+            response
+                .headers
+                .insert("metadata-flavor".into(), "Google".into());
             Box::pin(std::future::ready(Ok(response)))
         });
-        let effects = Effects {fetch,clock:Arc::new(||1000.0), ..Effects::default()};
+        let effects = Effects {
+            fetch,
+            clock: Arc::new(|| 1000.0),
+            ..Effects::default()
+        };
         let credentials = super::metadata::compute("controlled.invalid", effects, false);
         for _ in 0..2 {
-            let CacheableResource::New {data,..} = credentials.headers(hyper::http::Extensions::new()).await.unwrap() else {panic!("expected generated headers")};
-            assert!(data.get("authorization").is_some_and(|value| value == "Bearer controlled-access"));
+            let CacheableResource::New { data, .. } = credentials
+                .headers(hyper::http::Extensions::new())
+                .await
+                .unwrap()
+            else {
+                panic!("expected generated headers")
+            };
+            assert!(
+                data.get("authorization")
+                    .is_some_and(|value| value == "Bearer controlled-access")
+            );
         }
-        assert_eq!(calls.load(Ordering::SeqCst),1);
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
     });
 }
 

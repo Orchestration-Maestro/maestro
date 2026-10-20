@@ -1,13 +1,12 @@
 //! Public response-session stream boundaries.
 
 use super::super::{stream_openai_codex_responses, stream_simple_openai_codex_responses};
+use crate::tests::runtime::run;
 use crate::{AssistantMessageEvent, Cancellation, ErrorReason, SimpleStreamOptions, StopReason};
 
 #[test]
 fn maestro_response_sessions_raw_and_simple_key_boundaries() {
-    super::socket_transport::run_native(
-        maestro_response_sessions_raw_and_simple_key_boundaries_scenario(),
-    );
+    run(maestro_response_sessions_raw_and_simple_key_boundaries_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -33,7 +32,7 @@ pub(super) fn response() -> crate::HttpResponse {
 
 #[test]
 fn maestro_response_sessions_stream_public_sse() {
-    super::socket_transport::run_native(maestro_response_sessions_stream_public_sse_scenario());
+    run(maestro_response_sessions_stream_public_sse_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -142,7 +141,7 @@ pub(super) struct PriceCase {
 
 #[test]
 fn maestro_response_sessions_price_public_tiers() {
-    super::socket_transport::run_native(maestro_response_sessions_price_public_tiers_scenario());
+    run(maestro_response_sessions_price_public_tiers_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -223,7 +222,7 @@ async fn open_body_result(bytes: Vec<u8>, abort: bool) -> crate::SharedAssistant
 
 #[test]
 fn maestro_response_sessions_finish_open_bodies() {
-    super::socket_transport::run_native(maestro_response_sessions_finish_open_bodies_scenario());
+    run(maestro_response_sessions_finish_open_bodies_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -257,7 +256,7 @@ async fn maestro_response_sessions_finish_open_bodies_scenario() {
 
 #[test]
 fn maestro_response_sessions_terminal_abort_wins() {
-    super::socket_transport::run_native(maestro_response_sessions_terminal_abort_wins_scenario());
+    run(maestro_response_sessions_terminal_abort_wins_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -309,9 +308,7 @@ fn gated_options(
 
 #[test]
 fn maestro_response_sessions_retain_shared_output_until_finalization() {
-    super::socket_transport::run_native(
-        maestro_response_sessions_retain_shared_output_until_finalization_scenario(),
-    );
+    run(maestro_response_sessions_retain_shared_output_until_finalization_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -351,9 +348,7 @@ async fn maestro_response_sessions_retain_shared_output_until_finalization_scena
 
 #[test]
 fn maestro_response_sessions_finalize_partial_tool_on_error_and_abort() {
-    super::socket_transport::run_native(
-        maestro_response_sessions_finalize_partial_tool_on_error_and_abort_scenario(),
-    );
+    run(maestro_response_sessions_finalize_partial_tool_on_error_and_abort_scenario());
 }
 
 /// Execute the controlled public-operation scenario.
@@ -422,9 +417,7 @@ async fn partial_tool_case(aborted: bool) {
 
 #[test]
 fn maestro_response_sessions_detached_invocations_finish() {
-    super::socket_transport::run_native(
-        maestro_response_sessions_detached_invocations_finish_scenario(),
-    );
+    run(maestro_response_sessions_detached_invocations_finish_scenario());
 }
 
 /// Execute the controlled public-operation scenario.

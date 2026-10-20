@@ -5,7 +5,7 @@ use crate::messages;
 
 use std::sync::Arc;
 
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::{
     AnthropicOptions, AssistantContent, AssistantMessage, AssistantMessageEvent,
     AssistantMessageEventStream, Cancellation, FetchError, HttpResponse, SharedAssistantMessage,
@@ -92,17 +92,17 @@ fn tool_arguments(message: &SharedAssistantMessage) -> TestResult<Value> {
 
 #[test]
 fn messages_reduce_sparse_wire_indices() -> TestResult {
-    block_on(false, rows_of("messages_reduce_sparse_wire_indices"))
+    crate::runtime::run(rows_of("messages_reduce_sparse_wire_indices"))
 }
 
 #[test]
 fn messages_accumulate_thinking_signatures() -> TestResult {
-    block_on(false, rows_of("messages_accumulate_thinking_signatures"))
+    crate::runtime::run(rows_of("messages_accumulate_thinking_signatures"))
 }
 
 #[test]
 fn messages_reduce_redacted_thinking() -> TestResult {
-    block_on(false, rows_of("messages_reduce_redacted_thinking"))
+    crate::runtime::run(rows_of("messages_reduce_redacted_thinking"))
 }
 
 /// A tool call opening at wire position 9 with no arguments yet.
@@ -170,7 +170,7 @@ async fn arguments_stream_in_partial_and_final_form() -> TestResult {
 
 #[test]
 fn messages_repair_event_and_argument_json() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         rows_of("messages_repair_event_and_argument_json").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             arguments_stream_in_partial_and_final_form().await?;
@@ -227,7 +227,7 @@ async fn streamed_arguments_follow_the_shared_reader() -> TestResult {
 
 #[test]
 fn messages_keep_initial_tool_arguments() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         rows_of("messages_keep_initial_tool_arguments").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             streamed_arguments_follow_the_shared_reader().await?;
@@ -238,12 +238,12 @@ fn messages_keep_initial_tool_arguments() -> TestResult {
 
 #[test]
 fn messages_strip_scratch_on_terminal() -> TestResult {
-    block_on(false, rows_of("messages_strip_scratch_on_terminal"))
+    crate::runtime::run(rows_of("messages_strip_scratch_on_terminal"))
 }
 
 #[test]
 fn messages_reject_unterminated_stream() -> TestResult {
-    block_on(false, rows_of("messages_reject_unterminated_stream"))
+    crate::runtime::run(rows_of("messages_reject_unterminated_stream"))
 }
 
 /// A recognized stop completes the stream and releases the body, so a later event can never be
@@ -264,7 +264,7 @@ async fn stop_releases_the_body() -> TestResult {
 
 #[test]
 fn messages_complete_at_terminal() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         rows_of("messages_complete_at_terminal").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             stop_releases_the_body().await?;
@@ -275,22 +275,22 @@ fn messages_complete_at_terminal() -> TestResult {
 
 #[test]
 fn messages_ignore_unknown_event_names() -> TestResult {
-    block_on(false, rows_of("messages_ignore_unknown_event_names"))
+    crate::runtime::run(rows_of("messages_ignore_unknown_event_names"))
 }
 
 #[test]
 fn messages_ignore_unmatched_block_events() -> TestResult {
-    block_on(false, rows_of("messages_ignore_unmatched_block_events"))
+    crate::runtime::run(rows_of("messages_ignore_unmatched_block_events"))
 }
 
 #[test]
 fn messages_merge_usage_categories() -> TestResult {
-    block_on(false, rows_of("messages_merge_usage_categories"))
+    crate::runtime::run(rows_of("messages_merge_usage_categories"))
 }
 
 #[test]
 fn messages_map_stop_outcomes() -> TestResult {
-    block_on(false, rows_of("messages_map_stop_outcomes"))
+    crate::runtime::run(rows_of("messages_map_stop_outcomes"))
 }
 
 /// Deliver a body in the given chunks and compare the call with a row's expectation.
@@ -360,7 +360,7 @@ async fn special_bodies_survive_bytewise_delivery(rows: &[messages::Row]) -> Tes
 
 #[test]
 fn messages_decode_fragmented_sse() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         rows_of("messages_decode_fragmented_sse").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             let rows = messages::rows_of(FIXTURE, "messages_decode_fragmented_sse")?;
@@ -373,17 +373,17 @@ fn messages_decode_fragmented_sse() -> TestResult {
 
 #[test]
 fn messages_flush_trailing_event() -> TestResult {
-    block_on(false, rows_of("messages_flush_trailing_event"))
+    crate::runtime::run(rows_of("messages_flush_trailing_event"))
 }
 
 #[test]
 fn messages_preserve_sse_fields() -> TestResult {
-    block_on(false, rows_of("messages_preserve_sse_fields"))
+    crate::runtime::run(rows_of("messages_preserve_sse_fields"))
 }
 
 #[test]
 fn messages_report_exact_error_context() -> TestResult {
-    block_on(false, rows_of("messages_report_exact_error_context"))
+    crate::runtime::run(rows_of("messages_report_exact_error_context"))
 }
 
 /// A usage count beyond the range of a double is infinite, and the sums and costs that follow
@@ -424,7 +424,7 @@ async fn counts_are_doubles() -> TestResult {
 
 #[test]
 fn messages_keep_number_and_member_semantics() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         rows_of("messages_keep_number_and_member_semantics").await?;
         if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             counts_are_doubles().await?;
@@ -486,7 +486,7 @@ async fn opening_arguments_follow_the_conversion_bound() -> TestResult {
 
 #[test]
 fn messages_skip_unread_deep_values() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
             return {
                 let output =
@@ -573,7 +573,7 @@ async fn dropped_observer_keeps_the_invocation_running() -> TestResult {
 
 #[test]
 fn messages_retain_live_message_handles() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         handles_stay_live().await?;
         dropped_observer_keeps_the_invocation_running().await
     })
@@ -772,7 +772,7 @@ async fn failing_body_keeps_partial_usage() -> TestResult {
 
 #[test]
 fn messages_cancel_without_losing_partial_usage() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         preaborted_signal_ends_before_reading().await?;
         pending_injected_read_still_contributes(&[text_delta("read completed")]).await?;
         pending_injected_read_still_contributes(&[text_delta("read completed"), message_stop()])

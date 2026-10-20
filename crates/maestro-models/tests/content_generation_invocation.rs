@@ -38,7 +38,7 @@ fn bare_error_objects_are_independent_of_chunk_boundaries() -> TestResult {
 
 #[test]
 fn delimited_bare_errors_preserve_prior_deltas() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let error = r#"{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","message":"busy"}}"#;
         let delta =
             "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"retained\"}]}}]}\n\n";
@@ -93,7 +93,7 @@ fn explicit_and_environment_keys_keep_precedence() -> TestResult {
 #[test]
 fn common_retry_timeout_and_response_hook_are_unused() -> TestResult {
     content_invocation::assert_rows("common_retry_timeout_and_response_hook_are_unused")?;
-    chat::block_on(true, native::common_timeout_ignored())
+    crate::runtime::run_paused(native::common_timeout_ignored())
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn terminal_reason_and_partial_content_are_preserved() -> TestResult {
 #[test]
 fn public_stream_reuses_reduction_and_shared_message_identity() -> TestResult {
     content_invocation::assert_rows("public_stream_reuses_reduction_and_shared_message_identity")?;
-    chat::block_on(false, native::live_alias("google-generative-ai"))
+    crate::runtime::run(native::live_alias("google-generative-ai"))
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn removed_hook_signal_only_changes_transport_cancellation() -> TestResult {
 #[test]
 fn live_abort_releases_pending_body_and_retains_partial() -> TestResult {
     content_invocation::assert_rows("live_abort_releases_pending_body_and_retains_partial")?;
-    chat::block_on(false, native::held_body_abort("google-generative-ai"))
+    crate::runtime::run(native::held_body_abort("google-generative-ai"))
 }
 
 #[test]
@@ -284,7 +284,7 @@ use std::sync::{Arc, Mutex};
 
 #[test]
 fn hook_selected_signal_controls_transport_not_terminal_classification() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for mode in [
             "replace-abort-B",
             "replace-abort-A",
@@ -299,7 +299,7 @@ fn hook_selected_signal_controls_transport_not_terminal_classification() -> Test
 
 #[test]
 fn cancellation_during_setup_releases_the_request() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let (fetch, admission, release) = native::held_fetch(empty_response());
         let caller = Cancellation::new();
         let stream = native_stream(StreamOptions {
@@ -327,7 +327,7 @@ fn cancellation_during_setup_releases_the_request() -> TestResult {
 
 #[test]
 fn positive_timeout_covers_body_and_error_admission() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         held_body_deadline(200, "google-generative-ai").await?;
         held_body_deadline(500, "google-generative-ai").await
     })
@@ -335,7 +335,7 @@ fn positive_timeout_covers_body_and_error_admission() -> TestResult {
 
 #[test]
 fn timeout_does_not_cancel_the_callers_signal() -> TestResult {
-    chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         let (fetch, admission, release) = native::held_fetch(empty_response());
         let caller = Cancellation::new();
         let stream = native_stream(StreamOptions {
@@ -374,7 +374,7 @@ fn timeout_does_not_cancel_the_callers_signal() -> TestResult {
 
 #[test]
 fn generated_call_numbers_survive_invocation_boundaries() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let mut generated = Vec::new();
         for parts in [
             json!([{"functionCall":{"name":"lookup", "args":{}}}]),
@@ -403,12 +403,12 @@ fn generated_call_numbers_survive_invocation_boundaries() -> TestResult {
 
 #[test]
 fn dropping_the_reader_keeps_the_producer_running() -> TestResult {
-    chat::block_on(false, native::dropped_reader("google-generative-ai"))
+    crate::runtime::run(native::dropped_reader("google-generative-ai"))
 }
 
 #[test]
 fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let captured = Arc::new(Mutex::new(Vec::new()));
         let requests = Arc::clone(&captured);
         let fetch: Fetch = Arc::new(move |request| {
@@ -455,7 +455,7 @@ fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
             Ok(())
         };
     }
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for (aborted, generic) in [(false, false), (false, true), (true, false), (true, true)] {
             let (model, context) = native_input()?;
             let signal = Cancellation::new();
@@ -490,7 +490,7 @@ fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
 
 #[test]
 fn registered_options_reject_wrong_native_shapes() -> TestResult {
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         let sends = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let count = Arc::clone(&sends);
         let fetch: Fetch = Arc::new(move |_| {

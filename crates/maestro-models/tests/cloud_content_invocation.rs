@@ -182,7 +182,7 @@ fn cloud_headers_keep_layer_precedence_without_response_hooks() -> TestResult {
 #[test]
 fn cloud_owned_producer_keeps_lifetime_and_deadline_policy() -> TestResult {
     use crate::content_generation_invocation::native;
-    crate::chat::block_on(true, async {
+    crate::runtime::run_paused(async {
         native::dropped_reader("google-vertex").await?;
         native::held_body_abort("google-vertex").await?;
         native::held_body_deadline(200, "google-vertex").await?;
@@ -228,7 +228,7 @@ fn cloud_call_counters_are_independent_between_entries() -> TestResult {
             Ok(())
         };
     }
-    crate::chat::block_on(false, async {
+    crate::runtime::run(async {
         use crate::content_generation_invocation::native;
         use maestro_models::{StopReason, StreamOptions};
         use serde_json::json;
@@ -289,7 +289,7 @@ fn cloud_root_and_registry_entries_dispatch() -> TestResult {
             Ok(())
         };
     }
-    crate::chat::block_on(false, routes::root_routes())
+    crate::runtime::run(routes::root_routes())
 }
 
 #[test]
@@ -307,7 +307,7 @@ fn cloud_raw_options_preserve_declared_fields() -> TestResult {
             Ok(())
         };
     }
-    crate::chat::block_on(false, routes::raw_options())
+    crate::runtime::run(routes::raw_options())
 }
 
 #[path = "support/cloud_content_deadline.rs"]
@@ -316,7 +316,7 @@ mod deadline;
 #[test]
 fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
     if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        return crate::chat::block_on(false, deadline::delayed_refresh(case == "expired"));
+        return crate::runtime::run(deadline::delayed_refresh(case == "expired"));
     }
     for case in ["expired", "active"] {
         let files = crate::content_credentials::Files::new();

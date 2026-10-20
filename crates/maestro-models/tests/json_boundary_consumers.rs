@@ -8,7 +8,7 @@ use crate::bundled;
 use crate::chat;
 
 use bundled::PROTOCOLS;
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::{MistralOptions, OnPayload, StopReason, StreamOptions};
 use serde_json::{Value, json};
 use std::sync::Arc;
@@ -80,7 +80,7 @@ fn with(mut payload: Value, fields: Value) -> Value {
 
 #[test]
 fn mistral_checks_object_fields_after_payload_hook() -> TestResult {
-    block_on(true, async {
+    crate::runtime::run_paused(async {
         let (text, sent) = run(|payload| {
             with(
                 payload,

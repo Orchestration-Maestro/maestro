@@ -137,19 +137,16 @@ fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
         };
     }
     reset_api_providers();
-    crate::chat::block_on(
-        true,
-        tokio::task::LocalSet::new().run_until(async {
-            for protocol in crate::bundled::registered_apis() {
-                cases(protocol, false, 200).await?;
-            }
-            cases("openai-responses", true, 200).await?;
-            cases("azure-openai-responses", true, 200).await?;
-            cases("openai-codex-responses", false, 503).await?;
-            super::session_transport::exercise().await?;
-            Ok(())
-        }),
-    )
+    crate::runtime::run_paused(tokio::task::LocalSet::new().run_until(async {
+        for protocol in crate::bundled::registered_apis() {
+            cases(protocol, false, 200).await?;
+        }
+        cases("openai-responses", true, 200).await?;
+        cases("azure-openai-responses", true, 200).await?;
+        cases("openai-codex-responses", false, 503).await?;
+        super::session_transport::exercise().await?;
+        Ok(())
+    }))
 }
 /// Repeat independent raw/simple and local/threaded choices with unequal read policies.
 async fn cases(protocol: &str, nonstream: bool, status: u16) -> crate::TestResult {

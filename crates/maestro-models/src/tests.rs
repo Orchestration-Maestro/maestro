@@ -2,6 +2,8 @@
 
 #[path = "../tests/support/loopback.rs"]
 pub mod loopback;
+#[path = "../tests/support/runtime.rs"]
+pub(crate) mod runtime;
 #[path = "../tests/support/socks.rs"]
 pub mod socks;
 #[path = "../tests/support/tls.rs"]

@@ -173,51 +173,46 @@ fn standard_conclusion_preserves_recorded_outcomes() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn producer_completion_outlives_observers() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let mut outputs = Vec::new();
-            let mut releases = Vec::new();
-            let mut completions = Vec::new();
-            for _ in 0..2 {
-                let output = output();
-                let stream = AssistantMessageEventStream::new();
-                let (entered, ready) = tokio::sync::oneshot::channel();
-                let (release, proceed) = tokio::sync::oneshot::channel();
-                let (complete, completed) = tokio::sync::oneshot::channel();
-                let retained = Arc::clone(&output);
-                let producer = stream.clone();
-                start_producer_for::<crate::Threaded>(
-                    &stream,
-                    &output,
-                    None,
-                    Box::pin(async move {
-                        entered.send(()).unwrap();
-                        proceed.await.unwrap();
-                        retained.write().unwrap().error_message = Some("completed".into());
-                        producer.end(Some(Arc::clone(&retained)));
-                        complete.send(retained).unwrap();
-                    }),
-                    None,
-                );
-                ready.await.unwrap();
-                drop(stream);
-                releases.push(release);
-                completions.push(completed);
-                outputs.push(output);
-            }
-            assert!(!Arc::ptr_eq(&outputs[0], &outputs[1]));
-            for ((release, completed), output) in releases.into_iter().zip(completions).zip(outputs)
-            {
-                release.send(()).unwrap();
-                let retained = completed.await.unwrap();
-                assert!(Arc::ptr_eq(&retained, &output));
-                assert_eq!(
-                    output.read().unwrap().error_message.as_deref(),
-                    Some("completed")
-                );
-            }
-        });
+    crate::tests::runtime::run(async {
+        let mut outputs = Vec::new();
+        let mut releases = Vec::new();
+        let mut completions = Vec::new();
+        for _ in 0..2 {
+            let output = output();
+            let stream = AssistantMessageEventStream::new();
+            let (entered, ready) = tokio::sync::oneshot::channel();
+            let (release, proceed) = tokio::sync::oneshot::channel();
+            let (complete, completed) = tokio::sync::oneshot::channel();
+            let retained = Arc::clone(&output);
+            let producer = stream.clone();
+            start_producer_for::<crate::Threaded>(
+                &stream,
+                &output,
+                None,
+                Box::pin(async move {
+                    entered.send(()).unwrap();
+                    proceed.await.unwrap();
+                    retained.write().unwrap().error_message = Some("completed".into());
+                    producer.end(Some(Arc::clone(&retained)));
+                    complete.send(retained).unwrap();
+                }),
+                None,
+            );
+            ready.await.unwrap();
+            drop(stream);
+            releases.push(release);
+            completions.push(completed);
+            outputs.push(output);
+        }
+        assert!(!Arc::ptr_eq(&outputs[0], &outputs[1]));
+        for ((release, completed), output) in releases.into_iter().zip(completions).zip(outputs) {
+            release.send(()).unwrap();
+            let retained = completed.await.unwrap();
+            assert!(Arc::ptr_eq(&retained, &output));
+            assert_eq!(
+                output.read().unwrap().error_message.as_deref(),
+                Some("completed")
+            );
+        }
+    });
 }

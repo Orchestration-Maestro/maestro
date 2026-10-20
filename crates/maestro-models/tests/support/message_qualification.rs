@@ -186,7 +186,7 @@ pub fn assert_rows(test: &str) -> TestResult {
     }
     let _registry = bundled::registry();
     maestro_models::reset_api_providers();
-    chat::block_on(false, async {
+    crate::runtime::run(async {
         for row in owned {
             let actual = match &row.input {
                 Input::Wire(wire) => invoke(wire, &row.id, &row.expected).await?,

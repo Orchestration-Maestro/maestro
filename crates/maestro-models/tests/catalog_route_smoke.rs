@@ -7,7 +7,7 @@
 use crate::bundled;
 use crate::chat;
 
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::{
     ProviderStreamOptions, StopReason, StreamOptions, complete, get_models, reset_api_providers,
 };
@@ -102,7 +102,7 @@ fn maestro_catalog_routes_use_available_adapters() -> TestResult {
                 ..ProviderStreamOptions::default()
             };
             let id = model.id.clone();
-            let result = block_on(false, async {
+            let result = crate::runtime::run::<crate::TestResult<_>>(async {
                 Ok(complete(model, bundled::conversation()?, Some(options)).await?)
             })?;
             assert_eq!(

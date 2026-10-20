@@ -66,10 +66,7 @@ fn run(
     output: &mut dyn io::Write,
     errors: &mut dyn io::Write,
 ) -> io::Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(generate_models(fetch, destination, output, errors))
+    crate::runtime::run(generate_models(fetch, destination, output, errors))
 }
 /// Inspect provider output before accepting the success report.
 struct ObserveFiles<'a> {

@@ -1,7 +1,7 @@
 //! Controlled manual-input publication and ownership witnesses.
 use super::start_manual;
 use crate::oauth::native::CallbackOutcome;
-use crate::oauth::tests::run;
+use crate::tests::runtime::run;
 use crate::{DiagnosticCode, DiagnosticErrorInfo, EventStream, OAuthError};
 
 #[test]

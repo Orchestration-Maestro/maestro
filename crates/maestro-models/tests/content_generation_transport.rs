@@ -123,7 +123,7 @@ fn prepare(
         .and_then(Value::as_object_mut)
         .and_then(|config| config.shift_remove("httpOptions"));
     let projected = project_content_request(params)?;
-    chat::block_on(false, async {
+    crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(client.prepare_request(projected, controls.as_ref()).await)
     })
     .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?

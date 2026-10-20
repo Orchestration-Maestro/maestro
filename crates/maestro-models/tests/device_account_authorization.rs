@@ -47,7 +47,9 @@ fn maestro_device_login_preserves_enterprise_endpoints() {
             Some("example.com")
         );
     }
-    run(maestro_device_login_preserves_enterprise_endpoints_scenario());
+    crate::runtime::run_paused_after_start(
+        maestro_device_login_preserves_enterprise_endpoints_scenario(),
+    );
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -158,18 +160,6 @@ fn device_base_urls_follow_token_priority() {
 use maestro_models::{BoxFuture, Fetch, HttpResponse, OAuthCredentials, OAuthError};
 use std::sync::Arc;
 
-/// Run deterministic native futures with paused timers.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            tokio::time::pause();
-            work.await;
-        });
-}
-
 /// One complete controlled JSON response.
 fn response(text: impl Into<Vec<u8>>) -> HttpResponse {
     HttpResponse {
@@ -182,7 +172,9 @@ fn response(text: impl Into<Vec<u8>>) -> HttpResponse {
 
 #[test]
 fn device_refresh_preserves_tokens_expiry_and_domain() {
-    run(device_refresh_preserves_tokens_expiry_and_domain_scenario());
+    crate::runtime::run_paused_after_start(
+        device_refresh_preserves_tokens_expiry_and_domain_scenario(),
+    );
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -216,7 +208,7 @@ async fn device_refresh_preserves_tokens_expiry_and_domain_scenario() {
 
 #[test]
 fn device_refresh_selects_surviving_fields() {
-    run(device_refresh_selects_surviving_fields_scenario());
+    crate::runtime::run_paused_after_start(device_refresh_selects_surviving_fields_scenario());
 }
 
 use futures_util::FutureExt as _;
@@ -370,7 +362,7 @@ async fn device_refresh_selects_surviving_fields_scenario() {
 
 #[test]
 fn maestro_device_login_waits_before_polling() {
-    run(maestro_device_login_waits_before_polling_scenario());
+    crate::runtime::run_paused_after_start(maestro_device_login_waits_before_polling_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -445,7 +437,7 @@ fn device_provider_exposes_shared_contract() {
     let _: fn(OAuthCallbacks, Option<Fetch>) -> BoxFuture<Result<OAuthCredentials, OAuthError>> =
         maestro_models::oauth::login_github_copilot;
 
-    run(device_provider_exposes_shared_contract_scenario());
+    crate::runtime::run_paused_after_start(device_provider_exposes_shared_contract_scenario());
 }
 
 /// Caller-authored diagnostic used by controlled effects.
@@ -477,7 +469,7 @@ async fn device_provider_exposes_shared_contract_scenario() {
 
 #[test]
 fn device_requests_keep_wire_fields() {
-    run(device_requests_keep_wire_fields_scenario());
+    crate::runtime::run_paused_after_start(device_requests_keep_wire_fields_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -507,7 +499,7 @@ async fn device_requests_keep_wire_fields_scenario() {
 
 #[test]
 fn device_prompt_precedes_cancellation() {
-    run(device_prompt_precedes_cancellation_scenario());
+    crate::runtime::run_paused_after_start(device_prompt_precedes_cancellation_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -542,7 +534,7 @@ async fn device_prompt_precedes_cancellation_scenario() {
 
 #[test]
 fn device_callbacks_preserve_order_and_failures() {
-    run(device_callbacks_preserve_order_and_failures_scenario());
+    crate::runtime::run_paused_after_start(device_callbacks_preserve_order_and_failures_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -605,7 +597,9 @@ async fn device_callbacks_preserve_order_and_failures_scenario() {
 
 #[test]
 fn device_code_fields_are_selected_before_decoding() {
-    run(device_code_fields_are_selected_before_decoding_scenario());
+    crate::runtime::run_paused_after_start(
+        device_code_fields_are_selected_before_decoding_scenario(),
+    );
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -657,7 +651,7 @@ async fn device_code_fields_are_selected_before_decoding_scenario() {
 
 #[test]
 fn device_token_poll_selects_access_before_error() {
-    run(device_token_poll_selects_access_before_error_scenario());
+    crate::runtime::run_paused_after_start(device_token_poll_selects_access_before_error_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -698,7 +692,7 @@ async fn device_token_poll_selects_access_before_error_scenario() {
 
 #[test]
 fn device_unknown_token_bodies_keep_polling() {
-    run(device_unknown_token_bodies_keep_polling_scenario());
+    crate::runtime::run_paused_after_start(device_unknown_token_bodies_keep_polling_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -747,7 +741,7 @@ async fn device_unknown_token_bodies_keep_polling_scenario() {
 
 #[test]
 fn device_errors_keep_status_reason_and_body() {
-    run(device_errors_keep_status_reason_and_body_scenario());
+    crate::runtime::run_paused_after_start(device_errors_keep_status_reason_and_body_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -774,7 +768,7 @@ async fn device_errors_keep_status_reason_and_body_scenario() {
 
 #[test]
 fn device_errors_keep_server_description() {
-    run(device_errors_keep_server_description_scenario());
+    crate::runtime::run_paused_after_start(device_errors_keep_server_description_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -834,7 +828,9 @@ async fn device_errors_keep_server_description_scenario() {
 
 #[test]
 fn device_refresh_delegation_keeps_raw_enterprise_domain() {
-    run(device_refresh_delegation_keeps_raw_enterprise_domain_scenario());
+    crate::runtime::run_paused_after_start(
+        device_refresh_delegation_keeps_raw_enterprise_domain_scenario(),
+    );
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -971,7 +967,7 @@ fn catalog_policy_fetch(started: tokio::sync::mpsc::UnboundedSender<HeldPolicy>)
 
 #[test]
 fn maestro_device_tokens_enable_catalog_models() {
-    run(maestro_device_tokens_enable_catalog_models_scenario());
+    crate::runtime::run_paused_after_start(maestro_device_tokens_enable_catalog_models_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -1033,7 +1029,7 @@ async fn maestro_device_tokens_enable_catalog_models_scenario() {
 
 #[test]
 fn device_cancel_does_not_race_fetch() {
-    run(device_cancel_does_not_race_fetch_scenario());
+    crate::runtime::run_paused_after_start(device_cancel_does_not_race_fetch_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -1074,7 +1070,7 @@ async fn device_cancel_does_not_race_fetch_scenario() {
 
 #[test]
 fn maestro_device_login_cancels_scoped_waits() {
-    run(maestro_device_login_cancels_scoped_waits_scenario());
+    crate::runtime::run_paused_after_start(maestro_device_login_cancels_scoped_waits_scenario());
 }
 
 /// Controlled scenario for the named authorization behavior.
@@ -1107,7 +1103,9 @@ async fn maestro_device_login_cancels_scoped_waits_scenario() {
 
 #[test]
 fn device_decode_uses_native_json_causes_and_shared_text() {
-    run(device_decode_uses_native_json_causes_and_shared_text_scenario());
+    crate::runtime::run_paused_after_start(
+        device_decode_uses_native_json_causes_and_shared_text_scenario(),
+    );
 }
 
 /// Controlled scenario for the named authorization behavior.

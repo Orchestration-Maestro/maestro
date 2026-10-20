@@ -1,9 +1,6 @@
 //! Descriptors, destination projection and independently supplied options.
 
-use crate::{
-    bundled,
-    chat::{TestResult, block_on},
-};
+use crate::{bundled, chat::TestResult};
 use maestro_models::{ProviderStreamOptions, complete, get_model, get_models};
 use serde_json::json;
 
@@ -13,7 +10,7 @@ fn maestro_guide_invokes_custom_descriptors() -> TestResult {
     assert!(get_model("openai", "gpt-4o-mini").is_some());
     assert!(get_models("missing-guide-provider").is_empty());
     assert!(get_model("openai", "missing-guide-model").is_none());
-    block_on(false, async {
+    crate::runtime::run(async {
         let model = crate::chat::model(&json!({
             "id":"local-weather", "provider":"local-guide", "baseUrl":"https://controlled.invalid/v1",
             "compat":{"supportsStore":false,"supportsDeveloperRole":false,"supportsUsageInStreaming":false,"maxTokensField":"max_tokens"}
@@ -110,7 +107,7 @@ fn maestro_guide_projects_and_serializes_history() -> TestResult {
         crate::json::canonical(serde_json::to_value(context)?),
         histories.context.expected
     );
-    block_on(false, async {
+    crate::runtime::run(async {
         let (assistant, call) = super::tools::invalid_completed_call().await?;
         let mut history = bundled::conversation()?;
         history.messages.push(Message::Assistant(assistant));
@@ -199,7 +196,7 @@ fn maestro_guide_selects_thinking_and_transport_options() -> TestResult {
 /// Independently chosen raw and simple controls reach the actual HTTP request.
 fn check_invocation_options() -> TestResult {
     use maestro_models::{SimpleStreamOptions, ThinkingLevel, complete_simple};
-    block_on(false, async {
+    crate::runtime::run(async {
         let model = crate::chat::model(&json!({"compat":{"supportsReasoningEffort":true}}))?;
         let (mut raw, requests) = super::response_options(&model.api, "Raw");
         raw.temperature = Some(0.0);

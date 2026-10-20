@@ -351,17 +351,14 @@ async fn check_cache<E: Mode>(registration: &FauxProviderRegistration, simple: b
 }
 /// Run through both public families while retaining and joining local work.
 pub(super) fn exercise(scenario: Scenario) {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(tokio::task::LocalSet::new().run_until(async {
-            for simple in [false, true] {
-                run::<Local>(scenario, simple).await;
-                run::<Threaded>(scenario, simple).await;
-                if scenario == Scenario::Exhaustion {
-                    run::<Local>(Scenario::RejectedExhaustion, simple).await;
-                    run::<Threaded>(Scenario::RejectedExhaustion, simple).await;
-                }
+    crate::runtime::run(tokio::task::LocalSet::new().run_until(async {
+        for simple in [false, true] {
+            run::<Local>(scenario, simple).await;
+            run::<Threaded>(scenario, simple).await;
+            if scenario == Scenario::Exhaustion {
+                run::<Local>(Scenario::RejectedExhaustion, simple).await;
+                run::<Threaded>(Scenario::RejectedExhaustion, simple).await;
             }
-        }));
+        }
+    }));
 }

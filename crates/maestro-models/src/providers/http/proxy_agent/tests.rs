@@ -3,17 +3,9 @@
 use crate::tests::{loopback, socks};
 
 use crate::providers::http::{HttpRequest, Route, configured_fetch};
+use crate::tests::runtime::run;
 use futures_util::StreamExt;
 use std::sync::Arc;
-
-/// Run a transport case on the native executor.
-fn run(future: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future);
-}
 
 /// Select the supplied proxy without consulting process environment.
 fn sender(proxy: url::Url) -> crate::providers::http::Fetch {

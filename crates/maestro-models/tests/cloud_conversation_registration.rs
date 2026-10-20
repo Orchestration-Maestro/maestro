@@ -5,7 +5,7 @@ use crate::bundled::{self, registered};
 use crate::chat;
 use crate::transport;
 use bedrock::diagnostic as error;
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions, stream, stream_simple,
 };
@@ -35,7 +35,7 @@ fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
             Ok(())
         };
     }
-    block_on(false, async {
+    crate::runtime::run(async {
         explicit_routes().await?;
         maestro_models::set_bedrock_provider_module(pair("replacement"));
         maestro_models::set_bedrock_provider_module(
@@ -127,7 +127,7 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
         stream_bedrock: std::sync::Arc::new(CloudFailure("raw setup".into())),
         stream_simple_bedrock: std::sync::Arc::new(CloudFailure("simple setup".into())),
     });
-    block_on(false, async {
+    crate::runtime::run(async {
         let signal = maestro_models::Cancellation::new();
         signal.abort();
         for preaborted in [false, true] {
@@ -198,12 +198,11 @@ fn bedrock_raw_options_reach_their_consumers() -> TestResult {
         };
     }
     if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("profile") {
-        return block_on(
-            false,
-            bedrock::corpus(include_str!("fixtures/cloud_conversation/profile.json")),
-        );
+        return crate::runtime::run(bedrock::corpus(include_str!(
+            "fixtures/cloud_conversation/profile.json"
+        )));
     }
-    block_on(false, async {
+    crate::runtime::run(async {
         bedrock::corpus(include_str!("fixtures/cloud_conversation/raw-options.json")).await?;
         invalid_default_options().await
     })
@@ -233,7 +232,7 @@ async fn selected(provider: &maestro_models::ApiProvider) -> TestResult<String> 
 fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    block_on(false, async {
+    crate::runtime::run(async {
         let retained =
             maestro_models::get_api_provider("bedrock-converse-stream").ok_or("provider")?;
         let mut caller = pair("A");
@@ -289,7 +288,7 @@ fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
 fn bedrock_override_survives_reset_and_registry_changes() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    block_on(false, async {
+    crate::runtime::run(async {
         maestro_models::reset_api_providers();
         let order: Vec<String> = bundled::registered_apis()
             .into_iter()
@@ -397,7 +396,7 @@ fn assert_common<E: maestro_models::ProviderExecution>(
 fn bedrock_overrides_receive_open_options_unchanged() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    block_on(false, async {
+    crate::runtime::run(async {
         let scripted = bedrock::serve(vec![]);
         let common = open_options(&scripted);
         let simple_common = open_options(&scripted);

@@ -539,7 +539,7 @@ pub fn without_runtime(endpoint: Endpoint) -> TestResult {
             ..Default::default()
         };
         let stream = start(call, target, history, common)?;
-        crate::chat::block_on(false, async {
+        crate::runtime::run::<crate::TestResult<_>>(async {
             let (events, result) = crate::response_output::collect(&stream).await?;
             assert_eq!(events, vec![json!({"type":"error","reason":"error"})]);
             assert_eq!(

@@ -1,9 +1,6 @@
 //! Supplied account credentials and retained registration handles in fresh processes.
 
-use crate::{
-    bundled,
-    chat::{TestResult, block_on},
-};
+use crate::{bundled, chat::TestResult};
 use maestro_models::oauth::{OAuthCallbacks, OAuthLoginCallbacks, OAuthProviderInterface};
 use maestro_models::{
     BoxFuture, Fetch, OAuthAuthInfo, OAuthCredentials, OAuthError, OAuthPrompt, get_oauth_api_key,
@@ -110,7 +107,7 @@ fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
         assert!(output.status.success(), "{output:?}");
         return Ok(());
     }
-    block_on(false, async {
+    crate::runtime::run(async {
         let refreshes = Arc::new(AtomicUsize::new(0));
         let provider = Arc::new(Account {
             access: "refreshed-access",
@@ -182,7 +179,7 @@ fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
         return Ok(());
     }
     let _registry = bundled::registry();
-    block_on(false, async {
+    crate::runtime::run(async {
         reset_api_providers();
         assert_eq!(bundled::registered(), bundled::registered_apis());
         register_api_provider(api_provider("old result"), Some("guide-old".into()));

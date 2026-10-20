@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll, Waker};
 
-use chat::{TestResult, block_on, model};
+use chat::{TestResult, model};
 use json::{canonical, event_record};
 use maestro_models::providers::content::google_shared::process_google_stream;
 use maestro_models::{
@@ -316,7 +316,7 @@ fn assert_row(row: &Row, observed: Observed) -> TestResult {
 /// Run every fixture row owned by `test`, each with a fresh counter.
 fn check(test: &str) -> TestResult {
     for row in rows(test)? {
-        let observed = block_on(false, reduce(&row.input, &AtomicU64::new(0)))?;
+        let observed = crate::runtime::run(reduce(&row.input, &AtomicU64::new(0)))?;
         assert_row(&row, observed)?;
     }
     Ok(())
@@ -340,7 +340,7 @@ fn generated_suffix(counter: &AtomicU64) -> TestResult<String> {
         source_error: None,
         cost: None,
     };
-    let observed = block_on(false, reduce(&input, counter))?;
+    let observed = crate::runtime::run(reduce(&input, counter))?;
     let id = observed.message["content"][0]["id"]
         .as_str()
         .ok_or("generated id")?
@@ -435,7 +435,7 @@ fn generated_call_names_preserve_missing_and_empty_distinctions() -> TestResult 
         source_error: None,
         cost: None,
     };
-    let observed = block_on(false, reduce(&input, &AtomicU64::new(0)))?;
+    let observed = crate::runtime::run(reduce(&input, &AtomicU64::new(0)))?;
     let content = observed.message["content"].as_array().ok_or("content")?;
     let names: Vec<_> = content.iter().map(|call| call["name"].as_str()).collect();
     assert_eq!(names, [Some(""), Some("")]);
@@ -572,7 +572,7 @@ fn selected_tool_arguments_enforce_the_existing_json_depth_bound() -> TestResult
             source_error: None,
             cost: None,
         };
-        let observed = block_on(false, reduce(&input, &AtomicU64::new(0)))?;
+        let observed = crate::runtime::run(reduce(&input, &AtomicU64::new(0)))?;
         let kinds: Vec<_> = observed.events.iter().map(|e| e["type"].clone()).collect();
         if accepted {
             assert!(observed.error.is_none());
@@ -604,7 +604,7 @@ fn generated_identifier_counter_advances_before_arguments_fail() -> TestResult {
             source_error: None,
             cost: None,
         };
-        let observed = block_on(false, reduce(&input, &counter))?;
+        let observed = crate::runtime::run(reduce(&input, &counter))?;
         assert_eq!(observed.error.is_some(), fails);
     }
     assert_eq!(counter.load(Ordering::Relaxed), 2);
@@ -643,7 +643,7 @@ fn first_text(message: &SharedAssistantMessage) -> TestResult<String> {
 
 #[test]
 fn partial_handles_observe_later_updates_without_retaining_the_owner() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let output = initial_message()?;
         let weak = Arc::downgrade(&output);
         let events = AssistantMessageEventStream::new();
@@ -734,7 +734,7 @@ fn source_diagnostics_return_unchanged_and_stop_polling() -> TestResult {
     };
     let output = initial_message()?;
     let events = AssistantMessageEventStream::new();
-    let result = block_on(false, async {
+    let result = crate::runtime::run::<crate::TestResult<_>>(async {
         Ok(
             process_google_stream(source, &output, &events, &priced(None)?, &AtomicU64::new(0))
                 .await,
@@ -747,7 +747,7 @@ fn source_diagnostics_return_unchanged_and_stop_polling() -> TestResult {
 
 #[test]
 fn reducer_leaves_lifecycle_updates_to_its_caller() -> TestResult {
-    block_on(false, async {
+    crate::runtime::run(async {
         let output = initial_message()?;
         let events = AssistantMessageEventStream::new();
         let text = r#"{"candidates":[{"content":{"parts":[{"text":"hi"}]}}]}"#.to_owned();
@@ -795,7 +795,7 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
         selected.extend(rows(name)?);
     }
     if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        return block_on(false, async {
+        return crate::runtime::run(async {
             let index = case.parse::<usize>()?;
             cloud_entry_row(&selected[index]).await?;
             if index == 0 {

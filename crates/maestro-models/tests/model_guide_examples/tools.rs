@@ -1,10 +1,7 @@
 //! Tool declarations, argument progress and caller-owned execution.
 
 use super::weather_tool;
-use crate::{
-    bundled,
-    chat::{TestResult, block_on},
-};
+use crate::{bundled, chat::TestResult};
 use maestro_models::{StringEnumOptions, string_enum};
 use serde_json::json;
 
@@ -146,7 +143,7 @@ fn check_validation_inputs(invalid: &maestro_models::ToolCall) -> TestResult {
 fn maestro_guide_validates_before_tool_execution() -> TestResult {
     use maestro_models::{Message, ProviderStreamOptions, complete};
     let _registry = bundled::registry();
-    block_on(false, async {
+    crate::runtime::run(async {
         let (assistant, call) = invalid_completed_call().await?;
         let mut executions = 0;
         let feedback = execute_weather(&call, &mut executions).unwrap_err();
@@ -194,7 +191,7 @@ fn maestro_guide_reads_partial_arguments_without_execution() -> TestResult {
     };
     let _registry = bundled::registry();
     check_partial_parser();
-    block_on(false, async {
+    crate::runtime::run(async {
         let (mut feed, common) = super::fed_options();
         let events = stream_anthropic(
             crate::messages::model(&json!({}))?,

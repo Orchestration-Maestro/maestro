@@ -1,10 +1,7 @@
 //! Invocation and event-consumption examples.
 
 use super::response_options;
-use crate::{
-    bundled,
-    chat::{TestResult, block_on},
-};
+use crate::{bundled, chat::TestResult};
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StopReason, complete, complete_simple, get_model,
     stream, stream_simple,
@@ -13,7 +10,7 @@ use maestro_models::{
 #[test]
 fn maestro_guide_quick_start_completes_without_network() -> TestResult {
     let _registry = bundled::registry();
-    block_on(false, async {
+    crate::runtime::run(async {
         let model = get_model("openai", "gpt-4o-mini").ok_or("catalog model")?;
         let context = bundled::conversation()?;
         let (common, requests) = response_options(&model.api, "Hello");
@@ -79,7 +76,7 @@ fn maestro_guide_consumes_interleaved_stream() -> TestResult {
     };
     use std::sync::Arc;
     let _registry = bundled::registry();
-    block_on(false, async {
+    crate::runtime::run(async {
         let (fetch, _) = bundled::fetch(interleaved_frames());
         let model = crate::messages::model(&serde_json::json!({}))?;
         let events = stream_anthropic(
@@ -139,7 +136,7 @@ fn maestro_guide_observes_failure_and_cancellation() -> TestResult {
     };
     use serde_json::json;
     let _registry = bundled::registry();
-    block_on(false, async {
+    crate::runtime::run(async {
         check_setup_errors().await?;
         let model = crate::messages::model(&json!({}))?;
         let (mut feed, mut common) = super::fed_options();
