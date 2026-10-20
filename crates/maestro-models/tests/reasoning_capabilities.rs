@@ -1,9 +1,4 @@
 //! Raw `xhigh` effort reaches the wire unchanged and the server decides.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::bundled;
 use crate::chat;
 

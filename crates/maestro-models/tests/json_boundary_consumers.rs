@@ -1,9 +1,4 @@
 //! Consumers of the shared JSON boundary keep their caller-owned decisions.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::bundled;
 use crate::chat;
 

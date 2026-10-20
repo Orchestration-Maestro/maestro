@@ -1,9 +1,4 @@
 //! The literal gateway catalogs route to the bundled adapters.
-#![allow(
-    dead_code,
-    reason = "each test binary uses a subset of the shared support"
-)]
-
 use crate::bundled;
 use crate::chat;
 
