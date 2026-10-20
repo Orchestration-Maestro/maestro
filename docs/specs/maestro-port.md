@@ -252,12 +252,13 @@ phase distinguishes measurement from a valid zero-sized final viewport.
 
 Browser errors follow the existing operation interfaces. `AttachmentHostError`
 contains native Host, Presentation and BorrowConflict failures. Shared glyph and
-control drawing uses `ControlError` (Icon, Host and Presentation). Attachment,
-artifact and generic-dialog operations own `AttachmentUiError`, `ArtifactUiError`
-and `DialogUiError`; each composes localization, control, host, presentation and
-local borrow failures. Input owns `InputUiError` for localization, host and
-presentation failures. Leaf conversions wrap only the named operation variant;
-there is no generic I/O conversion or cross-feature conversion.
+control drawing uses `ControlError` (Icon, Host and Presentation). Artifact
+operations own `ArtifactUiError`. Generic-dialog operations own `DialogUiError`,
+and so do the attachment overlay and the tile that opens it. Each composes
+localization, control, host, presentation and local borrow failures. Input owns
+`InputUiError` for localization, host and presentation failures. Leaf conversions
+wrap only the named operation variant; there is no generic I/O conversion or
+cross-feature conversion.
 
 Code, Markdown and console rendering share `ReadingUiError`, owned by the
 code-block interface, for highlighting, localization, localized-control, native
