@@ -114,6 +114,47 @@ to their high bytes and converts gray, gray-alpha, RGB and RGBA to RGBA. PNG
 geometry replaces the declared geometry. Parser and loader errors remain typed;
 protocol error-message translation belongs to screen execution.
 
+## Image protocol: placements and rendering
+
+`Terminal::enable_kitty_graphics` enables image execution with 64 MiB of storage
+per screen, supported local media, a 16 MiB APC payload limit and terminal-local
+PNG decoding. Newly selected screens inherit that policy. Resets clear images
+and placements but retain host permissions and quotas. PNG decoding is isolated
+per terminal: enabling one terminal does not enable decoding in another.
+
+Completed APC image commands execute through the terminal's existing handler.
+Query, transmit, transmit-and-display, display and delete commands follow their
+quiet-level reply policy; drain replies with `take_pty_reply`. Chunked uploads
+retain their first command's metadata and deferred display request. Display
+updates the cursor unless the command suppresses movement. Animation commands
+return an unimplemented-action error. A zero storage limit disables execution,
+including queries and replies.
+
+Each screen owns its image payloads and placements. Physical placements hold
+tracked page positions; virtual placements supply prototypes for placeholder
+cells. Replacement, deletion and quota eviction release removed positions.
+Deletion supports image identifiers and numbers, cursor and cell intersections,
+rows, columns, z order, identifier ranges, unused images and all placements.
+Content changes receive process-wide generation stamps shared across screens,
+resets and terminals. Geometry-only changes mark storage dirty without changing
+its content generation.
+
+`kitty::graphics::render::PlacementRenderInfo` reports destination pixels,
+occupied cells, viewport-relative position, visibility and a source rectangle
+clamped to the image. Placeholder runs use U+10EEEE cells, foreground image
+identifiers, underline placement identifiers and the constant combining-mark
+table for row, column and high image-id bytes. Physical placements and
+placeholder runs share render geometry.
+
+`Terminal::kitty_image_placements_with_data_filter` returns visible placements
+in ascending z order. Virtual prototypes appear only through resolved
+placeholder runs. The filter receives a `KittyImageDescriptor` and returns
+whether to copy the payload into the result; omitted data leaves dimensions,
+format, payload length and fingerprint intact. Fingerprints include the entire
+payload and are cached per image generation, then pruned to visible images.
+Only a generation observed without stored placements skips later image queries;
+off-screen placements still need projection after scrolling or resizing.
+
 ## Cell and row records
 
 `Cell` and `page::row::Row` are eight-byte `Copy` records with typed accessors.
@@ -530,9 +571,9 @@ action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
 bits and the selected mouse event or format remain independent.
 
 Query and window requests are observable as typed stream actions. The terminal
-handler captures replies and colour effects, routes APC strings and consumes DCS
-without changing the screen. Image execution remains disabled. Input decoding
-continues after these commands.
+handler captures replies and colour effects, routes APC strings to image
+execution and consumes DCS without changing the screen. Input decoding continues
+after these commands.
 
 ## Replies and effects
 
@@ -599,6 +640,6 @@ the encoded image payload, not the control fields; the default is 65 MiB.
 Changing the limit or protocol enablement affects future strings, not a parser
 already selected by `G`. A new `start` releases an unfinished command.
 
-Image execution is disabled: parsed commands change no screen state and produce
-no replies. APC payloads never print as text; normal text resumes after the
+Completed image commands execute only when the active screen's image storage
+is enabled. APC payloads never print as text; normal text resumes after the
 string terminator.
