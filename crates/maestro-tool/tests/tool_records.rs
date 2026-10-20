@@ -1,4 +1,5 @@
 //! Shared tool record wire behavior.
+use maestro_request::types::{TextContent, UserBlock};
 use maestro_tool::tools::truncate::TruncationBy;
 use maestro_tool::types::ToolExecutionMode;
 use serde::{Deserialize, Serialize};
@@ -96,6 +97,29 @@ fn agent_result_fields_preserve_guest_presence() {
         >,
     >("agent")
     .unwrap();
+}
+
+#[test]
+fn text_result_builds_one_unsigned_text_block() {
+    for details in [
+        None,
+        Some(Value::Null),
+        Some(serde_json::json!({"answer": 42})),
+    ] {
+        let result = maestro_tool::types::AgentToolResult::<_, Option<bool>>::text_result(
+            "first\n雪".into(),
+            details.clone(),
+        );
+        assert_eq!(
+            result.content,
+            [UserBlock::Text(TextContent {
+                text: "first\n雪".into(),
+                text_signature: None,
+            })]
+        );
+        assert_eq!(result.details, details);
+        assert_eq!(result.terminate, None);
+    }
 }
 
 #[test]

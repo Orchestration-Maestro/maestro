@@ -558,16 +558,7 @@ struct CacheInput {
 }
 /// One literal text result using the shared record type.
 fn text_result(text: &str) -> maestro_agent::AgentToolResult<maestro_tools::BashToolDetails> {
-    maestro_agent::AgentToolResult {
-        content: vec![maestro_models::UserBlock::Text(
-            maestro_models::TextContent {
-                text: text.into(),
-                text_signature: None,
-            },
-        )],
-        details: None,
-        terminate: None,
-    }
+    maestro_agent::AgentToolResult::text_result(text.into(), None)
 }
 #[test]
 fn bash_result_cache_tracks_content_width_and_expansion() {

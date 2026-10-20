@@ -10,7 +10,6 @@ use crate::read_support;
 use display_support::{Env, NoLanguages, Setup, context};
 use edit_render_support::{Details, ResultRecord, cases, palette, theme};
 use maestro_agent::AgentToolResult;
-use maestro_models::{TextContent, UserBlock};
 use maestro_tools::{
     EditRenderState, EditToolDetails, EditToolInput, EditToolOptions, ToolDefinition,
     ToolRenderContext, ToolRenderResultOptions, create_edit_tool_definition,
@@ -115,17 +114,13 @@ fn args(new: &str) -> Value {
 }
 /// A successful result with optional details.
 fn result(diff: Option<&str>) -> AgentToolResult<EditToolDetails> {
-    AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: "execution message".into(),
-            text_signature: None,
-        })],
-        details: diff.map(|diff| EditToolDetails {
+    AgentToolResult::text_result(
+        "execution message".into(),
+        diff.map(|diff| EditToolDetails {
             diff: diff.into(),
             first_changed_line: Some(1),
         }),
-        terminate: None,
-    }
+    )
 }
 /// Convert strictly recorded details through the existing native result type.
 fn recorded_result(value: &Value) -> AgentToolResult<EditToolDetails> {

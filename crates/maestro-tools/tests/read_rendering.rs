@@ -10,7 +10,7 @@ use display_support::{
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
-use maestro_models::{BoxFuture, DiagnosticErrorInfo, TextContent, UserBlock};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, UserBlock};
 use maestro_theme::SyntaxHighlighter;
 use maestro_tools::{
     ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, ToolRenderResultOptions,
@@ -39,15 +39,7 @@ fn tool() -> maestro_tools::ToolDefinition<(), ReadToolInput, ReadToolDetails> {
 
 /// A result of one text block.
 fn text_result(text: &str) -> AgentToolResult<ReadToolDetails> {
-    let text = UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    });
-    AgentToolResult {
-        content: vec![text],
-        details: None,
-        terminate: None,
-    }
+    AgentToolResult::text_result(text.into(), None)
 }
 
 /// The options of a settled result.
