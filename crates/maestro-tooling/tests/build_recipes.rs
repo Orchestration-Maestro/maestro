@@ -880,13 +880,26 @@ fn copy_patched_sources(source: &Path, destination: &Path) {
         .unwrap()
         .parse()
         .unwrap();
-    for registry in manifest["patch"].as_table().unwrap().values() {
+    let Some(patches) = manifest.get("patch") else {
+        return;
+    };
+    for registry in patches.as_table().unwrap().values() {
         for patch in registry.as_table().unwrap().values() {
             if let Some(path) = patch.get("path").and_then(toml::Value::as_str) {
                 copy_tree(&source.join(path), &destination.join(path));
             }
         }
     }
+}
+
+#[test]
+fn patched_sources_accept_manifests_without_patches() {
+    let source = Workspace::new();
+    let destination = Workspace::new();
+    fs::write(source.0.join("Cargo.toml"), "[workspace]\n").unwrap();
+    let entries = fs::read_dir(&destination.0).unwrap().count();
+    copy_patched_sources(&source.0, &destination.0);
+    assert_eq!(fs::read_dir(&destination.0).unwrap().count(), entries);
 }
 
 #[test]
