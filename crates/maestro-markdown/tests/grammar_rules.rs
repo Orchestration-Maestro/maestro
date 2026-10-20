@@ -870,6 +870,18 @@ fn bare_addresses_follow_link_label_context() {
 }
 
 #[test]
+fn mapped_addresses_resume_after_link_and_image_labels() {
+    observations::check_with_options(
+        "address-completion",
+        2,
+        &[
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+        ],
+    );
+}
+
+#[test]
 fn image_labels_disable_address_tokens() {
     let document = parse("![https://a.b/_x_](y)".into());
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
@@ -899,11 +911,84 @@ fn link_label_scopes_disable_address_tokens() {
 }
 
 #[test]
-fn nested_authored_links_keep_existing_admission() {
-    let document = parse("[a [b](z)](y)".into());
+fn image_label_link_completion_resumes_address_tokens() {
+    let document = parse("![[b](z) https://a.b/_x_](y)".into());
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
     };
-    assert!(matches!(&children[1].kind, Kind::Link(_, _, href, _) if href == "z"));
-    assert_eq!(text(children), "[a b](y)");
+    let Kind::Image(_, metadata) = &children[0].kind else {
+        panic!("image")
+    };
+    assert!(matches!(&metadata.children[0].kind, Kind::Link(_, _, href, _) if href == "z"));
+    assert_eq!(text(&metadata.children), "b https://a.b/_x_");
+    assert!(
+        !metadata
+            .children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Emphasis(_)))
+    );
+}
+
+#[test]
+fn retained_labels_and_display_splits_share_address_context() {
+    for (source, label, emphasis) in [
+        (
+            "<a href=\"x\">[l](y) $$x$$ https://a.b/_x_</a>",
+            false,
+            false,
+        ),
+        (
+            "<a href=\"x\">![l](y) $$x$$ https://a.b/_x_</a>",
+            false,
+            false,
+        ),
+        ("[![b](z) $$x$$ https://a.b/_x_](y)", true, false),
+        ("<a href=\"x\"> $$x$$ https://a.b/_x_</a>", false, true),
+        (
+            "<a href=\"x\"><https://c.d> $$x$$ https://a.b/_x_</a>",
+            false,
+            true,
+        ),
+        (
+            "<a href=\"x\"><b@c.d> $$x$$ https://a.b/_x_</a>",
+            false,
+            true,
+        ),
+    ] {
+        let document = parse(source.into());
+        let context = InlineContext::new(&document);
+        let Kind::Paragraph(children) = &document.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        let owner = if label {
+            &children[0]
+        } else {
+            &document.nodes[0]
+        };
+        let scope = context.scope(&owner.range, label).unwrap();
+        let start = scope.text().find("$$x$$").unwrap();
+        let formula = start..start + 5;
+        for range in [0..scope.text().len(), formula.end..scope.text().len()] {
+            let opaque = if range.start == 0 {
+                vec![formula.clone()]
+            } else {
+                vec![]
+            };
+            let run = scope.interpret(range.clone(), &opaque);
+            let Kind::Paragraph(children) = &run.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            assert_eq!(
+                children
+                    .iter()
+                    .any(|node| matches!(node.kind, Kind::Emphasis(_))),
+                emphasis,
+                "{source:?} {range:?}"
+            );
+            assert!(
+                emphasis || text(children).contains("https://a.b/_x_"),
+                "{source:?} {range:?}"
+            );
+        }
+    }
 }

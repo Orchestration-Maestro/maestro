@@ -51,7 +51,6 @@ impl Tokenizer<'_> {
         if !text.starts_with('!') && contains_link(&children) {
             return None;
         }
-        self.in_link = false;
         let authored = source.text;
         let kind = if text.starts_with('!') {
             Kind::Image(

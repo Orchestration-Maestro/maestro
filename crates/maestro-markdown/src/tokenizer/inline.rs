@@ -9,6 +9,51 @@ use crate::{
 pub(crate) use entities::decode_operand;
 use std::{collections::HashMap, ops::Range};
 
+/// Link-label and raw-anchor state used by tokenization and mapped link selection.
+#[derive(Clone, Copy)]
+pub(crate) struct LinkContext(bool);
+
+impl LinkContext {
+    /// Enter an inline scope, including an authored link or image label.
+    pub(crate) fn new(label: bool) -> Self {
+        Self(label)
+    }
+
+    /// Whether bare address recognition is inside a link context.
+    pub(crate) fn active(self) -> bool {
+        self.0
+    }
+
+    /// Follow raw anchors and completed authored labels; angle links leave context unchanged.
+    pub(crate) fn track_anchor(&mut self, kind: &Kind) {
+        match kind {
+            Kind::Html(html) => {
+                if html
+                    .get(..3)
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<a "))
+                {
+                    self.0 = true;
+                } else if html
+                    .get(..4)
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case("</a>"))
+                {
+                    self.0 = false;
+                }
+            }
+            Kind::Image(..) => self.0 = false,
+            Kind::Link(_, _, _, meta)
+                if !matches!(
+                    meta.link_type,
+                    crate::LinkType::Autolink | crate::LinkType::Email
+                ) =>
+            {
+                self.0 = false;
+            }
+            _ => {}
+        }
+    }
+}
+
 /// One inline invocation; original definitions and policy are never reconstructed.
 pub(crate) struct Tokenizer<'a> {
     /// Framed authored source.
@@ -22,7 +67,7 @@ pub(crate) struct Tokenizer<'a> {
     /// Original operand identities for local interpretation, indexed like the atom ranges.
     pub(crate) retained_atoms: Option<&'a [crate::InlineAtom<'a>]>,
     /// Link-label and raw-anchor context shared by recursive inline spans.
-    in_link: bool,
+    context: LinkContext,
     /// Local interpretation has no document scope collector.
     #[cfg(test)]
     local: bool,
@@ -43,7 +88,7 @@ impl<'a> Tokenizer<'a> {
             options,
             definitions,
             scopes,
-            in_link,
+            context: LinkContext::new(in_link),
             retained_atoms: None,
             #[cfg(test)]
             local,
@@ -92,7 +137,7 @@ impl<'a> Tokenizer<'a> {
             if let Some((size, kind)) =
                 token.filter(|(size, kind)| *size > 0 && fits(atoms, cursor + size, limit, kind))
             {
-                self.track_anchor(&kind);
+                self.context.track_anchor(&kind);
                 output.push(node(self.source, cursor..cursor + size, kind));
                 cursor += size;
                 continue;
@@ -121,21 +166,14 @@ impl<'a> Tokenizer<'a> {
         output
     }
 
-    /// Retain operand identity and apply raw HTML transitions, never caller-opaque contents.
+    /// Retain operand identity and apply link-context transitions, never caller-opaque contents.
     fn push_atom(&mut self, range: Range<usize>, index: usize, output: &mut Vec<Node>) {
         if let Some(crate::InlineAtom::Resolved(original)) =
             self.retained_atoms.and_then(|atoms| atoms.get(index))
         {
-            self.track_anchor(&original.kind);
+            self.context.track_anchor(&original.kind);
         }
         output.push(node(self.source, range, Kind::Atom(index)));
-    }
-
-    /// Apply admitted raw-anchor transitions to the shared link context.
-    fn track_anchor(&mut self, kind: &Kind) {
-        if let Kind::Html(html) = kind {
-            self.in_link = crate::autolinks::anchor_state(html, self.in_link);
-        }
     }
 
     /// Keep accepted bare addresses whole where the grammar enables URL tokens.
@@ -144,7 +182,7 @@ impl<'a> Tokenizer<'a> {
             Some(Kind::Text(text)) => text.authored.chars().next_back(),
             _ => None,
         };
-        (!self.in_link && self.options != MarkedOptions::Documentation)
+        (!self.context.active() && self.options != MarkedOptions::Documentation)
             .then(|| crate::autolinks::address(text, previous, self.options))
             .flatten()
     }

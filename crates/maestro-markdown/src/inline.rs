@@ -1,5 +1,5 @@
 //! Scoped native inline interpretation over resolved document operands.
-use crate::{Document, Kind, Node, source::ScopeSource};
+use crate::{Document, Kind, Node, source::ScopeSource, tokenizer::inline::LinkContext};
 use std::{collections::HashMap, ops::Range};
 
 /// Native scope identity: start, end and whether this is an authored link label.
@@ -24,6 +24,8 @@ pub struct InlineScope<'a> {
     definitions: &'a HashMap<String, crate::Definition>,
     /// Native opaque operands, in authored order.
     pub operands: Vec<(Range<usize>, &'a Node)>,
+    /// Link-context snapshots after each resolved operand, indexed by its end offset.
+    contexts: Vec<(usize, LinkContext)>,
     /// Code, image, HTML and autolink barriers, including those inside authored labels.
     pub opaque: Vec<Range<usize>>,
     /// Strong, strike and emphasis extents with their content extents, in authored order.
@@ -80,10 +82,20 @@ impl<'a> InlineContext<'a> {
                 options: document.options,
                 definitions: &document.definitions,
                 operands: Vec::new(),
+                contexts: Vec::new(),
                 opaque: Vec::new(),
                 spans: Vec::new(),
             };
             collect(children, &mut scope, false);
+            let mut context = LinkContext::new(label);
+            scope.contexts = scope
+                .operands
+                .iter()
+                .map(|(span, node)| {
+                    context.track_anchor(&node.kind);
+                    (span.end, context)
+                })
+                .collect();
             self.scopes.insert((range.start, range.end, label), scope);
         }
     }
@@ -200,6 +212,12 @@ impl<'a> InlineScope<'a> {
             }
         }
         selected.sort_by_key(|(span, _)| span.start);
+        let boundary = self
+            .contexts
+            .partition_point(|(end, _)| *end <= range.start);
+        let in_link = self.contexts[..boundary]
+            .last()
+            .map_or(self.label, |(_, context)| context.active());
         let source = self.source.select(std::iter::once(range));
         let source = if self.label && self.options == crate::MarkedOptions::Export {
             source.brackets()
@@ -219,7 +237,7 @@ impl<'a> InlineScope<'a> {
             self.options,
             self.definitions,
             None,
-            self.label,
+            in_link,
         );
         tokenizer.retained_atoms = Some(&atoms);
         let children = tokenizer.parse(&slots);

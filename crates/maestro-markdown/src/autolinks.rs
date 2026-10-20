@@ -2,6 +2,7 @@
 use crate::{
     inline::ScopeKey,
     source::ScopeSource,
+    tokenizer::inline::LinkContext,
     types::{Document, Kind, MarkedOptions, Node, Text},
 };
 use regress::Regex;
@@ -390,7 +391,7 @@ pub fn autolinks(document: &mut Document) {
         &document.scopes,
         None,
         document.options,
-        &mut false,
+        &mut LinkContext::new(false),
     );
 }
 
@@ -400,17 +401,17 @@ fn map_links(
     scopes: &HashMap<ScopeKey, ScopeSource>,
     mapping: Option<&ScopeSource>,
     options: MarkedOptions,
-    in_link: &mut bool,
+    context: &mut LinkContext,
 ) {
     let mut result = Vec::new();
     let mut parts = Vec::new();
     for mut node in std::mem::take(nodes) {
-        if matches!(node.kind, Kind::Text(_)) && !*in_link {
+        if matches!(node.kind, Kind::Text(_)) && !context.active() {
             parts.push(node);
             continue;
         }
         result.extend(extend(std::mem::take(&mut parts), mapping, options));
-        map_children(&mut node, scopes, mapping, options, in_link);
+        map_children(&mut node, scopes, mapping, options, context);
         result.push(node);
     }
     result.extend(extend(parts, mapping, options));
@@ -423,7 +424,7 @@ fn map_children(
     scopes: &HashMap<ScopeKey, ScopeSource>,
     mapping: Option<&ScopeSource>,
     options: MarkedOptions,
-    in_link: &mut bool,
+    context: &mut LinkContext,
 ) {
     let mapping = scopes
         .get(&(node.range.start, node.range.end, false))
@@ -437,7 +438,7 @@ fn map_children(
         | Kind::Item(children)
         | Kind::List(_, children)
         | Kind::Heading(_, children, _)
-        | Kind::Quote(children, _) => map_links(children, scopes, mapping, options, in_link),
+        | Kind::Quote(children, _) => map_links(children, scopes, mapping, options, context),
         Kind::Table(table) => {
             for cell in table
                 .header
@@ -449,28 +450,11 @@ fn map_children(
                     scopes,
                     scopes.get(&(cell.range.start, cell.range.end, false)),
                     options,
-                    in_link,
+                    context,
                 );
             }
         }
-        Kind::Html(text) => *in_link = anchor_state(text, *in_link),
         _ => {}
     }
-}
-
-/// Follow the grammar's raw opening and closing anchor transitions.
-pub(crate) fn anchor_state(text: &str, in_link: bool) -> bool {
-    if text
-        .get(..3)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<a "))
-    {
-        true
-    } else if text
-        .get(..4)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("</a>"))
-    {
-        false
-    } else {
-        in_link
-    }
+    context.track_anchor(&node.kind);
 }

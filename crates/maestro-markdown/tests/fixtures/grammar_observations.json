@@ -19422,7 +19422,22 @@
               "image",
               "https://a.b/_x_",
               "y",
-              ""
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/"
+                ],
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "x"
+                    ]
+                  ]
+                ]
+              ]
             ]
           ]
         ]
@@ -19435,7 +19450,22 @@
               "image",
               "https://a.b/_x_",
               "y",
-              ""
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/"
+                ],
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "x"
+                    ]
+                  ]
+                ]
+              ]
             ]
           ]
         ]
@@ -19448,7 +19478,22 @@
               "image",
               "https://a.b/_x_",
               "y",
-              ""
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/"
+                ],
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "x"
+                    ]
+                  ]
+                ]
+              ]
             ]
           ]
         ]
@@ -20061,6 +20106,202 @@
                   ]
                 ]
               ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "address-completion:mapped-clear",
+    "group": "address-completion",
+    "input": "<a href=\"x\">[l](y) https://a.b/_x_</a>",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "html",
+              "<a href=\"x\">"
+            ],
+            [
+              "link",
+              "y",
+              "",
+              [
+                [
+                  "text",
+                  "l"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "link",
+              "https://a.b/_x",
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/_x"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "_"
+            ],
+            [
+              "html",
+              "</a>"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "html",
+              "<a href=\"x\">"
+            ],
+            [
+              "link",
+              "y",
+              "",
+              [
+                [
+                  "text",
+                  "l"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "link",
+              "https://a.b/_x",
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/_x"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "_"
+            ],
+            [
+              "html",
+              "</a>"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "address-completion:mapped-image-clear",
+    "group": "address-completion",
+    "input": "<a href=\"x\">![l](y) https://a.b/_x_</a>",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "html",
+              "<a href=\"x\">"
+            ],
+            [
+              "image",
+              "l",
+              "y",
+              "",
+              [
+                [
+                  "text",
+                  "l"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "link",
+              "https://a.b/_x",
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/_x"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "_"
+            ],
+            [
+              "html",
+              "</a>"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "html",
+              "<a href=\"x\">"
+            ],
+            [
+              "image",
+              "l",
+              "y",
+              "",
+              [
+                [
+                  "text",
+                  "l"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "link",
+              "https://a.b/_x",
+              "",
+              [
+                [
+                  "text",
+                  "https://a.b/_x"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "_"
+            ],
+            [
+              "html",
+              "</a>"
             ]
           ]
         ]
