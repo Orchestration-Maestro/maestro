@@ -306,3 +306,219 @@ test('packaging_keeps_linked_modules_and_locked_sources', t => {
     assert.deepEqual(inventory[family], names);
   }
 });
+
+
+const sandboxId = 'probe:"雪]';
+const sandboxSetup = String.raw`window.mountWitness = async function(nested, count = 0) {
+  for (let i = 0; i <= count; i++) {
+    const frame = document.createElement('iframe');
+    if (i === 0) frame.id = 'obsolete';
+    const loaded = new Promise(resolve => frame.onload = resolve);
+    document.body.append(frame); await loaded;
+  }
+  let doc = document;
+  if (nested) {
+    const host = document.createElement('iframe');
+    const loaded = new Promise(resolve => host.onload = resolve);
+    document.body.append(host); await loaded; doc = host.contentDocument;
+  }
+  const decoy = doc.createElement('div'); decoy.id = 'probe:"雪]-decoy'; doc.body.append(decoy);
+  const wrong = doc.createElement('iframe');
+  wrong.srcdoc = '<script>window.S={value:"wrong"}</script><button id="target" onclick="window.S.clicked=true">decoy</button>';
+  const wrongLoaded = new Promise(resolve => wrong.onload = resolve);
+  decoy.append(wrong); await wrongLoaded; window.decoyWitness = wrong;
+  const box = doc.createElement('div'); box.id = 'probe:"雪]'; doc.body.append(box);
+  const target = doc.createElement('iframe'); target.sandbox = 'allow-scripts allow-modals';
+  target.srcdoc = '<head><meta http-equiv="x-test" content="retained"><script>window.S={value:"right",started:true};window.done=Promise.resolve();</script></head><body><button id="target" onclick="window.S.clicked=true">click</button></body>';
+  const loaded = new Promise(resolve => target.onload = resolve);
+  box.append(target); await loaded;
+}`;
+
+function sandboxFixture(t, body, inspect, setup = sandboxSetup) {
+  const driver = observedBrowser(async page => {
+    const expose = page.exposeBinding.bind(page);
+    page.exposeBinding = (name, callback, ...options) => expose(name, name === 'inspectSandbox'
+      ? (context, id, action) => inspect(page, () => callback(context, id, action), action)
+      : callback, ...options);
+  });
+  return execute(fixture(t, {[first]: body}, setup), {chromium: driver});
+}
+
+const sandboxState = {
+  value: 'right', started: true, head: 'meta,script', body: 'button', scaffold: 0,
+  metaParent: 'head', origin: 'null', href: 'about:srcdoc',
+};
+
+test('sandbox_inspection_ignores_detached_unrelated_frames', async t => {
+  for (const nested of [false, true]) for (const action of ['state', 'click']) for (const remove of [false, true]) {
+    let armed = false, detached = false;
+    const body = `await mountWitness(${nested});
+      await window.inspectSandbox(${JSON.stringify(sandboxId)}, ${JSON.stringify(action)});
+      const state = await window.inspectSandbox(${JSON.stringify(sandboxId)}, 'state');
+      console.log('WITNESS_STATE ' + JSON.stringify(state));
+      if (window.decoyWitness.contentWindow.S.clicked) throw Error('decoy was clicked');`;
+    let lines;
+    await assert.doesNotReject(async () => {
+      lines = await sandboxFixture(t, body, async (page, inspect) => {
+        if (armed || !remove) return inspect();
+        armed = true;
+        const obsolete = page.frames().find(frame => frame.parentFrame() && frame.url() === 'about:blank');
+        assert(obsolete, 'obsolete frame exists before inspection');
+        let release;
+        const gate = new Promise(resolve => { release = resolve; });
+        const frameElement = obsolete.frameElement.bind(obsolete);
+        obsolete.frameElement = async () => { await gate; return frameElement(); };
+        const inspecting = inspect();
+        inspecting.catch(() => {});
+        try {
+          const event = once(page, 'framedetached');
+          await page.evaluate(() => document.getElementById('obsolete').remove());
+          await event;
+          detached = obsolete.isDetached();
+          assert(detached, 'real frame detached during pending inspection');
+        } finally { release(); }
+        return inspecting;
+      });
+    }, 'live target must survive unrelated frame detachment');
+    assert.equal(detached, remove);
+    const snapshots = lines.filter(line => line.startsWith('WITNESS_STATE ')).map(line => JSON.parse(line.slice(14)));
+    assert.deepEqual(snapshots, [{...sandboxState, ...(action === 'click' ? {clicked: true} : {})}]);
+    if (action === 'click') {
+      assert(lines.includes(`PHASE ${first} waiting for pointer-done ${sandboxId}; frame about:srcdoc`));
+      assert(lines.includes(`PHASE ${first} click returned ${sandboxId}`));
+    }
+    assert.equal(lines.at(-1), 'COMPLETE 45/45');
+  }
+});
+
+test('sandbox_inspection_reports_missing_mount', async t => {
+  for (const id of ['missing', 'empty', sandboxId]) {
+    const body = `document.body.innerHTML = '<div id="empty"></div><iframe sandbox="allow-scripts" srcdoc="opaque"></iframe>';
+      await window.inspectSandbox(${JSON.stringify(id)}, 'state');`;
+    await assert.rejects(sandboxFixture(t, body, (_, inspect) => inspect()), error => {
+      assert.equal(error.cause.message.split('\n')[0], 'page.evaluate: Error: mounted frame not found ' + id);
+      return true;
+    });
+  }
+});
+
+function observeLookup(page, observe) {
+  const acquire = page.evaluateHandle.bind(page);
+  page.evaluateHandle = async (...args) => {
+    const handle = await acquire(...args);
+    await observe(handle);
+    return handle;
+  };
+}
+
+test('sandbox_inspection_propagates_target_errors', async t => {
+  for (const action of ['state', 'click', 'close']) {
+    const body = `await mountWitness(false); await window.inspectSandbox(${JSON.stringify(sandboxId)}, '${action === 'close' ? 'state' : action}');`;
+    let reached = false;
+    await assert.rejects(sandboxFixture(t, body, async (page, inspect) => {
+      observeLookup(page, handle => {
+        const element = handle.asElement();
+        const resolve = element.contentFrame.bind(element);
+        element.contentFrame = async () => {
+          if (action === 'close') { reached = true; await page.close(); return resolve(); }
+          const frame = await resolve();
+          const remove = async () => {
+            const detached = once(page, 'framedetached');
+            await page.evaluate(id => document.getElementById(id).firstElementChild.remove(), sandboxId);
+            await detached;
+            assert(frame.isDetached(), 'selected native frame was removed');
+            reached = true;
+          };
+          if (action === 'state') {
+            const evaluate = frame.evaluate.bind(frame);
+            frame.evaluate = async (...args) => { await remove(); return evaluate(...args); };
+          } else {
+            const locator = frame.locator.bind(frame);
+            frame.locator = (...args) => {
+              const target = locator(...args), click = target.click.bind(target);
+              target.click = async () => { await remove(); return click(); };
+              return target;
+            };
+          }
+          return frame;
+        };
+      });
+      return inspect();
+    }), error => {
+      assert.match(error.message, new RegExp('FAIL ' + first));
+      assert.match(error.message, /detached|removed|closed/i);
+      return true;
+    });
+    assert(reached, 'native failing operation reached');
+  }
+});
+
+test('sandbox_inspection_disposes_lookup_handles', async t => {
+  for (const outcome of ['success', 'missing', 'close']) {
+    const counts = {created: 0, disposed: 0};
+    let released;
+    const disposed = new Promise(resolve => { released = resolve; });
+    const body = `await mountWitness(false);
+      console.log('WITNESS_STATE ' + JSON.stringify(await window.inspectSandbox(${JSON.stringify(outcome === 'missing' ? 'absent' : sandboxId)}, 'state')));`;
+    const running = sandboxFixture(t, body, (page, inspect) => {
+      observeLookup(page, handle => {
+        counts.created++;
+        const dispose = handle.dispose.bind(handle);
+        handle.dispose = async () => { await dispose(); counts.disposed++; released(); };
+        if (outcome === 'close') {
+          const element = handle.asElement(), resolve = element.contentFrame.bind(element);
+          element.contentFrame = async () => { await page.close(); return resolve(); };
+        }
+      });
+      return inspect();
+    });
+    if (outcome === 'success') {
+      const lines = await running;
+      assert.deepEqual(lines.filter(line => line.startsWith('WITNESS_STATE ')).map(line => JSON.parse(line.slice(14))), [sandboxState]);
+    } else await assert.rejects(running, outcome === 'missing' ? /mounted frame not found absent/ : /closed/i);
+    await disposed;
+    assert.deepEqual(counts, {created: 1, disposed: 1}, outcome);
+  }
+});
+
+test('sandbox_inspection_walks_each_document_once', async t => {
+  for (const n of [8, 16, 32]) {
+    const body = `await mountWitness(true, ${n - 2});
+      console.log('WITNESS_STATE ' + JSON.stringify(await window.inspectSandbox(${JSON.stringify(sandboxId)}, 'state')));`;
+    const lines = await sandboxFixture(t, body, async (page, inspect) => {
+      await page.evaluate(() => {
+        window.work = {queries: 0, frames: 0};
+        const documents = [document];
+        for (const doc of documents) for (const frame of doc.querySelectorAll('iframe')) {
+          if (frame.contentDocument) documents.push(frame.contentDocument);
+        }
+        for (const doc of documents) {
+          const query = doc.querySelectorAll.bind(doc);
+          doc.querySelectorAll = selector => {
+            const values = query(selector);
+            if (selector !== 'iframe') return values;
+            window.work.queries++;
+            return { *[Symbol.iterator]() {
+              for (const value of values) { window.work.frames++; yield value; }
+            }};
+          };
+        }
+      });
+      const result = await inspect();
+      const work = await page.evaluate(() => window.work);
+      const bounded = observed => {
+        assert(observed.queries <= n + 2, 'linear document queries');
+        assert(observed.frames <= n + 2, 'linear iframe visits');
+      };
+      bounded(work);
+      const rescanning = await page.evaluate(n => {
+        window.work = {queries: 0, frames: 0};
+        for (let i = 0; i < n + 2; i++) for (const frame of document.querySelectorAll('iframe')) void frame;
+        return window.work;
+      }, n);
+      assert.throws(() => bounded(rescanning), /linear iframe visits/, 'same bound rejects repeated native scans');
+      return result;
+    });
+    assert.deepEqual(lines.filter(line => line.startsWith('WITNESS_STATE ')).map(line => JSON.parse(line.slice(14))), [sandboxState]);
+  }
+});
