@@ -108,12 +108,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   test-process development edges are permitted.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native crates may declare it
-  as a production dependency without changing their layer; the guest authoring
-  crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness, checked test-process owner, cancellation leaf,
-  watch leaf, lock leaf, process leaf,
-  file-pattern crate, text leaf, JSON leaf, entry and tool record crates and
-  brand crate may not. Shared path helpers take supplied directory observations
+  as a production dependency without changing their layer, subject to the
+  exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
+  Shared path helpers take supplied directory observations
   and add no global environment, filesystem service, directory cache, scheduler
   or workspace dependency.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
