@@ -18,8 +18,11 @@ struct Row {
     /// Observations in the selected caller order.
     targets: Vec<Value>,
     /// Recorded joined authored spellings at block inline scopes.
+    ///
+    /// Absent for families recorded without metadata; a null target is deliberately
+    /// excluded. Absence and null targets match those of `link_labels`.
     inline_authored: Option<[Option<Vec<String>>; 4]>,
-    /// Recorded link labels in traversal order.
+    /// Recorded link labels, absent and excluded exactly where `inline_authored` is.
     link_labels: Option<[Option<Vec<String>>; 4]>,
     /// Corrected raw envelopes, when this family asserts source consumption.
     raw_quotes: Option<[Vec<String>; 4]>,
@@ -74,71 +77,73 @@ pub(super) fn check_with_options(
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// Describe a mismatch only for independently recorded metadata targets.
+/// Describe a mismatch only for recorded, non-excluded metadata targets.
 fn metadata_difference(row: &Row, target: usize, nodes: &[Node]) -> Option<String> {
-    let authored = row.inline_authored.as_ref()?[target].as_ref()?;
-    let expected_labels = row.link_labels.as_ref().unwrap()[target].as_ref().unwrap();
-    let (actual_authored, labels) = metadata(nodes);
+    let expected = (
+        recorded(row.inline_authored.as_ref(), target),
+        recorded(row.link_labels.as_ref(), target),
+    );
+    let (Some(authored), Some(expected_labels)) = expected else {
+        assert_eq!(
+            expected,
+            (None, None),
+            "{}: metadata recorded apart",
+            row.id
+        );
+        return None;
+    };
+    let (mut actual_authored, mut labels) = (Vec::new(), Vec::new());
+    metadata(nodes, &mut actual_authored, &mut labels);
     (actual_authored != *authored || labels != *expected_labels).then(|| {
         format!("metadata {actual_authored:?} / {labels:?} != {authored:?} / {expected_labels:?}")
     })
 }
 
-/// Collect authored inline scopes and link labels in source traversal order.
-fn metadata(input: &[Node]) -> (Vec<String>, Vec<String>) {
-    let mut authored = Vec::new();
-    let mut labels = Vec::new();
+/// One field's recording for a target: `None` when absent from the row or excluded there.
+fn recorded(field: Option<&[Option<Vec<String>>; 4]>, target: usize) -> Option<&Vec<String>> {
+    field?[target].as_ref()
+}
+
+/// Collect authored inline scopes and link labels.
+fn metadata(input: &[Node], authored: &mut Vec<String>, labels: &mut Vec<String>) {
     for node in input {
-        let scopes: Vec<&[Node]> = match &node.kind {
+        let (scope, children): (bool, Vec<&[Node]>) = match &node.kind {
             Kind::Paragraph(children) | Kind::Inline(children) | Kind::Heading(_, children, _) => {
-                vec![children]
+                (true, vec![children.as_slice()])
             }
-            Kind::Table(table) => table
-                .header
-                .iter()
-                .chain(table.rows.iter().flatten())
-                .map(|cell| cell.children.as_slice())
-                .collect(),
-            _ => Vec::new(),
-        };
-        for children in scopes {
-            authored.push(
-                children
+            Kind::Table(table) => (
+                true,
+                table
+                    .header
                     .iter()
-                    .map(|child| child.authored.as_str())
+                    .chain(table.rows.iter().flatten())
+                    .map(|cell| cell.children.as_slice())
                     .collect(),
-            );
-        }
-        let children = match &node.kind {
+            ),
             Kind::Link(children, label, ..) => {
                 labels.push(label.clone());
-                children.as_slice()
+                (false, vec![children.as_slice()])
             }
-            Kind::Paragraph(children)
-            | Kind::Inline(children)
-            | Kind::Heading(_, children, _)
-            | Kind::Item(children)
+            Kind::Item(children)
             | Kind::List(_, children)
             | Kind::Quote(children, _)
             | Kind::Strong(children)
             | Kind::Emphasis(children)
-            | Kind::Strike(children) => children,
-            Kind::Image(_, meta) => &meta.children,
-            Kind::Table(table) => {
-                for cell in table.header.iter().chain(table.rows.iter().flatten()) {
-                    let (nested_authored, nested_labels) = metadata(&cell.children);
-                    authored.extend(nested_authored);
-                    labels.extend(nested_labels);
-                }
-                continue;
-            }
-            _ => &[],
+            | Kind::Strike(children) => (false, vec![children.as_slice()]),
+            Kind::Image(_, meta) => (false, vec![meta.children.as_slice()]),
+            _ => (false, Vec::new()),
         };
-        let (nested_authored, nested_labels) = metadata(children);
-        authored.extend(nested_authored);
-        labels.extend(nested_labels);
+        if scope {
+            authored.extend(
+                children
+                    .iter()
+                    .map(|nodes| nodes.iter().map(|child| child.authored.as_str()).collect()),
+            );
+        }
+        for nodes in children {
+            metadata(nodes, authored, labels);
+        }
     }
-    (authored, labels)
 }
 
 /// Compare raw quote envelopes separately from semantic inline projections.
