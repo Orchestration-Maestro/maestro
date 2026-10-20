@@ -858,6 +858,7 @@ fn assert_watch_events(
 }
 
 /// Gives each input mutation a marker only its compiled result can print.
+#[cfg(unix)]
 fn mutate_watch_input(workspace: &Workspace, changed: &str) -> String {
     let input = if changed == ".cargo/config.toml" {
         "config"
@@ -880,6 +881,7 @@ fn mutate_watch_input(workspace: &Workspace, changed: &str) -> String {
 }
 
 /// Waits for the output associated with this mutation, not a queued older build.
+#[cfg(unix)]
 fn wait_for_marker(
     receive: &std::sync::mpsc::Receiver<String>,
     transcript: &mut String,
@@ -912,6 +914,7 @@ fn has_rebuild_marker(transcript: &str, marker: &str) -> bool {
 }
 
 /// Finds the pinned external watcher before fixture commands extend PATH.
+#[cfg(unix)]
 fn watcher_path() -> PathBuf {
     std::env::split_paths(&std::env::var_os("PATH").unwrap())
         .map(|directory| directory.join("watchexec"))
@@ -919,6 +922,7 @@ fn watcher_path() -> PathBuf {
         .unwrap()
 }
 
+#[cfg(unix)]
 fn watcher_diagnostics(root: &Path) -> String {
     let path = watcher_path();
     let version = Command::new(&path).arg("--version").output().unwrap();
@@ -938,6 +942,7 @@ fn watcher_diagnostics(root: &Path) -> String {
     )
 }
 
+#[cfg(unix)]
 fn wait_for_build(
     receive: &std::sync::mpsc::Receiver<String>,
     transcript: &mut String,

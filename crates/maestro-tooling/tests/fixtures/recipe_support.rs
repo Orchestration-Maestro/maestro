@@ -140,6 +140,7 @@ pub fn record(message: impl std::fmt::Display) {
 }
 
 /// Join a capture reader between phase records, so a blocked join is visible.
+#[cfg(unix)]
 pub fn join_reader(thread: std::thread::JoinHandle<()>) {
     record("phase: reader join");
     thread.join().unwrap();
