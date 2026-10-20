@@ -197,7 +197,7 @@ fn screen_vt_with_kitty_keyboard() {
     formatter.extra.kitty_keyboard = true;
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
-    assert_eq!(output, "hello\x1b[=3;1u");
+    assert_eq!(output, "hello\x1b[=3u");
     let replay = terminal_from_output(&output);
     assert_eq!(
         terminal.kitty_keyboard_flags(),
@@ -223,7 +223,7 @@ fn terminal_keyboard_extras_follow_content_and_skip_defaults() {
     };
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
-    assert_eq!(output, "\x1b[=3;1u\x1b[>4;2m");
+    assert_eq!(output, "\x1b[=3u\x1b[>4;2m");
     formatter.opts.emit = Format::Plain;
     output.clear();
     formatter.format(&mut output).unwrap();

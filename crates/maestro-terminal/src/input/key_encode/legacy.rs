@@ -14,7 +14,7 @@ pub(super) fn encode(event: &KeyEvent, opts: &KeyEncoder) -> Vec<u8> {
     if let Some(bytes) = function_sequence(event, opts) {
         return bytes;
     }
-    if let Some(byte) = ctrl_sequence(event) {
+    if let Some(byte) = ctrl_sequence(event, opts) {
         return if event.effective_mods().contains(Mods::ALT) {
             vec![0x1b, byte]
         } else {
@@ -29,8 +29,8 @@ pub(super) fn encode(event: &KeyEvent, opts: &KeyEncoder) -> Vec<u8> {
             return bytes;
         }
     }
-    if let Some(byte) = alt_prefix(event, opts) {
-        return vec![0x1b, byte];
+    if let Some(bytes) = alt_prefix(event, opts) {
+        return bytes;
     }
     if cfg!(target_os = "macos") && event.mods.contains(Mods::SUPER) {
         return Vec::new();
@@ -97,26 +97,44 @@ fn fixterms(event: &KeyEvent) -> Option<Vec<u8>> {
     Some(format!("\x1b[{};{}u", u32::from(cp), modifier_code(mods)).into_bytes())
 }
 
-/// ESC-prefix a supplied single byte, falling back to the unshifted codepoint.
-fn alt_prefix(event: &KeyEvent, opts: &KeyEncoder) -> Option<u8> {
+/// ESC-prefix semantic text, or a physical single-byte key identity.
+fn alt_prefix(event: &KeyEvent, opts: &KeyEncoder) -> Option<Vec<u8>> {
     if !event.effective_mods().contains(Mods::ALT)
         || !opts.modes.get(Mode::AltEscPrefix)
         || !opts.macos_option_as_alt.active(event.mods)
     {
         return None;
     }
-    if event.utf8.len() == 1 {
-        return Some(event.utf8.as_bytes()[0]);
+    let mut bytes = vec![0x1b];
+    if opts.encoding == super::KeyEncoding::Semantic {
+        bytes.extend_from_slice(event.utf8.as_bytes());
+    } else {
+        let byte = if event.utf8.len() == 1 {
+            event.utf8.as_bytes()[0]
+        } else {
+            u8::try_from(event.unshifted_codepoint)
+                .ok()
+                .filter(|&cp| cp > 0)?
+        };
+        bytes.push(byte);
     }
-    (event.unshifted_codepoint > 0)
-        .then(|| u8::try_from(event.unshifted_codepoint).ok())
-        .flatten()
+    Some(bytes)
 }
 
 /// Convert only control bindings whose character has a traditional C0 value.
-fn ctrl_sequence(event: &KeyEvent) -> Option<u8> {
+fn ctrl_sequence(event: &KeyEvent, opts: &KeyEncoder) -> Option<u8> {
     if !event.mods.contains(Mods::CTRL) {
         return None;
+    }
+    if opts.encoding == super::KeyEncoding::Semantic {
+        let byte = u8::try_from(event.unshifted_codepoint).ok()?;
+        return Some(match byte.to_ascii_lowercase() {
+            b'a'..=b'z' => byte.to_ascii_lowercase() - b'a' + 1,
+            b'[' => 27,
+            b'-' => 31,
+            b'?' | b'8' => byte,
+            _ => control_byte(byte).unwrap_or(byte),
+        });
     }
     let mut mods = event.mods.binding().unset(Mods::ALT);
     let mut byte = if event.utf8.len() == 1 {

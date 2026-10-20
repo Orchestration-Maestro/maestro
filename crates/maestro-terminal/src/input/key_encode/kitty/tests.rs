@@ -9,6 +9,7 @@ fn sequence(mods: u16, event: u8, text: &str, final_char: char) -> Sequence<'_> 
             final_char,
             modifier: false,
         },
+        semantic: false,
         mods,
         event,
         alternates: [None; 2],

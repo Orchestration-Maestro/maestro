@@ -414,6 +414,26 @@ impl KeyEvent {
 }
 
 impl Key {
+    /// Resolve a numbered function key without a caller-owned key table.
+    #[must_use]
+    pub fn function(number: u8) -> Option<Self> {
+        const KEYS: [Key; 12] = [
+            Key::F1,
+            Key::F2,
+            Key::F3,
+            Key::F4,
+            Key::F5,
+            Key::F6,
+            Key::F7,
+            Key::F8,
+            Key::F9,
+            Key::F10,
+            Key::F11,
+            Key::F12,
+        ];
+        KEYS.get(usize::from(number.checked_sub(1)?)).copied()
+    }
+
     /// Return the base-layout codepoint, including numeric keypad characters.
     #[must_use]
     pub fn codepoint(self) -> Option<char> {

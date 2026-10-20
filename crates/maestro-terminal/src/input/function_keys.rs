@@ -115,8 +115,12 @@ fn special_key(key: Key, code: u16, opts: &KeyEncoder) -> Option<String> {
         Key::Escape => 0x1b,
         _ => return None,
     };
-    if code == 1 {
+    if code == 1 || (key == Key::Enter && opts.encoding == super::key_encode::KeyEncoding::Semantic)
+    {
         return Some(char::from(byte).into());
+    }
+    if key == Key::Tab && code == 5 && opts.encoding == super::key_encode::KeyEncoding::Semantic {
+        return Some("\t".into());
     }
     if key == Key::Escape && code == 3 {
         return Some("\x1b\x1b".into());

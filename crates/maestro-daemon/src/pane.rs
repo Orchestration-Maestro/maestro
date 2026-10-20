@@ -1,5 +1,7 @@
 //! Process pane terminal state.
 
+mod input;
+
 /// Cursor position settling.
 pub mod cursor;
 

@@ -2,7 +2,10 @@
 
 mod colors;
 mod cursor;
+mod encoding;
+mod handoff;
 mod modes;
+mod mouse;
 #[cfg(any(windows, test))]
 mod prompt_cwd;
 mod reads;

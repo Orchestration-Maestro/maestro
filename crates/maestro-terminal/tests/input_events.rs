@@ -85,3 +85,15 @@ fn key_event_fields_retain_repeat_release_and_composition() {
     assert_eq!(event.action, KeyAction::Release);
     assert_eq!(event.effective_mods(), event.mods);
 }
+
+#[test]
+fn pixel_position_converts_full_unsigned_coordinates_with_nearest_rounding() {
+    use maestro_terminal::input::mouse::Pos;
+    assert_eq!(
+        Pos::from_pixels(70_000, u32::MAX),
+        Pos {
+            x: 70_000.0,
+            y: 4_294_967_296.0
+        }
+    );
+}

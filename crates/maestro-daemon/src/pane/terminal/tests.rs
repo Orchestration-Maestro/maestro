@@ -9,3 +9,7 @@ mod retained;
 mod modes;
 
 mod prompt_cwd;
+
+mod encoding;
+
+mod key_policy;

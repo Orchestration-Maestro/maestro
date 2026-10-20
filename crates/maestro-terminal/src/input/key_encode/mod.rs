@@ -2,6 +2,7 @@
 
 mod kitty;
 mod legacy;
+mod semantic;
 
 use super::key::KeyEvent;
 use super::key_mods::{Mod, Mods, Side};
@@ -36,9 +37,21 @@ impl OptionAsAlt {
     }
 }
 
+/// Whether input describes physical keys or already-decoded semantic keys.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum KeyEncoding {
+    /// Native physical events with terminal-library conventions.
+    #[default]
+    Physical,
+    /// Semantic input retaining its text and event-reporting conventions.
+    Semantic,
+}
+
 /// Terminal modes and caller configuration controlling keyboard bytes.
 #[derive(Clone, Debug)]
 pub struct KeyEncoder {
+    /// Interpretation of decoded key identity and text.
+    pub encoding: KeyEncoding,
     /// An owned terminal-mode snapshot; later terminal changes do not affect it.
     pub modes: ModeState,
     /// Enhanced keyboard protocol flags; disabled for legacy encoding.
@@ -55,6 +68,7 @@ impl KeyEncoder {
     #[must_use]
     pub fn from_terminal(terminal: &crate::Terminal) -> Self {
         Self {
+            encoding: KeyEncoding::Physical,
             modes: terminal.modes.clone(),
             kitty_flags: terminal.kitty_keyboard_flags(),
             modify_other_keys_state_2: terminal.modify_other_keys_enabled(),
@@ -65,6 +79,13 @@ impl KeyEncoder {
     /// Encode one event; releases and intermediate composition may produce no bytes.
     #[must_use]
     pub fn encode(&self, event: &KeyEvent) -> Vec<u8> {
+        let prepared;
+        let event = if self.encoding == KeyEncoding::Semantic {
+            prepared = semantic::prepare(event);
+            &prepared
+        } else {
+            event
+        };
         if self.kitty_flags == crate::kitty::key::Flags::DISABLED {
             legacy::encode(event, self)
         } else {
@@ -80,6 +101,7 @@ impl Default for KeyEncoder {
         modes.set(Mode::AltEscPrefix, false);
         Self {
             modes,
+            encoding: KeyEncoding::Physical,
             kitty_flags: crate::kitty::key::Flags::DISABLED,
             modify_other_keys_state_2: false,
             macos_option_as_alt: OptionAsAlt::default(),

@@ -7,7 +7,7 @@ use std::fmt::{self, Write};
 /// Optional screen keyboard state.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ScreenExtra {
-    /// Emit the active enhanced keyboard flags when enabled.
+    /// Emit retained enhanced keyboard flags and nested pushes when enabled.
     pub kitty_keyboard: bool,
 }
 
@@ -36,9 +36,8 @@ impl TerminalFormatter<'_> {
 impl ScreenFormatter<'_> {
     /// Emit nondefault screen keyboard flags only for styled output.
     pub(super) fn format_keyboard(&self, writer: &mut impl Write) -> fmt::Result {
-        let flags = self.screen.kitty_keyboard.current().int();
-        if self.opts.emit == Format::Vt && self.extra.kitty_keyboard && flags != 0 {
-            write!(writer, "\x1b[={flags};1u")?;
+        if self.opts.emit == Format::Vt && self.extra.kitty_keyboard {
+            self.screen.kitty_keyboard.replay_ansi(writer)?;
         }
         Ok(())
     }
