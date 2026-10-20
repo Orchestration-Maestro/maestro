@@ -179,6 +179,14 @@ Native Windows input fallback and recent-text qualification are tracked in
 
 ## Pane runtime
 
+`maestro_daemon::pane::agent_detection` supplies screen-scan and publication
+decisions. An identified idle pane can skip a scan when its content revision is
+unchanged and no identity, exit or pending-idle transition requires a read. Plain
+idle after working is held for three further observations or 700 ms; visible idle,
+a changed identity or process exit bypasses that hold. Unchanged visible blocker
+evidence is refreshed after 800 ms. The caller owns observation times and applies
+the returned decision; these helpers do not start the detection task.
+
 `maestro_daemon::render_signal::RenderSignal` coalesces render work while retaining
 its origins: generic requests, pane terminal damage and terminal-title changes.
 Hidden panes share one pending wakeup. A newly damaged visible pane or a new title

@@ -2,6 +2,9 @@
 
 mod input;
 
+/// Screen scan and publication policy for pane detection.
+pub mod agent_detection;
+
 /// Cursor position settling.
 pub mod cursor;
 
