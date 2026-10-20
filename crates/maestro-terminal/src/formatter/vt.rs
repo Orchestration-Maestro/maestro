@@ -34,7 +34,7 @@ impl TerminalFormatter<'_> {
 }
 
 impl ScreenFormatter<'_> {
-    /// Emit nondefault screen keyboard flags only for styled output.
+    /// Emit the retained screen keyboard stack only for styled output.
     pub(super) fn format_keyboard(&self, writer: &mut impl Write) -> fmt::Result {
         if self.opts.emit == Format::Vt && self.extra.kitty_keyboard {
             self.screen.kitty_keyboard.replay_ansi(writer)?;

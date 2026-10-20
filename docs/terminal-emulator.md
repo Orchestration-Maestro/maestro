@@ -14,9 +14,13 @@ sending it to the pane program.
 `input::key::KeyEvent` stores a physical `Key`, its `KeyAction`, modifier and
 consumed-modifier masks, composition state, generated text and the unshifted
 codepoint. `Mods` keeps pressed keys, lock states and observed modifier sides
-separate. Consumed modifiers are removed only when the event has text.
+separate; Hyper and Meta have their own pressed-key bits. Consumed modifiers are
+removed only when the event has text.
 
 `input::key_encode::KeyEncoder::encode` returns the bytes for a key event.
+The `encoding` option defaults to `KeyEncoding::Physical`; `Semantic` accepts
+already-decoded keys, preserving their text and event-reporting conventions.
+`Key::function` maps supported function-key numbers to engine identities.
 Its `modes` snapshot selects application cursor/keypad sequences, backarrow
 behavior, numeric-keypad handling and the alt escape prefix. The default encoder
 leaves these modes off; callers can change them through `modes.set`.
@@ -42,10 +46,11 @@ Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
 borrowed-buffer defect where changing the caller's text changed a stored event.
 
 `input::mouse::MouseEvent` carries an action, optional button, keyboard modifiers
-and surface-space pixel position. `input::mouse_encode::MouseEncoder::new(size)`
-starts with reporting disabled. Its `set_event` and `set_format` methods select press-only,
-normal, button-motion or all-motion reporting and byte, UTF-8, SGR, urxvt or SGR
-pixel output. `encode` returns owned bytes.
+and surface-space pixel position. `Pos::from_pixels` retains supplied pixel
+coordinates without narrowing them. `input::mouse_encode::MouseEncoder::new(size)`
+starts with reporting disabled. Its `set_event` and `set_format` methods select
+press-only, normal, button-motion or all-motion reporting and byte, UTF-8, SGR,
+urxvt or SGR pixel output. `encode` returns owned bytes.
 
 The mouse geometry types live in `input::mouse_encode::size`. Cell dimensions
 must be nonzero and pixel dimensions must already account for display scaling.
@@ -479,8 +484,12 @@ invalid URI UTF-8 becomes replacement characters.
 
 `track_row` replaces the viewport row anchor and returns the previous anchor's
 current retained row, or `None` if no previous anchor survives.
-`kitty_keyboard_state_ansi` emits the enabled extended modifier-key and keyboard
-protocol state as replayable text without screen content.
+`cursor_style_is_default` distinguishes a default cursor style from an explicit
+child setting.
+
+`kitty_keyboard_state_ansi` emits the retained extended modifier-key and keyboard
+protocol state as replayable text without screen content, including nested
+flag-stack pushes.
 
 ## Render state
 

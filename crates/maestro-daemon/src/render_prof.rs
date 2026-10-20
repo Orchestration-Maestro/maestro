@@ -105,8 +105,9 @@ impl RenderProfiler {
 /// Whether profiling is enabled for this process.
 pub fn enabled() -> bool {
     *ENABLED.get_or_init(|| {
-        std::env::var(ENV_VAR)
-            .is_ok_and(|value| matches!(value.as_str(), "1" | "true" | "yes" | "on"))
+        std::env::var(ENV_VAR).is_ok_and(|value| {
+            crate::environment::flag_enabled(&value, crate::environment::FlagPolicy::Exact)
+        })
     })
 }
 

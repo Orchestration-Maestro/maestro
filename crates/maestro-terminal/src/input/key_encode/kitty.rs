@@ -63,7 +63,12 @@ fn plain_text(event: &KeyEvent, opts: &KeyEncoder) -> Option<Vec<u8>> {
     {
         return Some(text.as_bytes().to_vec());
     }
-    if enabled(opts, Flags::REPORT_ALL) || !event.effective_mods().binding().empty() {
+    let mods = event.effective_mods();
+    if enabled(opts, Flags::REPORT_ALL)
+        || !mods.binding().empty()
+        || mods.contains(Mods::HYPER)
+        || mods.contains(Mods::META)
+    {
         return None;
     }
     match event.key {
@@ -107,12 +112,7 @@ impl<'a> Sequence<'a> {
     fn new(event: &'a KeyEvent, opts: &KeyEncoder, entry: Entry) -> Self {
         let mods = event.mods;
         let semantic = opts.encoding == super::KeyEncoding::Semantic;
-        let wire_mods = modifier_code(mods)
-            + if semantic {
-                mods.int() & 0x30
-            } else {
-                (mods.int() & 0x30) << 2
-            };
+        let wire_mods = modifier_code(mods) + ((mods.int() & 0x30) << 2);
         let action = if enabled(opts, Flags::REPORT_EVENTS) {
             match event.action {
                 KeyAction::Press => 1,

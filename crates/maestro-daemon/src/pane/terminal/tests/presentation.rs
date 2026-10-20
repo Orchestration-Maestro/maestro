@@ -11,7 +11,7 @@ fn pane() -> PaneTerminal {
 }
 
 fn process(pane: &PaneTerminal, bytes: &[u8]) -> ProcessBytesResult {
-    pane.process_pty_bytes(PaneId::from_raw(1), 0, bytes, None)
+    pane.process_pty_bytes(PaneId::from_raw(1), 0, bytes, || None)
 }
 
 fn job(pid: u32, name: &str) -> ForegroundJob {
@@ -122,12 +122,9 @@ fn pane_host_terminal_theme_restore_probe_skips_when_no_transient_override() {
 #[test]
 fn pane_host_terminal_theme_restore_probe_skips_when_host_theme_unknown() {
     let pane = pane();
-    pane.process_pty_bytes(
-        PaneId::from_raw(1),
-        7,
-        b"\x1b]11;#aabbcc\x07",
-        Some(&job(42, "child")),
-    );
+    pane.process_pty_bytes(PaneId::from_raw(1), 7, b"\x1b]11;#aabbcc\x07", || {
+        Some(job(42, "child"))
+    });
     assert!(pane.has_transient_default_color_override());
     assert!(!pane.should_probe_host_terminal_theme_restore());
 }
@@ -140,7 +137,7 @@ fn pane_host_terminal_theme_restore_probe_skips_on_alternate_screen() {
         PaneId::from_raw(1),
         7,
         b"\x1b]11;#aabbcc\x07\x1b[?1049h",
-        Some(&job(42, "child")),
+        || Some(job(42, "child")),
     );
     assert!(!pane.should_probe_host_terminal_theme_restore());
 }
@@ -149,12 +146,9 @@ fn pane_host_terminal_theme_restore_probe_skips_on_alternate_screen() {
 fn pane_host_terminal_theme_restore_probe_runs_when_restore_is_pending() {
     let pane = pane();
     pane.apply_host_terminal_theme(host_theme());
-    pane.process_pty_bytes(
-        PaneId::from_raw(1),
-        7,
-        b"\x1b]11;#aabbcc\x07",
-        Some(&job(42, "child")),
-    );
+    pane.process_pty_bytes(PaneId::from_raw(1), 7, b"\x1b]11;#aabbcc\x07", || {
+        Some(job(42, "child"))
+    });
     assert!(pane.should_probe_host_terminal_theme_restore());
 }
 
@@ -162,12 +156,9 @@ fn pane_host_terminal_theme_restore_probe_runs_when_restore_is_pending() {
 fn pane_restore_host_terminal_theme_reapplies_cached_colors() {
     let pane = pane();
     pane.apply_host_terminal_theme(host_theme());
-    pane.process_pty_bytes(
-        PaneId::from_raw(1),
-        7,
-        b"\x1b]11;#aabbcc\x07",
-        Some(&job(42, "child")),
-    );
+    pane.process_pty_bytes(PaneId::from_raw(1), 7, b"\x1b]11;#aabbcc\x07", || {
+        Some(job(42, "child"))
+    });
     assert!(!pane.maybe_restore_host_terminal_theme(7, Some(&job(42, "child"))));
     assert!(!pane.maybe_restore_host_terminal_theme(7, None));
     assert!(pane.maybe_restore_host_terminal_theme(7, Some(&job(7, "zsh"))));
@@ -216,14 +207,14 @@ fn pane_cursor_state_holds_pty_position_change_until_settle_window() {
     let pane = PaneTerminal::new(terminal);
     let pane_id = PaneId::from_raw(1);
 
-    pane.process_pty_bytes(pane_id, 0, b"x", None);
+    pane.process_pty_bytes(pane_id, 0, b"x", || None);
     assert_eq!(
         pane.cursor_state(Instant::now())
             .map(|cursor| (cursor.x, cursor.y, cursor.visible)),
         Some((1, 0, true))
     );
 
-    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[6;21H", None);
+    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[6;21H", || None);
 
     assert_eq!(
         result.render_delay,
@@ -243,8 +234,8 @@ fn pane_cursor_state_uses_live_position_when_settle_policy_disabled() {
     let pane = PaneTerminal::new(terminal);
     let pane_id = PaneId::from_raw(1);
 
-    pane.process_pty_bytes(pane_id, 0, b"x", None);
-    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[6;21H", None);
+    pane.process_pty_bytes(pane_id, 0, b"x", || None);
+    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[6;21H", || None);
 
     assert_eq!(result.render_delay, None);
     assert_eq!(

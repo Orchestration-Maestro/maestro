@@ -35,7 +35,7 @@ fn process_windows_powershell_prompt_bytes(
     let terminal = Terminal::new(cols, rows, 100).unwrap();
     let pane = PaneTerminal::new(terminal);
     pane.set_windows_powershell_prompt_cwd_reporting(enabled);
-    pane.process_pty_bytes(PaneId::from_raw(1), 0, bytes, None)
+    pane.process_pty_bytes(PaneId::from_raw(1), 0, bytes, || None)
 }
 
 #[test]

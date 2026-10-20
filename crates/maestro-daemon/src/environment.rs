@@ -106,3 +106,46 @@ pub const NAMES: &[EnvironmentName] = &[
         consumers: &[DaemonSelection],
     },
 ];
+
+/// Normalization selected by the environment value's consumer.
+#[derive(Clone, Copy)]
+pub(crate) enum FlagPolicy {
+    /// Match the supplied value byte for byte.
+    Exact,
+    /// Ignore surrounding whitespace and ASCII case.
+    Normalized,
+}
+
+/// Interpret an opt-in flag using its consumer's normalization policy.
+pub(crate) fn flag_enabled(value: &str, policy: FlagPolicy) -> bool {
+    let normalized;
+    let value = match policy {
+        FlagPolicy::Exact => value,
+        FlagPolicy::Normalized => {
+            normalized = value.trim().to_ascii_lowercase();
+            &normalized
+        }
+    };
+    matches!(value, "1" | "true" | "yes" | "on")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{FlagPolicy, flag_enabled};
+
+    #[test]
+    fn consumer_flag_policies_preserve_distinct_normalization() {
+        for value in ["1", "true", "yes", "on"] {
+            assert!(flag_enabled(value, FlagPolicy::Exact));
+            assert!(flag_enabled(value, FlagPolicy::Normalized));
+        }
+        for value in ["TRUE", " yes ", "On", " 1 "] {
+            assert!(!flag_enabled(value, FlagPolicy::Exact));
+            assert!(flag_enabled(value, FlagPolicy::Normalized));
+        }
+        for value in ["", "0", "false", "no", "only"] {
+            assert!(!flag_enabled(value, FlagPolicy::Exact));
+            assert!(!flag_enabled(value, FlagPolicy::Normalized));
+        }
+    }
+}

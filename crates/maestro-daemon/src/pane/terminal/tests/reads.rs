@@ -54,7 +54,7 @@ fn pane_empty_or_short_resize_keeps_following_bottom_when_output_creates_scrollb
             pane_id,
             0,
             b"000000\r\n000001\r\n000002\r\n000003\r\n000004",
-            None,
+            || None,
         );
 
         let metrics = pane.scroll_metrics().expect("scroll metrics after output");
@@ -75,7 +75,7 @@ fn pane_resize_that_removes_scrollback_restores_live_follow() {
     let resized = pane.scroll_metrics().expect("scroll metrics after resize");
     assert_eq!(resized.max_offset_from_bottom, 0);
 
-    pane.process_pty_bytes(pane_id, 0, b"\r\n000005\r\n000006", None);
+    pane.process_pty_bytes(pane_id, 0, b"\r\n000005\r\n000006", || None);
 
     let metrics = pane.scroll_metrics().expect("scroll metrics after output");
     assert_eq!(metrics.offset_from_bottom, 0);
@@ -299,7 +299,7 @@ fn pane_process_pty_bytes_answers_xtwinops_size_queries() {
     let pane_id = PaneId::from_raw(1);
     let _ = pane.resize(24, 80, 9, 18);
 
-    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[14t\x1b[16t\x1b[18t", None);
+    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[14t\x1b[16t\x1b[18t", || None);
 
     assert_eq!(
         result.terminal_responses.concat(),
@@ -320,7 +320,7 @@ fn pane_xtwinops_size_queries_follow_successful_resize() {
     let _ = pane.resize(24, 80, 9, 18);
     let _ = pane.resize(30, 100, 10, 20);
 
-    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[14t\x1b[16t\x1b[18t", None);
+    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[14t\x1b[16t\x1b[18t", || None);
 
     assert_eq!(
         result.terminal_responses.concat(),
@@ -340,7 +340,7 @@ fn pane_xtwinops_size_queries_stay_silent_without_pixel_geometry() {
     let pane_id = PaneId::from_raw(1);
     for (cell_width_px, cell_height_px) in [(0, 0), (0, 18), (9, 0)] {
         let _ = pane.resize(24, 80, cell_width_px, cell_height_px);
-        let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[14t\x1b[16t\x1b[18t", None);
+        let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[14t\x1b[16t\x1b[18t", || None);
         assert!(result.terminal_responses.is_empty());
     }
 }

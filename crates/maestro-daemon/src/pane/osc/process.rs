@@ -71,7 +71,6 @@ pub(in crate::pane) fn maybe_filter_primary_screen_scrollback_clear<'a>(
     strip_scrollback_clear_sequences(bytes)
 }
 
-#[cfg(target_os = "macos")]
 /// Restore only after returning to the shell on the primary screen.
 pub(in crate::pane) fn should_restore_host_terminal_theme(
     owner_pgid: u32,
@@ -87,27 +86,7 @@ pub(in crate::pane) fn should_restore_host_terminal_theme(
         return false;
     };
 
-    let _ = owner_pgid;
-    foreground_job_is_shell(foreground_job, shell_pid)
-}
-
-#[cfg(not(target_os = "macos"))]
-/// Restore only after returning to the shell on the primary screen.
-pub(in crate::pane) fn should_restore_host_terminal_theme(
-    owner_pgid: u32,
-    shell_pid: u32,
-    alternate_screen: bool,
-    foreground_job: Option<&ForegroundJob>,
-) -> bool {
-    if alternate_screen {
-        return false;
-    }
-
-    let Some(foreground_job) = foreground_job else {
-        return false;
-    };
-
-    foreground_job.process_group_id != owner_pgid
+    (cfg!(target_os = "macos") || foreground_job.process_group_id != owner_pgid)
         && foreground_job_is_shell(foreground_job, shell_pid)
 }
 

@@ -10,7 +10,8 @@ mod process;
 use collector::OscStreamCollector;
 pub(super) use cwd::parse_reported_cwd;
 pub(super) use process::{
-    maybe_filter_primary_screen_scrollback_clear, should_restore_host_terminal_theme,
+    contains_scrollback_clear_sequence, maybe_filter_primary_screen_scrollback_clear,
+    should_restore_host_terminal_theme,
 };
 
 /// Maximum retained title and progress length in Unicode scalar values.
@@ -142,10 +143,7 @@ impl Default for OscDebugTracker {
     fn default() -> Self {
         Self::new(
             std::env::var("MAESTRO_DEBUG_OSC_EVIDENCE").is_ok_and(|value| {
-                matches!(
-                    value.trim().to_ascii_lowercase().as_str(),
-                    "1" | "true" | "yes" | "on"
-                )
+                crate::environment::flag_enabled(&value, crate::environment::FlagPolicy::Normalized)
             }),
         )
     }

@@ -29,7 +29,9 @@ pub(super) fn key_event(key: &TerminalKey) -> KeyEvent {
             ClientKeyKind::Repeat => KeyAction::Repeat,
             ClientKeyKind::Release => KeyAction::Release,
         },
-        mods: Mods::from_int(u16::from(key.modifiers & 0x3f)),
+        mods: Mods::from_int(
+            u16::from(key.modifiers & 0x0f) | (u16::from(key.modifiers & 0x30) << 6),
+        ),
         ..KeyEvent::default()
     };
     if key.code == ClientKeyCode::BackTab {

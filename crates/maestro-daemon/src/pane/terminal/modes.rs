@@ -31,6 +31,7 @@ pub struct InputState {
     pub color_scheme_reporting: InputMode,
 }
 
+#[cfg(test)]
 impl InputState {
     /// Whether the child requests mouse reports.
     #[must_use]
@@ -79,13 +80,15 @@ impl PaneTerminal {
     /// Replay the engine's keyboard stack without a second byte tracker.
     #[must_use]
     pub fn kitty_keyboard_state_ansi(&self) -> Option<String> {
-        self.core
-            .lock()
-            .ok()?
-            .terminal
-            .kitty_keyboard_state_ansi()
-            .ok()
-            .filter(|text| !text.is_empty())
+        let core = self.core.lock().ok()?;
+        let mut replay = String::new();
+        core.terminal
+            .screens
+            .active()
+            .kitty_keyboard
+            .replay_ansi(&mut replay)
+            .ok()?;
+        (!replay.is_empty()).then_some(replay)
     }
 
     /// Whether paste delimiters are enabled.

@@ -287,8 +287,8 @@ fn pane_default_color_tracker_detects_split_osc_11_sequences() {
         maestro_terminal::Terminal::new(20, 5, 0).unwrap(),
     );
     let id = maestro_workspace::layout::PaneId::from_raw(1);
-    pane.process_pty_bytes(id, 0, b"\x1b]11;rgb:11/22", None);
-    pane.process_pty_bytes(id, 0, b"/33\x1b\\", None);
+    pane.process_pty_bytes(id, 0, b"\x1b]11;rgb:11/22", || None);
+    pane.process_pty_bytes(id, 0, b"/33\x1b\\", || None);
     pane.apply_host_terminal_theme(crate::terminal_theme::TerminalTheme::default().with_color(
         crate::terminal_theme::DefaultColorKind::Background,
         crate::terminal_theme::RgbColor {
@@ -298,7 +298,7 @@ fn pane_default_color_tracker_detects_split_osc_11_sequences() {
         },
     ));
     assert_eq!(
-        pane.process_pty_bytes(id, 0, b"\x1b]11;?\x1b\\", None)
+        pane.process_pty_bytes(id, 0, b"\x1b]11;?\x1b\\", || None)
             .terminal_responses
             .concat(),
         b"\x1b]11;rgb:1111/2222/3333\x1b\\"
@@ -311,7 +311,7 @@ fn pane_default_color_tracker_ignores_osc_queries() {
         maestro_terminal::Terminal::new(20, 5, 0).unwrap(),
     );
     let id = maestro_workspace::layout::PaneId::from_raw(1);
-    pane.process_pty_bytes(id, 0, b"\x1b]10;?\x1b\\\x1b]11;?\x07", None);
+    pane.process_pty_bytes(id, 0, b"\x1b]10;?\x1b\\\x1b]11;?\x07", || None);
     pane.apply_host_terminal_theme(crate::terminal_theme::TerminalTheme::default().with_color(
         crate::terminal_theme::DefaultColorKind::Background,
         crate::terminal_theme::RgbColor {
@@ -321,7 +321,7 @@ fn pane_default_color_tracker_ignores_osc_queries() {
         },
     ));
     assert_eq!(
-        pane.process_pty_bytes(id, 0, b"\x1b]11;?\x07", None)
+        pane.process_pty_bytes(id, 0, b"\x1b]11;?\x07", || None)
             .terminal_responses
             .concat(),
         b"\x1b]11;rgb:aaaa/bbbb/cccc\x1b\\"

@@ -5,11 +5,11 @@ use super::key_encode::KeyEncoder;
 use super::key_mods::Mods;
 use crate::modes::Mode;
 
-/// Encode the binding modifiers in shift, alt, control, super order, plus one.
+/// Encode shift, alt, control, super, Hyper and Meta in protocol order, plus one.
 #[must_use]
 pub(super) fn modifier_code(mods: Mods) -> u16 {
     let bits = mods.binding().int();
-    1 + (bits & 1) + ((bits & 4) >> 1) + ((bits & 2) << 1) + (bits & 8)
+    1 + (bits & 1) + ((bits & 4) >> 1) + ((bits & 2) << 1) + (bits & 8) + ((mods.int() >> 6) & 0x30)
 }
 
 /// Select a PC-style sequence before considering generated text.
@@ -115,8 +115,10 @@ fn special_key(key: Key, code: u16, opts: &KeyEncoder) -> Option<String> {
         Key::Escape => 0x1b,
         _ => return None,
     };
-    if code == 1 || (key == Key::Enter && opts.encoding == super::key_encode::KeyEncoding::Semantic)
-    {
+    if key == Key::Enter && opts.encoding == super::key_encode::KeyEncoding::Semantic {
+        return Some(if (code - 1) & 2 != 0 { "\x1b\r" } else { "\r" }.into());
+    }
+    if code == 1 {
         return Some(char::from(byte).into());
     }
     if key == Key::Tab && code == 5 && opts.encoding == super::key_encode::KeyEncoding::Semantic {

@@ -144,7 +144,9 @@ facts rather than application classifications. Application wiring is described b
 `maestro_daemon::pane::terminal::PaneTerminal` owns one concrete terminal engine
 with a single lock for screen state and pane policy. `process_pty_bytes` returns
 ordered child replies, title changes, bells, clipboard writes and working-directory
-observations. Callers send replies directly to the PTY, independently of queued
+observations. Its foreground-job source is lazy: colour sets and primary-screen
+history clears request it at most once per write, only when the shell PID is known.
+Callers send replies directly to the PTY, independently of queued
 user input. Capability and host-colour replies retain their position among engine
 replies, including queries split across writes. Child colour overrides survive
 host-theme refreshes until reset or a matching foreground-owner restore.
@@ -152,8 +154,11 @@ host-theme refreshes until reset or a matching foreground-owner restore.
 Resize retains bottom-follow and returns in-band size reports. Scrolling and mode
 reads use live engine state. Synchronized output suppresses immediate redraws;
 returned delays let the caller schedule image and cursor settling without a
-pane-owned timer. Key and mouse encoding reuse the engine's encoders with current
-pane modes. Grouped key repeats expand at the destination; releases encode once.
+pane-owned timer. Key and mouse encoding reuse the engine's encoders. Mouse reports
+and converted non-character keys use live pane modes; character keys and semantic
+fallbacks retain the caller's keyboard protocol. Keyboard handoff replays the
+retained flag stack without the independent modified-key mode. Grouped key repeats
+expand at the destination; releases encode once.
 
 Visible, recent and detection reads share the engine's retained rows and text
 formatters. Recent snapshots report whether the physical-row budget omitted older

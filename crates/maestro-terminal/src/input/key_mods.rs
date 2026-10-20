@@ -23,7 +23,7 @@ pub enum Side {
     Right,
 }
 
-/// Modifier mask: keys in bits 0–3, locks in 4–5 and right sides in 6–9.
+/// Modifier mask: keys in bits 0–3, locks in 4–5, right sides in 6–9 and Hyper/Meta in 10–11.
 ///
 /// A side bit does not imply that the modifier is pressed.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -42,6 +42,11 @@ impl Mods {
     pub const CAPS_LOCK: Self = Self(16);
     /// Num lock is enabled.
     pub const NUM_LOCK: Self = Self(32);
+
+    /// Hyper is pressed.
+    pub const HYPER: Self = Self(1 << 10);
+    /// Meta is pressed, independently of Alt.
+    pub const META: Self = Self(1 << 11);
 
     /// Preserve a supplied modifier mask, including side and reserved bits.
     #[must_use]

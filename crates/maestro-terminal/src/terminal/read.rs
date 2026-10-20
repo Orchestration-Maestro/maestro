@@ -193,7 +193,7 @@ impl Terminal {
         )
     }
 
-    /// Emit enabled keyboard protocols as replayable text, without screen content.
+    /// Emit retained keyboard protocol state as replayable text, without screen content.
     ///
     /// # Errors
     /// Returns a formatting error if the formatter cannot write its output.

@@ -250,7 +250,12 @@ fn pane_key_encoder_updates_after_terminal_mode_changes() {
     );
     assert_eq!(before, b"\x1b[A");
 
-    pane.seed_history_ansi(std::str::from_utf8(b"\x1b[?1h").unwrap());
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[?1h",
+        || None,
+    );
 
     let after = pane.encode_terminal_key(
         TerminalKey::new(ClientKeyCode::Up, KeyModifiers::NONE),
@@ -270,7 +275,12 @@ fn pane_key_encoder_updates_after_kitty_flag_changes() {
     );
 
     let before = pane.encode_terminal_key(key.clone(), KeyboardProtocol::Legacy);
-    pane.seed_history_ansi(std::str::from_utf8(b"\x1b[>1u").unwrap());
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>1u",
+        || None,
+    );
     let after = pane.encode_terminal_key(key, KeyboardProtocol::Legacy);
 
     assert_ne!(before, after);
@@ -282,7 +292,12 @@ fn pane_kitty_pane_encodes_shift_enter_as_csi_u() {
     let terminal = Terminal::new(80, 24, 0).unwrap();
     let pane = PaneTerminal::new(terminal);
 
-    pane.seed_history_ansi(std::str::from_utf8(b"\x1b[>5u").unwrap());
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>5u",
+        || None,
+    );
 
     let key = crate::input::parse_terminal_key_sequence("\x1b[13;2u").unwrap();
     let encoded = pane.encode_terminal_key(key, KeyboardProtocol::Legacy);
@@ -315,7 +330,12 @@ fn pane_keyboard_protocol_state_replays_nested_stack() {
     let terminal = Terminal::new(80, 24, 0).unwrap();
     let pane = PaneTerminal::new(terminal);
 
-    pane.seed_history_ansi(std::str::from_utf8(b"\x1b[>1u\x1b[>5u").unwrap());
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>1u\x1b[>5u",
+        || None,
+    );
 
     let ansi = pane.kitty_keyboard_state_ansi().unwrap();
 
@@ -327,7 +347,12 @@ fn pane_keyboard_protocol_state_replays_nested_stack() {
         KeyboardProtocol::Kitty { flags: 5 }
     );
 
-    restored.seed_history_ansi(std::str::from_utf8(b"\x1b[<u").unwrap());
+    restored.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[<u",
+        || None,
+    );
     assert_eq!(
         restored.keyboard_protocol(KeyboardProtocol::Legacy),
         KeyboardProtocol::Kitty { flags: 1 }
@@ -340,7 +365,12 @@ fn pane_modify_other_keys_mode_one_preserves_shift_enter() {
     let pane = PaneTerminal::new(terminal);
     let key = crate::input::parse_terminal_key_sequence("\x1b[13;2u").unwrap();
 
-    pane.seed_history_ansi("\x1b[>4;1m");
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>4;1m",
+        || None,
+    );
     let encoded = pane.encode_terminal_key(key, KeyboardProtocol::Legacy);
 
     assert_eq!(encoded, b"\x1b[27;2;13~");
@@ -351,7 +381,12 @@ fn pane_kitty_pane_encodes_parsed_legacy_alt_backspace_as_csi_u() {
     let terminal = Terminal::new(80, 24, 0).unwrap();
     let pane = PaneTerminal::new(terminal);
 
-    pane.seed_history_ansi(std::str::from_utf8(b"\x1b[>1u").unwrap());
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>1u",
+        || None,
+    );
 
     let key = crate::input::parse_terminal_key_sequence("\x1b\x7f").unwrap();
     let encoded = pane.encode_terminal_key(key, KeyboardProtocol::Legacy);
@@ -364,7 +399,12 @@ fn pane_kitty_pane_preserves_legacy_ctrl_alt_letter() {
     let terminal = Terminal::new(80, 24, 0).unwrap();
     let pane = PaneTerminal::new(terminal);
 
-    pane.seed_history_ansi(std::str::from_utf8(b"\x1b[>5u").unwrap());
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>5u",
+        || None,
+    );
 
     let mut events = crate::input::parse_raw_input_bytes_sync(b"\x1b\x06");
     let crate::input::RawInputEvent::Key(key) = events.remove(0) else {
@@ -380,7 +420,12 @@ fn pane_key_encoders_are_isolated_per_pane() {
     let first = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
     let second = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
 
-    first.seed_history_ansi("\x1b[?1h");
+    first.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[?1h",
+        || None,
+    );
 
     let first_encoded = first.encode_terminal_key(
         TerminalKey::new(ClientKeyCode::Up, KeyModifiers::NONE),
@@ -496,9 +541,24 @@ fn pane_pixel_release_does_not_truncate_coordinates_above_u16() {
 #[test]
 fn pane_keyboard_flags_compose_split_sequences_without_rescanning() {
     let pane = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
-    pane.seed_history_ansi("\x1b[>1u\x1b[>4;");
-    pane.seed_history_ansi("01m\x1b[>5u\x1b[<");
-    pane.seed_history_ansi("u");
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"\x1b[>1u\x1b[>4;",
+        || None,
+    );
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"01m\x1b[>5u\x1b[<",
+        || None,
+    );
+    pane.process_pty_bytes(
+        maestro_workspace::layout::PaneId::from_raw(1),
+        0,
+        b"u",
+        || None,
+    );
     assert_eq!(
         pane.keyboard_protocol(KeyboardProtocol::Legacy),
         KeyboardProtocol::Kitty { flags: 1 }
@@ -588,5 +648,33 @@ fn pane_legacy_control_unicode_uses_valid_protocol_not_a_truncated_byte() {
     assert_eq!(
         pane.encode_terminal_key(ascii, KeyboardProtocol::Legacy),
         [3]
+    );
+}
+
+#[test]
+fn pane_host_extended_modifiers_survive_semantic_character_encoding() {
+    let pane = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
+    for (input, expected) in [
+        ("\x1b[97;17u", b"\x1b[97;17u".as_slice()),
+        ("\x1b[97;33u", b"\x1b[97;33u"),
+    ] {
+        let key = crate::input::parse_terminal_key_sequence(input).unwrap();
+        assert_eq!(
+            pane.encode_terminal_key(key, KeyboardProtocol::Kitty { flags: 1 }),
+            expected
+        );
+    }
+}
+
+#[test]
+fn pane_keyboard_replay_excludes_independent_modified_key_mode() {
+    let pane = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
+    let id = maestro_workspace::layout::PaneId::from_raw(1);
+    pane.process_pty_bytes(id, 0, b"\x1b[>4;2m", || None);
+    assert_eq!(pane.kitty_keyboard_state_ansi(), None);
+    pane.process_pty_bytes(id, 0, b"\x1b[>1u\x1b[>0u", || None);
+    assert_eq!(
+        pane.kitty_keyboard_state_ansi().as_deref(),
+        Some("\x1b[>1u\x1b[>0u")
     );
 }

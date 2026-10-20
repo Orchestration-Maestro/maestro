@@ -7,7 +7,7 @@ use crate::{
 use maestro_terminal::Terminal;
 
 #[test]
-fn plain_page_keys_host_scroll_for_shell_like_decckm_with_bracketed_paste() {
+fn pane_bracketed_paste_restores_host_page_navigation() {
     let pane = PaneTerminal::new(Terminal::new(20, 3, 100).unwrap());
     assert_eq!(pane.plain_page_keys_use_host_scrollback(), Some(true));
     pane.seed_history_ansi("\x1b[?1h");

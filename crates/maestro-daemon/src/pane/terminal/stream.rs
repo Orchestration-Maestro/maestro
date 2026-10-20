@@ -2,23 +2,24 @@
 
 use super::{PaneCore, PaneTerminal, ProcessBytesResult, colors};
 use crate::pane::osc::{
-    DefaultColorEvent, maybe_filter_primary_screen_scrollback_clear, parse_reported_cwd,
+    DefaultColorEvent, contains_scrollback_clear_sequence,
+    maybe_filter_primary_screen_scrollback_clear, parse_reported_cwd,
 };
 use maestro_process::pty::foreground::ForegroundJob;
 use maestro_terminal::Mode;
 use maestro_workspace::layout::PaneId;
-use std::borrow::Cow;
 use std::time::{Duration, Instant};
+use std::{borrow::Cow, cell::LazyCell};
 
 impl PaneTerminal {
-    /// Process live output with supplied foreground process observations.
+    /// Process live output, requesting foreground facts only for colour sets or primary-screen ED3.
     /// Replies are returned directly, never re-queued as user input.
     pub fn process_pty_bytes(
         &self,
         pane_id: PaneId,
         shell_pid: u32,
         bytes: &[u8],
-        foreground_job: Option<&ForegroundJob>,
+        foreground_job: impl FnOnce() -> Option<ForegroundJob>,
     ) -> ProcessBytesResult {
         crate::render_prof::counter("pty.bytes", u64::try_from(bytes.len()).unwrap_or(u64::MAX));
         let Ok(mut core) = self.core.lock() else {
@@ -28,20 +29,24 @@ impl PaneTerminal {
             );
             return ProcessBytesResult::default();
         };
+        let foreground_job = LazyCell::new(foreground_job);
         discard_seed_effects(&mut core);
         observe_evidence(&mut core, pane_id, bytes);
         let title_changed = core.agent_osc_state.observe(bytes);
-        let filtered = if shell_pid > 0 {
+        let filtered = if shell_pid > 0
+            && core.terminal.active_screen() != maestro_terminal::screen_set::Key::Alternate
+            && contains_scrollback_clear_sequence(bytes)
+        {
             maybe_filter_primary_screen_scrollback_clear(
                 bytes,
                 core.terminal.active_screen() == maestro_terminal::screen_set::Key::Alternate,
-                foreground_job,
+                foreground_job.as_ref(),
             )
         } else {
             Cow::Borrowed(bytes)
         };
         let started = crate::render_prof::timer();
-        let terminal_responses = write_ordered(&mut core, &filtered, shell_pid, foreground_job);
+        let terminal_responses = write_ordered(&mut core, &filtered, shell_pid, &foreground_job);
         crate::render_prof::duration_since("pty.terminal_write", started);
         let terminal_bells = core.terminal.take_bell_count();
         let clipboard_writes = core.terminal.take_clipboard_writes();
@@ -119,7 +124,7 @@ fn write_ordered(
     core: &mut PaneCore,
     bytes: &[u8],
     shell_pid: u32,
-    foreground_job: Option<&ForegroundJob>,
+    foreground_job: &LazyCell<Option<ForegroundJob>, impl FnOnce() -> Option<ForegroundJob>>,
 ) -> Vec<Vec<u8>> {
     core.default_color_event_tracker.observe(bytes);
     core.xtgettcap_query_tracker.observe(bytes);
@@ -174,13 +179,14 @@ fn custom_response(
     core: &mut PaneCore,
     event: OrderedEvent,
     shell_pid: u32,
-    foreground_job: Option<&ForegroundJob>,
+    foreground_job: &LazyCell<Option<ForegroundJob>, impl FnOnce() -> Option<ForegroundJob>>,
     engine_reply: &mut Vec<u8>,
 ) -> Option<Vec<u8>> {
     match event {
         OrderedEvent::Color(event) => {
             if matches!(event.event, DefaultColorEvent::Set(_)) && shell_pid > 0 {
                 core.transient_default_color_owner_pgid = foreground_job
+                    .as_ref()
                     .filter(|job| !job.processes.iter().any(|process| process.pid == shell_pid))
                     .map(|job| job.process_group_id)
                     .or(core.transient_default_color_owner_pgid);
