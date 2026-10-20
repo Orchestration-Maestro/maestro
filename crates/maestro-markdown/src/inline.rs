@@ -214,9 +214,10 @@ impl<'a> InlineScope<'a> {
                 atoms.push(atom);
             }
         }
-        let children =
-            crate::tokenizer::inline::Tokenizer::new(&source, self.options, self.definitions, None)
-                .parse(&slots);
+        let mut tokenizer =
+            crate::tokenizer::inline::Tokenizer::new(&source, self.options, self.definitions, None);
+        tokenizer.retained_atoms = Some(&atoms);
+        let children = tokenizer.parse(&slots);
         InlineRun {
             nodes: vec![crate::tokenizer::node(
                 &source,

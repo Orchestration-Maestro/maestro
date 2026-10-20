@@ -19,6 +19,10 @@ pub(crate) struct Tokenizer<'a> {
     pub(crate) definitions: &'a HashMap<String, Definition>,
     /// Optional document scope collector, absent during local interpretation.
     pub(crate) scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
+    /// Original operand identities for local interpretation, indexed like the atom ranges.
+    pub(crate) retained_atoms: Option<&'a [crate::InlineAtom<'a>]>,
+    /// Raw anchor state shared by recursive inline spans.
+    raw_anchor: bool,
     /// Local interpretation has no document scope collector.
     #[cfg(test)]
     local: bool,
@@ -38,6 +42,8 @@ impl<'a> Tokenizer<'a> {
             options,
             definitions,
             scopes,
+            raw_anchor: false,
+            retained_atoms: None,
             #[cfg(test)]
             local,
         }
@@ -70,7 +76,7 @@ impl<'a> Tokenizer<'a> {
             let previous = kept.take();
             let atom = atoms.partition_point(|range| range.end <= cursor);
             if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
-                output.push(node(self.source, range.clone(), Kind::Atom(atom)));
+                self.push_atom(range.clone(), atom, &mut output);
                 cursor = range.end;
                 continue;
             }
@@ -90,6 +96,7 @@ impl<'a> Tokenizer<'a> {
             if let Some((size, kind)) =
                 token.filter(|(size, kind)| *size > 0 && fits(atoms, cursor + size, limit, kind))
             {
+                self.track_anchor(&kind);
                 output.push(node(self.source, cursor..cursor + size, kind));
                 cursor += size;
                 continue;
@@ -118,14 +125,30 @@ impl<'a> Tokenizer<'a> {
         output
     }
 
-    /// A bare address the mapped-link scan accepts at the start of `text` stays one
-    /// text token, outside link labels.
+    /// Retain operand identity and apply raw HTML transitions, never caller-opaque contents.
+    fn push_atom(&mut self, range: Range<usize>, index: usize, output: &mut Vec<Node>) {
+        if let Some(crate::InlineAtom::Resolved(original)) =
+            self.retained_atoms.and_then(|atoms| atoms.get(index))
+        {
+            self.track_anchor(&original.kind);
+        }
+        output.push(node(self.source, range, Kind::Atom(index)));
+    }
+
+    /// Update the shared raw-anchor state only after a tag has been admitted.
+    fn track_anchor(&mut self, kind: &Kind) {
+        if let Kind::Html(html) = kind {
+            self.raw_anchor = crate::autolinks::anchor_state(html, self.raw_anchor);
+        }
+    }
+
+    /// Keep accepted bare addresses whole where the grammar enables URL tokens.
     fn address(&self, text: &str, output: &[Node], in_link: bool) -> Option<usize> {
         let previous = match output.last().map(|node| &node.kind) {
             Some(Kind::Text(text)) => text.authored.chars().next_back(),
             _ => None,
         };
-        (!in_link)
+        (!in_link && !self.raw_anchor && self.options != MarkedOptions::Documentation)
             .then(|| crate::autolinks::address(text, previous, self.options))
             .flatten()
     }

@@ -15,8 +15,8 @@ struct Row {
     group: String,
     /// Original authored input.
     input: String,
-    /// Terminal, raw browser, escaped browser and export observations.
-    targets: [Value; 4],
+    /// Observations in the selected caller order.
+    targets: Vec<Value>,
     /// Recorded joined authored spellings at block inline scopes.
     inline_authored: Option<[Option<Vec<String>>; 4]>,
     /// Recorded link labels in traversal order.
@@ -25,22 +25,28 @@ struct Row {
 
 /// Require the complete selected family without deduplicating repeated observations.
 pub(super) fn check(group: &str, count: usize) {
+    check_with_options(
+        group,
+        count,
+        &[
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+            MarkedOptions::Browser { escape_html: true },
+            MarkedOptions::Export,
+        ],
+    );
+}
+
+/// Compare recorded observations for the grammars that own the selected rule.
+pub(super) fn check_with_options(group: &str, count: usize, options: &[MarkedOptions]) {
     let rows: Vec<Row> =
         serde_json::from_str(include_str!("../fixtures/grammar_observations.json")).unwrap();
     let mut seen = 0;
     let mut failures = Vec::new();
     for row in rows.into_iter().filter(|row| row.group == group) {
         seen += 1;
-        for (target, (options, expected)) in [
-            MarkedOptions::Terminal,
-            MarkedOptions::Browser { escape_html: false },
-            MarkedOptions::Browser { escape_html: true },
-            MarkedOptions::Export,
-        ]
-        .into_iter()
-        .zip(&row.targets)
-        .enumerate()
-        {
+        assert_eq!(row.targets.len(), options.len(), "{}", row.id);
+        for (target, (options, expected)) in options.iter().copied().zip(&row.targets).enumerate() {
             let mut document =
                 parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
             autolinks(&mut document);

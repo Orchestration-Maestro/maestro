@@ -352,7 +352,7 @@ fn hrefs(nodes: &[Node]) -> Vec<&str> {
 
 #[test]
 fn mapped_links_share_one_policy_aware_scanner() {
-    observations::check("url", 16);
+    observations::check("url", 17);
     for (options, expected) in [
         (
             MarkedOptions::Terminal,
@@ -798,4 +798,68 @@ fn deletion_reads_raw_source_after_unmatched_ticks() {
             );
         }
     }
+}
+
+#[test]
+fn bare_addresses_follow_raw_anchor_transitions() {
+    observations::check_with_options(
+        "address-context",
+        5,
+        &[
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+        ],
+    );
+}
+
+#[test]
+fn documentation_grammar_keeps_emphasis_inside_bare_addresses() {
+    let document = parse_with_options("https://a.b/_x_".into(), MarkedOptions::Documentation);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(&node.kind, Kind::Emphasis(children) if text(children) == "x"))
+    );
+}
+
+#[test]
+fn unmatched_opening_parentheses_end_bare_addresses() {
+    observations::check("url-backpedal", 3);
+}
+
+#[test]
+fn retained_raw_anchor_operands_keep_address_context() {
+    let document = parse("<a href=\"x\">https://a.b/_x_</a>".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(&node.kind, Kind::Emphasis(children) if text(children) == "x"))
+    );
+}
+
+#[test]
+fn caller_opaque_anchor_text_does_not_disable_bare_addresses() {
+    let document = parse("<a href=\"x\"> https://a.b/_x_ </a>".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), std::slice::from_ref(&(0..12)));
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(matches!(run.atoms[0], InlineAtom::Opaque(0)));
+    assert!(
+        !children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Emphasis(_)))
+    );
+    assert!(text(children).contains("https://a.b/_x_"));
 }

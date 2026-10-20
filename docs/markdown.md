@@ -20,8 +20,10 @@ also keeps mapped URLs separate from their neighboring inline source. Link-label
 scopes retain authored escapes for caller admission; export interpretation unescapes
 brackets before applying inline grammar, with ranges still pointing to the original source.
 
-Parsing preserves native structure before extended links are selected. Call
-`autolinks(&mut document)` separately to map bare URL, www and email spans.
+Parsing keeps accepted bare addresses whole outside raw anchors in the terminal,
+browser and export grammars. Documentation grammar still applies emphasis inside
+such text. Call `autolinks(&mut document)` separately to map bare URL, www and email
+spans to links.
 Native code, authored links and images remain opaque to that pass. Identity text
 units retain exact selected source subranges; decoded transformations stay atomic.
 

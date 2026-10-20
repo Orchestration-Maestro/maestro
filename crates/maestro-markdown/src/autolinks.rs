@@ -25,6 +25,13 @@ static SCAN: LazyLock<[Option<Regex>; 3]> =
 static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
     SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
 });
+/// Email local-part membership comes from the candidate's leading character class.
+static EMAIL_LOCAL_PART: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(&format!("^{}$", SOURCES[2].0.split_inclusive(']').next()?)).ok());
+/// Accepted URL prefixes exclude trailing punctuation and unmatched opening parentheses.
+static BACKPEDAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::new(r#"(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+"#).ok()
+});
 /// Domain labels permit Unicode letters and numbers.
 static DOMAIN: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+", "u").ok());
@@ -32,7 +39,7 @@ static DOMAIN: LazyLock<Option<Regex>> =
 /// Selects valid candidates before excluding overlaps with accepted links.
 fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
     let mut candidates = Vec::new();
-    for (regex, email) in rules(options, &SCAN) {
+    for (regex, email) in candidate_rules(options, &SCAN) {
         let Some(regex) = regex else {
             continue;
         };
@@ -63,7 +70,7 @@ fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
         .collect()
 }
 /// The grammar's web rule and the email rule from one rule set.
-fn rules(
+fn candidate_rules(
     options: MarkedOptions,
     set: &'static [Option<Regex>; 3],
 ) -> [(Option<&'static Regex>, bool); 2] {
@@ -78,12 +85,17 @@ fn rules(
 ///
 /// `previous` is the character before it in the same text run.
 pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions) -> Option<usize> {
-    rules(options, &START)
+    candidate_rules(options, &START)
         .into_iter()
         .find_map(|(regex, email)| {
-            // The run scan starts an email where its run of address characters starts.
-            let inside = |c: char| c.is_ascii_alphanumeric() || "._+-".contains(c);
-            if email && previous.is_some_and(inside) {
+            // A preceding local-part character would make this a suffix of an earlier candidate.
+            if email
+                && previous.is_some_and(|c| {
+                    EMAIL_LOCAL_PART
+                        .as_ref()
+                        .is_some_and(|rule| rule.find(c.encode_utf8(&mut [0; 4])).is_some())
+                })
+            {
                 return None;
             }
             let matched = regex?.find(text)?;
@@ -124,30 +136,18 @@ fn accepted(previous: Option<char>, authored: &str, email: bool) -> Option<(usiz
     };
     Some((label.len(), href))
 }
-/// Reduces punctuation, unbalanced closing parentheses and entity tails.
+/// Backpedal repeatedly until the grammar accepts the complete remaining URL prefix.
 fn suffix(candidate: &str) -> &str {
     let mut label = candidate;
     loop {
-        let previous = label.len();
-        label = label.trim_end_matches(['?', '!', '.', ',', ':', '*', '_', '~']);
-        let opens = label.matches('(').count();
-        let mut closes = label.matches(')').count();
-        while label.ends_with(')') && closes > opens {
-            label = &label[..label.len() - 1];
-            closes -= 1;
-        }
-        if label.ends_with(';')
-            && let Some((head, tail)) = label.rsplit_once('&')
-            && tail[..tail.len() - 1]
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric())
-            && tail.len() > 1
-        {
-            label = head;
-        }
-        if label.len() == previous {
+        let next = BACKPEDAL
+            .as_ref()
+            .and_then(|rule| rule.find(label))
+            .map_or("", |matched| &label[matched.range()]);
+        if next == label {
             return label;
         }
+        label = next;
     }
 }
 
@@ -459,7 +459,7 @@ fn map_children(
 }
 
 /// Follow the grammar's raw opening and closing anchor transitions.
-fn anchor_state(text: &str, in_link: bool) -> bool {
+pub(crate) fn anchor_state(text: &str, in_link: bool) -> bool {
     if text
         .get(..3)
         .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<a "))
