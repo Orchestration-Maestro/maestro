@@ -84,7 +84,12 @@ fn markup_rules_match_their_reference_spellings() {
             rules::BLOCK_FENCES_SOURCE,
             "",
         ),
-        ("html", &rules::BLOCK_HTML, rules::BLOCK_HTML_SOURCE, "i"),
+        (
+            "html",
+            &rules::BLOCK_HTML,
+            rules::BLOCK_HTML_SOURCE.as_str(),
+            "i",
+        ),
         ("tag", &rules::INLINE_TAG, rules::INLINE_TAG_SOURCE, ""),
         ("code", &rules::INLINE_CODE, rules::INLINE_CODE_SOURCE, ""),
     ] {
