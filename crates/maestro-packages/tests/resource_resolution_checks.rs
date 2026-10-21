@@ -279,44 +279,34 @@ fn installed_sources_keep_scope_paths_without_acquisition() {
     .unwrap();
 }
 
-/// Absolute operands avoid ambient reads; relative and tilde inputs propagate required failures.
+/// Absolute operands avoid ambient reads; relative inputs propagate the required failure.
+#[cfg(unix)]
 #[test]
 fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
+    let Some((_tree, _unlock, process)) = resolution_support::unreadable_cwd(
+        "ambient_inputs_are_observed_only_at_their_consuming_branch",
+    ) else {
+        return;
+    };
     block_on(Box::pin(async {
         use maestro_packages::PackageManager;
         let dir = scratch::Scratch::new().unwrap();
         let path = dir.path().join("opaque.data");
         std::fs::write(&path, "").unwrap();
         let absolute = path.to_string_lossy().into_owned();
-        let (manager, effects) = resolution_support::manager("unanchored");
-        effects.fail_ambient.set(true);
+        let (manager, _) = resolution_support::manager("unanchored");
         let result = manager
             .resolve_extension_sources(std::slice::from_ref(&absolute), None)
             .await
             .unwrap();
         assert_eq!(result.extensions[0].path, absolute);
-        assert!(effects.reads.borrow().is_empty());
         let error = manager
             .resolve_extension_sources(&["relative".into()], None)
             .await
             .err()
             .unwrap();
-        assert_eq!(error.kind(), std::io::ErrorKind::Other);
-        assert_eq!(&*effects.reads.borrow(), &["cwd"]);
-        let start = effects.reads.borrow().len();
-        assert!(
-            manager
-                .resolve_extension_sources(&["~/path".into()], None)
-                .await
-                .is_err()
-        );
-        assert_eq!(&effects.reads.borrow()[start..], &["home"]);
-        #[cfg(unix)]
-        if let Some((_tree, _unlock, process)) = resolution_support::unreadable_cwd(
-            "ambient_inputs_are_observed_only_at_their_consuming_branch",
-        ) {
-            resource_cases::ambient_entry_resolution(&process).await;
-        }
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        resource_cases::ambient_entry_resolution(&process).await;
         Ok(())
     }))
     .unwrap();
@@ -527,10 +517,7 @@ async fn resolve_relative_manifest(
             agent_dir: agent,
             settings_manager: settings,
         },
-        support::Controlled(Rc::new(support::Effects {
-            native_exists: true,
-            ..Default::default()
-        })),
+        support::Controlled(Rc::new(support::Effects::default())),
     );
     let result = manager
         .resolve_extension_sources(&["git:https://example.com/org/pkg".into()], None)

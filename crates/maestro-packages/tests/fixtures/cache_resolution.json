@@ -84,8 +84,7 @@
         "global/node_modules/pkg/prompt.md": "new",
         "global/node_modules/pkg/skill.md": "new",
         "global/node_modules/pkg/theme.json": "new"
-      },
-      "temporaryPathObserved": false
+      }
     }
   },
   {
@@ -154,7 +153,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/user/git/github.com/team/.controlled-stage-0"
+            "$ROOT/user/git/github.com/team/.controlled-stage"
           ]
         },
         {
@@ -164,7 +163,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/user/git/github.com/team/.controlled-stage-0"
+          "cwd": "$ROOT/user/git/github.com/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -175,8 +174,7 @@
         "user/git/github.com/team/repo/prompt.md": "new",
         "user/git/github.com/team/repo/skill.md": "new",
         "user/git/github.com/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": false
+      }
     }
   },
   {
@@ -256,8 +254,7 @@
         "global/node_modules/pkg/prompt.md": "old",
         "global/node_modules/pkg/skill.md": "old",
         "global/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/global/node_modules/pkg"
   },
@@ -340,8 +337,7 @@
         "global/node_modules/pkg/prompt.md": "old",
         "global/node_modules/pkg/skill.md": "old",
         "global/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/global/node_modules/pkg"
   },
@@ -433,8 +429,7 @@
         "global/node_modules/pkg/prompt.md": "new",
         "global/node_modules/pkg/skill.md": "new",
         "global/node_modules/pkg/theme.json": "new"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/global/node_modules/pkg"
   },
@@ -518,8 +513,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     }
   },
   {
@@ -588,7 +582,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/.maestro/git/github.com/team/.controlled-stage-0"
+            "$ROOT/.maestro/git/github.com/team/.controlled-stage"
           ]
         },
         {
@@ -598,7 +592,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/.maestro/git/github.com/team/.controlled-stage-0"
+          "cwd": "$ROOT/.maestro/git/github.com/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -609,8 +603,7 @@
         ".maestro/git/github.com/team/repo/prompt.md": "new",
         ".maestro/git/github.com/team/repo/skill.md": "new",
         ".maestro/git/github.com/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": false
+      }
     }
   },
   {
@@ -681,8 +674,7 @@
         ".maestro/npm/node_modules/pkg/prompt.md": "old",
         ".maestro/npm/node_modules/pkg/skill.md": "old",
         ".maestro/npm/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -756,8 +748,7 @@
         ".maestro/npm/node_modules/pkg/prompt.md": "old",
         ".maestro/npm/node_modules/pkg/skill.md": "old",
         ".maestro/npm/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -844,8 +835,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -929,8 +919,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -999,7 +988,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -1009,7 +998,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -1019,8 +1008,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -1091,8 +1079,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1166,8 +1153,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1254,8 +1240,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1329,8 +1314,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg"
   },
@@ -1417,8 +1401,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1505,8 +1488,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1593,8 +1575,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1681,8 +1662,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1769,8 +1749,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -1857,8 +1836,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -1945,8 +1923,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2033,8 +2010,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2121,8 +2097,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2209,8 +2184,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2297,8 +2271,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2385,8 +2358,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2473,8 +2445,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2561,8 +2532,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2649,8 +2619,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2680,8 +2649,7 @@
         ".maestro/npm/node_modules/pkg/prompt.md": "old",
         ".maestro/npm/node_modules/pkg/skill.md": "old",
         ".maestro/npm/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2768,8 +2736,7 @@
         ".maestro/npm/node_modules/pkg/skill.md": "new",
         ".maestro/npm/node_modules/pkg/theme.json": "new",
         ".maestro/npm/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2799,8 +2766,7 @@
         ".maestro/npm/node_modules/pkg/prompt.md": "old",
         ".maestro/npm/node_modules/pkg/skill.md": "old",
         ".maestro/npm/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -2887,8 +2853,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -2975,8 +2940,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -3063,8 +3027,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -3151,8 +3114,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -3239,8 +3201,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -3327,8 +3288,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -3402,8 +3362,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/@scope/pkg"
   },
@@ -3477,8 +3436,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -3552,8 +3510,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg@/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg@/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg@/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg@"
   },
@@ -3627,8 +3584,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg@v\nnext/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg@v\nnext/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg@v\nnext/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg@v\nnext"
   },
@@ -3650,8 +3606,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3672,8 +3627,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3694,8 +3648,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3716,8 +3669,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3738,8 +3690,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3760,8 +3711,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3782,8 +3732,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3804,8 +3753,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3826,8 +3774,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3848,8 +3795,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -3933,8 +3879,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4004,7 +3949,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -4014,7 +3959,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -4024,8 +3969,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4109,8 +4053,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4180,7 +4123,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -4190,7 +4133,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -4200,8 +4143,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4285,8 +4227,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4356,7 +4297,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -4366,7 +4307,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -4376,8 +4317,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4461,8 +4401,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4532,7 +4471,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -4542,7 +4481,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -4552,8 +4491,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4637,8 +4575,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4708,7 +4645,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -4718,7 +4655,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -4728,8 +4665,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4813,8 +4749,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4884,7 +4819,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -4894,7 +4829,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -4904,8 +4839,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -4989,8 +4923,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -5060,7 +4993,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -5070,7 +5003,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -5080,8 +5013,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -5120,8 +5052,7 @@
         "global/node_modules/pkg/prompt.md": "old",
         "global/node_modules/pkg/skill.md": "old",
         "global/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/global/node_modules/pkg"
   },
@@ -5152,8 +5083,7 @@
         ".maestro/npm/node_modules/pkg/prompt.md": "old",
         ".maestro/npm/node_modules/pkg/skill.md": "old",
         ".maestro/npm/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/npm/node_modules/pkg"
   },
@@ -5184,8 +5114,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "old",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
   },
@@ -5257,8 +5186,7 @@
         "user/git/github.com/team/repo/prompt.md": "old",
         "user/git/github.com/team/repo/skill.md": "old",
         "user/git/github.com/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/user/git/github.com/team/repo"
   },
@@ -5330,8 +5258,7 @@
         ".maestro/git/github.com/team/repo/prompt.md": "old",
         ".maestro/git/github.com/team/repo/skill.md": "old",
         ".maestro/git/github.com/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": false
+      }
     },
     "target": "$ROOT/.maestro/git/github.com/team/repo"
   },
@@ -5404,8 +5331,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -5478,8 +5404,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -5552,8 +5477,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -5624,7 +5548,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -5634,7 +5558,7 @@
             "checkout",
             "main"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         },
         {
           "mode": "run",
@@ -5643,7 +5567,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -5653,8 +5577,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -5724,7 +5647,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -5734,7 +5657,7 @@
             "checkout",
             "feature/branch"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         },
         {
           "mode": "run",
@@ -5743,7 +5666,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -5753,8 +5676,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -5826,8 +5748,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -5900,8 +5821,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -5974,8 +5894,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -6163,8 +6082,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "refreshed",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "refreshed",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "refreshed"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -6302,8 +6220,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -6423,8 +6340,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -6545,8 +6461,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -6677,8 +6592,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -6870,8 +6784,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -7072,8 +6985,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -7283,8 +7195,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -7365,8 +7276,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -7561,8 +7471,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "refreshed",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "refreshed",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "refreshed"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -7684,174 +7593,9 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
-  },
-  {
-    "case": "offline_second",
-    "recipe": {
-      "kind": "git",
-      "scope": "temporary",
-      "existing": true,
-      "offlineSequence": [
-        "0",
-        "1"
-      ]
-    },
-    "expected": {
-      "result": {
-        "extensions": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts",
-            "enabled": true,
-            "metadata": {
-              "source": "https://github.com/team/repo",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
-            }
-          }
-        ],
-        "skills": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md",
-            "enabled": true,
-            "metadata": {
-              "source": "https://github.com/team/repo",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
-            }
-          }
-        ],
-        "prompts": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md",
-            "enabled": true,
-            "metadata": {
-              "source": "https://github.com/team/repo",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
-            }
-          }
-        ],
-        "themes": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json",
-            "enabled": true,
-            "metadata": {
-              "source": "https://github.com/team/repo",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
-            }
-          }
-        ]
-      },
-      "error": null,
-      "secondResult": null,
-      "commands": [],
-      "events": [],
-      "files": {
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "old",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true,
-      "offlineReads": 2
-    },
-    "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
-  },
-  {
-    "case": "offline_between",
-    "recipe": {
-      "kind": "npm",
-      "scope": "temporary",
-      "second": true,
-      "offlineAfterCommand": "1"
-    },
-    "expected": {
-      "result": {
-        "extensions": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg/entry.ts",
-            "enabled": true,
-            "metadata": {
-              "source": "npm:pkg",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
-            }
-          }
-        ],
-        "skills": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md",
-            "enabled": true,
-            "metadata": {
-              "source": "npm:pkg",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
-            }
-          }
-        ],
-        "prompts": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md",
-            "enabled": true,
-            "metadata": {
-              "source": "npm:pkg",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
-            }
-          }
-        ],
-        "themes": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json",
-            "enabled": true,
-            "metadata": {
-              "source": "npm:pkg",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/npm/f35b2129/node_modules/pkg"
-            }
-          }
-        ]
-      },
-      "error": null,
-      "secondResult": null,
-      "commands": [
-        {
-          "mode": "run",
-          "command": "npm",
-          "args": [
-            "install",
-            "pkg",
-            "--prefix",
-            "$ROOT/temp/maestro-extensions/npm/f35b2129"
-          ]
-        }
-      ],
-      "events": [],
-      "files": {
-        "temp/maestro-extensions/npm/f35b2129/.gitignore": "*\n!.gitignore\n",
-        "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/entry.ts": "new",
-        "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
-        "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "new",
-        "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
-        "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
-        "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
-    }
   },
   {
     "case": "missing_fail_npm",
@@ -7883,8 +7627,7 @@
       "files": {
         "temp/maestro-extensions/npm/f35b2129/.gitignore": "*\n!.gitignore\n",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -7908,13 +7651,12 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         }
       ],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -8002,8 +7744,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8076,7 +7817,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -8086,7 +7827,7 @@
             "--flag",
             "install"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -8096,8 +7837,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8181,8 +7921,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\"keep\":true}\n"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8252,7 +7991,7 @@
           "args": [
             "clone",
             "https://example.org/team/repo",
-            "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/.controlled-stage"
           ]
         },
         {
@@ -8262,7 +8001,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -8272,8 +8011,7 @@
         "temp/maestro-extensions/git-example.org/80e1216f/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-example.org/80e1216f/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-example.org/80e1216f/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8343,7 +8081,7 @@
           "args": [
             "clone",
             "https://github.com/other/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/.controlled-stage"
           ]
         },
         {
@@ -8353,7 +8091,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/.controlled-stage"
         }
       ],
       "events": [],
@@ -8363,8 +8101,7 @@
         "temp/maestro-extensions/git-github.com/7f1a3252/other/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/7f1a3252/other/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/7f1a3252/other/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8434,7 +8171,7 @@
           "args": [
             "clone",
             "https://github.com/é/😀",
-            "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/.controlled-stage"
           ]
         },
         {
@@ -8444,7 +8181,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/.controlled-stage"
         }
       ],
       "events": [],
@@ -8454,8 +8191,7 @@
         "temp/maestro-extensions/git-github.com/da744c9f/é/😀/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/da744c9f/é/😀/skill.md": "new",
         "temp/maestro-extensions/git-github.com/da744c9f/é/😀/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8525,7 +8261,7 @@
           "args": [
             "clone",
             "https://github.com/a//b",
-            "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/.controlled-stage"
           ]
         },
         {
@@ -8535,7 +8271,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/.controlled-stage"
         }
       ],
       "events": [],
@@ -8545,8 +8281,7 @@
         "temp/maestro-extensions/git-github.com/ab07d3bb/a/b/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/ab07d3bb/a/b/skill.md": "new",
         "temp/maestro-extensions/git-github.com/ab07d3bb/a/b/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8567,8 +8302,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": false
+      "files": {}
     }
   },
   {
@@ -8603,8 +8337,7 @@
       "files": {
         "temp/maestro-extensions/npm/f35b2129/.gitignore": "*\n!.gitignore\n",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8630,13 +8363,12 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         }
       ],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": true
+      "files": {}
     }
   },
   {
@@ -8781,8 +8513,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8820,8 +8551,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -8964,8 +8694,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/z/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/z/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -9087,8 +8816,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
-      },
-      "temporaryPathObserved": true
+      }
     },
     "target": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
   },
@@ -9123,8 +8851,7 @@
       "events": [],
       "files": {
         "local.ts": "fixture"
-      },
-      "temporaryPathObserved": false
+      }
     }
   },
   {
@@ -9145,8 +8872,7 @@
       "secondResult": null,
       "commands": [],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": false
+      "files": {}
     }
   },
   {
@@ -9174,8 +8900,7 @@
         }
       ],
       "events": [],
-      "files": {},
-      "temporaryPathObserved": false
+      "files": {}
     }
   },
   {
@@ -9198,8 +8923,7 @@
       "files": {
         "temp/maestro-extensions/npm/f35b2129/.gitignore": "*\n!.gitignore\n",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -9332,8 +9056,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -9403,7 +9126,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
           ]
         },
         {
@@ -9413,7 +9136,7 @@
             "checkout",
             "v1.0.0"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         },
         {
           "mode": "run",
@@ -9422,7 +9145,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage"
         }
       ],
       "events": [],
@@ -9432,8 +9155,7 @@
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "new",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      }
     }
   },
   {
@@ -9576,8 +9298,7 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/z/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/z/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
-      },
-      "temporaryPathObserved": true
+      }
     }
   }
 ]

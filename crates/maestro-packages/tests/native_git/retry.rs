@@ -54,10 +54,7 @@ impl RetryFixture {
         ))));
         let local = Rc::new(tokio::task::LocalSet::new());
         let native = Rc::new(NativePackageOperations::new(Rc::new(|| false), &local));
-        let effects = Rc::new(Effects {
-            native_exists: true,
-            ..Effects::default()
-        });
+        let effects = Rc::new(Effects::default());
         *effects.local.borrow_mut() = Rc::downgrade(&local);
         configure_capture(&effects, native.clone());
         let fail = Rc::new(RefCell::new(String::new()));

@@ -51,10 +51,7 @@ pub async fn cases(names: &[&str]) {
             .collect();
         let base = dir.path().to_string_lossy().into_owned();
         let (_, settings, _) = support::manager(&json!({}));
-        let effects = Rc::new(support::Effects {
-            native_exists: true,
-            ..Default::default()
-        });
+        let effects = Rc::new(support::Effects::default());
         effects.outputs.borrow_mut().push_back(Ok(support::output(
             &format!("{base}/global_node_modules"),
             "",

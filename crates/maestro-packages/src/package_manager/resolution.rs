@@ -90,14 +90,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Project => join(&[&self.options.cwd, ".maestro"]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
-            let path = self.resolve_local(path, &base)?;
+            let path = super::paths::resolve_local(path, &base)?;
             Self::collect_local(path, &mut metadata, filter, result);
             return Ok(());
         }
         let path = self.remote_path(&parsed, scope)?;
-        let exists = self.operations.exists(&path);
+        let exists = Path::new(&path).exists();
         let mismatched = exists
-            && matches!(&parsed, Source::Npm { spec, name } if spec != name && self.installed_npm_version(&path).as_deref() != Some(&spec[name.len()+1..]));
+            && matches!(&parsed, Source::Npm { spec, name } if spec != name && super::npm::installed_npm_version(&path).as_deref() != Some(&spec[name.len()+1..]));
         if !exists || mismatched {
             if !self.admit_missing(source, on_missing).await? {
                 return Ok(());
@@ -112,7 +112,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         } else if let Source::Git(git) = &parsed
             && scope == SourceScope::Temporary
             && git.r#ref.is_none()
-            && !self.offline()
+            && !super::update::offline()
         {
             self.refresh_temporary_git(git, source).await;
         }
@@ -126,7 +126,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         on_missing: Option<&'a super::MissingCallback<'a>>,
     ) -> io::Result<bool> {
-        if self.offline() {
+        if super::update::offline() {
             return Ok(false);
         }
         let action = match on_missing {

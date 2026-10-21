@@ -13,10 +13,7 @@ pub fn manager(
     Rc<support::Effects>,
 ) {
     let (_, settings, _) = support::manager(&json!({}));
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        ..Default::default()
-    });
+    let effects = Rc::new(support::Effects::default());
     (
         DefaultPackageManager::new(
             PackageManagerOptions {
@@ -51,6 +48,55 @@ pub fn unreadable_cwd(
         return None;
     }
     Some((tree, unlock, process))
+}
+
+/// The variable naming the tree a child builds its case in.
+const TREE: &str = "MAESTRO_TEST_TREE";
+
+/// Runs `case` of the calling test in a child process over a fresh tree this process owns.
+/// `environment` gives the child's variables for that tree: a value sets one, `None` removes
+/// it. Returns the tree in the child selected for `case`; `None` in the caller once the child
+/// passed, and in a child selected for another case.
+pub fn case_in_child(
+    case: &str,
+    environment: impl FnOnce(&str) -> Vec<(&'static str, Option<String>)>,
+) -> Option<std::path::PathBuf> {
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        return selection
+            .runs_case(case)
+            .then(|| std::env::var_os(TREE).unwrap().into());
+    }
+    let tree = super::scratch::Scratch::new().unwrap();
+    let base = tree.path().to_str().unwrap();
+    let mut child =
+        maestro_test_process::TestProcess::current(std::thread::current().name().unwrap())
+            .unwrap()
+            .case(case)
+            .env(TREE, base);
+    for (name, value) in environment(base) {
+        child = match value {
+            Some(value) => child.env(name, value),
+            None => child.env_remove(name),
+        };
+    }
+    let output = child.output().unwrap();
+    assert!(output.status.success(), "{case}: {output:?}");
+    None
+}
+
+/// Runs `case` of the calling test in a child process, as [`case_in_child`] does, with a
+/// working directory that was removed. Returns the tree and the owner of the removed
+/// directory in the child selected for `case`; `None` in the caller once the child passed.
+#[cfg(unix)]
+pub fn case_in_removed_cwd(
+    case: &str,
+    environment: impl FnOnce(&str) -> Vec<(&'static str, Option<String>)>,
+) -> Option<(std::path::PathBuf, super::scratch::Scratch)> {
+    let tree = case_in_child(case, environment)?;
+    let owner = super::scratch::Scratch::new_in(&tree).unwrap();
+    owner.enter_removed("removed").unwrap();
+    Some((tree, owner))
 }
 
 /// Drives boundary-test futures through the shared test runtime.

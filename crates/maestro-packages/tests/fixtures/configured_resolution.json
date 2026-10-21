@@ -1,24 +1,7 @@
 [
   {
-    "case": "home-required",
-    "recipe": {
-      "homeFailure": true
-    },
-    "expected": {
-      "result": null,
-      "error": {
-        "message": "home unavailable"
-      },
-      "calls": [],
-      "events": [],
-      "callbacks": [],
-      "second": null
-    }
-  },
-  {
     "case": "home-avoided",
     "recipe": {
-      "homeFailure": true,
       "project": {
         "packages": [
           "npm:p"
@@ -67,7 +50,7 @@
     "expected": {
       "result": null,
       "error": {
-        "message": "cwd unavailable"
+        "message": "No such file or directory (os error 2)"
       },
       "calls": [],
       "events": [],
@@ -6488,7 +6471,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$BASE/project/.maestro/git/github.com/team/.controlled-stage-0"
+            "$BASE/project/.maestro/git/github.com/team/.controlled-stage"
           ]
         },
         {
@@ -6497,7 +6480,7 @@
             "install"
           ],
           "options": {
-            "cwd": "$BASE/project/.maestro/git/github.com/team/.controlled-stage-0"
+            "cwd": "$BASE/project/.maestro/git/github.com/team/.controlled-stage"
           }
         },
         {
@@ -6613,7 +6596,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$BASE/project/.maestro/git/github.com/team/.controlled-stage-0"
+            "$BASE/project/.maestro/git/github.com/team/.controlled-stage"
           ]
         },
         {
@@ -6622,7 +6605,7 @@
             "install"
           ],
           "options": {
-            "cwd": "$BASE/project/.maestro/git/github.com/team/.controlled-stage-0"
+            "cwd": "$BASE/project/.maestro/git/github.com/team/.controlled-stage"
           }
         },
         {
@@ -7710,30 +7693,6 @@
         "themes": []
       },
       "error": null,
-      "calls": [],
-      "events": [],
-      "callbacks": [],
-      "second": null
-    }
-  },
-  {
-    "case": "project-home-before-user-decode",
-    "recipe": {
-      "global": {
-        "extensions": 42
-      },
-      "project": {
-        "extensions": [
-          "~file.ts"
-        ]
-      },
-      "homeFailure": true
-    },
-    "expected": {
-      "result": null,
-      "error": {
-        "message": "home unavailable"
-      },
       "calls": [],
       "events": [],
       "callbacks": [],

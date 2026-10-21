@@ -134,7 +134,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                     .map(|entry| (InstalledSourceScope::User, entry)),
             );
         for (scope, entry) in entries {
-            if identities.insert(self.identity(entry_source(entry)?, &self.base(scope))?) {
+            if identities.insert(identity(entry_source(entry)?, &self.base(scope))?) {
                 selected.push((scope, entry));
             }
         }
@@ -167,17 +167,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Compares stored scope-relative identity before input cwd-relative identity.
     fn matches(&self, stored: &str, input: &str, scope: InstalledSourceScope) -> io::Result<bool> {
-        let stored = self.identity(stored, &self.base(scope))?;
-        let input = self.identity(input, &self.options.cwd)?;
+        let stored = identity(stored, &self.base(scope))?;
+        let input = identity(input, &self.options.cwd)?;
         Ok(stored == input)
-    }
-    /// Keeps the source kind separate from its identity string.
-    pub(super) fn identity<'a>(&self, source: &'a str, base: &str) -> io::Result<Identity<'a>> {
-        Ok(match sources::parse(source) {
-            Source::Local(path) => Identity::Local(self.resolve_local(path, base)?),
-            Source::Git(git) => Identity::Git(git.host, git.path),
-            Source::Npm { name, .. } => Identity::Npm(name),
-        })
     }
 }
 /// Kind-specific source identity, independent of clone address and pins.
@@ -228,4 +220,13 @@ fn same_pin(stored: &str, input: &str) -> bool {
         (Source::Git(a), Source::Git(b)) => a.r#ref == b.r#ref,
         _ => true,
     }
+}
+
+/// Keeps the source kind separate from its identity string.
+pub(super) fn identity<'a>(source: &'a str, base: &str) -> io::Result<Identity<'a>> {
+    Ok(match sources::parse(source) {
+        Source::Local(path) => Identity::Local(super::paths::resolve_local(path, base)?),
+        Source::Git(git) => Identity::Git(git.host, git.path),
+        Source::Npm { name, .. } => Identity::Npm(name),
+    })
 }

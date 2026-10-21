@@ -48,7 +48,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     {
         let manager = Rc::clone(self);
         Box::pin(async move {
-            if manager.offline() {
+            if offline() {
                 return Ok(Vec::new());
             }
             manager
@@ -68,10 +68,6 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             });
         }
         Ok(selected)
-    }
-    /// Reads offline mode without trimming the environment value.
-    pub(super) fn offline(&self) -> bool {
-        maestro_text::is_truthy_env_flag(self.operations.offline_value().as_deref())
     }
     /// Applies pin admission before inspecting installed contents.
     pub(super) async fn check_candidate(
@@ -128,7 +124,7 @@ impl<O: PackageOperations + 'static> DefaultPackageManager<O> {
         source: Option<String>,
     ) -> io::Result<()> {
         let rows = self.selected_update_sources(source.as_deref())?;
-        if self.offline() {
+        if offline() {
             return Ok(());
         }
         let mut npm = Vec::new();
@@ -213,7 +209,7 @@ impl<O: PackageOperations + 'static> DefaultPackageManager<O> {
         let project = self.snapshot(InstalledSourceScope::Project)?;
         let source = source.filter(|source| !source.is_empty());
         let identity = source
-            .map(|source| self.identity(source, &self.options.cwd))
+            .map(|source| super::configuration::identity(source, &self.options.cwd))
             .transpose()?;
         let mut selected = Vec::new();
         let mut configured = Vec::new();
@@ -253,11 +249,18 @@ impl<O: PackageOperations + 'static> DefaultPackageManager<O> {
             .map(|entry| {
                 let source = entry_source(entry)?;
                 let matched = match identity {
-                    Some(identity) => self.identity(source, &self.base(scope))? == *identity,
+                    Some(identity) => {
+                        super::configuration::identity(source, &self.base(scope))? == *identity
+                    }
                     None => true,
                 };
                 Ok((source.to_owned(), matched))
             })
             .collect()
     }
+}
+
+/// Reads offline mode without trimming the environment value.
+pub(super) fn offline() -> bool {
+    maestro_text::is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref())
 }

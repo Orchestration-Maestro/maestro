@@ -99,9 +99,7 @@ fn skill_pack_loads_with_closed_links_and_router() {
 
 /// Resolve only local skill resources while observing acquisition and spawning.
 fn resolve_paths(package: &Path, root: &str) -> Vec<String> {
-    let (unused, _, mut effects) = support::manager(&serde_json::json!({}));
-    drop(unused);
-    Rc::get_mut(&mut effects).unwrap().native_exists = true;
+    let effects = Rc::new(support::Effects::default());
     let settings = Rc::new(std::cell::RefCell::new(
         maestro_settings::SettingsManager::create(root, root, ".maestro"),
     ));
