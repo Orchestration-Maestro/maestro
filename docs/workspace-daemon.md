@@ -108,6 +108,12 @@ historical positional tabs (`w1:4`) and raw pane spellings (`p_3`). A stale pane
 alias returns no match rather than selecting a different live pane. Current-only
 pane lookup excludes historical spellings.
 
+Workspace moves preserve active and selected workspace identities when display
+positions change. Block moves use the caller's member order, reject duplicates
+and missing members, and leave unchanged orders clean. Accepted moves mark the
+session dirty. Notification context uses the resolved workspace label and adds a
+tab label only for a live pane in a workspace with multiple tabs.
+
 `maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
 retains the latest 512 ordered event payloads. Replay returns only events strictly
 newer than the supplied sequence. Events use the shared type-tagged protocol

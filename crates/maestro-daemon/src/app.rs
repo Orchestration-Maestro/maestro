@@ -4,3 +4,6 @@
 pub mod state;
 
 mod ids;
+
+/// Workspace actions and notification context.
+pub mod actions;

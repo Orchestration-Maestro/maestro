@@ -18,6 +18,8 @@ pub struct DaemonState<C> {
     pub active: Option<usize>,
     /// Workspace selection position for navigation.
     pub selected: usize,
+    /// Structural changes awaiting snapshot scheduling.
+    pub session_dirty: bool,
     /// Historical numeric spellings mapped to their retained pane identity.
     pub pane_id_aliases: HashMap<u32, PaneId>,
     /// Historical public spellings mapped to their retained pane identity.
@@ -37,6 +39,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             terminals: HashMap::new(),
             active: None,
             selected: 0,
+            session_dirty: false,
             pane_id_aliases: HashMap::new(),
             public_pane_id_aliases: HashMap::new(),
             headless_size: config.headless_size(),
