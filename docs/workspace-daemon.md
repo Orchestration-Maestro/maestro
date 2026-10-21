@@ -670,3 +670,11 @@ reloads preserve existing feedback, and the loop can consume the reload observat
 once. Construction requires an explicit `PaneLaunchInputs::no_session` choice;
 that policy suppresses automatic background checks without changing their stored
 preferences.
+
+Workspace preference saves use the same settings manager. Related leaves, such
+as a manual theme name and automatic-switch flag, reach storage in one batch.
+Saves preserve unrelated global preferences and fresh nested siblings from other
+writers. A failed global write leaves live daemon preferences unchanged and shows
+a diagnostic for five seconds; successful saves silently apply the accepted global
+document. The settings manager keeps its existing immediate cache and error-drain
+semantics.
