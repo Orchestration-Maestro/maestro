@@ -1,14 +1,13 @@
 # Skills
 
-`maestro-resources` discovers described instruction files through caller-supplied
-filesystem operations. The caller supplies home, working and configuration roots;
+`maestro-resources` discovers described instruction files on the native file
+system. The caller supplies home, working and configuration roots;
 the loader does not select application configuration.
 
 ## Supplied paths
 
 ```rust
-use maestro_resources::{load_skills, format_skills_for_prompt, LoadSkillsOptions,
-    NativeResourceOperations};
+use maestro_resources::{load_skills, format_skills_for_prompt, LoadSkillsOptions};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let root = std::env::temp_dir().join(format!("maestro-skills-guide-{}", std::process::id()));
@@ -25,7 +24,7 @@ let loaded = load_skills(LoadSkillsOptions {
     config_dir_name: ".maestro",
     skill_paths: &paths,
     include_defaults: false,
-}, &NativeResourceOperations)?;
+})?;
 assert!(loaded.diagnostics.is_empty());
 assert_eq!(loaded.skills.len(), 1);
 assert!(format_skills_for_prompt(&loaded.skills).contains("<name>calendar</name>"));
@@ -36,34 +35,32 @@ std::fs::remove_dir_all(root)?;
 
 With defaults enabled, user `agent_dir/skills` precedes project
 `cwd/config_dir_name/skills`, followed by explicit paths in caller order.
-Directory-entry order belongs to the filesystem adapter; the loader does not sort.
+Directory entries come in name order from the shared directory listing.
 An unignored regular `SKILL.md` is attempted before other entries and stops descent,
 even when its metadata is invalid. Otherwise the scan loads lowercase `.md` files
 only at its root and descends into directories for entry files. Hidden entries,
 `node_modules`, broken links and nonfiles are skipped; file and directory links
 follow their targets. Resource discovery and package discovery share
-[`skills::observed_type`](../../crates/maestro-resources/src/skills/discovery.rs) through the caller's `ResourceOperations`.
+[`skills::observed_type`](../../crates/maestro-resources/src/skills/discovery.rs).
 
 Relative explicit paths normalize with `cwd` as the first operand, so a relative
-`cwd` itself continues from the process working directory the adapter reports. On
+`cwd` itself continues from the process working directory. On
 Windows a drive-relative path on the drive of an absolute `cwd`, such as
 `C:item.md`, continues from `cwd`; on another drive, such as `D:item.md`, it
-continues from the directory the adapter reports for that drive, or from the
-drive root when none is reported and the process working directory is on another
-drive. The loader asks the adapter for its working directory and drive
-directories lazily, at most once per call, at the first resolution whose operands
-leave a part open: a relative path or, on Windows, a path rooted without a drive
-or relative to a drive. A call whose paths are all anchored never asks, and the
-first outcome, a failure included, serves the rest of the call; the adapter's own
-`canonicalize` is a separate operation. When the adapter cannot read the
-working directory, `load_skills` fails with that error's kind if resolving the
+continues from that drive's current directory, or from the
+drive root when the drive has none and the process working directory is on another
+drive. The loader reads the working directory and the drive directories at each
+resolution whose operands leave a part open: a relative path or, on Windows, a
+path rooted without a drive or relative to a drive. A call whose paths are all
+anchored never reads them, and a change of working directory between two
+resolutions shows in the second. When the working directory cannot be read, `load_skills` fails with that error's kind if resolving the
 project configuration directory or an explicit path needs it, for example beneath
 a relative `cwd`; an absolute `cwd` on POSIX loads as usual.
 `load_skills_from_dir` never fails for it: a scan makes each entry's path
 relative to its directory with `cwd` as the first operand of both resolutions,
 except that the directory itself is empty without resolving, and entries it
 skips (hidden, `node_modules`, broken links) are not located. A directory
-whose entries are open paths while the adapter cannot read the working directory
+whose entries are open paths while the working directory cannot be read
 ends with the skills gathered before the failure, and `load_skills` goes on with
 its other roots. A
 user skills root that needs the unreadable directory makes the classification of
@@ -126,26 +123,25 @@ Unknown skill fields are ignored by discovery. Extra YAML tags `binary`, `set`, 
 Collection-valued mapping-key pairs are discarded while ordinary fields survive.
 Library/process warnings are not printed or returned as skill diagnostics.
 
-## Filesystem adapters
+## Filesystem access
 
-`ResourceOperations` supplies ordered `read_dir`, lossy UTF-8 `read_file`,
-link-following `metadata`, independent `exists` observations, fallible
-`canonicalize`, the process working directory (`current_directory`) and the
-current directory of each Windows drive (`drive_directories`; the native adapter
-reads each drive's `=X:` environment variable and reports none elsewhere). The
-same public loaders accept replacement adapters without caller algorithm changes.
-Native operations are available outside `wasm32`; browser callers supply their
-own adapter.
+The loaders read the native file system directly. `read_entries` lists a directory
+in name order without following links, `read_text` decodes a file as UTF-8 with
+replacement characters, `metadata` follows links and `symlink_metadata` does not,
+`real_path` resolves links, `current_directory` reads the process working
+directory, and `drive_directories` reports the current directory of each Windows
+drive from its `=X:` environment variable (none elsewhere). Browser builds have no
+file system: listing fails with `Unsupported` and every read fails.
 
 Both loaders take an explicit `cwd`. It is the first operand of each lexical
 resolution against the caller: the project configuration directory, relative
 explicit paths and the paths a scan makes relative to its directory for its
-ignore matcher. Filesystem access is separate: the adapter receives each scanned directory as authored and
+ignore matcher. Filesystem access is separate: the loader reads each scanned directory as authored and
 each project or explicit path as the loader computed it, so `cwd` never
-relocates an authored path it reads. The process directories the adapter reports
+relocates an authored path it reads. The process directories
 complete only what those operands leave open, and alone resolve native real
 paths and the user and project roots that classify explicit paths. A working
-directory the adapter cannot read is never replaced by an empty one: a resolution
+directory that cannot be read is never replaced by an empty one: a resolution
 that needs it fails with that error's kind, which a scan turns into the end of the
 affected directory, and one that the operands or a drive directory anchor does
 not need it.

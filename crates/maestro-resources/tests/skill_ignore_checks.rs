@@ -2,9 +2,7 @@
 #![cfg(unix)]
 #![cfg(test)]
 use crate::support;
-use maestro_resources::{
-    DiagnosticType, LoadSkillsFromDirOptions, NativeResourceOperations, load_skills_from_dir,
-};
+use maestro_resources::{DiagnosticType, LoadSkillsFromDirOptions, load_skills_from_dir};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
@@ -115,14 +113,11 @@ fn check_group(group: &str) {
             std::os::unix::fs::symlink(target, root.join(name)).unwrap();
         }
         let scan = format!("{}{}", text(&root), recipe.root_suffix);
-        let result = load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd: text(dir.0.path()),
-                dir: &scan,
-                source: "path",
-            },
-            &NativeResourceOperations,
-        );
+        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd: text(dir.0.path()),
+            dir: &scan,
+            source: "path",
+        });
         let diagnostics: Vec<_> = result.diagnostics.iter().map(|diagnostic| {
             assert_eq!(diagnostic.r#type, DiagnosticType::Warning);
             assert!(diagnostic.collision.is_none());

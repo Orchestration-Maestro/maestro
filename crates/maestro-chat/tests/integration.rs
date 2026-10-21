@@ -1,9 +1,6 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-app/tests/support/directories.rs"]
-mod directories;
 mod extension_dialogs;
 mod extension_editor;
 #[path = "support/recorded_keys/filter_mode.rs"]

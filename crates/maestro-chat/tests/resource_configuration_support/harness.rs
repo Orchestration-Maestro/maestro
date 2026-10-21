@@ -89,10 +89,6 @@ impl Harness {
         let options = ConfigSelectorOptions {
             cwd: dirs.0.into(),
             agent_dir: dirs.1.into(),
-            path_operations: Rc::new(crate::directories::Directories {
-                cwd: Ok("/tmp".into()),
-                reads: Cell::new(0),
-            }),
             theme,
             collator: Rc::new(Collator::new(&|_| Some("en_US.UTF-8".into())).unwrap()),
             styles_enabled: Rc::new(|| true),

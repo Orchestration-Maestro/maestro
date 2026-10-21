@@ -4,8 +4,8 @@
 use crate::default_configuration as fixture;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
+use maestro_resources::SourceScope;
 use maestro_resources::prompt_templates::{LoadPromptTemplatesOptions, load_prompt_templates};
-use maestro_resources::{NativeResourceOperations, SourceScope};
 use serde::Deserialize;
 
 /// Markdown discovery operands.
@@ -34,17 +34,14 @@ fn hint(group: Group) {
             format!("{}/{}.md", paths::get_prompts_dir(&root), case.input.name),
             &case.input.text,
         );
-        let prompts = load_prompt_templates(
-            LoadPromptTemplatesOptions {
-                cwd: scratch.0.path().to_str().unwrap(),
-                home: &home,
-                agent_dir: &root,
-                config_dir_name: CONFIG_DIR_NAME,
-                prompt_paths: &[],
-                include_defaults: true,
-            },
-            &NativeResourceOperations,
-        )
+        let prompts = load_prompt_templates(LoadPromptTemplatesOptions {
+            cwd: scratch.0.path().to_str().unwrap(),
+            home: &home,
+            agent_dir: &root,
+            config_dir_name: CONFIG_DIR_NAME,
+            prompt_paths: &[],
+            include_defaults: true,
+        })
         .unwrap();
         assert_eq!(prompts.len(), 1);
         let prompt = &prompts[0];
@@ -104,17 +101,14 @@ fn literals() {
             format!("{}/literal.md", paths::get_prompts_dir(&root)),
             &case.input.template,
         );
-        let prompts = load_prompt_templates(
-            LoadPromptTemplatesOptions {
-                cwd: scratch.0.path().to_str().unwrap(),
-                home: &scratch.join("home"),
-                agent_dir: &root,
-                config_dir_name: CONFIG_DIR_NAME,
-                prompt_paths: &[],
-                include_defaults: true,
-            },
-            &NativeResourceOperations,
-        )
+        let prompts = load_prompt_templates(LoadPromptTemplatesOptions {
+            cwd: scratch.0.path().to_str().unwrap(),
+            home: &scratch.join("home"),
+            agent_dir: &root,
+            config_dir_name: CONFIG_DIR_NAME,
+            prompt_paths: &[],
+            include_defaults: true,
+        })
         .unwrap();
         assert_eq!(prompts.len(), 1);
         assert_eq!(

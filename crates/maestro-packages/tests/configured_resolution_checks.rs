@@ -14,10 +14,7 @@ fn empty_settings_have_no_package_resources() {
     use maestro_packages::PackageManager;
     let scratch = scratch::Scratch::new().unwrap();
     let base = scratch.path().to_str().unwrap();
-    let (manager, effects) = resolution_support::manager(
-        base,
-        configured_resolution_support::owned_filesystem(scratch.path()),
-    );
+    let (manager, effects) = resolution_support::manager(base);
     *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
     let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let sink = std::rc::Rc::clone(&events);
@@ -407,9 +404,6 @@ fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
     fs::write(format!("{package}/package.json"), "{}").unwrap();
     let effects = Rc::new(support::Effects {
         native_exists: true,
-        resources: Some(Rc::new(configured_resolution_support::owned_filesystem(
-            scratch.path(),
-        ))),
         ..Default::default()
     });
     *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
@@ -502,9 +496,6 @@ fn automatic_relative_home_keeps_authored_path_and_exact_override() {
     fs::write(format!("{project}/.git"), "marker").unwrap();
     let effects = Rc::new(support::Effects {
         native_exists: true,
-        resources: Some(Rc::new(configured_resolution_support::owned_filesystem(
-            scratch.path(),
-        ))),
         ..Default::default()
     });
     *effects.home_override.borrow_mut() = Some(home);
@@ -538,37 +529,4 @@ fn automatic_relative_home_keeps_authored_path_and_exact_override() {
         })
         .unwrap();
     }
-}
-
-#[test]
-fn symlinked_fixture_parent_keeps_lexical_resource_boundaries() {
-    use maestro_packages::PackageManager;
-    let scratch = scratch::Scratch::new().unwrap();
-    let parent = scratch.path().join("native");
-    std::fs::create_dir(&parent).unwrap();
-    let alias = scratch.path().join("alias");
-    std::os::unix::fs::symlink(&parent, &alias).unwrap();
-    let root = alias.join("owned");
-    std::fs::create_dir(&root).unwrap();
-    let inside = root.join("inside.md");
-    let outside = alias.join("outside.md");
-    std::fs::write(&inside, "inside prompt").unwrap();
-    std::fs::write(&outside, "outside prompt").unwrap();
-    let base = root.to_str().unwrap();
-    let (manager, effects) =
-        resolution_support::manager(base, configured_resolution_support::owned_filesystem(&root));
-    *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
-    resolution_support::run(async {
-        let result = manager
-            .resolve_extension_sources(&[inside.to_string_lossy().into_owned()], None)
-            .await?;
-        assert_eq!(result.extensions.len(), 1);
-        assert_eq!(result.extensions[0].path, inside.to_string_lossy());
-        let result = manager
-            .resolve_extension_sources(&[outside.to_string_lossy().into_owned()], None)
-            .await?;
-        assert!(result.extensions.is_empty());
-        Ok(())
-    })
-    .unwrap();
 }

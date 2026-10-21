@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::{scratch::Scratch, support};
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
-use maestro_resources::{LoadSkillsOptions, NativeResourceOperations, load_skills};
+use maestro_resources::{LoadSkillsOptions, load_skills};
 use std::{
     collections::BTreeSet,
     fs,
@@ -59,17 +59,14 @@ fn skill_pack_loads_with_closed_links_and_router() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     let paths = resolve_paths(&package, root);
-    let loaded = load_skills(
-        LoadSkillsOptions {
-            cwd: root,
-            home: root,
-            agent_dir: root,
-            config_dir_name: ".maestro",
-            skill_paths: &paths,
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let loaded = load_skills(LoadSkillsOptions {
+        cwd: root,
+        home: root,
+        agent_dir: root,
+        config_dir_name: ".maestro",
+        skill_paths: &paths,
+        include_defaults: false,
+    })
     .unwrap();
     assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
     let names: BTreeSet<_> = loaded.skills.iter().map(|s| s.name.as_str()).collect();

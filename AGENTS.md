@@ -241,7 +241,8 @@ foundation utility permission. Only app, chat, credentials, daemon, extensions,
 models, packages, resources, conventions, theme and tooling may declare it, as a
 non-optional native development dependency when used. `Scratch::new`
 canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
-spelling. Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
+spelling. On Unix, `enter_removed` and `enter_unreadable` put a test process in a
+removed or unreadable working directory. Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
 scoped tracing subscriber that sees every callsite. Only daemon and workspace

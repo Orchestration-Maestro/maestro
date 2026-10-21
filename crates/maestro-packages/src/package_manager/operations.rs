@@ -23,8 +23,6 @@ pub struct CommandCaptureOptions<'a> {
 }
 /// Effects supplied to the configured-source manager.
 pub trait PackageOperations {
-    /// Filesystem observations used by resource discovery.
-    fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations;
     /// Reads text with replacement decoding for invalid UTF-8.
     /// # Errors
     /// Returns a filesystem read failure.
@@ -127,9 +125,6 @@ impl NativePackageOperations {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl PackageOperations for NativePackageOperations {
-    fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
-        &maestro_resources::NativeResourceOperations
-    }
     fn read_file(&self, path: &str) -> io::Result<String> {
         std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
     }

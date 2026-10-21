@@ -1,9 +1,7 @@
 //! Conventional resource collection over replaceable filesystem observations.
 use maestro_path::join;
 use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
-use maestro_resources::skills::{
-    ResourceEntry, ResourceFileType, ResourceOperations, observed_type,
-};
+use maestro_resources::skills::{ResourceEntry, ResourceFileType, observed_type};
 use std::{io, path::Path};
 /// The conventional resource directories.
 #[derive(Clone, Copy)]
@@ -31,16 +29,12 @@ impl ResourceType {
     }
 }
 /// Collects resources according to their kind and extension entry points.
-pub(super) fn collect_resource_files(
-    dir: &str,
-    kind: ResourceType,
-    operations: &dyn ResourceOperations,
-) -> io::Result<Vec<String>> {
-    if !operations.exists(Path::new(dir)) {
+pub(super) fn collect_resource_files(dir: &str, kind: ResourceType) -> io::Result<Vec<String>> {
+    if !Path::new(dir).exists() {
         return Ok(Vec::new());
     }
     if matches!(kind, ResourceType::Extensions)
-        && let Some(entries) = resolve_extension_entries(dir, operations)?
+        && let Some(entries) = resolve_extension_entries(dir)?
     {
         return Ok(entries);
     }
@@ -49,7 +43,6 @@ pub(super) fn collect_resource_files(
         dir,
         dir,
         Discovery::Conventional(kind),
-        operations,
         &mut rules,
     ))
 }
@@ -58,21 +51,18 @@ fn collect_files(
     dir: &str,
     root: &str,
     mode: Discovery,
-    operations: &dyn ResourceOperations,
     rules: &mut ScopedIgnoreRules,
 ) -> Vec<String> {
     let kind = mode.kind();
     let mut result = Vec::new();
-    if !operations.exists(Path::new(dir)) {
+    if !Path::new(dir).exists() {
         return result;
     }
     let mut local = Ignore::new();
-    load_ignore(&mut local, dir, operations);
+    load_ignore(&mut local, dir);
     rules.push(relative_path(root, dir), local);
-    let entries = operations.read_dir(Path::new(dir)).unwrap_or_default();
-    if matches!(kind, ResourceType::Skills)
-        && admitted_skill(dir, root, &entries, operations, rules)
-    {
+    let entries = maestro_resources::read_entries(Path::new(dir)).unwrap_or_default();
+    if matches!(kind, ResourceType::Skills) && admitted_skill(dir, root, &entries, rules) {
         rules.pop();
         return vec![join(&[dir, "SKILL.md"])];
     }
@@ -82,7 +72,7 @@ fn collect_files(
             continue;
         }
         let path = join(&[dir, &name]);
-        let Some(file_type) = observed_type(&entry, &path, operations) else {
+        let Some(file_type) = observed_type(&entry, &path) else {
             continue;
         };
         if rules.ignored(
@@ -92,7 +82,7 @@ fn collect_files(
             continue;
         }
         if file_type == ResourceFileType::Directory && !matches!(mode, Discovery::Shallow(_)) {
-            match collect_child(&path, root, mode, operations, rules) {
+            match collect_child(&path, root, mode, rules) {
                 Ok(entries) => result.extend(entries),
                 Err(_) => break,
             }
@@ -125,14 +115,10 @@ impl ResourceType {
 }
 
 /// Selects a manifest entry list or the first existing index.
-fn resolve_extension_entries(
-    dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<Option<Vec<String>>> {
+fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
     let manifest_path = join(&[dir, "package.json"]);
-    if operations.exists(Path::new(&manifest_path))
-        && let Some(manifest) =
-            super::manifest::read_maestro_manifest_file(&manifest_path, operations)
+    if Path::new(&manifest_path).exists()
+        && let Some(manifest) = super::manifest::read_maestro_manifest_file(&manifest_path)
         && let Some(entries) = manifest
             .field("extensions")
             .filter(|raw| raw.get().starts_with('['))
@@ -141,8 +127,8 @@ fn resolve_extension_entries(
         let entries: Vec<String> = serde_json::from_str(entries.get())
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         for entry in entries {
-            let path = resolve_entry_path(dir, &entry, operations)?;
-            if operations.exists(Path::new(&path)) {
+            let path = resolve_entry_path(dir, &entry)?;
+            if Path::new(&path).exists() {
                 found.push(path);
             }
         }
@@ -153,7 +139,7 @@ fn resolve_extension_entries(
     Ok(["index.ts", "index.js", "index.wasm"]
         .into_iter()
         .map(|name| join(&[dir, name]))
-        .find(|path| operations.exists(Path::new(path)))
+        .find(|path| Path::new(path).exists())
         .map(|path| vec![path]))
 }
 
@@ -174,10 +160,10 @@ fn relative_path(root: &str, path: &str) -> String {
     }
 }
 /// Reads the three conventional ignore files in declaration order.
-fn load_ignore(rules: &mut Ignore, dir: &str, operations: &dyn ResourceOperations) {
+fn load_ignore(rules: &mut Ignore, dir: &str) {
     for name in [".gitignore", ".ignore", ".fdignore"] {
         let path = join(&[dir, name]);
-        let Ok(text) = operations.read_file(Path::new(&path)) else {
+        let Ok(text) = maestro_resources::read_text(Path::new(&path)) else {
             continue;
         };
         for line in text
@@ -195,13 +181,12 @@ fn collect_child(
     dir: &str,
     root: &str,
     mode: Discovery,
-    operations: &dyn ResourceOperations,
     rules: &mut ScopedIgnoreRules,
 ) -> io::Result<Vec<String>> {
     if matches!(mode.kind(), ResourceType::Extensions) {
-        resolve_extension_entries(dir, operations).map(Option::unwrap_or_default)
+        resolve_extension_entries(dir).map(Option::unwrap_or_default)
     } else {
-        Ok(collect_files(dir, root, mode, operations, rules))
+        Ok(collect_files(dir, root, mode, rules))
     }
 }
 /// Determines whether a file-like skill entry overrides directory scanning.
@@ -209,45 +194,36 @@ fn admitted_skill(
     dir: &str,
     root: &str,
     entries: &[ResourceEntry],
-    operations: &dyn ResourceOperations,
     rules: &ScopedIgnoreRules,
 ) -> bool {
     entries.iter().any(|entry| {
         let path = join(&[dir, "SKILL.md"]);
         entry.name == "SKILL.md"
-            && observed_type(entry, &path, operations) == Some(ResourceFileType::File)
+            && observed_type(entry, &path) == Some(ResourceFileType::File)
             && !rules.ignored(&relative_path(root, &path), false)
     })
 }
 /// Resolves literal manifest operands, consulting ambient directories only on demand.
-pub(super) fn resolve_entry_path(
-    dir: &str,
-    entry: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
+pub(super) fn resolve_entry_path(dir: &str, entry: &str) -> io::Result<String> {
     maestro_path::resolve_with(
         &[&[dir, entry]],
-        || operations.drive_directories(),
-        || operations.current_directory(),
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
     )
     .map(|paths| paths.into_iter().collect::<String>())
 }
 
 /// Collects files and resource directories from already-resolved literal paths.
-pub(super) fn collect_files_from_paths(
-    paths: Vec<String>,
-    kind: ResourceType,
-    operations: &dyn ResourceOperations,
-) -> Vec<String> {
+pub(super) fn collect_files_from_paths(paths: Vec<String>, kind: ResourceType) -> Vec<String> {
     let mut files = Vec::new();
     for path in paths {
-        if !operations.exists(Path::new(&path)) {
+        if !Path::new(&path).exists() {
             continue;
         }
-        match operations.metadata(Path::new(&path)) {
+        match maestro_resources::metadata(Path::new(&path)) {
             Ok(ResourceFileType::File) => files.push(path),
             Ok(ResourceFileType::Directory) => {
-                if let Ok(entries) = collect_resource_files(&path, kind, operations) {
+                if let Ok(entries) = collect_resource_files(&path, kind) {
                     files.extend(entries);
                 }
             }
@@ -281,10 +257,9 @@ pub(super) fn collect_auto_files(
     dir: &str,
     kind: ResourceType,
     agents: bool,
-    operations: &dyn ResourceOperations,
 ) -> io::Result<Vec<String>> {
     if matches!(kind, ResourceType::Extensions) {
-        return collect_resource_files(dir, kind, operations);
+        return collect_resource_files(dir, kind);
     }
     let mode = match kind {
         ResourceType::Skills if agents => Discovery::Agents,
@@ -295,7 +270,6 @@ pub(super) fn collect_auto_files(
         dir,
         dir,
         mode,
-        operations,
         &mut ScopedIgnoreRules::default(),
     ))
 }

@@ -174,9 +174,48 @@ fn identity_constants_share_branding() {
     assert_eq!(SERVICE_ORIGIN, "");
 }
 
-use crate::directories;
-use directories::Directories;
 use std::cell::Cell;
+
+/// Run the calling test in a child whose working directory is a fresh `work` directory,
+/// or one that no longer exists when `removed`. Returns the child's working directory
+/// in the child, `None` in the calling process once the child passed.
+fn in_work_directory(test: &str, removed: bool) -> Option<String> {
+    let case = if removed { "removed-work" } else { "work" };
+    let selection = maestro_test_process::selection();
+    if !selection.is_child() {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let work = scratch.path().join("work");
+        std::fs::create_dir(&work).unwrap();
+        let output = maestro_test_process::TestProcess::current(test)
+            .unwrap()
+            .nocapture()
+            .case(case)
+            .current_dir(&work)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{case}: {output:?}");
+        return None;
+    }
+    if !selection.runs_case(case) {
+        return None;
+    }
+    let work = std::env::current_dir().unwrap();
+    if removed {
+        std::fs::remove_dir(&work).unwrap();
+    }
+    Some(work.to_str().unwrap().to_owned())
+}
+
+/// Replace the recorded working directory at the start of quoted fixture paths with `cwd`.
+fn at_work(text: &str, cwd: &str) -> String {
+    let recorded = if cfg!(windows) {
+        r#""C:\\work"#
+    } else {
+        r#""/work"#
+    };
+    let replacement = serde_json::to_string(cwd).unwrap();
+    text.replace(recorded, &replacement[..replacement.len() - 1])
+}
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -230,10 +269,6 @@ fn observe_paths(input: &PathInput) -> Paths {
     )
     .unwrap();
     let agent = paths::get_agent_dir(input.env.agent.as_deref(), || Ok(input.home())).unwrap();
-    let operations = Directories {
-        cwd: Ok(if input.windows() { "C:\\work" } else { "/work" }.to_owned()),
-        reads: Cell::new(0),
-    };
     let assets =
         paths::get_interactive_assets_dir(&package, installation.layout, |p| input.exists(p));
     Paths {
@@ -242,10 +277,10 @@ fn observe_paths(input: &PathInput) -> Paths {
         export_template_dir: paths::get_export_template_dir(&package, installation.layout, |p| {
             input.exists(p)
         }),
-        readme_path: paths::get_readme_path(&package, &operations).unwrap(),
-        docs_path: paths::get_docs_path(&package, &operations).unwrap(),
-        examples_path: paths::get_examples_path(&package, &operations).unwrap(),
-        changelog_path: paths::get_changelog_path(&package, &operations).unwrap(),
+        readme_path: paths::get_readme_path(&package).unwrap(),
+        docs_path: paths::get_docs_path(&package).unwrap(),
+        examples_path: paths::get_examples_path(&package).unwrap(),
+        changelog_path: paths::get_changelog_path(&package).unwrap(),
         interactive_assets_dir: assets.clone(),
         agent_dir: agent.clone(),
         custom_themes_dir: paths::get_custom_themes_dir(&agent),
@@ -263,8 +298,11 @@ fn observe_paths(input: &PathInput) -> Paths {
         ),
     }
 }
-fn check_paths(text: &str, expected_rows: usize) {
-    let cases: Vec<Case<PathInput, Paths>> = serde_json::from_str(text).unwrap();
+fn check_paths(name: &str, text: &str, expected_rows: usize) {
+    let Some(cwd) = in_work_directory(name, false) else {
+        return;
+    };
+    let cases: Vec<Case<PathInput, Paths>> = serde_json::from_str(&at_work(text, &cwd)).unwrap();
     let mut consumed = 0;
     for case in cases {
         if case.input.windows() != cfg!(windows) {
@@ -278,6 +316,7 @@ fn check_paths(text: &str, expected_rows: usize) {
 #[test]
 fn asset_and_user_paths_select_layout() {
     check_paths(
+        "asset_and_user_paths_select_layout",
         include_str!("fixtures/configuration/asset_and_user_paths_select_layout.json"),
         if cfg!(windows) { 3 } else { 5 },
     );
@@ -287,6 +326,7 @@ fn asset_and_user_paths_select_layout() {
 #[test]
 fn agent_directory_keeps_override_precedence() {
     check_paths(
+        "agent_directory_keeps_override_precedence",
         include_str!("fixtures/configuration/agent_directory_keeps_override_precedence.json"),
         9,
     );
@@ -422,30 +462,29 @@ enum TextOperation {
 #[cfg(not(windows))]
 #[test]
 fn packaged_text_paths_read_cwd_only_when_needed() {
-    let cases: Vec<Case<CwdInput, Expected>> = serde_json::from_str(include_str!(
-        "fixtures/configuration/packaged_text_paths_read_cwd_only_when_needed.json"
-    ))
-    .unwrap();
-    assert_eq!(cases.len(), 8);
-    for case in cases {
-        let operations = Directories {
-            cwd: if case.input.cwd_error {
-                Err(io::Error::from_raw_os_error(2))
-            } else {
-                Ok("/work".to_owned())
-            },
-            reads: Cell::new(0),
+    let text =
+        include_str!("fixtures/configuration/packaged_text_paths_read_cwd_only_when_needed.json");
+    let name = "packaged_text_paths_read_cwd_only_when_needed";
+    for removed in [false, true] {
+        let Some(cwd) = in_work_directory(name, removed) else {
+            continue;
         };
-        let root = case.input.env.package.as_deref().unwrap();
-        let result = match case.input.op {
-            TextOperation::Readme => paths::get_readme_path(root, &operations),
-            TextOperation::Docs => paths::get_docs_path(root, &operations),
-            TextOperation::Examples => paths::get_examples_path(root, &operations),
-            TextOperation::Changelog => paths::get_changelog_path(root, &operations),
-        };
-        let needs_cwd = matches!(&case.expected, Expected::Error(_));
-        check_result(result, case.expected);
-        assert_eq!(operations.reads.get(), usize::from(needs_cwd));
+        let cases: Vec<Case<CwdInput, Expected>> =
+            serde_json::from_str(&at_work(text, &cwd)).unwrap();
+        assert_eq!(cases.len(), 8);
+        for case in cases
+            .into_iter()
+            .filter(|case| case.input.cwd_error == removed)
+        {
+            let root = case.input.env.package.as_deref().unwrap();
+            let result = match case.input.op {
+                TextOperation::Readme => paths::get_readme_path(root),
+                TextOperation::Docs => paths::get_docs_path(root),
+                TextOperation::Examples => paths::get_examples_path(root),
+                TextOperation::Changelog => paths::get_changelog_path(root),
+            };
+            check_result(result, case.expected);
+        }
     }
 }
 

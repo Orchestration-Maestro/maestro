@@ -2,7 +2,6 @@
 
 use super::SelfUpdateOperations;
 use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions};
-use maestro_resources::{NativeResourceOperations, ResourceOperations};
 use std::{io, process::Output};
 
 /// Native query capture and write-access observations without an update runner.
@@ -12,9 +11,6 @@ use std::{io, process::Output};
 pub struct NativeSelfUpdateOperations;
 
 impl SelfUpdateOperations for NativeSelfUpdateOperations {
-    fn resource_operations(&self) -> &dyn ResourceOperations {
-        &NativeResourceOperations
-    }
     fn is_windows(&self) -> bool {
         cfg!(windows)
     }

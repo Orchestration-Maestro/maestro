@@ -4,7 +4,6 @@ use super::{
     protocol::{resolved, scopes},
     records::Scopes,
 };
-use maestro_app::NativeResourceOperations;
 use maestro_chat::components::config_selector::ConfigSelectorOptions;
 use maestro_theme::Collator;
 use maestro_tui::{Component, tui::InputHandler};
@@ -42,7 +41,6 @@ fn native(path: &str, base: &str, settings: &Scopes) -> Harness {
         ConfigSelectorOptions {
             cwd: "/unrelated/project".into(),
             agent_dir: "/unrelated/agent".into(),
-            path_operations: Rc::new(NativeResourceOperations),
             theme,
             collator: Rc::new(Collator::new(&|_| Some("en_US.UTF-8".into())).unwrap()),
             styles_enabled: Rc::new(|| true),

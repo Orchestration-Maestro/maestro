@@ -2,10 +2,7 @@
 use super::*;
 use maestro_chat::{SessionFileOperations, TrashResult};
 use maestro_tui::{Container, Input, tui::LocalFuture};
-use std::{
-    io,
-    path::{Path, PathBuf},
-};
+use std::io;
 
 /// Exact callback transcript with closed operand shapes.
 #[derive(Debug, Deserialize, PartialEq)]
@@ -149,7 +146,6 @@ fn rename_input(h: &Harness) -> Rc<dyn Component> {
 #[derive(Debug, PartialEq)]
 enum Call {
     Trash(Vec<String>),
-    Exists(String),
     Unlink(String),
 }
 /// Controlled effects share only their actual call transcript.
@@ -158,7 +154,6 @@ struct Effects {
     success: bool,
     spawn_error: Option<String>,
     stderr: String,
-    exists: bool,
     unlink_error: Option<String>,
     gate: RefCell<Option<tokio::sync::oneshot::Receiver<()>>>,
 }
@@ -169,7 +164,6 @@ impl Default for Effects {
             success: true,
             spawn_error: None,
             stderr: String::new(),
-            exists: true,
             unlink_error: None,
             gate: RefCell::default(),
         }
@@ -204,39 +198,9 @@ impl SessionFileOperations for Effects {
         })
     }
 }
-impl maestro_app::ResourceOperations for Effects {
-    fn exists(&self, path: &Path) -> bool {
-        self.calls
-            .borrow_mut()
-            .push(Call::Exists(path.to_str().unwrap().into()));
-        self.exists
-    }
-    fn read_dir(&self, path: &Path) -> io::Result<Vec<maestro_app::ResourceEntry>> {
-        maestro_app::NativeResourceOperations.read_dir(path)
-    }
-    fn read_file(&self, path: &Path) -> io::Result<String> {
-        maestro_app::NativeResourceOperations.read_file(path)
-    }
-    fn metadata(&self, path: &Path) -> io::Result<maestro_app::ResourceFileType> {
-        maestro_app::NativeResourceOperations.metadata(path)
-    }
-    fn symlink_metadata(&self, path: &Path) -> io::Result<maestro_app::ResourceFileType> {
-        maestro_app::NativeResourceOperations.symlink_metadata(path)
-    }
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        maestro_app::NativeResourceOperations.canonicalize(path)
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        maestro_app::NativeResourceOperations.current_directory()
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        maestro_app::NativeResourceOperations.drive_directories()
-    }
-}
-/// Installs both independent observation ports before construction.
+/// Installs the file-operation port before construction.
 fn effects(o: &mut SessionSelectorOptions, port: &Rc<Effects>) {
     o.file_operations = Some(port.clone());
-    o.paths = port.clone();
 }
 /// Checks exact deadlines on the controlled status owner.
 fn delays(h: &Harness, expected: &[u64]) {
@@ -703,25 +667,51 @@ record!(Method { method: String });
 record!(Deleted { calls: Vec<RecordedCall>, removed: Frame, other: Frame, unexpired: Frame, expired: Frame, delays: Vec<u64>, current_loads: usize, all_loads: usize });
 record!(DeleteFailed { calls: Vec<RecordedCall>, failed: Frame, unexpired: Frame, expired: Frame, delays: Vec<u64>, current_loads: usize });
 record!(RefreshFailed { failed: Frame, unexpired: Frame, expired: Frame, delays: Vec<u64> });
-/// Validates recorded command identity/options and preserves every ordered operand.
-fn calls(port: &Effects, expected: Vec<RecordedCall>) {
+/// Validates recorded command identity/options and preserves every ordered operand. The
+/// recorded session path `from` names the real file `to`; the existence check reads the
+/// file system, so the port no longer observes it.
+fn calls(port: &Effects, expected: Vec<RecordedCall>, (from, to): (&str, &str)) {
+    let real = |path: String| if path == from { to.to_owned() } else { path };
     let expected: Vec<_> = expected
         .into_iter()
-        .map(|call| match call {
+        .filter_map(|call| match call {
             RecordedCall::Spawn((tag, program, args, encoding)) => {
                 assert_eq!(tag, "spawn");
                 assert_eq!(program, "trash");
                 assert_eq!(encoding.encoding, "utf-8");
-                Call::Trash(args)
+                Some(Call::Trash(args.into_iter().map(real).collect()))
             }
             RecordedCall::Path((tag, path)) => match tag.as_str() {
-                "exists" => Call::Exists(path),
-                "unlink" => Call::Unlink(path),
+                "exists" => None,
+                "unlink" => Some(Call::Unlink(real(path))),
                 _ => panic!("invalid effect"),
             },
         })
         .collect();
     assert_eq!(*port.calls.borrow(), expected);
+}
+/// A real session file named like the recorded `name`, created unless it should be
+/// absent, with the tree that owns it.
+fn session_file(name: &str, present: bool) -> (maestro_test_directory::Scratch, String) {
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let path = dir.path().join(name);
+    if present {
+        std::fs::write(&path, "").unwrap();
+    }
+    (dir, path.to_str().unwrap().to_owned())
+}
+/// The recorded frame, with the recorded selection `from` naming the real file `to`.
+fn moved(mut frame: Frame, (from, to): (&str, &str)) -> Frame {
+    if frame.selected.as_deref() == Some(from) {
+        frame.selected = Some(to.into());
+    }
+    frame
+}
+/// The default records, with session `a` stored at `path`.
+fn records_at(path: &str) -> Vec<maestro_app::SessionInfo> {
+    let mut records = records();
+    records[0].path = path.into();
+    records
 }
 /// Uses status, membership and refresh choice to observe the private deletion result.
 fn check_delete(h: &Harness, result: DeleteResult) {
@@ -749,7 +739,7 @@ fn literal(name: &str) {
         let h = configured(|o| effects(o, &port));
         ready(&h);
         delete(&h, &i.path);
-        calls(&port, e.calls);
+        calls(&port, e.calls, ("", ""));
         check_delete(&h, e.result);
         finish_pending(&h);
     });
@@ -760,13 +750,13 @@ fn policy(name: &str) {
             success: i.status == Some(0),
             spawn_error: i.error,
             stderr: i.stderr.unwrap_or_default(),
-            exists: i.exists.unwrap_or(true),
             ..Effects::default()
         });
+        let (_dir, path) = session_file("session.jsonl", i.exists.unwrap_or(true));
         let h = configured(|o| effects(o, &port));
         ready(&h);
-        delete(&h, "/session.jsonl");
-        calls(&port, e.calls);
+        delete(&h, &path);
+        calls(&port, e.calls, ("/session.jsonl", &path));
         check_delete(&h, e.result);
         finish_pending(&h);
     });
@@ -782,10 +772,11 @@ fn diagnostic(name: &str) {
             unlink_error: Some("unlink denied".into()),
             ..Effects::default()
         });
+        let (_dir, path) = session_file("session.jsonl", true);
         let h = configured(|o| effects(o, &port));
         ready(&h);
-        delete(&h, "/session.jsonl");
-        calls(&port, e.calls);
+        delete(&h, &path);
+        calls(&port, e.calls, ("/session.jsonl", &path));
         check_delete(&h, e.result);
     });
 }
@@ -796,14 +787,15 @@ fn deleted(name: &str) {
             ..Effects::default()
         });
         assert!(matches!(i.method.as_str(), "trash" | "unlink"));
+        let (_dir, path) = session_file("a.jsonl", true);
         let h = configured(|o| effects(o, &port));
-        ready(&h);
+        h.finish("current", records_at(&path));
         h.selector.handle_input("\t");
-        h.finish("all", records());
+        h.finish("all", records_at(&path));
         h.selector.handle_input("\t");
         h.selector.handle_input("hello");
-        delete(&h, "/missing/a.jsonl");
-        calls(&port, e.calls);
+        delete(&h, &path);
+        calls(&port, e.calls, ("/missing/a.jsonl", &path));
         assert_eq!(h.frame(120), e.removed);
         delays(&h, &e.delays);
         h.finish("current", vec![named("b", "Other")]);
@@ -825,17 +817,19 @@ fn delete_failed(name: &str) {
             unlink_error: Some("unlink denied".into()),
             ..Effects::default()
         });
+        let (_dir, path) = session_file("a.jsonl", true);
+        let recorded = ("/missing/a.jsonl", path.as_str());
         let h = configured(|o| effects(o, &port));
-        ready(&h);
+        h.finish("current", records_at(&path));
         h.selector.handle_input("hello");
-        delete(&h, "/missing/a.jsonl");
-        calls(&port, e.calls);
-        assert_eq!(h.frame(120), e.failed);
+        delete(&h, &path);
+        calls(&port, e.calls, recorded);
+        assert_eq!(h.frame(120), moved(e.failed, recorded));
         delays(&h, &e.delays);
         advance(&h.world.runtime, 2999);
-        assert_eq!(h.frame(120), e.unexpired);
+        assert_eq!(h.frame(120), moved(e.unexpired, recorded));
         advance(&h.world.runtime, 3000);
-        assert_eq!(h.frame(120), e.expired);
+        assert_eq!(h.frame(120), moved(e.expired, recorded));
         assert_eq!(h.current.loads.borrow().len(), e.current_loads);
     });
 }
@@ -898,6 +892,14 @@ record!(ScopeCompletion {
     current_loads: usize,
     all_loads: usize
 });
+/// The default records, with session `a` stored at `path` when it is deleted.
+fn scope_records(mutation: &str, path: &str) -> Vec<maestro_app::SessionInfo> {
+    if mutation == "delete" {
+        records_at(path)
+    } else {
+        records()
+    }
+}
 fn effect_scope(name: &str) {
     replay_cases(name, |i: Mutation, e: ScopeCompletion| {
         let (sender, receiver) = tokio::sync::oneshot::channel::<()>();
@@ -920,13 +922,14 @@ fn effect_scope(name: &str) {
                 Ok(())
             })
         });
+        let (_dir, path) = session_file("a.jsonl", true);
         let h = configured(|o| {
             effects(o, &port);
             o.rename_session = Some(save);
         });
-        ready(&h);
+        h.finish("current", scope_records(&i.mutation, &path));
         if i.mutation == "delete" {
-            delete(&h, "/missing/a.jsonl");
+            delete(&h, &path);
         } else {
             h.selector.handle_input("\x12");
             let input = rename_input(&h);
@@ -939,7 +942,7 @@ fn effect_scope(name: &str) {
             h.selector.handle_input("\x1b");
         }
         h.selector.handle_input("\t");
-        h.finish("all", records());
+        h.finish("all", scope_records(&i.mutation, &path));
         sender.send(()).unwrap();
         h.drain();
         assert_eq!(h.all.loads.borrow().len(), 2);
@@ -1346,7 +1349,7 @@ fn native_run(mode: &str) {
             "Session deleted"
         }));
         assert_eq!(
-            Path::new(&path).exists(),
+            std::path::Path::new(&path).exists(),
             matches!(mode, "zero" | "leading-dash")
         );
         assert_eq!(h.current.loads.borrow().len(), 2);
@@ -1390,7 +1393,10 @@ fn native_launch(test: &str) {
         if mode != "unavailable" {
             let status = std::process::Command::new("/usr/bin/install")
                 .args(["-m", "0700"])
-                .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/session-trash.sh"))
+                .arg(
+                    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("tests/fixtures/session-trash.sh"),
+                )
                 .arg(dir.0.path().join("bin/trash"))
                 .status()
                 .unwrap();
@@ -1421,7 +1427,7 @@ fn native_failure(h: &Harness, path: &str, frame: &str) {
     assert!(frame.contains("(trash: trash native failure)"));
     assert!(!frame.contains("second line"));
     assert_eq!(h.current.loads.borrow().len(), 1);
-    assert!(Path::new(path).is_dir());
+    assert!(std::path::Path::new(path).is_dir());
     let error = std::fs::remove_file(path).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::IsADirectory);
     assert!(frame.contains(&error.to_string()));

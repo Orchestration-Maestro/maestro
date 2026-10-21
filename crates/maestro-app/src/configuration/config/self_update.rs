@@ -3,7 +3,6 @@
 use super::installation::{InstallMethod, Installation, detect_install_method};
 use maestro_path::{posix, win32};
 use maestro_process::SpawnSyncError;
-use maestro_resources::ResourceOperations;
 use maestro_text::is_whitespace_scalar;
 use std::{io, path::Path, process::Output};
 
@@ -43,8 +42,6 @@ pub struct SelfUpdateContext<'a> {
 }
 /// Synchronous effects needed to establish global installation ownership.
 pub trait SelfUpdateOperations {
-    /// Filesystem and lazy working-directory observations.
-    fn resource_operations(&self) -> &dyn ResourceOperations;
     /// Whether authored paths use Windows semantics.
     fn is_windows(&self) -> bool;
     /// Observe the home directory.
@@ -297,24 +294,21 @@ fn global_roots(
 }
 /// Resolve authored paths lazily using the supplied path flavor.
 fn resolve(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<String> {
-    let resources = context.operations.resource_operations();
     maestro_path::resolve_with_flavor(
         &[&[path]],
         context.operations.is_windows(),
-        || resources.drive_directories(),
-        || resources.current_directory(),
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
     )
     .map(|paths| paths.concat())
 }
 /// Compare existing canonical paths, not authored spelling or mere prefixes.
 fn normalized(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<Option<String>> {
     let resolved = resolve(context, path)?;
-    let resources = context.operations.resource_operations();
-    if !resources.exists(Path::new(&resolved)) {
+    if !Path::new(&resolved).exists() {
         return Ok(None);
     }
-    Ok(resources
-        .canonicalize(Path::new(&resolved))
+    Ok(maestro_resources::real_path(Path::new(&resolved))
         .ok()
         .map(|path| {
             let path = path.to_string_lossy().into_owned();

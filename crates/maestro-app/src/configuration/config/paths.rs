@@ -1,9 +1,8 @@
-//! Configuration path queries over supplied observations.
+//! Configuration path queries.
 
 use super::installation::{Installation, PackageLayout};
 use super::{APP_NAME, CONFIG_DIR_NAME};
 use maestro_path::{dirname, join, resolve_with};
-use maestro_resources::ResourceOperations;
 use std::io;
 
 /// Expand only exact `~` and a leading `~/`, preserving the remaining text.
@@ -132,58 +131,45 @@ pub fn get_interactive_assets_dir(
 pub fn get_bundled_interactive_asset_path(assets_dir: &str, name: &str) -> String {
     join(&[assets_dir, name])
 }
-/// Resolve a packaged text path using lazily supplied directory observations.
+/// Resolve a packaged text path, reading the process directories only when it is relative.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-fn package_path(
-    package_dir: &str,
-    name: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
+/// Returns the working-directory error unchanged when the path needs it.
+fn package_path(package_dir: &str, name: &str) -> io::Result<String> {
     resolve_with(
         &[&[&join(&[package_dir, name])]],
-        || operations.drive_directories(),
-        || operations.current_directory(),
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
     )
     .map(|paths| paths.into_iter().collect())
 }
 /// Resolve the packaged README path.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_readme_path(
-    package_dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    package_path(package_dir, "README.md", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_readme_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "README.md")
 }
 /// Resolve the packaged documentation directory.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_docs_path(package_dir: &str, operations: &dyn ResourceOperations) -> io::Result<String> {
-    package_path(package_dir, "docs", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_docs_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "docs")
 }
 /// Resolve the packaged examples directory.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_examples_path(
-    package_dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    package_path(package_dir, "examples", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_examples_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "examples")
 }
 /// Resolve the packaged changelog path.
 ///
 /// # Errors
-/// Returns the required working-directory observation error unchanged.
-pub fn get_changelog_path(
-    package_dir: &str,
-    operations: &dyn ResourceOperations,
-) -> io::Result<String> {
-    package_path(package_dir, "CHANGELOG.md", operations)
+/// Returns the working-directory error unchanged when the path needs it.
+pub fn get_changelog_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "CHANGELOG.md")
 }
 /// Join the custom themes onto the supplied agent root.
 #[must_use]

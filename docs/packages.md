@@ -138,8 +138,7 @@ text begins with `#` before rule preparation removes one leading byte-order mark
 Directory patterns such as `a/**/` match `a` itself; `a/**` selects only descendants.
 The deepest matching directory decides, with later rules winning
 within that directory. Native Unix
-listings use byte-name order; replacement filesystem adapters supply their own
-order through `PackageOperations::resource_operations`. Returned records keep their authored path spellings; configured ownership is
+listings use byte-name order. Returned records keep their authored path spellings; configured ownership is
 described in [configured resource resolution](#configured-resource-resolution).
 Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).

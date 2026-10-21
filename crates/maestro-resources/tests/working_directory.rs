@@ -2,8 +2,8 @@
 
 use crate::support;
 use maestro_resources::{
-    LoadSkillsFromDirOptions, LoadSkillsOptions, NativeResourceOperations, canonicalize_path,
-    load_skills, load_skills_from_dir,
+    LoadSkillsFromDirOptions, LoadSkillsOptions, canonicalize_path, load_skills,
+    load_skills_from_dir,
 };
 use std::io::ErrorKind;
 use support::text;
@@ -41,19 +41,13 @@ fn check_removed_working_directory() {
     );
     let alias = dir.0.path().join("alias");
     std::os::unix::fs::symlink(dir.0.path().join("target"), &alias).unwrap();
-    let gone = dir.0.path().join("gone");
-    std::fs::create_dir(&gone).unwrap();
-    std::env::set_current_dir(&gone).unwrap();
-    std::fs::remove_dir(&gone).unwrap();
+    dir.0.enter_removed("gone").unwrap();
     assert_eq!(
-        canonicalize_path(text(&alias.join("skill.md")), &NativeResourceOperations),
+        canonicalize_path(text(&alias.join("skill.md"))),
         text(&file)
     );
     for relative in ["alias/skill.md", "é.md", "é/ü.md"] {
-        assert_eq!(
-            canonicalize_path(relative, &NativeResourceOperations),
-            relative
-        );
+        assert_eq!(canonicalize_path(relative), relative);
     }
     let options = |cwd| LoadSkillsOptions {
         cwd,
@@ -63,23 +57,20 @@ fn check_removed_working_directory() {
         skill_paths: &[],
         include_defaults: true,
     };
-    let error = load_skills(options("work"), &NativeResourceOperations).unwrap_err();
+    let error = load_skills(options("work")).unwrap_err();
     assert_eq!(error.kind(), ErrorKind::NotFound);
     assert!(
-        load_skills(options(text(dir.0.path())), &NativeResourceOperations)
+        load_skills(options(text(dir.0.path())))
             .unwrap()
             .skills
             .is_empty()
     );
     let scan = |cwd, dir| {
-        load_skills_from_dir(
-            LoadSkillsFromDirOptions {
-                cwd,
-                dir,
-                source: "path",
-            },
-            &NativeResourceOperations,
-        )
+        load_skills_from_dir(LoadSkillsFromDirOptions {
+            cwd,
+            dir,
+            source: "path",
+        })
     };
     assert!(scan("work", "skills").skills.is_empty());
     let loaded = scan("work", text(&dir.0.path().join("skills")));

@@ -10,6 +10,15 @@ use records::{Expected, Input};
 
 /// Runs all and only scenarios owned by the requested public witness.
 pub fn group(name: &str) {
+    // The recorded relative patterns were observed from the working directory `/tmp`, which
+    // belongs to the whole process.
+    #[cfg(unix)]
+    {
+        if maestro_test_process::run_alone(name).unwrap() {
+            return;
+        }
+        std::env::set_current_dir("/tmp").unwrap();
+    }
     let _guard = super::keybindings::bindings_guard();
     let windows = name == "resource_windows_paths_keep_authored_relative_patterns";
     let (source, owners): (&str, &[&str]) = if windows {

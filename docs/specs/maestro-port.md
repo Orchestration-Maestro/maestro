@@ -611,8 +611,15 @@ spelling, including relative and non-Unicode parents. Both return `io::Result`,
 use PID/atomic-sequence candidates and exclusive `create_dir`, retry only
 `AlreadyExists`, and never delete a colliding entry. The borrowed `path()` stays
 owned by `Scratch`; drop attempts recursive removal without panicking, including
-when canonicalization fails after creation. The leaf owns no caller policy,
-process launcher, timer, retry limit or ownership-transfer API.
+when canonicalization fails after creation. On Unix, `enter_removed(name)` makes
+a new directory in the tree the process working directory and removes it, so
+reading the working directory fails with `NotFound`. `enter_unreadable(name)`
+enters a directory deeper than the kernel path limit below `name` and takes read
+permission from `name`, so reading the working directory fails with
+`PermissionDenied` while relative paths still work; it returns the guard that
+restores `name`. Both change process-wide state, so only a process that runs one
+test calls them. The leaf owns no caller policy, process launcher, timer, retry
+limit or ownership-transfer API.
 
 ### Test tracing owner
 

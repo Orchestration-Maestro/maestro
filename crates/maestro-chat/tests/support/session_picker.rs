@@ -507,7 +507,6 @@ pub fn age(name: &str) {
                 theme: theme.clone(),
                 now_ms: Rc::new(move || i.now),
                 home: Rc::new(|| "/oracle-home".into()),
-                paths: Rc::new(maestro_app::NativeResourceOperations),
                 styles_enabled: Rc::new(|| true),
             },
         );
@@ -693,7 +692,6 @@ impl World {
                 theme: self.theme.clone(),
                 now_ms: Rc::new(move || now.get()),
                 home: Rc::new(move || home.borrow().clone()),
-                paths: Rc::new(maestro_app::NativeResourceOperations),
                 styles_enabled: Rc::new(move || styles.get()),
             },
         )

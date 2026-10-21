@@ -153,32 +153,26 @@ fn native_load(
     Vec<maestro_resources::PromptTemplate>,
 ) {
     use maestro_resources::{
-        LoadPromptTemplatesOptions, LoadSkillsFromDirOptions, NativeResourceOperations,
-        load_prompt_templates, load_skills_from_dir,
+        LoadPromptTemplatesOptions, LoadSkillsFromDirOptions, load_prompt_templates,
+        load_skills_from_dir,
     };
     let dir = support::Directory::new();
     let input = format!("---\n{yaml}\n---\nBody");
     let skill_file = dir.file("sample/SKILL.md", &input);
     let prompt_file = dir.file("sample.md", &input);
-    let skill = load_skills_from_dir(
-        LoadSkillsFromDirOptions {
-            cwd: support::text(dir.0.path()),
-            dir: support::text(skill_file.parent().unwrap()),
-            source: "user",
-        },
-        &NativeResourceOperations,
-    );
-    let prompts = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: support::text(dir.0.path()),
-            home: support::text(dir.0.path()),
-            agent_dir: support::text(dir.0.path()),
-            config_dir_name: ".maestro",
-            prompt_paths: &[support::text(&prompt_file).into()],
-            include_defaults: false,
-        },
-        &NativeResourceOperations,
-    )
+    let skill = load_skills_from_dir(LoadSkillsFromDirOptions {
+        cwd: support::text(dir.0.path()),
+        dir: support::text(skill_file.parent().unwrap()),
+        source: "user",
+    });
+    let prompts = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: support::text(dir.0.path()),
+        home: support::text(dir.0.path()),
+        agent_dir: support::text(dir.0.path()),
+        config_dir_name: ".maestro",
+        prompt_paths: &[support::text(&prompt_file).into()],
+        include_defaults: false,
+    })
     .unwrap();
     for item in &skill.skills {
         assert_eq!(item.file_path, skill_file);

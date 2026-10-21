@@ -35,8 +35,8 @@ Standalone assets use adjacent `theme`, `export-html` and `assets` directories.
 Package assets use `src` when that child exists, otherwise `dist`. Missing assets
 still produce paths. README, documentation, examples and changelog queries use
 [`maestro-path`](../../crates/maestro-path/src/lib.rs) lexical resolution with
-supplied `ResourceOperations`; a working directory is requested only when needed,
-and its error is propagated. Other path joins also use that shared path owner.
+the process directories; they read the working directory only when they need it,
+and propagate its error. Other path joins also use that shared path owner.
 
 `detect_install_method` inspects both supplied paths, normalizing separators and
 ASCII case for manager markers. Selection is standalone, pnpm, Yarn, Bun global,
