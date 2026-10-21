@@ -32,7 +32,7 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let scratch = crate::scratch::Scratch::new().unwrap();
     for (directory, text, status) in [("parent", "parent", 7), ("chosen", "chosen", 0)] {
-        let tools = scratch.0.join(directory).join("tools");
+        let tools = scratch.path().join(directory).join("tools");
         std::fs::create_dir_all(&tools).unwrap();
         #[cfg(windows)]
         std::fs::write(
@@ -54,9 +54,9 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .env(CHILD, &scratch.0)
+        .env(CHILD, scratch.path())
         .env_remove("NoDefaultCurrentDirectoryInExePath")
-        .current_dir(scratch.0.join(parent))
+        .current_dir(scratch.path().join(parent))
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
