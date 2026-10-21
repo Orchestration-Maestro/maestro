@@ -21,12 +21,12 @@ pub(crate) struct Recognizer {
 
 impl Recognizer {
     /// Extend one operand without revisiting completed lines.
-    pub(crate) fn extend(&mut self, source: &str) -> Verdict {
+    pub(crate) fn extend(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Verdict {
         while !self.stable {
             let Some(line) = self.lines.next(source) else {
                 break;
             };
-            self.consume(&source[line.clone()], line.end);
+            self.consume(&source.window(line.clone()), line.end);
         }
         if self.stable {
             Verdict::Stable(self.consumed)
@@ -36,12 +36,12 @@ impl Recognizer {
     }
 
     /// Resolve the final unterminated line at the caller's boundary.
-    pub(crate) fn finish(&mut self, source: &str) -> Option<usize> {
+    pub(crate) fn finish(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Option<usize> {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
         if let Some(line) = self.lines.finish(source) {
-            self.consume(&source[line.clone()], line.end);
+            self.consume(&source.window(line.clone()), line.end);
         }
         self.stable = true;
         self.consumed

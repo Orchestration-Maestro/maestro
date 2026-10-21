@@ -75,6 +75,11 @@ impl Segmented {
         self.text.chunks()
     }
 
+    /// Visit only the chunks overlapping one logical window.
+    pub(crate) fn chunks_in(&self, range: Range<usize>) -> impl Iterator<Item = &str> {
+        self.text.chunks_in(range)
+    }
+
     /// Select logical bytes while retaining their shared projection.
     pub(crate) fn select(&self, range: Range<usize>) -> Self {
         Self {
