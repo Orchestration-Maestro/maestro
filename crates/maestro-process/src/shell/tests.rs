@@ -4,6 +4,8 @@ use super::resolve_windows_executable;
 use crate::pty::foreground::{ForegroundJob, ForegroundProcess};
 use std::path::{Path, PathBuf};
 
+mod context;
+
 #[test]
 fn extensionless_commands_follow_directory_and_extension_order() {
     let directories = [PathBuf::from("current"), PathBuf::from("bin")];
