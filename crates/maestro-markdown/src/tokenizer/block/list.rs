@@ -3,7 +3,7 @@ use crate::{
     Kind, MarkedOptions, Node,
     lexer::{Lexer, lines},
     rules,
-    source::{ScopeSource, Source},
+    source::{ScopeSource, Segmented, Source},
     tokenizer::{capture, node},
 };
 use maestro_text::{is_whitespace_scalar, truncate_utf16};
@@ -191,27 +191,25 @@ impl<E> Lexer<'_, E> {
 /// Retained item framing, independent of emitted text and recursive block state.
 struct ItemLines {
     /// Emitted spelling with its original source pieces.
-    body: ScopeSource,
+    body: Segmented,
     /// Recognized raw prefix through the last admitted physical line.
     consumed: usize,
     /// Whether an admitted line has been blank.
     blank: bool,
     /// Whether the previous line prevents another lazy continuation.
     previous_stops: bool,
+    /// Continuation indentation chosen by this item's marker.
+    indent: usize,
+    /// Item-local interruption predicates, retained with its admission history.
+    rules: ItemRules,
 }
 impl ItemLines {
     /// Append one eligible line using measured indentation and previous-line history.
-    fn append(
-        &mut self,
-        source: &Source<'_>,
-        range: Range<usize>,
-        indent: usize,
-        rules: &ItemRules,
-    ) -> bool {
+    fn append(&mut self, source: &Source<'_>, range: Range<usize>) -> bool {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.list_lines += 1);
         let raw = &source.text[range.clone()];
-        if rules.interrupts(raw) {
+        if self.rules.interrupts(raw) {
             return false;
         }
         let end = range.end - usize::from(raw.ends_with('\n'));
@@ -223,20 +221,26 @@ impl ItemLines {
             .take_while(|byte| *byte == b' ')
             .count();
         let empty = original.text.trim_matches(is_whitespace_scalar).is_empty();
-        let aligned = spaces >= indent || empty;
+        let aligned = spaces >= self.indent || empty;
         if !aligned && (self.blank || self.previous_stops) {
             return false;
         }
-        let start = truncate_utf16(&measured.text, indent).len();
-        self.body
-            .append(source.select(std::iter::once(range.start - 1..range.start)));
+        let start = truncate_utf16(&measured.text, self.indent).len();
+        self.body.append(
+            &source
+                .select(std::iter::once(range.start - 1..range.start))
+                .into(),
+        );
         if aligned {
-            self.body
-                .append(measured.select(std::iter::once(start..measured.text.len())));
+            self.body.append(
+                &measured
+                    .select(std::iter::once(start..measured.text.len()))
+                    .into(),
+            );
         } else {
-            self.body.append(original);
+            self.body.append(&original.into());
         }
-        self.previous_stops = rules.ends_lazy(&measured.text[start..]);
+        self.previous_stops = self.rules.ends_lazy(&measured.text[start..]);
         self.blank |= empty;
         self.consumed = range.end;
         true
@@ -272,18 +276,20 @@ fn item_lines(
     }
     let rules = ItemRules::new(marker.indent, options);
     let mut item = ItemLines {
-        body,
+        body: body.into(),
         consumed: marker.line,
         blank,
         previous_stops: rules.ends_lazy(&first.text),
+        indent: marker.indent,
+        rules,
     };
     for range in lines(&source.text[marker.line..]) {
         let range = marker.line + range.start..marker.line + range.end;
-        if !item.append(source, range, marker.indent, &rules) {
+        if !item.append(source, range) {
             break;
         }
     }
-    (item.consumed, item.body)
+    (item.consumed, item.body.materialize())
 }
 
 /// Task markers are consumed before the item's ordinary inline grammar.

@@ -83,9 +83,8 @@ fn measured_containers(source: String) -> super::Work {
 
 #[test]
 fn container_mapping_matches_the_reference_work_shape() {
-    let chained = [32, 64, 128].map(|n| {
-        measured_containers(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n)))
-    });
+    let chained = [32, 64, 128]
+        .map(|n| measured_containers(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n))));
     let visits = chained.map(|work| work.list_lines);
     let copied = chained.map(|work| work.source_bytes + work.joined_bytes);
     eprintln!("chained list visits: {visits:?}; copied bytes: {copied:?}");
