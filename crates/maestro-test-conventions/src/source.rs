@@ -37,11 +37,15 @@ pub(crate) fn load(metadata: &Metadata) -> Result<Vec<Member>, String> {
                 .map(|path| {
                     let contents = std::fs::read_to_string(&path)
                         .map_err(|error| format!("{}: {error}", path.display()))?;
-                    let contents = contents
+                    let mut contents = contents
                         .strip_prefix('\u{feff}')
                         .unwrap_or(&contents)
                         .replace("\r\n", "\n");
                     let syntax = syn::parse_file(&contents).ok();
+                    if let Some(shebang) = syntax.as_ref().and_then(|file| file.shebang.as_ref()) {
+                        // Syn retains the newline but removes the shebang before assigning spans.
+                        contents.drain(..shebang.len());
+                    }
                     Ok(Source {
                         path,
                         contents,

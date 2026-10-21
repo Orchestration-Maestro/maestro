@@ -10,8 +10,7 @@ use crate::source::{Member, Source, cfg_test, test_layout};
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
-            let generated_bindings = member.name == "maestro-extensions-wasm"
-                && source.path == member.directory.join("src/bindings.rs");
+            let generated_bindings = crate::generated::bindings_source(member, source);
             documentation(source, generated_bindings)?;
             check_test_layout(source, &member.directory)?;
         }

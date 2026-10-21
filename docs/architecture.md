@@ -273,6 +273,17 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
+Conventions reject token-identical production function bodies with at least 30
+interior tokens, including free functions, methods, trait defaults and nested
+functions. Whitespace and comments are ignored; token spelling, literal contents
+and delimiter kinds are preserved. Each diagnostic lists the token count and all
+native file paths with one-based signature lines, including same-line sites.
+Parsed `cfg(test)` scopes, test file layouts, the generated model catalog and the
+exact generated guest binding file are excluded. Macro definitions are not
+expanded, but authored invocation tokens inside functions are compared.
+Unparsed fragments produce no candidates; compound configurations are not
+evaluated. There is no baseline, allowlist or suppression attribute.
+
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
