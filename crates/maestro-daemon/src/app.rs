@@ -1,6 +1,8 @@
 //! Mutable daemon state and workspace operations.
 
 mod api;
+#[cfg(unix)]
+mod creation;
 mod runtime;
 mod tab_bar_status;
 

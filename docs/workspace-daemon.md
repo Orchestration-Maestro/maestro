@@ -632,3 +632,12 @@ request a render.
 Construction initializes agent-panel ordering, sidebar collapse state and
 focus-gain redraw policy from the accepted preferences. The agent-panel ordering
 shares the settings owner's vocabulary rather than translating a duplicate enum.
+
+Named workspace creation retains its chosen directory until completion or
+cancellation. Pending naming suppresses automatic default creation without
+allocating a workspace or process. Directory selection follows navigation
+selection before terminal focus, then applies the configured follow, home,
+current or authored-path policy. Native creation binds real allocated identities
+to the shared launch inputs inside the topology's spawn transaction. A failed
+spawn publishes neither a workspace nor terminal ownership. Modal input remains
+with its input owner.

@@ -675,3 +675,67 @@ fn daemon_internal_event_drain_limits_work_per_tick() {
     assert_eq!(app.state.update_available.as_deref(), Some("2.0.63"));
     assert!(app.event_rx.try_recv().is_ok());
 }
+
+#[test]
+fn native_workspace_creation_retains_one_runtime_and_rolls_back_spawn_failure() {
+    if run_alone("native_workspace_creation_retains_one_runtime_and_rolls_back_spawn_failure")
+        .unwrap()
+    {
+        return;
+    }
+    TestProcess::named("setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(check_workspace_creation(args));
+            Ok::<_, std::io::Error>(())
+        })
+        .unwrap();
+}
+
+/// Exercises the real consuming topology callback, not a replacement spawner.
+async fn check_workspace_creation(args: &[String]) {
+    let mut config = Config::default();
+    config.terminal.default_shell = "/bin/sh".into();
+    config.terminal.new_cwd = maestro_daemon::settings::model::NewTerminalCwdConfig::Path(
+        std::env::temp_dir().display().to_string(),
+    );
+    let (launch, receiver) = launch_inputs(args, support::manifest_cache());
+    let mut app = App::new(
+        &config,
+        (|| 0) as fn() -> u128,
+        launch,
+        receiver,
+        maestro_daemon::api::event_hub::EventHub::default(),
+    );
+    assert!(app.ensure_default_workspace());
+    assert!(!app.ensure_default_workspace());
+    support::assert_identity_invariants(&app.state);
+    let workspace = &app.state.topology.workspaces[0];
+    let root = workspace.tabs[0].root_pane;
+    let terminal = workspace.terminal_id(root).unwrap();
+    assert_eq!(app.state.terminals.len(), 1);
+    assert_eq!(app.terminal_runtimes.len(), 1);
+    assert!(app.terminal_runtimes.get(terminal).is_some());
+    assert_eq!(app.state.mode, maestro_daemon::app::state::Mode::Terminal);
+    assert!(app.state.session_dirty);
+    app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
+    app.state.session_dirty = false;
+    assert!(
+        app.create_workspace_with_options(std::env::temp_dir(), false)
+            .is_err()
+    );
+    assert_eq!(app.state.topology.workspaces.len(), 1);
+    assert_eq!(app.state.terminals.len(), 1);
+    assert_eq!(app.terminal_runtimes.len(), 1);
+    assert!(!app.state.session_dirty);
+    support::assert_identity_invariants(&app.state);
+    for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {
+        runtime.shutdown().await;
+    }
+}

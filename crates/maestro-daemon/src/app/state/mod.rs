@@ -57,6 +57,10 @@ pub enum TabBarStatusSegment {
 
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
+    /// Whether interactive creation waits for a supplied workspace name.
+    pub prompt_new_workspace_name: maestro_protocol::shared::Flag,
+    /// Directory retained while the input owner collects a new workspace name.
+    pub pending_workspace_create_cwd: Option<std::path::PathBuf>,
     /// Live ordering selection for the agent panel.
     pub agent_panel_sort: AgentPanelSort,
     /// Current sidebar collapse state, initialized only on construction.
@@ -136,6 +140,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     #[must_use]
     pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
         Self {
+            prompt_new_workspace_name: config.ui.prompt_new_workspace_name,
+            pending_workspace_create_cwd: None,
             agent_panel_sort: config.ui.agent_panel_sort,
             sidebar_collapsed: config.ui.sidebar_start_collapsed,
             redraw_on_focus_gained: config.ui.redraw_on_focus_gained,
