@@ -8,6 +8,8 @@ mod boundaries;
 mod child_tests;
 /// Rust comment content checks.
 mod comments;
+/// Exact production function-body ownership.
+mod duplicates;
 /// Binding manifest lint exceptions and generated extension source checks.
 mod generated;
 /// Workspace membership and dependency graph checks.
@@ -59,6 +61,12 @@ mod time_limits;
 /// workspace feature; test feature unification can hide missing normal precision.
 /// The unifier's own direct `serde_json` entries are exempt from member inheritance.
 ///
+/// Token-identical production function bodies with at least 30 interior tokens
+/// are rejected, with every file/signature-line site reported. Only whitespace
+/// and comments are ignored. Parsed test scopes, test layouts and the existing
+/// generated catalog/binding sources are excluded. Macros are not expanded and
+/// unparsed fragments add no candidates; no suppression or baseline is supported.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -71,5 +79,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     comments::check(&members)?;
     repetition::check(&members)?;
     quality::check(root, &members)?;
-    time_limits::check(&members)
+    time_limits::check(&members)?;
+    duplicates::check(&members)
 }

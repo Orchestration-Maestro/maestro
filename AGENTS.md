@@ -73,6 +73,12 @@ Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs` or be below
 `tests` directory. Modules named `tests` require `#[cfg(test)]`, every
 `#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
 These layout conventions support production line counting.
+Conventions reject exact duplicate production function bodies of at least 30
+interior tokens, ignoring only whitespace and comments. Parsed test scopes, test
+layouts and the existing generated catalog/binding sources are excluded; macro
+expansions and unparsed fragments are not checked, and compound configurations
+are not evaluated. There are no suppressions or baseline. See
+[quality checks](docs/architecture.md#quality-checks) for matching and diagnostics.
 Duplicate assertions are a review judgement.
 
 ## Documentation
