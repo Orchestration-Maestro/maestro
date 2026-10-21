@@ -22,10 +22,6 @@ mod tests {
     struct NoOperations;
 
     impl ConfigValueOperations for NoOperations {
-        fn environment(&self, _name: &str) -> Option<String> {
-            None
-        }
-
         fn execute(&self, _command: &str) -> Option<Vec<u8>> {
             None
         }

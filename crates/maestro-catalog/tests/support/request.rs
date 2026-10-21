@@ -4,17 +4,13 @@ use maestro_catalog::{ModelRegistry, ResolvedRequestAuth};
 use maestro_credentials::ConfigValueOperations;
 use std::sync::Mutex;
 
-/// Mutable environment and completed helper outcomes.
+/// Completed helper outcomes and the commands asked for.
 #[derive(Default)]
 pub struct Operations {
-    pub environment: Mutex<IndexMap<String, String>>,
     pub commands: Mutex<IndexMap<String, Option<Vec<u8>>>>,
     pub calls: Mutex<Vec<String>>,
 }
 impl ConfigValueOperations for Operations {
-    fn environment(&self, name: &str) -> Option<String> {
-        self.environment.lock().unwrap().get(name).cloned()
-    }
     fn execute(&self, command: &str) -> Option<Vec<u8>> {
         self.calls.lock().unwrap().push(command.into());
         self.commands

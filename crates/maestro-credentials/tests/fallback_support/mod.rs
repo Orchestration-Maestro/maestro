@@ -60,9 +60,6 @@ fn status_value(status: AuthStatus) -> Value {
 /// Environment-free stored-value operations.
 struct NoOperations;
 impl ConfigValueOperations for NoOperations {
-    fn environment(&self, _: &str) -> Option<String> {
-        None
-    }
     fn execute(&self, _: &str) -> Option<Vec<u8>> {
         None
     }

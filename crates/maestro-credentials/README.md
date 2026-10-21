@@ -18,14 +18,13 @@ assert_eq!(storage.get_auth_status("openai").unwrap().source, Some(AuthSource::S
 ```rust
 use maestro_credentials::{ConfigValueOperations, resolve_config_value};
 
-struct Supplied;
-impl ConfigValueOperations for Supplied {
-    fn environment(&self, name: &str) -> Option<String> {
-        (name == "SERVICE_KEY").then(|| "supplied-key".to_owned())
+struct Helper;
+impl ConfigValueOperations for Helper {
+    fn execute(&self, command: &str) -> Option<Vec<u8>> {
+        (command == "print-key").then(|| b"supplied-key\n".to_vec())
     }
-    fn execute(&self, _command: &str) -> Option<Vec<u8>> { None }
 }
-assert_eq!(resolve_config_value("SERVICE_KEY", &Supplied).as_deref(), Some("supplied-key"));
+assert_eq!(resolve_config_value("!print-key", &Helper).as_deref(), Some("supplied-key"));
 ```
 
 See [credentials](../../docs/credentials.md) for storage, cache, header and

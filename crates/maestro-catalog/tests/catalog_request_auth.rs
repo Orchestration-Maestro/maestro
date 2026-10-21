@@ -9,9 +9,6 @@ use std::sync::Arc;
 
 struct Operations;
 impl ConfigValueOperations for Operations {
-    fn environment(&self, _: &str) -> Option<String> {
-        None
-    }
     fn execute(&self, _: &str) -> Option<Vec<u8>> {
         panic!("unexpected helper")
     }
@@ -102,18 +99,21 @@ fn native_helpers_preserve_shell_output_and_failure() {
 
 #[test]
 fn configured_environment_is_read_on_each_call() {
+    let values = [None, Some(""), Some("first"), Some("second"), Some(" ")];
+    let Some(values) = maestro_test_process::run_per_environment(
+        std::thread::current().name().unwrap(),
+        values,
+        |value| value.map(|value| ("ENV", value)).into_iter().collect(),
+    )
+    .unwrap() else {
+        return;
+    };
     let operations = request_support::Operations::default();
     let registry = support::registry(&document(
         r#""apiKey":"ENV","headers":{"X":"ENV"}"#,
         r#", "headers":{"M":"ENV"}"#,
     ));
-    for value in [None, Some(""), Some("first"), Some("second"), Some(" ")] {
-        let mut env = operations.environment.lock().unwrap();
-        env.clear();
-        if let Some(value) = value {
-            env.insert("ENV".into(), value.into());
-        }
-        drop(env);
+    for value in values {
         let expected = value.filter(|v| !v.is_empty()).unwrap_or("ENV");
         let key = run(registry.get_api_key_for_provider("p", &operations)).unwrap();
         assert!(key.as_deref().eq(&Some(expected)));
@@ -122,7 +122,7 @@ fn configured_environment_is_read_on_each_call() {
             Some(expected),
             &[("X", expected), ("M", expected)],
         );
-        let status = registry.get_provider_auth_status("p", &operations).unwrap();
+        let status = registry.get_provider_auth_status("p").unwrap();
         assert!(status.configured);
         assert_eq!(
             status.source,

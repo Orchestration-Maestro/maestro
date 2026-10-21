@@ -12,11 +12,9 @@ mod tests {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    /// Controlled environment and command output with the commands it ran.
+    /// Controlled command output with the commands it ran.
     #[derive(Default)]
     struct Operations {
-        /// Exact environment names.
-        env: RefCell<HashMap<String, String>>,
         /// Output by command; an unlisted command fails.
         output: HashMap<String, Vec<u8>>,
         /// Commands executed in order.
@@ -24,10 +22,6 @@ mod tests {
     }
 
     impl ConfigValueOperations for Operations {
-        fn environment(&self, name: &str) -> Option<String> {
-            self.env.borrow().get(name).cloned()
-        }
-
         fn execute(&self, command: &str) -> Option<Vec<u8>> {
             self.calls.borrow_mut().push(command.to_owned());
             self.output.get(command).cloned()
@@ -92,6 +86,13 @@ mod tests {
         });
     }
 
+    /// Variables the configured values below read, set in the child that resolves them.
+    const K2_ENVIRONMENT: [(&str, &str); 3] = [
+        ("K2_SET", " padded \n"),
+        ("K2_EMPTY", ""),
+        (" K2_LEADING", "leading"),
+    ];
+
     /// Configured stored values resolve as the resolver defines.
     async fn configured_values_resolve() {
         let operations = printing(&[
@@ -102,11 +103,6 @@ mod tests {
             ("k2-next-line", "\u{85}next\u{85}"),
             ("k2-mixed", "\u{feff}\u{85}mixed\u{85}\u{feff}"),
         ]);
-        operations.env.replace(HashMap::from([
-            ("K2_SET".to_owned(), " padded \n".to_owned()),
-            ("K2_EMPTY".to_owned(), String::new()),
-            (" K2_LEADING".to_owned(), "leading".to_owned()),
-        ]));
         let cases = [
             ("literal", "literal"),
             ("", ""),
@@ -155,7 +151,7 @@ mod tests {
                 .env_clear()
                 .case("*"),
                 root.root(),
-                &[],
+                &K2_ENVIRONMENT,
             );
         }
         let _serial = SERIAL.lock().unwrap();
@@ -167,6 +163,24 @@ mod tests {
 
     #[test]
     fn stored_helper_cache_spans_stores_and_clear() {
+        if is_child() {
+            let expected = std::env::var("MAESTRO_K3_EXPECTED").unwrap();
+            let key = block_on(key_of(&storing("K3_ENV"), &Operations::default()));
+            return assert_eq!(key, Some(expected));
+        }
+        let dir = TempDir::new("k3-environment");
+        for value in ["one", "two"] {
+            run_child(
+                maestro_test_process::TestProcess::named(
+                    "credential_key_selection::tests::stored_helper_cache_spans_stores_and_clear",
+                )
+                .unwrap()
+                .env_clear()
+                .case("*"),
+                dir.root(),
+                &[("K3_ENV", value), ("MAESTRO_K3_EXPECTED", value)],
+            );
+        }
         let _serial = SERIAL.lock().unwrap();
         block_on(async {
             let operations = printing(&[("k3-a", "key-a"), ("k3-b", "key-b")]);
@@ -188,23 +202,6 @@ mod tests {
             assert_eq!(key_of(&first, &operations).await.as_deref(), Some("key-a"));
             assert_eq!(key_of(&failing, &operations).await, None);
             assert_eq!(operations.calls.borrow().len(), 5);
-            let environment = storing("K3_ENV");
-            operations
-                .env
-                .borrow_mut()
-                .insert("K3_ENV".into(), "one".into());
-            assert_eq!(
-                key_of(&environment, &operations).await.as_deref(),
-                Some("one")
-            );
-            operations
-                .env
-                .borrow_mut()
-                .insert("K3_ENV".into(), "two".into());
-            assert_eq!(
-                key_of(&environment, &operations).await.as_deref(),
-                Some("two")
-            );
         });
     }
 

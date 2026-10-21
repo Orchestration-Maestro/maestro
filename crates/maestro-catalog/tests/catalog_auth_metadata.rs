@@ -68,6 +68,16 @@ fn availability_walk_reloads_slots_after_callbacks() {
 fn metadata_preserves_sources_without_helper_or_refresh_effects() {
     use maestro_credentials::{AuthSource, AuthStatus};
     use request_support::Operations;
+    if !maestro_test_process::selection().is_child() {
+        let test = "metadata_preserves_sources_without_helper_or_refresh_effects";
+        let process = maestro_test_process::TestProcess::current(test).unwrap();
+        let environment = [
+            ("ENV", Some("value")),
+            ("EMPTY_ENV", Some("")),
+            ("OPENAI_API_KEY", Some("ambient-key")),
+        ];
+        return crate::subprocess::run_child(process.case("*"), &environment);
+    }
     let operations = Operations::default();
     for (field, source, label) in [
         ("literal", AuthSource::ModelsJsonKey, None),
@@ -78,13 +88,8 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
             &format!(r#""apiKey":"{field}""#),
             "",
         ));
-        operations
-            .environment
-            .lock()
-            .unwrap()
-            .insert("ENV".into(), "value".into());
         assert_eq!(
-            registry.get_provider_auth_status("p", &operations).unwrap(),
+            registry.get_provider_auth_status("p").unwrap(),
             AuthStatus {
                 configured: true,
                 source: Some(source),
@@ -105,19 +110,19 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
                 .count(),
             1
         );
-        lower_layer_status(&registry, &operations);
+        lower_layer_status(&registry);
     }
-    metadata_fallback(&operations);
-    metadata_empty_environment_and_oauth(&operations);
+    metadata_fallback();
+    metadata_empty_environment_and_oauth();
     assert!(operations.calls.lock().unwrap().is_empty());
 }
 /// Observe absent and fallback-only provider metadata through the public registry.
-fn metadata_fallback(operations: &request_support::Operations) {
+fn metadata_fallback() {
     use maestro_credentials::{AuthSource, AuthStatus};
     let registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
     assert_eq!(
         registry
-            .get_provider_auth_status("unknown-metadata", operations)
+            .get_provider_auth_status("unknown-metadata")
             .unwrap(),
         AuthStatus {
             configured: false,
@@ -130,7 +135,7 @@ fn metadata_fallback(operations: &request_support::Operations) {
         .set_fallback_resolver(|_| Ok(Some("fallback".into())));
     assert_eq!(
         registry
-            .get_provider_auth_status("unknown-metadata", operations)
+            .get_provider_auth_status("unknown-metadata")
             .unwrap(),
         AuthStatus {
             configured: false,
@@ -308,11 +313,11 @@ const DISPLAY_NAMES: &[(&str, &str)] = &[
 ];
 
 /// Lower-layer metadata takes precedence over configured sources.
-fn lower_layer_status(registry: &ModelRegistry, operations: &request_support::Operations) {
+fn lower_layer_status(registry: &ModelRegistry) {
     use maestro_credentials::{ApiKeyCredential, AuthCredential, AuthSource, AuthStatus};
     registry.auth_storage().set_runtime_api_key("p", "runtime");
     assert_eq!(
-        registry.get_provider_auth_status("p", operations).unwrap(),
+        registry.get_provider_auth_status("p").unwrap(),
         AuthStatus {
             configured: false,
             source: Some(AuthSource::Runtime),
@@ -326,7 +331,7 @@ fn lower_layer_status(registry: &ModelRegistry, operations: &request_support::Op
         }),
     );
     assert_eq!(
-        registry.get_provider_auth_status("p", operations).unwrap(),
+        registry.get_provider_auth_status("p").unwrap(),
         AuthStatus {
             configured: true,
             source: Some(AuthSource::Stored),
@@ -336,16 +341,11 @@ fn lower_layer_status(registry: &ModelRegistry, operations: &request_support::Op
 }
 
 /// An empty configured environment falls back; complete OAuth metadata does not refresh.
-fn metadata_empty_environment_and_oauth(operations: &request_support::Operations) {
+fn metadata_empty_environment_and_oauth() {
     use maestro_credentials::{AuthSource, AuthStatus};
-    let registry = support::registry(&request_support::document(r#""apiKey":"ENV""#, ""));
-    operations
-        .environment
-        .lock()
-        .unwrap()
-        .insert("ENV".into(), String::new());
+    let registry = support::registry(&request_support::document(r#""apiKey":"EMPTY_ENV""#, ""));
     assert_eq!(
-        registry.get_provider_auth_status("p", operations).unwrap(),
+        registry.get_provider_auth_status("p").unwrap(),
         AuthStatus {
             configured: true,
             source: Some(AuthSource::ModelsJsonKey),
@@ -370,7 +370,7 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
     );
     assert_eq!(
         registry
-            .get_provider_auth_status("catalog-metadata-oauth", operations)
+            .get_provider_auth_status("catalog-metadata-oauth")
             .unwrap(),
         AuthStatus {
             configured: true,
@@ -380,26 +380,10 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
     );
     metadata_known_environment();
 }
-/// Isolated native environment metadata keeps the lower-layer configured flag.
+/// Native environment metadata keeps the lower-layer configured flag.
 fn metadata_known_environment() {
-    // The child runs only the metadata test with a controlled environment.
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
-            "metadata_preserves_sources_without_helper_or_refresh_effects",
-        )
-        .unwrap()
-        .case("*")
-        .env("OPENAI_API_KEY", "ambient-key")
-        .output()
-        .unwrap();
-        assert!(output.status.success(), "metadata subprocess failed");
-
-        return;
-    }
     let registry = ModelRegistry::in_memory(support::auth()).unwrap();
-    let status = registry
-        .get_provider_auth_status("openai", &request_support::Operations::default())
-        .unwrap();
+    let status = registry.get_provider_auth_status("openai").unwrap();
     assert!(!status.configured);
     assert_eq!(
         status.source,
@@ -439,10 +423,7 @@ fn provider_status_does_not_mask_fallback_failure() {
         let registry = fallback::registry(case.input.configured.unwrap());
         let calls = fallback::failing(&registry);
         let actual = fallback::outcome(
-            registry.get_provider_auth_status(
-                "maestro-custom-fallback",
-                &request_support::Operations::default(),
-            ),
+            registry.get_provider_auth_status("maestro-custom-fallback"),
             &calls,
         );
         assert!(
