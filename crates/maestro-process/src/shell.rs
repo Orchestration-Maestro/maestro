@@ -200,7 +200,7 @@ pub fn windows_shell_launch(command: &str, comspec: Option<&str>) -> Launch {
 #[cfg(any(windows, test))]
 fn resolve_windows_executable(
     command: &str,
-    directories: &[std::path::PathBuf],
+    directories: impl IntoIterator<Item = impl AsRef<std::path::Path>>,
     extensions: &str,
     cwd: &std::path::Path,
     exists: impl Fn(&std::path::Path) -> bool,
@@ -209,9 +209,9 @@ fn resolve_windows_executable(
     let candidates = if command.contains(['\\', '/', ':']) {
         vec![anchor_windows_path(std::path::Path::new(command), cwd)]
     } else {
-        std::iter::once(cwd)
-            .chain(directories.iter().map(std::path::PathBuf::as_path))
-            .map(|dir| anchor_windows_path(dir, cwd).join(command))
+        directories
+            .into_iter()
+            .map(|dir| anchor_windows_path(dir.as_ref(), cwd).join(command))
             .collect()
     };
     candidates.into_iter().find_map(|candidate| {
@@ -274,7 +274,16 @@ where
     };
     let cwd = cwd.map_or_else(std::env::current_dir, std::path::absolute)?;
     let path = value("PATH").unwrap_or_default();
-    let directories: Vec<_> = std::env::split_paths(&path).collect();
+    let directories = value("NoDefaultCurrentDirectoryInExePath")
+        .is_none()
+        .then_some(cwd.as_path())
+        .into_iter()
+        .map(std::borrow::Cow::Borrowed)
+        .chain(
+            std::env::split_paths(&path)
+                .filter(|directory| !directory.as_os_str().is_empty())
+                .map(std::borrow::Cow::Owned),
+        );
     let extensions = value("PATHEXT");
     let extensions = extensions
         .as_deref()
@@ -282,7 +291,7 @@ where
         .unwrap_or(".EXE;.COM;.BAT;.CMD");
     let executable = resolve_windows_executable(
         command,
-        &directories,
+        directories,
         extensions,
         &cwd,
         std::path::Path::is_file,

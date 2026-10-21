@@ -14,8 +14,11 @@ See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-
 `Launch::with_context` collects the child environment and working directory
 alongside the executable and arguments. Its operations resolve the executable
 when they spawn it; they do not expose a mutable command builder.
-On Windows, bare names search the child directory then `PATH`. Relative program
-paths and relative `PATH` entries use the child directory. Absolute program paths
+On Windows, bare names search the child directory then `PATH`, unless
+`NoDefaultCurrentDirectoryInExePath` is present (even empty). That variable skips
+the default child-directory search, not explicit paths or an authored `.` in
+`PATH`. Empty `PATH` members are ignored. Relative program paths and relative
+`PATH` entries use the child directory. Absolute program paths
 keep their location. Extensionless names try `PATHEXT` in order (default
 `.EXE;.COM;.BAT;.CMD` when absent); names with explicit extensions are checked
 without appending one. Supplied lookup variables replace inherited values,

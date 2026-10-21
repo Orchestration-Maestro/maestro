@@ -4,27 +4,49 @@ use std::path::{Path, PathBuf};
 
 #[test]
 fn launch_uses_complete_child_context() {
+    in_directory_context(
+        "launch_uses_complete_child_context",
+        "parent",
+        assert_context,
+    );
+}
+
+#[test]
+#[cfg(windows)]
+fn launch_honors_current_directory_search_policy() {
+    in_directory_context(
+        "launch_honors_current_directory_search_policy",
+        "chosen",
+        assert_lookup_policy,
+    );
+}
+
+/// Reuses the same executable fixtures in a checked child with a chosen parent directory.
+fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     const CHILD: &str = "MAESTRO_LAUNCH_CONTEXT_CHILD";
     if let Some(root) = std::env::var_os(CHILD) {
-        assert_context(&PathBuf::from(root));
+        run(&PathBuf::from(root));
         return;
     }
-    let root = std::env::temp_dir().join(format!("maestro-launch-context-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!(
+        "maestro-launch-context-{}-{name}",
+        std::process::id()
+    ));
     for (directory, text) in [("parent", "parent"), ("chosen", "chosen")] {
         let tools = root.join(directory).join("tools");
         std::fs::create_dir_all(&tools).unwrap();
         write_wrapper(&tools.join(wrapper_name()), text);
         if directory == "chosen" {
             write_wrapper(&tools.join(only_name()), text);
-            std::fs::create_dir(tools.join("nonfile.CMD")).unwrap();
         }
     }
-    let output = maestro_test_process::TestProcess::current("launch_uses_complete_child_context")
+    let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .env(CHILD, &root)
         .env("PATHEXT", ".CMD")
         .env("PATH", root.join("parent").join("tools"))
-        .current_dir(root.join("parent"))
+        .env_remove("NoDefaultCurrentDirectoryInExePath")
+        .current_dir(root.join(parent))
         .output()
         .unwrap();
     std::fs::remove_dir_all(root).unwrap();
@@ -125,8 +147,166 @@ fn assert_windows_paths(chosen: &Path) {
     );
 }
 
+/// A present skip-current-directory policy changes only bare-name lookup.
+#[cfg(windows)]
+fn assert_lookup_policy(root: &Path) {
+    let chosen = root.join("chosen");
+    let parent = root.join("parent").join("tools");
+    write_wrapper(&chosen.join("lookup.CMD"), "chosen");
+    write_wrapper(&parent.join("lookup.CMD"), "parent");
+    let mut observed = Vec::new();
+    for flag in [None, Some(""), Some("1")] {
+        let mut environment = vec![("PATH", parent.to_str().unwrap()), ("PATHEXT", ".CMD")];
+        if let Some(flag) = flag {
+            environment.push(("NoDefaultCurrentDirectoryInExePath", flag));
+        }
+        println!("SEARCH-POLICY flag={flag:?}");
+        observed.push(run_wrapper(Path::new("lookup.CMD"), &chosen, &environment));
+        assert_wrapper(
+            Path::new("tools/wrapper.CMD"),
+            &chosen,
+            &environment,
+            "chosen",
+        );
+        assert_wrapper(
+            &chosen.join("tools/wrapper.CMD"),
+            &chosen,
+            &environment,
+            "chosen",
+        );
+        let Some(std::path::Component::Prefix(prefix)) = chosen.components().next() else {
+            panic!("missing native drive prefix")
+        };
+        let drive_relative = PathBuf::from(format!(
+            "{}tools\\wrapper.CMD",
+            prefix.as_os_str().to_str().unwrap()
+        ));
+        let root_relative = chosen
+            .strip_prefix(prefix.as_os_str())
+            .unwrap()
+            .join("tools/wrapper.CMD");
+        assert_wrapper(&drive_relative, &chosen, &environment, "chosen");
+        assert_wrapper(&root_relative, &chosen, &environment, "chosen");
+    }
+    assert_eq!(observed, ["chosen", "parent", "parent"]);
+    assert_empty_search_paths(&chosen);
+    assert_native_image_policy(&chosen, &parent);
+}
+
+/// Empty PATH members cannot reintroduce the default cwd search; an authored dot can.
+#[cfg(windows)]
+fn assert_empty_search_paths(chosen: &Path) {
+    for path in ["", ";;;"] {
+        let error = Launch {
+            executable: "lookup.CMD".into(),
+            args: vec![],
+            verbatim: false,
+        }
+        .with_context(
+            [("PATH", path), ("NoDefaultCurrentDirectoryInExePath", "1")],
+            Some(chosen),
+        )
+        .output()
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    }
+    assert_wrapper(
+        Path::new("lookup.CMD"),
+        chosen,
+        &[("PATH", "."), ("NoDefaultCurrentDirectoryInExePath", "1")],
+        "chosen",
+    );
+}
+
+/// Direct executable images obey the same policy as batch wrappers.
+#[cfg(windows)]
+fn assert_native_image_policy(chosen: &Path, parent: &Path) {
+    let image = std::env::current_exe().unwrap();
+    for directory in [chosen, parent] {
+        std::fs::copy(&image, directory.join("lookup.exe")).unwrap();
+    }
+    let chosen_image = std::fs::canonicalize(chosen.join("lookup.exe")).unwrap();
+    let parent_image = std::fs::canonicalize(parent.join("lookup.exe")).unwrap();
+    for flag in [None, Some(""), Some("1")] {
+        let mut env = vec![("PATH", parent.to_str().unwrap())];
+        if let Some(flag) = flag {
+            env.push(("NoDefaultCurrentDirectoryInExePath", flag));
+        }
+        let actual = loaded_image("lookup.exe", chosen, &env);
+        assert_eq!(
+            &actual,
+            if flag.is_some() {
+                &parent_image
+            } else {
+                &chosen_image
+            }
+        );
+    }
+    let env = [("PATH", "."), ("NoDefaultCurrentDirectoryInExePath", "1")];
+    for program in [
+        Path::new("lookup.exe"),
+        Path::new("./lookup.exe"),
+        chosen_image.as_path(),
+    ] {
+        assert_eq!(
+            loaded_image(program.to_str().unwrap(), chosen, &env),
+            chosen_image
+        );
+    }
+}
+
+/// Observes the module loaded by the operating system through a checked test child.
+#[cfg(windows)]
+fn loaded_image(program: &str, cwd: &Path, environment: &[(&str, &str)]) -> PathBuf {
+    let mut environment = environment.to_vec();
+    environment.push(("MAESTRO_LOADED_IMAGE_PROBE", "1"));
+    let output = maestro_test_process::TestProcess::named(
+        maestro_test_process::test_name(loaded_image_probe).unwrap(),
+    )
+    .unwrap()
+    .nocapture()
+    .output_with(|args| {
+        Launch {
+            executable: program.into(),
+            args: args.into(),
+            verbatim: false,
+        }
+        .with_context(environment.iter().copied(), Some(cwd))
+        .output()
+    })
+    .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    let path = text
+        .lines()
+        .find_map(|line| line.split_once("LOADED-IMAGE ").map(|(_, path)| path))
+        .unwrap();
+    std::fs::canonicalize(path).unwrap()
+}
+
+/// The checked child's only effect is reporting its loaded executable image.
+#[test]
+#[cfg(windows)]
+fn loaded_image_probe() {
+    if std::env::var_os("MAESTRO_LOADED_IMAGE_PROBE").is_some() {
+        println!(
+            "LOADED-IMAGE {}",
+            std::env::current_exe().unwrap().display()
+        );
+    }
+}
+
 /// Observes which fixture actually ran, not the command builder's declared operands.
 fn assert_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)], expected: &str) {
+    assert_eq!(
+        run_wrapper(program, cwd, environment),
+        expected,
+        "{program:?}"
+    );
+}
+
+/// Runs one fixture and returns its independently authored output.
+fn run_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)]) -> String {
     let output = Launch {
         executable: program.to_str().unwrap().into(),
         args: vec![],
@@ -136,11 +316,7 @@ fn assert_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)], expe
     .output()
     .unwrap();
     assert!(output.status.success(), "{output:?}");
-    assert_eq!(
-        String::from_utf8(output.stdout).unwrap().trim(),
-        expected,
-        "{program:?}"
-    );
+    String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
 
 #[test]

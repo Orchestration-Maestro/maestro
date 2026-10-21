@@ -91,9 +91,10 @@ The current text is written as UTF-8 to
 `maestro-extension-editor-{milliseconds}.md` in the native temporary directory.
 Creation is exclusive: an existing file or symlink is preserved, not overwritten
 or removed. Newly created Unix files have mode 0600; Windows keeps its native ACL.
-The terminal stops before launching, and only a successful zero exit replaces the
-text. Readback preserves a BOM and decodes invalid UTF-8 lossily. Exactly one final
-LF is removed before the toolkit normalizes line endings; no other whitespace is
+The dialog closes its write handle, stops the terminal, then launches the editor.
+Only a successful zero exit replaces the text. Readback preserves a BOM and
+decodes invalid UTF-8 lossily. Exactly one final LF is removed before the toolkit
+normalizes line endings; no other whitespace is
 trimmed until submission.
 
 Nonzero exit, signal termination and native spawn failure preserve the buffer.
