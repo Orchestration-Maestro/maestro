@@ -401,7 +401,6 @@ pub async fn reduce(script: Script) -> TestResult<Reduction> {
         &model,
         Some(&wanted),
     );
-    #[cfg(not(target_arch = "wasm32"))]
     let outcome = ensure_send(outcome);
     let outcome = outcome.await;
     let events = published(&stream).await?;
