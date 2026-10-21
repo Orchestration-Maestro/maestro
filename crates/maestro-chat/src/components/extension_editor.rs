@@ -144,7 +144,12 @@ impl ExtensionEditorComponent {
     }
     /// Replaces the buffer only after a successfully observed zero exit.
     fn edit_file(&self, command: &str, path: &Path) -> io::Result<()> {
-        let Ok(mut command) = native_command(command, path, self.runtime.as_ref()) else {
+        let Ok(mut command) = native_command(
+            command,
+            path,
+            #[cfg(windows)]
+            self.runtime.as_ref(),
+        ) else {
             return Ok(());
         };
         match maestro_app::spawn_sync(&mut command, maestro_app::SpawnSyncOptions::Inherit) {
@@ -209,7 +214,7 @@ impl Component for ExtensionEditorComponent {
 fn native_command(
     command: &str,
     path: &Path,
-    _runtime: &dyn TuiRuntime,
+    #[cfg(windows)] runtime: &dyn TuiRuntime,
 ) -> io::Result<tokio::process::Command> {
     #[cfg(not(windows))]
     {
@@ -228,7 +233,7 @@ fn native_command(
         let (launch, env) = windows_command(
             command,
             &path.to_string_lossy(),
-            _runtime.environment("comspec").as_deref(),
+            runtime.environment("comspec").as_deref(),
         );
         let mut command = launch.command()?;
         command.env(env.0, env.1);
