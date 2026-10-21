@@ -181,6 +181,11 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
 
+Native footer repository discovery uses the workspace git owner through a
+native-only `maestro-app` to `maestro-workspace` edge. A typed policy retains
+caller-specific metadata rules within the one shared walk. Browser builds have
+no native repository; footer statuses, counts and callbacks remain available.
+
 The read-only footer contract, its live status view and the generic live map behind
 them belong to `maestro-extensions::footer_data_provider`; the application footer
 owner keeps its policy and re-exports them at its existing paths.
