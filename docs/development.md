@@ -393,6 +393,10 @@ elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 on Windows, where the shell converts the search list to colon-separated paths.
 The example builds the author component, warms the Wasmtime compilation cache
 beside it and exports its path to the tests' processes.
+The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
+instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
+sets the compile cache. So the component stays uninstrumented while its
+compiles still reach the cache.
 Plain Cargo tests retain their self-building fallback. Response-account native
 callback tests use assigned listener addresses through the private binding seam;
 the advertised redirect URI remains unchanged. Public protocol, account and
@@ -487,9 +491,12 @@ single-test isolation described above, not a process-wide owner lock.
 Shared CI restores a compiled-cache snapshot in each Linux job, but only pushes
 to `main` save one. `.github/workflows/warm-cache.yml` runs on every push to
 `main` and calls the shared workflow with `warm-cache: true`. That builds the
-full coverage test graph without running tests and saves the snapshot that
-merge-queue test shards restore. The warm-up is never a required check, and a
-newer push cancels a running one. Its `uses:` pin moves with each shared-CI
+full coverage test graph, then runs only the tests selected by
+`warm_test_filter` in `.github/ci.toml`. Today that is one guest-authoring test,
+so the author component's compiles enter the snapshot that merge-queue test
+shards restore. The snapshot is capped at 1 GiB and evicts its least recently
+used entries, so the selection stays narrow. The warm-up is never a required
+check, and a newer push cancels a running one. Its `uses:` pin moves with each shared-CI
 release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 A stale pin fails nothing; it only costs snapshot hits.
