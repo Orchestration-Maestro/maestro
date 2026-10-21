@@ -106,7 +106,7 @@ fn pac_source_errors_keep_not_modified_distinct() {
             assert!(!error.is::<NotFound>());
             assert_eq!(
                 error.to_string(),
-                "Source has not been modified since the provied \"cache\", re-use previous results"
+                "Source has not been modified since the provided \"cache\", re-use previous results"
             );
         }
         assert_eq!(peer.await.unwrap().len(), 1);

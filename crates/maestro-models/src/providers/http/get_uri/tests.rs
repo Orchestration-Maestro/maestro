@@ -186,7 +186,7 @@ fn pac_source_status_failures_keep_the_http_status() {
                 200..=299 => assert!(result.unwrap().bytes.is_empty()),
                 304 => assert_eq!(
                     result.unwrap_err().to_string(),
-                    "Source has not been modified since the provied \"cache\", re-use previous results"
+                    "Source has not been modified since the provided \"cache\", re-use previous results"
                 ),
                 404 => assert_eq!(
                     result.unwrap_err().to_string(),

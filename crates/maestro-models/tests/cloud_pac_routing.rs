@@ -7,12 +7,13 @@ use maestro_models::StreamOptions;
 
 #[test]
 fn pac_bedrock_routes_reach_raw_and_simple_streams() -> TestResult {
-    if std::env::var_os("MAESTRO_CHILD_CASE").is_some() {
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
         return crate::runtime::run(async {
             let (labels, message) =
                 cloud_proxy_transports::conversation(StreamOptions::default()).await?;
             cloud_proxy_transports::completed(&labels, &message)?;
-            if std::env::var("MAESTRO_CHILD_CASE")? == "PROXY" {
+            if selection.runs_case("PROXY") {
                 direct_conversation().await?;
             }
             Ok(())
@@ -93,7 +94,7 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     .env("AWS_REGION", "us-east-1")
     .env("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer")
     .env("AWS_MAX_ATTEMPTS", "1")
-    .env("MAESTRO_CHILD_CASE", directive);
+    .case(directive);
     if simple {
         child = child.env("MAESTRO_SIMPLE", "1");
     }
@@ -126,8 +127,13 @@ fn pac_credential_services_reuse_the_existing_bridge() -> TestResult {
 
 #[test]
 fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        return crate::runtime::run(cloud_proxy_transports::bypass_conversation(&case));
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        let case = ["selected", "bypass", "replacement"]
+            .into_iter()
+            .find(|id| selection.runs_case(id))
+            .ok_or("unknown child case")?;
+        return crate::runtime::run(cloud_proxy_transports::bypass_conversation(case));
     }
     for case in ["selected", "bypass", "replacement"] {
         let source_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -164,7 +170,7 @@ fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
         .env("AWS_REGION", "us-east-1")
         .env("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer")
         .env("AWS_MAX_ATTEMPTS", "1")
-        .env("MAESTRO_CHILD_CASE", case);
+        .case(case);
         if case == "bypass" {
             child = child.env("NO_PROXY", "*");
         }
