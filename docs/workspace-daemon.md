@@ -552,6 +552,10 @@ retain their event, subsystem, outcome and operation-specific fields.
 
 ## Snapshot operations
 
+The live `app`, `tab` and `workspace` modules and `persist::capture` and
+`capture_history` use the Linux pane runtime and are available only on Linux.
+Snapshot save and clear operations remain available on other native targets.
+
 `persist::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
 workspace snapshot storage. They add no format or serializer. Save commits
 topology before separate history; absent history removes the history file.

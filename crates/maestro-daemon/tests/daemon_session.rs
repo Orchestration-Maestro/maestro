@@ -1,6 +1,6 @@
 //! Debounced persistence owns captured jobs and completes the final writer.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 
 #[path = "support/launch.rs"]
 mod launch;

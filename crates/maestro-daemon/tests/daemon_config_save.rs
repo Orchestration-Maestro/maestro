@@ -1,6 +1,6 @@
 //! Workspace preference saves use captured settings edits before live application.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 
 mod config_support;
 #[path = "support/launch.rs"]

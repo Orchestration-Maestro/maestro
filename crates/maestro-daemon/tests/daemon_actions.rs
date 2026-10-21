@@ -1,5 +1,6 @@
 //! Workspace reordering preserves logical navigation selection.
 #![cfg(test)]
+#![cfg(target_os = "linux")]
 
 mod support;
 use support::{assert_identity_invariants, populate_terminals};

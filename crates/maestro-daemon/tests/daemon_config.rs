@@ -1,6 +1,6 @@
 //! Live daemon preferences retain independent areas through the settings owner.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 
 mod config_support;
 #[path = "support/launch.rs"]

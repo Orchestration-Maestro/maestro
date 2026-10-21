@@ -1,6 +1,6 @@
 //! Retained status segments react only to current command output.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 
 #[path = "support/launch.rs"]
 mod launch;

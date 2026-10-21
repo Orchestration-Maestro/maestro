@@ -1,5 +1,6 @@
 //! Stable pane numbers and historical aliases resolve only live panes.
 #![cfg(test)]
+#![cfg(target_os = "linux")]
 
 #[cfg(unix)]
 #[path = "support/launch.rs"]

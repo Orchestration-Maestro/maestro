@@ -3,6 +3,7 @@
 mod ignored;
 mod reload;
 
+#[cfg(target_os = "linux")]
 pub(crate) use reload::apply_loaded;
 pub use reload::{config_diagnostic_summary, load_config, load_live_config, reload_config};
 

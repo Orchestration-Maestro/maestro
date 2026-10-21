@@ -1,6 +1,6 @@
 //! Initial daemon presentation preferences come from the accepted configuration.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 
 #[path = "support/launch.rs"]
 mod launch;

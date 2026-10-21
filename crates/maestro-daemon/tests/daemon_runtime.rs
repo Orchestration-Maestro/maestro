@@ -1,5 +1,6 @@
 //! Public workspace identity forms preserve positional and stable numbering.
 #![cfg(test)]
+#![cfg(target_os = "linux")]
 
 use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 

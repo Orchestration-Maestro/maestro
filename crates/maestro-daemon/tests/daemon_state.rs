@@ -1,5 +1,6 @@
 //! Daemon geometry before the first attached view.
 #![cfg(test)]
+#![cfg(target_os = "linux")]
 
 mod support;
 use support::{assert_identity_invariants, populate_terminals};

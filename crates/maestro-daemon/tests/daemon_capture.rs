@@ -1,5 +1,6 @@
 //! Owned snapshots preserve topology, live terminal metadata and separate history.
 #![cfg(test)]
+#![cfg(target_os = "linux")]
 
 use maestro_daemon::{
     app::state::DaemonState,

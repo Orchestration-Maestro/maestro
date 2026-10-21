@@ -1,6 +1,6 @@
 //! Repository identity admission stays distinct from live terminal observations.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 #[path = "support/launch.rs"]
 mod launch;
 #[path = "repository_support/mod.rs"]

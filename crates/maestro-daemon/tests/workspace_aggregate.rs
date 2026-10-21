@@ -1,5 +1,6 @@
 //! Terminal-aware workspace attention and ordered pane detail projections.
 #![cfg(test)]
+#![cfg(target_os = "linux")]
 
 use maestro_daemon::{terminal::state::TerminalState, workspace::aggregate};
 use maestro_detection::agents::{Agent, AgentState};

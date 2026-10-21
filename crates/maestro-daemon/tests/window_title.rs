@@ -1,6 +1,6 @@
 //! Outer terminal titles use current workspace and focused pane metadata.
 #![cfg(test)]
-#![cfg(unix)]
+#![cfg(target_os = "linux")]
 
 #[path = "config_support/mod.rs"]
 mod config_support;
