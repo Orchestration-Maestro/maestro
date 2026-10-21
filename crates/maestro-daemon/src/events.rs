@@ -42,6 +42,36 @@ pub enum AppEvent {
         /// Time of the process observation.
         observed_at: Instant,
     },
+    /// Hook-authoritative state reported by an integration.
+    HookStateReported {
+        /// Pane receiving the report.
+        pane_id: PaneId,
+        /// Integration provenance.
+        source: String,
+        /// External catalogue label or custom identity.
+        agent_label: String,
+        /// Reported execution state.
+        state: AgentState,
+        /// Optional status detail.
+        message: Option<String>,
+        /// Source-local sequence.
+        seq: Option<u64>,
+        /// Validated session identity.
+        session_ref: Option<crate::agent_resume::AgentSessionRef>,
+    },
+    /// Integration ownership released back to the shell.
+    HookAgentReleased {
+        /// Pane receiving the release.
+        pane_id: PaneId,
+        /// Integration provenance.
+        source: String,
+        /// External catalogue label or custom identity.
+        agent_label: String,
+        /// Recognized catalogue identity, when available.
+        known_agent: Option<Agent>,
+        /// Source-local sequence.
+        seq: Option<u64>,
+    },
     /// Fallback screen detection changed a pane's state.
     StateChanged {
         /// Pane whose state changed.

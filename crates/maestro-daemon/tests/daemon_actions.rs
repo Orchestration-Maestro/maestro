@@ -936,3 +936,323 @@ fn delayed_notifications_recheck_live_context_and_select_independent_outputs() {
     );
     assert!(state.toast.is_none());
 }
+
+#[test]
+fn daemon_hook_reported_unknown_agent_sets_toast_title_from_label() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    use maestro_detection::agents::AgentState;
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let pane_id = state.topology.workspaces[1].tabs[0].root_pane;
+    state.handle_app_event(AppEvent::HookStateReported {
+        pane_id,
+        source: "custom:hermes".into(),
+        agent_label: "hermes".into(),
+        state: AgentState::Blocked,
+        message: None,
+        seq: None,
+        session_ref: None,
+    });
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::NeedsAttention);
+    assert_eq!(toast.title, "hermes needs attention");
+    assert_eq!(toast.context, "background · 2");
+}
+
+#[test]
+fn daemon_visible_blocker_overrides_hook_working_and_notifies() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.active = Some(0);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let bg_pane_id = state.topology.workspaces[1].tabs[0].root_pane;
+    let bg_terminal_id = state.topology.workspaces[1]
+        .pane_state(bg_pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: bg_pane_id,
+        agent: Some(Agent::Codex),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    state.handle_app_event(AppEvent::HookStateReported {
+        pane_id: bg_pane_id,
+        source: "maestro:codex".into(),
+        agent_label: "codex".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(1),
+        session_ref: None,
+    });
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: bg_pane_id,
+        agent: Some(Agent::Codex),
+        state: AgentState::Blocked,
+        visible_blocker: true,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    let terminal = state.terminals.get(&bg_terminal_id).unwrap();
+    assert_eq!(terminal.state, AgentState::Blocked);
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::NeedsAttention);
+    assert_eq!(toast.title, "codex needs attention");
+}
+
+#[test]
+fn daemon_reserved_native_state_report_does_not_override_screen_state() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active"]);
+    state.active = Some(0);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = state.topology.workspaces[0]
+        .pane_state(pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Claude),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    state.handle_app_event(AppEvent::HookStateReported {
+        pane_id,
+        source: "maestro:claude".into(),
+        agent_label: "claude".into(),
+        state: AgentState::Blocked,
+        message: None,
+        seq: Some(1),
+        session_ref: maestro_daemon::agent_resume::AgentSessionRef::id("claude-session"),
+    });
+    let terminal = state.terminals.get(&terminal_id).unwrap();
+    assert_eq!(terminal.state, AgentState::Working);
+    assert!(terminal.hook_authority.is_none());
+    assert!(terminal.persisted_agent_session.is_some());
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Claude),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    let terminal = state.terminals.get(&terminal_id).unwrap();
+    assert_eq!(terminal.state, AgentState::Idle);
+    assert!(state.toast.is_none());
+}
+
+#[test]
+fn daemon_official_release_preserves_process_owned_agent_identity() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active"]);
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = state.topology.workspaces[0]
+        .pane_state(pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Pi),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: true,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    let terminal = state.terminals.get_mut(&terminal_id).unwrap();
+    terminal.set_persisted_agent_session(maestro_daemon::agent_resume::PersistedAgentSession {
+        source: "maestro:pi".into(),
+        agent: "pi".into(),
+        session_ref: maestro_daemon::agent_resume::AgentSessionRef::path(
+            std::env::current_dir()
+                .unwrap()
+                .join("release-session.jsonl")
+                .display()
+                .to_string(),
+        )
+        .unwrap(),
+    });
+    terminal.set_hook_authority_with_session_ref(maestro_daemon::terminal::state::HookReport {
+        source: "maestro:pi".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        session_ref: None,
+        seq: Some(1),
+    });
+    terminal.set_agent_name("reviewer".into());
+    state.session_dirty = false;
+
+    let updates = state.handle_app_event(AppEvent::HookAgentReleased {
+        pane_id,
+        source: "maestro:pi".into(),
+        agent_label: "pi".into(),
+        known_agent: Some(Agent::Pi),
+        seq: Some(2),
+    });
+
+    assert!(updates.is_empty());
+    let terminal = &state.terminals[&terminal_id];
+    assert_eq!(terminal.state, AgentState::Working);
+    assert_eq!(terminal.detected_agent, Some(Agent::Pi));
+    assert_eq!(terminal.agent_name.as_deref(), Some("reviewer"));
+    assert!(terminal.full_lifecycle_hook_authority_active());
+    assert!(!state.session_dirty);
+}
+
+#[test]
+fn daemon_session_metadata_report_refreshes_session_without_overriding_screen_state() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active"]);
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = state.topology.workspaces[0]
+        .pane_state(pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Devin),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    state.handle_app_event(AppEvent::HookStateReported {
+        pane_id,
+        source: "maestro:devin".into(),
+        agent_label: "devin".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(1),
+        session_ref: maestro_daemon::agent_resume::AgentSessionRef::id("devin-session"),
+    });
+
+    let terminal = state.terminals.get(&terminal_id).unwrap();
+    assert_eq!(terminal.state, AgentState::Idle);
+    assert!(terminal.hook_authority.is_none());
+    assert!(terminal.persisted_agent_session.is_some());
+}
+
+#[test]
+fn daemon_hidden_custom_session_ref_only_update_marks_session_dirty_without_visible_update() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::AgentState;
+    let mut state = app_with_workspaces(&["active"]);
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let test_dir = std::env::current_dir().unwrap();
+    let first_session = test_dir.join("one.jsonl").display().to_string();
+    let second_session = test_dir.join("two.jsonl").display().to_string();
+
+    let first_updates = state.handle_app_event(AppEvent::HookStateReported {
+        pane_id,
+        source: "custom:pi".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(20),
+        session_ref: maestro_daemon::agent_resume::AgentSessionRef::path(first_session),
+    });
+    assert_eq!(first_updates.len(), 1);
+    state.session_dirty = false;
+
+    let second_updates = state.handle_app_event(AppEvent::HookStateReported {
+        pane_id,
+        source: "custom:pi".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(21),
+        session_ref: maestro_daemon::agent_resume::AgentSessionRef::path(second_session),
+    });
+
+    assert!(second_updates.is_empty());
+    assert!(state.session_dirty);
+}
+
+#[test]
+fn daemon_custom_release_clears_report_owned_agent() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::AgentState;
+    let mut state = app_with_workspaces(&["active"]);
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = state.topology.workspaces[0]
+        .pane_state(pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+    state
+        .terminals
+        .get_mut(&terminal_id)
+        .unwrap()
+        .set_hook_authority_with_session_ref(maestro_daemon::terminal::state::HookReport {
+            source: "custom:agent".into(),
+            agent_label: "custom-agent".into(),
+            state: AgentState::Working,
+            message: None,
+            session_ref: None,
+            seq: Some(1),
+        });
+
+    state.handle_app_event(AppEvent::HookAgentReleased {
+        pane_id,
+        source: "custom:agent".into(),
+        agent_label: "custom-agent".into(),
+        known_agent: None,
+        seq: Some(2),
+    });
+
+    let terminal = &state.terminals[&terminal_id];
+    assert!(terminal.hook_authority.is_none());
+    assert_eq!(terminal.state, AgentState::Unknown);
+}
+
+#[test]
+fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
+    use maestro_daemon::events::AppEvent;
+    let mut state = app_with_workspaces(&["active"]);
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = state.topology.workspaces[0]
+        .pane_state(pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+    let cwd = std::env::temp_dir().join(format!("maestro-cwd-report-test-{}", std::process::id()));
+    std::fs::create_dir_all(&cwd).unwrap();
+    state.session_dirty = false;
+
+    let updates = state.handle_app_event(AppEvent::TerminalCwdReported {
+        pane_id,
+        cwd: cwd.clone(),
+    });
+
+    assert!(updates.is_empty());
+    assert_eq!(state.terminals.get(&terminal_id).unwrap().cwd, cwd);
+    assert!(state.session_dirty);
+    let _ = std::fs::remove_dir_all(cwd);
+}

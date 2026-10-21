@@ -127,10 +127,14 @@ Removal clears pane aliases, extension provenance and affected copy/selection
 records. Detached terminal metadata is removed and its identity is queued for the
 loop to shut down the existing runtime; still-attached terminals are retained.
 
-Screen and process events update the existing terminal-state owner. Completion
-acknowledgement distinguishes initial idle from finished work and respects active
-tab and outer-terminal focus. State updates retain before/after presentation,
-release status and acquisition suppression for the loop's consumers.
+Screen, process and hook reports update the existing terminal-state owner.
+Reserved native reports retain session identity without overriding screen state.
+Official release events leave process ownership intact; custom releases use the
+terminal owner's release operation. Session-only changes mark persistence dirty
+without inventing a visible update. Completion acknowledgement distinguishes
+initial idle from finished work and respects active tab and outer-terminal focus.
+State updates retain before/after presentation, release status and acquisition
+suppression for the loop's consumers.
 
 Background notifications can be immediate or delayed. Pending transitions cancel
 when work resumes or their pane dies. Due delivery rechecks live state, identity,
@@ -247,8 +251,8 @@ and clears the previous process's OSC evidence. Lifecycle activation resets
 fallback tracking, while an explicit release suppresses reacquisition for one
 second. The caller must cancel and join the returned task on teardown.
 
-`maestro_daemon::events::AppEvent` carries process observations and screen state
-changes. Its async publisher waits for queue space rather than dropping these
+`maestro_daemon::events::AppEvent` carries process observations, screen state
+changes, hook state reports and agent releases. Its async publisher waits for queue space rather than dropping these
 transitions and pane death; a closed receiver produces a warning. Bell, clipboard
 and cwd metadata from the reader use nonblocking delivery.
 
