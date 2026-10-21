@@ -65,10 +65,8 @@ pub(crate) struct Recognizer {
     row: Option<&'static Regex>,
     /// Current header, body or final-boundary position.
     phase: Phase,
-    /// Bytes already searched for line endings.
-    scanned: usize,
-    /// Beginning of the current incomplete physical line.
-    line_start: usize,
+    /// Shared monotone physical-line framing.
+    lines: super::lines::Cursor,
     /// Captures once a complete header and delimiter have been admitted.
     result: Option<Table>,
 }
@@ -87,23 +85,18 @@ impl Recognizer {
             } else {
                 Phase::Header
             },
-            scanned: 0,
-            line_start: 0,
+            lines: super::lines::Cursor::default(),
             result: None,
         }
     }
 
     /// Supply an extended prefix without revisiting completed physical lines.
     pub(crate) fn extend(&mut self, source: &str) -> Verdict {
-        while self.phase != Phase::Stable && self.scanned < source.len() {
-            let rest = &source[self.scanned..];
-            let count = rest.find('\n').map_or(rest.len(), |end| end + 1);
-            charge(count);
-            self.scanned += count;
-            if source.as_bytes()[self.scanned - 1] == b'\n' {
-                self.consume(source, self.line_start..self.scanned);
-                self.line_start = self.scanned;
-            }
+        while self.phase != Phase::Stable {
+            let Some(line) = self.lines.next(source) else {
+                break;
+            };
+            self.consume(source, line);
         }
         if self.phase == Phase::Stable {
             Verdict::Stable(self.result.clone())
@@ -117,8 +110,8 @@ impl Recognizer {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
-        if self.line_start < source.len() {
-            self.consume(source, self.line_start..source.len());
+        if let Some(line) = self.lines.finish(source) {
+            self.consume(source, line);
         }
         self.phase = Phase::Stable;
         self.result.clone()

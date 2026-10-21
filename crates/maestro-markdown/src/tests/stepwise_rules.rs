@@ -79,12 +79,6 @@ fn inline_text_rules_match_their_reference_spellings() {
 fn markup_rules_match_their_reference_spellings() {
     for (label, compiled, source, flags) in [
         (
-            "fences",
-            &rules::BLOCK_FENCES,
-            rules::BLOCK_FENCES_SOURCE,
-            "",
-        ),
-        (
             "html",
             &rules::BLOCK_HTML,
             rules::BLOCK_HTML_SOURCE.as_str(),

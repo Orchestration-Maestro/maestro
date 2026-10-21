@@ -12,24 +12,16 @@ pub(crate) fn leaf(source: &Source<'_>) -> Option<Block> {
 
 /// Remove one indentation unit on every indented-code line.
 pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
-    #[cfg(test)]
-    crate::tests::block_operand(source.text);
-    let matched = rules::BLOCK_CODE.as_ref()?.find(source.text)?;
-    let pieces = crate::lexer::lines(&source.text[matched.range()]).map(|range| {
-        let line = &source.text[range.clone()];
-        let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(4);
-        let prefix = if spaces < 4 && line.as_bytes().get(spaces) == Some(&b'\t') {
-            spaces + 1
-        } else {
-            spaces
-        };
+    let consumed = rules::code::Recognizer::default().finish(source.text)?;
+    let pieces = crate::lexer::lines(&source.text[..consumed]).map(|range| {
+        let prefix = rules::code::indentation(&source.text[range.clone()]);
         range.start + prefix..range.end
     });
     let body = source.select(pieces);
     Some(Block {
-        consumed: matched.end(),
+        consumed,
         node: source.node(
-            matched.range(),
+            0..consumed,
             Kind::CodeBlock(
                 code_body(
                     rtrim(&body.text, '\n').to_owned(),
@@ -44,11 +36,12 @@ pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
 
 /// Retain full fence information and compensate only the opening indentation.
 fn fences(source: &Source<'_>) -> Option<Block> {
-    #[cfg(test)]
-    crate::tests::block_operand(source.text);
-    let matched = rules::BLOCK_FENCES.as_ref()?.find(source.text)?;
-    let indent = source.text.bytes().take_while(|byte| *byte == b' ').count();
-    let body = capture(source.text, &matched, 3);
+    let matched = rules::fence::Recognizer::default().finish(source.text)?;
+    let indent = matched.indent;
+    let body = matched
+        .body
+        .as_ref()
+        .map_or("", |range| &source.text[range.clone()]);
     let body: String = body
         .split_inclusive('\n')
         .map(|line| {
@@ -56,16 +49,17 @@ fn fences(source: &Source<'_>) -> Option<Block> {
             &line[if spaces >= indent { indent } else { 0 }..]
         })
         .collect();
-    let info = capture(source.text, &matched, 2).trim_matches(is_whitespace_scalar);
+    let info = source.text[matched.info.clone()].trim_matches(is_whitespace_scalar);
     Some(Block {
-        consumed: matched.end(),
+        consumed: matched.consumed,
         node: source.node(
-            matched.range(),
+            0..matched.consumed,
             Kind::CodeBlock(
                 code_body(
                     body,
                     matched
-                        .group(3)
+                        .body
+                        .as_ref()
                         .is_some_and(|range| source.text.as_bytes().get(range.end) == Some(&b'\n')),
                 ),
                 Some(super::inline::decode_operand(info)),

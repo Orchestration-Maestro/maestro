@@ -2,6 +2,7 @@
 use crate::{InlineAtom, InlineContext, Kind, Node, parse};
 use std::cell::RefCell;
 
+mod code_progress;
 mod container_frames;
 mod paragraph_progress;
 mod shared_text;
@@ -20,10 +21,14 @@ pub(crate) struct Work {
     pub(crate) block_recognizer_bytes: usize,
     /// Bytes supplied to the definition grammar, including failed admission.
     pub(crate) definition_bytes: usize,
-    /// Bytes searched or supplied to retained paragraph predicates.
+    /// Bytes supplied to retained paragraph predicates.
     pub(crate) paragraph_bytes: usize,
     /// Bytes searched or supplied to table grammar predicates.
     pub(crate) table_bytes: usize,
+    /// Bytes supplied to fenced-code grammar.
+    pub(crate) fence_bytes: usize,
+    /// Bytes supplied to indented-code grammar.
+    pub(crate) code_bytes: usize,
     /// Bytes visited by physical-line framing, including repeated visits.
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.

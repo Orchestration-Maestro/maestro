@@ -477,11 +477,13 @@ fn observe_reply(document: &crate::Document, lines: usize) {
 }
 
 /// Charge recognizer operands, line framing, source copies and source projections.
-fn container_work(work: super::Work) -> usize {
+fn container_work(work: &super::Work) -> usize {
     work.block_recognizer_bytes
         + work.definition_bytes
         + work.paragraph_bytes
         + work.table_bytes
+        + work.fence_bytes
+        + work.code_bytes
         + work.framing_bytes
         + work.source_bytes
         + work.joined_bytes
@@ -506,7 +508,7 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
         (40, [120, 240, 480]),
     ] {
         let samples = sizes.map(|lines| measured_reply(lines, cycle));
-        let charged = samples.map(container_work);
+        let charged = samples.each_ref().map(container_work);
         eprintln!("cycle={cycle} sizes={sizes:?} charged={charged:?} samples={samples:?}");
         for pair in charged.windows(2) {
             if pair[1] > 3 * pair[0] {
@@ -575,7 +577,7 @@ fn reply_quote_retained_bytes_grow_linearly_symptom_witness() {
 #[test]
 fn uniform_quote_control_grows_linearly() {
     let samples = [120, 240, 480].map(|lines| measured_reply(lines, 1));
-    let work = samples.map(container_work);
+    let work = samples.each_ref().map(container_work);
     let bytes = [120, 240, 480].map(|lines| retained_reply(lines, 1).bytes);
     eprintln!("uniform work={work:?} retained payload={bytes:?} samples={samples:?}");
     assert!(

@@ -113,10 +113,8 @@ static UNDERLINE: LazyLock<Option<Regex>> =
 pub(crate) struct Recognizer {
     /// Shared immutable caller predicates.
     grammar: &'static Grammar,
-    /// Bytes already searched for physical line ends.
-    scanned: usize,
-    /// Beginning of the not-yet-complete physical line.
-    line_start: usize,
+    /// Shared monotone physical-line framing.
+    cursor: super::lines::Cursor,
     /// Complete lines waiting for one line of lookahead.
     lines: VecDeque<Range<usize>>,
     /// Results retained independently of subsequent input.
@@ -140,8 +138,7 @@ impl Recognizer {
         };
         Self {
             grammar: &GRAMMARS[index],
-            scanned: 0,
-            line_start: 0,
+            cursor: super::lines::Cursor::default(),
             lines: VecDeque::new(),
             result: Recognized::default(),
             paragraph_open: true,
@@ -155,17 +152,8 @@ impl Recognizer {
         if self.settled() {
             return Verdict::Stable(self.result.clone());
         }
-        while self.scanned < source.len() {
-            let remaining = &source[self.scanned..];
-            let count = remaining.find('\n').map_or(remaining.len(), |end| end + 1);
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.paragraph_bytes += count);
-            self.scanned += count;
-            if source.as_bytes()[self.scanned - 1] != b'\n' {
-                continue;
-            }
-            self.lines.push_back(self.line_start..self.scanned);
-            self.line_start = self.scanned;
+        while let Some(line) = self.cursor.next(source) {
+            self.lines.push_back(line);
             if self.lines.len() == 2 {
                 self.consume(source);
             }
@@ -181,9 +169,10 @@ impl Recognizer {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
-        if self.line_start < source.len() && !self.settled() {
-            self.lines.push_back(self.line_start..source.len());
-            self.line_start = source.len();
+        if !self.settled()
+            && let Some(line) = self.cursor.finish(source)
+        {
+            self.lines.push_back(line);
         }
         while !self.lines.is_empty() && !self.settled() {
             self.consume(source);

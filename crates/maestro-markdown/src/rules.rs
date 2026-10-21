@@ -1,5 +1,8 @@
 //! Immutable block and inline recognizers.
+pub(crate) mod code;
 pub(crate) mod definition;
+pub(crate) mod fence;
+mod lines;
 pub(crate) mod paragraph;
 pub(crate) mod table;
 use crate::MarkedOptions;
@@ -70,18 +73,6 @@ fn blockquote(html: &str) -> Option<Regex> {
 /// Recognize block newline syntax without a mutable match cursor.
 pub(crate) static BLOCK_NEWLINE: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^(?:[ \t]*(?:\n|$))+", "").ok());
-
-/// Recognize block code syntax without a mutable match cursor.
-pub(crate) static BLOCK_CODE: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+", "").ok()
-});
-
-/// Reference spelling of block fences syntax.
-pub(crate) const BLOCK_FENCES_SOURCE: &str = r"^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)";
-
-/// Recognize block fences syntax without a mutable match cursor.
-pub(crate) static BLOCK_FENCES: LazyLock<Option<Regex>> =
-    LazyLock::new(|| stepwise(BLOCK_FENCES_SOURCE, ""));
 
 /// Recognize block heading syntax without a mutable match cursor.
 pub(crate) static BLOCK_HEADING: LazyLock<Option<Regex>> =
