@@ -48,3 +48,19 @@ struct ContainerExport {
     /// Complete returned HTML.
     html: String,
 }
+
+#[test]
+fn export_images_keep_literal_alt_bytes() {
+    let highlighter = maestro_theme::SyntectHighlighter::new().unwrap();
+    let cases: Vec<ContainerExport> =
+        serde_json::from_str(include_str!("../../fixtures/source_image_export.json")).unwrap();
+    assert_eq!(cases.len(), 6);
+    for case in cases {
+        assert_eq!(
+            super::prepare_export(&case.input, &highlighter),
+            case.html,
+            "{:?}",
+            case.input
+        );
+    }
+}

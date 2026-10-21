@@ -38,13 +38,19 @@ inside such text. Call `autolinks(&mut document)` separately to map bare URL, ww
 and email spans to links.
 Native code, authored links and images remain opaque to that pass. Identity text
 units retain exact selected source subranges; decoded transformations stay atomic.
+Web prefixes require an ASCII letter, digit or hyphen immediately afterward, not
+a valid domain name; later bytes may include underscores or Unicode. Terminal
+and export grammars admit mixed-case prefixes only at reached text cursors,
+including after consumed escaped punctuation. Browser protocol matching is
+case-insensitive, while its `www.` prefix is lowercase.
 The candidate scan consumes failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
 
 The parser retains link titles, destinations and inline labels; image destinations,
 titles and alt children; table alignments and authored cell spans; task markers;
-and full code information and bodies. Container-local
-source removes quote/list continuation prefixes. Aligned list continuations expand
+and full code information and bodies. Export renders literal image alt text,
+not its inline children; those children remain available in the shared document.
+Container-local source removes quote/list continuation prefixes. Aligned list continuations expand
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still
 names the original document source, not its container-local spelling.
 

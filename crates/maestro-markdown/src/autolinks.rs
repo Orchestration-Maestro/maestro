@@ -20,10 +20,10 @@ macro_rules! email_local_part {
 /// independently of rejected web spans.
 const SOURCES: [(&str, &str); 3] = [
     (
-        r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[^\s<]+",
+        r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[A-Za-z0-9-]+[^\s<]*",
         "",
     ),
-    (r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i"),
+    (r"(?:(?:https?|ftp)://|www\.)[A-Za-z0-9-]+[^\s<]*", "i"),
     (
         concat!(
             email_local_part!(),
@@ -55,9 +55,6 @@ static EMAIL_LOCAL_PART: LazyLock<Option<Regex>> =
 static BACKPEDAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::new(r#"(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+"#).ok()
 });
-/// Domain labels permit Unicode letters and numbers.
-static DOMAIN: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::with_flags(r"^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+", "u").ok());
 
 /// Selects valid candidates before excluding overlaps with accepted links.
 fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
@@ -79,7 +76,7 @@ fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
                 continue;
             }
             offset = range.end;
-            candidates.extend(candidate(run, range, email));
+            candidates.extend(candidate(run, range, email, options));
         }
     }
     candidates.sort_by_key(|(range, _)| range.start);
@@ -130,33 +127,39 @@ pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions
             let matched = regex?.find(text)?;
             #[cfg(test)]
             crate::tests::WORK.with_borrow_mut(|work| work.address_bytes += matched.end());
-            Some(accepted(previous, &text[matched.range()], email)?.0)
+            Some(accepted(&text[matched.range()], email)?.0)
         })
 }
 
 /// Validates one web or email match and retains its authored spelling.
-fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize>, String)> {
-    let previous = run.authored[..range.start].chars().next_back();
-    let (length, href) = accepted(previous, &run.authored[range.clone()], email)?;
+fn candidate(
+    run: &Run,
+    range: Range<usize>,
+    email: bool,
+    options: MarkedOptions,
+) -> Option<(Range<usize>, String)> {
+    let text = &run.authored[range.clone()];
+    let folded = matches!(options, MarkedOptions::Terminal | MarkedOptions::Export)
+        && !["http://", "https://", "ftp://", "www."]
+            .iter()
+            .any(|prefix| text.starts_with(prefix));
+    if !email && folded && range.start != 0 && run.recognition_start(range.start - 1) != range.start
+    {
+        return None;
+    }
+    let (length, href) = accepted(text, email)?;
     Some((range.start..range.start + length, href))
 }
 
-/// Accept a candidate after `previous`, returning its label length and destination.
-fn accepted(previous: Option<char>, authored: &str, email: bool) -> Option<(usize, String)> {
+/// Retain an admitted candidate's label length and authored destination.
+fn accepted(authored: &str, email: bool) -> Option<(usize, String)> {
     let label = if email {
         if authored.ends_with(['-', '_']) {
             return None;
         }
         authored.trim_end_matches('.')
     } else {
-        if previous.is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c)) {
-            return None;
-        }
-        let label = suffix(authored);
-        if !domain(label) {
-            return None;
-        }
-        label
+        suffix(authored)
     };
     let href = if email {
         format!("mailto:{label}")
@@ -396,23 +399,6 @@ fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>, options: MarkedOption
     }
     output
 }
-/// Checks domain labels and the final two underscore-free segments.
-fn domain(label: &str) -> bool {
-    let Some(regex) = DOMAIN.as_ref() else {
-        return false;
-    };
-    let text = label.split_once("://").map_or_else(
-        || label.strip_prefix("www.").unwrap_or(label),
-        |(_, text)| text,
-    );
-    regex.find(text).is_some_and(|domain| {
-        !text[domain.range()]
-            .rsplit('.')
-            .take(2)
-            .any(|part| part.contains('_'))
-    })
-}
-
 /// Apply shared mapped extended links after caller-owned inline admission.
 pub fn autolinks(document: &mut Document) {
     map_links(

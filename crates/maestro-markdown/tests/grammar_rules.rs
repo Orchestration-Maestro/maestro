@@ -1258,3 +1258,54 @@ fn cursor_admission_checks_native_prefix_boundaries() {
     assert!(run.atoms.is_empty());
     assert_eq!(cursor_shape(&run.nodes), "xé");
 }
+
+/// One source input with independently recorded ordered operands for every caller.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LinkSource {
+    /// Stable failure attribution.
+    id: String,
+    /// Complete authored source.
+    input: String,
+    /// Terminal, raw browser, escaped browser and export operands.
+    targets: [Vec<(String, String)>; 4],
+}
+
+#[test]
+fn mapped_link_sources_match_selected_grammars() {
+    let rows: Vec<LinkSource> =
+        serde_json::from_str(include_str!("fixtures/link_sources.json")).unwrap();
+    assert_eq!(rows.len(), 84);
+    let mut failures = Vec::new();
+    for row in rows {
+        for (options, expected) in [
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+            MarkedOptions::Browser { escape_html: true },
+            MarkedOptions::Export,
+        ]
+        .into_iter()
+        .zip(row.targets)
+        {
+            let mut document = parse_with_options(row.input.clone(), options);
+            autolinks(&mut document);
+            assert_eq!(document.source, row.input, "{} {options:?}", row.id);
+            let (mut labels, mut destinations) = (Vec::new(), Vec::new());
+            observations::metadata(
+                &document.nodes,
+                &mut Vec::new(),
+                &mut labels,
+                &mut destinations,
+                options,
+            );
+            let actual: Vec<_> = labels.into_iter().zip(destinations).collect();
+            if actual != expected {
+                failures.push(format!(
+                    "{} {options:?}: {actual:?} != {expected:?}",
+                    row.id
+                ));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

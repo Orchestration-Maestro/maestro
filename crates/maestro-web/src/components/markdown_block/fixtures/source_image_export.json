@@ -1,0 +1,26 @@
+[
+  {
+    "input": "> ![a `[b]` [c][r]][img]\n\n[r]: /c \"child\"\n[img]: /img \"tip\"",
+    "html": "<blockquote>\n<p><img src=\"/img\" alt=\"a `[b]` [c][r]\" title=\"tip\"></p>\n</blockquote>\n"
+  },
+  {
+    "input": "![a `[b]` [c][r]](/img \"tip\")\n\n[r]: /c \"child\"",
+    "html": "<p><img src=\"/img\" alt=\"a `[b]` [c][r]\" title=\"tip\"></p>\n"
+  },
+  {
+    "input": "[go](/u) ![a `[b]` [c][r]](/img \"tip\")\n\n[r]: /c \"child\"",
+    "html": "<p><a href=\"/u\">go</a> <img src=\"/img\" alt=\"a `[b]` [c][r]\" title=\"tip\"></p>\n"
+  },
+  {
+    "input": "![plain](/img)",
+    "html": "<p><img src=\"/img\" alt=\"plain\"></p>\n"
+  },
+  {
+    "input": "![**bold**](/img)",
+    "html": "<p><img src=\"/img\" alt=\"**bold**\"></p>\n"
+  },
+  {
+    "input": "![escaped \\[x\\]](/img)",
+    "html": "<p><img src=\"/img\" alt=\"escaped [x]\"></p>\n"
+  }
+]

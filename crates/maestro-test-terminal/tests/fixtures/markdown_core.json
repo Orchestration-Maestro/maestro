@@ -2591,7 +2591,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "xhttp://a.b                                                                     "
+        "x\u001b[34m\u001b[4mhttp://a.b\u001b[24m\u001b[39m                                                                     "
       ]
     },
     {
@@ -2627,7 +2627,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "www.a                                                                           "
+        "\u001b[34m\u001b[4mwww.a\u001b[24m\u001b[39m\u001b[2m (http://www.a)\u001b[22m                                                            "
       ]
     },
     {
@@ -2639,7 +2639,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "https://localhost                                                               "
+        "\u001b[34m\u001b[4mhttps://localhost\u001b[24m\u001b[39m                                                               "
       ]
     },
     {
@@ -2651,7 +2651,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "www.a_b.c                                                                       "
+        "\u001b[34m\u001b[4mwww.a_b.c\u001b[24m\u001b[39m\u001b[2m (http://www.a_b.c)\u001b[22m                                                    "
       ]
     },
     {
@@ -2663,7 +2663,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "www.a.b_c                                                                       "
+        "\u001b[34m\u001b[4mwww.a.b_c\u001b[24m\u001b[39m\u001b[2m (http://www.a.b_c)\u001b[22m                                                    "
       ]
     },
     {
@@ -2795,7 +2795,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[34m\u001b[4mwww.é.fr\u001b[24m\u001b[39m\u001b[2m (http://www.é.fr)\u001b[22m                                                      "
+        "www.é.fr                                                                        "
       ]
     }
   ],

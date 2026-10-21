@@ -7,8 +7,10 @@ uses its terminal grammar by default, including strict double-tilde strikethroug
 Bare HTTP/HTTPS, www and email links are recognized in authored text,
 before entity and backslash decoding, without starting inside a consumed punctuation
 escape. Selected links retain their literal spelling; surrounding text uses native
-decoding. A www link requires a period in the domain
-after its prefix. HTML is literal text,
+decoding. Web prefixes require an ASCII letter, digit or hyphen immediately
+afterward, not a valid domain name. Later bytes may include underscores or
+Unicode. Mixed-case prefixes are recognized only at reached text cursors,
+including after consumed escaped punctuation. HTML is literal text,
 including inside lists; quoted HTML suppresses the message foreground, like other
 quote text. Images display authored label markup without enclosing
 quote/list prefixes, unescaping brackets but retaining other escapes.
