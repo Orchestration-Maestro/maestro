@@ -123,18 +123,7 @@ impl ImageArtifact {
         muted.clone_into(&mut self.muted);
         self.changed = false;
     }
-    /// Retain one factory owning only live state.
-    fn reading(&self) -> Rc<ReadingContent> {
-        if let Some(reading) = &self.reading {
-            return Rc::clone(reading);
-        }
-        #[cfg(target_arch = "wasm32")]
-        let body = Rc::clone(&self.body);
-        Rc::new(ReadingContent {
-            #[cfg(target_arch = "wasm32")]
-            mount: Rc::new(move |document| browser::mount(document, &body)),
-        })
-    }
+    super::retained::artifact_reading!(body);
 }
 impl ArtifactElement for ImageArtifact {
     fn filename(&self) -> &str {

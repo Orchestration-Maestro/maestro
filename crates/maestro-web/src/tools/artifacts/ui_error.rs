@@ -18,28 +18,7 @@ pub enum ArtifactUiError {
     /// Caller holds an incompatible record borrow.
     BorrowConflict,
 }
-impl std::fmt::Display for ArtifactUiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::I18n(error) => std::fmt::Display::fmt(error, f),
-            Self::Control(error) => std::fmt::Display::fmt(error, f),
-            Self::Host(error) => std::fmt::Display::fmt(error, f),
-            Self::Presentation(error) => std::fmt::Display::fmt(error, f),
-            Self::BorrowConflict => f.write_str("Attachment is already borrowed"),
-        }
-    }
-}
-impl std::error::Error for ArtifactUiError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::I18n(error) => Some(error),
-            Self::Control(error) => std::error::Error::source(error),
-            Self::Host(error) => Some(error),
-            Self::Presentation(error) => std::error::Error::source(error),
-            Self::BorrowConflict => None,
-        }
-    }
-}
+crate::ui_error::impl_ui_error!(ArtifactUiError, error => std::error::Error::source(error));
 impl From<I18nError> for ArtifactUiError {
     fn from(error: I18nError) -> Self {
         Self::I18n(error)

@@ -49,14 +49,9 @@ impl ToolContent for Pill {
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
     ) -> ToolContentOutput {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let response = self.draw(ui, view, &mut retained);
-        drop(slot.replace(retained));
-        ToolContentOutput {
-            response,
-            overlays: Vec::new(),
-        }
+        crate::tools::types::render_retained::<Retained>(state, |retained, _| {
+            self.draw(ui, view, retained)
+        })
     }
 }
 impl Pill {

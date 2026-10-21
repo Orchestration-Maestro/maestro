@@ -70,22 +70,7 @@ impl ArtifactElement for MarkdownArtifact {
         self.modal = modal;
         self.reconcile()
     }
-    fn get_header_buttons(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), ArtifactUiError> {
-        ui.scope(|ui| {
-            ui.spacing_mut().item_spacing.x =
-                crate::browser::attachment_content::points(view.presentation.spacing["sm"]);
-            self.toggle
-                .render(ui, view.i18n, view.presentation)
-                .map_err(ArtifactUiError::localized_control)?;
-            self.reconcile()?;
-            self.source.get_header_buttons(ui, view)
-        })
-        .inner
-    }
+    super::retained::artifact_header_buttons!();
     fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.reconcile()?;
         if self.toggle.mode == ViewMode::Code {

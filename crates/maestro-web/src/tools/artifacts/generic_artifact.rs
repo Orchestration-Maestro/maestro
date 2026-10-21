@@ -88,21 +88,16 @@ impl GenericArtifact {
         ];
         self.text.borrow_mut().values = values;
         #[cfg(target_arch = "wasm32")]
-        browser::sync(&self.text.borrow());
+        {
+            let text = self.text.borrow();
+            crate::browser::attachment_content::browser::sync_text(
+                text.nodes.as_ref(),
+                &text.values,
+            );
+        }
         Ok(())
     }
-    /// Create a factory retaining owned text only.
-    fn reading(&self) -> Rc<ReadingContent> {
-        if let Some(reading) = &self.reading {
-            return Rc::clone(reading);
-        }
-        #[cfg(target_arch = "wasm32")]
-        let text = Rc::clone(&self.text);
-        Rc::new(ReadingContent {
-            #[cfg(target_arch = "wasm32")]
-            mount: Rc::new(move |document| browser::mount(document, &text)),
-        })
-    }
+    super::retained::artifact_reading!(text);
 }
 impl Drop for GenericArtifact {
     fn drop(&mut self) {

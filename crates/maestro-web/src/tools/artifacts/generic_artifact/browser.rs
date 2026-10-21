@@ -2,17 +2,9 @@
 use super::Text;
 use crate::browser::attachment_content::{
     AttachmentHostError, ReadingRoot,
-    browser::{host_error, set_text_if_changed},
+    browser::{host_error, sync_text},
 };
 use std::{cell::RefCell, rc::Rc};
-/// Synchronize differing text without replacing unchanged nodes.
-pub(super) fn sync(text: &Text) {
-    if let Some(nodes) = &text.nodes {
-        for (node, value) in nodes.iter().zip(&text.values) {
-            set_text_if_changed(node, value);
-        }
-    }
-}
 /// Mount one retained literal body in the actual canvas document.
 pub(super) fn mount(
     document: &web_sys::Document,
@@ -46,7 +38,7 @@ pub(super) fn mount(
     root.append_child(&body).map_err(|e| host_error(&e))?;
     let mut text = text.borrow_mut();
     text.nodes = Some(nodes);
-    sync(&text);
+    sync_text(text.nodes.as_ref(), &text.values);
     Ok(ReadingRoot {
         frame_style: "",
         decoration: None,

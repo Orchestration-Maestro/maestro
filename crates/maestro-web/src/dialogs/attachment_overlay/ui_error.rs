@@ -17,27 +17,7 @@ pub enum AttachmentUiError {
     /// Caller holds an incompatible record borrow.
     BorrowConflict,
 }
-impl std::fmt::Display for AttachmentUiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::I18n(error) => std::fmt::Display::fmt(error, f),
-            Self::Control(error) => std::fmt::Display::fmt(error, f),
-            Self::Host(error) => std::fmt::Display::fmt(error, f),
-            Self::Presentation(error) => std::fmt::Display::fmt(error, f),
-            Self::BorrowConflict => f.write_str("Attachment is already borrowed"),
-        }
-    }
-}
-impl std::error::Error for AttachmentUiError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::I18n(error) => Some(error),
-            Self::Control(error) => std::error::Error::source(error),
-            Self::Host(error) => Some(error),
-            _ => None,
-        }
-    }
-}
+crate::ui_error::impl_ui_error!(AttachmentUiError, _ => None);
 impl From<I18nError> for AttachmentUiError {
     fn from(error: I18nError) -> Self {
         Self::I18n(error)

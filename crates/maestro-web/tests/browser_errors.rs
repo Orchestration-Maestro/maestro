@@ -52,6 +52,19 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
         assert_eq!(error.to_string(), "Attachment is already borrowed");
         assert!(error.source().is_none());
     }
+    for message in ["", " ", "<literal> café"] {
+        for make in [ControlError::Host, ControlError::Presentation] {
+            let errors: Vec<Box<dyn Error>> = vec![
+                Box::new(AttachmentUiError::Control(make(message.into()))),
+                Box::new(DialogUiError::Control(make(message.into()))),
+                Box::new(ArtifactUiError::Control(make(message.into()))),
+            ];
+            for error in errors {
+                assert_eq!(error.to_string(), message);
+                assert!(error.source().is_none());
+            }
+        }
+    }
     leaf_sources();
 }
 
