@@ -3,11 +3,6 @@
 pub mod browser;
 pub mod components;
 pub mod dialogs;
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Stylesheet composition is not installed yet")
-)]
-mod docx_preview;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::input::Input;
 pub use components::message_renderer_registry::{
