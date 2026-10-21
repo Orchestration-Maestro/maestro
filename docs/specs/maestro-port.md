@@ -736,7 +736,8 @@ implicit contiguous accessor, `Deref<str>` or per-node flattened cache.
 
 Reply-quote work and retained storage grow linearly in input bytes, admitted
 nodes and mapping records, excluding requested output bytes. List-item admission
-still restarts when its enclosing quote resumes. Caller block tokenizers
+and open leaf state must survive quote resumption over the same shared source
+handles, without re-admitting completed prefixes. Caller block tokenizers
 receive the same contiguous operands in the same order, including repeated
 admissions. Materializing those operands is caller-requested output work,
 charged separately from parser work; contiguous source operands are borrowed.
