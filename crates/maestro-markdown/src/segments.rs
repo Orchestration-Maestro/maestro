@@ -208,13 +208,12 @@ impl<T: Clone> Segments<T> {
         }
         let mut parts = self.parts(range.clone());
         let (first, selected, _) = parts.next()?;
-        let start = first.native(&selected, project)?.start;
-        let end = if let Some((last, selected, _)) = parts.next_back() {
-            last.native(&selected, project)?.end
-        } else {
-            first.native(&selected, project)?.end
+        let first = first.native(&selected, project)?;
+        let end = match parts.next_back() {
+            Some((last, selected, _)) => last.native(&selected, project)?.end,
+            None => first.end,
         };
-        Some(start..end)
+        Some(first.start..end)
     }
 
     /// Locate native bytes using the ordered native bounds of retained operands.
