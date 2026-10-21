@@ -1,12 +1,14 @@
 //! List admission and item continuation framing.
 use crate::{
     Kind, MarkedOptions, Node,
+    inline::ScopeKey,
     lexer::Lexer,
     rules,
     source::{ScopeSource, Segmented, Source},
     tokenizer::{capture, node},
 };
 use maestro_text::is_whitespace_scalar;
+use std::collections::HashMap;
 mod state;
 use state::ItemLines;
 
@@ -137,6 +139,29 @@ pub(crate) struct ListState {
     item_start: usize,
     /// Completed item admission states, preserving callback replay order.
     completed: Vec<ItemLines>,
+    /// Final promotion policy, applied when child nodes become observable.
+    loose: bool,
+}
+
+impl ListState {
+    /// Transfer each child's single output into its final item without cloning it.
+    pub(crate) fn finish(mut self, items: &mut [Node], scopes: &mut HashMap<ScopeKey, Segmented>) {
+        for (item, node) in self
+            .completed
+            .iter_mut()
+            .chain(std::iter::once(&mut self.item))
+            .zip(items)
+        {
+            item.output.complete();
+            scopes.extend(std::mem::take(&mut item.output.scopes));
+            if let Kind::Item(children) = &mut node.kind {
+                *children = std::mem::take(&mut item.output.nodes);
+            }
+            if self.loose {
+                loosen(node);
+            }
+        }
+    }
 }
 
 impl<E> Lexer<'_, E> {
@@ -158,6 +183,7 @@ impl<E> Lexer<'_, E> {
             item,
             item_start: 0,
             completed: Vec::new(),
+            loose: false,
         });
         self.list_tail(
             &source.select(std::iter::once(0..source.text.len())).into(),
@@ -186,7 +212,7 @@ impl<E> Lexer<'_, E> {
     ) -> Option<(usize, Node, Box<ListState>)> {
         let mut items = Vec::with_capacity(state.completed.len() + 1);
         let mut loose = false;
-        for item in &state.completed {
+        for item in &mut state.completed {
             let (node, item_loose) = self.list_item(item, true)?;
             loose |= item_loose;
             items.push(node);
@@ -202,7 +228,7 @@ impl<E> Lexer<'_, E> {
             let Some(next) = marker(&line.text).filter(|next| next.follows(&state.first)) else {
                 break;
             };
-            let (item, item_loose) = self.list_item(&state.item, true)?;
+            let (item, item_loose) = self.list_item(&mut state.item, true)?;
             loose |= item_loose;
             items.push(item);
             state.item_start = offset;
@@ -211,11 +237,9 @@ impl<E> Lexer<'_, E> {
             state.completed.push(previous);
             offset += next.line;
         }
-        let (item, item_loose) = self.list_item(&state.item, false)?;
+        let (item, item_loose) = self.list_item(&mut state.item, false)?;
         items.push(item);
-        if loose || item_loose {
-            items.iter_mut().for_each(loosen);
-        }
+        state.loose = loose || item_loose;
         let end = state.item_start + state.item.raw_end();
         let raw = source.select(0..end);
         let node = Node {
@@ -226,19 +250,21 @@ impl<E> Lexer<'_, E> {
         Some((end, node, state))
     }
 
-    /// Publish one item's blocks while keeping its untrimmed admission source alive.
-    fn list_item(&mut self, item: &ItemLines, following: bool) -> Option<(Node, bool)> {
+    /// Replay child admission while retaining its output for final publication.
+    fn list_item(&mut self, item: &mut ItemLines, following: bool) -> Option<(Node, bool)> {
         let (mut body, task) = task(item.body().materialize());
         if !following {
             body.truncate(body.text.trim_end_matches(is_whitespace_scalar).len());
         }
-        let mut children = self.item_blocks(&body);
+        self.item_blocks(&body, &mut item.output);
         if let Some(checked) = task {
-            children.insert(0, node(&body, 0..0, Kind::TaskListMarker(checked)));
+            item.output
+                .nodes
+                .insert(0, node(&body, 0..0, Kind::TaskListMarker(checked)));
         }
         let raw = item.raw();
         let loose = following && item.blank_end()
-            || children.iter().any(|node| {
+            || item.output.nodes.iter().any(|node| {
                 matches!(node.kind, Kind::Gap)
                     && node
                         .authored
@@ -252,7 +278,7 @@ impl<E> Lexer<'_, E> {
             Node {
                 authored: raw.mapped(),
                 range: raw.native(&(0..raw.len()))?,
-                kind: Kind::Item(children),
+                kind: Kind::Item(Vec::new()),
             },
             loose,
         ))

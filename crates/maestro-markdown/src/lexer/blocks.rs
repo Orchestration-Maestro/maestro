@@ -19,11 +19,11 @@ enum Tail {
 
 /// One ordered output shared across recursive quote chunks.
 #[derive(Default)]
-pub(super) struct BlockTokens {
+pub(crate) struct BlockTokens {
     /// Visible semantic nodes.
-    pub(super) nodes: Vec<Node>,
+    pub(crate) nodes: Vec<Node>,
     /// Inline operands retained as shared source until this invocation publishes.
-    pub(super) scopes: HashMap<ScopeKey, Segmented>,
+    pub(crate) scopes: HashMap<ScopeKey, Segmented>,
     /// Last grammar token, independent of visible output.
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
@@ -36,6 +36,18 @@ impl Default for Tail {
 }
 
 impl BlockTokens {
+    /// Publish the trailing list's children only when its invocation completes.
+    pub(crate) fn complete(&mut self) {
+        if let Some(list) = self.list.take()
+            && let Some(Node {
+                kind: Kind::List(_, items),
+                ..
+            }) = self.nodes.last_mut()
+        {
+            list.finish(items, &mut self.scopes);
+        }
+    }
+
     /// Current visible tail only when no invisible definition intervenes.
     pub(super) fn last(&self) -> Option<&Node> {
         match self.tail {
@@ -46,7 +58,7 @@ impl BlockTokens {
 
     /// Publish a block and retain a container's own recognized raw source.
     pub(super) fn push(&mut self, source: &Source<'_>, consumed: usize, node: Node) {
-        self.list = None;
+        self.complete();
         self.tail = Tail::Visible(
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
                 .then(|| source.select(std::iter::once(0..consumed)).into()),
@@ -56,7 +68,7 @@ impl BlockTokens {
 
     /// Publish a container recognized over retained segmented input.
     pub(super) fn push_segmented(&mut self, raw: Segmented, node: Node) {
-        self.list = None;
+        self.complete();
         self.tail = Tail::Visible(Some(raw));
         self.nodes.push(node);
     }
@@ -71,7 +83,8 @@ impl BlockTokens {
 }
 impl<E> Lexer<'_, E> {
     /// Publish completed block output and materialize each inline operand once.
-    pub(super) fn finish_blocks(&mut self, output: BlockTokens) -> Vec<Node> {
+    pub(super) fn finish_blocks(&mut self, mut output: BlockTokens) -> Vec<Node> {
+        output.complete();
         self.scopes.extend(
             output
                 .scopes
@@ -119,9 +132,7 @@ impl<E> Lexer<'_, E> {
 
     /// Admit everything preceding paragraph and line-text fallback.
     fn block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        if let Some(consumed) = self.extension(source, &mut output.nodes) {
-            output.tail = Tail::Visible(None);
-            output.list = None;
+        if let Some(consumed) = self.extension(source, output) {
             return Some(consumed);
         }
         if let Some(consumed) =
@@ -230,8 +241,8 @@ impl<E> Lexer<'_, E> {
         } else if self.definition(source, &matched)
             && matches!(self.options, MarkedOptions::Browser { .. })
         {
+            output.complete();
             output.tail = Tail::Definition;
-            output.list = None;
         }
         Some(matched.consumed)
     }

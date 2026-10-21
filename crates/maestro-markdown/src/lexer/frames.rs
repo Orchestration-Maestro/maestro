@@ -179,7 +179,7 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Release inline scopes of replaced containers before callback replay admission.
-    fn forget(&mut self, node: &Node) {
+    pub(super) fn forget(&mut self, node: &Node) {
         match &node.kind {
             Kind::Paragraph(_) | Kind::Inline(_) | Kind::Heading(..) => {
                 self.scopes

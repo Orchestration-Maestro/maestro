@@ -11,7 +11,7 @@ use crate::{
     source::{ScopeSource, Source},
     tokenizer,
 };
-use blocks::BlockTokens;
+pub(crate) use blocks::BlockTokens;
 use maestro_text::is_whitespace_scalar;
 use std::{
     collections::{HashMap, hash_map::Entry},
@@ -77,14 +77,19 @@ impl<'a, E> Lexer<'a, E> {
         self.finish_blocks(output)
     }
 
-    /// Begin item grammar; completion intentionally returns to top level.
-    pub(crate) fn item_blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
+    /// Replay item admission without publishing its inline operands prematurely.
+    pub(crate) fn item_blocks(&mut self, source: &ScopeSource, output: &mut BlockTokens) {
+        output.complete();
+        for node in &output.nodes {
+            self.forget(node);
+        }
+        *output = BlockTokens::default();
         self.top = false;
-        self.blocks(source)
+        self.block_tokens(source, output, false);
     }
 
     /// Try a validated caller block extension before built-in tokenizers.
-    fn extension(&mut self, source: &Source<'_>, output: &mut Vec<Node>) -> Option<usize> {
+    fn extension(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
         let token = match self.tokenizer.as_mut()?.tokenize(source.text) {
             Ok(token) => token?,
             Err(error) => {
@@ -94,7 +99,11 @@ impl<'a, E> Lexer<'a, E> {
         };
         let BlockToken { raw, kind, text } = token;
         let consumed = raw.len();
-        output.push(source.node(0..consumed, Kind::CustomBlock(kind, text)));
+        output.push(
+            source,
+            consumed,
+            source.node(0..consumed, Kind::CustomBlock(kind, text)),
+        );
         Some(consumed)
     }
 

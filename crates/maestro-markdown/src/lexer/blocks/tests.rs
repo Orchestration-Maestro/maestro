@@ -3,22 +3,54 @@ use super::{BlockTokens, Lexer};
 use crate::{MarkedOptions, source::ScopeSource, tokenizer};
 use std::{collections::HashMap, convert::Infallible};
 
+/// One source-only lexer using the ordinary block dispatcher.
+fn lexer() -> Lexer<'static, Infallible> {
+    Lexer {
+        tokenizer: None,
+        error: None,
+        top: true,
+        clipped: false,
+        barriers: None,
+        context: tokenizer::inline::LinkContext::new(false),
+        options: MarkedOptions::Terminal,
+        definitions: HashMap::new(),
+        scopes: HashMap::new(),
+    }
+}
+
+#[test]
+fn list_children_publish_scopes_at_their_invocation_boundary() {
+    let source = ScopeSource::identity("- é\n- [X] β");
+    let mut lexer = lexer();
+    let mut output = BlockTokens::default();
+    lexer.block_tokens(&source, &mut output, false);
+    assert!(lexer.scopes.is_empty(), "provisional item scopes escaped");
+    let nodes = lexer.finish_blocks(output);
+    assert_eq!(lexer.scopes.len(), 2);
+    let crate::Kind::List(_, items) = &nodes[0].kind else {
+        panic!("list")
+    };
+    let crate::Kind::Item(first) = &items[0].kind else {
+        panic!("first item")
+    };
+    let crate::Kind::Item(second) = &items[1].kind else {
+        panic!("second item")
+    };
+    assert!(matches!(first[0].kind, crate::Kind::Inline(_)));
+    assert!(matches!(second[0].kind, crate::Kind::TaskListMarker(true)));
+    for (child, text) in [(&first[0], "é"), (&second[1], "β")] {
+        let scope = &lexer.scopes[&(child.range.start, child.range.end, false)];
+        assert_eq!(&*scope.text, text);
+        assert_eq!(scope.native(&(0..text.len())), Some(child.range.clone()));
+    }
+}
+
 #[test]
 fn block_accumulator_retains_inline_operands_until_publication() {
     for count in [32, 64, 128] {
         let text = format!("a\n{}", "    é\n".repeat(count));
         let source = ScopeSource::identity(&text);
-        let mut lexer = Lexer::<Infallible> {
-            tokenizer: None,
-            error: None,
-            top: true,
-            clipped: false,
-            barriers: None,
-            context: tokenizer::inline::LinkContext::new(false),
-            options: MarkedOptions::Terminal,
-            definitions: HashMap::new(),
-            scopes: HashMap::new(),
-        };
+        let mut lexer = lexer();
         let mut output = BlockTokens::default();
         crate::tests::WORK.with_borrow_mut(|work| *work = crate::tests::Work::default());
         for line in crate::lexer::lines(&text) {
