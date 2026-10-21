@@ -104,11 +104,8 @@ fn external_editor_windows_keeps_temp_path_one_literal_operand() {
 fn external_editor_shell_receives_exact_filename_as_single_argument() {
     let path = r"C:\%USERNAME%\Temp Dir & files\$HOME`whoami`'s.md";
     let (launch, env) = windows_command("printf '<%s>\\n'", path, Some("sh"));
-    let output = std::process::Command::new(launch.executable)
-        .args(launch.args)
-        .env(env.0, env.1)
-        .output()
-        .unwrap();
+    let command: maestro_app::LaunchContext<'_, _> = launch.with_context([env], None);
+    let output = command.output().unwrap();
     assert!(output.status.success());
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),

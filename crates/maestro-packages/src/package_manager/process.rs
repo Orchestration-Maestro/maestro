@@ -3,22 +3,16 @@ use super::{
     CommandOutput, PackageFuture,
     operations::{NativePackageOperations, recover_environment},
 };
-use std::{
-    io,
-    process::{Command, Stdio},
-};
+use std::{io, process::Stdio};
 
 impl NativePackageOperations {
-    /// Builds a child with literal arguments and the recovered environment; the native
-    /// launcher resolves Windows command shims such as `npm.cmd`.
-    ///
-    /// # Errors
-    /// Returns `NotFound` when a Windows command cannot be resolved.
-    pub(super) fn command(
+    /// Collects package operands, the recovered environment and child directory for launch.
+    pub(super) fn command<'a>(
         command: &str,
         args: &[String],
         overrides: &[(&str, &str)],
-    ) -> io::Result<Command> {
+        cwd: Option<&'a str>,
+    ) -> maestro_process::LaunchContext<'a, Vec<(String, String)>> {
         let inherited = std::env::vars_os()
             .map(|(key, value)| {
                 (
@@ -44,23 +38,18 @@ impl NativePackageOperations {
                     .map(|&(key, value)| (key.into(), value.into())),
             )
             .collect();
-        let mut child = maestro_process::Launch {
+        maestro_process::Launch {
             executable: command.into(),
             args: args.into(),
             verbatim: false,
         }
-        .command_with_env(environment.iter().map(|(key, value)| (key, value)))?;
-        child.env_clear().envs(environment);
-        Ok(child)
+        .with_context(environment, cwd.map(std::path::Path::new))
+        .clear_environment()
     }
 
     /// Waits for a child with ignored stdin and decoded captured streams.
     pub(super) fn capture(command: &str, args: &[String]) -> io::Result<CommandOutput> {
-        let output = Self::command(command, args, &[])?
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()?;
+        let output = Self::command(command, args, &[], None).output()?;
         Ok(CommandOutput {
             status: output.status.code(),
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -77,17 +66,16 @@ impl NativePackageOperations {
         cwd: Option<&'a str>,
     ) -> PackageFuture<'a, Option<i32>> {
         Box::pin(async move {
-            let mut child = tokio::process::Command::from(Self::command(command, args, &[])?);
-            if let Some(cwd) = cwd {
-                child.current_dir(cwd);
-            }
-            if (self.is_stdout_taken_over)() {
-                child
-                    .stdin(Stdio::null())
-                    .stdout(stderr_stdio()?)
-                    .stderr(stderr_stdio()?);
-            }
-            Ok(child.spawn()?.wait().await?.code())
+            let stdio = if (self.is_stdout_taken_over)() {
+                [Stdio::null(), stderr_stdio()?, stderr_stdio()?]
+            } else {
+                [Stdio::inherit(), Stdio::inherit(), Stdio::inherit()]
+            };
+            Ok(Self::command(command, args, &[], cwd)
+                .spawn(stdio)?
+                .wait()
+                .await?
+                .code())
         })
     }
 }

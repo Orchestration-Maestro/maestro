@@ -11,16 +11,22 @@ See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-
 
 ## Command preparation
 
-`Launch::command` builds a standard process command from its executable and
-arguments. On Windows it resolves command names in the current directory then
-`PATH`. Extensionless names try `PATHEXT` in order (default `.EXE;.COM;.BAT;.CMD`
-when absent); names with explicit extensions are checked without appending one.
-The standard library handles batch file argument quoting. For a verbatim Windows shell launch, only the final
-command-text argument bypasses quoting; interpreter flags remain ordinary arguments.
-`Launch::command_with_env` applies child environment overrides before resolving
-Windows commands. Supplied `PATH` and `PATHEXT` values replace the inherited lookup
-values, including empty values; omitted keys use the parent's values. Windows
-variable names are case-insensitive. Callers retain creation flags and capture policy.
+`Launch::with_context` collects the child environment and working directory
+alongside the executable and arguments. Its operations resolve the executable
+when they spawn it; they do not expose a mutable command builder.
+On Windows, bare names search the child directory then `PATH`. Relative program
+paths and relative `PATH` entries use the child directory. Absolute program paths
+keep their location. Extensionless names try `PATHEXT` in order (default
+`.EXE;.COM;.BAT;.CMD` when absent); names with explicit extensions are checked
+without appending one. Supplied lookup variables replace inherited values,
+including empty values; omitted keys inherit unless the environment is cleared.
+Windows variable names are case-insensitive.
+
+The standard library handles batch argument quoting. For a verbatim Windows
+shell launch, only the final command-text argument bypasses quoting;
+interpreter flags remain ordinary arguments. Callers choose inherited or
+captured streams, deadlines and the existing background-console setting before
+launching. The launcher reuses the capture and wait operations below.
 
 `shell_quote` serializes POSIX operands. `quote_powershell_arg` may leave safe
 PowerShell operands unquoted; `quote_powershell_literal` always quotes and is used

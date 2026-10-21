@@ -1,10 +1,9 @@
 //! Native observations for read-only self-update qualification.
 
 use super::SelfUpdateOperations;
-use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions};
 use maestro_resources::{NativeResourceOperations, ResourceOperations};
 use std::{io, process::Output};
-use tokio::process::Command;
 
 /// Native query capture and write-access observations without an update runner.
 ///
@@ -26,16 +25,19 @@ impl SelfUpdateOperations for NativeSelfUpdateOperations {
         check_write_access(path)
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> Result<Output, SpawnSyncError> {
-        spawn_sync(
-            &mut query_command(command, args).map_err(SpawnSyncError::Spawn)?,
-            SpawnSyncOptions::Capture {
-                stdout: OutputMode::Capture,
-                stderr: OutputMode::Capture,
-                input: None,
-                timeout: None,
-                max_buffer_bytes: None,
-            },
-        )
+        maestro_process::Launch {
+            executable: command.into(),
+            args: args.into(),
+            verbatim: false,
+        }
+        .with_context(std::iter::empty::<(&str, &str)>(), None)
+        .spawn_sync(SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
+            stderr: OutputMode::Capture,
+            input: None,
+            timeout: None,
+            max_buffer_bytes: None,
+        })
     }
 }
 
@@ -54,15 +56,4 @@ fn check_write_access(path: &str) -> io::Result<()> {
     } else {
         Err(io::Error::from(io::ErrorKind::PermissionDenied))
     }
-}
-
-/// Prepare an operation-owned builder so shell settings cannot leak to later calls.
-fn query_command(command: &str, args: &[String]) -> io::Result<Command> {
-    Ok(maestro_process::Launch {
-        executable: command.into(),
-        args: args.into(),
-        verbatim: false,
-    }
-    .command()?
-    .into())
 }

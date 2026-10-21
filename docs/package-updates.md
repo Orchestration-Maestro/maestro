@@ -54,8 +54,9 @@ check needs no admission.
 
 ## Captured commands
 
-`PackageOperations::run_command_capture` takes arguments, which a shell-selected command interpolates as authored text, and
+`PackageOperations::run_command_capture` takes literal arguments and
 `CommandCaptureOptions` for cwd, an optional deadline and environment overrides.
+Native executable lookup uses that child directory and environment before spawning.
 Native capture returns trimmed stdout after child exit and both pipe EOFs;
 success does not substitute stderr. It ignores stdin and does not query stdout
 takeover. The captured child, its pipes and termination come from

@@ -48,26 +48,28 @@ fn assert_operations(root: &Path) {
     let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let cwd = root.join("chosen");
     let cwd = cwd.to_str().unwrap();
-    let program = if cfg!(windows) {
-        "./tools/wrapper.cmd"
+    let programs: &[&str] = if cfg!(windows) {
+        &["tools\\wrapper.cmd", "./tools/wrapper.cmd"]
     } else {
-        "./tools/wrapper"
+        &["./tools/wrapper"]
     };
     let runtime = crate::runtime::runtime();
-    let result = runtime.block_on(operations.run_command_capture(
-        program,
-        &[],
-        CommandCaptureOptions {
-            cwd: Some(cwd),
-            timeout: None,
-            env: &[],
-        },
-    ));
-    assert_eq!(result.unwrap(), "chosen");
-    assert_eq!(
-        runtime
-            .block_on(operations.run_command(program, &[], Some(cwd)))
-            .unwrap(),
-        Some(0)
-    );
+    for &program in programs {
+        let result = runtime.block_on(operations.run_command_capture(
+            program,
+            &[],
+            CommandCaptureOptions {
+                cwd: Some(cwd),
+                timeout: None,
+                env: &[],
+            },
+        ));
+        assert_eq!(result.unwrap(), "chosen");
+        assert_eq!(
+            runtime
+                .block_on(operations.run_command(program, &[], Some(cwd)))
+                .unwrap(),
+            Some(0)
+        );
+    }
 }

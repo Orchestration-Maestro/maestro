@@ -310,6 +310,7 @@ fn isolated(name: &str) -> bool {
         .unwrap()
         .nocapture()
         .env("MAESTRO_EDITOR_CHILD", name)
+        .env_remove("MAESTRO_EDITOR_FILE")
         .env("TMPDIR", &directory)
         .env("TEMP", &directory)
         .env("TMP", &directory)
@@ -1468,3 +1469,31 @@ const OWNERS: [&str; 22] = [
     "external_editor_windows_uses_shell_while_unix_executes_directly",
     "editor_dialog_constructor_returns_theme_failure",
 ];
+
+#[test]
+#[cfg(windows)]
+fn external_editor_passes_environment_operand_to_native_child() {
+    let _guard = input_support::globals();
+    if isolated("external_editor_passes_environment_operand_to_native_child") {
+        return;
+    }
+    maestro_tui::set_keybindings(manager());
+    let host = dialog(
+        &RenderInput {
+            visual: Some("echo changed>".into()),
+            ..ordinary_input()
+        },
+        Some("before".into()),
+        EditorOptions::default(),
+    );
+    host.spy
+        .clock
+        .set_environment("comspec", &std::env::var("COMSPEC").unwrap());
+    host.dialog.handle_input("\x07").unwrap();
+    assert_eq!(text(&host.dialog), "changed\n");
+    assert!(
+        !std::env::temp_dir()
+            .join("maestro-extension-editor-1767323045006.md")
+            .exists()
+    );
+}
