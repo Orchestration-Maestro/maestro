@@ -654,3 +654,19 @@ Explicit host appearance reports take precedence over inferred background
 luminance. Host colours still update independently, preserving each child's own
 colour overrides. The daemon propagates accepted observations to live panes and
 retains them for later pane launches.
+
+### Live preferences
+
+`App::reload_config` uses the supplied `SettingsManager` to flush pending writes
+before reloading the global document. Invalid documents leave accepted preferences
+unchanged. Independently invalid areas retain their current values while valid
+areas apply; inverted sidebar bounds reject the interface area before clamping.
+Reloads preserve live sidebar collapse state and manually resized widths, subject
+to the new bounds. Accepted shell, directory and client preferences stay in
+`App::config` rather than a second configuration snapshot.
+
+Explicit reloads report success or warnings through a workspace toast. Silent
+reloads preserve existing feedback, and the loop can consume the reload observation
+once. Construction requires an explicit `PaneLaunchInputs::no_session` choice;
+that policy suppresses automatic background checks without changing their stored
+preferences.

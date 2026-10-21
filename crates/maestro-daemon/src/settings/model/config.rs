@@ -65,6 +65,16 @@ impl Config {
         self.server.headless_size()
     }
 
+    /// Accepts startup sidebar bounds, falling back to interface defaults when inverted.
+    #[must_use]
+    pub fn sidebar_bounds(&self) -> (u16, u16) {
+        validated_sidebar_bounds(self.ui.sidebar_min_width, self.ui.sidebar_max_width)
+            .unwrap_or_else(|| {
+                let defaults = super::UiConfig::default();
+                (defaults.sidebar_min_width, defaults.sidebar_max_width)
+            })
+    }
+
     /// Explain inverted sidebar width bounds before clamping.
     #[must_use]
     pub fn invalid_sidebar_bounds_diagnostic(&self) -> Option<String> {

@@ -328,3 +328,13 @@ fn background_inference_selects_theme_until_explicit_appearance_is_reported() {
     );
     assert!(app.state.host_terminal_appearance_explicit.0);
 }
+
+#[test]
+fn daemon_app_new_falls_back_to_default_bounds_on_inverted_config() {
+    let mut config = Config::default();
+    config.ui.sidebar_min_width = 50;
+    config.ui.sidebar_max_width = 30;
+    let app = app(&config);
+    assert_eq!(app.config.ui.sidebar_min_width, 18);
+    assert_eq!(app.config.ui.sidebar_max_width, 36);
+}

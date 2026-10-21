@@ -16,6 +16,7 @@ pub fn launch_inputs(
     let (events, receiver) = mpsc::channel(8);
     (
         PaneLaunchInputs {
+            no_session: true,
             setup_entry: PtySetupEntry {
                 executable: std::env::current_exe().unwrap(),
                 args: args.iter().map(OsString::from).collect(),

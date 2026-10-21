@@ -3,7 +3,8 @@
 mod ignored;
 mod reload;
 
-pub use reload::{config_diagnostic_summary, load_config, reload_config};
+pub(crate) use reload::apply_loaded;
+pub use reload::{config_diagnostic_summary, load_config, load_live_config, reload_config};
 
 use std::{cell::RefCell, path::Path};
 

@@ -22,6 +22,8 @@ use tokio::sync::{Notify, mpsc};
 
 /// Shared runtime adapters retained without a placeholder pane identity or geometry.
 pub struct PaneLaunchInputs {
+    /// Disable saved sessions and automatic background checks for this daemon lifetime.
+    pub no_session: bool,
     /// Caller executable implementing child-side terminal setup.
     pub setup_entry: PtySetupEntry,
     /// Daemon socket advertised to child commands.
@@ -86,12 +88,19 @@ impl<C: FnMut() -> u128> App<C> {
         event_rx: mpsc::Receiver<AppEvent>,
         event_hub: EventHub,
     ) -> Self {
+        let mut accepted = config.clone();
+        (accepted.ui.sidebar_min_width, accepted.ui.sidebar_max_width) = config.sidebar_bounds();
+        let config = &accepted;
         let mut app = Self {
             event_rx,
+            next_auto_update_check: None,
+            next_agent_manifest_update_check: None,
+            config_diagnostic_deadline: None,
+            config_reloaded_from_disk: false,
             copy_feedback_deadline: None,
             tab_bar_status: super::tab_bar_status::TabBarStatus::default(),
             state: DaemonState::new(config, clock, Arc::clone(&launch.manifests)),
-            config: config.clone(),
+            config: accepted.clone(),
             launch,
             terminal_runtimes: TerminalRuntimeRegistry::new(),
             event_hub,

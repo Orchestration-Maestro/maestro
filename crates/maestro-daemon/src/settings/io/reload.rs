@@ -63,6 +63,23 @@ pub async fn reload_config(
     current: &mut Config,
     agent_dir: &Path,
 ) -> (ConfigReloadReport, Vec<SettingsError>) {
+    let (loaded, other) = load_live_config(manager, agent_dir).await;
+    let report = match loaded {
+        Ok(loaded) => apply_loaded(current, loaded),
+        Err(diagnostics) => ConfigReloadReport {
+            status: ConfigReloadStatus::Failed,
+            diagnostics,
+        },
+    };
+    (report, other)
+}
+
+/// Flushes pending writes and loads independently decoded areas from one global document.
+/// Global document errors reject the load; project errors retain their separate reporting path.
+pub async fn load_live_config(
+    manager: &mut SettingsManager,
+    agent_dir: &Path,
+) -> (Result<LoadedConfig, Vec<String>>, Vec<SettingsError>) {
     manager.flush().await;
     let mut other = manager.drain_errors();
     manager.reload().await;
@@ -73,23 +90,24 @@ pub async fn reload_config(
     other.extend(project);
     if !global.is_empty() {
         return (
-            ConfigReloadReport {
-                status: ConfigReloadStatus::Failed,
-                diagnostics: global
-                    .iter()
-                    .map(|error| document_diagnostic(error, "keeping current config"))
-                    .collect(),
-            },
+            Err(global
+                .iter()
+                .map(|error| document_diagnostic(error, "keeping current config"))
+                .collect()),
             other,
         );
     }
-    let loaded = project_global_settings(&manager.get_global_settings(), agent_dir);
-    let report = apply_loaded(current, loaded);
-    (report, other)
+    (
+        Ok(project_global_settings(
+            &manager.get_global_settings(),
+            agent_dir,
+        )),
+        other,
+    )
 }
 
 /// Apply original semantic areas without coupling their namespace placement.
-fn apply_loaded(current: &mut Config, loaded: LoadedConfig) -> ConfigReloadReport {
+pub(crate) fn apply_loaded(current: &mut Config, loaded: LoadedConfig) -> ConfigReloadReport {
     macro_rules! apply {
         ($($field:ident),* $(,)?) => { $(
             if !loaded.invalid_sections.iter().any(|area| area == stringify!($field)) {

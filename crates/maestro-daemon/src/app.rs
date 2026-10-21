@@ -1,6 +1,7 @@
 //! Mutable daemon state and workspace operations.
 
 mod api;
+mod config;
 #[cfg(unix)]
 mod creation;
 mod runtime;
@@ -15,6 +16,14 @@ use state::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
+    /// Next automatic product check, absent when disabled or already requested.
+    pub next_auto_update_check: Option<std::time::Instant>,
+    /// Next automatic detection catalogue check.
+    pub next_agent_manifest_update_check: Option<std::time::Instant>,
+    /// Earliest time to remove the current settings diagnostic.
+    pub config_diagnostic_deadline: Option<std::time::Instant>,
+    /// Whether a disk reload awaits acknowledgement by the loop.
+    config_reloaded_from_disk: bool,
     /// Single internal observation queue drained by the daemon loop.
     pub event_rx: tokio::sync::mpsc::Receiver<crate::events::AppEvent>,
     /// Earliest time to remove the current clipboard acknowledgement.

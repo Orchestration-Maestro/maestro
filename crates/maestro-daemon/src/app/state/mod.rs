@@ -57,8 +57,30 @@ pub enum TabBarStatusSegment {
     Text(Option<String>),
 }
 
+/// Source controlling whether a settings reload replaces the live sidebar width.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SidebarWidthSource {
+    /// The configured default still owns the live width.
+    #[default]
+    ConfigDefault,
+    /// A restored session supplied the live width.
+    Persisted,
+    /// A user resize supplied the live width.
+    Manual,
+}
+
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
+    /// Live expanded sidebar width, independently resizable from its configured default.
+    pub sidebar_width: u16,
+    /// Owner of the live sidebar width.
+    pub sidebar_width_source: SidebarWidthSource,
+    /// Current agent-panel scroll position, reset when row composition reloads.
+    pub agent_panel_scroll: usize,
+    /// Compact diagnostic for the most recently loaded settings document.
+    pub config_diagnostic: Option<String>,
+    /// Whether connected clients must reacquire accepted interface preferences.
+    pub request_client_config_reload: maestro_protocol::shared::Flag,
     /// Accepted theme selection policy and renderer overrides.
     pub theme_runtime: ThemeRuntimeConfig,
     /// Active authored or sibling theme name, independent of palette rendering.
@@ -151,8 +173,14 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Creates empty daemon state using accepted settings and an identity clock.
     #[must_use]
     pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
+        let (sidebar_min, sidebar_max) = config.sidebar_bounds();
         let theme_runtime = ThemeRuntimeConfig::new(config, true);
         Self {
+            sidebar_width: config.ui.sidebar_width.clamp(sidebar_min, sidebar_max),
+            sidebar_width_source: SidebarWidthSource::ConfigDefault,
+            agent_panel_scroll: 0,
+            config_diagnostic: None,
+            request_client_config_reload: maestro_protocol::shared::Flag(false),
             theme_name: theme_runtime.effective_name(None).into(),
             theme_runtime,
             host_terminal_appearance: None,
