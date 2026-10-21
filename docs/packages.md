@@ -66,6 +66,10 @@ installed contents when the settings edit fails.
 
 ## Children
 
+Every package child starts through the native launcher with literal arguments and
+no shell. On Windows the launcher finds a command such as `npm` through `PATH` and
+`PATHEXT`, so `.cmd` shims start without `cmd.exe` reading their arguments again.
+
 `NativePackageOperations::run_command` runs a child with inherited streams, or, while
 the supplied query reports stdout taken over, with stdin ignored and output sent to
 standard error. It completes when the child exits, whether or not its streams are

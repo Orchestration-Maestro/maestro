@@ -180,7 +180,7 @@ fn root_case(case: &fixtures::Case<RootInput, Roots>) {
             agent_dir: agent.clone(),
             settings_manager: Rc::clone(&settings),
         },
-        NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local),
+        NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local),
     );
     let events = progress(&manager);
     let runtime = crate::support::io_runtime();
@@ -320,7 +320,7 @@ fn update_case(case: &fixtures::Case<UpdateInput, Updated>) {
             agent_dir: agent.clone(),
             settings_manager: Rc::clone(&settings),
         },
-        NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local),
+        NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local),
     ));
     let events = progress(manager.as_ref());
     let runtime = crate::support::io_runtime();

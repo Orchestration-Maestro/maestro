@@ -53,11 +53,7 @@ impl RetryFixture {
                 .clone(),
         ))));
         let local = Rc::new(tokio::task::LocalSet::new());
-        let native = Rc::new(NativePackageOperations::new(
-            |_| false,
-            Rc::new(|| false),
-            &local,
-        ));
+        let native = Rc::new(NativePackageOperations::new(Rc::new(|| false), &local));
         let effects = Rc::new(Effects {
             native_exists: true,
             ..Effects::default()

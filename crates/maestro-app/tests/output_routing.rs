@@ -366,7 +366,7 @@ fn package_probe() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     use std::rc::Rc;
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local);
+    let operations = NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local);
     let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
             for label in ["A", "B", "C"] {

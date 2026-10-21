@@ -41,7 +41,7 @@ fn updates_selected_unpinned_source_beside_pin() {
             agent_dir: format!("{cwd}/agent"),
             settings_manager: native_settings.clone(),
         },
-        NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+        NativePackageOperations::new(Rc::new(|| false), &local),
     ));
     let runtime = crate::runtime::runtime();
     runtime.block_on(local.run_until(async {
@@ -735,7 +735,7 @@ fn project_batch_preparation_keeps_existing_files() {
                 agent_dir: format!("{cwd}/agent"),
                 settings_manager: settings,
             },
-            NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+            NativePackageOperations::new(Rc::new(|| false), &local),
         ));
         let runtime = crate::runtime::runtime();
         runtime

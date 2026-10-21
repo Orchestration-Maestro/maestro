@@ -13,7 +13,7 @@ impl NativePackageOperations {
         args: &[String],
         options: CommandCaptureOptions<'_>,
     ) -> io::Result<String> {
-        let mut builder = tokio::process::Command::from(self.command(command, args));
+        let mut builder = tokio::process::Command::from(Self::command(command, args)?);
         if let Some(cwd) = options.cwd {
             builder.current_dir(cwd);
         }

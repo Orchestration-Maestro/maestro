@@ -165,7 +165,6 @@ fn captured_commands_preserve_stream_choice_and_failure_wrapper() {
 fn native_capture_matches_controlled_stream_results() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     let operations = NativePackageOperations::new(
-        |_| false,
         std::rc::Rc::new(|| false),
         &std::rc::Rc::new(tokio::task::LocalSet::new()),
     );
@@ -212,14 +211,6 @@ fn native_capture_matches_controlled_stream_results() {
         (child.status, child.stdout, child.stderr),
         (Some(3), "out\n".into(), "err\n".into())
     );
-    let child = NativePackageOperations::new(
-        |_| true,
-        std::rc::Rc::new(|| false),
-        &std::rc::Rc::new(tokio::task::LocalSet::new()),
-    )
-    .run_command_sync("printf", &["fallback".into()])
-    .unwrap();
-    assert_eq!(child.stdout, "fallback");
 }
 
 /// Selected commands and their independently observed root/argv outcomes.
