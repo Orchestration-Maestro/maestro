@@ -12,6 +12,25 @@ pub struct App<C> {
     pub state: DaemonState<C>,
     /// Live process owners keyed by durable terminal identity.
     pub terminal_runtimes: TerminalRuntimeRegistry,
+    /// Shared publication history for state transitions and pane exits.
+    pub event_hub: crate::api::event_hub::EventHub,
+    /// Temporary panes awaiting exit and restoration of their previous focus.
+    pub overlay_panes:
+        std::collections::HashMap<maestro_workspace::layout::PaneId, OverlayPaneState>,
+}
+
+/// Focus and cleanup retained while a temporary overlay process owns a pane.
+pub struct OverlayPaneState {
+    /// Workspace display position containing the overlay.
+    pub ws_idx: usize,
+    /// Tab display position containing the overlay.
+    pub tab_idx: usize,
+    /// Pane to restore if the overlay still has focus when it exits.
+    pub previous_focus: maestro_workspace::layout::PaneId,
+    /// Zoom state before the overlay took focus.
+    pub previous_zoomed: bool,
+    /// Temporary files owned by the overlay process.
+    pub temp_files: Vec<std::path::PathBuf>,
 }
 
 /// Retained daemon data independent of attached views.

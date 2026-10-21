@@ -583,3 +583,9 @@ Immediate workspace toasts use the first tab's live root directory for their
 context, falling back to terminal metadata and then the workspace identity.
 Delayed deliveries reread that directory at delivery time for both workspace and
 client notification context. Explicit workspace names still take precedence.
+
+Internal events publish agent release even when an idle agent's execution status
+has not changed. Pane death publishes completion and the exit event before its
+identity is removed. Temporary overlay exits clean their owned files and restore
+previous focus and zoom only while the overlay still owns focus; a focus change
+made before exit is preserved.
