@@ -411,6 +411,14 @@ fn failed_switch_keeps_previous_history_consistent() {
     let mut restricted = permissions.clone();
     restricted.set_readonly(true);
     fs::set_permissions(&readonly, restricted).unwrap();
+    // A privileged Unix run writes the read-only file anyway, so there is nothing to check.
+    #[cfg(unix)]
+    if maestro_test_directory::deny(&readonly, 0o444)
+        .unwrap()
+        .is_none()
+    {
+        return;
+    }
     let error = manager.set_session_file(&readonly).unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
     fs::set_permissions(&readonly, permissions).unwrap();

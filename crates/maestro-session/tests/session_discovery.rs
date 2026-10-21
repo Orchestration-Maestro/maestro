@@ -487,19 +487,19 @@ fn all_projects_skips_unreadable_children() {
     let sessions = Path::new(&agent).join("sessions");
     std::fs::write(sessions.join("good/bad.jsonl"), "{broken").unwrap();
     let locked = sessions.join("locked");
-    std::fs::set_permissions(&locked, std::os::unix::fs::PermissionsExt::from_mode(0o000)).unwrap();
-    let restricted = std::fs::read_dir(&locked).is_err();
+    // A privileged run reads the locked project anyway, so there is nothing to check.
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o000).unwrap() else {
+        return;
+    };
     let mut seen = Vec::new();
     let mut record = |loaded, total| {
         seen.push((loaded, total));
         Ok(())
     };
     let listed = runtime().block_on(SessionManager::list_all(&agent, Some(&mut record)));
-    std::fs::set_permissions(&locked, std::os::unix::fs::PermissionsExt::from_mode(0o700)).unwrap();
-    if restricted {
-        assert_eq!(ids(&listed), ["g1"]);
-        assert_eq!(seen, [(1, 2), (2, 2)]);
-    }
+    drop(restore);
+    assert_eq!(ids(&listed), ["g1"]);
+    assert_eq!(seen, [(1, 2), (2, 2)]);
 }
 
 #[test]

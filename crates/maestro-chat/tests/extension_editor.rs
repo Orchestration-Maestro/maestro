@@ -312,9 +312,7 @@ fn isolated(name: &str) -> bool {
         .nocapture()
         .case(name)
         .env_remove("MAESTRO_EDITOR_FILE")
-        .env("TMPDIR", directory)
-        .env("TEMP", directory)
-        .env("TMP", directory)
+        .temp_dir(directory)
         .env("PATH", directory)
         .output()
         .unwrap();
@@ -1117,6 +1115,13 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
     }
     maestro_tui::set_keybindings(manager());
     let root = std::env::temp_dir();
+    // A privileged run ignores the write and unlink faults, so it has nothing to check.
+    if maestro_test_directory::deny(&root, 0o500)
+        .unwrap()
+        .is_none()
+    {
+        return;
+    }
     for (input, expected) in cases::<FaultInput, FaultExpected>(
         "external_editor_finally_cleans_and_restarts_after_io_failures",
     ) {

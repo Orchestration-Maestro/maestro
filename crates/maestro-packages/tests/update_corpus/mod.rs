@@ -17,6 +17,8 @@ pub fn replay() {
         serde_json::from_str(include_str!("../fixtures/configured-update.json")).unwrap();
     let mut ids = std::collections::HashSet::new();
     assert_eq!(cases.len(), 81);
+    // Cases without an offline value run together in one child that starts online.
+    let online = case_in_child("online", |_| vec![]).is_some();
     for case in cases {
         assert!(ids.insert(case.id.clone()), "duplicate corpus case");
         if let Input::Offline { offline, .. } = &case.input {
@@ -24,7 +26,7 @@ pub fn replay() {
             if case_in_child(&case.id, environment).is_none() {
                 continue;
             }
-        } else if maestro_test_process::selection().is_child() {
+        } else if !online {
             continue;
         }
         assert_eq!(run(case.input), case.expected, "corpus case {}", case.id);

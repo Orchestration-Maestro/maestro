@@ -440,19 +440,16 @@ fn permission_discovery_fixture() -> (maestro_test_directory::Scratch, PathBuf, 
 #[test]
 fn unreadable_git_marker_keeps_workspace_ascent_and_footer_stop() {
     use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
-    use std::os::unix::fs::PermissionsExt;
     let (_directory, outer, inner) = permission_discovery_fixture();
     let marker = inner.join(".git");
     std::fs::write(&marker, "gitdir: ../.git\n").unwrap();
-    std::fs::set_permissions(&marker, std::fs::Permissions::from_mode(0o0)).unwrap();
-    let denied = std::fs::read(&marker).is_err();
+    // A privileged run reads the marker anyway, so there is nothing to check.
+    let Some(restore) = maestro_test_directory::deny(&marker, 0o0).unwrap() else {
+        return;
+    };
     let workspace = discover_git_paths_with(&inner, DiscoveryPolicy::Workspace);
     let footer = discover_git_paths_with(&inner, DiscoveryPolicy::Footer);
-    std::fs::set_permissions(&marker, std::fs::Permissions::from_mode(0o600)).unwrap();
-    // shortcut: privileged readers bypass mode bits; use an unprivileged child if root-run proof is required.
-    if !denied {
-        return;
-    }
+    drop(restore);
     assert_eq!(workspace.unwrap().repo_root, outer);
     assert!(footer.is_none());
 }
@@ -461,17 +458,14 @@ fn unreadable_git_marker_keeps_workspace_ascent_and_footer_stop() {
 #[test]
 fn inaccessible_git_marker_stat_climbs_for_both_callers() {
     use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
-    use std::os::unix::fs::PermissionsExt;
     let (_directory, outer, inner) = permission_discovery_fixture();
-    std::fs::set_permissions(&inner, std::fs::Permissions::from_mode(0o0)).unwrap();
-    let denied = std::fs::metadata(inner.join(".git")).is_err();
+    // A privileged run looks inside anyway, so there is nothing to check.
+    let Some(restore) = maestro_test_directory::deny(&inner, 0o0).unwrap() else {
+        return;
+    };
     let workspace = discover_git_paths_with(&inner, DiscoveryPolicy::Workspace);
     let footer = discover_git_paths_with(&inner, DiscoveryPolicy::Footer);
-    std::fs::set_permissions(&inner, std::fs::Permissions::from_mode(0o700)).unwrap();
-    // shortcut: privileged readers bypass mode bits; use an unprivileged child if root-run proof is required.
-    if !denied {
-        return;
-    }
+    drop(restore);
     assert_eq!(workspace.unwrap().repo_root, outer);
     assert_eq!(footer.unwrap().repo_root, outer);
 }
@@ -480,7 +474,7 @@ fn inaccessible_git_marker_stat_climbs_for_both_callers() {
 #[test]
 fn inaccessible_optional_common_metadata_falls_back_for_both_callers() {
     use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
-    use std::os::unix::fs::{PermissionsExt, symlink};
+    use std::os::unix::fs::symlink;
     let (directory, _outer, inner) = permission_discovery_fixture();
     let store = directory.path().join("store");
     let locked = directory.path().join("locked");
@@ -490,15 +484,13 @@ fn inaccessible_optional_common_metadata_falls_back_for_both_callers() {
     std::fs::write(locked.join("common"), "..\n").unwrap();
     symlink(locked.join("common"), store.join("commondir")).unwrap();
     std::fs::write(inner.join(".git"), format!("gitdir: {}\n", store.display())).unwrap();
-    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o0)).unwrap();
-    let denied = !store.join("commondir").exists();
+    // A privileged run follows the link anyway, so there is nothing to check.
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o0).unwrap() else {
+        return;
+    };
     let workspace = discover_git_paths_with(&inner, DiscoveryPolicy::Workspace);
     let footer = discover_git_paths_with(&inner, DiscoveryPolicy::Footer);
-    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o700)).unwrap();
-    // shortcut: privileged readers bypass mode bits; use an unprivileged child if root-run proof is required.
-    if !denied {
-        return;
-    }
+    drop(restore);
     assert_eq!(workspace.unwrap().git_common_dir, store);
     assert_eq!(footer.unwrap().git_common_dir, store);
 }

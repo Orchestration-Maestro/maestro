@@ -18,6 +18,9 @@ use worker_support::{Gates, driver, gated_npm_checks};
 
 #[test]
 fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (controlled, settings, effects, _tree) =
         support::installed(&json!({}), &json!(["npm:example", "npm:pinned@1"]));
     let (runtime, local) = driver(&effects);
@@ -132,6 +135,9 @@ fn offline_values_short_circuit_before_settings() {
 
 #[test]
 fn availability_reads_snapshots_then_project_first_identities() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, settings, effects, _tree) = support::installed(
         &json!({"packages":["npm:a","npm:u","git:git@github.com:org/repo.git","./local"]}),
         &json!(["npm:z", "npm:a", "https://github.com/org/repo", "./local"]),
@@ -170,6 +176,9 @@ fn availability_reads_snapshots_then_project_first_identities() {
 
 #[test]
 fn availability_preserves_first_same_scope_source_and_pin_precedence() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, settings, effects, tree) = support::installed(
         &json!({"packages":["npm:shadow","npm:missing"]}),
         &json!([{"source":"npm:first","skills":["x"]}, "npm:first@1", "npm:shadow@latest", "npm:missing"]),
@@ -192,6 +201,9 @@ fn availability_preserves_first_same_scope_source_and_pin_precedence() {
 
 #[test]
 fn availability_skips_local_pins_before_existence() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let pins = json!([
         "npm:fixed@1.0.0",
         "npm:tag@latest",
@@ -228,6 +240,9 @@ fn availability_ignores_missing_contents_without_installing() {
 
 #[test]
 fn npm_availability_compares_exact_version_strings() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (installed, latest, expected) in [
         ("1.0", "\"1.0\"", false),
         ("1.0", "\"2.0\"", true),
@@ -250,6 +265,9 @@ fn npm_availability_compares_exact_version_strings() {
 
 #[test]
 fn npm_version_files_preserve_selected_field_semantics() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (manifest, expected, calls) in [
         (None, false, 0),
         (Some("{broken"), false, 0),
@@ -289,6 +307,9 @@ fn npm_version_files_preserve_selected_field_semantics() {
 
 #[test]
 fn npm_lookup_failures_are_suppressed_without_effects() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (latest, expected) in [
         (" \u{feff}\n", false),
         ("not-json", false),
@@ -319,6 +340,9 @@ fn npm_lookup_failures_are_suppressed_without_effects() {
 
 #[test]
 fn npm_capture_uses_live_prefix_cwd_and_timeout() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, settings, effects, tree) =
         support::installed(&json!({"packages":["npm:@scope/pkg"]}), &json!([]));
     let changed = settings;
@@ -355,6 +379,9 @@ fn npm_capture_uses_live_prefix_cwd_and_timeout() {
 
 #[test]
 fn git_availability_uses_origin_upstream_then_head() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for upstream in ["origin/main", "", "other/main", "origin/"] {
         let (manager, _, effects, tree) =
             support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
@@ -410,6 +437,9 @@ fn git_availability_uses_origin_upstream_then_head() {
 
 #[test]
 fn git_remote_failures_obey_fallback_boundaries() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) =
         support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
     responses(
@@ -587,6 +617,9 @@ const REMOTE_HEAD_CASES: &[(&[&str], bool)] = &[
 
 #[test]
 fn git_head_matching_keeps_hash_line_and_whitespace_rules() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (outputs, changed) in REMOTE_HEAD_CASES {
         let (manager, _, effects, _tree) =
             support::installed(&json!({}), &json!(["git:github.com/org/repo"]));
@@ -601,23 +634,25 @@ fn git_head_matching_keeps_hash_line_and_whitespace_rules() {
 
 #[test]
 fn invalid_settings_and_ambient_reads_follow_consumption_order() {
-    for packages in [json!(null), json!([])] {
-        let (manager, _, effects, _tree) =
-            support::installed(&json!({"packages":packages}), &json!([]));
-        assert!(check(&manager, &effects).unwrap().is_empty());
-    }
-    for packages in [
-        json!({}),
-        json!([null]),
-        json!([{"skills":[]}]),
-        json!([{"source":3}]),
-        json!(["npm:good", null]),
-    ] {
-        let (manager, _, effects, _tree) =
-            support::installed(&json!({"packages":packages}), &json!([]));
-        assert!(check(&manager, &effects).is_err());
-        assert_eq!(effects.spawns.get(), 0);
-        assert!(effects.calls.borrow().is_empty());
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_some() {
+        for packages in [json!(null), json!([])] {
+            let (manager, _, effects, _tree) =
+                support::installed(&json!({"packages":packages}), &json!([]));
+            assert!(check(&manager, &effects).unwrap().is_empty());
+        }
+        for packages in [
+            json!({}),
+            json!([null]),
+            json!([{"skills":[]}]),
+            json!([{"source":3}]),
+            json!(["npm:good", null]),
+        ] {
+            let (manager, _, effects, _tree) =
+                support::installed(&json!({"packages":packages}), &json!([]));
+            assert!(check(&manager, &effects).is_err());
+            assert_eq!(effects.spawns.get(), 0);
+            assert!(effects.calls.borrow().is_empty());
+        }
     }
     for (index, (user, project, expected)) in [
         (
@@ -662,6 +697,9 @@ fn invalid_settings_and_ambient_reads_follow_consumption_order() {
 
 #[test]
 fn check_calls_do_not_hold_settings_borrows_across_effects() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, settings, effects, tree) =
         support::installed(&json!({"packages":["npm:first","npm:second"]}), &json!([]));
     let global = support::npm_root(tree.path(), true);
@@ -697,6 +735,9 @@ fn check_calls_do_not_hold_settings_borrows_across_effects() {
 
 #[test]
 fn availability_returns_typed_records_in_source_order() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = support::installed(
         &json!({"packages":["npm:p2","git:github.com/org/p3"]}),
         &json!(["git:github.com/org/p0", "npm:p1"]),
@@ -739,6 +780,9 @@ fn availability_returns_typed_records_in_source_order() {
 
 #[test]
 fn four_workers_claim_slots_without_global_serialization() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for count in [0, 1, 4, 7] {
         check_pool_size(count);
     }
@@ -762,6 +806,9 @@ fn four_workers_claim_slots_without_global_serialization() {
 
 #[test]
 fn first_failure_keeps_other_workers_claiming_sources() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = support::installed(
         &json!({"packages":["npm:fail","git:github.com/org/p3","git:github.com/org/p4","git:github.com/org/p5"]}),
         &json!([
@@ -805,6 +852,9 @@ fn first_failure_keeps_other_workers_claiming_sources() {
 
 #[test]
 fn availability_releases_last_owner_after_remaining_work() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = support::installed(
         &json!({"packages":["npm:fail","git:github.com/org/p3"]}),
         &json!([
@@ -921,6 +971,9 @@ fn assert_only_read_commands(calls: &[Vec<String>]) {
 
 #[test]
 fn native_git_availability_leaves_head_and_contents_unchanged() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let scratch = scratch::Scratch::new().unwrap();
     let root = scratch.path();
     let (author, install) = seed_git(root);

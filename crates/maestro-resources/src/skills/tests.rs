@@ -35,7 +35,7 @@ enum Cwd {
 struct Fixture {
     /// Restores read permission before the tree is removed.
     #[cfg(unix)]
-    _unlock: Option<maestro_test_directory::Unlock>,
+    _restore: Option<maestro_test_directory::Restore>,
     /// Owner of the tree.
     _scratch: Scratch,
     /// Root for anchored paths.
@@ -46,32 +46,33 @@ struct Fixture {
 
 #[cfg(not(windows))]
 impl Fixture {
-    /// Create the tree and enter its working directory.
-    fn new(cwd: Cwd) -> Self {
+    /// Create the tree and enter its working directory; `None` when an unreadable one
+    /// stays readable, as in a privileged run.
+    fn new(cwd: Cwd) -> Option<Self> {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path().to_path_buf();
         #[cfg(unix)]
         if cwd == Cwd::Unreadable {
-            let (process, unlock) = scratch.enter_unreadable("process").unwrap();
-            return Self {
-                _unlock: Some(unlock),
+            let (process, restore) = scratch.enter_unreadable("process").unwrap()?;
+            return Some(Self {
+                _restore: Some(restore),
                 _scratch: scratch,
                 root,
                 process,
-            };
+            });
         }
         let process = root.join("process");
         fs::create_dir(&process).unwrap();
         std::env::set_current_dir(&process).unwrap();
         #[cfg(not(unix))]
         let _ = cwd;
-        Self {
+        Some(Self {
             #[cfg(unix)]
-            _unlock: None,
+            _restore: None,
             _scratch: scratch,
             root,
             process,
-        }
+        })
     }
 
     /// The anchored spelling of `relative` below the root.
@@ -102,7 +103,7 @@ fn write(path: impl AsRef<Path>, text: &str) {
 ///
 /// The calling process starts the child and returns once it passed. A child where the
 /// working directory stays readable although `Unreadable` was asked for (a privileged
-/// run, or a platform that reads it another way) skips the case.
+/// run) skips the case.
 #[cfg(not(windows))]
 fn in_child(name: &str, case: &str, cwd: Cwd, body: impl FnOnce(&Fixture)) {
     let selection = maestro_test_process::selection();
@@ -119,10 +120,9 @@ fn in_child(name: &str, case: &str, cwd: Cwd, body: impl FnOnce(&Fixture)) {
     if !selection.runs_case(case) {
         return;
     }
-    let fixture = Fixture::new(cwd);
-    if cwd != Cwd::Readable && std::env::current_dir().is_ok() {
+    let Some(fixture) = Fixture::new(cwd) else {
         return;
-    }
+    };
     body(&fixture);
 }
 
@@ -486,10 +486,13 @@ fn explicit_skill_path_on_the_cwd_drive_continues_from_the_cwd() {
 fn explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root() {
     let name = "explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root";
     if !maestro_test_process::selection().is_child() {
+        // The working directory must not be on D:, or the path continues from it instead.
+        let system = std::env::var("SystemDrive").unwrap();
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .env_remove("=D:")
+            .current_dir(format!(r"{system}\"))
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
@@ -516,6 +519,25 @@ fn explicit_skill_path_on_another_drive_continues_from_the_drive_directory() {
     });
 }
 
+/// The drive letter of `path` and its spelling without a verbatim prefix (`\\?\C:\x`
+/// gives `C` and `C:\x`).
+#[cfg(windows)]
+fn drive_and_plain_spelling(path: &Path) -> (char, PathBuf) {
+    use std::path::{Component, Prefix};
+    let Some(Component::Prefix(prefix)) = path.components().next() else {
+        panic!("{} has no drive", path.display());
+    };
+    let (Prefix::Disk(letter) | Prefix::VerbatimDisk(letter)) = prefix.kind() else {
+        panic!("{} has no drive letter", path.display());
+    };
+    let text = path.to_str().unwrap();
+    let plain = text.strip_prefix(r"\\?\").unwrap_or(text);
+    (
+        char::from(letter).to_ascii_uppercase(),
+        PathBuf::from(plain),
+    )
+}
+
 /// A real path continues a drive-relative path from the reported drive directory.
 #[cfg(windows)]
 #[test]
@@ -524,13 +546,12 @@ fn real_path_continues_from_the_drive_directory() {
     let scratch = Scratch::new().unwrap();
     let directory = scratch.path().to_path_buf();
     if !maestro_test_process::selection().is_child() {
-        let text = directory.to_str().unwrap();
-        let letter = text.chars().next().unwrap().to_ascii_uppercase();
+        let (letter, plain) = drive_and_plain_spelling(&directory);
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
-            .env(format!("={letter}:"), text)
-            .env("MAESTRO_DRIVE_TEST_DIRECTORY", text)
+            .env(format!("={letter}:"), &plain)
+            .env("MAESTRO_DRIVE_TEST_DIRECTORY", &plain)
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
@@ -538,7 +559,7 @@ fn real_path_continues_from_the_drive_directory() {
     }
     let directory = PathBuf::from(std::env::var("MAESTRO_DRIVE_TEST_DIRECTORY").unwrap());
     fs::write(directory.join("item.md"), "item").unwrap();
-    let letter = directory.to_str().unwrap().chars().next().unwrap();
+    let (letter, _) = drive_and_plain_spelling(&directory);
     let resolved = real_path(Path::new(&format!("{letter}:item.md"))).unwrap();
     assert_eq!(resolved, directory.join("item.md"));
 }

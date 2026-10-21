@@ -147,19 +147,16 @@ fn edit_matching_failures_leave_original_bytes() {
 #[test]
 fn edit_execution_requires_read_and_write_access() {
     use maestro_tools::edit_diff::compute_edit_diff;
-    use std::os::unix::fs::PermissionsExt;
     for row in rows("edit_execution_requires_read_and_write_access") {
         let args: FileInput = serde_json::from_value(row.input).unwrap();
         let expected: FileExpected = serde_json::from_value(row.expected).unwrap();
         let dir = TempDir::new();
         let path = dir.file(&args.path, &args.bytes);
         let mode = args.mode.unwrap();
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(mode)).unwrap();
-        let probe = rustix::fs::access(
-            &path,
-            rustix::fs::Access::READ_OK | rustix::fs::Access::WRITE_OK,
-        );
-        assert_eq!(probe.err().unwrap(), rustix::io::Errno::ACCESS);
+        // A privileged run reads and writes anyway, so there is nothing to check.
+        let Some(restore) = maestro_test_directory::deny(&path, mode).unwrap() else {
+            continue;
+        };
         let tool: Tool = create_edit_tool_definition(dir.text(), EditToolOptions::default());
         let error = run(start(&tool, args.arguments(), None)).err().unwrap();
         assert!(error.message.starts_with("Could not edit file:"));
@@ -167,7 +164,7 @@ fn edit_execution_requires_read_and_write_access() {
         if mode == 0o444 {
             assert!(run(compute_edit_diff(&path, "hello", "world", &dir.text()).unwrap()).is_ok());
         }
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        drop(restore);
         assert_eq!(std::fs::read(path).unwrap(), expected.bytes);
     }
 }

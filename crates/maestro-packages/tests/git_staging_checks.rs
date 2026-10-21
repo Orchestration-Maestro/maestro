@@ -191,6 +191,9 @@ fn git_requested_ref_is_applied_before_dependencies() {
 #[cfg(unix)]
 #[test]
 fn git_failed_dependency_restores_revision_at_mutation_owner() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let fixture = crate::native_git::retry::RetryFixture::new("ordinary");
     fixture.advance();
     *fixture.fail.borrow_mut() = "dependencies".into();
@@ -205,6 +208,9 @@ fn git_failed_dependency_restores_revision_at_mutation_owner() {
 #[cfg(unix)]
 #[test]
 fn git_update_failure_restores_head_and_retry_installs_dependencies() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for layout in ["ordinary", "linked", "separate", "include"] {
         for phase in ["reset", "clean", "dependencies"] {
             check_update_retry(layout, phase);
@@ -374,19 +380,19 @@ fn git_missing_install_publishes_only_prepared_contents() {
 fn git_staging_collision_and_publication_failures_keep_owned_paths() {
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
         let fixture = Fixture::new(&json!({}));
         let parent = fixture.agent("git/example.test/team");
         std::fs::create_dir_all(&parent).unwrap();
-        std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o555)).unwrap();
-        let result = block_on(
-            fixture
-                .manager
-                .install("https://example.test/team/repo", None),
-        );
-        std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o755)).unwrap();
-        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
-        assert_eq!(std::fs::read_dir(parent).unwrap().count(), 0);
+        if let Some(restore) = maestro_test_directory::deny(&parent, 0o555).unwrap() {
+            let result = block_on(
+                fixture
+                    .manager
+                    .install("https://example.test/team/repo", None),
+            );
+            drop(restore);
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+            assert_eq!(std::fs::read_dir(parent).unwrap().count(), 0);
+        }
     }
     let collision_fixture = Fixture::new(&json!({}));
     // Another writer takes the target while the clone runs.
@@ -428,6 +434,9 @@ fn git_staging_collision_and_publication_failures_keep_owned_paths() {
 
 #[test]
 fn git_missing_acquisition_routes_share_staging() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for route in ["install", "persist", "configured", "explicit", "update"] {
         let source = "https://example.test/team/repo";
         let fixture = Fixture::new(&if matches!(route, "configured" | "update") {
@@ -719,6 +728,9 @@ fn git_repin_checkout_failure_restores_original_selection() {
 #[test]
 fn git_fetch_or_probe_failure_does_not_start_rollback() {
     use crate::native_git::{git, retry::RetryFixture};
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for phase in ["fetch", "HEAD", "@{upstream}", "current"] {
         let fixture = RetryFixture::new("ordinary");
         if phase != "current" {
@@ -762,19 +774,23 @@ fn git_fetch_or_probe_failure_does_not_start_rollback() {
 #[cfg(unix)]
 #[test]
 fn git_recovery_io_failure_reports_original_kind_without_persisting() {
-    use std::os::unix::fs::PermissionsExt;
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     check_native_recovery_failure("locked");
     check_native_recovery_failure("selection-recovery");
     let staged = Fixture::new(&json!({}));
-    let parent = staged.agent("git/example.test/team");
     // The clone fails after its staging parent stopped accepting removals.
-    let locked = parent.clone();
+    let locked = staged.agent("git/example.test/team");
+    let denial = std::rc::Rc::new(std::cell::RefCell::new(None));
+    let held = std::rc::Rc::clone(&denial);
     staged
         .script
         .hooks
         .borrow_mut()
         .push_back(Box::new(move |_| {
-            std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o555)).unwrap();
+            let restore = maestro_test_directory::deny(&locked, 0o555).unwrap();
+            *held.borrow_mut() = Some(restore);
         }));
     staged
         .script
@@ -790,7 +806,11 @@ fn git_recovery_io_failure_reports_original_kind_without_persisting() {
             .install_and_persist("https://example.test/team/repo", None),
     )
     .unwrap_err();
-    std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o755)).unwrap();
+    // A privileged run still removes the staged clone, so there is no recovery failure.
+    let Some(restore) = denial.take().expect("the clone hook ran") else {
+        return;
+    };
+    drop(restore);
     assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
     assert!(error.to_string().contains("recovery failed"));
     assert!(
@@ -856,8 +876,7 @@ fn git_repin_live_configuration_reaches_selected_transport() {
 #[test]
 fn git_temporary_refresh_recovers_then_suppresses_failure() {
     use crate::native_git::{git, retry::RetryFixture};
-    let temporary = |base: &str| vec![("TMPDIR", Some(base.to_owned()))];
-    if crate::resolution_support::case_in_child("temporary", temporary).is_none() {
+    if crate::resolution_support::case_in_child("temporary", |_| vec![]).is_none() {
         return;
     }
     let fixture = RetryFixture::new("ordinary");

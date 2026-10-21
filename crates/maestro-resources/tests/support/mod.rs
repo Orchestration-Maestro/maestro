@@ -30,16 +30,8 @@ impl Default for Directory {
     }
 }
 
-/// Permission bits put back on drop, so the tree can be removed.
 #[cfg(unix)]
-pub struct Restore(PathBuf, u32);
-#[cfg(unix)]
-impl Drop for Restore {
-    fn drop(&mut self) {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&self.0, std::fs::Permissions::from_mode(self.1));
-    }
-}
+pub use maestro_test_directory::Restore;
 
 /// Take every permission away from `path`. Returns the guard that puts them back and the
 /// error reading `path` now gives, or `None` when the run still reads it (a privileged run).
@@ -49,16 +41,13 @@ impl Drop for Restore {
 #[cfg(unix)]
 #[must_use]
 pub fn deny(path: &Path) -> Option<(Restore, String)> {
-    use std::os::unix::fs::PermissionsExt;
-    let mode = std::fs::metadata(path).unwrap().permissions().mode();
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o000)).unwrap();
-    let guard = Restore(path.to_path_buf(), mode);
+    let guard = maestro_test_directory::deny(path, 0o000).unwrap()?;
     let error = if path.is_dir() {
         std::fs::read_dir(path).err()
     } else {
         std::fs::read(path).err()
     };
-    error.map(|error| (guard, error.to_string()))
+    Some((guard, error.unwrap().to_string()))
 }
 
 /// Create a link at `link` whose target lies in a directory without search permission: a

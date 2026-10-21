@@ -63,14 +63,13 @@ impl Scratch {
     /// `name`. Reading the working directory then fails with `PermissionDenied` while paths
     /// relative to it keep working. Returns the working directory and the guard that gives
     /// `name` its permissions back; drop the guard before this owner. The working directory
-    /// belongs to the whole process, so only a process running one test may call this. A
-    /// privileged process still reads the working directory; callers check for that.
+    /// belongs to the whole process, so only a process running one test may call this.
+    /// Returns `None` when the process still reads `name`, as a privileged process does.
     ///
     /// # Errors
     /// Returns a directory creation, working-directory change or permission failure.
     #[cfg(unix)]
-    pub fn enter_unreadable(&self, name: &str) -> io::Result<(PathBuf, Unlock)> {
-        use std::os::unix::fs::PermissionsExt;
+    pub fn enter_unreadable(&self, name: &str) -> io::Result<Option<(PathBuf, Restore)>> {
         let locked = self.path.join(name);
         fs::create_dir(&locked)?;
         std::env::set_current_dir(&locked)?;
@@ -81,21 +80,63 @@ impl Scratch {
             std::env::set_current_dir(&segment)?;
             process.push(&segment);
         }
-        fs::set_permissions(&locked, fs::Permissions::from_mode(0o311))?;
-        Ok((process, Unlock(locked)))
+        Ok(deny(&locked, 0o311)?.map(|restore| (process, restore)))
     }
 }
 
-/// Gives the ancestor of an unreadable working directory its permissions back on drop.
+/// Set `mode` on `path` and check that this process is now refused what the mode takes
+/// from the owner: reading or listing without read, writing or creating an entry without
+/// write, and looking up an entry without search. Returns the guard that gives `path` its
+/// earlier permissions back, or `None`, with those permissions already back, when the
+/// process is not refused, as in a privileged run.
+///
+/// # Errors
+/// Returns a metadata or permission-change failure.
+#[cfg(unix)]
+pub fn deny(path: impl AsRef<Path>, mode: u32) -> io::Result<Option<Restore>> {
+    use std::os::unix::fs::PermissionsExt;
+    let path = path.as_ref();
+    let metadata = fs::metadata(path)?;
+    fs::set_permissions(path, fs::Permissions::from_mode(mode))?;
+    let restore = Restore(path.to_owned(), metadata.permissions());
+    Ok(refused(path, mode, metadata.is_dir()).then_some(restore))
+}
+
+/// Whether each owner access that `mode` lacks is refused to this process.
+#[cfg(unix)]
+fn refused(path: &Path, mode: u32, directory: bool) -> bool {
+    let denied = |result: io::Result<()>| {
+        result.is_err_and(|error| error.kind() == io::ErrorKind::PermissionDenied)
+    };
+    let probe = path.join(".maestro-deny-probe");
+    let read = || {
+        if directory {
+            fs::read_dir(path).map(drop)
+        } else {
+            fs::File::open(path).map(drop)
+        }
+    };
+    let write = || {
+        if directory {
+            fs::create_dir(&probe).and_then(|()| fs::remove_dir(&probe))
+        } else {
+            fs::OpenOptions::new().append(true).open(path).map(drop)
+        }
+    };
+    (mode & 0o400 != 0 || denied(read()))
+        && (mode & 0o200 != 0 || denied(write()))
+        && (mode & 0o100 != 0 || !directory || denied(fs::symlink_metadata(&probe).map(drop)))
+}
+
+/// Gives a denied path its earlier permissions back on drop.
 #[cfg(unix)]
 #[derive(Debug)]
-pub struct Unlock(PathBuf);
+pub struct Restore(PathBuf, fs::Permissions);
 
 #[cfg(unix)]
-impl Drop for Unlock {
+impl Drop for Restore {
     fn drop(&mut self) {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fs::set_permissions(&self.0, fs::Permissions::from_mode(0o755));
+        let _ = fs::set_permissions(&self.0, self.1.clone());
     }
 }
 

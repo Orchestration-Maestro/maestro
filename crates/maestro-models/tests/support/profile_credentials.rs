@@ -303,7 +303,13 @@ pub fn check_rows(test: &str) -> TestResult {
             .ok_or("unknown row")?;
         return crate::runtime::run(converse(row));
     }
-    owned.iter().try_for_each(|row| check_outside(test, row))
+    // A privileged run writes a read-only cache anyway, so such a row has nothing to check.
+    let probe = maestro_test_directory::Scratch::new()?;
+    let denials = maestro_test_directory::deny(probe.path(), 0o555)?.is_some();
+    owned
+        .iter()
+        .filter(|row| denials || row.input.read_only.is_none())
+        .try_for_each(|row| check_outside(test, row))
 }
 
 /// Reject a fixture whose ids repeat.

@@ -261,9 +261,13 @@ fn moved(root: &str, value: Value) -> Value {
 /// Build the recorded install tree below `tree`, enter the recorded working directory and
 /// return the case with its POSIX paths moved there. Existence and canonical paths now come
 /// from the file system, so the trace no longer records those reads. `None` for a case that
-/// needs links or a removed working directory where the platform has neither.
+/// needs links or a removed working directory where the platform has neither, and for a
+/// case recorded with POSIX paths on a Windows host.
 fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Case> {
     if case["input"]["windows"] != true {
+        if cfg!(windows) {
+            return None;
+        }
         let input = case["input"].as_object_mut().unwrap();
         input
             .entry("package_dir")

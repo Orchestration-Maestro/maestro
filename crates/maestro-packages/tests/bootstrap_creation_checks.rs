@@ -64,44 +64,61 @@ fn resolve_source(fixture: &Fixture, source: &str, scope: SourceScope) -> io::Re
     Ok(entry.path.clone())
 }
 
+/// Resolves an npm source into `scope`, whose root exists beforehand when asked, and
+/// checks the bootstrap files; a temporary root lies inside the case's `tree`.
+fn npm_bootstrap_files(
+    tree: &std::path::Path,
+    scope: SourceScope,
+    existing_root: bool,
+    expected: &BootstrapFiles,
+) {
+    let fixture = Fixture::new(&serde_json::json!({}));
+    let root = match scope {
+        SourceScope::Project => fixture.project(".maestro/npm"),
+        _ => format!(
+            "{}/maestro-extensions/npm/f35b2129",
+            std::env::temp_dir().to_str().unwrap()
+        ),
+    };
+    if existing_root {
+        std::fs::create_dir_all(&root).unwrap();
+    }
+    fixture
+        .script
+        .hooks
+        .borrow_mut()
+        .push_back(Box::new(|call| {
+            install_resource(call);
+        }));
+    let entry = resolve_source(&fixture, "npm:fresh", scope).unwrap();
+    assert_eq!(entry, format!("{root}/node_modules/fresh/entry.ts"));
+    if scope == SourceScope::Temporary {
+        assert!(std::path::Path::new(&root).starts_with(tree), "{root}");
+    }
+    assert_eq!(
+        sandbox::read(&format!("{root}/.gitignore")),
+        expected.gitignore
+    );
+    assert_eq!(
+        sandbox::read(&format!("{root}/package.json")),
+        expected.package_json
+    );
+}
+
 #[test]
 fn resolution_creates_exact_bootstrap_files() {
-    let temporary = |base: &str| vec![("TMPDIR", Some(base.to_owned()))];
-    if crate::resolution_support::case_in_child("temporary", temporary).is_none() {
-        return;
-    }
     let expected = texts();
     for scope in [SourceScope::Project, SourceScope::Temporary] {
         for existing_root in [false, true] {
-            let fixture = Fixture::new(&serde_json::json!({}));
-            let root = match scope {
-                SourceScope::Project => fixture.project(".maestro/npm"),
-                _ => format!(
-                    "{}/maestro-extensions/npm/f35b2129",
-                    std::env::temp_dir().to_str().unwrap()
-                ),
-            };
-            if existing_root {
-                std::fs::create_dir_all(&root).unwrap();
+            // Each case owns its tree and the temporary directory inside it.
+            let case = format!("{scope:?}-{existing_root}");
+            if let Some(tree) = crate::resolution_support::case_in_child(&case, |_| vec![]) {
+                npm_bootstrap_files(&tree, scope, existing_root, &expected);
             }
-            fixture
-                .script
-                .hooks
-                .borrow_mut()
-                .push_back(Box::new(|call| {
-                    install_resource(call);
-                }));
-            let entry = resolve_source(&fixture, "npm:fresh", scope).unwrap();
-            assert_eq!(entry, format!("{root}/node_modules/fresh/entry.ts"));
-            assert_eq!(
-                sandbox::read(&format!("{root}/.gitignore")),
-                expected.gitignore
-            );
-            assert_eq!(
-                sandbox::read(&format!("{root}/package.json")),
-                expected.package_json
-            );
         }
+    }
+    if crate::resolution_support::case_in_child("git", |_| vec![]).is_none() {
+        return;
     }
     for scope in [SourceScope::User, SourceScope::Project] {
         let fixture = Fixture::new(&serde_json::json!({}));
@@ -207,6 +224,9 @@ fn preserved(path: &str, kind: Entry, original: &std::fs::Metadata) {
 
 #[test]
 fn resolution_preserves_existing_bootstrap_entries() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let expected = texts();
     for filename in [".gitignore", "package.json"] {
         for kind in entries() {
@@ -261,7 +281,6 @@ enum Boundary {
 /// Checks that the operating system's error and the completed effect prefix reach the caller.
 #[cfg(unix)]
 fn failing_resolution(boundary: Boundary) {
-    use std::os::unix::fs::PermissionsExt;
     let fixture = Fixture::new(&serde_json::json!({"npmCommand":[""]}));
     let root = fixture.project(".maestro/npm");
     let locked = match boundary {
@@ -269,10 +288,12 @@ fn failing_resolution(boundary: Boundary) {
         Boundary::Ignore => root.clone(),
     };
     std::fs::create_dir_all(&locked).unwrap();
-    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o555).unwrap() else {
+        return;
+    };
     let expected = std::fs::create_dir(format!("{locked}/probe")).unwrap_err();
     let error = resolve_source(&fixture, "npm:failure", SourceScope::Project).unwrap_err();
-    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+    drop(restore);
     assert_eq!(error.raw_os_error(), expected.raw_os_error());
     assert!(
         fixture.calls().is_empty(),
@@ -287,6 +308,9 @@ fn failing_resolution(boundary: Boundary) {
 
 #[test]
 fn resolution_propagates_original_bootstrap_failures() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     #[cfg(unix)]
     for boundary in [Boundary::Directory, Boundary::Ignore] {
         failing_resolution(boundary);

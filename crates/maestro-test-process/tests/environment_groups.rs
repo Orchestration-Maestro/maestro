@@ -142,6 +142,35 @@ fn an_unknown_group_is_refused() {
     assert!(output.status.success(), "{output:?}");
 }
 
+#[test]
+fn cleared_children_keep_the_temporary_directory() {
+    let test = "cleared_children_keep_the_temporary_directory";
+    if !maestro_test_process::selection().is_child() {
+        let root =
+            std::env::temp_dir().join(format!("maestro-test-process-temp-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let output = TestProcess::current(test)
+            .unwrap()
+            .case("*")
+            .temp_dir(&root)
+            .output();
+        std::fs::remove_dir_all(&root).unwrap();
+        let output = output.unwrap();
+        assert!(output.status.success(), "{output:?}");
+        return;
+    }
+    // The wildcard child runs under the directory its parent chose; its cleared group
+    // child must see the same one.
+    let expected = std::env::temp_dir();
+    let selected = run_per_environment(test, [()], |()| {
+        BTreeMap::from([("MTP_EXPECTED_TEMP", expected.clone())])
+    });
+    if selected.unwrap().is_some() {
+        let expected = std::env::var_os("MTP_EXPECTED_TEMP").unwrap();
+        assert_eq!(std::env::temp_dir(), PathBuf::from(expected));
+    }
+}
+
 /// Selection transport names that callers must never read or write.
 const SELECTION_VARIABLES: &[&str] = &[
     "MAESTRO_CHILD_CASE",

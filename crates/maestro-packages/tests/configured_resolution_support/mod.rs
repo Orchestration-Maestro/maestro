@@ -75,8 +75,8 @@ struct Fixture {
     manager: DefaultPackageManager<support::Controlled>,
     /// Surviving settings alias.
     settings: Rc<std::cell::RefCell<SettingsManager>>,
-    /// Directory permissions restored before removing the tree.
-    denied: Vec<std::path::PathBuf>,
+    /// Guards that give denied entries their permissions back before the tree goes.
+    _denied: Vec<maestro_test_directory::Restore>,
     /// Completed effect observations.
     effects: Rc<support::Effects>,
 }
@@ -112,7 +112,10 @@ fn run_case(case: &Record) {
     }) else {
         return;
     };
-    let fixture = setup(&case.recipe, base);
+    // A privileged run reads denied entries anyway, so such a recipe has nothing to check.
+    let Some(fixture) = setup(&case.recipe, base) else {
+        return;
+    };
     let _removed = case.recipe.cwd_failure.unwrap_or_default().then(|| {
         let owner = scratch::Scratch::new_in(&fixture.base).unwrap();
         owner.enter_removed("removed").unwrap();
@@ -120,8 +123,9 @@ fn run_case(case: &Record) {
     });
     resolution_support::run(observe(&fixture, case)).unwrap();
 }
-/// Constructs the configured manager from real scoped settings files.
-fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Fixture {
+/// Constructs the configured manager from real scoped settings files; `None` when this
+/// process still reads the recipe's denied entries.
+fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Option<Fixture> {
     let base = root.to_str().unwrap();
     let cwd = recipe
         .cwd
@@ -136,7 +140,7 @@ fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Fixture {
     if !recipe.no_git.unwrap_or_default() {
         fs::write(Path::new(&cwd).join(".git"), "gitdir: unused").unwrap();
     }
-    native_tree(&root, recipe);
+    let denied = native_tree(&root, recipe)?;
     let mut global = substitute(&recipe.global, base);
     global["npmCommand"] = json!(["npm"]);
     fs::write(Path::new(&user).join("settings.json"), global.to_string()).unwrap();
@@ -158,16 +162,17 @@ fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Fixture {
         },
         support::Controlled(Rc::clone(&effects)),
     );
-    Fixture {
-        denied: recipe.denied.iter().map(|name| root.join(name)).collect(),
+    Some(Fixture {
+        _denied: denied,
         base: root,
         manager,
         settings,
         effects,
-    }
+    })
 }
-/// Creates each supplied file, directory, package and link.
-fn native_tree(root: &Path, recipe: &Recipe) {
+/// Creates each supplied file, directory, package and link, then denies access to the
+/// recipe's denied entries; `None` when this process is not refused.
+fn native_tree(root: &Path, recipe: &Recipe) -> Option<Vec<maestro_test_directory::Restore>> {
     let base = root.to_str().unwrap();
     for (name, text) in &recipe.files {
         let path = root.join(name);
@@ -188,12 +193,13 @@ fn native_tree(root: &Path, recipe: &Recipe) {
         }
         std::os::unix::fs::symlink(root.join(target), dest).unwrap();
     }
-    for name in &recipe.denied {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(root.join(name), fs::Permissions::from_mode(0o000)).unwrap();
-    }
+    recipe
+        .denied
+        .iter()
+        .map(|name| maestro_test_directory::deny(root.join(name), 0o000).unwrap())
+        .collect()
 }
-/// Supplies controlled acquisition and ambient failures below their owning wrappers.
+/// Supplies controlled acquisition failures below their owning wrappers.
 fn effects(recipe: &Recipe, base: &str) -> Rc<support::Effects> {
     let effects = Rc::new(support::Effects::default());
     effects.outputs.borrow_mut().push_back(Ok(support::output(
@@ -422,7 +428,8 @@ pub fn borrowed_callback() {
             ..Recipe::default()
         },
         tree.path().to_path_buf(),
-    );
+    )
+    .unwrap();
     let manager = &fixture.manager;
     let settings = &fixture.settings;
     let effects = &fixture.effects;
@@ -443,13 +450,4 @@ pub fn borrowed_callback() {
             .iter()
             .any(|(_, args)| args.first().is_some_and(|arg| arg == "install"))
     );
-}
-
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        use std::os::unix::fs::PermissionsExt;
-        for path in &self.denied {
-            fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
-        }
-    }
 }

@@ -421,6 +421,14 @@ fn failed_history_switch_preserves_existing_labels() {
     let mut permissions = std::fs::metadata(&rewrite_failure).unwrap().permissions();
     permissions.set_readonly(true);
     std::fs::set_permissions(&rewrite_failure, permissions).unwrap();
+    // A privileged Unix run rewrites the read-only file anyway, so there is nothing to check.
+    #[cfg(unix)]
+    if maestro_test_directory::deny(&rewrite_failure, 0o444)
+        .unwrap()
+        .is_none()
+    {
+        return;
+    }
     let mut manager = SessionManager::open(&labeled, None, None).unwrap();
     let stamp = manager.get_tree()[0].label_timestamp.cloned();
     for failing in [&index_failure, &unreadable, &rewrite_failure] {

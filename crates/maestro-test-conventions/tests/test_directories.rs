@@ -53,7 +53,7 @@ fn chosen_temporary_parent_is_canonical_and_errors_stay_native() {
             TestProcess::current("chosen_temporary_parent_is_canonical_and_errors_stay_native")
                 .unwrap()
                 .case(case)
-                .env("TMPDIR", temporary)
+                .temp_dir(temporary)
                 .output()
                 .unwrap();
         assert!(

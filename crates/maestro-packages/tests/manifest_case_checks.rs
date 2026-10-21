@@ -1,4 +1,4 @@
-//! Manifest expansion on the case-insensitive native file systems of macOS and Windows.
+//! Manifest expansion on volumes that fold case, as macOS and Windows volumes usually do.
 #![cfg(test)]
 #![cfg(any(target_os = "macos", windows))]
 use crate::manifest_resource_checks::write;
@@ -15,6 +15,10 @@ fn manifest_mixed_case_promotion_keeps_authored_alias() {
         resolution_support::run(async {
             let scene = scratch::Scratch::new()?;
             write(&scene.path().join("b/preload.ts"), "fixture");
+            // A volume that keeps case apart has nothing to fold.
+            if !scene.path().join("B/preload.ts").exists() {
+                return Ok(());
+            }
             write(&scene.path().join("a/u.ts"), "fixture");
             if linked {
                 #[cfg(unix)]
@@ -31,8 +35,10 @@ fn manifest_mixed_case_promotion_keeps_authored_alias() {
             let actual = manager
                 .resolve_extension_sources(&[base.into()], None)
                 .await?;
-            let resource = |name| {
-                json!({"path":format!("$BASE/{name}"),"enabled":true,"metadata":{"source":"$BASE","scope":"user","origin":"package","baseDir":"$BASE"}})
+            let resource = |name: &str| {
+                let sep = std::path::MAIN_SEPARATOR_STR;
+                let path = format!("$BASE{sep}{}", name.replace('/', sep));
+                json!({"path":path,"enabled":true,"metadata":{"source":"$BASE","scope":"user","origin":"package","baseDir":"$BASE"}})
             };
             let mut expected = vec![resource("B/preload.ts"), resource("a/u.ts")];
             if !linked {

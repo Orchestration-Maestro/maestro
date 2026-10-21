@@ -112,9 +112,21 @@ fn access_error(path: &std::path::Path, code: &str) -> io::Error {
     );
     error
 }
+/// Whether a privileged run ignores the case's denied modes, leaving nothing to check.
+#[cfg(unix)]
+fn denial_ignored(root: &TempDir, case: &Case) -> bool {
+    matches!(case.setup.as_deref(), Some("readonly" | "unreadable"))
+        && maestro_test_directory::deny(root.text(), 0o0)
+            .unwrap()
+            .is_none()
+}
 /// Compare the public result against one recorded native case.
 fn check_case(case: &Case) {
     let root = TempDir::new();
+    #[cfg(unix)]
+    if denial_ignored(&root, case) {
+        return;
+    }
     let bytes = setup(&root, case);
     let path = case.path.as_ref().map_or_else(
         || case.file.clone(),

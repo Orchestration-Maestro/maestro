@@ -341,7 +341,6 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
 async fn replay(case: &Recorded) {
     let Some(tree) = super::resolution_support::case_in_child(&case.case, |base| {
         vec![
-            ("TMPDIR", Some(format!("{base}/temp"))),
             ("HOME", Some(format!("{base}/home"))),
             ("MAESTRO_OFFLINE", case.recipe.offline.clone()),
         ]

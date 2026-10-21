@@ -178,6 +178,18 @@ impl TestProcess {
         self
     }
 
+    /// Point the child's temporary directory at `path` through the variables
+    /// `std::env::temp_dir` reads: `TMPDIR` on Unix, `TMP` and `TEMP` on Windows.
+    #[must_use]
+    pub fn temp_dir(self, path: impl AsRef<Path>) -> Self {
+        let path = path.as_ref();
+        if cfg!(windows) {
+            self.env("TMP", path).env("TEMP", path)
+        } else {
+            self.env("TMPDIR", path)
+        }
+    }
+
     /// Set the child's working directory.
     #[must_use]
     pub fn current_dir(mut self, path: impl AsRef<Path>) -> Self {

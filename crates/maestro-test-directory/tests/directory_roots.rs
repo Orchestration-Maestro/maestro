@@ -153,3 +153,45 @@ fn supplied_parent_keeps_non_unicode_path_bytes() {
         "value"
     );
 }
+
+/// A denial is reported only when this process is really refused, and the earlier
+/// permissions come back either way. A privileged run takes the `None` arms.
+#[cfg(unix)]
+#[test]
+fn denials_match_what_this_process_is_refused() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = Scratch::new().unwrap();
+    let directory = root.path().join("directory");
+    fs::create_dir(&directory).unwrap();
+    fs::write(directory.join("entry"), "value").unwrap();
+    let file = root.path().join("file");
+    fs::write(&file, "value").unwrap();
+    let mode = |path: &std::path::Path| fs::metadata(path).unwrap().permissions().mode() & 0o777;
+    let (directory_mode, file_mode) = (mode(&directory), mode(&file));
+    let created = directory.join("created");
+    let checks: [(&std::path::Path, u32, &dyn Fn() -> bool); 4] = [
+        (&directory, 0o555, &|| fs::create_dir(&created).is_ok()),
+        (&directory, 0o311, &|| fs::read_dir(&directory).is_ok()),
+        (&directory, 0o600, &|| {
+            fs::metadata(directory.join("entry")).is_ok()
+        }),
+        (&file, 0o444, &|| {
+            fs::OpenOptions::new().append(true).open(&file).is_ok()
+        }),
+    ];
+    for (path, denied_mode, allowed) in checks {
+        let guard = maestro_test_directory::deny(path, denied_mode).unwrap();
+        assert_eq!(
+            guard.is_some(),
+            !allowed(),
+            "{} {denied_mode:o}",
+            path.display()
+        );
+        if guard.is_some() {
+            assert_eq!(mode(path), denied_mode);
+        }
+        drop(guard);
+        let _ = fs::remove_dir(&created);
+    }
+    assert_eq!((mode(&directory), mode(&file)), (directory_mode, file_mode));
+}

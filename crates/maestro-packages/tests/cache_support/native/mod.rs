@@ -60,10 +60,7 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
 pub fn refresh() {
     // The temporary cache lives below the child's own temporary directory.
     let Some(dir) = crate::resolution_support::case_in_child("refresh", |base| {
-        vec![
-            ("TMPDIR", Some(format!("{base}/temp"))),
-            ("HOME", Some(format!("{base}/home"))),
-        ]
+        vec![("HOME", Some(format!("{base}/home")))]
     }) else {
         return;
     };
