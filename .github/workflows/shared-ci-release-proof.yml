@@ -1,0 +1,16 @@
+name: Shared CI release candidate proof
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@074571c2ddf98ae55732f3e92219cf271b953f41
+    with:
+      checkout-repository: Orchestration-Maestro/maestro
+      checkout-ref: 2a70c76437dcd0c43ea765dceb039940423b7f8c
+      test-event: merge_group
+      concurrency-key: release-candidate-0-14-0
