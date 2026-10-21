@@ -29,6 +29,26 @@ fn block_hints_clip_before_inline_operands() {
 }
 
 #[test]
+fn equation_hints_avoid_failed_link_suffix_work() {
+    let counts = [32, 64, 128].map(|count| {
+        let source = "Intro\n\n".to_owned() + &"\\[x\\]\n\n".repeat(count);
+        WORK.with_borrow_mut(|work| *work = Work::default());
+        let blocks = hinted_blocks(
+            &source,
+            crate::MarkedOptions::Browser { escape_html: true },
+            Delimited("\\[", "\\]"),
+        );
+        assert_eq!(blocks.len(), count + 1);
+        let bytes = WORK.with_borrow(|work| work.link_bytes);
+        eprintln!("FAILED-LINK-WORK n={count} bytes={bytes}");
+        bytes
+    });
+    for pair in counts.windows(2) {
+        assert!(pair[1] <= 3 * pair[0], "link suffix bytes: {counts:?}");
+    }
+}
+
+#[test]
 fn block_hint_work_grows_with_equations_and_urls() {
     for family in ["equations", "urls"] {
         let counts = [32, 64, 128].map(|count| {

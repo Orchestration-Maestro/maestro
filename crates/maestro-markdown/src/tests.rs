@@ -70,6 +70,8 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
+    /// Suffix bytes supplied to direct-link admission, including rejected links.
+    pub(crate) link_bytes: usize,
     /// Raw suffix bytes supplied to the deletion recognizer.
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
