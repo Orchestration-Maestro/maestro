@@ -20,7 +20,7 @@ impl Launch {
         self.command_with_env(std::iter::empty::<(&str, &str)>())
     }
 
-    /// Builds a native command with the supplied child environment overrides.
+    /// Builds a native command, using child overrides for Windows PATH/PATHEXT lookup.
     ///
     /// # Errors
     /// Returns `NotFound` when a Windows command cannot be resolved.
@@ -31,7 +31,12 @@ impl Launch {
         V: AsRef<std::ffi::OsStr>,
     {
         #[cfg(windows)]
-        let executable = native_windows_executable(&self.executable)
+        let environment: Vec<_> = environment
+            .into_iter()
+            .map(|(key, value)| (key.as_ref().to_os_string(), value.as_ref().to_os_string()))
+            .collect();
+        #[cfg(windows)]
+        let executable = native_windows_executable(&self.executable, &environment)
             .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))?;
         #[cfg(not(windows))]
         let executable = &self.executable;
@@ -105,16 +110,31 @@ fn resolve_windows_executable(
     })
 }
 
-/// Observes the current directory, search path and executable extensions once per launch.
+/// Resolves against child overrides, inheriting each omitted lookup variable.
 #[cfg(windows)]
-fn native_windows_executable(command: &str) -> Option<std::path::PathBuf> {
-    let path = std::env::var_os("PATH").unwrap_or_default();
+fn native_windows_executable(
+    command: &str,
+    environment: &[(std::ffi::OsString, std::ffi::OsString)],
+) -> Option<std::path::PathBuf> {
+    let value = |key: &str| {
+        environment
+            .iter()
+            .rev()
+            .find(|(name, _)| name.eq_ignore_ascii_case(key))
+            .map(|(_, value)| std::borrow::Cow::Borrowed(value.as_os_str()))
+            .or_else(|| std::env::var_os(key).map(std::borrow::Cow::Owned))
+    };
+    let path = value("PATH").unwrap_or_default();
     let directories: Vec<_> = std::env::current_dir()
         .into_iter()
         .chain(std::env::split_paths(&path))
         .collect();
-    let extensions = std::env::var("PATHEXT").unwrap_or_else(|_| ".EXE;.COM;.BAT;.CMD".into());
-    resolve_windows_executable(command, &directories, &extensions, std::path::Path::is_file)
+    let extensions = value("PATHEXT");
+    let extensions = extensions
+        .as_deref()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or(".EXE;.COM;.BAT;.CMD");
+    resolve_windows_executable(command, &directories, extensions, std::path::Path::is_file)
 }
 
 /// Serializes one literal POSIX shell operand.

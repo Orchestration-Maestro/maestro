@@ -17,7 +17,10 @@ arguments. On Windows it resolves command names in the current directory then
 when absent); names with explicit extensions are checked without appending one.
 The standard library handles batch file argument quoting. For a verbatim Windows shell launch, only the final
 command-text argument bypasses quoting; interpreter flags remain ordinary arguments.
-Callers retain environment, creation flags and capture policy.
+`Launch::command_with_env` applies child environment overrides before resolving
+Windows commands. Supplied `PATH` and `PATHEXT` values replace the inherited lookup
+values, including empty values; omitted keys use the parent's values. Windows
+variable names are case-insensitive. Callers retain creation flags and capture policy.
 
 `shell_quote` serializes POSIX operands. `quote_powershell_arg` may leave safe
 PowerShell operands unquoted; `quote_powershell_literal` always quotes and is used

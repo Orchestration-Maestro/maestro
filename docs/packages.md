@@ -66,9 +66,11 @@ installed contents when the settings edit fails.
 
 ## Children
 
-Every package child starts through the native launcher with literal arguments and
-no shell. On Windows the launcher finds a command such as `npm` through `PATH` and
-`PATHEXT`, so `.cmd` shims start without `cmd.exe` reading their arguments again.
+Every package child starts through the native launcher with an argument vector,
+without Maestro building a shell command string. On Windows the launcher finds a
+command such as `npm` through `PATH` and `PATHEXT`; capture overrides apply to this
+lookup as well as the child's environment. Rust's standard library runs `.cmd`
+and `.bat` files through `cmd.exe` and handles batch argument escaping.
 
 `NativePackageOperations::run_command` runs a child with inherited streams, or, while
 the supplied query reports stdout taken over, with stdin ignored and output sent to

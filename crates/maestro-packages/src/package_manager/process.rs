@@ -14,13 +14,11 @@ impl NativePackageOperations {
     ///
     /// # Errors
     /// Returns `NotFound` when a Windows command cannot be resolved.
-    pub(super) fn command(command: &str, args: &[String]) -> io::Result<Command> {
-        let mut child = maestro_process::Launch {
-            executable: command.into(),
-            args: args.into(),
-            verbatim: false,
-        }
-        .command()?;
+    pub(super) fn command(
+        command: &str,
+        args: &[String],
+        overrides: &[(&str, &str)],
+    ) -> io::Result<Command> {
         let inherited = std::env::vars_os()
             .map(|(key, value)| {
                 (
@@ -38,13 +36,27 @@ impl NativePackageOperations {
             inherited,
             || std::fs::read("/proc/self/environ"),
         );
+        let environment: Vec<_> = environment
+            .into_iter()
+            .chain(
+                overrides
+                    .iter()
+                    .map(|&(key, value)| (key.into(), value.into())),
+            )
+            .collect();
+        let mut child = maestro_process::Launch {
+            executable: command.into(),
+            args: args.into(),
+            verbatim: false,
+        }
+        .command_with_env(environment.iter().map(|(key, value)| (key, value)))?;
         child.env_clear().envs(environment);
         Ok(child)
     }
 
     /// Waits for a child with ignored stdin and decoded captured streams.
     pub(super) fn capture(command: &str, args: &[String]) -> io::Result<CommandOutput> {
-        let output = Self::command(command, args)?
+        let output = Self::command(command, args, &[])?
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -65,7 +77,7 @@ impl NativePackageOperations {
         cwd: Option<&'a str>,
     ) -> PackageFuture<'a, Option<i32>> {
         Box::pin(async move {
-            let mut child = tokio::process::Command::from(Self::command(command, args)?);
+            let mut child = tokio::process::Command::from(Self::command(command, args, &[])?);
             if let Some(cwd) = cwd {
                 child.current_dir(cwd);
             }
