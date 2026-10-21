@@ -251,6 +251,7 @@ pub struct ExecuteInput {
     /// Working directory the tool is built over.
     cwd: Option<String>,
     /// State of the process working directory.
+    #[cfg(unix)]
     ambient_cwd: Option<String>,
 }
 
