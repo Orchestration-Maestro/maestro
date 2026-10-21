@@ -117,6 +117,10 @@ impl<C: FnMut() -> u128> App<C> {
         self.state.terminals.insert(terminal.id.clone(), terminal);
         self.state.pane_id_aliases.remove(&pane.raw());
         let index = self.state.topology.workspaces.len() - 1;
+        crate::workspace::admit_git_identity(
+            &mut self.state.topology.workspaces[index],
+            home.as_deref(),
+        );
         crate::logging::workspace_created(&self.state.topology.workspaces[index].id, pane.raw());
         if focus || self.state.active.is_none() {
             self.state.switch_workspace(index);

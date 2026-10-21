@@ -4362,8 +4362,10 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-lock",
+ "maestro-path",
  "maestro-protocol",
  "maestro-test-tracing",
+ "maestro-text",
  "num-traits",
  "serde",
  "serde_json",

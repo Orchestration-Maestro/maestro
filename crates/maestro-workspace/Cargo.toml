@@ -8,6 +8,8 @@ autotests = false
 
 [dependencies]
 num-traits.workspace = true
+maestro-path = { path = "../maestro-path" }
+maestro-text = { path = "../maestro-text" }
 maestro-protocol = { path = "../maestro-protocol" }
 serde.workspace = true
 

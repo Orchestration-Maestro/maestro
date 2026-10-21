@@ -597,6 +597,21 @@ When a launch-command pane is marked to return to a shell, exit starts that shel
 without removing the pane. A successful replacement clears agent runtime identity
 and restores focus. A failed spawn follows the normal pane-close path.
 
+## Repository identity
+
+Successful workspace creation admits native repository metadata and its initial
+branch after the pane spawn succeeds. Ordinary repositories, linked worktrees,
+standalone bare repositories and embedded bare repositories use the shared
+`maestro-workspace::workspace::git` discovery owner, re-exported through
+`maestro-daemon::git::discovery`. Reftable branch and revision queries stay with
+the daemon's process-owning caller.
+
+Repository grouping uses the shared metadata directory; checkout identity uses
+the checkout root. A linked worktree's automatic label names the checkout, not
+the repository group. Display operations read admitted labels without repeating
+filesystem discovery. Root-terminal metadata can select a newer admitted label
+without changing the workspace's retained fallback directory.
+
 ## Retained tab-bar status
 
 `App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,

@@ -69,3 +69,6 @@ mod tests;
 /// Native terminal state transferred between workspace servers.
 #[cfg(unix)]
 pub mod handoff_runtime;
+
+/// Native repository discovery and caller-owned Git process fallbacks.
+pub mod git;

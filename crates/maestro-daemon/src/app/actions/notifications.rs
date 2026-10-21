@@ -210,13 +210,11 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Resolves the first tab's current terminal directory through shared workspace labels.
     pub fn workspace_label_from_terminals(&self, workspace: usize) -> Option<String> {
         let workspace = self.topology.workspaces.get(workspace)?;
-        let cwd = workspace
-            .tabs
-            .first()
-            .and_then(|tab| tab.terminal_id(tab.root_pane))
-            .and_then(|terminal| self.terminals.get(terminal))
-            .map_or(&workspace.identity_cwd, |terminal| &terminal.cwd);
-        Some(workspace.display_name_for_cwd(cwd, None))
+        Some(crate::workspace::display_name_from_terminals(
+            workspace,
+            &self.terminals,
+            None,
+        ))
     }
 
     /// Earliest pending attention deadline, absent when no transition is waiting.

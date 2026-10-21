@@ -77,12 +77,12 @@ impl<C: FnMut() -> u128> App<C> {
         pane: maestro_workspace::layout::PaneId,
     ) -> Option<String> {
         let target = self.state.topology.workspaces.get(workspace)?;
-        let cwd = crate::workspace::resolved_identity_cwd_from(
+        let label = crate::workspace::display_name_from(
             target,
             &self.state.terminals,
             &self.terminal_runtimes,
-        )?;
-        let label = target.display_name_for_cwd(&cwd, None);
+            None,
+        );
         Some(notification_context(target, &label, workspace, pane))
     }
 
