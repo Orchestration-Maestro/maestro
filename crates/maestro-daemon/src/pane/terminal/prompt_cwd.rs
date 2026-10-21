@@ -1,6 +1,6 @@
 //! Windows shell prompt cwd observations over retained text.
 use super::{PaneCore, PaneTerminal, reads::full_range};
-use maestro_terminal::screen_set::Key;
+use maestro_terminal::{Coordinate, Point, page_list::Direction, screen_set::Key};
 use std::path::PathBuf;
 
 impl PaneTerminal {
@@ -33,9 +33,22 @@ impl PaneCore {
         if current.trim().is_empty() {
             return None;
         }
-        let text = self
-            .terminal
-            .read_text_screen(full_range(&self.terminal, start, row + 1)?)?;
+        let pages = &self.terminal.screens.active().pages;
+        let anchor = pages.pin(Point::Active(Coordinate {
+            x: 0,
+            y: u32::from(cursor.y),
+        }))?;
+        let mut preceding = anchor.row_iterator(Direction::LeftUp, None);
+        let mut logical_start = row;
+        while let Some(pin) = preceding.next(pages) {
+            if !pin.row_and_cell(pages)?.0.wrap_continuation() {
+                break;
+            }
+            logical_start = logical_start.checked_sub(1)?;
+        }
+        let text =
+            self.terminal
+                .read_text_screen(full_range(&self.terminal, logical_start, row + 1)?)?;
         windows_powershell_prompt_cwd(&text)
     }
 }
