@@ -2,9 +2,20 @@
 
 use std::io;
 
+/// Protocol selected by the proxy URL.
+#[derive(Clone, Copy)]
+enum SocksVersion {
+    /// SOCKS4 with a NUL-terminated identity.
+    V4,
+    /// SOCKS5 with negotiated authentication.
+    V5,
+}
+
 /// Parsed connection policy for one selected SOCKS URL.
 #[derive(Clone)]
 pub(super) struct SocksProxyAgent {
+    /// Selected wire protocol.
+    version: SocksVersion,
     /// Resolve destination names locally rather than at the proxy.
     pub(super) lookup: bool,
     /// Proxy URL host; IPv6 brackets are removed only at socket connection.
@@ -20,13 +31,16 @@ pub(super) struct SocksProxyAgent {
 impl SocksProxyAgent {
     /// Parse only the selected proxy, retaining empty credential fields.
     pub(super) fn new(url: &url::Url) -> io::Result<Self> {
-        let lookup = match url.scheme() {
-            "socks5" => true,
-            "socks" | "socks5h" => false,
+        let (lookup, version) = match url.scheme() {
+            "socks4" => (true, SocksVersion::V4),
+            "socks4a" => (false, SocksVersion::V4),
+            "socks5" => (true, SocksVersion::V5),
+            "socks" | "socks5h" => (false, SocksVersion::V5),
             _ => return Err(io::Error::other("Unsupported SOCKS protocol")),
         };
         let host = url.host_str().unwrap_or_default().to_owned();
         Ok(Self {
+            version,
             lookup,
             host,
             port: url.port().filter(|port| *port != 0).unwrap_or(1080),
@@ -48,7 +62,11 @@ impl SocksProxyAgent {
             } else {
                 80
             });
-        let target = if let Ok(ip) = host.parse::<std::net::IpAddr>() {
+        let target = if matches!(self.version, SocksVersion::V4)
+            && host.parse::<std::net::Ipv6Addr>().is_ok()
+        {
+            tokio_socks::TargetAddr::Domain(host.into(), port)
+        } else if let Ok(ip) = host.parse::<std::net::IpAddr>() {
             tokio_socks::TargetAddr::Ip((ip, port).into())
         } else if self.lookup {
             let address = tokio::net::lookup_host((host, port))
@@ -71,6 +89,9 @@ impl SocksProxyAgent {
     ) -> io::Result<tokio::net::TcpStream> {
         let host = socket_host(&self.host);
         let socket = tokio::net::TcpStream::connect((host, self.port)).await?;
+        if matches!(self.version, SocksVersion::V4) {
+            return self.tunnel4(socket, target).await;
+        }
         let stream = if self.user.is_empty() && self.password.is_empty() {
             tokio_socks::tcp::Socks5Stream::connect_with_socket(socket, target).await
         } else if (1..=255).contains(&self.user.len()) && (1..=255).contains(&self.password.len()) {
@@ -86,6 +107,34 @@ impl SocksProxyAgent {
         };
         stream
             .map(tokio_socks::tcp::Socks5Stream::into_inner)
+            .map_err(io::Error::other)
+    }
+
+    /// Delegate representable SOCKS4 frames and correct the remaining inputs once.
+    async fn tunnel4(
+        &self,
+        socket: tokio::net::TcpStream,
+        target: tokio_socks::TargetAddr<'_>,
+    ) -> io::Result<tokio::net::TcpStream> {
+        let native = self.user.len() <= 255
+            && match &target {
+                tokio_socks::TargetAddr::Ip(std::net::SocketAddr::V4(_)) => true,
+                tokio_socks::TargetAddr::Ip(std::net::SocketAddr::V6(_)) => false,
+                tokio_socks::TargetAddr::Domain(host, _) => self.user.len() + host.len() <= 503,
+            };
+        if !native {
+            return super::socks_client::connect4(socket, target, &self.user).await;
+        }
+        let stream = if self.user.is_empty() {
+            tokio_socks::tcp::Socks4Stream::connect_with_socket(socket, target).await
+        } else {
+            tokio_socks::tcp::Socks4Stream::connect_with_userid_and_socket(
+                socket, target, &self.user,
+            )
+            .await
+        };
+        stream
+            .map(tokio_socks::tcp::Socks4Stream::into_inner)
             .map_err(io::Error::other)
     }
 }

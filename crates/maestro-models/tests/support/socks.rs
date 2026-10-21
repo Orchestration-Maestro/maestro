@@ -1,4 +1,4 @@
-//! Controlled SOCKS5 peer protocol, using the shared connection owner.
+//! Controlled SOCKS peer protocol, using the shared connection owner.
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -51,6 +51,11 @@ pub fn negotiate_reply(
 ) -> std::io::Result<Negotiation> {
     let mut version = [0];
     socket.read_exact(&mut version)?;
+    if version == [4] {
+        let negotiation = read4(socket)?;
+        socket.write_all(&[0, 90, 0, 80, 127, 0, 0, 1])?;
+        return Ok(negotiation);
+    }
     assert_eq!(version, [5]);
     let methods = counted(socket)?;
     socket.write_all(&[5, if authenticate { 2 } else { 0 }])?;
@@ -143,4 +148,45 @@ pub fn failed_frames(socket: &mut TcpStream, expected: &[Frame]) -> std::io::Res
         }
     }
     Ok(after)
+}
+
+/// Read a NUL-terminated protocol field without consuming the next one.
+fn terminated(socket: &mut TcpStream) -> std::io::Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    loop {
+        let mut byte = [0];
+        socket.read_exact(&mut byte)?;
+        if byte == [0] {
+            return Ok(bytes);
+        }
+        bytes.push(byte[0]);
+    }
+}
+
+/// Read a SOCKS4 CONNECT after its version byte, leaving the reply unsent.
+///
+/// # Errors
+/// Returns socket read failures.
+///
+/// # Panics
+/// Panics when the command is not CONNECT.
+pub fn read4(socket: &mut TcpStream) -> std::io::Result<Negotiation> {
+    let mut head = [0; 7];
+    socket.read_exact(&mut head)?;
+    assert_eq!(head[0], 1);
+    let user = terminated(socket)?;
+    let remote = head[3..] == [0, 0, 0, 1];
+    let host = if remote {
+        terminated(socket)?
+    } else {
+        head[3..].to_vec()
+    };
+    Ok(Negotiation {
+        methods: Vec::new(),
+        user: Some(user),
+        password: None,
+        kind: if remote { 3 } else { 1 },
+        host,
+        port: u16::from_be_bytes([head[1], head[2]]),
+    })
 }

@@ -1,4 +1,4 @@
-//! SOCKS5 exchange for credential pairs outside the native library's admitted domain.
+//! SOCKS exchanges outside the native library's admitted domain.
 
 use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -82,4 +82,39 @@ async fn consume_reply(socket: &mut TcpStream) -> io::Result<()> {
 /// Require a representable SOCKS counted field, including the empty field.
 fn length(size: usize) -> io::Result<u8> {
     u8::try_from(size).map_err(|_| io::Error::other("SOCKS field exceeds 255 bytes"))
+}
+
+/// Complete a SOCKS4 exchange beyond the native adapter's admitted inputs.
+pub(super) async fn connect4(
+    mut socket: TcpStream,
+    target: TargetAddr<'_>,
+    user: &str,
+) -> io::Result<TcpStream> {
+    let (port, address, domain) = match target {
+        TargetAddr::Ip(std::net::SocketAddr::V4(address)) => {
+            (address.port(), address.ip().octets(), None)
+        }
+        TargetAddr::Ip(std::net::SocketAddr::V6(address)) => (
+            address.port(),
+            [0, 0, 0, 1],
+            Some(std::borrow::Cow::Owned(address.ip().to_string())),
+        ),
+        TargetAddr::Domain(host, port) => (port, [0, 0, 0, 1], Some(host)),
+    };
+    let mut request = vec![4, 1];
+    request.extend(port.to_be_bytes());
+    request.extend(address);
+    request.extend(user.as_bytes());
+    request.push(0);
+    if let Some(domain) = domain {
+        request.extend(domain.as_bytes());
+        request.push(0);
+    }
+    socket.write_all(&request).await?;
+    let mut reply = [0; 8];
+    socket.read_exact(&mut reply).await?;
+    if reply[0] != 0 || reply[1] != 90 {
+        return Err(io::Error::other("SOCKS connection refused"));
+    }
+    Ok(socket)
 }

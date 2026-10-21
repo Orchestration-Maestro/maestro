@@ -537,7 +537,7 @@ fn ipv6_proxy_literal_connects_without_brackets() {
 mod tls;
 
 /// Complete authenticated plaintext traffic and return the origin's actual header block.
-async fn authenticated_origin_head() -> Vec<u8> {
+async fn authenticated_origin_head(scheme: &str) -> Vec<u8> {
     let (sent, received) = std::sync::mpsc::channel();
     let server = loopback::start_routed(Arc::new(move |mut socket| {
         let negotiation = socks::negotiate(&mut socket, true)?;
@@ -546,7 +546,8 @@ async fn authenticated_origin_head() -> Vec<u8> {
             "proxy credential octets"
         );
         assert!(
-            negotiation.password.as_deref() == Some(b"proxy-pass"),
+            negotiation.password.as_deref()
+                == (!negotiation.methods.is_empty()).then_some(b"proxy-pass".as_slice()),
             "proxy credential octets"
         );
         loopback::answer_connection(socket, &|request| {
@@ -562,13 +563,17 @@ async fn authenticated_origin_head() -> Vec<u8> {
     }))
     .unwrap();
     let proxy = url::Url::parse(&format!(
-        "socks://proxy-user:proxy-pass@{}",
+        "{scheme}://proxy-user:proxy-pass@{}",
         server.url.strip_prefix("http://").unwrap()
     ))
     .unwrap();
-    let mut response = sender(proxy)(request("http://destination.invalid/"))
-        .await
-        .unwrap();
+    let mut response = sender(proxy)(request(if scheme == "socks4" {
+        "http://localhost/"
+    } else {
+        "http://destination.invalid/"
+    }))
+    .await
+    .unwrap();
     while let Some(chunk) = response.body.next().await {
         chunk.unwrap();
     }
@@ -579,35 +584,38 @@ async fn authenticated_origin_head() -> Vec<u8> {
 #[test]
 fn socks_credentials_do_not_become_origin_headers() {
     run(async {
-        let head = authenticated_origin_head().await;
-        assert!(
-            !String::from_utf8_lossy(&head)
-                .to_ascii_lowercase()
-                .contains("proxy-authorization")
-        );
-        assert!(
-            !head
-                .windows(10)
-                .any(|bytes| bytes == b"proxy-user" || bytes == b"proxy-pass")
-        );
-        let encrypted = tls::secure_exchange(true, "proxy-user:proxy-pass@").await;
-        let proxy = encrypted.proxy.unwrap();
-        assert!(
-            proxy.user.as_deref() == Some(b"proxy-user"),
-            "proxy credential octets"
-        );
-        assert!(
-            proxy.password.as_deref() == Some(b"proxy-pass"),
-            "proxy credential octets"
-        );
-        assert!(encrypted.request.header("proxy-authorization").is_none());
-        assert!(
-            !encrypted
-                .request
-                .head
-                .windows(10)
-                .any(|bytes| bytes == b"proxy-user" || bytes == b"proxy-pass")
-        );
+        for scheme in ["socks5h", "socks4", "socks4a"] {
+            let head = authenticated_origin_head(scheme).await;
+            assert!(
+                !String::from_utf8_lossy(&head)
+                    .to_ascii_lowercase()
+                    .contains("proxy-authorization")
+            );
+            assert!(
+                !head
+                    .windows(10)
+                    .any(|bytes| bytes == b"proxy-user" || bytes == b"proxy-pass")
+            );
+            let encrypted = tls::secure_exchange(Some(scheme), "proxy-user:proxy-pass@").await;
+            let proxy = encrypted.proxy.unwrap();
+            assert!(
+                proxy.user.as_deref() == Some(b"proxy-user"),
+                "proxy credential octets"
+            );
+            assert!(
+                proxy.password.as_deref()
+                    == (scheme == "socks5h").then_some(b"proxy-pass".as_slice()),
+                "proxy credential octets"
+            );
+            assert!(encrypted.request.header("proxy-authorization").is_none());
+            assert!(
+                !encrypted
+                    .request
+                    .head
+                    .windows(10)
+                    .any(|bytes| bytes == b"proxy-user" || bytes == b"proxy-pass")
+            );
+        }
     });
 }
 
@@ -635,3 +643,5 @@ async fn truncated_body_keeps_received_bytes() {
     assert_eq!(bytes, b"part");
     server.finish().unwrap();
 }
+
+mod socks4;

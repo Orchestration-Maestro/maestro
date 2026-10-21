@@ -50,12 +50,18 @@ The native SOCKS connector adds `tokio-socks =0.5.3` (MIT, defaults off, `tokio`
 reqwest `=0.13.5` with defaults and `stream`, without enabling reqwest's `socks` feature.
 Native direct declarations reuse already-locked `hyper =1.11.1` (`client`, `server`, `http1`),
 `hyper-util =0.1.21` (`tokio`), `hyper-rustls =0.27.10` (defaults off, `http1`),
-`rustls =0.23.45` (defaults off, `std`, `tls12`, `aws_lc_rs`),
+`rustls =0.23.46` (defaults off, `std`, `tls12`, `aws_lc_rs`),
 `rustls-platform-verifier =0.7.1` (defaults off) and `tower-service =0.3.3` (defaults off).
 These are MIT or Apache-2.0 alternatives. Tokio enables `io-util` alongside its existing native
 features. One TLS configuration supplies platform trust to reqwest and the SOCKS connector;
 Hyper's HTTP/1 connection is driven by its request and response body, without detached work
 or automatic replay. None of these declarations reaches the browser build.
+
+For SOCKS4, the native library handles empty IDs through its anonymous operation and
+nonempty IDs through 255 UTF-8 bytes. Its domain frames fit only when the ID and hostname
+together occupy at most 503 bytes. Longer IDs, larger frames and locally resolved IPv6
+addresses use the existing owned exchange; these adapter restrictions do not limit accepted
+proxy URLs or truncate transmitted fields. No library fork is used.
 
 ## Native credentials
 

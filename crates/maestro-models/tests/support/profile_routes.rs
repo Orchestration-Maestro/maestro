@@ -153,7 +153,7 @@ fn peer(
     route: &'static str,
     seen: &Arc<Mutex<Vec<Seen>>>,
     endpoint: &str,
-    socks_proxy: bool,
+    socks_proxy: Option<&str>,
 ) -> TestResult<loopback::Routed> {
     let body = bedrock::answer("answer")?.concat();
     let (input, seen) = (input.clone(), Arc::clone(seen));
@@ -187,9 +187,15 @@ fn peer(
             &body,
         )
     };
-    if socks_proxy {
+    if let Some(scheme) = socks_proxy {
+        let socks4 = scheme.starts_with("socks4");
         loopback::start_routed(Arc::new(move |mut socket| {
-            crate::socks::negotiate(&mut socket, false)?;
+            let negotiation = crate::socks::negotiate(&mut socket, false)?;
+            assert!(
+                negotiation.user.as_deref() == socks4.then_some(b"proxy-user".as_slice()),
+                "proxy identity bytes"
+            );
+            assert!(negotiation.password.is_none());
             loopback::answer_connection(socket, &handler)
         }))
     } else {
@@ -259,8 +265,8 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
     if row.input.mode == "mandatory" {
         direct.deny = Some(On);
     }
-    let origin = peer(&direct, "direct", &seen, "", false)?;
-    let conversation = peer(&input, "direct", &seen, "", false)?;
+    let origin = peer(&direct, "direct", &seen, "", None)?;
+    let conversation = peer(&input, "direct", &seen, "", None)?;
     let tls = (row.input.mode == "https")
         .then(|| tls_peer(&seen))
         .transpose()?;
@@ -268,12 +274,7 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
         || origin.url.clone(),
         |tls| tls.url.replacen("http:", "https:", 1),
     );
-    let proxy = peer(&input, "proxy", &seen, &endpoint, row.input.mode == "socks")?;
-    let proxy_url = if row.input.mode == "socks" {
-        proxy.url.replacen("http", "socks5h", 1)
-    } else {
-        proxy.url.clone()
-    };
+    let (proxy, proxy_url) = proxy_peer(&row.input.mode, &input, &seen, &endpoint)?;
     let mut vars = environment(
         row,
         &work,
@@ -312,6 +313,28 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
         &seen.lock().map_err(|error| error.to_string())?,
     );
     Ok(())
+}
+
+/// Select the proxy protocol without changing the credential service handler.
+fn proxy_peer(
+    mode: &str,
+    input: &Input,
+    seen: &Arc<Mutex<Vec<Seen>>>,
+    endpoint: &str,
+) -> TestResult<(loopback::Routed, String)> {
+    let scheme = match mode {
+        "socks" => Some("socks5h"),
+        "socks4" => Some("socks4"),
+        "socks4a" => Some("socks4a"),
+        _ => None,
+    };
+    let proxy = peer(input, "proxy", seen, endpoint, scheme)?;
+    let proxy_url = match scheme {
+        Some("socks5h") => proxy.url.replacen("http", "socks5h", 1),
+        Some(scheme) => format!("{scheme}://proxy%2Duser:ignored@{}", &proxy.url[7..]),
+        None => proxy.url.clone(),
+    };
+    Ok((proxy, proxy_url))
 }
 
 /// Assert the socket transcript, allowing only native CONNECT retry multiplicity.

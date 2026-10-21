@@ -66,11 +66,11 @@ fn secure_peer(
 }
 
 /// Complete a real TLS request through either sender with one supplied trust configuration.
-pub(super) async fn secure_exchange(proxied: bool, credentials: &str) -> Observed {
+pub(super) async fn secure_exchange(scheme: Option<&str>, credentials: &str) -> Observed {
     let (sent, received) = std::sync::mpsc::channel();
     let config = server_config(&[b"http/1.1"]).unwrap();
     let authenticate = !credentials.is_empty();
-    let authenticate = proxied.then_some(authenticate);
+    let authenticate = scheme.map(|_| authenticate);
     let server = loopback::start_routed(Arc::new(move |socket| {
         secure_peer(socket, &config, authenticate, &sent)
     }))
@@ -81,16 +81,20 @@ pub(super) async fn secure_exchange(proxied: bool, credentials: &str) -> Observe
         .tls_backend_preconfigured(trusted())
         .build()
         .unwrap();
-    let response = if proxied {
+    let response = if let Some(scheme) = scheme {
         let proxy = url::Url::parse(&format!(
-            "socks5h://{credentials}{}",
+            "{scheme}://{credentials}{}",
             server.url.strip_prefix("http://").unwrap()
         ))
         .unwrap();
         let sender =
             super::super::sender(Arc::new(move |_| Ok(Some(proxy.clone()))), trusted(), None);
         let request = client
-            .post("https://destination.invalid/path")
+            .post(if scheme == "socks4" {
+                "https://localhost/path"
+            } else {
+                "https://destination.invalid/path"
+            })
             .body(b"payload".to_vec())
             .build()
             .unwrap();
@@ -115,16 +119,30 @@ pub(super) async fn secure_exchange(proxied: bool, credentials: &str) -> Observe
 #[test]
 fn socks_tls_uses_shared_trust_and_destination_name() {
     run(async {
-        let direct = secure_exchange(false, "").await;
+        let direct = secure_exchange(None, "").await;
         assert_eq!(direct.name, "localhost");
         assert_eq!(direct.alpn, b"http/1.1");
-        let proxied = secure_exchange(true, "").await;
-        assert_eq!(proxied.name, "destination.invalid");
-        assert_eq!(proxied.alpn, b"http/1.1");
-        let proxy = proxied.proxy.unwrap();
-        assert_eq!(proxy.host, b"destination.invalid");
-        assert_eq!(proxy.port, 443);
-        assert_eq!(proxied.request.body, b"payload");
+        for (scheme, credentials) in [
+            ("socks5h", String::new()),
+            ("socks4a", String::new()),
+            ("socks4a", format!("{}@", "x".repeat(256))),
+        ] {
+            let proxied = secure_exchange(Some(scheme), &credentials).await;
+            assert_eq!(proxied.name, "destination.invalid");
+            assert_eq!(proxied.alpn, b"http/1.1");
+            let proxy = proxied.proxy.unwrap();
+            assert_eq!(proxy.host, b"destination.invalid");
+            assert_eq!(proxy.port, 443);
+            assert_eq!(proxied.request.body, b"payload");
+            if scheme == "socks4a" {
+                let expected = credentials.strip_suffix('@').unwrap_or("");
+                assert!(
+                    proxy.user.as_deref() == Some(expected.as_bytes()),
+                    "proxy identity bytes"
+                );
+                assert!(proxy.password.is_none());
+            }
+        }
     });
 }
 
