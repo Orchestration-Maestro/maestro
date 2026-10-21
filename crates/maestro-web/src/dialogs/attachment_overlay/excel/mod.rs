@@ -86,7 +86,12 @@ impl Excel {
             if let Err(text) = content {
                 operands.1.clone_into(&mut text.borrow_mut().values[0]);
                 #[cfg(target_arch = "wasm32")]
-                super::error::sync(&text.borrow());
+                let text = text.borrow();
+                #[cfg(target_arch = "wasm32")]
+                crate::browser::attachment_content::browser::sync_text(
+                    text.nodes.as_ref(),
+                    &text.values,
+                );
             }
         }
         #[cfg(target_arch = "wasm32")]

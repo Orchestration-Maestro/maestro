@@ -462,3 +462,15 @@ pub(crate) fn set_text_if_changed(element: &web_sys::Element, text: &str) {
         element.set_text_content(Some(text));
     }
 }
+
+/// Update the paired native text nodes without replacing unchanged text.
+pub(crate) fn sync_text<const N: usize>(
+    nodes: Option<&[web_sys::Element; N]>,
+    values: &[String; N],
+) {
+    if let Some(nodes) = nodes {
+        for (node, value) in nodes.iter().zip(values) {
+            set_text_if_changed(node, value);
+        }
+    }
+}

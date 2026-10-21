@@ -2,10 +2,7 @@
 use crate::components::native_text::{NativeText, TextKind};
 use crate::tools::{
     renderer_registry::{ToolHeaderState, ToolHeaderText, render_header},
-    types::{
-        ToolContent, ToolContentOutput, ToolRenderResult, ToolRenderView, ToolResultMessageView,
-        ToolUiError,
-    },
+    types::{ToolContent, ToolRenderResult, ToolRenderView, ToolResultMessageView, ToolUiError},
 };
 use crate::{I18n, browser};
 use maestro_app::{JsonObject, ToolRendererState, display_truthy};
@@ -62,25 +59,7 @@ struct Retained {
     /// Present only while plain error text is selected.
     error: Option<NativeText>,
 }
-impl ToolContent for CardContent {
-    fn render(
-        &self,
-        ui: &mut egui::Ui,
-        view: ToolRenderView<'_>,
-        state: &ToolRendererState,
-    ) -> ToolContentOutput {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let mut overlays = Vec::new();
-        let result = self.draw(ui, view, &mut retained, &mut overlays);
-        let old = slot.replace(retained);
-        drop(old);
-        ToolContentOutput {
-            response: result,
-            overlays,
-        }
-    }
-}
+crate::tools::types::retained_tool_content!(CardContent, Retained);
 impl CardContent {
     /// Reconcile native owners before drawing the current branch.
     fn draw(
@@ -196,16 +175,16 @@ impl Caption {
         }
     }
 }
-impl ToolContent for ArtifactCaption {
-    fn render(
+crate::tools::types::retained_tool_content!(ArtifactCaption, CaptionState);
+impl ArtifactCaption {
+    /// Draw the caption and its independently owned optional file action.
+    fn draw(
         &self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
-        state: &ToolRendererState,
-    ) -> ToolContentOutput {
-        let slot = state.state::<CaptionState>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let mut overlays = Vec::new();
+        retained: &mut CaptionState,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
+    ) -> Result<egui::Response, ToolUiError> {
         let row = ui.horizontal_wrapped(|ui| -> Result<(), ToolUiError> {
             let label = retained
                 .label
@@ -215,17 +194,12 @@ impl ToolContent for ArtifactCaption {
                 crate::tools::renderer_registry::header::InlineActions::action(&self.actions),
             ));
             if let Some(pill) = &self.pill {
-                pill.render(ui, view, &retained.pill)
-                    .collect(&mut overlays)?;
+                pill.render(ui, view, &retained.pill).collect(overlays)?;
             } else {
                 retained.pill = ToolRendererState::default();
             }
             Ok(())
         });
-        drop(slot.replace(retained));
-        ToolContentOutput {
-            response: row.inner.map(|()| row.response),
-            overlays,
-        }
+        row.inner.map(|()| row.response)
     }
 }

@@ -2,17 +2,9 @@
 use super::Text;
 use crate::browser::attachment_content::{
     AttachmentHostError, ReadingRoot,
-    browser::{host_error, set_text_if_changed},
+    browser::{host_error, sync_text},
 };
 use std::{cell::RefCell, rc::Rc};
-/// Update changed text only, preserving unchanged native selection.
-pub(in crate::dialogs::attachment_overlay) fn sync(text: &Text) {
-    if let Some(nodes) = &text.nodes {
-        for (node, value) in nodes.iter().zip(&text.values) {
-            set_text_if_changed(node, value);
-        }
-    }
-}
 /// Mount a centered panel with literal heading and diagnostic.
 pub(in crate::dialogs::attachment_overlay) fn mount(
     document: &web_sys::Document,
@@ -40,7 +32,10 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
     }
     root.append_child(&panel).map_err(|e| host_error(&e))?;
     text.borrow_mut().nodes = Some(nodes);
-    sync(&text.borrow());
+    {
+        let text = text.borrow();
+        sync_text(text.nodes.as_ref(), &text.values);
+    }
     Ok(ReadingRoot {
         frame_style: "",
         decoration: None,

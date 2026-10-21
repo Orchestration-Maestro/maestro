@@ -10,7 +10,7 @@ use crate::{
             header::browser::{NativeText, TextKind},
             render_header,
         },
-        types::{ToolContent, ToolContentOutput, ToolRenderView},
+        types::ToolRenderView,
     },
 };
 use maestro_app::ToolRendererState;
@@ -80,25 +80,7 @@ struct Retained {
     /// Present only while a result is rendered.
     output: Option<Section>,
 }
-impl ToolContent for DefaultContent {
-    fn render(
-        &self,
-        ui: &mut egui::Ui,
-        view: ToolRenderView<'_>,
-        state: &ToolRendererState,
-    ) -> ToolContentOutput {
-        let slot = state.state::<Retained>();
-        let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let mut overlays = Vec::new();
-        let result = self.draw(ui, view, &mut retained, &mut overlays);
-        let old = slot.replace(retained);
-        drop(old);
-        ToolContentOutput {
-            response: result,
-            overlays,
-        }
-    }
-}
+crate::tools::types::retained_tool_content!(DefaultContent, Retained);
 impl DefaultContent {
     /// Draw selected branches, releasing only subsections that disappear.
     fn draw(

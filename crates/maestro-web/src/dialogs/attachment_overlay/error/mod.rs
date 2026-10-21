@@ -31,7 +31,13 @@ impl Error {
     ) -> Result<egui::Rect, AttachmentHostError> {
         self.text.borrow_mut().values = operands.0;
         #[cfg(target_arch = "wasm32")]
-        browser::sync(&self.text.borrow());
+        {
+            let text = self.text.borrow();
+            crate::browser::attachment_content::browser::sync_text(
+                text.nodes.as_ref(),
+                &text.values,
+            );
+        }
         let reading = self.reading.as_ref().map_or_else(
             || {
                 #[cfg(target_arch = "wasm32")]
@@ -52,7 +58,7 @@ impl Error {
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]
-pub(super) use browser::{mount, sync};
+pub(super) use browser::mount;
 
 /// Preserve literal diagnostics, using the fallback only for absence.
 pub(super) fn failure_detail(message: Option<&str>, fallback: String) -> String {

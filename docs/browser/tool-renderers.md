@@ -57,6 +57,8 @@ Changing the recipe's concrete content type starts fresh widget state. Native
 placement follows the row lifetime independently of retained state aliases:
 leaving a recipe detaches its native surfaces, while aliases can keep the
 underlying owners alive. Nested placements detach with their parent.
+Row drawing takes call-scoped access to its typed state and restores it before
+returning either success or an error.
 
 The default renderer chooses result status before streaming status, formats
 truthy input as canonical JSON, and preserves ordered raw text output. Output

@@ -177,18 +177,7 @@ impl TextArtifact {
         browser::sync(&body, html_changed);
         self.changed = false;
     }
-    /// Create the factory once, retaining owned state only.
-    fn reading(&self) -> Rc<ReadingContent> {
-        if let Some(reading) = &self.reading {
-            return Rc::clone(reading);
-        }
-        #[cfg(target_arch = "wasm32")]
-        let body = Rc::clone(&self.body);
-        Rc::new(ReadingContent {
-            #[cfg(target_arch = "wasm32")]
-            mount: Rc::new(move |document| browser::mount(document, &body)),
-        })
-    }
+    super::retained::artifact_reading!(body);
 }
 impl ArtifactElement for TextArtifact {
     fn filename(&self) -> &str {
