@@ -120,9 +120,9 @@ fn assert_context(root: &Path) {
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
 }
 
-/// Covers the child's drive, root-relative paths and canonical directory spelling.
+/// Constructs drive-relative and root-relative wrapper paths from the chosen directory.
 #[cfg(windows)]
-fn assert_windows_paths(chosen: &Path) {
+fn windows_wrapper_paths(chosen: &Path) -> (PathBuf, PathBuf) {
     let Some(std::path::Component::Prefix(prefix)) = chosen.components().next() else {
         panic!("the native temporary directory must have a Windows prefix");
     };
@@ -136,6 +136,13 @@ fn assert_windows_paths(chosen: &Path) {
         .unwrap()
         .join("tools")
         .join(wrapper_name());
+    (drive_relative, root_relative)
+}
+
+/// Covers the child's drive, root-relative paths and canonical directory spelling.
+#[cfg(windows)]
+fn assert_windows_paths(chosen: &Path) {
+    let (drive_relative, root_relative) = windows_wrapper_paths(chosen);
     for program in [drive_relative.as_path(), root_relative.as_path()] {
         assert_wrapper(program, chosen, &[("PATHEXT", ".CMD")], "chosen");
     }
@@ -174,17 +181,7 @@ fn assert_lookup_policy(root: &Path) {
             &environment,
             "chosen",
         );
-        let Some(std::path::Component::Prefix(prefix)) = chosen.components().next() else {
-            panic!("missing native drive prefix")
-        };
-        let drive_relative = PathBuf::from(format!(
-            "{}tools\\wrapper.CMD",
-            prefix.as_os_str().to_str().unwrap()
-        ));
-        let root_relative = chosen
-            .strip_prefix(prefix.as_os_str())
-            .unwrap()
-            .join("tools/wrapper.CMD");
+        let (drive_relative, root_relative) = windows_wrapper_paths(&chosen);
         assert_wrapper(&drive_relative, &chosen, &environment, "chosen");
         assert_wrapper(&root_relative, &chosen, &environment, "chosen");
     }
