@@ -65,12 +65,6 @@ impl Pty {
     pub fn resize(&self, size: PtySize) -> io::Result<()> {
         fd::resize_pty_fd(&self.master_fd, size)
     }
-
-    /// Reads the terminal's current foreground process group.
-    #[must_use]
-    pub fn foreground_process_group(&self) -> Option<u32> {
-        foreground::foreground_process_group_id_for_tty_fd(&self.master_fd)
-    }
 }
 
 pub mod actor;
