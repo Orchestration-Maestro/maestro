@@ -182,14 +182,7 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<AzureOpenAIResponsesOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            produce::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            produce::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, produce::<Local>, produce::<Threaded>)
 }
 
 /// Box the same producer with this concrete family's future bounds.
@@ -279,14 +272,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
 /// Resolve shared simple options before starting the same producer.

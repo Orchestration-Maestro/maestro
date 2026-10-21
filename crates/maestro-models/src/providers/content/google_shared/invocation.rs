@@ -2,7 +2,10 @@
 use super::super::google::GoogleOptions;
 use super::thinking::disabled_thinking;
 use super::{ApiClient, GenerateContentParameters, build_parameters, enabled_thinking};
-use crate::{Context, DiagnosticErrorInfo, Local, Model, ProviderExecution, Threaded};
+use crate::{
+    Context, DiagnosticErrorInfo, Local, Model, ProviderExecution, ProviderInvocation,
+    StreamOptionsFamily, Threaded,
+};
 
 /// Owned constructor configuration supplied to the common producer.
 pub(in crate::providers::content) struct Setup<E: ProviderExecution> {
@@ -253,4 +256,22 @@ async fn selected_payload<E: ProviderExecution>(
     } else {
         Ok(selected)
     }
+}
+
+/// Prepare the selected content family before starting its existing producer.
+pub(in crate::providers::content) fn dispatch<K: StreamOptionsFamily>(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<K>,
+    local: impl FnOnce(Model, Context, Option<K::Options<Local>>) -> Setup<Local>,
+    threaded: impl FnOnce(Model, Context, Option<K::Options<Threaded>>) -> Setup<Threaded>,
+) -> crate::AssistantMessageEventStream {
+    invocation.dispatch(
+        model,
+        context,
+        |model, context, options, submit| start::<Local>(local(model, context, options), submit),
+        |model, context, options, submit| {
+            start::<Threaded>(threaded(model, context, options), submit)
+        },
+    )
 }

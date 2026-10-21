@@ -46,14 +46,7 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<MistralOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            start::<Local>(model, context, options.unwrap_or_default(), None, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            start::<Threaded>(model, context, options.unwrap_or_default(), None, submit)
-        }
-    }
+    invocation.dispatch(model, context, start_call::<Local>, start_call::<Threaded>)
 }
 
 /// Resolve credentials before starting a simple conversation stream.
@@ -88,14 +81,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
 /// Resolve credentials before reusing the raw producer.
@@ -224,4 +210,14 @@ async fn produce<E: ProviderExecution>(
     });
     super::sse::read(body, model, stream, output).await?;
     conclude(stream, output, options.common.signal.as_ref())
+}
+
+/// Pass raw controls to the existing producer without a simple-effort override.
+fn start_call<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<MistralOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
+    start::<E>(model, context, options.unwrap_or_default(), None, submit)
 }
