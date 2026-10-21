@@ -677,14 +677,14 @@ fn maestro_skills_report_explicit_path_failures() {
     let upper = dir.file("upper.MD", "---\ndescription: Not loaded\n---");
     let stat = dir.file("stat.md", "---\ndescription: Not loaded\n---");
     let missing = dir.0.join("absent");
-    #[cfg_attr(not(unix), allow(unused_mut))]
-    let mut paths = vec![missing.clone(), upper.clone(), stat.clone()];
+    let paths = vec![missing.clone(), upper.clone(), stat.clone()];
     #[cfg(unix)]
-    let _socket = {
+    let (paths, _socket) = {
+        let mut paths = paths;
         let other = dir.0.join("other.md");
         let listener = std::os::unix::net::UnixListener::bind(&other).unwrap();
         paths.push(other);
-        listener
+        (paths, listener)
     };
     let ops = support::Controlled {
         reads: std::sync::Mutex::default(),
@@ -704,14 +704,13 @@ fn maestro_skills_report_explicit_path_failures() {
     )
     .unwrap();
     assert!(result.skills.is_empty());
-    #[cfg_attr(not(unix), allow(unused_mut))]
-    let mut expected = vec![
+    let expected = [
         ("skill path does not exist", missing),
         ("skill path is not a markdown file", upper),
         ("injected metadata", stat),
+        #[cfg(unix)]
+        ("skill path is not a markdown file", dir.0.join("other.md")),
     ];
-    #[cfg(unix)]
-    expected.push(("skill path is not a markdown file", dir.0.join("other.md")));
     assert_eq!(
         result
             .diagnostics

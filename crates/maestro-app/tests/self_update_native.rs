@@ -171,17 +171,17 @@ fn native_windows_update_access_matches_directory_rule() {
                 .check_write_access(path.to_str().unwrap())
                 .is_ok()
         );
-        let mut permissions = fs::metadata(path).unwrap().permissions();
+        let original_permissions = fs::metadata(path).unwrap().permissions();
+        let mut permissions = original_permissions.clone();
         permissions.set_readonly(true);
-        fs::set_permissions(path, permissions.clone()).unwrap();
+        fs::set_permissions(path, permissions).unwrap();
         assert_eq!(
             operations
                 .check_write_access(path.to_str().unwrap())
                 .is_ok(),
             path == &dir
         );
-        permissions.set_readonly(false);
-        fs::set_permissions(path, permissions).unwrap();
+        fs::set_permissions(path, original_permissions).unwrap();
     }
     assert!(
         operations
@@ -236,16 +236,16 @@ fn windows_selection_uses_native_access(scratch: &Scratch) {
             .unwrap()
             .is_some()
     );
-    let mut permissions = std::fs::metadata(&package).unwrap().permissions();
+    let original_permissions = std::fs::metadata(&package).unwrap().permissions();
+    let mut permissions = original_permissions.clone();
     permissions.set_readonly(true);
-    std::fs::set_permissions(&package, permissions.clone()).unwrap();
+    std::fs::set_permissions(&package, permissions).unwrap();
     assert!(
         get_self_update_command(&context, "agent", Some(&configured), None)
             .unwrap()
             .is_some()
     );
-    permissions.set_readonly(false);
-    std::fs::set_permissions(&package, permissions).unwrap();
+    std::fs::set_permissions(&package, original_permissions).unwrap();
     std::fs::remove_dir(&package).unwrap();
 }
 

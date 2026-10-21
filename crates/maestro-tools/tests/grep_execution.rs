@@ -1,6 +1,7 @@
 //! Content search through the public tool factories.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 use crate::runtime;
 use maestro_tools::{GrepToolOptions, ToolsManager, create_grep_tool_definition};
 use std::sync::Arc;
