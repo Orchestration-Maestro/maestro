@@ -407,6 +407,12 @@ a universal sandbox. Do not use it alongside another process editing that auth
 file. Tooling regressions instead use disposable authentication fixtures and
 controlled processes, without provider calls or operator credentials.
 
+Pull-request CI runs only the tests of changed crates and of the crates that
+depend on them. A test that reads a file outside its own crate needs that path
+in `test_inputs` in `.github/ci.toml`, mapped to the package whose test reads
+it. Without that entry, a change to the file runs every test, or none when the
+file is Markdown or under `docs/`.
+
 ### Child-process tests
 
 A test that re-runs one test in a fresh process starts it through
