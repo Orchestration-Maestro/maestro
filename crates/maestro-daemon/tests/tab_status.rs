@@ -2,41 +2,25 @@
 #![cfg(test)]
 #![cfg(unix)]
 
+#[path = "support/launch.rs"]
+mod launch;
 mod support;
 
 use maestro_daemon::{
     api::event_hub::EventHub,
-    app::{App, construction::PaneLaunchInputs, state::TabBarStatusSegment},
+    app::{App, state::TabBarStatusSegment},
     events::AppEvent,
-    render_signal::RenderSignal,
     settings::{model::Config, tab_bar::TabBarRightEntryConfig},
-    terminal_theme::TerminalTheme,
 };
-use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
-use std::{sync::Arc, time::Instant};
-use tokio::sync::{Notify, mpsc};
+use std::time::Instant;
+use tokio::sync::mpsc;
 
 /// Daemon with a deterministic public identity clock.
 type TestApp = App<fn() -> u128>;
 
 /// Supplies a daemon without launching any pane process.
 fn test_app() -> TestApp {
-    let (events, receiver) = mpsc::channel(8);
-    let launch = PaneLaunchInputs {
-        setup_entry: PtySetupEntry {
-            executable: std::env::current_exe().unwrap(),
-            args: Vec::new(),
-        },
-        socket: std::env::temp_dir().join("maestro-status-test.sock"),
-        executable: None,
-        manifests: support::manifest_cache(),
-        events,
-        render_notify: Arc::new(Notify::new()),
-        render_dirty: Arc::new(RenderSignal::new()),
-        theme: TerminalTheme::default(),
-        appearance: None,
-        process_detection_mode: ProcessDetectionMode::Native,
-    };
+    let (launch, receiver) = launch::launch_inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,

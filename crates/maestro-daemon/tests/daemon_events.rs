@@ -2,28 +2,28 @@
 #![cfg(test)]
 #![cfg(unix)]
 
+#[path = "support/launch.rs"]
+mod launch;
 mod support;
+use launch::launch_inputs;
 
 use maestro_daemon::{
-    app::{App, construction::PaneLaunchInputs},
+    app::App,
     events::AppEvent,
     pane::{
         launch_env::PaneLaunchEnv,
         runtime::{AgentDetection, PaneRuntime},
     },
-    render_signal::RenderSignal,
     settings::model::Config,
-    terminal_theme::TerminalTheme,
 };
 use maestro_detection::agents::{Agent, AgentState};
-use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::layout::PaneId;
 
 /// Daemon owner driven by a deterministic public-identity clock.
 type TestApp = App<fn() -> u128>;
-use std::{ffi::OsString, sync::Arc, time::Instant};
-use tokio::sync::{Notify, mpsc};
+use std::{sync::Arc, time::Instant};
+use tokio::sync::mpsc;
 
 #[test]
 fn setup_entry() {
@@ -166,32 +166,6 @@ fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
     state.toast_config.delay_seconds = u64::from(delayed);
     state.sound.enabled = false;
     app
-}
-
-/// Supplies the same existing pane runtime boundary used by native launches.
-fn launch_inputs(
-    args: &[String],
-    manifests: Arc<std::sync::RwLock<maestro_detection::manifest::ManifestCache>>,
-) -> (PaneLaunchInputs, mpsc::Receiver<AppEvent>) {
-    let (events, receiver) = mpsc::channel(8);
-    (
-        PaneLaunchInputs {
-            setup_entry: PtySetupEntry {
-                executable: std::env::current_exe().unwrap(),
-                args: args.iter().map(OsString::from).collect(),
-            },
-            socket: std::env::temp_dir().join("maestro-context-test.sock"),
-            executable: None,
-            manifests,
-            events,
-            render_notify: Arc::new(Notify::new()),
-            render_dirty: Arc::new(RenderSignal::new()),
-            theme: TerminalTheme::default(),
-            appearance: None,
-            process_detection_mode: ProcessDetectionMode::Native,
-        },
-        receiver,
-    )
 }
 
 #[test]

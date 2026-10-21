@@ -628,3 +628,7 @@ launch inputs. One drain processes at most sixty-four observations and retains
 later events for the next pass. Render impact comes from the same event dispatch
 used by direct callers: bells alone and unchanged or stale status output do not
 request a render.
+
+Construction initializes agent-panel ordering, sidebar collapse state and
+focus-gain redraw policy from the accepted preferences. The agent-panel ordering
+shares the settings owner's vocabulary rather than translating a duplicate enum.

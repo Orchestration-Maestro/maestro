@@ -15,6 +15,9 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+/// Agent panel ordering uses the same vocabulary as the accepted preferences.
+pub use crate::settings::model::AgentPanelSortConfig as AgentPanelSort;
+
 mod notification;
 pub use notification::{
     AgentNotificationDelivery, CopyFeedback, PendingAgentNotification, ToastKind,
@@ -54,6 +57,12 @@ pub enum TabBarStatusSegment {
 
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
+    /// Live ordering selection for the agent panel.
+    pub agent_panel_sort: AgentPanelSort,
+    /// Current sidebar collapse state, initialized only on construction.
+    pub sidebar_collapsed: maestro_protocol::shared::Flag,
+    /// Whether outer focus gain requests a full host redraw.
+    pub redraw_on_focus_gained: maestro_protocol::shared::Flag,
     /// Ordered retained right-side status segments.
     pub tab_bar_right: Vec<TabBarStatusSegment>,
     /// Printable spacing between status segments.
@@ -127,6 +136,9 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     #[must_use]
     pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
         Self {
+            agent_panel_sort: config.ui.agent_panel_sort,
+            sidebar_collapsed: config.ui.sidebar_start_collapsed,
+            redraw_on_focus_gained: config.ui.redraw_on_focus_gained,
             tab_bar_right: Vec::new(),
             tab_bar_right_separator: " ".into(),
             topology: WorkspaceTopology::new(clock),
