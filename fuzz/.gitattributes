@@ -1,2 +1,2 @@
 # Seeds are fuzzer input bytes; keep their line endings.
-corpus/** binary
+corpus/** -text
