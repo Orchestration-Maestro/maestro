@@ -1,6 +1,7 @@
 //! Internal observations applied through daemon state and live process context.
 
 mod overlay;
+mod respawn;
 mod state_events;
 
 use super::{
@@ -13,7 +14,11 @@ use crate::{events::AppEvent, settings::model::ToastDelivery};
 impl<C: FnMut() -> u128> App<C> {
     /// Applies a background observation through the retained state transition owner.
     pub fn handle_internal_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
-        self.publish_pane_exit(&event);
+        self.publish_pane_process_exit(&event);
+        if self.respawn_shell_after_exit(&event) {
+            return Vec::new();
+        }
+        self.emit_pane_exit(&event);
         let overlay_exit = self.take_overlay_before_exit(&event);
         let previous_toast = self.state.toast.clone();
         let updates = self.state.handle_app_event(event);

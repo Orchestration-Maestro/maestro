@@ -3,11 +3,18 @@
 mod api;
 mod runtime;
 
+/// Shared launch inputs and daemon construction.
+pub mod construction;
+
 use crate::terminal::runtime_registry::TerminalRuntimeRegistry;
 use state::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
+    /// Accepted preferences shared by creation and replacement process launches.
+    pub config: crate::settings::model::Config,
+    /// Caller-supplied process entry and shared runtime adapters.
+    pub launch: construction::PaneLaunchInputs,
     /// Mutable workspace metadata and notification decisions.
     pub state: DaemonState<C>,
     /// Live process owners keyed by durable terminal identity.

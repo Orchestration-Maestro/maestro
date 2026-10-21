@@ -5,19 +5,18 @@
 mod support;
 
 use maestro_daemon::{
-    app::{App, state::DaemonState},
+    app::{App, construction::PaneLaunchInputs},
     events::AppEvent,
     pane::{
         launch_env::PaneLaunchEnv,
-        runtime::{AgentDetection, PaneRuntime, PaneRuntimeConfig},
+        runtime::{AgentDetection, PaneRuntime},
     },
     render_signal::RenderSignal,
     settings::model::Config,
-    terminal::runtime_registry::TerminalRuntimeRegistry,
     terminal_theme::TerminalTheme,
 };
 use maestro_detection::agents::{Agent, AgentState};
-use maestro_process::pty::{PtySetupEntry, PtySize, foreground::ProcessDetectionMode};
+use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::layout::PaneId;
 
@@ -63,7 +62,10 @@ async fn check_live_context(args: &[String], delayed: bool) {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let (config, mut events) = runtime_config(args, pane, Arc::clone(&app.state.manifests));
+    let (launch, mut events) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    app.launch = launch;
+    let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
+    config.agent_detection = AgentDetection::Disabled;
     let command = format!(
         "printf '\\033]7;file://{}\\033\\\\'; read -r line",
         live.display()
@@ -142,61 +144,50 @@ fn context_directories() -> std::path::PathBuf {
 
 /// Builds the background workspace without admitting the process's new directory.
 fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
-    let mut state = DaemonState::new(
-        &Config::default(),
+    let config = Config::default();
+    let (launch, _) = launch_inputs(&[], support::manifest_cache());
+    let mut app = App::new(
+        &config,
         (|| 0) as fn() -> u128,
-        support::manifest_cache(),
+        launch,
+        maestro_daemon::api::event_hub::EventHub::default(),
     );
+    let state = &mut app.state;
     state
         .topology
         .new_with_tab(directory, None, |_, _| Ok(()))
         .unwrap();
-    support::populate_terminals(&mut state);
+    support::populate_terminals(state);
     state.active = Some(0);
-    support::assert_identity_invariants(&state);
+    support::assert_identity_invariants(state);
     state.active = None;
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
     state.toast_config.delay_seconds = u64::from(delayed);
     state.sound.enabled = false;
-    App {
-        state,
-        terminal_runtimes: TerminalRuntimeRegistry::new(),
-        overlay_panes: std::collections::HashMap::new(),
-        event_hub: maestro_daemon::api::event_hub::EventHub::default(),
-    }
+    app
 }
 
 /// Supplies the same existing pane runtime boundary used by native launches.
-fn runtime_config(
+fn launch_inputs(
     args: &[String],
-    pane: PaneId,
     manifests: Arc<std::sync::RwLock<maestro_detection::manifest::ManifestCache>>,
-) -> (PaneRuntimeConfig, mpsc::Receiver<AppEvent>) {
+) -> (PaneLaunchInputs, mpsc::Receiver<AppEvent>) {
     let (events, receiver) = mpsc::channel(8);
     (
-        PaneRuntimeConfig {
-            pane_id: pane,
-            size: PtySize {
-                rows: 24,
-                cols: 80,
-                cell_width_px: 0,
-                cell_height_px: 0,
-            },
-            scrollback_limit_bytes: 4096,
-            theme: TerminalTheme::default(),
-            appearance: None,
-            events,
-            render_notify: Arc::new(Notify::new()),
-            render_dirty: Arc::new(RenderSignal::new()),
-            manifests,
-            process_detection_mode: ProcessDetectionMode::Native,
-            agent_detection: AgentDetection::Disabled,
+        PaneLaunchInputs {
             setup_entry: PtySetupEntry {
                 executable: std::env::current_exe().unwrap(),
                 args: args.iter().map(OsString::from).collect(),
             },
             socket: std::env::temp_dir().join("maestro-context-test.sock"),
             executable: None,
+            manifests,
+            events,
+            render_notify: Arc::new(Notify::new()),
+            render_dirty: Arc::new(RenderSignal::new()),
+            theme: TerminalTheme::default(),
+            appearance: None,
+            process_detection_mode: ProcessDetectionMode::Native,
         },
         receiver,
     )
@@ -444,4 +435,170 @@ fn pane_death_publishes_completion_before_exit_and_identity_removal() {
     assert!(release < exit);
     assert!(app.state.find_pane(pane).is_none());
     assert!(app.state.toast.as_ref().unwrap().title.contains("finished"));
+}
+
+#[test]
+fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
+    if run_alone("daemon_pane_died_respawns_shell_and_clears_restored_agent_session").unwrap() {
+        return;
+    }
+    TestProcess::named("setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(check_respawn(args));
+            Ok::<_, std::io::Error>(())
+        })
+        .unwrap();
+}
+
+/// A launch-command exit keeps its pane but replaces its process and clears agent ownership.
+async fn check_respawn(args: &[String]) {
+    let mut app = context_app(std::env::temp_dir(), false);
+    let (launch, _events) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    app.launch = launch;
+    app.config.terminal.default_shell = "/bin/sh".into();
+    app.config.terminal.shell_mode = maestro_daemon::settings::model::ShellModeConfig::NonLogin;
+    let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    let terminal = app.state.terminals.get_mut(&terminal_id).unwrap();
+    terminal.respawn_shell_on_exit = true;
+    terminal.set_agent_name("codex".into());
+    terminal.set_persisted_agent_session(maestro_daemon::agent_resume::PersistedAgentSession {
+        source: "maestro:codex".into(),
+        agent: "codex".into(),
+        session_ref: maestro_daemon::agent_resume::AgentSessionRef::id("codex-session").unwrap(),
+    });
+    app.handle_internal_event(AppEvent::PaneDied { pane_id: pane });
+    assert!(app.state.find_pane(pane).is_some());
+    let terminal = &app.state.terminals[&terminal_id];
+    assert!(!terminal.respawn_shell_on_exit);
+    assert!(terminal.persisted_agent_session.is_none());
+    assert!(terminal.agent_name.is_none());
+    assert_shell_identity(&app, &terminal_id).await;
+    assert_eq!(app.terminal_runtimes.len(), 1);
+    assert!(
+        app.terminal_runtimes
+            .get(&terminal_id)
+            .unwrap()
+            .child_pid()
+            .is_some()
+    );
+    for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {
+        runtime.shutdown().await;
+    }
+}
+
+#[test]
+fn daemon_terminal_delivery_does_not_refresh_existing_targeted_toast() {
+    use maestro_daemon::app::state::{ToastKind, ToastNotification, ToastTarget};
+    let mut app = context_app("/__maestro_original__".into(), false);
+    let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    let workspace_id = app.state.topology.workspaces[0].id.clone();
+    app.state.terminals.get_mut(&terminal_id).unwrap().cwd = "/__maestro_projects__".into();
+    app.state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Terminal;
+    app.handle_internal_event(AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(Agent::Codex),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: Instant::now(),
+    });
+    app.state.toast = Some(ToastNotification {
+        kind: ToastKind::Finished,
+        title: "codex finished".into(),
+        context: "__maestro_original__ · 1".into(),
+        position: None,
+        target: Some(ToastTarget {
+            workspace_id,
+            pane_id: pane,
+        }),
+    });
+    app.handle_internal_event(AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(Agent::Codex),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: Instant::now(),
+    });
+    assert_eq!(
+        app.state.toast.as_ref().map(|toast| toast.context.as_str()),
+        Some("__maestro_original__ · 1")
+    );
+}
+
+/// Observes a running replacement shell and its actual injected public identities.
+async fn assert_shell_identity(
+    app: &TestApp,
+    terminal: &maestro_workspace::terminal_id::TerminalId,
+) {
+    let runtime = app.terminal_runtimes.get(terminal).unwrap();
+    runtime.send_bytes(b"printf '\\nspawned:<%s>|<%s>|<%s>\\n' \"$MAESTRO_WORKSPACE_ID\" \"$MAESTRO_TAB_ID\" \"$MAESTRO_PANE_ID\"\n".to_vec()).await.unwrap();
+    loop {
+        let _ = app.launch.render_dirty.take();
+        if runtime
+            .visible_text()
+            .contains("spawned:<w1>|<w1:t1>|<w1:p1>")
+        {
+            break;
+        }
+        app.launch.render_notify.notified().await;
+    }
+    assert_eq!(runtime.cwd(), Some(std::env::temp_dir()));
+    assert_eq!(runtime.current_size(), app.state.estimate_pane_size());
+    assert!(
+        !app.event_hub
+            .events_after(0)
+            .iter()
+            .any(|(_, event)| matches!(
+                event,
+                maestro_protocol::events::EventData::PaneExited { .. }
+            ))
+    );
+}
+
+#[test]
+fn failed_shell_respawn_keeps_normal_pane_exit() {
+    let mut app = context_app(std::env::temp_dir(), false);
+    app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
+    app.config.terminal.shell_mode = maestro_daemon::settings::model::ShellModeConfig::Login;
+    let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    app.state
+        .terminals
+        .get_mut(&terminal_id)
+        .unwrap()
+        .respawn_shell_on_exit = true;
+    app.handle_internal_event(AppEvent::PaneDied { pane_id: pane });
+    assert!(app.state.find_pane(pane).is_none());
+    assert!(!app.state.terminals.contains_key(&terminal_id));
+    assert!(app.terminal_runtimes.is_empty());
+    assert!(
+        app.event_hub
+            .events_after(0)
+            .iter()
+            .any(|(_, event)| matches!(
+                event,
+                maestro_protocol::events::EventData::PaneExited { .. }
+            ))
+    );
 }

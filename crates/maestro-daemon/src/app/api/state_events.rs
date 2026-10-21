@@ -8,7 +8,7 @@ use maestro_protocol::events::EventData;
 
 impl<C: FnMut() -> u128> App<C> {
     /// Publishes completion and death before the pane loses its public identity.
-    pub(super) fn publish_pane_exit(&mut self, event: &crate::events::AppEvent) {
+    pub(super) fn publish_pane_process_exit(&mut self, event: &crate::events::AppEvent) {
         let crate::events::AppEvent::PaneDied { pane_id } = event else {
             return;
         };
@@ -17,6 +17,13 @@ impl<C: FnMut() -> u128> App<C> {
             self.refresh_new_workspace_toast_context_for_update(&update, previous_toast.as_ref());
             self.emit_pane_state_update(&update);
         }
+    }
+
+    /// Announces a terminal pane exit only when no replacement process took ownership.
+    pub(super) fn emit_pane_exit(&self, event: &crate::events::AppEvent) {
+        let crate::events::AppEvent::PaneDied { pane_id } = event else {
+            return;
+        };
         if let Some((workspace, _)) = self.state.find_pane(*pane_id)
             && let Some(public_pane) = self.state.public_pane_id(workspace, *pane_id)
         {

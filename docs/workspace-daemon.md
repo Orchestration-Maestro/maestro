@@ -589,3 +589,10 @@ has not changed. Pane death publishes completion and the exit event before its
 identity is removed. Temporary overlay exits clean their owned files and restore
 previous focus and zoom only while the overlay still owns focus; a focus change
 made before exit is preserved.
+
+Construction retains one set of launch adapters, including the shared detection
+cache, supplied child setup entry, socket, event sender and render signals.
+Runtime configurations bind those inputs to the real pane ID and current size.
+When a launch-command pane is marked to return to a shell, exit starts that shell
+without removing the pane. A successful replacement clears agent runtime identity
+and restores focus. A failed spawn follows the normal pane-close path.
