@@ -66,10 +66,11 @@ impl BlockTokens {
         self.nodes.push(node);
     }
 
-    /// Publish a container recognized over retained segmented input.
+    /// Publish a block recognized over retained segmented input.
     pub(super) fn push_segmented(&mut self, raw: Segmented, node: Node) {
         self.complete();
-        self.tail = Tail::Visible(Some(raw));
+        self.tail =
+            Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
         self.nodes.push(node);
     }
 
@@ -97,19 +98,23 @@ impl<E> Lexer<'_, E> {
     /// Append blocks while preserving the invocation's paragraph clipping state.
     pub(super) fn block_tokens(
         &mut self,
-        source: &ScopeSource,
+        source: &Segmented,
         output: &mut BlockTokens,
         mut clipped: bool,
     ) {
+        let callback = self.tokenizer.as_ref().map(|_| source.materialize());
         let mut cursor = 0;
-        while cursor < source.text.len() && self.error.is_none() {
-            let rest = source.view(cursor..source.text.len());
-            if let Some(consumed) = self.block(&rest, output) {
+        while cursor < source.len() && self.error.is_none() {
+            let rest = source.select(cursor..source.len());
+            let caller = callback
+                .as_ref()
+                .map(|source| source.view(cursor..source.text.len()));
+            if let Some(consumed) = self.block(&rest, output, caller.as_ref()) {
                 cursor += consumed;
                 continue;
             }
             self.clipped = false;
-            let Some((consumed, node)) = self.paragraph(&rest, output) else {
+            let Some((consumed, node)) = self.paragraph(&rest, output, caller.as_ref()) else {
                 break;
             };
             let inline = matches!(node.kind, Kind::Inline(_));
@@ -122,7 +127,7 @@ impl<E> Lexer<'_, E> {
             if merge {
                 Self::merge_node(output, &node);
             } else {
-                output.push(&rest, consumed, node);
+                output.push_segmented(rest.select(0..consumed), node);
             }
             clipped = self.clipped;
             cursor += consumed;
@@ -131,37 +136,44 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Admit everything preceding paragraph and line-text fallback.
-    fn block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        if let Some(consumed) = self.extension(source, output) {
+    fn block(
+        &mut self,
+        source: &Segmented,
+        output: &mut BlockTokens,
+        callback: Option<&Source<'_>>,
+    ) -> Option<usize> {
+        if let Some(consumed) = callback.and_then(|source| self.extension(source, output)) {
             return Some(consumed);
         }
+        let first = source.first_line();
+        let first = first.view(0..first.text.len());
         if let Some(consumed) =
-            Self::space_block(source, output).or_else(|| Self::code_block(source, output))
+            Self::space_block(&first, output).or_else(|| Self::code_block(source, output))
         {
             return Some(consumed);
         }
-        if let Some(block) = tokenizer::block::leaf(source) {
+        if let Some(block) = tokenizer::block::leaf(source, &first) {
             if let Some(inline) = block.inline {
                 output.scopes.insert(
                     (block.node.range.start, block.node.range.end, false),
                     inline.into(),
                 );
             }
-            output.push(source, block.consumed, block.node);
+            output.push_segmented(source.select(0..block.consumed), block.node);
             return Some(block.consumed);
         }
         if let Some((consumed, node, list)) = self.container(source) {
-            output.push(source, consumed, node);
+            output.push_segmented(source.select(0..consumed), node);
             output.list = list;
             return Some(consumed);
         }
         if let Some(block) = tokenizer::block::html(source, self.options) {
-            output.push(source, block.consumed, block.node);
+            output.push_segmented(source.select(0..block.consumed), block.node);
             return Some(block.consumed);
         }
         self.definition_block(source, output).or_else(|| {
             self.table(source, output).map(|(consumed, node)| {
-                output.push(source, consumed, node);
+                output.push_segmented(source.select(0..consumed), node);
                 consumed
             })
         })
@@ -198,36 +210,37 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Merge ordinary code into eligible text using the one dedented operand.
-    fn code_block(source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
+    fn code_block(source: &Segmented, output: &mut BlockTokens) -> Option<usize> {
         let block = tokenizer::block::code(source)?;
-        let consumed = if output
+        let consumed = block.consumed;
+        if !output
             .last()
             .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
         {
-            let end = code_merge_end(source, block.consumed);
-            let body = block.inline?;
-            let end_text = body.local(&source.extent(0..end))?.end;
-            let end_text = body.text[..end_text].trim_end_matches('\n').len();
-            Self::merge_source(
-                output,
-                source,
-                end,
-                body.select(std::iter::once(0..end_text)),
-            );
-            end
-        } else {
-            let consumed = block.consumed;
-            output.push(source, consumed, block.node);
-            consumed
+            output.push_segmented(source.select(0..consumed), block.node);
+            return Some(consumed);
+        }
+        let end = code_merge_end(source, consumed);
+        let raw = source.select(0..end);
+        let range = raw.native(&(0..end))?;
+        let body = block.inline?;
+        let end_text = body.local(&range)?.end;
+        let end_text = body.text[..end_text].trim_end_matches('\n').len();
+        let body = body.select(std::iter::once(0..end_text));
+        let node = Node {
+            authored: raw.mapped(),
+            range,
+            kind: Kind::Inline(Vec::new()),
         };
-        Some(consumed)
+        Self::merge(output, &node, &body.into());
+        Some(end)
     }
 
     /// Merge literal definitions before registering otherwise first-wins references.
-    fn definition_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        let matched = rules::definition::recognize(source.text, self.options)?;
+    fn definition_block(&mut self, source: &Segmented, output: &mut BlockTokens) -> Option<usize> {
+        let matched = rules::definition::recognize(source, self.options)?;
+        let raw = source.select(0..matched.consumed).materialize();
+        let source = &raw.view(0..raw.text.len());
         if output
             .last()
             .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
@@ -295,14 +308,18 @@ impl<E> Lexer<'_, E> {
 }
 
 /// Preserve authored blank lines after merged code, not synthetic reentry seams.
-fn code_merge_end(source: &Source<'_>, consumed: usize) -> usize {
-    let raw = &source.text[..consumed];
+fn code_merge_end(source: &Segmented, consumed: usize) -> usize {
+    use crate::rules::lines::Input;
+    let raw = source.select(0..consumed);
+    let mut lines = rules::lines::Cursor::default();
     let mut end = consumed;
     let mut blank = false;
-    for range in crate::lexer::lines(raw) {
-        let line = &raw[range.clone()];
+    while let Some(range) = lines.next(&raw).or_else(|| lines.finish(&raw)) {
+        let line = raw.window(range.clone());
+        #[cfg(test)]
+        crate::tests::block_operand(&line);
         if line.trim_matches([' ', '\t', '\n']).is_empty() {
-            blank |= !source.extent(range.clone()).is_empty();
+            blank |= raw.native(&range).is_some_and(|range| !range.is_empty());
         } else {
             end = range.end - usize::from(line.ends_with('\n'));
             blank = false;

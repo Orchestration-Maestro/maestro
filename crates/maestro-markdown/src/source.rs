@@ -286,12 +286,6 @@ impl ScopeSource {
         Arc::make_mut(&mut self.units).push((native, begin..self.text.len()));
     }
 
-    /// Discard a semantic suffix while retaining the existing prefix allocation.
-    pub(crate) fn truncate(&mut self, end: usize) {
-        let _ = &self.text[..end];
-        self.text.range.end = self.text.range.start + end;
-    }
-
     /// Apply table-pipe spelling once while preserving each atomic source unit.
     pub(crate) fn pipes(&self) -> Self {
         self.replace("\\|", "|")

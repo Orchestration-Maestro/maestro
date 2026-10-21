@@ -1,11 +1,7 @@
 //! List admission and item continuation framing.
 use crate::{
-    Kind, MarkedOptions, Node,
-    inline::ScopeKey,
-    lexer::Lexer,
-    rules,
-    source::{ScopeSource, Segmented, Source},
-    tokenizer::{capture, node},
+    Kind, MarkedOptions, Node, inline::ScopeKey, lexer::Lexer, rules, source::Segmented,
+    tokenizer::capture,
 };
 use maestro_text::is_whitespace_scalar;
 use std::collections::HashMap;
@@ -166,14 +162,15 @@ impl ListState {
 
 impl<E> Lexer<'_, E> {
     /// Admit a list using bounded physical-line operands.
-    pub(crate) fn list(&mut self, source: &Source<'_>) -> Option<(usize, Node, Box<ListState>)> {
-        let first_line = source.text.split_inclusive('\n').next()?;
+    pub(crate) fn list(&mut self, source: &Segmented) -> Option<(usize, Node, Box<ListState>)> {
+        let first = source.first_line();
+        let first_line = first.text.split_inclusive('\n').next()?;
         #[cfg(test)]
         crate::tests::block_operand(first_line);
         rules::BLOCK_LIST.as_ref()?.find(first_line)?;
         let first = marker(first_line)?;
         let item = ItemLines::new(
-            &source.select(std::iter::once(0..first.line)),
+            &source.select(0..first.line).materialize(),
             &first,
             self.options,
         );
@@ -185,11 +182,7 @@ impl<E> Lexer<'_, E> {
             completed: Vec::new(),
             loose: false,
         });
-        self.list_tail(
-            &source.select(std::iter::once(0..source.text.len())).into(),
-            state,
-            offset,
-        )
+        self.list_tail(source, state, offset)
     }
 
     /// Resume the same item's source and history after its enclosing quote grows.
@@ -252,15 +245,22 @@ impl<E> Lexer<'_, E> {
 
     /// Replay child admission while retaining its output for final publication.
     fn list_item(&mut self, item: &mut ItemLines, following: bool) -> Option<(Node, bool)> {
-        let (mut body, task) = task(item.body().materialize());
+        let (mut body, task) = task(item.body());
         if !following {
-            body.truncate(body.text.trim_end_matches(is_whitespace_scalar).len());
+            let trimmed = item.body().len() - item.body_end();
+            body.truncate(body.len().saturating_sub(trimmed));
         }
         self.item_blocks(&body, &mut item.output);
         if let Some(checked) = task {
-            item.output
-                .nodes
-                .insert(0, node(&body, 0..0, Kind::TaskListMarker(checked)));
+            let end = body.native(&(0..body.len())).map_or(0, |range| range.end);
+            item.output.nodes.insert(
+                0,
+                Node {
+                    authored: body.select(0..0).mapped(),
+                    range: end..end,
+                    kind: Kind::TaskListMarker(checked),
+                },
+            );
         }
         let raw = item.raw();
         let loose = following && item.blank_end()
@@ -286,25 +286,23 @@ impl<E> Lexer<'_, E> {
 }
 
 /// Task markers are consumed before the item's ordinary inline grammar.
-fn task(source: ScopeSource) -> (ScopeSource, Option<bool>) {
-    let bytes = source.text.as_bytes();
+fn task(source: &Segmented) -> (Segmented, Option<bool>) {
+    let first = source.first_line();
+    let bytes = first.text.as_bytes();
     if bytes.len() >= 4
         && bytes[0] == b'['
         && bytes[2] == b']'
         && bytes[3] == b' '
         && matches!(bytes[1], b' ' | b'x' | b'X')
     {
-        let end = 3 + source.text[3..]
+        let end = 3 + first.text[3..]
             .bytes()
             .take_while(|byte| *byte == b' ')
             .count();
         let checked = bytes[1] != b' ';
-        (
-            source.select(std::iter::once(end..source.text.len())),
-            Some(checked),
-        )
+        (source.select(end..source.len()), Some(checked))
     } else {
-        (source, None)
+        (source.clone(), None)
     }
 }
 

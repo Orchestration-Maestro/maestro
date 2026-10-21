@@ -1,18 +1,25 @@
 //! Leaf block recognizers with authored ranges.
 use super::{Block, capture};
-use crate::{Kind, MarkedOptions, helpers::rtrim, rules, source::Source};
+use crate::{
+    Kind, MarkedOptions,
+    helpers::rtrim,
+    rules,
+    source::{Segmented, Source},
+};
 use maestro_text::is_whitespace_scalar;
 
 /// Admit a non-container block in grammar order.
-pub(crate) fn leaf(source: &Source<'_>) -> Option<Block> {
+pub(crate) fn leaf(source: &Segmented, first: &Source<'_>) -> Option<Block> {
     fences(source)
-        .or_else(|| heading(source))
-        .or_else(|| rule(source))
+        .or_else(|| heading(first))
+        .or_else(|| rule(first))
 }
 
 /// Remove one indentation unit on every indented-code line.
-pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
-    let consumed = rules::code::Recognizer::default().finish(source.text)?;
+pub(crate) fn code(source: &Segmented) -> Option<Block> {
+    let consumed = rules::code::Recognizer::default().finish(source)?;
+    let raw = source.select(0..consumed).materialize();
+    let source = &raw.view(0..consumed);
     let pieces = crate::lexer::lines(&source.text[..consumed]).map(|range| {
         let prefix = rules::code::indentation(&source.text[range.clone()]);
         range.start + prefix..range.end
@@ -35,8 +42,10 @@ pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
 }
 
 /// Retain full fence information and compensate only the opening indentation.
-fn fences(source: &Source<'_>) -> Option<Block> {
-    let matched = rules::fence::Recognizer::default().finish(source.text)?;
+fn fences(source: &Segmented) -> Option<Block> {
+    let matched = rules::fence::Recognizer::default().finish(source)?;
+    let raw = source.select(0..matched.consumed).materialize();
+    let source = &raw.view(0..raw.text.len());
     let indent = matched.indent;
     let body = matched
         .body
@@ -109,11 +118,13 @@ fn rule(source: &Source<'_>) -> Option<Block> {
 }
 
 /// Raw HTML remains a block only for callers that permit it.
-pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block> {
+pub(crate) fn html(source: &Segmented, options: MarkedOptions) -> Option<Block> {
     if options == MarkedOptions::Export {
         return None;
     }
     if options == (MarkedOptions::Browser { escape_html: true }) {
+        let raw = source.materialize();
+        let source = &raw.view(0..raw.text.len());
         #[cfg(test)]
         crate::tests::block_operand(source.text);
         let html = super::html::BlockRecognizer::default().finish(source.text)?;
@@ -123,9 +134,9 @@ pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block>
             inline: None,
         });
     }
-    #[cfg(test)]
-    crate::tests::block_operand(source.text);
-    let consumed = rules::html::Recognizer::default().finish(source.text)?;
+    let consumed = rules::html::Recognizer::default().finish(source)?;
+    let raw = source.select(0..consumed).materialize();
+    let source = &raw.view(0..consumed);
     Some(Block {
         consumed,
         node: source.node(

@@ -8,7 +8,7 @@ use crate::{
     helpers,
     inline::ScopeKey,
     rules,
-    source::{ScopeSource, Source},
+    source::{ScopeSource, Segmented, Source},
     tokenizer,
 };
 pub(crate) use blocks::BlockTokens;
@@ -73,12 +73,12 @@ impl<'a, E> Lexer<'a, E> {
     /// Admit a document into one retained block accumulator.
     pub(crate) fn blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
         let mut output = BlockTokens::default();
-        self.block_tokens(source, &mut output, false);
+        self.block_tokens(&source.clone().into(), &mut output, false);
         self.finish_blocks(output)
     }
 
     /// Replay item admission without publishing its inline operands prematurely.
-    pub(crate) fn item_blocks(&mut self, source: &ScopeSource, output: &mut BlockTokens) {
+    pub(crate) fn item_blocks(&mut self, source: &Segmented, output: &mut BlockTokens) {
         output.complete();
         for node in &output.nodes {
             self.forget(node);
@@ -132,7 +132,7 @@ impl<'a, E> Lexer<'a, E> {
     /// Recognize quote/list containers before definitions and ordinary paragraphs.
     fn container(
         &mut self,
-        source: &Source<'_>,
+        source: &Segmented,
     ) -> Option<(usize, Node, Option<Box<tokenizer::block::ListState>>)> {
         self.quote(source)
             .map(|(end, node)| (end, node, None))
@@ -168,49 +168,63 @@ impl<'a, E> Lexer<'a, E> {
     /// Capture setext headings before selecting top-level paragraphs or item text.
     fn paragraph(
         &mut self,
-        source: &Source<'_>,
+        source: &Segmented,
         output: &mut BlockTokens,
+        callback: Option<&Source<'_>>,
     ) -> Option<(usize, Node)> {
-        let recognized = rules::paragraph::Recognizer::new(self.options).finish(source.text);
+        let recognized = rules::paragraph::Recognizer::new(self.options).finish(source);
         let limit = if recognized.heading.is_none() {
-            self.extension_start(source)
+            callback.map_or(source.len(), |source| self.extension_start(source))
         } else {
-            source.text.len()
+            source.len()
         };
         let (end, content, kind) = if let Some(heading) = recognized.heading {
-            let label = source.text[heading.content.clone()].to_owned();
+            let label = source
+                .select(heading.content.clone())
+                .materialize()
+                .text
+                .to_string();
             (
                 heading.consumed,
                 heading.content,
                 Kind::Heading(heading.level, Vec::new(), label),
             )
         } else if self.top {
-            let end = if limit == source.text.len() {
+            let end = if limit == source.len() {
                 recognized.paragraph?
             } else {
                 rules::paragraph::Recognizer::new(self.options)
-                    .finish(&source.text[..limit])
+                    .finish(&source.select(0..limit))
                     .paragraph?
             };
             (end, 0..end, Kind::Paragraph(Vec::new()))
         } else {
-            let end = source.text.find('\n').unwrap_or(source.text.len());
+            let first = source.first_line();
+            let end = first.text.find('\n').unwrap_or(first.text.len());
             (end, 0..end, Kind::Inline(Vec::new()))
         };
-        let node = source.node(0..end, kind);
+        let raw = source.select(0..end);
+        let range = raw.native(&(0..end))?;
+        let node = Node {
+            authored: raw.mapped(),
+            range,
+            kind,
+        };
         output.scopes.insert(
             (node.range.start, node.range.end, false),
-            source.select(std::iter::once(content)).into(),
+            source.select(content),
         );
         Some((end, node))
     }
 
     /// Select a table only when header and delimiter column counts agree.
-    fn table(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<(usize, Node)> {
+    fn table(&mut self, source: &Segmented, output: &mut BlockTokens) -> Option<(usize, Node)> {
         if self.options == MarkedOptions::Documentation {
             return None;
         }
-        let matched = rules::table::Recognizer::new(self.options).finish(source.text)?;
+        let matched = rules::table::Recognizer::new(self.options).finish(source)?;
+        let raw = source.select(0..matched.consumed).materialize();
+        let source = &raw.view(0..raw.text.len());
         let delimiter = &source.text[matched.delimiter];
         if !delimiter.contains(['|', ':']) {
             return None;

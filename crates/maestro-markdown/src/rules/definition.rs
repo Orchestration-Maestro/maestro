@@ -159,12 +159,18 @@ impl Recognizer {
 }
 
 /// Recognize a complete caller operand through the same retained grammar.
-pub(crate) fn recognize(source: &str, options: MarkedOptions) -> Option<Definition> {
+pub(crate) fn recognize(
+    source: &(impl super::lines::Input + ?Sized),
+    options: MarkedOptions,
+) -> Option<Definition> {
     let mut recognizer = Recognizer::new(options);
-    for (offset, scalar) in source.char_indices() {
-        if let Verdict::Stable(result) =
-            recognizer.extend(&source[offset..offset + scalar.len_utf8()])
-        {
+    let scalars = source.chunks(0..source.len()).flat_map(|chunk| {
+        chunk
+            .char_indices()
+            .map(move |(offset, scalar)| &chunk[offset..offset + scalar.len_utf8()])
+    });
+    for scalar in scalars {
+        if let Verdict::Stable(result) = recognizer.extend(scalar) {
             return result;
         }
     }

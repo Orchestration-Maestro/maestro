@@ -213,6 +213,11 @@ impl ItemLines {
         &self.body
     }
 
+    /// Final semantic boundary already measured during physical-line admission.
+    pub(super) fn body_end(&self) -> usize {
+        self.trimmed.body_end
+    }
+
     /// Borrow the complete recognized raw, independently of final-list trim.
     pub(super) fn raw(&self) -> &Segmented {
         &self.raw

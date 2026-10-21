@@ -2,7 +2,7 @@
 use super::{Lexer, blocks::BlockTokens, quote::quote_source};
 use crate::{
     Kind, Node, rules,
-    source::{Cursor, ScopeSource, Segmented, Source},
+    source::{Cursor, ScopeSource, Segmented},
 };
 
 /// Retained quote invocation state across nested block admission.
@@ -45,11 +45,13 @@ impl Resume {
 
 impl<E> Lexer<'_, E> {
     /// Bound initial quote admission in its existing contiguous caller operand.
-    pub(super) fn quote(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        let first = source.text.split_inclusive('\n').next()?;
-        if crate::source::strip_quote(first).len() == first.len() {
+    pub(super) fn quote(&mut self, source: &Segmented) -> Option<(usize, Node)> {
+        let first = source.first_line();
+        if crate::source::strip_quote(&first.text).len() == first.text.len() {
             return None;
         }
+        let raw = source.materialize();
+        let source = &raw.view(0..raw.text.len());
         #[cfg(test)]
         crate::tests::block_operand(source.text);
         let matched = rules::block_blockquote(self.options)?.find(source.text)?;
@@ -103,7 +105,7 @@ impl<E> Lexer<'_, E> {
         }
         let top = self.top;
         self.top = true;
-        self.block_tokens(&chunk, &mut frame.output, true);
+        self.block_tokens(&chunk.clone().into(), &mut frame.output, true);
         self.top = top;
         frame.text.append(&chunk.into());
         frame.finished = frame.pending.is_empty()

@@ -10,7 +10,6 @@ fn lexer() -> Lexer<'static, Infallible> {
         error: None,
         top: true,
         clipped: false,
-        barriers: None,
         context: tokenizer::inline::LinkContext::new(false),
         options: MarkedOptions::Terminal,
         definitions: HashMap::new(),
@@ -23,7 +22,7 @@ fn list_children_publish_scopes_at_their_invocation_boundary() {
     let source = ScopeSource::identity("- é\n- [X] β");
     let mut lexer = lexer();
     let mut output = BlockTokens::default();
-    lexer.block_tokens(&source, &mut output, false);
+    lexer.block_tokens(&source.into(), &mut output, false);
     assert!(lexer.scopes.is_empty(), "provisional item scopes escaped");
     let nodes = lexer.finish_blocks(output);
     assert_eq!(lexer.scopes.len(), 2);
@@ -38,6 +37,7 @@ fn list_children_publish_scopes_at_their_invocation_boundary() {
     };
     assert!(matches!(first[0].kind, crate::Kind::Inline(_)));
     assert!(matches!(second[0].kind, crate::Kind::TaskListMarker(true)));
+    assert_eq!(second[0].range, 13..13);
     for (child, text) in [(&first[0], "é"), (&second[1], "β")] {
         let scope = &lexer.scopes[&(child.range.start, child.range.end, false)];
         assert_eq!(&*scope.text, text);
@@ -54,7 +54,11 @@ fn block_accumulator_retains_inline_operands_until_publication() {
         let mut output = BlockTokens::default();
         crate::tests::WORK.with_borrow_mut(|work| *work = crate::tests::Work::default());
         for line in crate::lexer::lines(&text) {
-            lexer.block_tokens(&source.select(std::iter::once(line)), &mut output, true);
+            lexer.block_tokens(
+                &source.select(std::iter::once(line)).into(),
+                &mut output,
+                true,
+            );
         }
         let copied = crate::tests::WORK.with_borrow(|work| work.source_bytes + work.joined_bytes);
         assert_eq!(output.nodes.len(), 1);
@@ -69,4 +73,31 @@ fn block_accumulator_retains_inline_operands_until_publication() {
         let copied = crate::tests::WORK.with_borrow(|work| work.source_bytes + work.joined_bytes);
         assert_eq!(copied, 1 + 3 * count, "one inline publication at {count}");
     }
+}
+
+#[test]
+fn block_dispatch_bounds_operands_to_the_admitted_leaf() {
+    let counts = [32, 64, 128].map(|count| {
+        crate::tests::WORK.with_borrow_mut(|work| *work = crate::tests::Work::default());
+        let document = crate::parse("# é\n\n***\n\n".repeat(count));
+        assert_eq!(
+            document
+                .nodes
+                .iter()
+                .filter(|node| matches!(node.kind, crate::Kind::Heading(..)))
+                .count(),
+            count,
+        );
+        assert_eq!(
+            document
+                .nodes
+                .iter()
+                .filter(|node| matches!(node.kind, crate::Kind::Rule))
+                .count(),
+            count,
+        );
+        crate::tests::WORK.with_borrow(|work| work.block_recognizer_bytes)
+    });
+    eprintln!("bounded block dispatch operands: {counts:?}");
+    assert!(counts.windows(2).all(|pair| pair[1] <= 3 * pair[0]));
 }

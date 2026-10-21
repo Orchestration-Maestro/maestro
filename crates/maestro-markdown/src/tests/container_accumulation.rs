@@ -87,12 +87,27 @@ fn container_mapping_matches_the_reference_work_shape() {
         .map(|n| measured_containers(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n))));
     let visits = chained.map(|work| work.list_lines);
     let copied = chained.map(|work| work.source_bytes + work.joined_bytes);
-    eprintln!("chained list visits: {visits:?}; copied bytes: {copied:?}");
+    let built_in = chained.map(|work| {
+        work.block_recognizer_bytes
+            + work.definition_bytes
+            + work.paragraph_bytes
+            + work.table_bytes
+            + work.fence_bytes
+            + work.code_bytes
+            + work.html_bytes
+            + work.framing_bytes
+            + work.source_views
+            + work.projections
+    });
+    eprintln!(
+        "chained list visits: {visits:?}; copied bytes: {copied:?}; built-in work: {built_in:?}"
+    );
     let admission_linear = visits.windows(2).all(|pair| pair[1] <= 3 * pair[0]);
     let copying_linear = copied.windows(2).all(|pair| pair[1] <= 3 * pair[0]);
+    let built_in_linear = built_in.windows(2).all(|pair| pair[1] <= 3 * pair[0]);
     assert!(
-        admission_linear && copying_linear,
-        "admission linear: {admission_linear}; copying linear: {copying_linear}; {chained:?}"
+        admission_linear && copying_linear && built_in_linear,
+        "admission linear: {admission_linear}; copying linear: {copying_linear}; built-in linear: {built_in_linear}; {chained:?}"
     );
     for unit in [
         "> a\n> b\n\n",
