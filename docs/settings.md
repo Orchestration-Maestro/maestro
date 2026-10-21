@@ -516,3 +516,6 @@ immediately; `flush` waits for queued writes and `drain_errors` reports failures
 Each write merges the edited leaf into fresh storage under the existing lock,
 so independent writers can change sibling preferences without losing updates.
 Whole-field and object-key setters still replace the value they address.
+
+Use `set_global_key_paths` when several leaves form one change. The batch publishes
+once and reaches storage in one write, so readers cannot observe half a change.

@@ -125,3 +125,32 @@ fn whole_object_key_edits_still_replace_the_addressed_value() {
         json!({"delivery":"terminal"})
     );
 }
+
+#[test]
+fn nested_batch_publishes_one_complete_storage_update() {
+    let storage = crate::support::ControlledStorage::new();
+    storage.inject(
+        SettingsScope::Global,
+        r#"{"multiplexer":{"theme":{"name":"catppuccin","autoSwitch":true}}}"#,
+    );
+    let mut manager = SettingsManager::from_storage(storage.clone());
+    manager.set_global_key_paths(
+        "multiplexer",
+        &[
+            (&["theme", "name"], Some(json!("gruvbox"))),
+            (&["theme", "autoSwitch"], Some(json!(false))),
+        ],
+    );
+    block_on(manager.flush());
+    let writes = storage.writes();
+    assert_eq!(
+        writes.len(),
+        1,
+        "readers must not observe half of a settings change"
+    );
+    let saved: Value = serde_json::from_str(&writes[0].1).unwrap();
+    assert_eq!(
+        saved["multiplexer"]["theme"],
+        json!({"name":"gruvbox","autoSwitch":false})
+    );
+}

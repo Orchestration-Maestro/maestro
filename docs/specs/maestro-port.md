@@ -55,6 +55,8 @@ immediately and merges only the addressed leaf into fresh storage under the
 existing write lock. `None` removes that leaf without creating absent parents;
 an empty key path addresses the whole field. Existing whole-field and object-key
 setters retain replacement semantics through this same path representation.
+`set_global_key_paths` publishes several such sets or removals as one cache
+change and one queued write; the single-path method delegates to it.
 Layered scope merging remains one object level; nested write intent does not
 change read precedence or introduce another writer.
 

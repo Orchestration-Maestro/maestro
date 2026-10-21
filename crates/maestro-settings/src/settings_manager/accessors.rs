@@ -68,9 +68,20 @@ impl SettingsManager {
     /// preference; absent parents stay absent. Each queued edit merges into fresh
     /// storage under the existing write lock, preserving unedited sibling keys.
     pub fn set_global_key_path(&mut self, field: &str, keys: &[&str], value: Option<Value>) {
+        self.set_global_key_paths(field, &[(keys, value)]);
+    }
+
+    /// Sets or removes several nested preferences as one cache publication and queued write.
+    ///
+    /// Paths are literal and apply in their supplied order. Storage readers observe
+    /// the complete batch under the existing lock, never a partially applied batch.
+    pub fn set_global_key_paths(&mut self, field: &str, edits: &[(&[&str], Option<Value>)]) {
         self.edit(
             SettingsScope::Global,
-            vec![Change::path(field, keys, value)],
+            edits
+                .iter()
+                .map(|(keys, value)| Change::path(field, keys, value.clone()))
+                .collect(),
         );
     }
 
