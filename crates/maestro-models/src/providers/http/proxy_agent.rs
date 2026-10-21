@@ -183,4 +183,4 @@ pub(super) fn decode(value: &str) -> std::io::Result<String> {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

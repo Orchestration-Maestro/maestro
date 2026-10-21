@@ -1,8 +1,9 @@
 //! PAC candidate establishment shares one connect budget; headers do not bound bodies.
 
 use super::{request, routed};
+use crate::providers::http::proxy_agent::tests::socks;
 use crate::providers::http::{FetchError, Route, collect_body, configured_fetch};
-use crate::tests::{loopback, socks};
+use crate::tests::loopback;
 use futures_util::FutureExt;
 use std::sync::{Arc, mpsc};
 use std::time::Duration;

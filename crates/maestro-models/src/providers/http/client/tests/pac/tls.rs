@@ -2,7 +2,8 @@
 
 use super::{request, routed};
 use crate::providers::http::collect_body;
-use crate::tests::{loopback, socks, tls};
+use crate::providers::http::proxy_agent::tests::socks;
+use crate::tests::{loopback, tls};
 use std::io::{Read, Write};
 use std::sync::{Arc, mpsc};
 

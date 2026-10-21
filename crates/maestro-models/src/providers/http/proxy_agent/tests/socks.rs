@@ -6,7 +6,7 @@ use std::net::TcpStream;
 
 /// Complete negotiation observed by authentication assertions.
 #[derive(Debug)]
-pub(super) struct Negotiation {
+pub(in crate::providers::http) struct Negotiation {
     /// Methods offered in order.
     pub methods: Vec<u8>,
     /// Username bytes, if authentication was selected.
@@ -22,7 +22,7 @@ pub(super) struct Negotiation {
 }
 
 /// Negotiate using the ordinary successful bound-address reply.
-pub(super) fn negotiate(
+pub(in crate::providers::http) fn negotiate(
     socket: &mut TcpStream,
     authenticate: bool,
 ) -> std::io::Result<Negotiation> {
@@ -30,7 +30,7 @@ pub(super) fn negotiate(
 }
 
 /// Capture authentication through the shared parser without duplicating the protocol exchange.
-pub(super) fn negotiate_reply(
+pub(in crate::providers::http) fn negotiate_reply(
     socket: &mut TcpStream,
     authenticate: bool,
     reply: &[u8],

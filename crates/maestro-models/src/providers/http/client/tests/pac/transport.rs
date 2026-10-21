@@ -2,7 +2,8 @@
 
 use super::{request, routed};
 use crate::providers::http::collect_body;
-use crate::tests::{loopback, socks};
+use crate::providers::http::proxy_agent::tests::socks;
+use crate::tests::loopback;
 use std::sync::Arc;
 
 #[test]

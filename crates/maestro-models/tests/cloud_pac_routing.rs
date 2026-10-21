@@ -47,7 +47,9 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     let socks = directive.starts_with("SOCKS");
     let server = loopback::start_routed(std::sync::Arc::new(move |mut socket| {
         if socks {
-            let address = crate::socks::negotiate(&mut socket, false)?;
+            use crate::socks::{DEFAULT_REPLY, negotiate_observing};
+            let (address, ()) =
+                negotiate_observing(&mut socket, false, DEFAULT_REPLY, |_, _, _| ())?;
             assert_eq!(address.kind, 3);
             assert_eq!(address.host, b"destination.invalid");
             assert_eq!(address.port, 8081);
