@@ -5,8 +5,8 @@ source and all native nodes, metadata and authored ranges. The same operations
 are exposed through `maestro_app::markdown` for frontend consumers.
 `Alignment` and `LinkType` belong to the shared Markdown owner. They describe
 column alignment and link handling through owned Rust types. Links distinguish
-authored labels (including resolved references), angle-enclosed URIs or mapped
-bare destinations, and angle-enclosed email addresses.
+authored labels (including resolved references) from automatic URI and email
+destinations, whether angle-enclosed or bare.
 
 After parsing, `InlineContext::new(&document)` indexes original
 container and link-label scopes. `scope(range, label)` exposes authored bytes,
@@ -50,8 +50,8 @@ The recognizer skips failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
 
 The parser retains link titles, destinations and inline labels; image destinations,
-titles and alt children; table alignments and authored cell spans; task markers;
-and full code information and bodies. Export renders literal image alt text,
+titles and alt children; table alignments, cell children and original source ranges;
+task markers; and full code information and bodies. Export renders literal image alt text,
 not its inline children; those children remain available in the shared document.
 Container-local source removes quote/list continuation prefixes. Aligned list continuations expand
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still

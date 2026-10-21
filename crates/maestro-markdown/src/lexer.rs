@@ -267,11 +267,9 @@ impl<'a, E> Lexer<'a, E> {
                 });
                 let input = source.select(std::iter::once(range.clone())).pipes();
                 let range = source.extent(range);
-                let authored = input.text.clone();
                 self.scopes.insert((range.start, range.end, false), input);
                 Cell {
                     children: Vec::new(),
-                    authored,
                     range,
                 }
             })

@@ -177,10 +177,7 @@ fn collect<'a>(nodes: &'a [Node], scope: &mut InlineScope<'a>, label: bool) {
             }
             Kind::Link(c, _, _, meta) => {
                 operand(node, scope, label);
-                if matches!(
-                    meta.link_type,
-                    crate::LinkType::Autolink | crate::LinkType::Email
-                ) {
+                if meta.link_type == crate::LinkType::Autolink {
                     scope.opaque.extend(scope.source.local(&node.range));
                 } else {
                     collect(c, scope, true);

@@ -109,7 +109,9 @@ fn parser_retains_container_source_extents() {
             _ => None,
         })
         .unwrap();
-    assert_eq!(table.rows[0][0].authored, " | ");
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&table.rows[0][0].range, false).unwrap();
+    assert_eq!(scope.text(), " | ");
     assert_eq!(&document.source[table.rows[0][0].range.clone()], " \\| ");
     let Kind::Text(text) = &table.rows[0][1].children[0].kind else {
         panic!("text")
@@ -399,4 +401,225 @@ fn list_continuations_separate_measurement_spelling_and_history() {
             }
         }
     }
+}
+
+#[test]
+fn automatic_links_keep_targets_and_share_their_handling_class() {
+    for options in link_grammars() {
+        for (source, label, destination) in [
+            (
+                "<user@example.com>",
+                "user@example.com",
+                "mailto:user@example.com",
+            ),
+            (
+                "<a_b+tag@example.co.uk>",
+                "a_b+tag@example.co.uk",
+                "mailto:a_b+tag@example.co.uk",
+            ),
+            (
+                "<a_b$c@example.com>",
+                "a_b$c@example.com",
+                "mailto:a_b$c@example.com",
+            ),
+            (
+                "<https://example.com/a?b&c>",
+                "https://example.com/a?b&c",
+                "https://example.com/a?b&c",
+            ),
+            (
+                "<mailto:user@example.com>",
+                "mailto:user@example.com",
+                "mailto:user@example.com",
+            ),
+            (
+                "user@example.com",
+                "user@example.com",
+                "mailto:user@example.com",
+            ),
+            (
+                "<javascript:alert(1)>",
+                "javascript:alert(1)",
+                "javascript:alert(1)",
+            ),
+        ] {
+            assert_automatic_link(source, label, destination, options);
+        }
+        assert_automatic_link_neighbors(options);
+    }
+}
+
+/// Authored links and invalid addresses retain their separate admission rules.
+fn assert_automatic_link_neighbors(options: maestro_markdown::MarkedOptions) {
+    let document = maestro_markdown::parse_with_options("<user@localhost>".into(), options);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        !children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Link(..)))
+    );
+    let document = maestro_markdown::parse_with_options(
+        "[mail](mailto:user@example.com \"tip\")".into(),
+        options,
+    );
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let node = scope.operands[0].1;
+    let Kind::Link(_, label, destination, meta) = &node.kind else {
+        panic!("authored link")
+    };
+    assert_eq!(meta.link_type, maestro_markdown::LinkType::Inline);
+    assert_eq!(
+        (label.as_str(), destination.as_str(), meta.title.as_str()),
+        ("mail", "mailto:user@example.com", "tip")
+    );
+    assert!(scope.opaque.is_empty());
+}
+
+/// The automatic-link handling class is shared across each delivered grammar.
+fn link_grammars() -> [maestro_markdown::MarkedOptions; 4] {
+    use maestro_markdown::MarkedOptions;
+    [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ]
+}
+
+/// Observe literal operands and their identity through local interpretation.
+fn assert_automatic_link(
+    source: &str,
+    label: &str,
+    destination: &str,
+    options: maestro_markdown::MarkedOptions,
+) {
+    let document = maestro_markdown::parse_with_options(source.into(), options);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert_eq!(children.len(), 1);
+    let node = &children[0];
+    let Kind::Link(children, actual_label, href, meta) = &node.kind else {
+        panic!("automatic link")
+    };
+    assert_eq!(
+        meta.link_type,
+        maestro_markdown::LinkType::Autolink,
+        "{source} {options:?}"
+    );
+    assert_eq!(actual_label, label);
+    assert_eq!(href, destination);
+    assert!(meta.title.is_empty());
+    assert_eq!(node.range, 0..source.len());
+    assert_eq!(children.len(), 1);
+    assert!(
+        matches!(&children[0].kind, Kind::Text(text) if text.authored == label && text.decoded == label)
+    );
+    assert_automatic_scope(&document, node, source);
+}
+
+/// The scope retains the original automatic operand as a single opaque atom.
+fn assert_automatic_scope(
+    document: &maestro_markdown::Document,
+    node: &maestro_markdown::Node,
+    source: &str,
+) {
+    let context = maestro_markdown::InlineContext::new(document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    assert_eq!(scope.opaque.len(), 1);
+    assert_eq!(scope.opaque[0], 0..source.len());
+    assert_eq!(scope.operands.len(), 1);
+    assert_eq!(&scope.text()[scope.operands[0].0.clone()], source);
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    assert_eq!(run.atoms.len(), 1);
+    assert!(
+        matches!(run.atoms[0], maestro_markdown::InlineAtom::Resolved(original) if std::ptr::eq(original, node))
+    );
+}
+
+#[test]
+fn angle_email_links_keep_anchor_and_label_context() {
+    for options in link_grammars() {
+        for source in [
+            "[<user@example.com>](/outer)",
+            "[*<user@example.com>*](/outer)",
+        ] {
+            let document = maestro_markdown::parse_with_options(source.into(), options);
+            let Kind::Paragraph(children) = &document.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            let Kind::Link(label, _, href, _) = &children[0].kind else {
+                panic!("outer link")
+            };
+            assert_eq!(href, "/outer");
+            let inner = match &label[0].kind {
+                Kind::Emphasis(children) => &children[0],
+                _ => &label[0],
+            };
+            assert!(
+                matches!(&inner.kind, Kind::Link(_, _, href, _) if href == "mailto:user@example.com")
+            );
+            let context = maestro_markdown::InlineContext::new(&document);
+            let scope = context.scope(&children[0].range, true).unwrap();
+            let run = scope.interpret(0..scope.text().len(), &[]);
+            assert_eq!(run.atoms.len(), 1);
+            assert!(
+                matches!(run.atoms[0], maestro_markdown::InlineAtom::Resolved(node) if std::ptr::eq(node, inner))
+            );
+        }
+    }
+    for options in [link_grammars()[0], link_grammars()[1]] {
+        assert_raw_anchor_email(options);
+    }
+}
+
+/// An automatic email leaves the raw anchor active until its authored close.
+fn assert_raw_anchor_email(options: maestro_markdown::MarkedOptions) {
+    let source =
+        "<a href=\"/outer\"><user@example.com> https://held.test/_x_</a> https://live.test";
+    let document = maestro_markdown::parse_with_options(source.into(), options);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let links: Vec<_> = children
+        .iter()
+        .filter_map(|node| match &node.kind {
+            Kind::Link(_, _, href, _) => Some(href.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(links, ["mailto:user@example.com", "https://live.test"]);
+    assert!(children.iter().any(
+        |node| matches!(&node.kind, Kind::Text(text) if text.decoded.contains("https://held.test/"))
+    ));
+    assert!(children.iter().any(|node| matches!(&node.kind, Kind::Emphasis(c) if matches!(&c[0].kind, Kind::Text(text) if text.decoded == "x"))));
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), &[]);
+    let Kind::Paragraph(replayed) = &run.nodes[0].kind else {
+        panic!("replayed paragraph")
+    };
+    assert!(
+        !replayed
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Link(..)))
+    );
+    assert!(replayed.iter().any(
+        |node| matches!(&node.kind, Kind::Text(text) if text.decoded.contains("https://held.test/"))
+    ));
+    assert!(replayed.iter().any(|node| matches!(&node.kind, Kind::Emphasis(c) if matches!(&c[0].kind, Kind::Text(text) if text.decoded == "x"))));
+    let resolved: Vec<_> = run
+        .atoms
+        .iter()
+        .filter_map(|atom| match atom {
+            maestro_markdown::InlineAtom::Resolved(node) => Some(*node),
+            maestro_markdown::InlineAtom::Opaque(_) => None,
+        })
+        .collect();
+    assert_eq!(resolved.len(), 4);
+    assert!(std::ptr::eq(resolved[1], &raw const children[1]));
+    assert!(matches!(&resolved[3].kind, Kind::Link(_, _, href, _) if href == "https://live.test"));
 }

@@ -55,10 +55,8 @@ pub enum Alignment {
 pub enum LinkType {
     /// Authored link label, including resolved document references.
     Inline,
-    /// Angle-enclosed URI or mapped bare destination.
+    /// Automatic URI or email destination, angle-enclosed or bare.
     Autolink,
-    /// Angle-enclosed email address.
-    Email,
 }
 
 /// A native node together with its source extent.
@@ -121,12 +119,10 @@ pub enum Kind {
 }
 /// Inline children of each cell in one table row.
 pub type Cells = Vec<Cell>;
-/// One table cell with its original inline source and native extent.
+/// One table cell with its inline children and original source extent.
 pub struct Cell {
     /// Complete inline operands.
     pub children: Vec<Node>,
-    /// Container-local authored bytes, not reconstructed decoded text.
-    pub authored: String,
     /// Native source coordinates.
     pub range: Range<usize>,
 }

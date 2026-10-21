@@ -42,12 +42,7 @@ impl LinkContext {
                 }
             }
             Kind::Image(..) => self.0 = false,
-            Kind::Link(_, _, _, meta)
-                if !matches!(
-                    meta.link_type,
-                    crate::LinkType::Autolink | crate::LinkType::Email
-                ) =>
-            {
+            Kind::Link(_, _, _, meta) if meta.link_type != crate::LinkType::Autolink => {
                 self.0 = false;
             }
             _ => {}
