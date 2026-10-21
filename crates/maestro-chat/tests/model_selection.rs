@@ -399,7 +399,59 @@ fn scope_switch_keeps_query_and_clamps_current_position() {
 
 #[test]
 fn navigation_wraps_and_empty_confirm_is_inert() {
+    if isolate("navigation_wraps_and_empty_confirm_is_inert") {
+        return;
+    }
     replay("navigation_wraps_and_empty_confirm_is_inert");
+    for (count, start, previous, next) in [
+        (0, 0, 0, 0),
+        (1, 0, 0, 0),
+        (3, 0, 2, 1),
+        (3, 1, 0, 2),
+        (3, 2, 1, 0),
+    ] {
+        for (key, expected) in [("\x1b[A", previous), ("\x1b[B", next)] {
+            let models: Vec<_> = ["a", "b", "c"]
+                .into_iter()
+                .take(count)
+                .map(|id| serde_json::json!({"provider": "p", "id": id, "name": id}))
+                .collect();
+            let mut query: Query = serde_json::from_value(serde_json::json!({
+                "available": models, "scoped": models
+            }))
+            .unwrap();
+            let fixture = Fixture::new(&mut query);
+            for _ in 0..start {
+                fixture.selector.handle_input("\x1b[B");
+            }
+            let before = fixture.selector.render(120);
+            fixture.observed.events.borrow_mut().clear();
+            fixture.selector.handle_input(key);
+            fixture.selector.handle_input("\r");
+            if count == 0 {
+                assert_eq!(fixture.selector.render(120), before);
+                assert!(fixture.observed.events.borrow().is_empty());
+            } else {
+                let id = ["a", "b", "c"][expected];
+                assert_eq!(
+                    *fixture.observed.events.borrow(),
+                    vec![
+                        vec![
+                            serde_json::json!("save"),
+                            serde_json::json!("p"),
+                            serde_json::json!(id)
+                        ],
+                        vec![
+                            serde_json::json!("select"),
+                            serde_json::json!("p"),
+                            serde_json::json!(id),
+                            serde_json::json!(id)
+                        ]
+                    ]
+                );
+            }
+        }
+    }
 }
 
 #[test]

@@ -110,7 +110,40 @@ fn search_editing_clamps_without_resetting_position() {
 /// Replays the complete navigation wraps and empty actions are inert observations.
 #[test]
 fn navigation_wraps_and_empty_actions_are_inert() {
+    use maestro_tui::{Component, tui::InputHandler};
     scoped_model_support::replay("navigation_wraps_and_empty_actions_are_inert");
+    let _guard = keybindings::bindings_guard();
+    for (count, start, previous, next) in [
+        (0, 0, 0, 0),
+        (1, 0, 0, 0),
+        (3, 0, 2, 1),
+        (3, 1, 0, 2),
+        (3, 2, 1, 0),
+    ] {
+        for (key, expected) in [("\x1b[A", previous), ("\x1b[B", next)] {
+            let mut query = scoped_model_support::native_query();
+            query.models.truncate(count);
+            let fixture = scoped_model_support::Fixture::new(query);
+            for _ in 0..start {
+                fixture.selector.handle_input("\x1b[B");
+            }
+            let before = fixture.selector.render(120);
+            fixture.selector.handle_input(key);
+            fixture.selector.handle_input("\r");
+            if count == 0 {
+                assert_eq!(fixture.selector.render(120), before);
+                assert!(fixture.observed.events.borrow().is_empty());
+            } else {
+                assert_eq!(
+                    *fixture.observed.events.borrow(),
+                    vec![vec![
+                        serde_json::json!("change"),
+                        serde_json::json!([(["p/a", "p/b", "q/c"][expected])])
+                    ]]
+                );
+            }
+        }
+    }
 }
 
 /// Replays the complete no match notice and empty footer are exact observations.

@@ -58,6 +58,53 @@ fn sidebar_tokens_keep_custom_identity() {
     );
 }
 
+/// Checks occurrence identity and one-layer projection for both token families.
+macro_rules! assert_projection {
+    ($name:ident, $plain:expr, $family:ident) => {
+        /// Checks the token family through its public projection method.
+        fn $name() {
+            let plain = $plain;
+            assert!(std::ptr::eq(plain.parts().0, &plain));
+            assert_eq!(plain.parts().1, Default::default());
+            let style = super::super::sidebar::SidebarTokenStyle {
+                bold: Some(false),
+                dim: Some(true),
+                ..Default::default()
+            };
+            let styled = $family::Styled {
+                token: Box::new(plain),
+                style,
+            };
+            let $family::Styled { token, .. } = &styled else {
+                unreachable!()
+            };
+            assert!(std::ptr::eq(styled.parts().0, token.as_ref()));
+            assert_eq!(styled.parts().1, style);
+            let nested = $family::Styled {
+                token: Box::new(styled),
+                style: Default::default(),
+            };
+            let $family::Styled { token, .. } = &nested else {
+                unreachable!()
+            };
+            assert!(std::ptr::eq(nested.parts().0, token.as_ref()));
+            assert!(matches!(nested.parts().0, $family::Styled { .. }));
+            assert_eq!(nested.parts().1, Default::default());
+        }
+    };
+}
+
+assert_projection!(
+    assert_agent_projection,
+    AgentSidebarToken::Workspace,
+    AgentSidebarToken
+);
+assert_projection!(
+    assert_space_projection,
+    SpaceSidebarToken::GitStatus,
+    SpaceSidebarToken
+);
+
 #[test]
 fn sidebar_styles_belong_to_each_occurrence() {
     let config = decode(json!({"agents": {"rows": [[
@@ -88,6 +135,8 @@ fn sidebar_styles_belong_to_each_occurrence() {
     assert_eq!(serde_json::to_value(style.fg.unwrap()).unwrap(), "#ff00aa");
     assert_eq!(config.spaces.rows[1][0].parts().1.bold, Some(true));
     assert_eq!(decode(encoded), config);
+    assert_agent_projection();
+    assert_space_projection();
 }
 
 #[test]
