@@ -13,11 +13,10 @@ impl NativePackageOperations {
         args: &[String],
         options: CommandCaptureOptions<'_>,
     ) -> io::Result<String> {
-        let mut builder = tokio::process::Command::from(Self::command(command, args)?);
+        let mut builder = tokio::process::Command::from(Self::command(command, args, options.env)?);
         if let Some(cwd) = options.cwd {
             builder.current_dir(cwd);
         }
-        builder.envs(options.env.iter().copied());
         let mut child = CapturedChild::spawn(&mut builder)?;
         let timed_out = Cell::new(false);
         let deadline = async {

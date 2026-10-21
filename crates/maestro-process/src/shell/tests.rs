@@ -265,30 +265,7 @@ fn pane_custom_commands_keep_the_plain_command_flag() {
 fn launch_resolves_effective_child_path_and_extensions() {
     const CHILD: &str = "MAESTRO_LAUNCH_PATH_CHILD";
     if let Some(directory) = std::env::var_os(CHILD) {
-        let chosen = PathBuf::from(directory).join("chosen");
-        let path = chosen.to_str().unwrap();
-        for (name, environment, expected) in [
-            (
-                "shared",
-                vec![("Path", path), ("pathext", ".BAT")],
-                "chosen",
-            ),
-            ("only", vec![("PATH", path), ("PATHEXT", ".BAT")], "chosen"),
-            ("shared", vec![], "parent"),
-            ("shared.cmd", vec![("OTHER", "value")], "parent"),
-        ] {
-            let output = super::Launch {
-                executable: name.into(),
-                args: vec![],
-                verbatim: false,
-            }
-            .command_with_env(environment)
-            .unwrap()
-            .output()
-            .unwrap();
-            assert!(output.status.success(), "{output:?}");
-            assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), expected);
-        }
+        assert_launch_environment(&PathBuf::from(directory));
         return;
     }
     let directory =
@@ -298,7 +275,8 @@ fn launch_resolves_effective_child_path_and_extensions() {
     std::fs::create_dir_all(&parent).unwrap();
     std::fs::create_dir(&chosen).unwrap();
     std::fs::write(parent.join("shared.CMD"), "@echo parent\r\n").unwrap();
-    for name in ["shared.BAT", "only.BAT"] {
+    std::fs::write(parent.join("shared.BAT"), "@echo parent-extension\r\n").unwrap();
+    for name in ["shared.BAT", "only.BAT", "shared.CMD"] {
         std::fs::write(chosen.join(name), "@echo chosen\r\n").unwrap();
     }
     let output = maestro_test_process::TestProcess::current(
@@ -312,4 +290,45 @@ fn launch_resolves_effective_child_path_and_extensions() {
     .unwrap();
     std::fs::remove_dir_all(directory).unwrap();
     assert!(output.status.success(), "{output:?}");
+}
+
+/// Checks lookup overrides and inherited controls in the isolated Windows child.
+#[cfg(windows)]
+fn assert_launch_environment(directory: &Path) {
+    let chosen = directory.join("chosen");
+    let path = chosen.to_str().unwrap();
+    for (name, environment, expected) in [
+        (
+            "shared",
+            vec![("Path", path), ("pathext", ".BAT")],
+            "chosen",
+        ),
+        ("only", vec![("PATH", path), ("PATHEXT", ".BAT")], "chosen"),
+        ("shared", vec![], "parent"),
+        ("shared.cmd", vec![("OTHER", "value")], "parent"),
+        ("shared", vec![("PATH", path)], "chosen"),
+        ("shared", vec![("PATHEXT", ".BAT")], "parent-extension"),
+    ] {
+        let output = super::Launch {
+            executable: name.into(),
+            args: vec![],
+            verbatim: false,
+        }
+        .command_with_env(environment)
+        .unwrap()
+        .output()
+        .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), expected);
+    }
+    for environment in [[("PATH", "")], [("PATHEXT", "")]] {
+        let error = super::Launch {
+            executable: "shared".into(),
+            args: vec![],
+            verbatim: false,
+        }
+        .command_with_env(environment)
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    }
 }
