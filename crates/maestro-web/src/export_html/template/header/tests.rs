@@ -274,4 +274,28 @@ fn header_cost_sums_four_components_before_three_place_rounding() {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 mod disclosures;
+
+#[test]
+fn header_shared_admission_preserves_disclosure_error_order() {
+    for (mut data, expected) in [
+        (
+            json!({"systemPrompt":true,"tools":[null]}),
+            "nonstring system prompt",
+        ),
+        (
+            json!({"tools":[{"parameters":{"properties":{"x":null},"required":true}}]}),
+            "invalid required list",
+        ),
+        (
+            json!({"tools":[{"name":true,"parameters":{"properties":{"x":null}}}]}),
+            "null property receiver",
+        ),
+    ] {
+        data["entries"] = json!([]);
+        let error = prepare(&document(&data), &|_| unreachable!()).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert_eq!(error.to_string(), expected);
+    }
+}

@@ -1,5 +1,10 @@
 //! Recorded disclosure operands through complete header preparation.
-use super::*;
+fn prepare(
+    doc: &SessionDocument,
+    date: &dyn Fn(&Value) -> io::Result<String>,
+) -> io::Result<details::Admitted> {
+    super::super::prepare(doc, date).map(|prepared| prepared.admitted)
+}
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -31,9 +36,9 @@ fn prompt_output(prompt: Option<&details::Prompt>) -> Value {
         Some(details::Prompt::Preview {
             full,
             preview,
-            hint,
+            remaining,
         }) => {
-            json!({"expandable":true,"heading":"System Prompt","preview":preview,"hint":hint,"full":full})
+            json!({"expandable":true,"heading":"System Prompt","preview":preview,"hint":format!("... ({remaining} more lines, click to expand)"),"full":full})
         }
     }
 }
