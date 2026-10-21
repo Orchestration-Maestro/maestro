@@ -100,12 +100,14 @@ jobs:
           from pathlib import Path
           import shutil
           import subprocess
-          
+          import sys
+
+          sys.stdout.reconfigure(encoding="utf-8")
           root = Path(os.environ["RUNNER_TEMP"]) / "unicode-build-evidence"
           root.mkdir()
           workspace = Path.cwd()
           results = []
-          
+
           def run(name, args, env=None, expected=0):
               print(f"START {name}: {args}", flush=True)
               proc = subprocess.run(args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -119,7 +121,7 @@ jobs:
               print(output[-6000:], flush=True)
               assert proc.returncode == expected, row
               return output
-          
+
           run("host", ["rustc", "--version", "--verbose"])
           run("nasm-version", ["nasm", "-v"])
           print("NASM executable:", shutil.which("nasm"), flush=True)
@@ -130,7 +132,7 @@ jobs:
               out.mkdir()
               run(f"nasm-{label}", ["nasm", "-f", "win64", "-o", str(out / "tiny.obj"), str(source)], expected=expected)
               assert (out / "tiny.obj").exists() == (expected == 0)
-          
+
           base = os.environ.copy()
           base.pop("AWS_LC_SYS_PREBUILT_NASM", None)
           ascii_env = base | {"CARGO_TARGET_DIR": str(workspace / "native target ascii")}
@@ -140,7 +142,7 @@ jobs:
           assert "NASM failed" in failed and "native target O" in failed
           wrong = run("dependency-prebuilt-alone-red", ["cargo", "build", "--locked", "-p", "aws-lc-sys"], unicode_env | {"AWS_LC_SYS_PREBUILT_NASM": "1"}, expected=101)
           assert "NASM failed" in wrong
-          
+
           paths = base["PATH"].split(os.pathsep)
           excluded = [p for p in paths if (Path(p) / "nasm.exe").is_file()]
           assert excluded, "missing real NASM exclusion"
