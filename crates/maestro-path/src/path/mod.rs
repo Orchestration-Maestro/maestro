@@ -229,3 +229,26 @@ impl<'a> Root<'a> {
         }
     }
 }
+
+/// Lexically normalize a native path without decoding its components or following links.
+///
+/// Prefixes and roots are retained. Parent segments cannot climb above a root;
+/// relative paths retain leading parent segments. Trailing separators are removed.
+#[must_use]
+pub fn normalize_native(path: &std::path::Path) -> std::path::PathBuf {
+    use std::path::Component;
+    let mut result = std::path::PathBuf::new();
+    for component in path.components() {
+        if matches!(component, Component::Prefix(_) | Component::RootDir) {
+            result.push(component.as_os_str());
+        }
+    }
+    let segments = path.components().filter_map(|component| match component {
+        Component::Normal(_) | Component::ParentDir => Some(component.as_os_str()),
+        _ => None,
+    });
+    for segment in segments::reduce(segments, !path.has_root()) {
+        result.push(segment);
+    }
+    result
+}

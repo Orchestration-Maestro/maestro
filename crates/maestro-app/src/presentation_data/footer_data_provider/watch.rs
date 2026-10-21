@@ -122,7 +122,7 @@ impl Watching {
                 .git_paths
                 .as_ref()
                 .map_or(git::BranchRead::Ready(None), |paths| {
-                    git::read_branch(self.operations.as_ref(), paths)
+                    git::read_branch(paths)
                 });
             match selection {
                 git::BranchRead::Ready(branch) => {

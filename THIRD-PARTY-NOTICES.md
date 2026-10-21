@@ -740,6 +740,12 @@ The host colour query builders and reply parsing in
 under the same license. Changes include shared framing, three-channel RGBA reply
 admission and checked string slicing for malformed non-ASCII hex replies.
 
+The application state, construction, internal event routing, notifications,
+metadata expiry, configuration reload and session scheduling in
+`crates/maestro-daemon/src/app/` derive from the application modules under the
+same license. Workspace attention ordering derives from the workspace aggregate
+module. The daemon's repository queries reuse workspace-owned discovery.
+
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
 the agent resume, terminal state, terminal metadata, terminal title and terminal

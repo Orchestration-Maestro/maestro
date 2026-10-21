@@ -8,6 +8,7 @@ repository.workspace = true
 [dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "time", "macros"] }
 regex.workspace = true
+chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"] }
 tracing-subscriber = { version = "=0.3.23", features = ["env-filter"] }
 sha2 = { version = "=0.11.0", default-features = false }
 maestro-ipc = { path = "../maestro-ipc" }
@@ -29,10 +30,11 @@ maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-tracing.workspace = true
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "test-util"] }
 
 [lints]
 workspace = true

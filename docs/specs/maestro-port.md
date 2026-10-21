@@ -49,6 +49,17 @@ Settings retain user/project scopes, runtime overrides, established names/defaul
 
 Settings persistence uses explicit write intent: native `SettingsStorage::with_write_lock` creates the parent as needed and holds the stable sidecar lock before reading, through its single callback and optional write, including first creation. `Ok(None)` and callback failure may leave a parent/sidecar but never create the settings file. Concurrent independent manager edits therefore merge against fresh text under exclusion. The legacy `with_lock` remains noncreating for missing-file reads and calls its callback before locking a first replacement; raw callers needing concurrent first-write exclusion choose write intent. Supplied adapters default to their existing `with_lock` contract; native decorators forward write intent to retain native exclusion.
 
+Workspace preference saves use the same captured-edit queue at literal nested
+key paths. `SettingsManager::set_global_key_path(field, keys, value)` publishes
+immediately and merges only the addressed leaf into fresh storage under the
+existing write lock. `None` removes that leaf without creating absent parents;
+an empty key path addresses the whole field. Existing whole-field and object-key
+setters retain replacement semantics through this same path representation.
+`set_global_key_paths` publishes several such sets or removals as one cache
+change and one queued write; the single-path method delegates to it.
+Layered scope merging remains one object level; nested write intent does not
+change read precedence or introduce another writer.
+
 Local model files use partial nested overrides, validated supplied limits and zero defaults for omitted price fields. Dynamic provider replacement/removal is separate and restores underlying catalog entries. Selection preserves distinct command-line, exact-reference and scope matching: saved model within scope first, otherwise first scoped model; catalog-order exact matches where specified; uniqueness only for the exact-reference operation; provider-prefix/raw-ID/suffix/alias/date/glob ordering and warnings. Internal mode has no manifest, origins or locked values; [manifest mode](manifest-mode.md) adds them only when settings name a manifest.
 
 The model catalog owns private synchronization; registration, removal and refresh use shared receivers. Release catalog, configuration and descriptor guards before supplied file, credential, OAuth, configured-value or display-name effects, global registration/reset, awaits and callback retirement. Successful transformations publish exactly their selected list; failures retain prior effects without retaining the failed incoming registration. Loading publishes only after its local transformation chain succeeds. Refresh traverses live retained insertion order, including callback additions; replacement keeps its position and removal followed by insertion moves to the end. Request authentication retains the early provider-source entry while sampling model sources later; provider-only fallback is sampled after credentials. Load diagnostics are owned observations. Native file effects are thread-safe; browser effects may remain local. Do not expose a state guard or require an outer lock.
@@ -333,7 +344,7 @@ from the optional foundation utility described below.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon`, `maestro-workspace` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -394,8 +405,23 @@ The read-only footer contract `ReadonlyFooterDataProvider`, its live
 `ExtensionStatuses` view and the one generic insertion-ordered live map behind it
 belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
 because extension footer factories receive it. The application keeps the footer
-metadata owner, its Git, watch, count and status policy and its existing public
+metadata owner, its branch, watch, count and status policy and its existing public
 paths, which re-export the moved declarations.
+Native repository discovery belongs to `maestro-workspace::workspace::git`.
+The daemon and application footer reuse its directory walk, lexical path and drive
+resolution and shared Unicode trimming without replacing native path bytes.
+A typed discovery policy preserves caller-specific metadata rules: the
+footer requires the spaced worktree marker, accepts an existing HEAD of any kind,
+and reads `commondir` only for worktree links; it stops at a marker without HEAD.
+Workspace identity climbs past markers without a regular HEAD, accepts the
+unspaced marker, requires a regular HEAD file and reads shared metadata for all
+repository layouts, falling back to the checkout metadata if `commondir` cannot
+be read. Both policies support standalone bare repositories. The footer
+keeps branch, detached-head and watch policy; Git subprocess
+fallbacks stay with the process-owning callers. The application reaches discovery
+through a native-only dependency on the workspace owner, not a daemon re-export. Use native files
+rather than a new injected discovery port whose only other adapter is a test fake.
+
 
 The crate is core, sits below layer 0 and depends on no workspace crate, including
 `maestro-path`. Only the table entries that list it
@@ -480,7 +506,9 @@ This declaration creates no crate and moves no code.
 
 `maestro-path` is the foundation utility for lexical path strings. It sits below
 layer 0, has no internal dependencies, and exposes platform-independent path
-operations. Native crates may depend on it without changing their delivery layer.
+operations. Native path normalization shares its segment reducer with the string
+flavors and preserves native component bytes without filesystem observations.
+Native crates may depend on it without changing their delivery layer.
 This optional utility edge is ignored when evaluating leaf status and exact
 direct-dependency sets; every other dependency rule, including cycle and internal
 dev-dependency checks, still applies. The guest authoring crate
@@ -571,7 +599,7 @@ exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
-`maestro-chat`, `maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
+`maestro-chat`, `maestro-credentials`, `maestro-daemon`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
 `maestro-resources`, `maestro-test-conventions`, `maestro-theme` and `maestro-tooling`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.

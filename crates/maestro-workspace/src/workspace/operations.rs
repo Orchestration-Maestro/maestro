@@ -227,9 +227,18 @@ impl Workspace {
     /// Display the explicit name or the admitted identity label.
     #[must_use]
     pub fn display_name(&self, home: Option<&std::path::Path>) -> String {
+        self.display_name_for_cwd(&self.identity_cwd, home)
+    }
+    /// Return an explicit name or the automatic label for a supplied live directory.
+    #[must_use]
+    pub fn display_name_for_cwd(
+        &self,
+        cwd: &std::path::Path,
+        home: Option<&std::path::Path>,
+    ) -> String {
         self.custom_name
             .clone()
-            .unwrap_or_else(|| self.automatic_display_name_for_cwd(&self.identity_cwd, home))
+            .unwrap_or_else(|| self.automatic_display_name_for_cwd(cwd, home))
     }
     /// Use the admitted label only for its supplied identity path.
     fn automatic_display_name_for_cwd(

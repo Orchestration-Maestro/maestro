@@ -5,7 +5,7 @@ use super::{
 };
 impl TerminalState {
     /// Borrow the live session identity, falling back to the restored identity.
-    pub(in crate::terminal) fn current_session_identity_for_persistence(
+    pub(crate) fn current_session_identity_for_persistence(
         &self,
     ) -> Option<(&str, &str, &crate::agent_resume::AgentSessionRef)> {
         if let Some(authority) = self.hook_authority.as_ref()

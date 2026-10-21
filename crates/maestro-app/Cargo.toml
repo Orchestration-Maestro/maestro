@@ -41,6 +41,7 @@ maestro-path = { path = "../maestro-path" }
 maestro-watch = { path = "../maestro-watch" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-workspace = { path = "../maestro-workspace" }
 maestro-packages = { path = "../maestro-packages" }
 maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }

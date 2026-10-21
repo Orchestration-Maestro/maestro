@@ -784,3 +784,200 @@ fn runtime_shutdown_kills_resistant_session_members() {
         }
     });
 }
+
+#[test]
+fn manifest_publication_resets_only_matching_retained_runtime_detection() {
+    let name = "manifest_publication_resets_only_matching_retained_runtime_detection";
+    if run_alone(name).unwrap() {
+        return;
+    }
+    TestProcess::named("pane::runtime::tests::setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            crate::tests::block_on(check_manifest_resets(args));
+            Ok::<_, io::Error>(())
+        })
+        .unwrap();
+}
+
+/// Checks the actual production reset permit after each complete dispatch.
+async fn check_manifest_resets(args: &[String]) {
+    use crate::terminal::state::TerminalState;
+    use maestro_detection::agents::Agent;
+    let (mut runtime_config, receiver, _) = config(args);
+    runtime_config.agent_detection = AgentDetection::Disabled;
+    let mut app = manifest_test_app(&runtime_config, receiver);
+    assert!(Arc::ptr_eq(&app.state.manifests, &runtime_config.manifests));
+    let (pane, ()) = app
+        .state
+        .topology
+        .new_with_tab("/tmp".into(), None, |_, _| Ok(()))
+        .unwrap();
+    runtime_config.pane_id = pane;
+    let id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    let runtime = PaneRuntime::spawn_shell_command(
+        runtime_config,
+        "read -r line",
+        std::env::temp_dir(),
+        &PaneLaunchEnv::default(),
+    )
+    .unwrap();
+    app.terminal_runtimes.insert(id.clone(), runtime);
+    let mut terminal = TerminalState::new(id.clone(), "/tmp".into());
+    terminal.detected_agent = Some(Agent::Codex);
+    app.state.terminals.insert(id.clone(), terminal);
+    let orphan_id = app.state.topology.alloc_terminal_id();
+    let mut orphan = TerminalState::new(orphan_id.clone(), "/tmp".into());
+    orphan.detected_agent = Some(Agent::Codex);
+    app.state.terminals.insert(orphan_id, orphan);
+    assert_manifest_reset_selection(&mut app, &id);
+    assert_hook_runtime_controls(&mut app, &id);
+    app.terminal_runtimes.remove(&id).unwrap().shutdown().await;
+}
+
+/// Uses the real application construction path with the supplied runtime adapters.
+fn manifest_test_app(
+    runtime_config: &PaneRuntimeConfig,
+    receiver: mpsc::Receiver<AppEvent>,
+) -> crate::app::App<fn() -> u128> {
+    use crate::{
+        api::event_hub::EventHub,
+        app::{App, construction::PaneLaunchInputs},
+        settings::model::Config,
+    };
+    let launch = PaneLaunchInputs {
+        no_session: true,
+        setup_entry: runtime_config.setup_entry.clone(),
+        socket: runtime_config.socket.clone(),
+        executable: None,
+        manifests: Arc::clone(&runtime_config.manifests),
+        events: runtime_config.events.clone(),
+        render_notify: Arc::clone(&runtime_config.render_notify),
+        render_dirty: Arc::clone(&runtime_config.render_dirty),
+        theme: runtime_config.theme,
+        appearance: None,
+        process_detection_mode: runtime_config.process_detection_mode,
+    };
+    App::new(
+        &Config::default(),
+        (|| 0) as fn() -> u128,
+        launch,
+        receiver,
+        EventHub::default(),
+    )
+}
+
+/// Compares actual reset readiness after matching, nonmatching and empty publications.
+fn assert_manifest_reset_selection(
+    app: &mut crate::app::App<fn() -> u128>,
+    id: &maestro_workspace::terminal_id::TerminalId,
+) {
+    use maestro_detection::{
+        agents::{Agent, AgentState},
+        manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
+    };
+    for (hook, agents, expected) in [
+        (None, vec![], false),
+        (None, vec![Agent::Claude], false),
+        (None, vec![Agent::Codex], true),
+        (Some("claude"), vec![Agent::Codex], false),
+        (Some("claude"), vec![Agent::Claude], true),
+        (Some("custom"), vec![Agent::Codex], true),
+    ] {
+        app.state.terminals.get_mut(id).unwrap().hook_authority =
+            hook.map(|label| crate::terminal::state::HookAuthority {
+                source: "test".into(),
+                agent_label: label.into(),
+                state: AgentState::Working,
+                message: None,
+                reported_at: std::time::Instant::now(),
+                session_ref: None,
+            });
+        app.handle_internal_event(AppEvent::AgentDetectionManifestsUpdated {
+            updated: agents
+                .into_iter()
+                .map(|agent| ManifestUpdateCommit {
+                    agent,
+                    version: ManifestVersion::parse("2026.06.10.1").unwrap(),
+                })
+                .collect(),
+            status: ManifestUpdateStatus::default(),
+        });
+        assert_eq!(
+            detection_reset_ready(app.terminal_runtimes.get(id).unwrap()),
+            expected
+        );
+    }
+}
+
+/// Checks lifecycle pause and release routing on the actual retained runtime control.
+fn assert_hook_runtime_controls(
+    app: &mut crate::app::App<fn() -> u128>,
+    id: &maestro_workspace::terminal_id::TerminalId,
+) {
+    use maestro_detection::agents::{Agent, AgentState};
+    let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
+    app.state.terminals.insert(
+        id.clone(),
+        crate::terminal::state::TerminalState::new(id.clone(), "/tmp".into()),
+    );
+    let terminal = app.state.terminals.get_mut(id).unwrap();
+    terminal.detected_agent = Some(Agent::Pi);
+    terminal.set_persisted_agent_session(crate::agent_resume::PersistedAgentSession {
+        source: "maestro:pi".into(),
+        agent: "pi".into(),
+        session_ref: crate::agent_resume::AgentSessionRef::id("live-session").unwrap(),
+    });
+    let updates = app.handle_internal_event(AppEvent::HookStateReported {
+        pane_id: pane,
+        source: "maestro:pi".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(1),
+        session_ref: Some(crate::agent_resume::AgentSessionRef::id("live-session").unwrap()),
+    });
+    assert!(!updates.is_empty());
+    assert!(detection_reset_ready(
+        app.terminal_runtimes.get(id).unwrap()
+    ));
+    app.state.terminals.get_mut(id).unwrap().hook_authority = None;
+    app.state.terminals.get_mut(id).unwrap().detected_agent = None;
+    app.handle_internal_event(AppEvent::HookStateReported {
+        pane_id: pane,
+        source: "custom".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(1),
+        session_ref: None,
+    });
+    app.handle_internal_event(AppEvent::HookAgentReleased {
+        pane_id: pane,
+        source: "custom".into(),
+        agent_label: "pi".into(),
+        known_agent: Some(Agent::Pi),
+        seq: Some(2),
+    });
+    assert!(detection_reset_ready(
+        app.terminal_runtimes.get(id).unwrap()
+    ));
+}
+
+/// Observes one retained detector reset permit without waiting or changing its owner.
+fn detection_reset_ready(runtime: &PaneRuntime) -> bool {
+    use std::{
+        future::Future,
+        task::{Context, Waker},
+    };
+    let reset = runtime.control.wait_for_reset();
+    tokio::pin!(reset);
+    reset
+        .poll(&mut Context::from_waker(Waker::noop()))
+        .is_ready()
+}

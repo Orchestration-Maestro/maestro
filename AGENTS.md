@@ -107,8 +107,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   (non-core) crates as normal or build dependencies; the declared native
   test-process, test-directory and test-tracing development edges are permitted.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
-  below layer 0 and depends on no workspace crate. Native crates may declare it
-  as a production dependency without changing their layer, subject to the
+  below layer 0 and depends on no workspace crate. Native normalization reuses its
+  segment reducer without decoding path bytes or accessing the filesystem.
+  Native crates may declare it as a production dependency without changing their
+  layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Shared path helpers take supplied directory observations
   and add no global environment, filesystem service, directory cache, scheduler
@@ -181,6 +183,11 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
 
+Native footer repository discovery uses the workspace git owner through a
+native-only `maestro-app` to `maestro-workspace` edge. A typed policy retains
+caller-specific metadata rules within the one shared walk. Browser builds have
+no native repository; footer statuses, counts and callbacks remain available.
+
 The read-only footer contract, its live status view and the generic live map behind
 them belong to `maestro-extensions::footer_data_provider`; the application footer
 owner keeps its policy and re-exports them at its existing paths.
@@ -224,8 +231,8 @@ general dev-dependency target.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
-foundation utility permission. Only app, chat, credentials, extensions, models,
-packages, resources, conventions, theme and tooling may declare it, as a
+foundation utility permission. Only app, chat, credentials, daemon, extensions,
+models, packages, resources, conventions, theme and tooling may declare it, as a
 non-optional native development dependency when used. `Scratch::new`
 canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
 spelling. Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).

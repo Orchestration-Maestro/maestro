@@ -5,6 +5,11 @@ use maestro_workspace::persist::snapshot::{SessionHistorySnapshot, SessionSnapsh
 use maestro_workspace::persist::{clear_path, save_to_paths};
 use std::path::Path;
 
+#[cfg(target_os = "linux")]
+mod capture;
+#[cfg(target_os = "linux")]
+pub use capture::{capture, capture_history};
+
 /// Save topology before history, reporting only a completed combined save as success.
 pub fn save(
     paths: &DaemonPaths,

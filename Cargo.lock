@@ -3570,6 +3570,7 @@ dependencies = [
  "maestro-tools",
  "maestro-tui",
  "maestro-watch",
+ "maestro-workspace",
  "num-traits",
  "percent-encoding",
  "rand 0.10.3",
@@ -3665,6 +3666,7 @@ dependencies = [
 name = "maestro-daemon"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "maestro-dependencies",
  "maestro-detection",
  "maestro-ipc",
@@ -3673,6 +3675,7 @@ dependencies = [
  "maestro-protocol",
  "maestro-settings",
  "maestro-terminal",
+ "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
  "maestro-tui",
@@ -4361,8 +4364,10 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-lock",
+ "maestro-path",
  "maestro-protocol",
  "maestro-test-tracing",
+ "maestro-text",
  "num-traits",
  "serde",
  "serde_json",

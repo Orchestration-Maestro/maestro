@@ -506,3 +506,16 @@ are commented out so the host/build default still applies. The guide uses JSONC;
 }
 ```
 <!-- workspace-defaults:end -->
+
+## Nested preference edits
+
+`SettingsManager::set_global_key_path` addresses a literal top-level field and
+nested keys. Pass `Some(value)` to set the leaf, including JSON null, or `None`
+to remove it. An empty key slice addresses the field itself. New values publish
+immediately; `flush` waits for queued writes and `drain_errors` reports failures.
+Each write merges the edited leaf into fresh storage under the existing lock,
+so independent writers can change sibling preferences without losing updates.
+Whole-field and object-key setters still replace the value they address.
+
+Use `set_global_key_paths` when several leaves form one change. The batch publishes
+once and reaches storage in one write, so readers cannot observe half a change.

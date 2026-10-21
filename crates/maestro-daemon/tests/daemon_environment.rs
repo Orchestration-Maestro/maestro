@@ -55,11 +55,7 @@ fn daemon_environment_names_match_their_consumers() {
             ],
         ),
     ] {
-        let actual = NAMES
-            .iter()
-            .filter(|e| e.consumers.contains(&consumer))
-            .map(|e| e.name)
-            .collect::<std::collections::BTreeSet<_>>();
+        let actual = names_for(consumer);
         assert_eq!(actual, expected.into_iter().collect());
     }
 }
@@ -72,5 +68,31 @@ fn unique_names() {
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(names.len(), NAMES.len());
     assert!(names.contains(maestro_daemon::instances::SESSION_ENV_VAR));
-    assert_eq!(NAMES.len(), 20);
+    assert_eq!(NAMES.len(), 24);
+}
+
+/// Names published for one actual launch or selection consumer.
+fn names_for(consumer: Consumer) -> std::collections::BTreeSet<&'static str> {
+    NAMES
+        .iter()
+        .filter(|entry| entry.consumers.contains(&consumer))
+        .map(|entry| entry.name)
+        .collect()
+}
+
+#[test]
+fn status_command_environment_names_match_their_consumer() {
+    assert_eq!(
+        names_for(Consumer::StatusCommand),
+        [
+            "MAESTRO_SOCKET_PATH",
+            "MAESTRO_BIN_PATH",
+            "MAESTRO_ACTIVE_WORKSPACE_ID",
+            "MAESTRO_ACTIVE_TAB_ID",
+            "MAESTRO_ACTIVE_PANE_ID",
+            "MAESTRO_ACTIVE_PANE_CWD",
+        ]
+        .into_iter()
+        .collect()
+    );
 }

@@ -9,6 +9,15 @@ use tokio::sync::mpsc;
 /// An observation from a background pane task.
 #[derive(Debug)]
 pub enum AppEvent {
+    /// A retained status command completed against one configuration generation.
+    TabBarCommandFinished {
+        /// Configuration generation that launched the command.
+        generation: u64,
+        /// Ordered segment receiving this output.
+        segment_index: usize,
+        /// Last sanitized output line, or the command failure.
+        result: Result<Option<String>, String>,
+    },
     /// The pane's child or imported terminal reader has exited.
     PaneDied {
         /// Pane whose runtime ended.
@@ -41,6 +50,50 @@ pub enum AppEvent {
         agent: Agent,
         /// Time of the process observation.
         observed_at: Instant,
+    },
+    /// Hook-authoritative state reported by an integration.
+    HookStateReported {
+        /// Pane receiving the report.
+        pane_id: PaneId,
+        /// Integration provenance.
+        source: String,
+        /// External catalogue label or custom identity.
+        agent_label: String,
+        /// Reported execution state.
+        state: AgentState,
+        /// Optional status detail.
+        message: Option<String>,
+        /// Source-local sequence.
+        seq: Option<u64>,
+        /// Validated session identity.
+        session_ref: Option<crate::agent_resume::AgentSessionRef>,
+    },
+    /// Integration ownership released back to the shell.
+    HookAgentReleased {
+        /// Pane receiving the release.
+        pane_id: PaneId,
+        /// Integration provenance.
+        source: String,
+        /// External catalogue label or custom identity.
+        agent_label: String,
+        /// Recognized catalogue identity, when available.
+        known_agent: Option<Agent>,
+        /// Source-local sequence.
+        seq: Option<u64>,
+    },
+    /// An application version is available through the active installation manager.
+    UpdateReady {
+        /// Available version spelling.
+        version: String,
+        /// Installation command selected by the producer.
+        install_command: String,
+    },
+    /// Detection catalogue publication has completed against the shared cache.
+    AgentDetectionManifestsUpdated {
+        /// Successfully published agent versions.
+        updated: Vec<maestro_detection::manifest_update::ManifestUpdateCommit>,
+        /// Latest catalogue diagnostics, including checks with no updates.
+        status: maestro_detection::manifest_update::ManifestUpdateStatus,
     },
     /// Fallback screen detection changed a pane's state.
     StateChanged {

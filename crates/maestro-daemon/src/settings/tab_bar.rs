@@ -2,6 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Maximum supplied status entries retained in authored order.
+pub(crate) const MAX_TAB_BAR_RIGHT_ENTRIES: usize = 16;
+/// Maximum command launch interval in seconds.
+pub(crate) const MAX_TAB_BAR_COMMAND_INTERVAL_SECONDS: u64 = 31_536_000;
+/// Maximum command lifetime in seconds.
+pub(crate) const MAX_TAB_BAR_COMMAND_TIMEOUT_SECONDS: u64 = 3_600;
+
 /// An entry rendered at the right edge of the tab bar.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
@@ -74,11 +81,11 @@ pub fn parse_tab_bar_datetime_format(
 #[must_use]
 pub fn tab_bar_right_diagnostics(entries: &[TabBarRightEntryConfig]) -> Vec<String> {
     let mut diagnostics = Vec::new();
-    if entries.len() > 16 {
+    if entries.len() > MAX_TAB_BAR_RIGHT_ENTRIES {
         diagnostics
             .push("multiplexer.tabBarRight may contain at most 16 entries; ignoring extras".into());
     }
-    for (index, entry) in entries.iter().take(16).enumerate() {
+    for (index, entry) in entries.iter().take(MAX_TAB_BAR_RIGHT_ENTRIES).enumerate() {
         let field = format!("multiplexer.tabBarRight[{index}]");
         match entry {
             TabBarRightEntryConfig::Datetime { format } => {
@@ -97,8 +104,16 @@ pub fn tab_bar_right_diagnostics(entries: &[TabBarRightEntryConfig]) -> Vec<Stri
                     diagnostics.push(format!("{field} command is empty; hiding entry"));
                 }
                 for (name, value, maximum) in [
-                    ("intervalSeconds", *interval_seconds, 31_536_000),
-                    ("timeoutSeconds", *timeout_seconds, 3600),
+                    (
+                        "intervalSeconds",
+                        *interval_seconds,
+                        MAX_TAB_BAR_COMMAND_INTERVAL_SECONDS,
+                    ),
+                    (
+                        "timeoutSeconds",
+                        *timeout_seconds,
+                        MAX_TAB_BAR_COMMAND_TIMEOUT_SECONDS,
+                    ),
                 ] {
                     diagnostics.extend(schedule_diagnostic(&field, name, value, maximum));
                 }

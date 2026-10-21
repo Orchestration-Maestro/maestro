@@ -95,6 +95,67 @@ not expire them.
 The topology API starts no terminal, background task or daemon listener. See the
 [daemon design](specs/workspace-daemon.md) for the remaining runtime boundaries.
 
+## Retained daemon state
+
+`maestro_daemon::app::state::DaemonState` retains one `WorkspaceTopology`,
+terminal metadata, active and selected workspace positions, and historical pane
+aliases. Its supplied clock feeds the topology allocator. Pane-size estimation
+uses the first supplied pane rectangle, falling back to the configured headless
+rows and columns before a view attaches.
+
+Public target parsing distinguishes stable numbers (`w1:t4`, `w1:p2`) from
+historical positional tabs (`w1:4`) and raw pane spellings (`p_3`). A stale pane
+alias returns no match rather than selecting a different live pane. Current-only
+pane lookup excludes historical spellings.
+
+Workspace moves preserve active and selected workspace identities when display
+positions change. Block moves use the caller's member order, reject duplicates
+and missing members, and leave unchanged orders clean. Accepted moves mark the
+session dirty. Notification context uses the resolved workspace label and adds a
+tab label only for a live pane in a workspace with multiple tabs.
+
+Focus navigation records workspace and pane identities, not display positions.
+Switching workspaces or tabs marks the selected tab's panes seen and the session
+dirty. Last-pane navigation toggles across workspaces and tabs; removed targets
+are discarded. Copy navigation retains its pane while focus is elsewhere, clears
+cross-pane selections, and returns to copy context when that pane is selected.
+
+Closing a selected parent checkout removes its repository group; closing a linked
+checkout removes only that workspace. Pane death removes only its own workspace
+when its last pane exits, retaining the logical active and selected workspaces.
+Removal clears extension provenance and affected copy/selection records. Pane
+aliases remain recorded; resolving an alias to a removed pane returns no match. Detached terminal metadata is removed and its identity is queued for the
+loop to shut down the existing runtime; still-attached terminals are retained.
+
+Screen, process and hook reports update the existing terminal-state owner.
+Reserved native reports retain session identity without overriding screen state.
+Official release events leave process ownership intact; custom releases use the
+terminal owner's release operation. Session-only changes mark persistence dirty
+without inventing a visible update. Completion acknowledgement distinguishes
+initial idle from finished work and respects active tab and outer-terminal focus.
+State updates retain before/after presentation, release status and acquisition
+suppression for the loop's consumers.
+
+Background notifications can be immediate or delayed. Pending transitions cancel
+when work resumes or their pane dies. Due delivery rechecks live state, identity,
+focus and the root terminal's directory. Workspace toasts, client notifications
+and sound decisions are independent; terminal delivery does not replace the
+workspace toast. Host notification and sound effects remain with the loop.
+
+Update-ready events retain the available version and the producer's install
+command. Workspace delivery shows installation guidance; other delivery modes
+leave any existing toast unchanged. Receiving an event does not acquire or install
+an update.
+
+`maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
+retains the latest 512 ordered event payloads. Replay returns only events strictly
+newer than the supplied sequence. Events use the shared type-tagged protocol
+records without another envelope.
+
+`maestro_daemon::key_combo` parses, formats and matches workspace key combinations
+using shared key codes. It preserves named punctuation, Unicode characters,
+modifier aliases and shifted-key matching; shifted Tab normalizes to BackTab.
+
 ## Snapshot
 
 [`maestro_workspace::persist`](../crates/maestro-workspace/src/persist/mod.rs)
@@ -195,8 +256,8 @@ and clears the previous process's OSC evidence. Lifecycle activation resets
 fallback tracking, while an explicit release suppresses reacquisition for one
 second. The caller must cancel and join the returned task on teardown.
 
-`maestro_daemon::events::AppEvent` carries process observations and screen state
-changes. Its async publisher waits for queue space rather than dropping these
+`maestro_daemon::events::AppEvent` carries process observations, screen state
+changes, hook state reports and agent releases. Its async publisher waits for queue space rather than dropping these
 transitions and pane death; a closed receiver produces a warning. Bell, clipboard
 and cwd metadata from the reader use nonblocking delivery.
 
@@ -436,15 +497,15 @@ graceful stop.
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and
-workspace actions, plus the inputs observed by daemon selection. It is a
+workspace actions and status commands, plus the inputs observed by daemon selection. It is a
 vocabulary table, not an environment reader or launcher. Callers supply observed
 values to `SelectionEnvironment`; selection never mutates the process environment.
 
 | Name | Consumers |
 |---|---|
 | `MAESTRO_ENV` | Pane, action |
-| `MAESTRO_SOCKET_PATH` | Pane, action, daemon selection |
-| `MAESTRO_BIN_PATH` | Pane, action |
+| `MAESTRO_SOCKET_PATH` | Pane, action, status command, daemon selection |
+| `MAESTRO_BIN_PATH` | Pane, action, status command |
 | `MAESTRO_WORKSPACE_ID` | Pane, action |
 | `MAESTRO_TAB_ID` | Pane, action |
 | `MAESTRO_PANE_ID` | Pane, action |
@@ -491,6 +552,10 @@ retain their event, subsystem, outcome and operation-specific fields.
 
 ## Snapshot operations
 
+The live `app`, `tab` and `workspace` modules and `persist::capture` and
+`capture_history` use the Linux pane runtime and are available only on Linux.
+Snapshot save and clear operations remain available on other native targets.
+
 `persist::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
 workspace snapshot storage. They add no format or serializer. Save commits
 topology before separate history; absent history removes the history file.
@@ -501,3 +566,193 @@ Clear removes topology first. If that fails, history remains untouched and only
 the failure is logged. Once topology is removed, clear attempts history removal
 before reporting topology-clear success, even if history removal failed.
 Direct history clear tolerates absence and reports other native removal errors.
+
+Detection catalogue events retain update diagnostics and refresh source/version
+summaries from the same caller-supplied `ManifestCache` shared with pane runtimes.
+Successful updates show agent labels and versions when workspace toast delivery
+is enabled. Matching retained runtimes reset their fallback detectors after the
+shared cache changes. Empty updates refresh diagnostics and summaries without
+a toast or detector reset.
+
+The daemon can toggle zoom on the active split tab without changing its layout.
+A single-pane tab is unchanged; a zoom change marks the session dirty.
+
+Closing a pane or tab targets the active workspace, not the navigation selection.
+Detached terminal metadata and plugin records are removed through the same cleanup
+owner as workspace closes. Closing the last pane or tab of a parent repository
+group requests confirmation when enabled; closing a linked workspace leaves its
+checkout directory untouched. Agent completion can be published before removing
+the pane, while its identity and notification context are still available.
+
+`app::App` retains daemon state beside the existing terminal runtime registry.
+Immediate workspace toasts use the first tab's live root directory for their
+context, falling back to terminal metadata and then the workspace identity.
+Delayed deliveries reread that directory at delivery time for both workspace and
+client notification context. Explicit workspace names still take precedence.
+
+Internal events publish agent release even when an idle agent's execution status
+has not changed. Pane death publishes completion and the exit event before its
+identity is removed. Temporary overlay exits clean their owned files and restore
+previous focus and zoom only while the overlay still owns focus; a focus change
+made before exit is preserved.
+
+Construction retains one set of launch adapters, including the shared detection
+cache, supplied child setup entry, socket, event sender and render signals.
+Runtime configurations bind those inputs to the real pane ID and current size.
+When a launch-command pane is marked to return to a shell, exit starts that shell
+without removing the pane. A successful replacement clears agent runtime identity
+and restores focus. A failed spawn follows the normal pane-close path.
+
+## Repository identity
+
+Successful workspace creation admits native repository metadata and its initial
+branch after the pane spawn succeeds. Ordinary repositories, linked worktrees,
+standalone bare repositories and embedded bare repositories use the shared
+`maestro-workspace::workspace::git` discovery owner, re-exported through
+`maestro-daemon::git::discovery`. Reftable branch and revision queries stay with
+the daemon's process-owning caller.
+
+Repository grouping uses the shared metadata directory; checkout identity uses
+the checkout root. A linked worktree's automatic label names the checkout, not
+the repository group. Display operations read admitted labels without repeating
+filesystem discovery. Root-terminal metadata can select a newer admitted label
+without changing the workspace's retained fallback directory.
+
+## Retained tab-bar status
+
+`App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,
+local datetime, literal text or command segments. Reload invalidates previous
+command results and synchronously kills running commands and their descendants.
+Commands use the supplied daemon socket and executable, stable active workspace,
+tab and pane IDs, and the focused runtime's current directory when available.
+These optional values use `MAESTRO_ACTIVE_WORKSPACE_ID`, `MAESTRO_ACTIVE_TAB_ID`,
+`MAESTRO_ACTIVE_PANE_ID` and `MAESTRO_ACTIVE_PANE_CWD`.
+
+Commands drain all output while retaining only the final line's first 4,096 bytes.
+Dynamic text is trimmed, stripped of control and Unicode format characters, and
+limited to eighty Unicode scalars. Literal text and separators preserve printable
+spacing. Command deadlines start before the first task poll; a running command
+has no second scheduling deadline. Current-generation completion requests a render
+only when its visible output changes. The daemon loop owns calls to the status
+scheduler; this owner does not start another background loop.
+
+Local datetime uses the system timezone through the safe calendar library. Linux
+hostname observation reads the kernel hostname without starting a process.
+
+Clipboard write observations retain a separate “copied to clipboard” acknowledgement
+for two seconds. Disabling clipboard feedback clears its content and deadline.
+Feedback never replaces an agent notification; the daemon scheduler expires it
+at its deadline. Host clipboard emission remains with the terminal effect owner.
+
+`App::new` consumes the matching internal-event receiver alongside the shared
+launch inputs. One drain processes at most sixty-four observations and retains
+later events for the next pass. Render impact comes from the same event dispatch
+used by direct callers: bells alone and unchanged or stale status output do not
+request a render.
+
+Construction initializes agent-panel ordering, sidebar collapse state and
+focus-gain redraw policy from the accepted preferences. The agent-panel ordering
+shares the settings owner's vocabulary rather than translating a duplicate enum.
+
+Named workspace creation retains its chosen directory until completion or
+cancellation. Pending naming suppresses automatic default creation without
+allocating a workspace or process. Directory selection follows navigation
+selection before terminal focus, then applies the configured follow, home,
+current or authored-path policy. Native creation binds real allocated identities
+to the shared launch inputs inside the topology's spawn transaction. A failed
+spawn publishes neither a workspace nor terminal ownership. Modal input remains
+with its input owner.
+
+### Host appearance and theme names
+
+The daemon retains manual, dark and light theme names separately. Automatic
+switching is opt-in; without it, host appearance leaves the manual name unchanged.
+When enabled, the selected theme's dark/light sibling supplies each omitted name.
+Custom colour overrides and the legacy accent are retained for the renderer, which
+owns palette construction.
+
+Explicit host appearance reports take precedence over inferred background
+luminance. Host colours still update independently, preserving each child's own
+colour overrides. The daemon propagates accepted observations to live panes and
+retains them for later pane launches.
+
+### Live preferences
+
+`App::reload_config` uses the supplied `SettingsManager` to flush pending writes
+before reloading the global document. Invalid documents leave accepted preferences
+unchanged. Independently invalid areas retain their current values while valid
+areas apply; inverted sidebar bounds reject the interface area before clamping.
+Reloads preserve live sidebar collapse state and manually resized widths, subject
+to the new bounds. Accepted shell, directory and client preferences stay in
+`App::config` rather than a second configuration snapshot.
+
+Explicit reloads report success or warnings through a workspace toast. Silent
+reloads preserve existing feedback, and the loop can consume the reload observation
+once. Construction requires an explicit `PaneLaunchInputs::no_session` choice;
+that policy suppresses automatic background checks without changing their stored
+preferences. An accepted history disable clears separate history on the next
+loop pass or at shutdown, after joining any captured writer so it cannot recreate
+the file. Reading the reload observation does not discard that pending clear.
+Rejected history settings leave both the accepted preference and history intact.
+
+Workspace preference saves use the same settings manager. Related leaves, such
+as a manual theme name and automatic-switch flag, reach storage in one batch.
+Saves preserve unrelated global preferences and fresh nested siblings from other
+writers. A failed global write leaves live daemon preferences unchanged and shows
+a diagnostic for five seconds; successful saves silently apply the accepted global
+document. The settings manager keeps its existing immediate cache and error-drain
+semantics.
+
+Tab observations expose the stable public number even after an earlier tab is
+closed. Display labels still follow the current position unless explicitly
+named; focus and agent attention are projected from the retained live state.
+Workspace attention ranks blocked panes above unseen completions, working panes,
+seen completions and unknown panes. Pane details follow tab and layout order,
+retain tab vector positions, and qualify agent labels when multiple tabs exist.
+
+Terminal targets resolve a terminal handle before a current public pane handle,
+then an agent name or detected label. Agent targets accept a current public pane
+handle only for an agent, or an explicit agent name; historical pane spellings
+remain names. Ambiguous names return all matching viewport identities, current
+directories and agent statuses rather than selecting the first match.
+
+Session capture owns the current workspace order, stable numbers, layout, focus,
+sidebar state and settled pane launch metadata. A first tab's live root directory
+supplies workspace identity. Screen history is captured separately for each
+attached runtime, so topology JSON contains no terminal output. Session provenance
+uses the terminal owner's live hook identity before its restored identity.
+
+The daemon runs one internal-event loop with one selected deadline timer. Dirty
+sessions debounce for five seconds; a busy captured writer retries after 250 ms.
+Final saving joins that writer before capturing current state. Interactive size
+polling is separate from headless deadlines, and hidden render attempts do not
+advance the presentation clock.
+
+Shutdown retains each runtime while draining its critical exit publication,
+even when the event queue is full. It saves the session before terminating live
+children and does not respawn command shells while stopping.
+
+Terminal titles retain their latest raw text, including progress spinners. Only
+changes to normalized title text advance the pane revision and publish a complete
+pane update. Sidebar redraws follow the title form used by its configured rows.
+Pane and agent observations share one presentation projection; foreground process
+directories are read asynchronously through the retained runtime.
+
+Outer window titles render on the daemon from workspace, tab, pane, normalized
+terminal-title and hostname tokens. Empty or invalid templates disable ownership
+of the outer title. Accepted settings reloads replace the parsed template.
+
+Linux desktop notifications invoke the native notifier with a literal operand
+separator before the title. Missing displays or notifier executables return
+without showing a notification; other launch and wait failures remain errors.
+
+The native footer and daemon share repository discovery, including standalone
+bare repositories and embedded bare worktrees. Checkout paths retain their
+spelling for watching; canonical paths remain repository identity keys.
+Caller-specific metadata rules use one typed policy: footer worktree markers
+require a space after `gitdir:`, while workspace identity also accepts the
+unspaced form. Footer directory metadata ignores `commondir`; a worktree link
+uses it. Workspace discovery climbs past incomplete nested repositories; footer
+discovery stops at a marker without HEAD. Native directory and link bytes are
+retained. The footer calls the workspace owner through the direct native
+application dependency. The browser footer has no native repository discovery.

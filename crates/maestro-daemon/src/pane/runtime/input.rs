@@ -106,6 +106,11 @@ impl PaneRuntime {
         true
     }
 
+    /// Retains host colours while preserving the child terminal's dynamic overrides.
+    pub fn apply_host_terminal_theme(&self, theme: crate::terminal_theme::TerminalTheme) {
+        self.shared.terminal.apply_host_terminal_theme(theme);
+    }
+
     /// Applies host colour changes through the same response lane as terminal reads.
     pub fn apply_host_terminal_appearance(&self, appearance: Option<HostAppearance>) {
         self.io.write_terminal_response(|| {

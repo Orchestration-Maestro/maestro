@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::{rc::Rc, time::Duration};
 use tokio::process::Command;
 
-use super::operations::{FooterFileKind, FooterFileStats, FooterOperations};
+use super::operations::{FooterFileStats, FooterOperations};
 use maestro_watch::fs_watch::{FsWatcher, NativeWatchOperations, WatchOperations, WatchTimer};
 use num_traits::ToPrimitive;
 use tokio::task::{JoinHandle, LocalSet};
@@ -112,27 +112,6 @@ impl FooterOperations for NativeFooterOperations {
 
     fn exists(&self, path: &str) -> bool {
         fs::exists(path).unwrap_or(false)
-    }
-
-    fn stat_kind(&self, path: &str) -> io::Result<FooterFileKind> {
-        let kind = fs::metadata(path)?.file_type();
-        Ok(match (kind.is_file(), kind.is_dir()) {
-            (true, _) => FooterFileKind::File,
-            (_, true) => FooterFileKind::Directory,
-            _ => FooterFileKind::Other,
-        })
-    }
-
-    fn read_text(&self, path: &str) -> io::Result<String> {
-        Ok(String::from_utf8_lossy(&fs::read(path)?).into_owned())
-    }
-
-    fn current_dir(&self) -> io::Result<String> {
-        Ok(std::env::current_dir()?.to_string_lossy().into_owned())
-    }
-
-    fn drive_directory(&self, _drive: char) -> Option<String> {
-        None
     }
 
     fn symbolic_ref_sync(&self, repo_dir: &str) -> io::Result<Option<String>> {
