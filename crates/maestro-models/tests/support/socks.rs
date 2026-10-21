@@ -27,15 +27,6 @@ fn counted(socket: &mut TcpStream) -> std::io::Result<Vec<u8>> {
 /// Ordinary successful bound-address reply.
 pub const DEFAULT_REPLY: &[u8] = &[5, 0, 0, 1, 127, 0, 0, 1, 0, 80];
 
-/// Negotiate a tunnel, leaving HTTP input unread.
-///
-/// # Errors
-/// Returns protocol socket read or write failures.
-pub fn negotiate(socket: &mut TcpStream, authenticate: bool) -> std::io::Result<Negotiation> {
-    let (destination, ()) = negotiate_observing(socket, authenticate, DEFAULT_REPLY, |_, _, _| ())?;
-    Ok(destination)
-}
-
 /// Negotiate with a chosen bound-address frame and capture caller-owned authentication observations.
 ///
 /// # Errors
@@ -52,7 +43,7 @@ pub fn negotiate_observing<T>(
     let mut version = [0];
     socket.read_exact(&mut version)?;
     if version == [4] {
-        let negotiation = read4(socket)?;
+        let negotiation = read4(socket, observe)?;
         socket.write_all(&[0, 90, 0, 80, 127, 0, 0, 1])?;
         return Ok(negotiation);
     }
@@ -114,7 +105,10 @@ fn terminated(socket: &mut TcpStream) -> std::io::Result<Vec<u8>> {
 ///
 /// # Panics
 /// Panics when the command is not CONNECT.
-pub fn read4(socket: &mut TcpStream) -> std::io::Result<Negotiation> {
+pub fn read4<T>(
+    socket: &mut TcpStream,
+    observe: impl FnOnce(Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>) -> T,
+) -> std::io::Result<(Negotiation, T)> {
     let mut head = [0; 7];
     socket.read_exact(&mut head)?;
     assert_eq!(head[0], 1);
@@ -125,12 +119,12 @@ pub fn read4(socket: &mut TcpStream) -> std::io::Result<Negotiation> {
     } else {
         head[3..].to_vec()
     };
-    Ok(Negotiation {
-        methods: Vec::new(),
-        user: Some(user),
-        password: None,
-        kind: if remote { 3 } else { 1 },
-        host,
-        port: u16::from_be_bytes([head[1], head[2]]),
-    })
+    Ok((
+        Negotiation {
+            kind: if remote { 3 } else { 1 },
+            host,
+            port: u16::from_be_bytes([head[1], head[2]]),
+        },
+        observe(Vec::new(), Some(user), None),
+    ))
 }

@@ -1,7 +1,7 @@
 //! Controlled clock witnesses at connection and header boundaries.
 
-use super::run;
-use crate::tests::{loopback, socks};
+use super::{run, socks};
+use crate::tests::loopback;
 use futures_util::FutureExt;
 use std::sync::{Arc, mpsc};
 use std::time::Duration;
@@ -46,11 +46,9 @@ fn observe_stall(
         let mut version = [0];
         socket.read_exact(&mut version)?;
         assert_eq!(version, [4]);
-        let negotiation = socks::read4(socket)?;
-        assert!(
-            negotiation.user.as_deref() == Some(identity),
-            "proxy identity bytes"
-        );
+        crate::tests::socks::read4(socket, |_, user, _| {
+            assert!(user.as_deref() == Some(identity), "proxy identity bytes");
+        })?;
     } else {
         let mut hello = [0; 3];
         socket.read_exact(&mut hello)?;

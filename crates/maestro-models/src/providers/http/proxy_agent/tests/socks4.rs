@@ -1,7 +1,7 @@
 //! SOCKS4 wire observations through the configured sender and retained socket.
 
-use super::{request, run, sender};
-use crate::tests::{loopback, socks};
+use super::{request, run, sender, socks};
+use crate::tests::loopback;
 use futures_util::StreamExt;
 use std::sync::Arc;
 

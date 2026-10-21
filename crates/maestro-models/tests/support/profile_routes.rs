@@ -190,12 +190,18 @@ fn peer(
     if let Some(scheme) = socks_proxy {
         let socks4 = scheme.starts_with("socks4");
         loopback::start_routed(Arc::new(move |mut socket| {
-            let negotiation = crate::socks::negotiate(&mut socket, false)?;
-            assert!(
-                negotiation.user.as_deref() == socks4.then_some(b"proxy-user".as_slice()),
-                "proxy identity bytes"
-            );
-            assert!(negotiation.password.is_none());
+            crate::socks::negotiate_observing(
+                &mut socket,
+                false,
+                crate::socks::DEFAULT_REPLY,
+                |_, user, password| {
+                    assert!(
+                        user.as_deref() == socks4.then_some(b"proxy-user".as_slice()),
+                        "proxy identity bytes"
+                    );
+                    assert!(password.is_none());
+                },
+            )?;
             loopback::answer_connection(socket, &handler)
         }))
     } else {
