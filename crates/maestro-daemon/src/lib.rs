@@ -45,6 +45,12 @@ pub mod render_signal;
 /// Lossless background pane event delivery.
 pub mod events;
 
+/// Shared replay history for daemon API consumers.
+pub mod api;
+
+/// Workspace key-combination grammar.
+pub mod key_combo;
+
 #[cfg(test)]
 mod tests;
 
