@@ -288,6 +288,7 @@ impl Script {
 }
 
 /// Fail to compile when a future is not `Send`, so endpoint tasks can own the reduction.
+#[cfg(not(target_arch = "wasm32"))]
 fn ensure_send<T: Send>(future: T) -> T {
     future
 }
@@ -379,14 +380,16 @@ pub async fn reduce(script: Script) -> TestResult<Reduction> {
         resolve_service_tier: options["resolver"].is_string().then_some(&resolver),
         apply_service_tier_pricing: (options["pricing"] == json!(true)).then_some(&pricing),
     };
-    let outcome = ensure_send(process_responses_stream(
+    let outcome = process_responses_stream(
         finite_source(events, failure),
         &output,
         &stream,
         &model,
         Some(&wanted),
-    ))
-    .await;
+    );
+    #[cfg(not(target_arch = "wasm32"))]
+    let outcome = ensure_send(outcome);
+    let outcome = outcome.await;
     let events = published(&stream).await?;
     let message = output.read().map_err(|error| error.to_string())?.clone();
     let tiers = tiers.lock().map_err(|error| error.to_string())?.clone();

@@ -1,7 +1,10 @@
 //! Regenerate the shipped dark and light theme documents from a brand pack.
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_theme::{BrandMode, NativeThemeOperations, load_brand_pack};
+#[cfg(not(target_arch = "wasm32"))]
 use std::io::{Error, ErrorKind};
 
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> std::io::Result<()> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     let [pack, directory] = arguments.as_slice() else {
@@ -20,3 +23,7 @@ fn main() -> std::io::Result<()> {
     }
     Ok(())
 }
+
+/// Native author preparation is unavailable in browser builds.
+#[cfg(target_arch = "wasm32")]
+fn main() {}
