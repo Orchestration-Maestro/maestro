@@ -7,6 +7,7 @@ mod config_io;
 #[cfg(unix)]
 mod creation;
 mod runtime;
+mod session;
 mod tab_bar_status;
 mod theme_sync;
 
@@ -21,6 +22,18 @@ use state::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
+    /// Earliest capture time for the next debounced session save.
+    pub session_save_deadline: Option<std::time::Instant>,
+    /// The sole writer of an already captured session job.
+    pub session_save_thread: Option<std::thread::JoinHandle<()>>,
+    /// Next terminal-size observation for an interactive caller.
+    pub next_resize_poll: std::time::Instant,
+    /// Last attempted render, whether or not presented.
+    last_render_at: Option<std::time::Instant>,
+    /// Last frame actually presented to an interactive caller.
+    last_presentation_at: Option<std::time::Instant>,
+    /// Earliest time to remove the current workspace notification.
+    pub toast_deadline: Option<std::time::Instant>,
     /// Next automatic product check, absent when disabled or already requested.
     pub next_auto_update_check: Option<std::time::Instant>,
     /// Next automatic detection catalogue check.

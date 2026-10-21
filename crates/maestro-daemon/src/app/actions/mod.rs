@@ -4,6 +4,7 @@ mod close;
 mod death;
 mod events;
 mod focus;
+mod managed;
 mod notifications;
 mod ordering;
 mod removal;

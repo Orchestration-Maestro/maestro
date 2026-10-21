@@ -29,6 +29,7 @@ impl<C: FnMut() -> u128> App<C> {
         notify_success: bool,
     ) -> (ConfigReloadReport, Vec<SettingsError>) {
         self.config_reloaded_from_disk = true;
+        let previous_toast = self.state.toast.clone();
         let (loaded, errors) = load_live_config(manager, agent_dir).await;
         let report = match loaded {
             Ok(loaded) => self.apply_live_config(loaded, notify_success),
@@ -42,6 +43,7 @@ impl<C: FnMut() -> u128> App<C> {
         };
         self.state.config_diagnostic = config_diagnostic_summary(&report.diagnostics);
         self.config_diagnostic_deadline = None;
+        self.sync_toast_deadline(previous_toast.as_ref());
         (report, errors)
     }
 

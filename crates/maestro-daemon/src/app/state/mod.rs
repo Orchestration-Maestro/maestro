@@ -71,6 +71,8 @@ pub enum SidebarWidthSource {
 
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
+    /// Whether the shared daemon loop should finish its owned shutdown.
+    pub should_quit: maestro_protocol::shared::Flag,
     /// Live expanded sidebar width, independently resizable from its configured default.
     pub sidebar_width: u16,
     /// Persisted fraction separating sidebar sections.
@@ -180,6 +182,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         let (sidebar_min, sidebar_max) = config.sidebar_bounds();
         let theme_runtime = ThemeRuntimeConfig::new(config, true);
         Self {
+            should_quit: maestro_protocol::shared::Flag(false),
             sidebar_width: config.ui.sidebar_width.clamp(sidebar_min, sidebar_max),
             sidebar_width_source: SidebarWidthSource::ConfigDefault,
             sidebar_section_split: 0.5,

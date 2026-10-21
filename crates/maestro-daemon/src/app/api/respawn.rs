@@ -10,6 +10,9 @@ use maestro_workspace::layout::PaneId;
 impl<C: FnMut() -> u128> App<C> {
     /// Attempts replacement before pane removal; failure leaves ordinary close policy intact.
     pub(super) fn respawn_shell_after_exit(&mut self, event: &AppEvent) -> bool {
+        if self.state.should_quit.0 {
+            return false;
+        }
         let AppEvent::PaneDied { pane_id } = event else {
             return false;
         };

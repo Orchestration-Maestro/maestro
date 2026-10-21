@@ -92,6 +92,12 @@ impl<C: FnMut() -> u128> App<C> {
         (accepted.ui.sidebar_min_width, accepted.ui.sidebar_max_width) = config.sidebar_bounds();
         let config = &accepted;
         let mut app = Self {
+            session_save_deadline: None,
+            session_save_thread: None,
+            next_resize_poll: std::time::Instant::now() + std::time::Duration::from_millis(100),
+            last_render_at: None,
+            last_presentation_at: None,
+            toast_deadline: None,
             event_rx,
             next_auto_update_check: None,
             next_agent_manifest_update_check: None,

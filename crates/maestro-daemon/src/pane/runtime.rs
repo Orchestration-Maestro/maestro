@@ -127,6 +127,11 @@ impl PaneRuntime {
 
     /// Stops I/O and terminates the owned session without waiting for event capacity.
     pub async fn shutdown(mut self) {
+        let _ = self.begin_shutdown().await;
+    }
+
+    /// Stops native work while the daemon retains this runtime until exit delivery completes.
+    pub(crate) async fn begin_shutdown(&mut self) -> Option<JoinHandle<()>> {
         self.stop_detection().await;
         self.io.shutdown();
         lifecycle::shutdown_processes(
@@ -138,6 +143,7 @@ impl PaneRuntime {
             task.abort();
             let _ = task.await;
         }
+        self.watcher.take()
     }
 }
 

@@ -487,3 +487,190 @@ fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous(
     assert_eq!(candidates[0].tab_id, "w1:t1");
     assert_eq!(candidates[1].tab_id, "w1:t2");
 }
+
+/// Builds the screen-state observation used by native fallback detection.
+#[cfg(unix)]
+fn state_event(
+    pane_id: maestro_workspace::layout::PaneId,
+    state: maestro_detection::agents::AgentState,
+) -> maestro_daemon::events::AppEvent {
+    maestro_daemon::events::AppEvent::StateChanged {
+        pane_id,
+        state,
+        agent: Some(maestro_detection::agents::Agent::Claude),
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_full_internal_event_queue_eventually_applies_working_to_idle_transition() {
+    use maestro_detection::agents::AgentState;
+    let (mut app, pane) = target_app();
+    app.handle_internal_event(state_event(pane, AgentState::Working));
+    let id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    assert_eq!(app.state.terminals[&id].state, AgentState::Working);
+    let sender = app.launch.events.clone();
+    for _ in 0..sender.max_capacity() {
+        sender
+            .try_send(maestro_daemon::events::AppEvent::TerminalBell {
+                pane_id: pane,
+                count: 1,
+            })
+            .unwrap();
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut send = std::pin::pin!(sender.send(state_event(pane, AgentState::Idle)));
+            let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+            assert!(std::future::Future::poll(send.as_mut(), &mut context).is_pending());
+            app.drain_internal_events();
+            send.await.unwrap();
+            for _ in 0..(sender.max_capacity() / 64 + 2) {
+                app.drain_internal_events();
+            }
+        });
+    assert_eq!(app.state.terminals[&id].state, AgentState::Idle);
+}
+
+#[test]
+#[cfg(unix)]
+fn setup_entry() {
+    if maestro_process::pty::setup_entry().is_some() {
+        std::process::exit(1);
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
+    let name = "shutdown_drains_pending_exit_hooks_before_runtime_release";
+    if maestro_test_process::run_alone(name).unwrap() {
+        return;
+    }
+    maestro_test_process::TestProcess::named("setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(check_shutdown(args));
+            Ok::<_, std::io::Error>(())
+        })
+        .unwrap();
+}
+
+/// Holds a real child until shutdown while the critical event queue is full.
+#[cfg(unix)]
+async fn check_shutdown(args: &[String]) {
+    use maestro_daemon::{events::AppEvent, paths::DaemonPaths};
+    let (mut app, pane) = live_shutdown_app(args).await;
+    app.state
+        .terminals
+        .values_mut()
+        .next()
+        .unwrap()
+        .respawn_shell_on_exit = true;
+    app.handle_internal_event(state_event(
+        pane,
+        maestro_detection::agents::AgentState::Working,
+    ));
+    let before = app.event_hub.current_sequence();
+    for _ in 0..app.launch.events.max_capacity() {
+        app.launch
+            .events
+            .try_send(AppEvent::TerminalBell {
+                pane_id: pane,
+                count: 1,
+            })
+            .unwrap();
+    }
+    assert_eq!(app.launch.events.capacity(), 0);
+    let runtime = app.terminal_runtimes.values().next().unwrap();
+    let pid = runtime.child_pid().unwrap();
+    runtime.send_bytes(b"\n".to_vec()).await.unwrap();
+    while maestro_process::child_process::process_exists(pid) {
+        tokio::task::yield_now().await;
+    }
+    app.shutdown(&DaemonPaths::new("/unused", None).unwrap())
+        .await;
+    let events = app.event_hub.events_after(before);
+    let release = events
+        .iter()
+        .position(|(_, event)| {
+            matches!(
+                event,
+                maestro_protocol::events::EventData::PaneAgentDetected { released: true, .. }
+            )
+        })
+        .unwrap();
+    let exit = events
+        .iter()
+        .position(|(_, event)| {
+            matches!(
+                event,
+                maestro_protocol::events::EventData::PaneExited { .. }
+            )
+        })
+        .unwrap();
+    assert!(release < exit);
+    assert!(app.terminal_runtimes.is_empty());
+    assert!(app.state.topology.workspaces.is_empty());
+}
+
+/// Starts a checked child and waits for its already-ingested readiness observation.
+#[cfg(unix)]
+async fn live_shutdown_app(
+    args: &[String],
+) -> (
+    maestro_daemon::app::App<fn() -> u128>,
+    maestro_workspace::layout::PaneId,
+) {
+    use maestro_daemon::{
+        events::AppEvent,
+        pane::{
+            launch_env::PaneLaunchEnv,
+            runtime::{AgentDetection, PaneRuntime},
+        },
+    };
+    let (mut app, pane) = target_app();
+    let (launch, receiver) =
+        launch::launch_inputs(args, std::sync::Arc::clone(&app.state.manifests));
+    app.launch = launch;
+    app.event_rx = receiver;
+    let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
+    config.agent_detection = AgentDetection::Disabled;
+    let runtime = PaneRuntime::spawn_shell_command(
+        config,
+        "printf '\\033]7;file:///tmp\\033\\\\'; read -r line",
+        std::env::current_dir().unwrap(),
+        &PaneLaunchEnv::default(),
+    )
+    .unwrap();
+    let id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    app.terminal_runtimes.insert(id, runtime);
+    loop {
+        if matches!(
+            app.event_rx.recv().await.unwrap(),
+            AppEvent::TerminalCwdReported { .. }
+        ) {
+            break;
+        }
+    }
+    (app, pane)
+}

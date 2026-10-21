@@ -694,3 +694,13 @@ sidebar state and settled pane launch metadata. A first tab's live root director
 supplies workspace identity. Screen history is captured separately for each
 attached runtime, so topology JSON contains no terminal output. Session provenance
 uses the terminal owner's live hook identity before its restored identity.
+
+The daemon runs one internal-event loop with one selected deadline timer. Dirty
+sessions debounce for five seconds; a busy captured writer retries after 250 ms.
+Final saving joins that writer before capturing current state. Interactive size
+polling is separate from headless deadlines, and hidden render attempts do not
+advance the presentation clock.
+
+Shutdown retains each runtime while draining its critical exit publication,
+even when the event queue is full. It saves the session before terminating live
+children and does not respawn command shells while stopping.

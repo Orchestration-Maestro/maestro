@@ -24,6 +24,14 @@ impl<C: FnMut() -> u128> App<C> {
 
     /// Single dispatch owner shared by state callers and the bounded daemon drain.
     fn apply_internal_event(&mut self, event: AppEvent) -> (Vec<PaneStateUpdate>, bool) {
+        let previous = self.state.toast.clone();
+        let result = self.dispatch_internal_event(event);
+        self.sync_toast_deadline(previous.as_ref());
+        result
+    }
+
+    /// Dispatches a background observation through its existing domain owner.
+    fn dispatch_internal_event(&mut self, event: AppEvent) -> (Vec<PaneStateUpdate>, bool) {
         if let AppEvent::TabBarCommandFinished {
             generation,
             segment_index,

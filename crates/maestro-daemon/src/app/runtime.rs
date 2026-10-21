@@ -1,5 +1,9 @@
 //! Scheduled notification delivery using current process observations.
 
+mod cadence;
+mod run;
+mod scheduled;
+
 use super::{App, state::AgentNotificationDelivery};
 use std::time::Instant;
 
@@ -12,14 +16,34 @@ const APP_EVENT_DRAIN_LIMIT: usize = 64;
 impl<C: FnMut() -> u128> App<C> {
     /// Drains one bounded internal-event batch without starving the next loop operation.
     pub fn drain_internal_events(&mut self) -> bool {
+        self.drain_internal_events_up_to(APP_EVENT_DRAIN_LIMIT).1
+    }
+
+    /// Drains all queued observations when correctness requires an exhaustive boundary.
+    pub fn drain_all_internal_events(&mut self) -> bool {
         let mut changed = false;
-        for _ in 0..APP_EVENT_DRAIN_LIMIT {
+        loop {
+            let (had_event, batch_changed) =
+                self.drain_internal_events_up_to(APP_EVENT_DRAIN_LIMIT);
+            changed |= batch_changed;
+            if !had_event {
+                return changed;
+            }
+        }
+    }
+
+    /// Reports occupancy separately from visible changes, including bell-only batches.
+    fn drain_internal_events_up_to(&mut self, limit: usize) -> (bool, bool) {
+        let mut changed = false;
+        let mut had_event = false;
+        for _ in 0..limit {
             let Ok(event) = self.event_rx.try_recv() else {
                 break;
             };
+            had_event = true;
             changed |= self.handle_internal_event_with_render_impact(event);
         }
-        changed
+        (had_event, changed)
     }
 
     /// Records clipboard feedback without changing any agent notification.
