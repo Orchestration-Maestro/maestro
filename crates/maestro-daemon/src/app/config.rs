@@ -95,6 +95,7 @@ impl<C: FnMut() -> u128> App<C> {
             let entries = self.config.ui.tab_bar_right.clone();
             let separator = self.config.ui.tab_bar_right_separator.clone();
             self.configure_tab_bar_status(&entries, &separator);
+            self.configure_window_title(&self.config.ui.window_title.clone());
         }
         self.state.headless_size = self.config.headless_size();
         self.configure_update_checks(previous.update);

@@ -92,6 +92,7 @@ impl<C: FnMut() -> u128> App<C> {
         (accepted.ui.sidebar_min_width, accepted.ui.sidebar_max_width) = config.sidebar_bounds();
         let config = &accepted;
         let mut app = Self {
+            window_title_template: None,
             session_save_deadline: None,
             session_save_thread: None,
             next_resize_poll: std::time::Instant::now() + std::time::Duration::from_millis(100),
@@ -116,6 +117,7 @@ impl<C: FnMut() -> u128> App<C> {
         if let Some(appearance) = app.launch.appearance {
             app.set_host_terminal_appearance(appearance, true);
         }
+        app.configure_window_title(&config.ui.window_title);
         app.configure_tab_bar_status(&config.ui.tab_bar_right, &config.ui.tab_bar_right_separator);
         app
     }

@@ -14,6 +14,7 @@ mod tab_bar_status;
 /// Raw and normalized terminal title synchronization.
 pub mod terminal_titles;
 mod theme_sync;
+mod window_title;
 
 /// Stable terminal targeting and unambiguous agent-name resolution.
 pub mod terminal_targets;
@@ -26,6 +27,8 @@ use state::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
+    /// Parsed outer-title format with the server hostname resolved at configuration time.
+    window_title_template: Option<(crate::settings::window_title::WindowTitleTemplate, String)>,
     /// Earliest capture time for the next debounced session save.
     pub session_save_deadline: Option<std::time::Instant>,
     /// The sole writer of an already captured session job.

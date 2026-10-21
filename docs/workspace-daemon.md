@@ -710,3 +710,7 @@ changes to normalized title text advance the pane revision and publish a complet
 pane update. Sidebar redraws follow the title form used by its configured rows.
 Pane and agent observations share one presentation projection; foreground process
 directories are read asynchronously through the retained runtime.
+
+Outer window titles render on the daemon from workspace, tab, pane, normalized
+terminal-title and hostname tokens. Empty or invalid templates disable ownership
+of the outer title. Accepted settings reloads replace the parsed template.
