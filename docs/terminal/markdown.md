@@ -33,8 +33,11 @@ the borders that fit. The minimum content width remains one cell, even at viewpo
 width zero. Wrapping follows the [styled text rules](text.md).
 
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
-`DefaultTextStyle`. Callers set `clean_content` to filter decoded authored values with
-the [shared terminal cleaners](../text.md) before styling and hyperlink generation.
+`DefaultTextStyle`. Callers set `clean_content` to strip complete terminal escapes
+before parsing, then clean decoded authored values before styling and hyperlink
+generation. Both passes use the [shared terminal cleaners](../text.md). Binary
+controls are removed only after decoding, so their removal cannot join an entity
+spelling before the parser reads it.
 Assistant messages and branch and compaction summaries set it to `true`.
 User messages leave it disabled to preserve authored terminal styles.
 

@@ -1309,3 +1309,32 @@ fn mapped_link_sources_match_selected_grammars() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+#[test]
+fn rejected_folded_web_spans_keep_nested_candidates() {
+    for prefix in ["HTTPS://", "HTTP://", "FTP://", "WWW."] {
+        for (label, destination) in [
+            ("https://target.example", "https://target.example"),
+            ("http://target.example", "http://target.example"),
+            ("ftp://target.example", "ftp://target.example"),
+            ("www.target.example", "http://www.target.example"),
+        ] {
+            let source = format!("See {prefix}redirect.example/?url={label}");
+            for options in [MarkedOptions::Terminal, MarkedOptions::Export] {
+                let mut document = parse_with_options(source.clone(), options);
+                autolinks(&mut document);
+                let (mut labels, mut destinations) = (Vec::new(), Vec::new());
+                observations::metadata(
+                    &document.nodes,
+                    &mut Vec::new(),
+                    &mut labels,
+                    &mut destinations,
+                    options,
+                );
+                assert_eq!(document.source, source);
+                assert_eq!(labels, [label], "{source} {options:?}");
+                assert_eq!(destinations, [destination], "{source} {options:?}");
+            }
+        }
+    }
+}

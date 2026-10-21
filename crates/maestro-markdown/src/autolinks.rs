@@ -44,6 +44,8 @@ static SCAN: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
         Regex::with_flags(&source, flags).ok()
     })
 });
+/// Lowercase web starts reached inside text rejected by a case-folding caller.
+static LOWERCASE_WEB: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(SOURCES[1].0).ok());
 /// The same rules anchored at an inline token start.
 static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
     SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
@@ -76,7 +78,14 @@ fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
                 continue;
             }
             offset = range.end;
-            candidates.extend(candidate(run, range, email, options));
+            if let Some(link) = candidate(run, range.clone(), email, options) {
+                candidates.push(link);
+            } else if !email {
+                offset = LOWERCASE_WEB
+                    .as_ref()
+                    .and_then(|rule| rule.find(&run.authored[range.clone()]))
+                    .map_or(range.end, |nested| range.start + nested.start());
+            }
         }
     }
     candidates.sort_by_key(|(range, _)| range.start);

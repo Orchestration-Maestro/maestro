@@ -669,3 +669,19 @@ fn markdown_content_cleaning_covers_authored_emission_sites() {
         }
     }
 }
+
+#[test]
+fn markdown_content_cleaning_precedes_link_recognition() {
+    let view = Markdown::new(
+        "before \x1b]8;;https://attacker.example/\x07docs.example\x1b]8;;\x07 after".into(),
+        MarkdownOptions {
+            clean_content: true,
+            padding_x: 0,
+            padding_y: 0,
+            default_text_style: None,
+        },
+        Rc::new(markdown::plain()),
+        TerminalImage::new(|_| None, || 1),
+    );
+    assert_eq!(view.render(32), ["before docs.example after       "]);
+}

@@ -573,7 +573,7 @@ fn markdown_list_html_retains_literal_text_and_parent_style() {
 }
 
 #[test]
-fn markdown_www_requires_a_period_after_the_prefix() {
+fn markdown_www_accepts_single_segment_hosts() {
     let terminal = TerminalImage::new(|_| None, || 1);
     let mut capabilities = terminal.get_capabilities();
     capabilities.hyperlinks = true;
@@ -590,7 +590,9 @@ fn markdown_www_requires_a_period_after_the_prefix() {
         terminal,
     );
     let expected = format!(
-        "www.a www.com {} {} {}",
+        "{} {} {} {} {}",
+        maestro_tui::hyperlink("www.a", "http://www.a"),
+        maestro_tui::hyperlink("www.com", "http://www.com"),
         maestro_tui::hyperlink("www.a.com", "http://www.a.com"),
         maestro_tui::hyperlink("www.com.org", "http://www.com.org"),
         maestro_tui::hyperlink("http://www.a", "http://www.a")
@@ -668,17 +670,17 @@ fn markdown_consumed_definitions_do_not_create_blank_rows() {
 }
 
 #[test]
-fn markdown_rejected_web_candidates_leave_emails_eligible() {
+fn markdown_web_candidates_take_precedence_over_embedded_emails() {
     for (input, expected) in [
         (
             "www.user@example.com",
-            maestro_tui::hyperlink("www.user@example.com", "mailto:www.user@example.com"),
+            maestro_tui::hyperlink("www.user@example.com", "http://www.user@example.com"),
         ),
         (
             "https://localhost/a@example.com",
-            format!(
-                "https://localhost/{}",
-                maestro_tui::hyperlink("a@example.com", "mailto:a@example.com")
+            maestro_tui::hyperlink(
+                "https://localhost/a@example.com",
+                "https://localhost/a@example.com",
             ),
         ),
     ] {

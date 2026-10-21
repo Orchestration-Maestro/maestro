@@ -42,7 +42,8 @@ Web prefixes require an ASCII letter, digit or hyphen immediately afterward, not
 a valid domain name; later bytes may include underscores or Unicode. Terminal
 and export grammars admit mixed-case prefixes only at reached text cursors,
 including after consumed escaped punctuation. Browser protocol matching is
-case-insensitive, while its `www.` prefix is lowercase.
+case-insensitive, while its `www.` prefix is lowercase. Rejected mixed-case spans
+do not hide later lowercase web candidates.
 The candidate scan consumes failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
 
