@@ -5,6 +5,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use futures_util::FutureExt;
 use hyper::body::Body;
 use hyper_util::rt::TokioIo;
 use tower_service::Service;
@@ -99,7 +100,7 @@ pub(super) async fn exchange(
             .parse()?;
     }
     let (mut sender, connection) = hyper::client::conn::http1::handshake(socket).await?;
-    let mut connection: Driver = Box::pin(connection);
+    let mut connection: Driver = Box::pin(connection.fuse());
     let response = driving(&mut connection, sender.send_request(request)).await?;
     Ok(response.map(|body| response_body(body, connection)))
 }

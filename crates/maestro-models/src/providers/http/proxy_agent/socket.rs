@@ -4,6 +4,7 @@ use std::future::{Future, Ready, ready};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use futures_util::future::FusedFuture;
 use hyper::rt::{Read, ReadBufCursor, Write};
 use hyper_util::client::legacy::connect::{Connected, Connection};
 use tower_service::Service;
@@ -93,7 +94,7 @@ pub(in crate::providers::http) async fn secure(
 
 /// Drive an owned HTTP exchange or an upgrade without detached tasks.
 pub(in crate::providers::http) type Driver =
-    Pin<Box<dyn Future<Output = Result<(), hyper::Error>> + Send>>;
+    Pin<Box<dyn FusedFuture<Output = Result<(), hyper::Error>> + Send>>;
 
 /// Await an operation while the same owner drives its connection.
 pub(in crate::providers::http) async fn driving<T>(
@@ -113,4 +114,40 @@ pub(in crate::providers::http) async fn driving<T>(
         operation.as_mut().poll(cx)
     })
     .await?)
+}
+
+#[cfg(test)]
+mod tests {
+    use futures_util::FutureExt;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    use std::task::Poll;
+
+    #[test]
+    fn completed_driver_can_be_driven_again_for_the_next_operation() {
+        crate::tests::runtime::run(async {
+            let polls = Arc::new(AtomicUsize::new(0));
+            let observed = Arc::clone(&polls);
+            let connection = std::future::poll_fn(move |_| {
+                assert_eq!(
+                    observed.fetch_add(1, Ordering::SeqCst),
+                    0,
+                    "completed connection was polled twice"
+                );
+                Poll::Ready(Ok(()))
+            });
+            let mut connection: super::Driver = Box::pin(connection.fuse());
+            for value in [1, 2] {
+                assert_eq!(
+                    super::driving(&mut connection, std::future::ready(Ok(value)))
+                        .await
+                        .unwrap(),
+                    value
+                );
+            }
+            assert_eq!(polls.load(Ordering::SeqCst), 1);
+        });
+    }
 }

@@ -7,6 +7,7 @@ fn pac_data_sources_preserve_bytes_and_cache_identity() {
         for (uri, bytes) in [
             ("data:,", b"".as_slice()),
             ("data:,hello+world", b"hello+world".as_slice()),
+            ("data:,%EF%BB%BFplain", b"\xef\xbb\xbfplain".as_slice()),
             ("data:,%FF%EF%BB%BF", b"\xff\xef\xbb\xbf".as_slice()),
         ] {
             let url = url::Url::parse(uri).unwrap();
@@ -173,7 +174,9 @@ fn pac_http_redirects_keep_limit_and_cached_targets() {
 fn pac_source_status_failures_keep_the_http_status() {
     crate::tests::runtime::run(async {
         let fetch = super::super::configured_fetch(super::super::Route::default());
-        for status in [200, 201, 204, 299, 301, 304, 404, 407, 500, 599] {
+        for status in [
+            200, 201, 202, 204, 206, 250, 299, 301, 302, 304, 307, 308, 404, 407, 500, 599, 600,
+        ] {
             let (uri, peer) = source_server(vec![format!(
                 "HTTP/1.1 {status} Custom\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
             )])
@@ -280,3 +283,4 @@ async fn https_rejects_invalid_identity(trust: bool) {
 }
 
 mod files;
+mod redirects;

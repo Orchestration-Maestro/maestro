@@ -1,6 +1,7 @@
 //! Ordered establishment ends before any application request can be replayed.
 
 use base64::Engine as _;
+use futures_util::FutureExt;
 use hyper_util::rt::TokioIo;
 
 use super::candidates::{self, Candidate};
@@ -176,7 +177,7 @@ async fn tunnel(
     }
     let request = request.body(reqwest::Body::from(Vec::new()))?;
     let (mut sender, connection) = hyper::client::conn::http1::handshake(socket).await?;
-    let mut connection: Driver = Box::pin(connection.with_upgrades());
+    let mut connection: Driver = Box::pin(connection.with_upgrades().fuse());
     let mut response = driving(&mut connection, sender.send_request(request)).await?;
     if response.status() != hyper::StatusCode::OK {
         return Ok(Established::Refused(

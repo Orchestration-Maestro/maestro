@@ -106,3 +106,38 @@ fn pac_abandoned_pending_results_release_without_settlement() {
         resolver.close().await.unwrap();
     });
 }
+
+#[test]
+fn resolver_keeps_bracketed_ipv6_and_hostless_errors_distinct() {
+    crate::tests::runtime::run(async {
+        let resolver = super::super::Resolver::new(
+            "function FindProxyForURL(url,host){return JSON.stringify([url,host])}".into(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            resolver
+                .resolve("https://[::1]:8443/a%20b?q=1&q=2")
+                .await
+                .unwrap(),
+            "[\"https://[::1]:8443/a%20b?q=1&q=2\",\"[::1]\"]"
+        );
+        assert!(
+            resolver
+                .resolve("data:,x")
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("Could not determine `host`")
+        );
+        assert!(
+            resolver
+                .resolve("")
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("relative URL")
+        );
+        resolver.close().await.unwrap();
+    });
+}

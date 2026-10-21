@@ -184,39 +184,56 @@ fn pac_candidate_walk_has_linear_work() {
 #[test]
 fn pac_selected_failures_never_replay_transmitted_bodies() {
     crate::tests::runtime::run(async {
-        let (sent, received) = std::sync::mpsc::channel();
-        let selected = loopback::start_routed(Arc::new(move |mut socket| {
-            let request = loopback::read_request(&mut socket)?.unwrap();
-            sent.send(request.body).unwrap();
-            Ok(())
-        }))
-        .unwrap();
-        let (sent, fallback_seen) = std::sync::mpsc::channel();
-        let fallback = loopback::serve_routed(move |_| {
-            sent.send(()).unwrap();
-            loopback::Reply {
-                status: 200,
-                content_type: "text/plain",
-                headers: &[],
-                body: b"replayed".to_vec(),
-                close: false,
-            }
-        })
-        .unwrap();
-        let script = format!(
-            "function FindProxyForURL(){{return 'PROXY {};DIRECT'}}",
-            &selected.url[7..]
-        );
-        let result = routed(&script)(request(fallback.url.clone())).await;
-        selected.finish().unwrap();
-        fallback.finish().unwrap();
-        assert!(result.is_err());
-        assert_eq!(
-            received.try_iter().collect::<Vec<_>>(),
-            [b"unique body".to_vec()]
-        );
-        assert_eq!(fallback_seen.try_iter().count(), 0);
+        for reply in [
+            b"".as_slice(),
+            b"invalid HTTP\r\n\r\n",
+            b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\nConnection: close\r\n\r\nshort",
+        ] {
+            failed_exchange(reply).await;
+        }
     });
+}
+
+/// Close after an application request, before headers, at invalid headers or within its body.
+async fn failed_exchange(reply: &'static [u8]) {
+    let (sent, received) = std::sync::mpsc::channel();
+    let selected = loopback::start_routed(Arc::new(move |mut socket| {
+        use std::io::Write;
+        let request = loopback::read_request(&mut socket)?.unwrap();
+        sent.send(request.body).unwrap();
+        socket.write_all(reply)?;
+        Ok(())
+    }))
+    .unwrap();
+    let (sent, fallback_seen) = std::sync::mpsc::channel();
+    let fallback = loopback::serve_routed(move |_| {
+        sent.send(()).unwrap();
+        loopback::Reply {
+            status: 200,
+            content_type: "text/plain",
+            headers: &[],
+            body: b"replayed".to_vec(),
+            close: false,
+        }
+    })
+    .unwrap();
+    let script = format!(
+        "function FindProxyForURL(){{return 'PROXY {};DIRECT'}}",
+        &selected.url[7..]
+    );
+    let result = routed(&script)(request(fallback.url.clone())).await;
+    let result = match result {
+        Ok(response) => collect_body(response.body).await,
+        Err(error) => Err(error),
+    };
+    selected.finish().unwrap();
+    fallback.finish().unwrap();
+    assert!(result.is_err());
+    assert_eq!(
+        received.try_iter().collect::<Vec<_>>(),
+        [b"unique body".to_vec()]
+    );
+    assert_eq!(fallback_seen.try_iter().count(), 0);
 }
 
 #[test]
@@ -262,4 +279,37 @@ async fn cancellation_peer(
     }
     sent.send(()).unwrap();
     assert_eq!(socket.read(&mut [0]).await.unwrap(), 0);
+}
+
+#[test]
+fn pac_dropped_response_body_closes_selected_socket() {
+    crate::tests::runtime::run(async {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let proxy = listener.local_addr().unwrap();
+        let peer = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut bytes = Vec::new();
+            while !bytes.ends_with(b"unique body") {
+                bytes.push(socket.read_u8().await.unwrap());
+            }
+            socket
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\nConnection: close\r\n\r\nx")
+                .await
+                .unwrap();
+            assert_eq!(socket.read(&mut [0]).await.unwrap(), 0);
+        });
+        let fetch = routed(&format!(
+            "function FindProxyForURL(){{return 'PROXY {proxy}'}}"
+        ));
+        let response = fetch(request("http://destination.invalid/".into()))
+            .await
+            .unwrap();
+        let reading = tokio::spawn(collect_body(response.body));
+        tokio::task::yield_now().await;
+        reading.abort();
+        assert!(reading.await.err().unwrap().is_cancelled());
+        drop(fetch);
+        peer.await.unwrap();
+    });
 }

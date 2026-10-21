@@ -85,8 +85,9 @@ fn pac_direct_and_dns_failures_advance_before_application_bytes() {
                 .await
                 .unwrap();
         });
+        let refused = reserved.local_addr().unwrap();
         let script = format!(
-            "function FindProxyForURL() {{ return 'DIRECT; PROXY missing.invalid:80; HTTP {proxy}'; }}"
+            "function FindProxyForURL() {{ return 'DIRECT; PROXY {refused}; PROXY missing.invalid:80; HTTP {proxy}'; }}"
         );
         let response = routed(&script)(request(destination)).await.unwrap();
         assert_eq!(collect_body(response.body).await.unwrap(), b"ok");
@@ -148,6 +149,20 @@ fn pac_results_keep_value_kinds_and_delimiter_rules() {
                 .err()
                 .unwrap();
             assert!(error.to_string().ends_with(expected), "{value}: {error}");
+        }
+        for value in ["undefined", "null", "false", "0", "''"] {
+            let server = crate::tests::loopback::serve_routed(|_| crate::tests::loopback::Reply {
+                status: 200,
+                content_type: "text/plain",
+                headers: &[],
+                body: b"direct".to_vec(),
+                close: false,
+            })
+            .unwrap();
+            let script = format!("function FindProxyForURL(){{return {value}}}");
+            let response = routed(&script)(request(server.url.clone())).await.unwrap();
+            assert_eq!(collect_body(response.body).await.unwrap(), b"direct");
+            server.finish().unwrap();
         }
     });
 }
@@ -442,4 +457,7 @@ fn shared_response(count: usize, request: Vec<u8>, code: &str) -> String {
     }
 }
 
+mod deadlines;
+mod retention;
+mod tls;
 mod transport;

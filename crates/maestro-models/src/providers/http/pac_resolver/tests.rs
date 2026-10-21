@@ -9,6 +9,8 @@ fn pac_domain_suffix_keeps_empty_and_case_boundaries() {
             "[true,false,false,true,false,true,true,true,true,true,true]"
         );
         resolver.close().await.unwrap();
+        assert_eq!(expression("[dnsDomainIs(),...[null,'plain',123,true,{},['a','b']].map(x=>dnsDomainIs(x,'plain'))]").await,
+            "[true,false,true,false,false,false,false]");
     });
 }
 
@@ -30,26 +32,28 @@ async fn expression(text: &str) -> String {
 #[test]
 fn pac_domain_levels_count_only_literal_dots() {
     crate::tests::runtime::run(async {
-        assert_eq!(expression("['','a','.a.','a..b','雪.例',null,undefined,12,true,{},['a.b']].map(x=>dnsDomainLevels(x))").await,
-            "[0,0,2,2,1,0,0,0,0,0,1]");
+        assert_eq!(expression("['','a','.a.','a..b','...','雪.例',null,undefined,12,true,{},['a.b']].map(x=>dnsDomainLevels(x))").await,
+            "[0,0,2,2,3,1,0,0,0,0,0,1]");
     });
 }
 
 #[test]
 fn pac_plain_hosts_distinguish_dots_from_colons() {
     crate::tests::runtime::run(async {
-        assert_eq!(expression("['','host','::1','host.name','127.0.0.1',null,undefined,12,true,{},['a.b']].map(x=>isPlainHostName(x))").await,
-            "[true,true,true,false,false,true,true,true,true,true,false]");
+        assert_eq!(expression("['','host','::1','host.name','host.','127.0.0.1',null,undefined,12,true,{},['a.b']].map(x=>isPlainHostName(x))").await,
+            "[true,true,true,false,false,false,true,true,true,true,true,false]");
     });
 }
 
 #[test]
 fn pac_local_domain_compares_complete_label_prefixes() {
     crate::tests::runtime::run(async {
-        assert_eq!(expression("[['www','www.example.com'],['www.example','www.example.com'],['ww','www.example.com'],['www.example.com.extra','www.example.com'],['',''],['','x']].map(x=>localHostOrDomainIs(...x))").await,
-            "[true,true,false,false,true,false]");
+        assert_eq!(expression("[['www','www.example.com'],['www.example','www.example.com'],['www.example.com','www.example.com'],['www.other','www.example.com'],['ww','www.example.com'],['www.example.com.extra','www.example.com'],['',''],['','x']].map(x=>localHostOrDomainIs(...x))").await,
+            "[true,true,true,false,false,false,true,false]");
         assert_eq!(expression("[null,undefined,12,true,{},[]].map(x=>{try{return localHostOrDomainIs(x,'host')}catch(e){return 'error'}})").await,
             "[\"error\",\"error\",\"error\",\"error\",\"error\",\"error\"]");
+        assert_eq!(expression("[[],...[null,'plain',123,true,{},['a','b']].map(x=>[x,'plain.example'])].map(args=>{try{return localHostOrDomainIs(...args)}catch(e){return 'error'}})").await,
+            "[\"error\",\"error\",true,\"error\",\"error\",\"error\",\"error\"]");
     });
 }
 
@@ -195,6 +199,7 @@ fn pac_local_address_falls_back_to_native_interfaces() {
 }
 
 mod alerts;
+mod calendar;
 
 #[test]
 fn pac_helpers_are_available_to_authored_scripts() {
