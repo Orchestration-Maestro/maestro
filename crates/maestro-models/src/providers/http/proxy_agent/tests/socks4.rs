@@ -275,6 +275,11 @@ async fn check_local(observed: socks::Negotiation, input: &Input) {
 
 #[test]
 fn socks4_refusal_and_truncation_send_no_application_bytes() {
+    if maestro_test_process::run_alone("socks4_refusal_and_truncation_send_no_application_bytes")
+        .unwrap()
+    {
+        return;
+    }
     run(async {
         let selected: Vec<_> = cases()
             .into_iter()
@@ -325,6 +330,9 @@ async fn refusal(case: Case) {
 
 #[test]
 fn socks4_reply_fragmentation_keeps_surplus_bytes() {
+    if maestro_test_process::run_alone("socks4_reply_fragmentation_keeps_surplus_bytes").unwrap() {
+        return;
+    }
     run(async {
         let selected: Vec<_> = cases()
             .into_iter()

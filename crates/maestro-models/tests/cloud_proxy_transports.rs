@@ -245,6 +245,9 @@ fn socks_cancel_closes_inflight_connection() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return crate::runtime::run(cancel_conversation());
     }
+    if maestro_test_process::run_alone("socks_cancel_closes_inflight_connection")? {
+        return Ok(());
+    }
     for (scheme, identity) in [
         ("socks5h", None),
         ("socks4a", Some(String::new())),

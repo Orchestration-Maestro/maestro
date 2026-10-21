@@ -102,25 +102,33 @@ impl PromptDirectories {
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir(&root).unwrap();
-        assert!(root.to_str().unwrap().is_ascii());
         Self(root)
     }
 
     /// Keep twelve columns while accommodating unusually long temporary roots.
     fn rows(&self) -> u16 {
-        u16::try_from((self.0.to_str().unwrap().len() + 6).div_ceil(12).max(8)).unwrap()
+        u16::try_from(
+            (maestro_tui::visible_width(self.0.to_str().unwrap()) + 6)
+                .div_ceil(12)
+                .max(8),
+        )
+        .unwrap()
     }
 
-    /// Create an ASCII directory whose default prompt occupies exactly these cells.
+    /// Extend the native root with ASCII components to reach the requested prompt cells.
     fn directory(&self, prompt_cells: usize) -> std::path::PathBuf {
         let mut path = self.0.clone();
         let target = prompt_cells - 4;
-        while path.to_str().unwrap().len() < target {
-            let remaining = target - path.to_str().unwrap().len();
+        while maestro_tui::visible_width(path.to_str().unwrap()) < target {
+            let remaining = target - maestro_tui::visible_width(path.to_str().unwrap());
             let component = if remaining > 65 { 60 } else { remaining - 1 };
             path.push("x".repeat(component));
         }
         std::fs::create_dir_all(&path).unwrap();
+        assert_eq!(
+            maestro_tui::visible_width(&format!("PS {}>", path.display())),
+            prompt_cells
+        );
         path
     }
 }

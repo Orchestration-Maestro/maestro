@@ -61,6 +61,11 @@ fn observe_stall(
 
 #[test]
 fn socks_handshake_deadline_ends_at_tunnel_establishment() {
+    if maestro_test_process::run_alone("socks_handshake_deadline_ends_at_tunnel_establishment")
+        .unwrap()
+    {
+        return;
+    }
     run(async {
         tokio::time::pause();
         for (scheme, identity) in [
@@ -133,6 +138,11 @@ async fn handshake_boundary(scheme: &str, identity: Option<&str>, tunnel: bool) 
 
 #[test]
 fn socks_connect_and_header_deadlines_keep_separate_scopes() {
+    if maestro_test_process::run_alone("socks_connect_and_header_deadlines_keep_separate_scopes")
+        .unwrap()
+    {
+        return;
+    }
     run(async {
         tokio::time::pause();
         for (connect, headers, phase) in [
