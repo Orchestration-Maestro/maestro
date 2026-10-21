@@ -69,19 +69,11 @@ impl<C: FnMut() -> u128> App<C> {
         pane: maestro_workspace::layout::PaneId,
     ) -> Option<String> {
         let target = self.state.topology.workspaces.get(workspace)?;
-        let terminal = target
-            .tabs
-            .first()
-            .and_then(|tab| tab.terminal_id(tab.root_pane));
-        let cwd = terminal
-            .and_then(|terminal| self.terminal_runtimes.get(terminal))
-            .and_then(crate::pane::runtime::PaneRuntime::cwd)
-            .or_else(|| {
-                terminal
-                    .and_then(|terminal| self.state.terminals.get(terminal))
-                    .map(|terminal| terminal.cwd.clone())
-            })
-            .unwrap_or_else(|| target.identity_cwd.clone());
+        let cwd = crate::workspace::resolved_identity_cwd_from(
+            target,
+            &self.state.terminals,
+            &self.terminal_runtimes,
+        )?;
         let label = target.display_name_for_cwd(&cwd, None);
         Some(notification_context(target, &label, workspace, pane))
     }

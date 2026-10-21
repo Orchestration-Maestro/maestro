@@ -73,6 +73,10 @@ pub enum SidebarWidthSource {
 pub struct DaemonState<C> {
     /// Live expanded sidebar width, independently resizable from its configured default.
     pub sidebar_width: u16,
+    /// Persisted fraction separating sidebar sections.
+    pub sidebar_section_split: f32,
+    /// Persisted collapsed repository group identities.
+    pub collapsed_space_keys: std::collections::HashSet<String>,
     /// Owner of the live sidebar width.
     pub sidebar_width_source: SidebarWidthSource,
     /// Current agent-panel scroll position, reset when row composition reloads.
@@ -178,6 +182,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         Self {
             sidebar_width: config.ui.sidebar_width.clamp(sidebar_min, sidebar_max),
             sidebar_width_source: SidebarWidthSource::ConfigDefault,
+            sidebar_section_split: 0.5,
+            collapsed_space_keys: std::collections::HashSet::new(),
             agent_panel_scroll: 0,
             config_diagnostic: None,
             request_client_config_reload: maestro_protocol::shared::Flag(false),

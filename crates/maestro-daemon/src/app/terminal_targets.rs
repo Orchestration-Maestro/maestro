@@ -203,11 +203,12 @@ impl<C: FnMut() -> u128> App<C> {
         let tab_idx = workspace.find_tab_index_for_pane(pane_id)?;
         let pane = workspace.pane_state(pane_id)?;
         let terminal = self.state.terminals.get(&pane.attached_terminal_id)?;
-        let cwd = self
-            .terminal_runtimes
-            .get(&pane.attached_terminal_id)
-            .and_then(crate::pane::runtime::PaneRuntime::cwd)
-            .or_else(|| Some(terminal.cwd.clone()));
+        let cwd = crate::tab::cwd_for_pane(
+            &workspace.tabs[tab_idx],
+            pane_id,
+            &self.state.terminals,
+            &self.terminal_runtimes,
+        );
         Some(TerminalTargetCandidate {
             terminal_id: terminal.id.to_string(),
             pane_id: self.state.public_pane_id(ws_idx, pane_id)?,

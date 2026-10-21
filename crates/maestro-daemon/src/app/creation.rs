@@ -157,17 +157,11 @@ impl<C: FnMut() -> u128> App<C> {
                 return Some(terminal.cwd.clone());
             }
         }
-        let root = workspace
-            .tabs
-            .first()
-            .and_then(|tab| tab.terminal_id(tab.root_pane));
-        root.and_then(|terminal| self.terminal_runtimes.get(terminal))
-            .and_then(PaneRuntime::cwd)
-            .or_else(|| {
-                root.and_then(|terminal| self.state.terminals.get(terminal))
-                    .map(|terminal| terminal.cwd.clone())
-            })
-            .or_else(|| Some(workspace.identity_cwd.clone()))
+        crate::workspace::resolved_identity_cwd_from(
+            workspace,
+            &self.state.terminals,
+            &self.terminal_runtimes,
+        )
     }
 }
 

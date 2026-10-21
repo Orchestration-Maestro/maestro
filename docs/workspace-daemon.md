@@ -688,3 +688,9 @@ then an agent name or detected label. Agent targets accept a current public pane
 handle only for an agent, or an explicit agent name; historical pane spellings
 remain names. Ambiguous names return all matching viewport identities, current
 directories and agent statuses rather than selecting the first match.
+
+Session capture owns the current workspace order, stable numbers, layout, focus,
+sidebar state and settled pane launch metadata. A first tab's live root directory
+supplies workspace identity. Screen history is captured separately for each
+attached runtime, so topology JSON contains no terminal output. Session provenance
+uses the terminal owner's live hook identity before its restored identity.

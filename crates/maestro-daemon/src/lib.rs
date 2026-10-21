@@ -24,6 +24,12 @@ pub mod instances;
 /// Structured workspace events and bounded file logging.
 pub mod logging;
 
+/// Live pane directory observations over topology-owned tabs.
+pub mod tab;
+
+/// Live process observations over topology-owned workspaces.
+pub mod workspace;
+
 /// Daemon snapshot save and clear operations.
 pub mod persist;
 
