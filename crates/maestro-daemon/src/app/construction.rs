@@ -81,6 +81,7 @@ impl<C: FnMut() -> u128> App<C> {
     /// Constructs one daemon owner from accepted preferences and supplied runtime adapters.
     pub fn new(config: &Config, clock: C, launch: PaneLaunchInputs, event_hub: EventHub) -> Self {
         let mut app = Self {
+            copy_feedback_deadline: None,
             tab_bar_status: super::tab_bar_status::TabBarStatus::default(),
             state: DaemonState::new(config, clock, Arc::clone(&launch.manifests)),
             config: config.clone(),

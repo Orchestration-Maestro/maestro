@@ -26,6 +26,12 @@ impl<C: FnMut() -> u128> App<C> {
             }
             return Vec::new();
         }
+        if let AppEvent::ClipboardWrite { .. } = event {
+            self.show_clipboard_feedback();
+            self.launch.render_dirty.request_generic();
+            self.launch.render_notify.notify_one();
+            return Vec::new();
+        }
         self.publish_pane_process_exit(&event);
         if self.respawn_shell_after_exit(&event) {
             return Vec::new();

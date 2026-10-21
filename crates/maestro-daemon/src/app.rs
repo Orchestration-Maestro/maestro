@@ -12,6 +12,8 @@ use state::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
+    /// Earliest time to remove the current clipboard acknowledgement.
+    pub copy_feedback_deadline: Option<std::time::Instant>,
     /// Status producers retained across internal event passes.
     tab_bar_status: tab_bar_status::TabBarStatus,
     /// Accepted preferences shared by creation and replacement process launches.

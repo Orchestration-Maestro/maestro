@@ -5,6 +5,13 @@ use maestro_protocol::{schema::NotificationShowSound, shared::ToastMaestroPositi
 use maestro_workspace::layout::PaneId;
 use std::time::Instant;
 
+/// Short-lived clipboard acknowledgement, independent of agent notifications.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CopyFeedback {
+    /// Feedback text rendered by the attached view.
+    pub message: String,
+}
+
 /// Agent transition presented by a notification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToastKind {

@@ -617,3 +617,8 @@ scheduler; this owner does not start another background loop.
 
 Local datetime uses the system timezone through the safe calendar library. Linux
 hostname observation reads the kernel hostname without starting a process.
+
+Clipboard write observations retain a separate “copied to clipboard” acknowledgement
+for two seconds. Disabling clipboard feedback clears its content and deadline.
+Feedback never replaces an agent notification; the daemon scheduler expires it
+at its deadline. Host clipboard emission remains with the terminal effect owner.

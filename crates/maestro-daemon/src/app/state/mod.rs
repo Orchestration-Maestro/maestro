@@ -17,7 +17,8 @@ use std::{
 
 mod notification;
 pub use notification::{
-    AgentNotificationDelivery, PendingAgentNotification, ToastKind, ToastNotification, ToastTarget,
+    AgentNotificationDelivery, CopyFeedback, PendingAgentNotification, ToastKind,
+    ToastNotification, ToastTarget,
 };
 mod selection;
 pub use selection::{
@@ -83,6 +84,8 @@ pub struct DaemonState<C> {
     pub sound: crate::settings::sound::SoundConfig,
     /// Last known outer terminal focus, absent before the first report.
     pub outer_terminal_focus: Option<bool>,
+    /// Clipboard acknowledgement kept separately from agent notification content.
+    pub copy_feedback: Option<CopyFeedback>,
     /// Most recent workspace notification.
     pub toast: Option<ToastNotification>,
     /// Available application version reported by the update producer.
@@ -141,6 +144,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             sound: config.ui.sound.clone(),
             outer_terminal_focus: None,
             toast: None,
+            copy_feedback: None,
             update_available: None,
             update_install_command: "maestro update".into(),
             latest_release_notes_available: false,

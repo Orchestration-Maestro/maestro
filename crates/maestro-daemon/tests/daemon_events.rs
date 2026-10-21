@@ -602,3 +602,81 @@ fn failed_shell_respawn_keeps_normal_pane_exit() {
             ))
     );
 }
+
+#[test]
+fn daemon_clipboard_write_event_shows_feedback_toast() {
+    let mut app = context_app(std::env::temp_dir(), false);
+    app.handle_internal_event(AppEvent::ClipboardWrite {
+        content: b"copied".to_vec(),
+    });
+    assert!(app.state.toast.is_none());
+    assert_eq!(
+        app.state.copy_feedback.as_ref().unwrap().message,
+        "copied to clipboard"
+    );
+    assert!(app.copy_feedback_deadline.is_some());
+}
+
+#[test]
+fn daemon_clipboard_feedback_can_be_disabled() {
+    let mut app = context_app(std::env::temp_dir(), false);
+    app.state.toast_config.clipboard.enabled = false;
+    app.handle_internal_event(AppEvent::ClipboardWrite {
+        content: b"copied".to_vec(),
+    });
+    assert!(app.state.copy_feedback.is_none());
+    assert!(app.copy_feedback_deadline.is_none());
+}
+
+#[test]
+fn daemon_clipboard_feedback_does_not_replace_notification_toast() {
+    let mut app = context_app(std::env::temp_dir(), false);
+    app.state.toast = Some(maestro_daemon::app::state::ToastNotification {
+        kind: maestro_daemon::app::state::ToastKind::NeedsAttention,
+        title: "agent needs attention".into(),
+        context: "background · 2".into(),
+        position: None,
+        target: None,
+    });
+    let original = app.state.toast.clone();
+    app.handle_internal_event(AppEvent::ClipboardWrite {
+        content: b"copied".to_vec(),
+    });
+    assert_eq!(app.state.toast, original);
+    assert_eq!(
+        app.state
+            .copy_feedback
+            .as_ref()
+            .map(|feedback| feedback.message.as_str()),
+        Some("copied to clipboard")
+    );
+}
+
+#[test]
+fn clipboard_feedback_expires_at_its_deadline_and_disabling_clears_it() {
+    let mut app = context_app(std::env::temp_dir(), false);
+    app.handle_internal_event(AppEvent::ClipboardWrite {
+        content: b"copied".to_vec(),
+    });
+    let deadline = app.copy_feedback_deadline.unwrap();
+    assert!(
+        !app.expire_copy_feedback(
+            deadline
+                .checked_sub(std::time::Duration::from_nanos(1))
+                .unwrap()
+        )
+    );
+    assert!(app.expire_copy_feedback(deadline));
+    assert!(app.state.copy_feedback.is_none());
+    assert!(app.copy_feedback_deadline.is_none());
+    assert!(!app.expire_copy_feedback(deadline));
+    app.handle_internal_event(AppEvent::ClipboardWrite {
+        content: Vec::new(),
+    });
+    app.state.toast_config.clipboard.enabled = false;
+    app.handle_internal_event(AppEvent::ClipboardWrite {
+        content: Vec::new(),
+    });
+    assert!(app.state.copy_feedback.is_none());
+    assert!(app.copy_feedback_deadline.is_none());
+}
