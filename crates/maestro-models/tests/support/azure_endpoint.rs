@@ -178,12 +178,7 @@ pub async fn run_case(case: &Value) -> TestResult<Value> {
 pub async fn assert_rows(test: &str) -> TestResult {
     let decoded = crate::azure_cases::rows(FIXTURE)?;
     let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
-    for row in selected(
-        test,
-        &rows,
-        |index, _| Ok(index.to_string()),
-        crate::environment_rows::json_environment,
-    )? {
+    for row in selected(test, &rows, crate::environment_rows::json_environment)? {
         compare(
             row,
             run_case(&row["case"]).await?,

@@ -453,34 +453,17 @@ pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) ->
         .collect();
     assert!(!owned.is_empty(), "unowned test");
     let _registry = bundled::registry();
-    let partitions = partitions(&owned, &all)?;
-    let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") else {
-        let full_name = test_path(&owned[0].test, test)?;
-        for (index, env) in partitions.iter().enumerate() {
-            {
-                let output = maestro_test_process::TestProcess::current(&full_name)?
-                    .nocapture()
-                    .env_clear()
-                    .envs(env.iter().map(|(k, v)| (*k, *v)))
-                    .env("MAESTRO_CHILD_CASE", format!("responses:{index}"))
-                    .output()?;
-                assert!(output.status.success(), "{output:?}");
-            };
-        }
+    let full_name = test_path(&owned[0].test, test)?;
+    let mut cases = Vec::new();
+    for row in owned {
+        cases.push((row, environment(&[row], &all)?));
+    }
+    let group =
+        maestro_test_process::run_per_environment(&full_name, cases, |(_, env)| env.clone())?;
+    let Some(group) = group else {
         return Ok(());
     };
-    let index: usize = case
-        .strip_prefix("responses:")
-        .ok_or("child case")?
-        .parse()?;
-    let partition = partitions.get(index).ok_or("environment partition")?;
-    let mut owned_here = Vec::new();
-    for row in owned {
-        if environment(&[row], &all)? == *partition {
-            owned_here.push(row);
-        }
-    }
-    let owned = owned_here;
+    let owned: Vec<_> = group.into_iter().map(|(row, _)| row).collect();
     maestro_models::reset_api_providers();
     crate::runtime::run(async {
         let mut results = histories::Results::new();
@@ -655,21 +638,6 @@ fn environment<'a>(owned: &[&'a Row], all: &'a [Row]) -> TestResult<BTreeMap<&'a
         }
     }
     Ok(env)
-}
-
-/// The distinct exact environments of the selected rows, in first-seen order.
-fn partitions<'a>(
-    owned: &[&'a Row],
-    all: &'a [Row],
-) -> TestResult<Vec<BTreeMap<&'a str, &'a str>>> {
-    let mut partitions = Vec::new();
-    for row in owned {
-        let env = environment(&[row], all)?;
-        if !partitions.contains(&env) {
-            partitions.push(env);
-        }
-    }
-    Ok(partitions)
 }
 
 /// One public operation publishes an actual result to this test's local history set.

@@ -303,12 +303,9 @@ pub fn assert_observed(row: &Value, observed: &Observed) {
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
-    for row in crate::environment_rows::selected(
-        test,
-        &owned,
-        |_, row| Ok(row["id"].as_str().ok_or("row id")?.to_owned()),
-        crate::environment_rows::json_environment,
-    )? {
+    for row in
+        crate::environment_rows::selected(test, &owned, crate::environment_rows::json_environment)?
+    {
         assert_observed(row, &run_case(&row["case"]).await?);
     }
     Ok(())

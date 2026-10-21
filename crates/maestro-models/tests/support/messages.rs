@@ -407,18 +407,13 @@ pub fn rows_of(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 /// with one runs alone in a child holding exactly those variables.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows_of(fixture, test)?;
-    for row in crate::environment_rows::selected(
-        test,
-        &owned,
-        |_, row| Ok(row.id.clone()),
-        |row| {
-            Ok(row.case.env.as_ref().map(|env| {
-                env.iter()
-                    .map(|(name, value)| (name.as_str(), value.as_str()))
-                    .collect()
-            }))
-        },
-    )? {
+    for row in crate::environment_rows::selected(test, &owned, |row| {
+        Ok(row.case.env.as_ref().map(|env| {
+            env.iter()
+                .map(|(name, value)| (name.as_str(), value.as_str()))
+                .collect()
+        }))
+    })? {
         assert_run(row, &run_case(&row.case).await?);
     }
     Ok(())

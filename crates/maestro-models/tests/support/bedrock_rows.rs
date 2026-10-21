@@ -227,29 +227,13 @@ fn rows(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
         .collect())
 }
 
-/// Run every row `test` owns in `fixture` in an isolated child with its row-specific variables.
+/// Run every row `test` owns in `fixture` in a cleared child holding exactly its variables.
 pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} owns no rows");
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        let row = owned
-            .iter()
-            .find(|row| row.id == case)
-            .ok_or("unknown row")?;
-        return crate::runtime::run_paused(check(row));
-    }
-    for row in &owned {
-        let env = environment(row);
-        let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (*k, *v)).collect();
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .envs(env.iter().copied())
-                .env("MAESTRO_CHILD_CASE", &row.id)
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
+    let group = maestro_test_process::run_per_environment(test, &owned, |row| environment(row))?;
+    for row in group.into_iter().flatten() {
+        crate::runtime::run_paused(check(row))?;
     }
     Ok(())
 }

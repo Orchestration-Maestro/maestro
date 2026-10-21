@@ -407,6 +407,16 @@ reaping. Settings helpers select supplied complete nested identities with `named
 and apply shell setup through `shell_setup`, keeping reports separate from exit
 status checks.
 
+Cases that read process variables go through `run_per_environment(test, cases,
+environment)`. It groups the cases by the variables `environment` returns and
+reruns the test once per group, in a child that holds exactly those variables
+after `env_clear()`. In the parent it returns `None` once every child
+passes; in a child it returns that group's cases in their original order, and the
+test checks them. Cases that share variables therefore share one child and one
+fixture parse, so don't spawn a child per case yourself. A case that needs a fresh
+process for other state, such as a process-wide counter or files created per
+case, keeps its own child.
+
 Credential tests acquire `SERIAL` before `PROCESS_CREATION` when both are needed.
 Configure the builder first, hold the creation guard only around checked `spawn`,
 and release it before waiting for completion. Pipe both output streams explicitly;
