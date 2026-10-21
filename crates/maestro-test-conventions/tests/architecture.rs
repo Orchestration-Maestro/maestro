@@ -1550,7 +1550,7 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
     for &(from, targets) in support::policy::POLICY {
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !excluded.contains(&from);
-            let support_edge = to == "maestro-test-process";
+            let support_edge = support::policy::test_support_callers(to).is_some();
             let approved = dev && support::policy::DEVELOPMENT.contains(&(from, to));
             if from == to
                 || support_edge
@@ -2440,4 +2440,212 @@ maestro-lock = { path = "../maestro-lock" }"#,
     );
     workspace.list(&[("maestro-lock", "core"), ("maestro-detection", "core")]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+/// The disposable-directory owner.
+const DIRECTORY: &str = "maestro-test-directory";
+
+/// Independently declared native directory consumers.
+const DIRECTORY_CALLERS: &[&str] = &[
+    "maestro-app",
+    "maestro-credentials",
+    "maestro-extensions",
+    "maestro-models",
+    "maestro-packages",
+    "maestro-resources",
+    "maestro-test-conventions",
+    "maestro-tooling",
+];
+
+#[test]
+fn directory_support_edges_are_native_development_only() {
+    for caller in DIRECTORY_CALLERS {
+        let workspace = Workspace::new();
+        workspace.foundation(&[caller, DIRECTORY]);
+        for (kind, extra, accepted) in [
+            (NATIVE_DEV, "", true),
+            ("dev-dependencies", "", false),
+            ("dependencies", "", false),
+            ("build-dependencies", "", false),
+            ("dependencies", ", optional = true", false),
+            (
+                "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+                "",
+                false,
+            ),
+            (
+                "target.'cfg(target_os = \"none\")'.dev-dependencies",
+                "",
+                false,
+            ),
+        ] {
+            let declaration = format!(
+                "[{kind}]\nsupport = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\"{extra} }}\n"
+            );
+            let result = caller_declares(&workspace, caller, &declaration);
+            let expected = if accepted {
+                Ok(())
+            } else {
+                Err(format!(
+                    "{caller}: maestro-test-directory must be a native, non-optional development dependency"
+                ))
+            };
+            assert_eq!(result, expected, "{caller} {kind}{extra}");
+        }
+    }
+}
+
+#[test]
+fn directory_support_owner_has_no_domain_dependencies() {
+    let workspace = Workspace::new();
+    workspace.foundation(&[DIRECTORY, "maestro-text", "maestro-path", UNIFIER]);
+    for target in ["maestro-text", "maestro-path"] {
+        for table in ["dependencies", "dev-dependencies", "build-dependencies"] {
+            workspace.member(
+                DIRECTORY,
+                DIRECTORY,
+                &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "maestro-test-directory must not depend on workspace crate {target}"
+                ))
+            );
+        }
+    }
+    workspace.member(
+        DIRECTORY,
+        DIRECTORY,
+        &unifier_declaration(&[], NATIVE, "unified", ""),
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn directory_support_permissions_are_exact() {
+    let native = format!(
+        "[{NATIVE_DEV}]\nsupport = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\" }}"
+    );
+    for &(caller, _) in support::policy::POLICY {
+        if DIRECTORY_CALLERS.contains(&caller) || caller == DIRECTORY {
+            continue;
+        }
+        let workspace = Workspace::new();
+        workspace.foundation(&[caller, DIRECTORY]);
+        assert_eq!(
+            caller_declares(&workspace, caller, &native),
+            Err(format!(
+                "maestro-test-directory is reachable only as a native development dependency of its declared callers: {caller} -> maestro-test-directory"
+            ))
+        );
+    }
+    assert!(support::policy::test_support_callers("maestro-test-other").is_none());
+    assert!(support::policy::test_support_callers("maestro-test-terminal").is_none());
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", DIRECTORY]);
+    assert_eq!(caller_declares(&workspace, "maestro-app", &native), Ok(()));
+    workspace.member("maestro-test-other", "maestro-test-other", &native);
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("maestro-test-other")
+    );
+}
+
+#[test]
+fn directory_support_edges_keep_cycle_checks() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-models", DIRECTORY]);
+    workspace.member(
+        DIRECTORY,
+        DIRECTORY,
+        "[dev-dependencies]\nback = { package = \"maestro-models\", path = \"../maestro-models\" }",
+    );
+    let native = format!(
+        "[{NATIVE_DEV}]\nsupport = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\" }}"
+    );
+    let error = caller_declares(&workspace, "maestro-models", &native).unwrap_err();
+    assert!(error.contains("test dependency cycle"), "{error}");
+    for (owner, helper) in [
+        ("maestro-tui", "maestro-test-terminal"),
+        ("maestro-models", "maestro-agent"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[owner, helper]);
+        if helper == "maestro-agent" {
+            workspace.member(
+                helper,
+                helper,
+                "[dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
+            );
+        }
+        let declaration = format!(
+            "[dev-dependencies]\nsupport = {{ package = {helper:?}, path = \"../{helper}\" }}"
+        );
+        let error = caller_declares(&workspace, owner, &declaration).unwrap_err();
+        assert!(error.contains("test dependency cycle"), "{error}");
+    }
+}
+
+#[test]
+fn directory_support_inventory_matches_contract() {
+    assert_eq!(support::class(DIRECTORY), "dedicated");
+    assert!(utility_excluded().contains(&DIRECTORY));
+    assert!(!support::policy::uses_utility(DIRECTORY));
+    assert_eq!(DIRECTORY_CALLERS, support::policy::TEST_DIRECTORY_CALLERS);
+    let documented = std::iter::once("maestro-app")
+        .chain(specification_names(
+            "`cfg(not(target_arch = \"wasm32\"))` from `maestro-app`,\n",
+            "; a caller\ndeclares it only",
+        ))
+        .collect::<Vec<_>>();
+    assert_eq!(documented, DIRECTORY_CALLERS);
+    assert!(documented_foundation_graph_matches_policy(
+        FOUNDATION_SPECIFICATION
+    ));
+    let workspace = Workspace::new();
+    workspace.foundation(&[DIRECTORY]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    workspace.list(&[(DIRECTORY, "core")]);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "invalid scoped layer for {DIRECTORY}: expected dedicated"
+        ))
+    );
+    workspace.list(&[]);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "workspace crate is not listed in workspace-crates.json: {DIRECTORY}"
+        ))
+    );
+}
+
+#[test]
+fn directory_support_preserves_process_and_domain_policies() {
+    for caller in owner_callers() {
+        let workspace = Workspace::new();
+        workspace.foundation(&[caller, OWNER, DIRECTORY]);
+        assert_eq!(
+            caller_declares(
+                &workspace,
+                caller,
+                &format!("[{NATIVE_DEV}]\n{}", owner_entry(""))
+            ),
+            Ok(())
+        );
+    }
+    test_process_policy_keeps_existing_domain_edges();
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-models", "maestro-app", DIRECTORY]);
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-models",
+            "[dependencies]\napp = { package = \"maestro-app\", path = \"../maestro-app\" }"
+        ),
+        Err("forbidden production dependency: maestro-models -> maestro-app".into())
+    );
 }

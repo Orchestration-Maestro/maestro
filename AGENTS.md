@@ -105,7 +105,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never use dedicated
   (non-core) crates as normal or build dependencies; the declared native
-  test-process development edges are permitted.
+  test-process and test-directory development edges are permitted.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer, subject to the
@@ -194,6 +194,7 @@ Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness, checked test-process owner,
+disposable test-directory owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
@@ -215,6 +216,14 @@ only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
 the required toolkit/text set. The scenario harness is not a
 general dev-dependency target.
+
+The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
+creation and cleanup. It has no internal edge except the native unifier, and no
+foundation utility permission. Only app, credentials, extensions, models,
+packages, resources, conventions and tooling may declare it, as a non-optional
+native development dependency when used. `Scratch::new` canonicalizes its chosen
+root; `Scratch::new_in` keeps native supplied-parent spelling. Both graph cycle
+checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
 its domain owner. Native extensions may specialize it with the alias in

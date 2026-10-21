@@ -83,6 +83,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-settings", &["maestro-lock", "maestro-json"]),
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-process", &[]),
+    ("maestro-test-directory", &[]),
     ("maestro-tooling", &[]),
     (
         "maestro-tui",
@@ -299,6 +300,30 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-tui-crossterm",
 ];
 
+/// Native disposable-directory owner.
+pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
+
+/// Declared consumers of disposable native directory ownership.
+pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
+    "maestro-app",
+    "maestro-credentials",
+    "maestro-extensions",
+    "maestro-models",
+    "maestro-packages",
+    "maestro-resources",
+    "maestro-test-conventions",
+    "maestro-tooling",
+];
+
+/// Resolve one named support owner without granting a crate-name pattern.
+pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str]> {
+    match owner {
+        TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
+        TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
+        _ => None,
+    }
+}
+
 /// Generated crate that unifies native dependency features and exposes no API.
 pub(crate) const UNIFIER: &str = "maestro-dependencies";
 
@@ -306,7 +331,7 @@ pub(crate) const UNIFIER: &str = "maestro-dependencies";
 pub(crate) fn uses_utility(name: &str) -> bool {
     name != UTILITY
         && name != UNIFIER
-        && name != TEST_PROCESS
+        && test_support_callers(name).is_none()
         && !matches!(
             name,
             "maestro-watch"
@@ -342,6 +367,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
             "maestro"
                 | "maestro-test-conventions"
                 | "maestro-test-process"
+                | "maestro-test-directory"
                 | "maestro-test-terminal"
                 | "maestro-tooling"
         ) {
