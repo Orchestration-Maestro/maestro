@@ -87,3 +87,14 @@ fn accepted_title_configuration_reaches_construction_and_reload() {
     app.configure_window_title("literal/{workspace}/{tab}/{pane}/{terminal_title}");
     assert_eq!(app.window_title().as_deref(), Some("literal////"));
 }
+
+#[test]
+fn workspace_title_retains_home_directory_label() {
+    let Some(home) = std::env::var_os("HOME") else {
+        return;
+    };
+    let mut app = app();
+    app.state.terminals.values_mut().next().unwrap().cwd = home.into();
+    app.configure_window_title("{workspace}");
+    assert_eq!(app.window_title().as_deref(), Some("~"));
+}

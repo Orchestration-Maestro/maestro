@@ -47,6 +47,7 @@ impl<C: FnMut() -> u128> App<C> {
                 .terminals
                 .get(ws.terminal_id(ws.focused_pane_id()?)?)
         });
+        let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
         let mut title = String::new();
         for part in template.parts() {
             let value = match part {
@@ -58,13 +59,12 @@ impl<C: FnMut() -> u128> App<C> {
                     title.push_str(hostname);
                     continue;
                 }
-                WindowTitlePart::Token(WindowTitleToken::Workspace) => workspace.and_then(|ws| {
-                    let cwd = crate::workspace::resolved_identity_cwd_from(
+                WindowTitlePart::Token(WindowTitleToken::Workspace) => workspace.map(|ws| {
+                    crate::workspace::display_name_from_terminals(
                         ws,
                         &self.state.terminals,
-                        &self.terminal_runtimes,
-                    )?;
-                    Some(ws.display_name_for_cwd(&cwd, None))
+                        home.as_deref(),
+                    )
                 }),
                 WindowTitlePart::Token(WindowTitleToken::Tab) => workspace
                     .and_then(maestro_workspace::workspace::Workspace::active_tab_display_name),

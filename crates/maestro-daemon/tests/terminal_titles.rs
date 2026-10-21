@@ -259,6 +259,9 @@ async fn check_loop_projection(args: &[String]) {
         .unwrap()
         .clone();
     app.state.terminals.get_mut(&id).unwrap().manual_label = Some("native".into());
+    app.state.terminals.get_mut(&id).unwrap().cwd = "/retained-title".into();
+    app.configure_window_title("{workspace}");
+    assert_eq!(app.window_title().as_deref(), Some("retained-title"));
     title(&app, b"\x1b]0;ready\x07");
     let _ = app.launch.render_dirty.request_terminal_title(pane);
     app.launch.render_notify.notify_one();
