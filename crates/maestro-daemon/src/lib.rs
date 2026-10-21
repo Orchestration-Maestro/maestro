@@ -48,6 +48,9 @@ pub mod events;
 /// Shared replay history for daemon API consumers.
 pub mod api;
 
+/// Native hostname and local calendar observations.
+pub mod platform;
+
 /// Workspace key-combination grammar.
 pub mod key_combo;
 

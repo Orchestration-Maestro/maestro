@@ -80,13 +80,16 @@ impl PaneLaunchInputs {
 impl<C: FnMut() -> u128> App<C> {
     /// Constructs one daemon owner from accepted preferences and supplied runtime adapters.
     pub fn new(config: &Config, clock: C, launch: PaneLaunchInputs, event_hub: EventHub) -> Self {
-        Self {
+        let mut app = Self {
+            tab_bar_status: super::tab_bar_status::TabBarStatus::default(),
             state: DaemonState::new(config, clock, Arc::clone(&launch.manifests)),
             config: config.clone(),
             launch,
             terminal_runtimes: TerminalRuntimeRegistry::new(),
             event_hub,
             overlay_panes: HashMap::new(),
-        }
+        };
+        app.configure_tab_bar_status(&config.ui.tab_bar_right, &config.ui.tab_bar_right_separator);
+        app
     }
 }

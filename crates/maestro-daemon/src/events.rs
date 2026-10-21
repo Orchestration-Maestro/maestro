@@ -9,6 +9,15 @@ use tokio::sync::mpsc;
 /// An observation from a background pane task.
 #[derive(Debug)]
 pub enum AppEvent {
+    /// A retained status command completed against one configuration generation.
+    TabBarCommandFinished {
+        /// Configuration generation that launched the command.
+        generation: u64,
+        /// Ordered segment receiving this output.
+        segment_index: usize,
+        /// Last sanitized output line, or the command failure.
+        result: Result<Option<String>, String>,
+    },
     /// The pane's child or imported terminal reader has exited.
     PaneDied {
         /// Pane whose runtime ended.

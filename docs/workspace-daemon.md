@@ -497,15 +497,15 @@ graceful stop.
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and
-workspace actions, plus the inputs observed by daemon selection. It is a
+workspace actions and status commands, plus the inputs observed by daemon selection. It is a
 vocabulary table, not an environment reader or launcher. Callers supply observed
 values to `SelectionEnvironment`; selection never mutates the process environment.
 
 | Name | Consumers |
 |---|---|
 | `MAESTRO_ENV` | Pane, action |
-| `MAESTRO_SOCKET_PATH` | Pane, action, daemon selection |
-| `MAESTRO_BIN_PATH` | Pane, action |
+| `MAESTRO_SOCKET_PATH` | Pane, action, status command, daemon selection |
+| `MAESTRO_BIN_PATH` | Pane, action, status command |
 | `MAESTRO_WORKSPACE_ID` | Pane, action |
 | `MAESTRO_TAB_ID` | Pane, action |
 | `MAESTRO_PANE_ID` | Pane, action |
@@ -596,3 +596,24 @@ Runtime configurations bind those inputs to the real pane ID and current size.
 When a launch-command pane is marked to return to a shell, exit starts that shell
 without removing the pane. A successful replacement clears agent runtime identity
 and restores focus. A failed spawn follows the normal pane-close path.
+
+## Retained tab-bar status
+
+`App::configure_tab_bar_status` retains up to sixteen ordered zoom, hostname,
+local datetime, literal text or command segments. Reload invalidates previous
+command results and synchronously kills running commands and their descendants.
+Commands use the supplied daemon socket and executable, stable active workspace,
+tab and pane IDs, and the focused runtime's current directory when available.
+These optional values use `MAESTRO_ACTIVE_WORKSPACE_ID`, `MAESTRO_ACTIVE_TAB_ID`,
+`MAESTRO_ACTIVE_PANE_ID` and `MAESTRO_ACTIVE_PANE_CWD`.
+
+Commands drain all output while retaining only the final line's first 4,096 bytes.
+Dynamic text is trimmed, stripped of control and Unicode format characters, and
+limited to eighty Unicode scalars. Literal text and separators preserve printable
+spacing. Command deadlines start before the first task poll; a running command
+has no second scheduling deadline. Current-generation completion requests a render
+only when its visible output changes. The daemon loop owns calls to the status
+scheduler; this owner does not start another background loop.
+
+Local datetime uses the system timezone through the safe calendar library. Linux
+hostname observation reads the kernel hostname without starting a process.

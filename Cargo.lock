@@ -3665,6 +3665,7 @@ dependencies = [
 name = "maestro-daemon"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "maestro-dependencies",
  "maestro-detection",
  "maestro-ipc",

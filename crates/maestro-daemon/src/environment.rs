@@ -7,6 +7,8 @@ pub enum Consumer {
     Pane,
     /// Injected into a workspace action or its pane entrypoint.
     Action,
+    /// Injected into a retained status-command launch.
+    StatusCommand,
     /// Observed when selecting a daemon or socket endpoint.
     DaemonSelection,
 }
@@ -19,23 +21,39 @@ pub struct EnvironmentName {
     pub consumers: &'static [Consumer],
 }
 
-use Consumer::{Action, DaemonSelection, Pane};
+use Consumer::{Action, DaemonSelection, Pane, StatusCommand};
 
 /// Source-backed pane/action injection and daemon-selection vocabulary.
 /// Runtime pane markers are injected only on Windows. Optional action context
 /// fields are injected only when that context is available.
 pub const NAMES: &[EnvironmentName] = &[
     EnvironmentName {
+        name: "MAESTRO_ACTIVE_WORKSPACE_ID",
+        consumers: &[StatusCommand],
+    },
+    EnvironmentName {
+        name: "MAESTRO_ACTIVE_TAB_ID",
+        consumers: &[StatusCommand],
+    },
+    EnvironmentName {
+        name: "MAESTRO_ACTIVE_PANE_ID",
+        consumers: &[StatusCommand],
+    },
+    EnvironmentName {
+        name: "MAESTRO_ACTIVE_PANE_CWD",
+        consumers: &[StatusCommand],
+    },
+    EnvironmentName {
         name: "MAESTRO_ENV",
         consumers: &[Pane, Action],
     },
     EnvironmentName {
         name: "MAESTRO_SOCKET_PATH",
-        consumers: &[Pane, Action, DaemonSelection],
+        consumers: &[Pane, Action, DaemonSelection, StatusCommand],
     },
     EnvironmentName {
         name: "MAESTRO_BIN_PATH",
-        consumers: &[Pane, Action],
+        consumers: &[Pane, Action, StatusCommand],
     },
     EnvironmentName {
         name: "MAESTRO_WORKSPACE_ID",

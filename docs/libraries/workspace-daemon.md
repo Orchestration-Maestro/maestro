@@ -76,7 +76,7 @@ and test support retain their own closures.
 
 `maestro-daemon` uses the already-locked `time =0.3.55` with default features and
 `formatting` to parse strftime formats and check that a date/time value can render
-them. It does not start a clock or schedule commands.
+them. Status datetime producers also use these formats.
 
 Its host-resolved external closure reuses these locked packages:
 
@@ -134,3 +134,13 @@ native feature unifier is unchanged. Windows device-stem recognition reuses
 `maestro-daemon` directly uses the existing locked `regex =1.13.1` with default
 features for retained terminal text matching. It adds no new package identity.
 The dependency uses the MIT OR Apache-2.0 licence.
+
+## Local status datetime
+
+`maestro-daemon` uses the already-locked `chrono =0.4.45` with default features
+disabled and `std` and `clock` enabled. It reads local timezone information safely
+inside the asynchronous daemon process, then supplies a calendar value to the
+existing `time` formatter. Chrono uses the MIT OR Apache-2.0 licence. No new
+package identity or version is added. Controlled deadline tests enable Tokio's
+existing `test-util` feature; production command execution reuses the process
+owner's captured-child stream and group termination operations.

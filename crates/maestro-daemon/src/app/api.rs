@@ -14,6 +14,18 @@ use crate::{events::AppEvent, settings::model::ToastDelivery};
 impl<C: FnMut() -> u128> App<C> {
     /// Applies a background observation through the retained state transition owner.
     pub fn handle_internal_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
+        if let AppEvent::TabBarCommandFinished {
+            generation,
+            segment_index,
+            result,
+        } = event
+        {
+            if self.handle_tab_bar_command_finished(generation, segment_index, result) {
+                self.launch.render_dirty.request_generic();
+                self.launch.render_notify.notify_one();
+            }
+            return Vec::new();
+        }
         self.publish_pane_process_exit(&event);
         if self.respawn_shell_after_exit(&event) {
             return Vec::new();

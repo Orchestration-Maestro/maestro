@@ -2,6 +2,7 @@
 
 mod api;
 mod runtime;
+mod tab_bar_status;
 
 /// Shared launch inputs and daemon construction.
 pub mod construction;
@@ -11,6 +12,8 @@ use state::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
+    /// Status producers retained across internal event passes.
+    tab_bar_status: tab_bar_status::TabBarStatus,
     /// Accepted preferences shared by creation and replacement process launches.
     pub config: crate::settings::model::Config,
     /// Caller-supplied process entry and shared runtime adapters.

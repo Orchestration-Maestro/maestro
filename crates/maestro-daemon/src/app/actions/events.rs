@@ -56,19 +56,18 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                 agent_label,
                 seq,
                 ..
-            } => {
-                if crate::agent_resume::is_official_agent_source(&source, &agent_label) {
-                    return Vec::new();
-                }
-                self.update_terminal_state(pane_id, |terminal| {
+            } if !crate::agent_resume::is_official_agent_source(&source, &agent_label) => self
+                .update_terminal_state(pane_id, |terminal| {
                     terminal.release_agent_with_mutation(&source, &agent_label, seq)
-                })
-            }
+                }),
             AppEvent::TerminalCwdReported { pane_id, cwd } => {
                 self.update_terminal_cwd(pane_id, cwd);
                 None
             }
-            AppEvent::TerminalBell { .. } | AppEvent::ClipboardWrite { .. } => None,
+            AppEvent::TerminalBell { .. }
+            | AppEvent::ClipboardWrite { .. }
+            | AppEvent::TabBarCommandFinished { .. }
+            | AppEvent::HookAgentReleased { .. } => None,
         };
         update.into_iter().collect()
     }

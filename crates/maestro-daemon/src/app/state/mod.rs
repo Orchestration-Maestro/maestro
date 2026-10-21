@@ -42,8 +42,21 @@ pub struct PluginPaneRecord {
     pub entrypoint: String,
 }
 
+/// One retained right-side tab-bar segment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TabBarStatusSegment {
+    /// The current tab's zoom indicator, resolved by its renderer.
+    Zoom,
+    /// Sanitized text, absent when the producer has no visible output.
+    Text(Option<String>),
+}
+
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
+    /// Ordered retained right-side status segments.
+    pub tab_bar_right: Vec<TabBarStatusSegment>,
+    /// Printable spacing between status segments.
+    pub tab_bar_right_separator: String,
     /// Sole owner of workspace topology and public identity allocation.
     pub topology: WorkspaceTopology<C>,
     /// Retained terminal metadata keyed by the attached terminal identity.
@@ -111,6 +124,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     #[must_use]
     pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
         Self {
+            tab_bar_right: Vec::new(),
+            tab_bar_right_separator: " ".into(),
             topology: WorkspaceTopology::new(clock),
             terminals: HashMap::new(),
             manifests,
