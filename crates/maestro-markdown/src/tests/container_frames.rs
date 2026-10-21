@@ -270,21 +270,13 @@ fn container_paragraph_lookahead_keeps_later_setext() {
             first_leaf(&control.nodes),
             ("text", "alpha\nbeta".to_owned())
         );
-        let matched = crate::rules::block_paragraph(options)
-            .unwrap()
-            .find(prefix)
-            .unwrap();
-        assert!(matched.end() < prefix.len());
+        let matched = crate::rules::paragraph::Recognizer::new(options).finish(prefix);
+        assert!(matched.paragraph.unwrap() < prefix.len());
+        assert!(matched.heading.is_none());
         assert!(
-            crate::rules::block_lheading(options)
-                .unwrap()
-                .find(prefix)
-                .is_none()
-        );
-        assert!(
-            crate::rules::block_lheading(options)
-                .unwrap()
-                .find(full)
+            crate::rules::paragraph::Recognizer::new(options)
+                .finish(full)
+                .heading
                 .is_some()
         );
     }
@@ -487,6 +479,8 @@ fn observe_reply(document: &crate::Document, lines: usize) {
 /// Charge recognizer operands, line framing, source copies and source projections.
 fn container_work(work: super::Work) -> usize {
     work.block_recognizer_bytes
+        + work.definition_bytes
+        + work.paragraph_bytes
         + work.framing_bytes
         + work.source_bytes
         + work.joined_bytes

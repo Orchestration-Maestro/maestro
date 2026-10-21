@@ -367,14 +367,6 @@ impl ScopeSource {
     }
 }
 impl Source<'_> {
-    /// Borrow a bounded grammar prefix without copying source or projection units.
-    pub(crate) fn prefix(&self, end: usize) -> Source<'_> {
-        Source {
-            text: &self.text[..end],
-            owner: self.owner,
-            offset: self.offset,
-        }
-    }
     /// The whole mapped source text and this window's start in it.
     pub(crate) fn whole(&self) -> (&str, usize) {
         (&self.owner.text, self.offset)

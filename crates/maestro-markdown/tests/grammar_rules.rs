@@ -378,7 +378,10 @@ fn failed_local_runs_preserve_text_and_later_addresses() {
                 panic!("paragraph")
             };
             for node in children {
-                assert_eq!(document.source[node.range.clone()], node.authored);
+                assert_eq!(
+                    document.source[node.range.clone()],
+                    node.authored.to_owned_string()
+                );
             }
         }
     }

@@ -1,5 +1,6 @@
-//! Block and inline grammar recognizers.
+//! Immutable block and inline recognizers.
 pub(crate) mod definition;
+pub(crate) mod paragraph;
 use crate::MarkedOptions;
 use regress::Regex;
 use std::sync::LazyLock;
@@ -36,23 +37,25 @@ fn interruption(code: bool, html: &str) -> String {
     .concat()
 }
 
+/// Reference table header and delimiter row before body admission.
+const TABLE_HEADER: &str = r" *([^\n ].*)\n {0,3}((?:\| *)?:?-+:? *(?:\| *:?-+:? *)*(?:\| *)?)";
+
 /// Reference table header, delimiter row and body rows up to the first interruption, unanchored.
 fn table(html: &str) -> String {
     [
-        r" *([^\n ].*)\n {0,3}((?:\| *)?:?-+:? *(?:\| *:?-+:? *)*(?:\| *)?)(?:\n((?:(?! *\n|",
+        TABLE_HEADER,
+        r"(?:\n((?:(?! *\n|",
         &interruption(true, html),
         r").*(?:\n|$))*)\n*|$)",
     ]
     .concat()
 }
 
-/// Reference paragraph lines up to the first interruption, or table when tables interrupt, unanchored.
-fn paragraph(html: &str, table: Option<&str>) -> String {
-    let table = table.map_or_else(String::new, |rows| ["|", rows].concat());
+/// Reference quoted paragraph lines up to the first interruption, unanchored.
+fn quote_paragraph_source(html: &str) -> String {
     [
         r"([^\n]+(?:\n(?!",
         &interruption(false, html),
-        &table,
         r"| +\n)[^\n]+)*)",
     ]
     .concat()
@@ -67,7 +70,7 @@ fn anchored(source: &str) -> Option<Regex> {
 fn blockquote(html: &str) -> Option<Regex> {
     let source = [
         r"^( {0,3}> ?(",
-        &paragraph(html, None),
+        &quote_paragraph_source(html),
         r"|[^\n]*)(?:\n|$))+",
     ]
     .concat();
@@ -136,17 +139,6 @@ pub(crate) static BLOCK_HTML: LazyLock<Option<Regex>> =
 /// Recognize block table syntax without a mutable match cursor.
 pub(crate) static BLOCK_TABLE: LazyLock<Option<Regex>> =
     LazyLock::new(|| anchored(&table(&html_openers())));
-
-/// Recognize block lheading syntax without a mutable match cursor.
-pub(crate) static BLOCK_LHEADING: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^(?!(?:[*+-]|\d{1,9}[.)]) |(?: {4}| {0,3}\t)| {0,3}(?:`{3,}|~{3,})| {0,3}>| {0,3}#{1,6}| {0,3}<[^\n>]+>\n| {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n)((?:.|\n(?!\s*?\n|(?:[*+-]|\d{1,9}[.)]) |(?: {4}| {0,3}\t)| {0,3}(?:`{3,}|~{3,})| {0,3}>| {0,3}#{1,6}| {0,3}<[^\n>]+>\n| {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n))+?)\n {0,3}(=+|-+) *(?:\n+|$)", "").ok()
-});
-
-/// Recognize block paragraph syntax without a mutable match cursor.
-pub(crate) static BLOCK_PARAGRAPH: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    let html = html_openers();
-    anchored(&paragraph(&html, Some(&table(&html))))
-});
 
 /// Recognize inline escape syntax without a mutable match cursor.
 pub(crate) static INLINE_ESCAPE: LazyLock<Option<Regex>> = LazyLock::new(|| {
@@ -239,39 +231,6 @@ static INLINE_TEXT: LazyLock<Option<Regex>> = LazyLock::new(|| {
         "",
     )
 });
-
-/// Immutable caller-specific block lheading export recognizer.
-static BLOCK_LHEADING_EXPORT: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^(?!(?:[*+-]|\d{1,9}[.)]) |(?: {4}| {0,3}\t)| {0,3}(?:`{3,}|~{3,})| {0,3}>| {0,3}#{1,6}| {0,3}<[^\n>]+>\n)((?:.|\n(?!\s*?\n|(?:[*+-]|\d{1,9}[.)]) |(?: {4}| {0,3}\t)| {0,3}(?:`{3,}|~{3,})| {0,3}>| {0,3}#{1,6}| {0,3}<[^\n>]+>\n))+?)\n {0,3}(=+|-+) *(?:\n+|$)", "").ok()
-});
-
-/// Select block lheading syntax from the immutable caller grammar.
-pub(crate) fn block_lheading(options: MarkedOptions) -> Option<&'static Regex> {
-    if options == (MarkedOptions::Browser { escape_html: true }) {
-        return BLOCK_LHEADING_LITERAL.as_ref();
-    }
-    match options {
-        MarkedOptions::Terminal | MarkedOptions::Browser { .. } => BLOCK_LHEADING.as_ref(),
-        MarkedOptions::Export | MarkedOptions::Documentation => BLOCK_LHEADING_EXPORT.as_ref(),
-    }
-}
-
-/// Immutable caller-specific block paragraph documentation recognizer.
-static BLOCK_PARAGRAPH_DOCUMENTATION: LazyLock<Option<Regex>> =
-    LazyLock::new(|| anchored(&paragraph(&html_openers(), None)));
-
-/// Select block paragraph syntax from the immutable caller grammar.
-pub(crate) fn block_paragraph(options: MarkedOptions) -> Option<&'static Regex> {
-    if options == (MarkedOptions::Browser { escape_html: true }) {
-        return BLOCK_PARAGRAPH_LITERAL.as_ref();
-    }
-    match options {
-        MarkedOptions::Terminal | MarkedOptions::Browser { .. } | MarkedOptions::Export => {
-            BLOCK_PARAGRAPH.as_ref()
-        }
-        MarkedOptions::Documentation => BLOCK_PARAGRAPH_DOCUMENTATION.as_ref(),
-    }
-}
 
 /// Immutable caller-specific inline link terminal recognizer.
 static INLINE_LINK_TERMINAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
@@ -473,19 +432,6 @@ pub(crate) fn inline_del(options: MarkedOptions) -> Option<&'static Regex> {
         MarkedOptions::Documentation => None,
     }
 }
-
-/// Block syntax over caller-displayed tag spans, with directive boundaries retained.
-static BLOCK_PARAGRAPH_LITERAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    anchored(&paragraph(
-        LITERAL_HTML_OPENERS,
-        Some(&table(&html_openers())),
-    ))
-});
-
-/// Block syntax over caller-displayed tag spans, with directive boundaries retained.
-static BLOCK_LHEADING_LITERAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^(?!(?:[*+-]|\d{1,9}[.)]) |(?: {4}| {0,3}\t)| {0,3}(?:`{3,}|~{3,})| {0,3}>| {0,3}#{1,6}| {0,3}<(?![A-Za-z0-9_]|\/[A-Za-z0-9_]+>|\s)[^\n>]+>\n| {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n)((?:.|\n(?!\s*?\n|(?:[*+-]|\d{1,9}[.)]) |(?: {4}| {0,3}\t)| {0,3}(?:`{3,}|~{3,})| {0,3}>| {0,3}#{1,6}| {0,3}<(?![A-Za-z0-9_]|\/[A-Za-z0-9_]+>|\s)[^\n>]+>\n| {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n))+?)\n {0,3}(=+|-+) *(?:\n+|$)", "").ok()
-});
 
 /// Block syntax over caller-displayed tag spans, with directive boundaries retained.
 static BLOCK_BLOCKQUOTE_LITERAL: LazyLock<Option<Regex>> =

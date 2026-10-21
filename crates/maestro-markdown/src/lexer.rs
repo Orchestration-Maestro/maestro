@@ -167,36 +167,28 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Capture setext headings before selecting top-level paragraphs or item text.
     fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        let heading = rules::block_lheading(self.options).and_then(|rule| rule.find(source.text));
-        let limit = if heading.is_none() {
+        let recognized = rules::paragraph::Recognizer::new(self.options).finish(source.text);
+        let limit = if recognized.heading.is_none() {
             self.extension_start(source)
         } else {
             source.text.len()
         };
-        let window = source.prefix(limit);
-        let (end, content, kind) = if let Some(matched) = heading {
-            let level = if capture(source.text, &matched, 2).starts_with('=') {
-                1
-            } else {
-                2
-            };
-            let label = capture(source.text, &matched, 1).to_owned();
+        let (end, content, kind) = if let Some(heading) = recognized.heading {
+            let label = source.text[heading.content.clone()].to_owned();
             (
-                matched.end(),
-                matched.group(1)?,
-                Kind::Heading(level, Vec::new(), label),
+                heading.consumed,
+                heading.content,
+                Kind::Heading(heading.level, Vec::new(), label),
             )
         } else if self.top {
-            #[cfg(test)]
-            crate::tests::block_operand(window.text);
-            let matched = rules::block_paragraph(self.options)?.find(window.text)?;
-            (
-                matched.end(),
-                matched.group(1)?,
-                Kind::Paragraph(Vec::new()),
-            )
+            let end = if limit == source.text.len() {
+                recognized.paragraph?
+            } else {
+                rules::paragraph::Recognizer::new(self.options)
+                    .finish(&source.text[..limit])
+                    .paragraph?
+            };
+            (end, 0..end, Kind::Paragraph(Vec::new()))
         } else {
             let end = source.text.find('\n').unwrap_or(source.text.len());
             (end, 0..end, Kind::Inline(Vec::new()))
