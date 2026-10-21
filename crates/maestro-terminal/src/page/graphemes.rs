@@ -114,7 +114,7 @@ impl Page {
         });
         #[cfg(test)]
         {
-            self.row_shift_work += visits;
+            crate::tests::WORK.with_borrow_mut(|work| work.row_shift += visits);
         }
         if !has_grapheme {
             self.rows[usize::from(y)].set_grapheme(false);

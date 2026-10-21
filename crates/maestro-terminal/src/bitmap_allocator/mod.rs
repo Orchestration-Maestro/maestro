@@ -15,12 +15,6 @@ pub(crate) struct BitmapAllocator<const CHUNK: usize> {
 pub(crate) struct Layout {
     /// Combined bitmap and addressable chunk bytes.
     pub(crate) total_size: u64,
-    /// Number of 64-bit bitmap words.
-    pub(crate) bitmap_count: u64,
-    /// Offset of the bitmap region.
-    pub(crate) bitmap_start: u64,
-    /// Offset of the chunk region.
-    pub(crate) chunks_start: u64,
 }
 
 impl<const CHUNK: usize> BitmapAllocator<CHUNK> {
@@ -67,9 +61,6 @@ impl<const CHUNK: usize> BitmapAllocator<CHUNK> {
         let chunks_start = bitmap_count * 8;
         Layout {
             total_size: chunks_start + bitmap_count * 64 * CHUNK as u64,
-            bitmap_count,
-            bitmap_start: 0,
-            chunks_start,
         }
     }
 

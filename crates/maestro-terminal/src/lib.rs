@@ -80,3 +80,6 @@ pub mod formatter;
 
 /// Retained incremental viewport rendering.
 pub mod render;
+
+#[cfg(test)]
+mod tests;

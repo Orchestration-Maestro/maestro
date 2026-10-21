@@ -12,8 +12,9 @@ impl Handler for Discard {
 /// Count actual adapter visits without counting produced actions.
 fn visits(bytes: &[u8]) -> usize {
     let mut stream = Stream::new(false);
+    crate::tests::WORK.with_borrow_mut(|work| work.input_visits = 0);
     stream.next_slice(bytes, &mut Discard);
-    stream.input_visits
+    crate::tests::WORK.with_borrow(|work| work.input_visits)
 }
 
 /// Accept bounded per-byte work whose doubling remains linear.

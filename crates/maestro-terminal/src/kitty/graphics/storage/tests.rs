@@ -40,13 +40,13 @@ fn nonspatial_deletion_never_reads_placement_pages() {
             let screen = terminal.screens.active_mut();
             let image = screen.kitty_images.image_by_id(1).unwrap();
             let placement = screen.kitty_images.placements.values().next().unwrap();
-            screen.pages.page_visits.set(0);
+            crate::tests::WORK.with_borrow_mut(|work| work.page_visits = 0);
             assert!(placement.rect(image, &screen.pages, (10, 20)).is_some());
             assert!(
-                screen.pages.page_visits.get() > 0,
+                crate::tests::WORK.with_borrow(|work| work.page_visits) > 0,
                 "spatial control must read pages"
             );
-            screen.pages.page_visits.set(0);
+            crate::tests::WORK.with_borrow_mut(|work| work.page_visits = 0);
             screen.kitty_images.delete(
                 &mut screen.pages,
                 (10, 20),
@@ -54,7 +54,7 @@ fn nonspatial_deletion_never_reads_placement_pages() {
                 selector,
             );
             assert_eq!(
-                screen.pages.page_visits.get(),
+                crate::tests::WORK.with_borrow(|work| work.page_visits),
                 0,
                 "{selector:?}, {lines} retained rows"
             );

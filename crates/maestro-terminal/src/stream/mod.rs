@@ -22,9 +22,6 @@ pub trait Handler {
 
 /// Retained byte decoder for successive terminal writes.
 pub struct Stream {
-    /// Input visits made by the adapter's escape search and parser delivery.
-    #[cfg(test)]
-    input_visits: usize,
     /// Incomplete scalar carried between writes.
     utf8: Utf8Stream,
     /// Existing control-sequence parser with its OSC allocation policy.
@@ -38,8 +35,6 @@ impl Stream {
         let mut parser = crate::Parser::init();
         parser.osc_parser.alloc = allocating;
         Self {
-            #[cfg(test)]
-            input_visits: 0,
             utf8: Utf8Stream::default(),
             parser,
         }
@@ -57,7 +52,7 @@ impl Stream {
             };
             #[cfg(test)]
             {
-                self.input_visits += 1;
+                crate::tests::WORK.with_borrow_mut(|work| work.input_visits += 1);
             }
             for action in self.parser.next(byte).into_iter().flatten() {
                 Self::dispatch(action, handler);
@@ -100,7 +95,7 @@ impl Stream {
             .position(|&byte| {
                 #[cfg(test)]
                 {
-                    self.input_visits += 1;
+                    crate::tests::WORK.with_borrow_mut(|work| work.input_visits += 1);
                 }
                 byte == 0x1b
             })

@@ -45,7 +45,8 @@ impl Terminal {
             page.get_cells_mut(pin.y).fill(cell);
             #[cfg(test)]
             {
-                page.row_shift_work += usize::from(page.size.cols);
+                crate::tests::WORK
+                    .with_borrow_mut(|work| work.row_shift += usize::from(page.size.cols));
             }
             if screen.cursor.style_id != 0 {
                 page.styles

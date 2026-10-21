@@ -18,11 +18,11 @@ fn clean_page_visits(lines: usize) -> usize {
     for mut row in state.rows() {
         row.clear_dirty();
     }
-    terminal.screens.active().pages.page_visits.set(0);
+    crate::tests::WORK.with_borrow_mut(|work| work.page_visits = 0);
     state.update(&mut terminal);
     assert_eq!(state.dirty, Dirty::Clean);
     assert!(state.cursor.viewport.is_none());
-    terminal.screens.active().pages.page_visits.get()
+    crate::tests::WORK.with_borrow(|work| work.page_visits)
 }
 
 #[test]

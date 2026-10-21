@@ -22,9 +22,6 @@ pub(super) struct Arena<T> {
     slots: Vec<Slot<T>>,
     /// Vacant indices available for reuse.
     free: Vec<usize>,
-    /// Counts actual indexed reads, including reads made by traversal adapters.
-    #[cfg(test)]
-    pub(super) queries: std::cell::Cell<usize>,
 }
 
 impl<T> Arena<T> {
@@ -34,8 +31,6 @@ impl<T> Arena<T> {
             owner: NEXT_OWNER.fetch_add(1, Ordering::Relaxed),
             slots: Vec::new(),
             free: Vec::new(),
-            #[cfg(test)]
-            queries: std::cell::Cell::new(0),
         }
     }
 
@@ -61,7 +56,8 @@ impl<T> Arena<T> {
     /// Borrow a current value, rejecting foreign or obsolete keys.
     pub(super) fn get(&self, key: NodeId) -> Option<&T> {
         #[cfg(test)]
-        self.queries.set(self.queries.get() + 1);
+        crate::tests::WORK
+            .with_borrow_mut(|work| *work.queries.entry(self.owner).or_default() += 1);
         if key.arena != self.owner {
             return None;
         }

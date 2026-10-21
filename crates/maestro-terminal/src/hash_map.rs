@@ -5,10 +5,6 @@
 pub(crate) struct Layout {
     /// Aligned metadata, keys and values byte size.
     pub(crate) total_size: u64,
-    /// Keys offset from the metadata start, after the 16-byte header.
-    pub(crate) keys_start: u64,
-    /// Values offset from the metadata start.
-    pub(crate) vals_start: u64,
     /// Raw power-of-two slot count before applying load percentage.
     pub(crate) capacity: u64,
 }
@@ -32,8 +28,6 @@ pub(crate) fn layout(
     Layout {
         total_size: (vals_start + capacity * value_bytes).div_ceil(value_align.max(key_bytes))
             * value_align.max(key_bytes),
-        keys_start: keys_start - 16,
-        vals_start: vals_start - 16,
         capacity,
     }
 }

@@ -71,9 +71,6 @@ pub(crate) struct Tokenizer<'a> {
     pub(crate) atom_indices: Option<&'a [usize]>,
     /// Link-label and raw-anchor context shared by recursive inline spans.
     pub(crate) context: LinkContext,
-    /// Local interpretation has no document scope collector.
-    #[cfg(test)]
-    local: bool,
 }
 impl<'a> Tokenizer<'a> {
     /// Bind one source view to its document state.
@@ -84,8 +81,6 @@ impl<'a> Tokenizer<'a> {
         scopes: Option<&'a mut HashMap<ScopeKey, ScopeSource>>,
         in_link: bool,
     ) -> Self {
-        #[cfg(test)]
-        let local = scopes.is_none();
         Self {
             source,
             options,
@@ -94,8 +89,6 @@ impl<'a> Tokenizer<'a> {
             context: LinkContext::new(in_link),
             retained_atoms: None,
             atom_indices: None,
-            #[cfg(test)]
-            local,
         }
     }
 

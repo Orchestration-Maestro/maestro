@@ -293,12 +293,13 @@ fn prompt_selection_work(rows: u16) -> (usize, usize) {
         .unwrap()
         .1
         .set_content(crate::page::cell::Content::Codepoint('$'));
-    list.nodes.queries.set(0);
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let (selected, count) = list.last_nonempty_active_row().unwrap();
     assert_eq!((selected.node, selected.y), (first.node, first.y));
     assert_eq!(count, 1);
-    let monotone = list.nodes.queries.get();
-    list.nodes.queries.set(0);
+    let monotone = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     for y in (0..rows).rev() {
         let pin = list
             .pin(Point::Active(Coordinate {
@@ -316,5 +317,9 @@ fn prompt_selection_work(rows: u16) -> (usize, usize) {
             break;
         }
     }
-    (monotone, list.nodes.queries.get())
+    (
+        monotone,
+        crate::tests::WORK
+            .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0)),
+    )
 }

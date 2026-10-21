@@ -25,7 +25,7 @@ impl Tokenizer<'_> {
         mut admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Vec<Node> {
         #[cfg(test)]
-        if self.local {
+        if self.scopes.is_none() {
             crate::tests::WORK.with_borrow_mut(|work| work.local_bytes += extent.len());
         }
         let mut output = Vec::new();

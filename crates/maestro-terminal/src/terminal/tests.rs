@@ -52,7 +52,7 @@ fn character_delete_work(cols: u16, rescan: bool) -> usize {
         .pages
         .page_mut(pin.node)
         .unwrap();
-    page.row_shift_work = 0;
+    crate::tests::WORK.with_borrow_mut(|work| work.row_shift = 0);
     if rescan {
         for _ in 1..cols {
             page.update_row_grapheme_flag(pin.y);
@@ -66,7 +66,7 @@ fn character_delete_work(cols: u16, rescan: bool) -> usize {
             .all(|cell| cell.codepoint() == 'x')
     );
     assert!(page.get_cells(pin.y)[usize::from(cols - 1)].is_zero());
-    page.row_shift_work
+    crate::tests::WORK.with_borrow(|work| work.row_shift)
 }
 
 #[test]
@@ -91,13 +91,7 @@ fn full_row_shift_work(cols: u16, insert: bool) -> usize {
         .active()
         .pages
         .get_top_left(crate::point::Tag::Active);
-    terminal
-        .screens
-        .active_mut()
-        .pages
-        .page_mut(pin.node)
-        .unwrap()
-        .row_shift_work = 0;
+    crate::tests::WORK.with_borrow_mut(|work| work.row_shift = 0);
     if insert {
         terminal.insert_lines(1).unwrap();
     } else {
@@ -115,7 +109,7 @@ fn full_row_shift_work(cols: u16, insert: bool) -> usize {
             expected
         );
     }
-    page.row_shift_work
+    crate::tests::WORK.with_borrow(|work| work.row_shift)
 }
 
 #[test]
@@ -197,12 +191,7 @@ fn alignment_work(cols: u16) -> (usize, usize) {
         .tracked_pin(t.screens.active().cursor.page_pin)
         .unwrap()
         .node;
-    t.screens
-        .active_mut()
-        .pages
-        .page_mut(node)
-        .unwrap()
-        .row_shift_work = 0;
+    crate::tests::WORK.with_borrow_mut(|work| work.row_shift = 0);
     t.decaln().unwrap();
     let page = t.screens.active().pages.page(node).unwrap();
     let mut repeated = 0;
@@ -214,7 +203,10 @@ fn alignment_work(cols: u16) -> (usize, usize) {
             }
         }
     }
-    (page.row_shift_work, repeated)
+    (
+        crate::tests::WORK.with_borrow(|work| work.row_shift),
+        repeated,
+    )
 }
 
 #[test]

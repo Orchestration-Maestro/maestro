@@ -729,7 +729,7 @@ fn sgr_reuses_the_parameter_parser() {
         ],
     );
     expect(b"\x1b[1:2H", &[]);
-    let params = vec!["1"; 25].join(";");
+    let params = ["1"; 25].join(";");
     expect(format!("\x1b[{params}m").as_bytes(), &[]);
     expect(
         b"\x1b[999999m",

@@ -56,9 +56,6 @@ struct Node {
 
 /// Page ownership, active dimensions and retained positions for one screen.
 pub struct PageList {
-    /// Page borrows observed by owner-private traversal tests.
-    #[cfg(test)]
-    pub(crate) page_visits: std::cell::Cell<usize>,
     /// Resident pages indexed by lifetime.
     nodes: Arena<Node>,
     /// Oldest retained page.
@@ -127,8 +124,6 @@ impl PageList {
             garbage: false,
         }));
         Self {
-            #[cfg(test)]
-            page_visits: std::cell::Cell::new(0),
             nodes,
             first,
             last,
@@ -235,14 +230,14 @@ impl PageList {
     #[must_use]
     pub fn page(&self, node: NodeId) -> Option<&Page> {
         #[cfg(test)]
-        self.page_visits.set(self.page_visits.get() + 1);
+        crate::tests::WORK.with_borrow_mut(|work| work.page_visits += 1);
         Some(&self.nodes.get(node)?.page)
     }
 
     /// Mutably borrow the actual page for a current key.
     pub fn page_mut(&mut self, node: NodeId) -> Option<&mut Page> {
         #[cfg(test)]
-        self.page_visits.set(self.page_visits.get() + 1);
+        crate::tests::WORK.with_borrow_mut(|work| work.page_visits += 1);
         Some(&mut self.nodes.get_mut(node)?.page)
     }
 
