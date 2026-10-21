@@ -286,39 +286,10 @@ impl ScopeSource {
         Arc::make_mut(&mut self.units).push((native, begin..self.text.len()));
     }
 
-    /// Append a framed span without losing its transformations.
-    pub(crate) fn append(&mut self, other: Self) {
-        if self.text.is_empty() && self.units.is_empty() {
-            *self = other;
-            return;
-        }
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.joined_bytes += other.text.len());
-        self.normalize();
-        let base = self.text.len();
-        self.text.push_str(&other.text);
-        Arc::make_mut(&mut self.units).extend(other.unit_slice().iter().map(|unit| {
-            let (native, local) = other.unit(unit);
-            (native, base + local.start..base + local.end)
-        }));
-    }
-
     /// Discard a semantic suffix while retaining the existing prefix allocation.
     pub(crate) fn truncate(&mut self, end: usize) {
         let _ = &self.text[..end];
         self.text.range.end = self.text.range.start + end;
-    }
-
-    /// Add a semantic separator without consuming another authored byte.
-    pub(crate) fn newline(&mut self) {
-        self.normalize();
-        let boundary = self
-            .unit_slice()
-            .last()
-            .map_or(0, |unit| self.unit(unit).0.end);
-        let start = self.text.len();
-        self.text.push_str("\n");
-        Arc::make_mut(&mut self.units).push((boundary..boundary, start..start + 1));
     }
 
     /// Apply table-pipe spelling once while preserving each atomic source unit.

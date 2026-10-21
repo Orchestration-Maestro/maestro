@@ -74,7 +74,7 @@ impl<'a, E> Lexer<'a, E> {
     pub(crate) fn blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
         let mut output = BlockTokens::default();
         self.block_tokens(source, &mut output, false);
-        output.nodes
+        self.finish_blocks(output)
     }
 
     /// Begin item grammar; completion intentionally returns to top level.
@@ -157,7 +157,11 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Capture setext headings before selecting top-level paragraphs or item text.
-    fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+    fn paragraph(
+        &mut self,
+        source: &Source<'_>,
+        output: &mut BlockTokens,
+    ) -> Option<(usize, Node)> {
         let recognized = rules::paragraph::Recognizer::new(self.options).finish(source.text);
         let limit = if recognized.heading.is_none() {
             self.extension_start(source)
@@ -185,15 +189,15 @@ impl<'a, E> Lexer<'a, E> {
             (end, 0..end, Kind::Inline(Vec::new()))
         };
         let node = source.node(0..end, kind);
-        self.scopes.insert(
+        output.scopes.insert(
             (node.range.start, node.range.end, false),
-            source.select(std::iter::once(content)),
+            source.select(std::iter::once(content)).into(),
         );
         Some((end, node))
     }
 
     /// Select a table only when header and delimiter column counts agree.
-    fn table(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+    fn table(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<(usize, Node)> {
         if self.options == MarkedOptions::Documentation {
             return None;
         }
@@ -216,7 +220,7 @@ impl<'a, E> Lexer<'a, E> {
             return None;
         }
         let count = headers.len();
-        let header = self.cells(source, matched.header, count);
+        let header = Self::cells(source, matched.header, count, output);
         let rows = matched
             .body
             .into_iter()
@@ -229,7 +233,7 @@ impl<'a, E> Lexer<'a, E> {
                     .trim_matches(is_whitespace_scalar)
                     .is_empty()
             })
-            .map(|range| self.cells(source, range, count))
+            .map(|range| Self::cells(source, range, count, output))
             .collect();
         let table = Table {
             header,
@@ -244,7 +248,12 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Retain padded authored cell scopes but interpret their trimmed content.
-    fn cells(&mut self, source: &Source<'_>, row: Range<usize>, count: usize) -> Vec<Cell> {
+    fn cells(
+        source: &Source<'_>,
+        row: Range<usize>,
+        count: usize,
+        output: &mut BlockTokens,
+    ) -> Vec<Cell> {
         let ranges = helpers::cell_ranges(source.text[row.clone()].trim_end_matches('\n'));
         (0..count)
             .map(|index| {
@@ -253,7 +262,9 @@ impl<'a, E> Lexer<'a, E> {
                 });
                 let input = source.select(std::iter::once(range.clone())).pipes();
                 let range = source.extent(range);
-                self.scopes.insert((range.start, range.end, false), input);
+                output
+                    .scopes
+                    .insert((range.start, range.end, false), input.into());
                 Cell {
                     children: Vec::new(),
                     range,

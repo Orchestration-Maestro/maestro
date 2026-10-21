@@ -1,10 +1,13 @@
 //! Retained output and ordered recursive block admission.
 use super::Lexer;
 use crate::{
-    Kind, MarkedOptions, Node, rules,
+    Kind, MarkedOptions, Node,
+    inline::ScopeKey,
+    rules,
     source::{ScopeSource, Segmented, Source},
     tokenizer,
 };
+use std::collections::HashMap;
 
 /// Effective grammar tail, including an invisible retained definition.
 enum Tail {
@@ -19,6 +22,8 @@ enum Tail {
 pub(super) struct BlockTokens {
     /// Visible semantic nodes.
     pub(super) nodes: Vec<Node>,
+    /// Inline operands retained as shared source until this invocation publishes.
+    pub(super) scopes: HashMap<ScopeKey, Segmented>,
     /// Last grammar token, independent of visible output.
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
@@ -65,6 +70,17 @@ impl BlockTokens {
     }
 }
 impl<E> Lexer<'_, E> {
+    /// Publish completed block output and materialize each inline operand once.
+    pub(super) fn finish_blocks(&mut self, output: BlockTokens) -> Vec<Node> {
+        self.scopes.extend(
+            output
+                .scopes
+                .into_iter()
+                .map(|(key, source)| (key, source.materialize())),
+        );
+        output.nodes
+    }
+
     /// Append blocks while preserving the invocation's paragraph clipping state.
     pub(super) fn block_tokens(
         &mut self,
@@ -80,7 +96,7 @@ impl<E> Lexer<'_, E> {
                 continue;
             }
             self.clipped = false;
-            let Some((consumed, node)) = self.paragraph(&rest) else {
+            let Some((consumed, node)) = self.paragraph(&rest, output) else {
                 break;
             };
             let inline = matches!(node.kind, Kind::Inline(_));
@@ -91,7 +107,7 @@ impl<E> Lexer<'_, E> {
                         && matches!(last.kind, Kind::Paragraph(_))
             });
             if merge {
-                self.merge_node(output, &node);
+                Self::merge_node(output, &node);
             } else {
                 output.push(&rest, consumed, node);
             }
@@ -108,17 +124,16 @@ impl<E> Lexer<'_, E> {
             output.list = None;
             return Some(consumed);
         }
-        if let Some(consumed) = self
-            .space_block(source, output)
-            .or_else(|| self.code_block(source, output))
+        if let Some(consumed) =
+            Self::space_block(source, output).or_else(|| Self::code_block(source, output))
         {
             return Some(consumed);
         }
         if let Some(block) = tokenizer::block::leaf(source) {
             if let Some(inline) = block.inline {
-                self.scopes.insert(
+                output.scopes.insert(
                     (block.node.range.start, block.node.range.end, false),
-                    inline,
+                    inline.into(),
                 );
             }
             output.push(source, block.consumed, block.node);
@@ -134,7 +149,7 @@ impl<E> Lexer<'_, E> {
             return Some(block.consumed);
         }
         self.definition_block(source, output).or_else(|| {
-            self.table(source).map(|(consumed, node)| {
+            self.table(source, output).map(|(consumed, node)| {
                 output.push(source, consumed, node);
                 consumed
             })
@@ -142,7 +157,7 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Consume spacing while keeping the visible tail's raw and scope in sync.
-    fn space_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
+    fn space_block(source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
         #[cfg(test)]
         crate::tests::block_operand(source.text);
         let gap = rules::BLOCK_NEWLINE
@@ -154,13 +169,14 @@ impl<E> Lexer<'_, E> {
             return Some(gap.end());
         }
         if let Some(last) = output.nodes.last_mut() {
-            let scope = self
+            let scope = output
                 .scopes
                 .remove(&(last.range.start, last.range.end, false));
             last.authored.append(&source.authored(0..1));
             last.range.end = source.extent(0..1).end;
             if let Some(scope) = scope {
-                self.scopes
+                output
+                    .scopes
                     .insert((last.range.start, last.range.end, false), scope);
             }
         }
@@ -171,7 +187,7 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Merge ordinary code into eligible text using the one dedented operand.
-    fn code_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
+    fn code_block(source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
         let block = tokenizer::block::code(source)?;
         let consumed = if output
             .last()
@@ -181,7 +197,7 @@ impl<E> Lexer<'_, E> {
             let body = block.inline?;
             let end_text = body.local(&source.extent(0..end))?.end;
             let end_text = body.text[..end_text].trim_end_matches('\n').len();
-            self.merge_source(
+            Self::merge_source(
                 output,
                 source,
                 end,
@@ -205,7 +221,7 @@ impl<E> Lexer<'_, E> {
             .last()
             .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
         {
-            self.merge_source(
+            Self::merge_source(
                 output,
                 source,
                 matched.consumed,
@@ -221,37 +237,36 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Join inline operands without reconstructing them from bounding node ranges.
-    fn merge_node(&mut self, output: &mut BlockTokens, node: &Node) {
-        if let Some(body) = self
+    fn merge_node(output: &mut BlockTokens, node: &Node) {
+        if let Some(body) = output
             .scopes
             .remove(&(node.range.start, node.range.end, false))
         {
-            self.merge(output, node, body);
+            Self::merge(output, node, &body);
         }
     }
 
     /// Join a dedented or literal operand while preserving its original provenance.
     fn merge_source(
-        &mut self,
         output: &mut BlockTokens,
         source: &Source<'_>,
         consumed: usize,
         body: ScopeSource,
     ) {
         let node = source.node(0..consumed, Kind::Inline(Vec::new()));
-        self.merge(output, &node, body);
+        Self::merge(output, &node, &body.into());
     }
 
     /// Extend the semantic tail and transfer its inline scope to the new extent.
-    fn merge(&mut self, output: &mut BlockTokens, node: &Node, body: ScopeSource) {
+    fn merge(output: &mut BlockTokens, node: &Node, body: &Segmented) {
         let Some(last) = output.nodes.last_mut() else {
             return;
         };
         let key = (last.range.start, last.range.end, false);
-        let Some(mut previous) = self.scopes.remove(&key) else {
+        let Some(mut previous) = output.scopes.remove(&key) else {
             return;
         };
-        if !previous.text.ends_with('\n') {
+        if !previous.mapped().ends_with_newline() {
             previous.newline();
         }
         previous.append(body);
@@ -260,7 +275,8 @@ impl<E> Lexer<'_, E> {
         }
         last.authored.append(&node.authored);
         last.range.end = node.range.end;
-        self.scopes
+        output
+            .scopes
             .insert((last.range.start, last.range.end, false), previous);
         output.tail = Tail::Visible(None);
         output.list = None;
@@ -283,3 +299,6 @@ fn code_merge_end(source: &Source<'_>, consumed: usize) -> usize {
     }
     if blank { end } else { consumed }
 }
+
+#[cfg(test)]
+mod tests;

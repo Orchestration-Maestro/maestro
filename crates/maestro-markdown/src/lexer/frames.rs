@@ -80,7 +80,7 @@ impl<E> Lexer<'_, E> {
             let node = Node {
                 authored: raw.mapped(),
                 range: raw.native(&(0..raw.len()))?,
-                kind: Kind::Quote(frame.output.nodes, frame.text.mapped()),
+                kind: Kind::Quote(self.finish_blocks(frame.output), frame.text.mapped()),
             };
             let rest = frame.source.select(frame.consumed..frame.source.len());
             let Some(parent) = frames.last_mut() else {
