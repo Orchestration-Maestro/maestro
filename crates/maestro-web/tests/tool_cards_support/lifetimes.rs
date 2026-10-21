@@ -74,21 +74,31 @@ fn error(surface: &mut Surface, state: &mut ToolRenderState) {
         )
         .unwrap();
     browser::draw(surface, &recipe, state);
-    let _ = js("globalThis.savedError=document.querySelector('.maestro-message-error')");
+    check(
+        "!savedCaption.isConnected && document.querySelector('.maestro-tool-caption').textContent==='literal expression' && document.querySelector('.maestro-message-error').textContent==='one\\ntwo'",
+    );
+    let _ = js(
+        "globalThis.savedError=document.querySelector('.maestro-message-error'); globalThis.savedErrorCaption=document.querySelector('.maestro-tool-caption')",
+    );
     args.insert("expression".into(), serde_json::json!("changed expression"));
     let recipe = CalculateRenderer
         .render(Some(&args), Some((&result).into()), false)
         .unwrap();
     browser::draw(surface, &recipe, state);
-    check("document.querySelector('.maestro-message-error')===savedError");
+    check(
+        "document.querySelector('.maestro-message-error')===savedError && document.querySelector('.maestro-tool-caption')===savedErrorCaption && savedErrorCaption.textContent==='changed expression'",
+    );
     result.is_error = false;
     let recipe = CalculateRenderer
         .render(Some(&args), Some((&result).into()), false)
         .unwrap();
     browser::draw(surface, &recipe, state);
     check(
-        "!savedError.isConnected && document.querySelector('.maestro-tool-caption')===savedCaption",
+        "!savedError.isConnected && !savedErrorCaption.isConnected && document.querySelector('.maestro-tool-caption').textContent==='changed expression = one\\ntwo'",
     );
+    let _ = js("globalThis.savedCaption=document.querySelector('.maestro-tool-caption')");
+    browser::draw(surface, &recipe, state);
+    check("document.querySelector('.maestro-tool-caption')===savedCaption");
 }
 fn release_child(surface: &mut Surface) {
     let calls = Rc::new(Cell::new(0));
