@@ -147,7 +147,7 @@ fn concurrent_resolution_preserves_first_creator_bytes() {
     for scope in [SourceScope::Project, SourceScope::Temporary] {
         for filename in [".gitignore", "package.json"] {
             let scratch = scratch::Scratch::new().unwrap();
-            let base = scratch.0.to_string_lossy().into_owned();
+            let base = scratch.path().to_string_lossy().into_owned();
             let barrier = Arc::new(Barrier::new(2));
             let (done, completed) = channel();
             let threads: Vec<_> = [None, Some(completed)]
@@ -502,10 +502,10 @@ fn native_write_mode_keeps_exclusive_and_replacing_semantics() {
     );
     for exclusive in [true, false] {
         let scratch = scratch::Scratch::new().unwrap();
-        let path = format!("{}/missing", scratch.0.to_string_lossy());
+        let path = format!("{}/missing", scratch.path().to_string_lossy());
         operations.write_file(&path, "new text", exclusive).unwrap();
         assert_eq!(sandbox::read(&path), "new text");
-        let missing_parent = format!("{}/no-parent/entry", scratch.0.to_string_lossy());
+        let missing_parent = format!("{}/no-parent/entry", scratch.path().to_string_lossy());
         let error = operations
             .write_file(&missing_parent, "new text", exclusive)
             .unwrap_err();
@@ -517,7 +517,7 @@ fn native_write_mode_keeps_exclusive_and_replacing_semantics() {
                 .exists()
         );
         for (index, kind) in entries().into_iter().enumerate() {
-            let path = format!("{}/occupied-{index}", scratch.0.to_string_lossy());
+            let path = format!("{}/occupied-{index}", scratch.path().to_string_lossy());
             let original = occupied(&path, kind);
             let result = operations.write_file(&path, "new text", exclusive);
             if exclusive {

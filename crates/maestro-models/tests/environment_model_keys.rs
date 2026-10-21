@@ -147,7 +147,7 @@ fn maestro_vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestRes
         return Ok(());
     }
     let directory = Directory::new()?;
-    let credential = directory.0.join("credentials");
+    let credential = directory.path().join("credentials");
     std::fs::write(&credential, b"deliberately not JSON")?;
     assert_vertex_requirements(&directory, &credential)?;
     assert_vertex_paths(&directory, &credential)?;
@@ -235,11 +235,11 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
     )?;
     vertex_run(
         directory,
-        &vertex_variables(&directory.0),
+        &vertex_variables(directory.path()),
         Some("<authenticated>"),
     )?;
     let default = directory
-        .0
+        .path()
         .join(".config/gcloud/application_default_credentials.json");
     std::fs::create_dir_all(default.parent().ok_or("missing parent")?)?;
     for exists in [false, true] {
@@ -260,12 +260,12 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
     }
     vertex_run(
         directory,
-        &vertex_variables(&directory.0.join("missing")),
+        &vertex_variables(&directory.path().join("missing")),
         None,
     )?;
     #[cfg(unix)]
     {
-        let link = directory.0.join("link");
+        let link = directory.path().join("link");
         std::os::unix::fs::symlink(credential, &link)?;
         vertex_run(directory, &vertex_variables(&link), Some("<authenticated>"))?;
         std::fs::remove_file(credential)?;
@@ -276,7 +276,7 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
 
 #[cfg(not(target_arch = "wasm32"))]
 fn assert_vertex_cache(directory: &Directory) -> TestResult {
-    let path = directory.0.join("cached");
+    let path = directory.path().join("cached");
     let mut variables = vertex_variables(&path);
     variables.push(("MAESTRO_ENV_CREATE".into(), path.as_os_str().to_owned()));
     vertex_run(directory, &variables, None)?;
@@ -291,7 +291,7 @@ fn assert_vertex_cache(directory: &Directory) -> TestResult {
 fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
     use std::os::unix::ffi::OsStringExt;
     let home = directory
-        .0
+        .path()
         .join(std::ffi::OsString::from_vec(b"native-\xff".to_vec()));
     let path = home.join(".config/gcloud/application_default_credentials.json");
     std::fs::create_dir_all(path.parent().ok_or("missing parent")?)?;

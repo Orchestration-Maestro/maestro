@@ -293,7 +293,7 @@ impl Fixture {
     /// and the ambient working directory is unavailable.
     pub fn over(settings: SettingsManager, cwd: Option<&str>, relative_agent: bool) -> Self {
         let scratch = Scratch::new().unwrap();
-        let root = scratch.0.to_string_lossy().into_owned();
+        let root = scratch.path().to_string_lossy().into_owned();
         let settings = Rc::new(RefCell::new(settings));
         let script = Rc::new(Script::default());
         let local = Rc::new(tokio::task::LocalSet::new());
@@ -348,7 +348,7 @@ impl Fixture {
     /// An absolute path below the disposable root.
     #[must_use]
     pub fn path(&self, relative: &str) -> String {
-        format!("{}/{relative}", self.scratch.0.to_string_lossy())
+        format!("{}/{relative}", self.scratch.path().to_string_lossy())
     }
     /// The project input base.
     #[must_use]

@@ -48,8 +48,8 @@ fn cases(names: &[&str]) {
     for name in names {
         let case = all.iter().find(|c| c.id == *name).unwrap();
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.to_str().unwrap();
-        let user = dir.0.join("user");
+        let root = dir.path().to_str().unwrap();
+        let user = dir.path().join("user");
         setup(case, &dir, &user);
         let settings = Rc::new(RefCell::new(maestro_settings::SettingsManager::create(
             root,
@@ -121,12 +121,12 @@ fn component_entries_use_shared_configured_and_manifest_routes() {
 
 /// Create only the recorded filesystem and settings operands.
 fn setup(case: &Case, dir: &scratch::Scratch, user: &std::path::Path) {
-    let root = dir.0.to_str().unwrap();
+    let root = dir.path().to_str().unwrap();
     fs::create_dir_all(user).unwrap();
-    fs::create_dir_all(dir.0.join("extensions")).unwrap();
-    fs::write(dir.0.join(".git"), "gitdir: unused").unwrap();
+    fs::create_dir_all(dir.path().join("extensions")).unwrap();
+    fs::write(dir.path().join(".git"), "gitdir: unused").unwrap();
     for file in &case.input.files {
-        let path = dir.0.join(&file.path);
+        let path = dir.path().join(&file.path);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         if file.text == "@author_component" {
             fs::copy("tests/fixtures/author_component.wasm", path).unwrap();
@@ -135,7 +135,10 @@ fn setup(case: &Case, dir: &scratch::Scratch, user: &std::path::Path) {
         }
     }
     for (path, value) in [
-        (dir.0.join(".maestro/settings.json"), &case.input.configured),
+        (
+            dir.path().join(".maestro/settings.json"),
+            &case.input.configured,
+        ),
         (user.join("settings.json"), &case.input.filtered),
     ] {
         if let Some(value) = value {

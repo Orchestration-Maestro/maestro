@@ -202,7 +202,7 @@ fn cases(test: &str) {
 /// Drives one recipe and checks only its completed invocation.
 async fn run_case(row: Row) {
     let scratch = scratch::Scratch::new().unwrap();
-    let root = scratch.0.to_string_lossy();
+    let root = scratch.path().to_string_lossy();
     let (_, settings, _) = support::manager(&serde_json::json!({}));
     let effects = Rc::new(support::Effects {
         native_exists: true,

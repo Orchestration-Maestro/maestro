@@ -475,7 +475,7 @@ fn native_agent_root_reads_disposable_environment() {
             )
             .unwrap()
             .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("MAESTRO_CONFIGURATION_CHILD", "1"),
                 ("MAESTRO_CONFIGURATION_EXPECTED", &expected),
@@ -495,7 +495,12 @@ fn native_probe_rejects_missing_selection() {
     let scratch = child::Scratch::new();
     assert!(
         std::panic::catch_unwind(|| {
-            child::probe("configuration_paths::missing_probe", &scratch.0, &[], &[])
+            child::probe(
+                "configuration_paths::missing_probe",
+                scratch.0.path(),
+                &[],
+                &[],
+            )
         })
         .is_err(),
         "unselected probe returned success"
@@ -526,9 +531,9 @@ fn native_probe_preserves_cwd_and_environment_order() {
     let scratch = child::Scratch::new();
     let records = child::probe(
         "configuration_paths::native_probe_preserves_cwd_and_environment_order",
-        &scratch.0,
+        scratch.0.path(),
         &[
-            ("MAESTRO_PROBE_CWD", scratch.0.to_str().unwrap()),
+            ("MAESTRO_PROBE_CWD", scratch.0.path().to_str().unwrap()),
             (KEY, "replacement"),
             ("MAESTRO_PROBE_PATH", &std::env::var("PATH").unwrap()),
         ],

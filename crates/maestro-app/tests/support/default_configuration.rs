@@ -537,10 +537,10 @@ pub fn settings(name: &str, group: Group) {
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("HOME", &home),
-                ("MAESTRO_DEFAULT_ROOT", scratch.0.to_str().unwrap()),
+                ("MAESTRO_DEFAULT_ROOT", scratch.0.path().to_str().unwrap()),
                 ("MAESTRO_DEFAULT_CASE", &index.to_string()),
             ],
             REMOVED,

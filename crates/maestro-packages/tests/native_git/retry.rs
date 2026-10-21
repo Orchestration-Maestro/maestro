@@ -45,7 +45,7 @@ impl RetryFixture {
         git(&repo.target, &["reset", "--hard", "origin/main"]);
         repo.original = git(&repo.target, &["rev-parse", "HEAD"]);
         configure_layout(&repo, layout);
-        let root = &repo.scratch.0;
+        let root = repo.scratch.path();
         let settings = Rc::new(RefCell::new(SettingsManager::in_memory(Settings(
             json!({"packages":["git:github.com/acme/tool"]})
                 .as_object()
@@ -163,7 +163,7 @@ async fn execute(
 
 /// Prepares each repository layout through native Git.
 fn configure_layout(repo: &Repository, layout: &str) {
-    let root = &repo.scratch.0;
+    let root = repo.scratch.path();
     if layout == "linked" {
         let owner = root.join("owner");
         std::fs::rename(&repo.target, &owner).unwrap();

@@ -21,6 +21,7 @@ maestro-process = { path = "../maestro-process" }
 tokio = { version = "=1.53.2", default-features = false, features = ["time", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "macros", "test-util"] }
 

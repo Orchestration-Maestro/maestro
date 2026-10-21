@@ -11,7 +11,7 @@ const OWNER: &str = "maestro-path";
 fn workspace() -> Workspace {
     let workspace = Workspace::new();
     workspace.foundation(&[OWNER]);
-    let root = workspace.root.join("crates").join(OWNER);
+    let root = workspace.root.path().join("crates").join(OWNER);
     std::fs::create_dir_all(root.join("tests")).unwrap();
     workspace.integration(OWNER);
     workspace
@@ -20,16 +20,21 @@ fn workspace() -> Workspace {
 #[test]
 fn unlisted_test_file_is_rejected() {
     let workspace = workspace();
-    let tests = workspace.root.join(format!("crates/{OWNER}/tests"));
+    let tests = workspace.root.path().join(format!("crates/{OWNER}/tests"));
     std::fs::write(tests.join("added.rs"), "").unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("added.rs"), "{error}");
     std::fs::write(tests.join("integration.rs"), "mod added;\n").unwrap();
-    check_workspace(&workspace.root).unwrap();
+    check_workspace(workspace.root.path()).unwrap();
 }
 
 fn rewrite(workspace: &Workspace, from: &str, to: &str) {
-    let path = workspace.root.join("crates").join(OWNER).join("Cargo.toml");
+    let path = workspace
+        .root
+        .path()
+        .join("crates")
+        .join(OWNER)
+        .join("Cargo.toml");
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(text.contains(from));
     std::fs::write(path, text.replace(from, to)).unwrap();
@@ -38,12 +43,12 @@ fn rewrite(workspace: &Workspace, from: &str, to: &str) {
 #[test]
 fn listed_test_files_share_one_target() {
     let workspace = workspace();
-    let tests = workspace.root.join(format!("crates/{OWNER}/tests"));
+    let tests = workspace.root.path().join(format!("crates/{OWNER}/tests"));
     std::fs::create_dir_all(tests.join("support")).unwrap();
     std::fs::write(tests.join("support/helper.rs"), "").unwrap();
     std::fs::write(tests.join("case.rs"), "#![cfg(unix)]\n").unwrap();
     std::fs::write(tests.join("integration.rs"), "mod case;\n").unwrap();
-    check_workspace(&workspace.root).unwrap();
+    check_workspace(workspace.root.path()).unwrap();
 }
 
 #[test]
@@ -52,12 +57,12 @@ fn automatic_test_discovery_is_rejected() {
         let workspace = workspace();
         rewrite(&workspace, "autotests = false", replacement);
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("autotests")
         );
     }
-    check_workspace(&workspace().root).unwrap();
+    check_workspace(workspace().root.path()).unwrap();
 }
 
 #[test]
@@ -65,7 +70,7 @@ fn custom_test_target_without_opt_in_is_unchecked() {
     let workspace = workspace();
     rewrite(&workspace, "autotests = false", "");
     rewrite(&workspace, "name = \"integration\"", "name = \"custom\"");
-    check_workspace(&workspace.root).unwrap();
+    check_workspace(workspace.root.path()).unwrap();
 }
 
 #[test]
@@ -77,9 +82,9 @@ fn missing_or_extra_test_targets_are_rejected() {
     ] {
         let workspace = workspace();
         rewrite(&workspace, target, &replacement);
-        assert!(check_workspace(&workspace.root).is_err());
+        assert!(check_workspace(workspace.root.path()).is_err());
     }
-    check_workspace(&workspace().root).unwrap();
+    check_workspace(workspace().root.path()).unwrap();
 }
 
 #[test]
@@ -90,12 +95,13 @@ fn nonstandard_test_root_is_rejected() {
     ] {
         let workspace = workspace();
         rewrite(&workspace, from, to);
-        assert!(check_workspace(&workspace.root).is_err());
+        assert!(check_workspace(workspace.root.path()).is_err());
     }
     for contents in [None, Some("mod {")] {
         let workspace = workspace();
         let root = workspace
             .root
+            .path()
             .join(format!("crates/{OWNER}/tests/integration.rs"));
         std::fs::write(root.with_file_name("case.rs"), "").unwrap();
         if let Some(contents) = contents {
@@ -103,9 +109,9 @@ fn nonstandard_test_root_is_rejected() {
         } else {
             std::fs::remove_file(&root).unwrap();
         }
-        assert!(check_workspace(&workspace.root).is_err());
+        assert!(check_workspace(workspace.root.path()).is_err());
     }
-    check_workspace(&workspace().root).unwrap();
+    check_workspace(workspace().root.path()).unwrap();
 }
 
 #[test]
@@ -121,9 +127,9 @@ fn nonexecuting_test_target_is_rejected() {
             "path = \"tests/integration.rs\"",
             &format!("path = \"tests/integration.rs\"\n{option}"),
         );
-        assert!(check_workspace(&workspace.root).is_err());
+        assert!(check_workspace(workspace.root.path()).is_err());
     }
-    check_workspace(&workspace().root).unwrap();
+    check_workspace(workspace().root.path()).unwrap();
 }
 
 #[test]
@@ -137,10 +143,10 @@ fn test_module_decoys_are_rejected() {
         "mod case; mod case;",
     ] {
         let workspace = workspace();
-        let tests = workspace.root.join(format!("crates/{OWNER}/tests"));
+        let tests = workspace.root.path().join(format!("crates/{OWNER}/tests"));
         std::fs::write(tests.join("case.rs"), "").unwrap();
         std::fs::write(tests.join("integration.rs"), contents).unwrap();
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(error.contains("case.rs"), "{error}");
     }
 }
@@ -149,8 +155,8 @@ fn test_module_decoys_are_rejected() {
 fn unmigrated_test_layout_is_unchanged() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-models", "maestro-path"]);
-    let tests = workspace.root.join("crates/maestro-path/tests");
+    let tests = workspace.root.path().join("crates/maestro-path/tests");
     std::fs::create_dir_all(&tests).unwrap();
     std::fs::write(tests.join("standalone.rs"), "").unwrap();
-    check_workspace(&workspace.root).unwrap();
+    check_workspace(workspace.root.path()).unwrap();
 }

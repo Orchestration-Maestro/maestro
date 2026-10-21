@@ -10,10 +10,10 @@ fn block_documentation_is_rejected_with_file_and_line() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
-    let path = workspace.root.join("crates/models/src/lib.rs");
+    let path = workspace.root.path().join("crates/models/src/lib.rs");
     for source in ["\n/** Item. */\npub struct Item;\n", "\n/*! Crate. */\n"] {
         std::fs::write(&path, source).unwrap();
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert_eq!(
             error,
             format!("{}:2: block documentation: use /// or //!", path.display())
@@ -26,17 +26,17 @@ fn only_generated_guest_bindings_allow_block_documentation() {
     let workspace = Workspace::new();
     workspace.member("guest", "maestro-extensions-wasm", "");
     workspace.list(&[("maestro-extensions-wasm", "core")]);
-    let root = workspace.root.join("crates/guest/src");
+    let root = workspace.root.path().join("crates/guest/src");
     let bindings = root.join("bindings.rs");
     std::fs::write(
         &bindings,
         "//! Crate.\n/*! Crate. */\n//! Crate.\n/// Item.\n/** Item. */\n/// Item.\npub struct Item;",
     )
     .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     let manual = root.join("manual.rs");
     std::fs::write(&manual, "/** Item. */\npub struct Item;").unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert_eq!(
         error,
         format!(
@@ -50,9 +50,9 @@ fn only_generated_guest_bindings_allow_block_documentation() {
         ("maestro-extensions-wasm", "core"),
         ("maestro-models", "core"),
     ]);
-    let other = workspace.root.join("crates/models/src/bindings.rs");
+    let other = workspace.root.path().join("crates/models/src/bindings.rs");
     std::fs::write(&other, "/*! Crate. */").unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert_eq!(
         error,
         format!("{}:1: block documentation: use /// or //!", other.display())
@@ -64,7 +64,7 @@ fn numbered_planning_comments_are_rejected_with_file_and_line() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
-    let path = workspace.root.join("crates/models/src/lib.rs");
+    let path = workspace.root.path().join("crates/models/src/lib.rs");
     for (contents, line) in [
         ("\n// slice 6\n", 2),
         ("\r\n// café 🦀 SLICE 6\r\n", 2),
@@ -72,10 +72,10 @@ fn numbered_planning_comments_are_rejected_with_file_and_line() {
         ("\u{feff}#!/usr/bin/env rustx\n// café ticket 1\n", 2),
     ] {
         std::fs::write(&path, contents).unwrap();
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert_location(&error, &path, line);
         std::fs::write(&path, "// Technical comment.\n").unwrap();
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -84,15 +84,15 @@ fn crlf_and_lf_sources_report_identical_comment_lines() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
-    let path = workspace.root.join("crates/models/src/lib.rs");
+    let path = workspace.root.path().join("crates/models/src/lib.rs");
     let lf = "\u{feff}#!/usr/bin/env rustx\nconst TEXT: &str = r#\"first\nsecond\"#;\n\n// café ticket 1\n";
     std::fs::write(&path, lf).unwrap();
-    let expected = check_workspace(&workspace.root).unwrap_err();
+    let expected = check_workspace(workspace.root.path()).unwrap_err();
     assert_location(&expected, &path, 5);
     std::fs::write(&path, lf.replace('\n', "\r\n")).unwrap();
-    assert_eq!(check_workspace(&workspace.root), Err(expected));
+    assert_eq!(check_workspace(workspace.root.path()), Err(expected));
     std::fs::write(&path, lf.replace("ticket 1", "Technical")).unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 fn assert_location(error: &str, expected: &std::path::Path, line: usize) {
@@ -109,14 +109,14 @@ fn rejects(comments: &[&str]) {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
-    let path = workspace.root.join("crates/models/src/lib.rs");
+    let path = workspace.root.path().join("crates/models/src/lib.rs");
     for comment in comments {
         std::fs::write(&path, format!("\n{comment}\n")).unwrap();
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert_location(&error, &path, 2);
     }
     std::fs::write(&path, "// Describes model behavior.\n").unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn technical_comments_and_planning_text_outside_comments_pass() {
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
     std::fs::write(
-        workspace.root.join("crates/models/src/lib.rs"),
+        workspace.root.path().join("crates/models/src/lib.rs"),
         r###"
 //! the JSON-RPC specification; an async task; step 1 of the parse.
 /// phase one writes the intent; UTF-16; S3-compatible; x86_64; 0x1F.
@@ -172,7 +172,7 @@ fn borrow<'a>(value: &'a str) -> &'a str { value }
 "###,
     )
     .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -180,17 +180,17 @@ fn nested_block_comments_report_the_inner_line_in_non_src_files() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
-    let path = workspace.root.join("crates/models/build.rs");
+    let path = workspace.root.path().join("crates/models/build.rs");
     std::fs::write(&path, "/* technical\n /* ticket 5 */\n*/\n").unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert_location(&error, &path, 2);
     std::fs::write(&path, "/* Outer /* technical */ comment. */").unwrap();
     for excluded in ["target", ".git"] {
-        let ignored = workspace.root.join("crates/models").join(excluded);
+        let ignored = workspace.root.path().join("crates/models").join(excluded);
         std::fs::create_dir(&ignored).unwrap();
         std::fs::write(ignored.join("ignored.rs"), "// ticket 5").unwrap();
     }
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -205,9 +205,9 @@ fn hyphenated_planning_token_is_rejected_only_in_comments() {
     workspace.member("models", "maestro-models", "");
     workspace.list(&[("maestro-models", "core")]);
     std::fs::write(
-        workspace.root.join("crates/models/src/lib.rs"),
+        workspace.root.path().join("crates/models/src/lib.rs"),
         "const TEXT: &str = \"ticket-owned\";\n// ticket-ownedness\n",
     )
     .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }

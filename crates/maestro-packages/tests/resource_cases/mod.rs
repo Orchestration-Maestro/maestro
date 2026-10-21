@@ -53,8 +53,8 @@ pub async fn cases(names: &[&str]) {
         let _denied = case
             .denied
             .as_ref()
-            .map(|path| Denied::new(dir.0.join(path)));
-        let base = dir.0.to_string_lossy().into_owned();
+            .map(|path| Denied::new(dir.path().join(path)));
+        let base = dir.path().to_string_lossy().into_owned();
         let (_, settings, _) = support::manager(&json!({}));
         let effects = Rc::new(support::Effects {
             native_exists: true,
@@ -102,16 +102,16 @@ pub async fn cases(names: &[&str]) {
 /// Creates only the filesystem inputs selected by the recipe.
 fn setup(case: &Recipe, dir: &Scratch) {
     for (name, text) in &case.files {
-        let path = dir.0.join(name);
+        let path = dir.path().join(name);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, text).unwrap();
     }
     for name in &case.dirs {
-        std::fs::create_dir_all(dir.0.join(name)).unwrap();
+        std::fs::create_dir_all(dir.path().join(name)).unwrap();
     }
     #[cfg(unix)]
     for (name, target) in &case.links {
-        let path = dir.0.join(name);
+        let path = dir.path().join(name);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::os::unix::fs::symlink(target, path).unwrap();
     }
@@ -159,11 +159,11 @@ fn assert_calls(case: &Recipe, effects: &support::Effects) {
 #[cfg(unix)]
 pub async fn first_authored_metadata() {
     let dir = Scratch::new().unwrap();
-    let folder = dir.0.join("extensions");
+    let folder = dir.path().join("extensions");
     std::fs::create_dir(&folder).unwrap();
     let path = folder.join("a.ts");
     std::fs::write(&path, "").unwrap();
-    let base = dir.0.to_string_lossy().into_owned();
+    let base = dir.path().to_string_lossy().into_owned();
     let source = path.to_string_lossy().into_owned();
     let (manager, _) = manager(&base, Filesystem::default());
     let result = manager
@@ -181,7 +181,7 @@ pub async fn first_authored_metadata() {
 #[cfg(unix)]
 pub async fn ambient_entry_resolution() {
     let dir = Scratch::new().unwrap();
-    let extensions = dir.0.join("pkg/extensions");
+    let extensions = dir.path().join("pkg/extensions");
     std::fs::create_dir_all(&extensions).unwrap();
     let entry = extensions.join("file.ts");
     std::fs::write(&entry, "").unwrap();
@@ -197,7 +197,7 @@ pub async fn ambient_entry_resolution() {
         current_reads: Rc::clone(&reads),
         ..Default::default()
     };
-    let base = dir.0.to_string_lossy().into_owned();
+    let base = dir.path().to_string_lossy().into_owned();
     let (manager, effects) = manager(&base, resources);
     let current = std::env::current_dir().unwrap();
     let relative = maestro_path::relative(

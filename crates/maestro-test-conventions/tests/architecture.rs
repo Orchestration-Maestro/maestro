@@ -22,7 +22,7 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
         workspace.member("models", name, "");
         workspace.list(&[(name, "core")]);
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!("invalid workspace crate name: {name}"))
         );
     }
@@ -35,7 +35,7 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
         let workspace = Workspace::new();
         workspace.foundation(&[name]);
         assert_eq!(support::class(name), class);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     for name in [
         "maestro-tui",
@@ -49,7 +49,7 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
     ] {
         let workspace = Workspace::new();
         workspace.foundation(&[name]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -58,19 +58,19 @@ fn unlisted_member_is_rejected_and_listing_it_passes() {
     for &(name, _) in support::policy::POLICY {
         let workspace = Workspace::new();
         workspace.foundation(&[name]);
-        let path = workspace.root.join("workspace-crates.json");
+        let path = workspace.root.path().join("workspace-crates.json");
         let mut list: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
         list.as_object_mut().unwrap().shift_remove(name);
         std::fs::write(&path, serde_json::to_vec(&list).unwrap()).unwrap();
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "workspace crate is not listed in workspace-crates.json: {name}"
             ))
         );
         workspace.foundation(&[name]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -81,54 +81,54 @@ fn crate_list_requires_core_or_dedicated_layers() {
     workspace.member("app", "maestro-app", "");
     workspace.list(&[("maestro-app", "unknown")]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("invalid layer for maestro-app: expected core or dedicated".into())
     );
     workspace.list(&[("maestro-app", "core")]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     workspace.list(&[("maestro-app", "dedicated")]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("invalid scoped layer for maestro-app: expected core".into())
     );
-    std::fs::write(workspace.root.join("workspace-crates.json"), "[]").unwrap();
+    std::fs::write(workspace.root.path().join("workspace-crates.json"), "[]").unwrap();
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("workspace-crates.json must be an object mapping crate names to layers".into())
     );
     for contents in [None, Some("not JSON")] {
-        let list = workspace.root.join("workspace-crates.json");
+        let list = workspace.root.path().join("workspace-crates.json");
         if let Some(contents) = contents {
             std::fs::write(&list, contents).unwrap();
         } else {
             std::fs::remove_file(&list).unwrap();
         }
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("workspace-crates.json")
         );
         workspace.list(&[("maestro-app", "core")]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
-    std::fs::remove_file(workspace.root.join("workspace-crates.json")).unwrap();
-    std::fs::create_dir(workspace.root.join("workspace-crates.json")).unwrap();
+    std::fs::remove_file(workspace.root.path().join("workspace-crates.json")).unwrap();
+    std::fs::create_dir(workspace.root.path().join("workspace-crates.json")).unwrap();
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("workspace-crates.json")
     );
-    std::fs::remove_dir(workspace.root.join("workspace-crates.json")).unwrap();
+    std::fs::remove_dir(workspace.root.path().join("workspace-crates.json")).unwrap();
     workspace.list(&[("maestro-app", "core")]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 fn all_crates_require_their_declared_layer() {
     let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
     let workspace = Workspace::new();
     workspace.foundation(&names);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-    let path = workspace.root.join("workspace-crates.json");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    let path = workspace.root.path().join("workspace-crates.json");
     let mut list: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
     for name in names {
@@ -140,7 +140,7 @@ fn all_crates_require_their_declared_layer() {
         list[name] = wrong.into();
         std::fs::write(&path, serde_json::to_vec(&list).unwrap()).unwrap();
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "invalid scoped layer for {name}: expected {}",
                 support::class(name)
@@ -149,7 +149,7 @@ fn all_crates_require_their_declared_layer() {
         list[name] = support::class(name).into();
     }
     std::fs::write(&path, serde_json::to_vec(&list).unwrap()).unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn production_cycles_are_rejected() {
             &format!("[{kind}]\nmaestro-session = {{ path = \"../session\" }}"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(
                 "workspace dependency cycle: maestro-agent -> maestro-session -> maestro-agent"
                     .into()
@@ -180,7 +180,7 @@ fn production_cycles_are_rejected() {
         );
         workspace.member("session", "maestro-session", "");
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-agent -> maestro-session".into())
         );
         workspace.member("agent", "maestro-agent", "");
@@ -189,7 +189,7 @@ fn production_cycles_are_rejected() {
             "maestro-session",
             "[dependencies]\nmaestro-agent = { path = \"../agent\" }",
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -226,7 +226,7 @@ fn leaf_internal_dependencies_are_rejected() {
         ] {
             workspace.member("leaf", leaf, declaration);
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(if is_leaf(leaf) {
                     format!("{leaf} must not depend on workspace crate maestro-app")
                 } else if declaration.starts_with("[dev-dependencies]") {
@@ -239,7 +239,7 @@ fn leaf_internal_dependencies_are_rejected() {
             );
         }
         workspace.member("leaf", leaf, "");
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -259,7 +259,7 @@ fn core_to_dedicated_dependency_is_rejected() {
             &format!("[{kind}]\nmaestro = {{ path = \"../root\" }}"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("core crate maestro-agent must not depend on dedicated crate maestro".into())
         );
         workspace.member("agent", "maestro-agent", "");
@@ -273,7 +273,7 @@ fn core_to_dedicated_dependency_is_rejected() {
         } else {
             Err("forbidden production dependency: maestro -> maestro-agent".into())
         };
-        assert_eq!(check_workspace(&workspace.root), expected);
+        assert_eq!(check_workspace(workspace.root.path()), expected);
         workspace.member("root", "maestro", "");
         workspace.member("maestro-app", "maestro-app", "");
         workspace.list(&[
@@ -301,7 +301,7 @@ fn core_to_dedicated_dependency_is_rejected() {
         } else {
             Ok(())
         };
-        assert_eq!(check_workspace(&workspace.root), expected);
+        assert_eq!(check_workspace(workspace.root.path()), expected);
     }
 }
 
@@ -327,15 +327,15 @@ fn external_dependency_aliases_are_not_workspace_edges() {
             "maestro-models",
             &format!("[dependencies]\nmaestro-app = {{ package = \"external-lib\", {source} }}"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
 #[test]
 fn metadata_command_failure_is_reported_not_accepted() {
     let workspace = Workspace::new();
-    std::fs::write(workspace.root.join("Cargo.toml"), "not valid toml").unwrap();
-    let error = check_workspace(&workspace.root).unwrap_err();
+    std::fs::write(workspace.root.path().join("Cargo.toml"), "not valid toml").unwrap();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.starts_with("cargo metadata failed ("), "{error}");
     assert!(error.contains("Cargo.toml"), "{error}");
     let workspace = Workspace::new();
@@ -345,7 +345,7 @@ fn metadata_command_failure_is_reported_not_accepted() {
         "[dependencies]\nmissing-offline-package = \"999.0.0\"",
     );
     workspace.list(&[("maestro-models", "core")]);
-    let error = check_workspace(&workspace.root).unwrap_err();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.starts_with("cargo metadata failed ("), "{error}");
     assert!(error.contains("missing-offline-package"), "{error}");
 
@@ -355,7 +355,7 @@ fn metadata_command_failure_is_reported_not_accepted() {
         workspace.foundation(&["maestro-models"]);
         let rustc = workspace.command("rustc", "printf 'host: x86_64-unknown-linux-gnu\\n'");
         workspace.probe(
-            &workspace.root.join("missing-cargo"),
+            &workspace.root.path().join("missing-cargo"),
             &rustc,
             "cargo metadata failed:",
         );
@@ -371,7 +371,7 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
     let workspace = Workspace::new();
     workspace.list(&[("maestro-session", "core"), ("maestro-agent", "core")]);
     workspace.member("agent", "maestro-agent", "");
-    let manifest = workspace.root.join("Cargo.toml");
+    let manifest = workspace.root.path().join("Cargo.toml");
     let text = std::fs::read_to_string(&manifest).unwrap();
     std::fs::write(
         &manifest,
@@ -401,7 +401,7 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
                 "maestro-session",
                 &format!("[{kind}]\nrenamed = {{ package = \"maestro-agent\", {source} }}"),
             );
-            assert_eq!(check_workspace(&workspace.root), Err("dependency maestro-session -> maestro-agent must use a path to that workspace member".into()));
+            assert_eq!(check_workspace(workspace.root.path()), Err("dependency maestro-session -> maestro-agent must use a path to that workspace member".into()));
         }
         workspace.member("session", "maestro-session", &format!("[{kind}]\nrenamed = {{ package = \"maestro-agent\", path = \"../agent/../agent\" }}"));
         let expected = if kind == "dev-dependencies" {
@@ -409,7 +409,7 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
         } else {
             Ok(())
         };
-        assert_eq!(check_workspace(&workspace.root), expected);
+        assert_eq!(check_workspace(workspace.root.path()), expected);
     }
 }
 
@@ -419,7 +419,7 @@ fn unknown_scoped_member_is_rejected() {
     workspace.member("unknown", "maestro-unknown", "");
     workspace.list(&[("maestro-unknown", "core")]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("workspace crate is outside scoped policy: maestro-unknown".into())
     );
 }
@@ -469,7 +469,7 @@ fn forbidden_direct_edges_are_rejected() {
                 &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../to\"{extra} }}"),
             );
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(if is_leaf(from) {
                     format!("{from} must not depend on workspace crate {to}")
                 } else if kind.ends_with("dev-dependencies") {
@@ -483,7 +483,7 @@ fn forbidden_direct_edges_are_rejected() {
         }
         let corrected = Workspace::new();
         corrected.foundation(&[from, to]);
-        assert_eq!(check_workspace(&corrected.root), Ok(()));
+        assert_eq!(check_workspace(corrected.root.path()), Ok(()));
     }
 }
 
@@ -503,7 +503,7 @@ fn export_reuses_text_and_json_without_frontend_edge() {
             &format!("[{kind}]\nfrontend = {{ package = \"maestro-web\", path = \"../maestro-web\"{extra} }}"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-export -> maestro-web".into()),
             "{kind}{extra}"
         );
@@ -525,7 +525,7 @@ fn catalog_pattern_edge_is_scoped() {
         "[dev-dependencies]\nalias = { package = \"maestro-pattern\", path = \"../maestro-pattern\" }",
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("internal dev dependency requires declared dependency-free test support: maestro-catalog -> maestro-pattern".into())
     );
     workspace.member("maestro-catalog", "maestro-catalog", "");
@@ -536,7 +536,7 @@ fn catalog_pattern_edge_is_scoped() {
             &format!("[{kind}]\nalias = {{ package = \"maestro-catalog\", path = \"../maestro-catalog\"{extra} }}"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-pattern -> maestro-catalog".into())
         );
     }
@@ -559,14 +559,14 @@ fn process_capture_consumers_may_declare_the_owner() {
             from,
             "[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\nnative = { package = \"maestro-process\", path = \"../maestro-process\" }",
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{from}");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{from}");
         workspace.member(
             from,
             from,
             "[dev-dependencies]\nalias = { package = \"maestro-process\", path = \"../maestro-process\" }",
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "internal dev dependency requires declared dependency-free test support: {from} -> maestro-process"
             ))
@@ -588,13 +588,13 @@ fn process_leaf_cannot_depend_on_cancellation() {
             &format!("[{kind}]\nalias = {{ package = \"maestro-cancellation\", path = \"../maestro-cancellation\"{extra} }}"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("maestro-process must not depend on workspace crate maestro-cancellation".into()),
             "{kind}{extra}"
         );
     }
     workspace.member("maestro-process", "maestro-process", "");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -608,7 +608,7 @@ fn session_shared_records_edge_is_scoped() {
         "[dev-dependencies]\nalias = { package = \"maestro-request\", path = \"../maestro-request\" }",
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("internal dev dependency requires declared dependency-free test support: maestro-session -> maestro-request".into())
     );
     workspace.member("maestro-session", "maestro-session", "");
@@ -619,7 +619,7 @@ fn session_shared_records_edge_is_scoped() {
             &format!("[{kind}]\nalias = {{ package = \"maestro-session\", path = \"../maestro-session\"{extra} }}"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-request -> maestro-session".into())
         );
     }
@@ -642,7 +642,7 @@ fn theme_shared_records_edge_is_scoped() {
                 from,
                 &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../{to}\"{extra} }}"),
             );
-            let error = check_workspace(&workspace.root).unwrap_err();
+            let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(
                 error.contains(from) && error.contains(to),
                 "{from} -> {to} ({kind}{extra}): {error}"
@@ -653,7 +653,7 @@ fn theme_shared_records_edge_is_scoped() {
             from,
             &format!("[dev-dependencies]\nalias = {{ package = {to:?}, path = \"../{to}\" }}"),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(error.contains(from) && error.contains(to), "{error}");
     }
 }
@@ -667,7 +667,7 @@ fn documentation_checks_may_reuse_the_markdown_owner() {
         "maestro-test-conventions",
         "[dependencies]\nmaestro-markdown = { path = \"../maestro-markdown\" }",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -679,7 +679,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
         let workspace = Workspace::new();
         workspace.foundation(&[&[from], targets].concat());
         if targets.is_empty() {
-            assert_eq!(check_workspace(&workspace.root), Ok(()), "{from}");
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{from}");
         } else {
             check_permitted_declarations(&workspace, from, targets);
         }
@@ -769,7 +769,7 @@ fn native_consumers_may_declare_the_utility(consumers: &[&str]) {
             );
         }
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Ok(()),
             "consumers -> maestro-path ({kind}{extra})"
         );
@@ -786,7 +786,7 @@ fn native_consumer_may_not_dev_declare_the_utility(from: &str) {
         &dependencies_with_utility(required_targets(from), "dev-dependencies", ""),
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(if is_leaf(from) {
             format!("{from} must not depend on workspace crate maestro-path")
         } else {
@@ -808,7 +808,7 @@ fn excluded_crate_may_not_declare_the_utility(from: &str) {
             &dependencies_with_utility(required_targets(from), kind, extra),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(if is_leaf(from) {
                 format!("{from} must not depend on workspace crate maestro-path")
             } else {
@@ -817,7 +817,7 @@ fn excluded_crate_may_not_declare_the_utility(from: &str) {
         );
     }
     workspace.foundation(&[from, "maestro-path"]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// Reject every dependency kind from the utility to another workspace crate.
@@ -833,7 +833,7 @@ fn path_utility_has_no_outbound_edges() {
             ),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("maestro-path must not depend on workspace crate maestro-models".into())
         );
     }
@@ -856,7 +856,7 @@ fn path_utility_does_not_replace_the_application() {
             frontend,
             &dependencies_with_utility(required, "dependencies", ""),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         for omitted in required {
             let remaining: Vec<_> = required
                 .iter()
@@ -869,7 +869,7 @@ fn path_utility_does_not_replace_the_application() {
                 &dependencies_with_utility(&remaining, "dependencies", ""),
             );
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "{frontend}: missing required direct dependency {omitted}"
                 ))
@@ -896,25 +896,38 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-tool", "core"),
         ("maestro-brand", "core"),
     ]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for absent in ["text", "json", "entry", "tool", "brand"] {
         assert!(
             !workspace
                 .root
+                .path()
                 .join(format!("crates/maestro-{absent}"))
                 .exists()
         );
     }
-    assert!(!workspace.root.join("crates/maestro-process").exists());
-    assert!(!workspace.root.join("crates/maestro-tools").exists());
+    assert!(
+        !workspace
+            .root
+            .path()
+            .join("crates/maestro-process")
+            .exists()
+    );
+    assert!(!workspace.root.path().join("crates/maestro-tools").exists());
     workspace.member("tools", "maestro-tools", "");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-    assert!(!workspace.root.join("crates/maestro-text").exists());
-    assert!(!workspace.root.join("crates/maestro-chat").exists());
-    assert!(!workspace.root.join("crates/maestro-watch").exists());
-    assert!(!workspace.root.join("crates/maestro-lock").exists());
-    assert!(!workspace.root.join("crates/maestro-pattern").exists());
-    assert!(!workspace.root.join("wit").exists());
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    assert!(!workspace.root.path().join("crates/maestro-text").exists());
+    assert!(!workspace.root.path().join("crates/maestro-chat").exists());
+    assert!(!workspace.root.path().join("crates/maestro-watch").exists());
+    assert!(!workspace.root.path().join("crates/maestro-lock").exists());
+    assert!(
+        !workspace
+            .root
+            .path()
+            .join("crates/maestro-pattern")
+            .exists()
+    );
+    assert!(!workspace.root.path().join("wit").exists());
 }
 
 #[test]
@@ -945,7 +958,7 @@ fn frontends_require_application_without_unused_allowed_edges() {
                 frontend,
                 &dependencies_with_utility(&remaining, "dependencies", ""),
             );
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
         let mut mixed = String::new();
         for (index, target) in required.iter().enumerate() {
@@ -957,10 +970,10 @@ fn frontends_require_application_without_unused_allowed_edges() {
             .unwrap();
         }
         workspace.member(frontend, frontend, &mixed);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         workspace.member(frontend, frontend, "");
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("missing required direct dependency")
         );
@@ -977,10 +990,10 @@ fn terminal_adapter_and_harness_require_toolkit() {
         };
         let workspace = Workspace::new();
         workspace.foundation(&[owner, "maestro-models", "maestro-text"]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         workspace.member(owner, owner, "");
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "{owner}: missing required direct dependency maestro-tui"
             ))
@@ -988,7 +1001,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
         for (kind, extra) in DECLARATIONS {
             workspace.member(owner, owner, &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\n{text}models = {{ package = \"maestro-models\", path = \"../maestro-models\"{extra} }}"));
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "forbidden production dependency: {owner} -> maestro-models"
                 ))
@@ -998,7 +1011,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
                 owner,
                 &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\"{extra} }}\n{text}"),
             );
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
     }
     for &(from, _) in support::policy::POLICY {
@@ -1013,7 +1026,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
             .chain([("dev-dependencies", "")])
         {
             workspace.member(from, from, &format!("[{kind}]\nharness = {{ package = \"maestro-test-terminal\", path = \"../maestro-test-terminal\"{extra} }}"));
-            let error = check_workspace(&workspace.root).unwrap_err();
+            let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(
                 error.contains(from)
                     && error.contains("maestro-test-terminal")
@@ -1025,7 +1038,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
     let workspace = Workspace::new();
     let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
     workspace.foundation(&names);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -1042,12 +1055,12 @@ fn unapproved_internal_dev_edges_are_rejected_for_every_member() {
             "[dev-dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
         );
         assert!(
-            check_workspace(&workspace.root)
+            check_workspace(workspace.root.path())
                 .unwrap_err()
                 .contains("internal dev dependency")
         );
         workspace.member("maestro-agent", "maestro-agent", "");
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -1057,7 +1070,7 @@ fn metadata_fixtures_run_while_scenario_data_is_open() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-models"]);
     std::fs::write(
-        workspace.root.join("resolved.json"),
+        workspace.root.path().join("resolved.json"),
         serde_json::to_vec(&workspace.metadata()).unwrap(),
     )
     .unwrap();
@@ -1079,7 +1092,7 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
         let wrapper = std::env::var_os("RUSTC_WRAPPER");
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-models"]);
-        let result = check_workspace(&workspace.root);
+        let result = check_workspace(workspace.root.path());
         assert_eq!(std::env::var_os("RUSTC_WRAPPER"), wrapper);
         assert_eq!(result, Ok(()));
         return;
@@ -1087,7 +1100,7 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
     let workspace = Workspace::new();
     let failing =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
-    let missing = workspace.root.join("missing-wrapper");
+    let missing = workspace.root.path().join("missing-wrapper");
     for wrapper in [None, Some(failing), Some(missing)] {
         let mut command = maestro_test_process::TestProcess::current(
             "metadata_queries_leave_compiler_wrappers_to_builds",
@@ -1371,7 +1384,7 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&s
         }
         workspace.member(from, from, &declarations);
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Ok(()),
             "{from} -> {targets:?} (optional: {optional})"
         );
@@ -1411,7 +1424,7 @@ fn check_frontend_omission(
             .unwrap();
         }
         workspace.member(frontend, frontend, &declarations);
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains(frontend)
                 && error.contains(omitted)
@@ -1424,7 +1437,7 @@ fn check_frontend_omission(
         )
         .unwrap();
         workspace.member(frontend, frontend, &declarations);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -1492,11 +1505,11 @@ fn test_dependency_cycles_are_rejected() {
         "[dev-dependencies]\nmaestro-agent = { path = \"../maestro-agent\" }",
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("test dependency cycle: maestro-agent -> maestro-models -> maestro-agent".into())
     );
     workspace.member("maestro-models", "maestro-models", "");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -1510,11 +1523,11 @@ fn maestro_conventions_rejects_foreign_target_reverse_edges() {
     ] {
         workspace.member("maestro-agent", "maestro-agent", &format!("[{kind}]\nalias = {{ package = \"maestro-session\", path = \"../maestro-session\"{extra} }}"));
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-agent -> maestro-session".into())
         );
         workspace.member("maestro-agent", "maestro-agent", "");
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -1618,11 +1631,11 @@ fn command_order_and_host_failures(workspace: &Workspace, valid: &serde_json::Va
         "ordered-rustc",
         &format!(
             "printf 'rustc %s\\n' \"$*\" >> {log:?}; printf 'host: x86_64-unknown-linux-gnu\\n'",
-            log = workspace.root.join("order")
+            log = workspace.root.path().join("order")
         ),
     );
     workspace.probe(&cargo, &rustc, "ok");
-    let log = std::fs::read_to_string(workspace.root.join("order")).unwrap();
+    let log = std::fs::read_to_string(workspace.root.path().join("order")).unwrap();
     let lines: Vec<_> = log.lines().collect();
     assert_eq!(lines.len(), 3, "{log}");
     assert!(
@@ -1650,7 +1663,7 @@ fn command_order_and_host_failures(workspace: &Workspace, valid: &serde_json::Va
 fn compiler_host_failures(workspace: &Workspace, cargo: &std::path::Path) {
     workspace.probe(
         cargo,
-        &workspace.root.join("missing-rustc"),
+        &workspace.root.path().join("missing-rustc"),
         "rustc -vV failed:",
     );
     for (body, expected) in [
@@ -1686,7 +1699,7 @@ fn terminal_adapter_text_edge_is_scoped() {
     workspace.foundation(&[ADAPTER, "maestro-text", "maestro-path"]);
     workspace.member(ADAPTER, ADAPTER, &format!("[dependencies]\n{toolkit}"));
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "{ADAPTER}: missing required direct dependency maestro-text"
         ))
@@ -1696,14 +1709,18 @@ fn terminal_adapter_text_edge_is_scoped() {
         ADAPTER,
         &format!("[dependencies]\n{toolkit}{plain_text}"),
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for (kind, extra) in DECLARATIONS {
         workspace.member(
             ADAPTER,
             ADAPTER,
             &format!("[{kind}]\n{toolkit}renamed = {{ package = \"maestro-text\", path = \"../maestro-text\"{extra} }}"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Ok(()),
+            "{kind}{extra}"
+        );
     }
     let missing = format!("{ADAPTER}: missing required direct dependency maestro-tui");
     let sparse = Workspace::new();
@@ -1720,13 +1737,13 @@ fn terminal_adapter_text_edge_is_scoped() {
     ] {
         sparse.member(ADAPTER, ADAPTER, only);
         assert_eq!(
-            check_workspace(&sparse.root),
+            check_workspace(sparse.root.path()),
             Err(missing.clone()),
             "{only}"
         );
         workspace.member(ADAPTER, ADAPTER, only);
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(missing.clone()),
             "{only}"
         );
@@ -1744,7 +1761,7 @@ fn adapter_text_may_not_be_dev_only(workspace: &Workspace, toolkit: &str) {
         &format!("[dependencies]\n{toolkit}[dev-dependencies]\nmaestro-text = {{ path = \"../maestro-text\" }}"),
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "internal dev dependency requires declared dependency-free test support: {ADAPTER} -> maestro-text"
         ))
@@ -1761,7 +1778,7 @@ fn harness_may_not_declare_text(toolkit: &str) {
         &format!("[dependencies]\n{toolkit}maestro-text = {{ path = \"../maestro-text\" }}"),
     );
     assert_eq!(
-        check_workspace(&harness.root),
+        check_workspace(harness.root.path()),
         Err("forbidden production dependency: maestro-test-terminal -> maestro-text".into())
     );
 }
@@ -1777,12 +1794,12 @@ fn terminal_example_brand_edge_is_development_only() {
         "target.'cfg(target_os = \"none\")'.dev-dependencies",
     ] {
         workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", &format!("{required}[{kind}]\nbrand = {{ package = \"maestro-brand\", path = \"../maestro-brand\" }}"));
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
     }
     for (kind, extra) in DECLARATIONS {
         workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\nmaestro-text = {{ path = \"../maestro-text\" }}\nbrand = {{ package = \"maestro-brand\", path = \"../maestro-brand\"{extra} }}"));
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-tui-crossterm -> maestro-brand".into()),
             "{kind}{extra}"
         );
@@ -1802,7 +1819,7 @@ fn extension_credentials_edge_is_development_only() {
             "maestro-extensions",
             &format!("[{kind}]\nmaestro-credentials = {{ path = \"../maestro-credentials\" }}"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
     }
     for (kind, extra) in DECLARATIONS {
         workspace.member(
@@ -1813,7 +1830,7 @@ fn extension_credentials_edge_is_development_only() {
             ),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(
                 "forbidden production dependency: maestro-extensions -> maestro-credentials".into()
             ),
@@ -1832,7 +1849,7 @@ fn terminal_example_brand_edge_keeps_required_runtime_dependencies() {
     ] {
         workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", &format!("[dependencies]\n{retained} = {{ path = \"../{retained}\" }}\n[dev-dependencies]\nmaestro-brand = {{ path = \"../maestro-brand\" }}"));
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "maestro-tui-crossterm: missing required direct dependency {missing}"
             ))
@@ -1903,7 +1920,11 @@ fn complete_permitted_graph_is_acyclic() {
             append_required_root_wiring(&mut declarations, from, kind);
             workspace.member(from, from, &declarations);
         }
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Ok(()),
+            "{kind}{extra}"
+        );
     }
 }
 
@@ -1948,7 +1969,11 @@ fn feature_unifier_is_a_native_build_dependency_leaf() {
                 from,
                 &unifier_declaration(required, NATIVE, alias, ""),
             );
-            assert_eq!(check_workspace(&workspace.root), Ok(()), "{from} {alias}");
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Ok(()),
+                "{from} {alias}"
+            );
         }
         for (section, extra) in [
             ("dependencies", ""),
@@ -1964,7 +1989,7 @@ fn feature_unifier_is_a_native_build_dependency_leaf() {
                 &unifier_declaration(required, section, "unified", extra),
             );
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "{from}: {UNIFIER} must be a native, normal, non-optional dependency"
                 )),
@@ -1988,7 +2013,7 @@ fn unifier_has_no_outbound_edges() {
                 &format!("[{kind}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
             );
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "{UNIFIER} must not depend on workspace crate {target}"
                 ))
@@ -2003,7 +2028,7 @@ fn unifier_class_is_dedicated() {
     workspace.foundation(&[UNIFIER]);
     workspace.list(&[(UNIFIER, "core")]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "invalid scoped layer for {UNIFIER}: expected dedicated"
         ))
@@ -2016,7 +2041,7 @@ fn unifier_class_is_dedicated() {
         "[dependencies]\ntooling = { package = \"maestro-tooling\", path = \"../maestro-tooling\" }",
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("core crate maestro-models must not depend on dedicated crate maestro-tooling".into())
     );
 }
@@ -2039,7 +2064,7 @@ fn feature_unifier_preserves_required_domain_edges() {
             from,
             &unifier_declaration(required, NATIVE, "unified", ""),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{from}");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{from}");
         for omitted in required {
             let remaining: Vec<_> = required.iter().copied().filter(|t| t != omitted).collect();
             workspace.member(
@@ -2048,7 +2073,7 @@ fn feature_unifier_preserves_required_domain_edges() {
                 &unifier_declaration(&remaining, NATIVE, "unified", ""),
             );
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "{from}: missing required direct dependency {omitted}"
                 ))
@@ -2089,7 +2114,7 @@ fn caller_declares(workspace: &Workspace, caller: &str, declaration: &str) -> Re
     };
     manifest.push_str(declaration);
     workspace.member(caller, caller, &manifest);
-    check_workspace(&workspace.root).map(drop)
+    check_workspace(workspace.root.path()).map(drop)
 }
 
 /// A dependency entry that reaches the owner through a renamed alias.
@@ -2152,7 +2177,7 @@ fn test_process_owner_stays_dependency_free() {
         OWNER,
         &unifier_declaration(&[], NATIVE, "unified", ""),
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for (table, target) in [
         ("dependencies", "maestro-path"),
         ("dependencies", "maestro-text"),
@@ -2165,7 +2190,7 @@ fn test_process_owner_stays_dependency_free() {
             OWNER,
             &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}\n"),
         );
-        let error = check_workspace(&workspace.root).unwrap_err();
+        let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
             error.contains(OWNER) && error.contains(target),
             "{table} {target}: {error}"
@@ -2193,7 +2218,7 @@ fn test_process_permission_is_not_a_name_pattern() {
     workspace.foundation(&["maestro-agent", OWNER]);
     workspace.member("maestro-test-other", "maestro-test-other", "");
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("maestro-test-other")
     );
@@ -2251,7 +2276,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
                 owner_entry("")
             ),
         );
-        assert_eq!(check_workspace(&workspace.root).is_ok(), accepted);
+        assert_eq!(check_workspace(workspace.root.path()).is_ok(), accepted);
     }
 }
 
@@ -2262,17 +2287,17 @@ fn test_process_inventory_matches_foundation_contract() {
     assert_eq!(owner_callers(), support::policy::TEST_PROCESS_CALLERS);
     let workspace = Workspace::new();
     workspace.foundation(&[OWNER]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     workspace.list(&[(OWNER, "core")]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "invalid scoped layer for {OWNER}: expected dedicated"
         ))
     );
     workspace.list(&[]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "workspace crate is not listed in workspace-crates.json: {OWNER}"
         ))
@@ -2292,14 +2317,14 @@ fn workspace_daemon_owners_are_core() {
     ] {
         let workspace = Workspace::new();
         workspace.foundation(&[name]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()), "{name}");
-        let path = workspace.root.join("workspace-crates.json");
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{name}");
+        let path = workspace.root.path().join("workspace-crates.json");
         let mut inventory: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
         inventory[name] = "dedicated".into();
         std::fs::write(&path, serde_json::to_vec_pretty(&inventory).unwrap()).unwrap();
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!("invalid scoped layer for {name}: expected core"))
         );
     }
@@ -2311,11 +2336,11 @@ fn daemon_requires_the_terminal_engine() {
     workspace.foundation(&["maestro-daemon"]);
     workspace.member("maestro-daemon", "maestro-daemon", "");
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err("maestro-daemon: missing required direct dependency maestro-terminal".into())
     );
     workspace.foundation(&["maestro-daemon"]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2355,7 +2380,7 @@ fn check_root_dependency_form(kind: &str, extra: &str) {
         .unwrap();
         workspace.member("maestro", "maestro", &declarations);
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "maestro: missing required direct dependency {target}"
             )),
@@ -2363,7 +2388,7 @@ fn check_root_dependency_form(kind: &str, extra: &str) {
         );
     }
     workspace.foundation(&["maestro"]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2376,7 +2401,7 @@ fn workspace_root_accepts_native_target_wiring() {
         writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
     }
     workspace.member("maestro", "maestro", &declarations);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2391,14 +2416,14 @@ fn workspace_root_requires_core_wiring() {
         }
         workspace.member("maestro", "maestro", &declarations);
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(format!(
                 "maestro: missing required direct dependency {omitted}"
             ))
         );
     }
     workspace.foundation(&["maestro"]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2411,7 +2436,7 @@ fn detection_consumes_foreground_process_facts() {
         "[dependencies]\nmaestro-process = { path = \"../maestro-process\" }",
     );
     workspace.list(&[("maestro-process", "core"), ("maestro-detection", "core")]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2419,13 +2444,13 @@ fn detection_text_test_edge_is_native() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-detection", "maestro-text"]);
     workspace.member("maestro-detection", "maestro-detection", "[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nmaestro-text = { path = \"../maestro-text\" }");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     workspace.member(
         "maestro-detection",
         "maestro-detection",
         "[dev-dependencies]\nmaestro-text = { path = \"../maestro-text\" }",
     );
-    assert_eq!(check_workspace(&workspace.root), Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into()));
+    assert_eq!(check_workspace(workspace.root.path()), Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into()));
 }
 
 #[test]
@@ -2439,7 +2464,7 @@ fn detection_catalog_uses_atomic_replacement() {
 maestro-lock = { path = "../maestro-lock" }"#,
     );
     workspace.list(&[("maestro-lock", "core"), ("maestro-detection", "core")]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// The disposable-directory owner.
@@ -2454,6 +2479,7 @@ const TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-workspace"];
 /// Independently declared native directory consumers.
 const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
+    "maestro-chat",
     "maestro-credentials",
     "maestro-extensions",
     "maestro-models",
@@ -2513,7 +2539,7 @@ fn directory_support_owner_has_no_domain_dependencies() {
                 &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
             );
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(format!(
                     "maestro-test-directory must not depend on workspace crate {target}"
                 ))
@@ -2525,7 +2551,7 @@ fn directory_support_owner_has_no_domain_dependencies() {
         DIRECTORY,
         &unifier_declaration(&[], NATIVE, "unified", ""),
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2562,7 +2588,7 @@ fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
     assert_eq!(caller_declares(&workspace, callers[0], &native), Ok(()));
     workspace.member("maestro-test-other", "maestro-test-other", &native);
     assert!(
-        check_workspace(&workspace.root)
+        check_workspace(workspace.root.path())
             .unwrap_err()
             .contains("maestro-test-other")
     );
@@ -2638,17 +2664,17 @@ fn support_inventory_matches_contract(owner: &str, callers: &[&str], documented:
     ));
     let workspace = Workspace::new();
     workspace.foundation(&[owner]);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     workspace.list(&[(owner, "core")]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "invalid scoped layer for {owner}: expected dedicated"
         ))
     );
     workspace.list(&[]);
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(format!(
             "workspace crate is not listed in workspace-crates.json: {owner}"
         ))

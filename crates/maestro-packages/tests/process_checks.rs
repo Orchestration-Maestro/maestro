@@ -21,7 +21,7 @@ use std::{
 
 /// A path below the directory.
 fn at(root: &Scratch, relative: &str) -> String {
-    root.0.join(relative).to_string_lossy().into_owned()
+    root.path().join(relative).to_string_lossy().into_owned()
 }
 
 /// A native manager running the given shell script as its package command.
@@ -61,9 +61,9 @@ fn parallel_scratch_directories_are_all_created_and_distinct() {
         .map(|_| std::thread::spawn(|| Scratch::new().unwrap()))
         .collect();
     let scratches: Vec<_> = threads.into_iter().map(|t| t.join().unwrap()).collect();
-    let paths: std::collections::HashSet<_> = scratches.iter().map(|s| s.0.clone()).collect();
+    let paths: std::collections::HashSet<_> = scratches.iter().map(Scratch::path).collect();
     assert_eq!(paths.len(), 32);
-    assert!(scratches.iter().all(|s| s.0.is_dir()));
+    assert!(scratches.iter().all(|s| s.path().is_dir()));
 }
 
 #[test]
@@ -165,7 +165,7 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
     let status = TestProcess::current("native_stdio_obeys_live_takeover_and_literal_arguments")
         .unwrap()
         .nocapture()
-        .env(STDIO_CHILD, &root.0)
+        .env(STDIO_CHILD, root.path())
         .current_dir(at(&root, "ambient"))
         .stdin(std::fs::File::open(at(&root, "input")).unwrap())
         .stderr(std::fs::File::create(&err).unwrap())
@@ -177,7 +177,7 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
         std::fs::read_to_string(err).unwrap(),
     );
     let canonical = |name: &str| {
-        root.0
+        root.path()
             .join(name)
             .canonicalize()
             .unwrap()
@@ -287,7 +287,7 @@ fn native_local_repository_installs_checks_out_and_removes() {
         "native_local_repository_installs_checks_out_and_removes",
     )
     .unwrap()
-    .env(REPOSITORY_CHILD, &root.0)
+    .env(REPOSITORY_CHILD, root.path())
     .env("GIT_CONFIG_GLOBAL", "/dev/null")
     .env("GIT_CONFIG_SYSTEM", "/dev/null")
     .env("GIT_CONFIG_COUNT", "1")

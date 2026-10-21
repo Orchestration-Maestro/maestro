@@ -1,37 +1,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 use std::ffi::OsString;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use maestro_models::{find_env_keys, get_env_api_key};
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-pub struct Directory(pub PathBuf);
-
-impl Directory {
-    pub fn new() -> TestResult<Self> {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        loop {
-            let path = std::env::temp_dir().join(format!(
-                "maestro-environment-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ));
-            match std::fs::create_dir(&path) {
-                Ok(()) => return Ok(Self(path)),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => return Err(error.into()),
-            }
-        }
-    }
-}
-
-impl Drop for Directory {
-    fn drop(&mut self) {
-        assert!(std::fs::remove_dir_all(&self.0).is_ok());
-    }
-}
+pub use maestro_test_directory::Scratch as Directory;
 
 pub fn child() -> TestResult<bool> {
     let Ok(expectation) = std::env::var("MAESTRO_ENV_EXPECTATION") else {
@@ -67,9 +41,9 @@ pub fn run(
 ) -> TestResult {
     let output = maestro_test_process::TestProcess::current(test)?
         .env_clear()
-        .current_dir(&directory.0)
-        .env("HOME", &directory.0)
-        .env("USERPROFILE", &directory.0)
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("USERPROFILE", directory.path())
         .nocapture()
         .envs(variables.iter().map(|(key, value)| (key, value)))
         .env(

@@ -471,7 +471,7 @@ fn workflow(
 fn configured_sources_work_without_acquisition() {
     use maestro_packages::NativePackageOperations;
     let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_str().unwrap();
+    let base = scratch.path().to_str().unwrap();
     let cwd = maestro_path::join(&[base, "project"]);
     let agent = maestro_path::join(&[base, "agent"]);
     let root = maestro_path::join(&[base, "global"]);

@@ -57,7 +57,7 @@ const EXPECTED_SKILLS: [(&str, bool); 37] = [
 fn skill_pack_loads_with_closed_links_and_router() {
     let package = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packages/maestro-skills");
     let scratch = Scratch::new().unwrap();
-    let root = scratch.0.to_str().unwrap();
+    let root = scratch.path().to_str().unwrap();
     let paths = resolve_paths(&package, root);
     let loaded = load_skills(
         LoadSkillsOptions {
@@ -97,7 +97,7 @@ fn skill_pack_loads_with_closed_links_and_router() {
         .collect();
     assert_eq!(names, entries.iter().map(String::as_str).collect());
     check_files(&package, &names);
-    check_controls(&package, &scratch.0, &names);
+    check_controls(&package, scratch.path(), &names);
 }
 
 /// Resolve only local skill resources while observing acquisition and spawning.

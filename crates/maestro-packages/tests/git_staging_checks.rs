@@ -841,7 +841,7 @@ fn git_temporary_refresh_recovers_then_suppresses_failure() {
         fixture
             .repo
             .scratch
-            .0
+            .path()
             .join("temporary")
             .to_string_lossy()
             .into_owned(),
@@ -1019,9 +1019,9 @@ fn install_transport(
     common: &Path,
 ) -> std::path::PathBuf {
     use crate::native_git::git;
-    let marker = fixture.repo.scratch.0.join("transport-called");
-    let source = fixture.repo.scratch.0.join("transport-source");
-    let executable = fixture.repo.scratch.0.join("transport");
+    let marker = fixture.repo.scratch.path().join("transport-called");
+    let source = fixture.repo.scratch.path().join("transport-source");
+    let executable = fixture.repo.scratch.path().join("transport");
     assert!(Path::new("/usr/bin/git-upload-pack").is_file());
     std::fs::write(
         &source,
@@ -1166,15 +1166,19 @@ fn staging_allocation_skips_collisions() {
         Rc::new(|| false),
         &Rc::new(tokio::task::LocalSet::new()),
     );
-    let first = native.create_temp_dir(scratch.0.to_str().unwrap()).unwrap();
+    let first = native
+        .create_temp_dir(scratch.path().to_str().unwrap())
+        .unwrap();
     let name = Path::new(&first).file_name().unwrap().to_str().unwrap();
     let (prefix, index) = name.rsplit_once('-').unwrap();
     let collision = scratch
-        .0
+        .path()
         .join(format!("{prefix}-{}", index.parse::<usize>().unwrap() + 1));
     std::fs::create_dir(&collision).unwrap();
     std::fs::write(collision.join("foreign"), "retain").unwrap();
-    let second = native.create_temp_dir(scratch.0.to_str().unwrap()).unwrap();
+    let second = native
+        .create_temp_dir(scratch.path().to_str().unwrap())
+        .unwrap();
     assert_ne!(Path::new(&second), collision);
     assert_eq!(
         std::fs::read_to_string(collision.join("foreign")).unwrap(),
@@ -1516,7 +1520,7 @@ fn check_current_selection(
         let path = fixture
             .repo
             .scratch
-            .0
+            .path()
             .join("cwd/.maestro/git/github.com/acme/tool");
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::rename(&fixture.repo.target, &path).unwrap();

@@ -253,7 +253,7 @@ fn browser_example_development_serves_rebuilt_external_assets() {
             .unwrap()
             .contains("outline-style:dotted")
     );
-    edit_linked_targets(&pack_target.0, &mark_target.0, || {
+    edit_linked_targets(&pack_target.path(), &mark_target.path(), || {
         wait_for(&receive, "✅ success");
         get(port, wasm.file_name().unwrap().to_str().unwrap()).1
     });
@@ -276,7 +276,7 @@ fn browser_compile_watch_rebuilds_external_identity() {
     let (child, receive, thread) = start_output(command);
     wait_for(&receive, "✅ success");
     let wasm = browser.path("target/maestro-browser/library/maestro-browser-author_bg.wasm");
-    edit_linked_targets(&pack_target.0, &mark_target.0, || {
+    edit_linked_targets(&pack_target.path(), &mark_target.path(), || {
         wait_for(&receive, "✅ success");
         fs::read(&wasm).unwrap()
     });
@@ -295,10 +295,10 @@ fn linked_identity(browser: &Browser) -> (std::path::PathBuf, Workspace, Workspa
     let pack_target = Workspace::new();
     let mark_target = Workspace::new();
     for (authored, target) in [
-        (pack.clone(), pack_target.0.join("pack.json")),
+        (pack.clone(), pack_target.path().join("pack.json")),
         (
             browser.path("external mark.svg"),
-            mark_target.0.join("mark.svg"),
+            mark_target.path().join("mark.svg"),
         ),
     ] {
         crate::recipe_support::record(format!("phase: authored rename {authored:?} -> {target:?}"));
@@ -804,7 +804,7 @@ fn browser_ignores_only_generated_outputs() {
     let browser = Browser::new();
     assert!(
         Command::new("git")
-            .current_dir(&browser.workspace.0)
+            .current_dir(browser.workspace.path())
             .args(["init", "--quiet"])
             .status()
             .unwrap()
@@ -826,7 +826,7 @@ fn browser_ignores_only_generated_outputs() {
         ("package.json.in", false),
     ] {
         let result = Command::new("git")
-            .current_dir(&browser.workspace.0)
+            .current_dir(browser.workspace.path())
             .args(["check-ignore", "--no-index", "--quiet"])
             .arg(browser.fixture(path))
             .status()
@@ -840,7 +840,7 @@ fn browser_ignores_only_generated_outputs() {
     ] {
         assert!(
             !Command::new("git")
-                .current_dir(&browser.workspace.0)
+                .current_dir(browser.workspace.path())
                 .args(["check-ignore", "--no-index", "--quiet"])
                 .arg(path)
                 .status()
@@ -853,14 +853,13 @@ fn browser_ignores_only_generated_outputs() {
 #[test]
 fn browser_recipes_preserve_literal_paths_and_failures() {
     let mut workspace = Workspace::new();
-    let renamed = workspace.0.with_file_name(format!(
+    let renamed = workspace.path().with_file_name(format!(
         "Maestro's author 東京 {}",
-        workspace.0.file_name().unwrap().to_str().unwrap()
+        workspace.path().file_name().unwrap().to_str().unwrap()
     ));
-    fs::rename(&workspace.0, &renamed).unwrap();
-    workspace.0 = renamed;
+    workspace.rename(renamed.file_name().unwrap()).unwrap();
     check_command_failures(&workspace);
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     success(
         &workspace
             .command("browser-library-build")
@@ -872,7 +871,7 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
     assert!(
         log.contains("|browser-author|library-build|pack's 東京 path|light|--public-url|/a space/")
     );
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     success(&workspace.run("browser-build"));
     let log = workspace.log();
     assert_eq!(log.lines().count(), 2);
@@ -888,7 +887,7 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
             .unwrap()
             .contains("|browser-author|example-build|")
     );
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     assert!(
         !workspace
             .command("browser-build")
@@ -899,7 +898,7 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
             .success()
     );
     assert_eq!(workspace.log().lines().count(), 1);
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     check_root_browser_selection(&workspace);
     check_real_author_literals();
 }
@@ -939,7 +938,7 @@ fn check_root_browser_selection(workspace: &Workspace) {
     assert!(
         log.contains("watch|build|--workspace|--locked") && log.contains("|browser-author|serve|")
     );
-    fs::remove_file(workspace.0.join("log")).unwrap();
+    fs::remove_file(workspace.path().join("log")).unwrap();
     success(&workspace.run("dev-compile"));
     let log = workspace.log();
     assert!(
@@ -988,7 +987,7 @@ fn check_command_failures(workspace: &Workspace) {
         if recipe == "browser-example-preview" {
             command.env(
                 "MAESTRO_FAIL",
-                workspace.0.join("target/maestro-browser/example"),
+                workspace.path().join("target/maestro-browser/example"),
             );
         } else if recipe.ends_with("clean") {
             command.env("MAESTRO_FAIL", phase);
@@ -1033,7 +1032,7 @@ fn preview_failures(browser: &Browser) {
 fn browser_author_metadata_adapter_keeps_literals_and_status() {
     use std::{ffi::OsString, os::unix::fs::PermissionsExt};
     let workspace = Workspace::new();
-    let script = workspace.0.join("cargo-probe");
+    let script = workspace.path().join("cargo-probe");
     fs::write(
         &script,
         "#!/bin/sh\nprintf '%s\\n' \"$@\"\nprintf 'native diagnostic' >&2\nexit 17\n",
@@ -1067,7 +1066,7 @@ fn browser_author_metadata_adapter_keeps_literals_and_status() {
         .to_vec();
     let before: Vec<_> = std::env::vars_os().collect();
     assert_eq!(
-        maestro_tooling::run(&args, &script, &workspace.0).unwrap(),
+        maestro_tooling::run(&args, &script, &workspace.path()).unwrap(),
         std::process::ExitCode::from(17)
     );
     assert_eq!(std::env::vars_os().collect::<Vec<_>>(), before);
@@ -1361,14 +1360,19 @@ fn browser_author_hook_status_propagates() {
     let args = [
         "browser-author",
         "hook",
-        workspace.0.to_str().unwrap(),
+        workspace.path().to_str().unwrap(),
         "sh",
         "-c",
         "exit 17",
     ]
     .map(std::ffi::OsString::from);
     assert_eq!(
-        maestro_tooling::run(&args, std::path::Path::new(env!("CARGO")), &workspace.0).unwrap(),
+        maestro_tooling::run(
+            &args,
+            std::path::Path::new(env!("CARGO")),
+            &workspace.path()
+        )
+        .unwrap(),
         std::process::ExitCode::from(17)
     );
 }
@@ -1549,14 +1553,14 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
     .unwrap();
     success(
         &toolchain_support::command(env!("CARGO"))
-            .current_dir(&browser.workspace.0)
+            .current_dir(browser.workspace.path())
             .args(["metadata", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),
     );
     success(
         &toolchain_support::command(env!("CARGO"))
-            .current_dir(&browser.workspace.0)
+            .current_dir(browser.workspace.path())
             .args(["metadata", "--locked", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),
@@ -1904,7 +1908,7 @@ fn browser_native_refusals_preserve_errors_and_adapter_status() {
     let error = maestro_tooling::run(
         &["browser-author".into()],
         std::path::Path::new(env!("CARGO")),
-        &browser.workspace.0,
+        &browser.workspace.path(),
     )
     .unwrap_err();
     assert_eq!(error.to_string(), "missing browser operation");
