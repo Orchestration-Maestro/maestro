@@ -299,6 +299,40 @@ fn proxy_choice_follows_the_variables_and_exclusions() -> Result<(), Box<dyn std
 }
 
 #[test]
+fn pac_sources_admit_exactly_the_supported_protocols() {
+    let destination = Url::parse("http://origin.example/").unwrap();
+    for source in [
+        "pac+data:,function%20FindProxyForURL()%7Breturn%20'DIRECT'%7D",
+        "pac+data://,script",
+        "pac+file:///script.pac",
+        "pac+http://proxy.example/script.pac",
+        "pac+https://proxy.example/script.pac",
+    ] {
+        let selected = environment(&[("HTTP_PROXY", source)])
+            .proxy_for(&destination)
+            .unwrap();
+        assert_eq!(selected, Some(Url::parse(source).unwrap()));
+    }
+    let bare = environment(&[("HTTP_PROXY", "proxy.example:8080")]);
+    assert_eq!(
+        bare.proxy_for(&destination).unwrap(),
+        Some(Url::parse("http://proxy.example:8080").unwrap())
+    );
+    for source in ["pac+gopher://proxy.example/script", "pac+http://"] {
+        assert!(
+            environment(&[("HTTP_PROXY", source)])
+                .proxy_for(&destination)
+                .is_err()
+        );
+        assert_eq!(
+            environment(&[("HTTP_PROXY", source), ("NO_PROXY", "origin.example")])
+                .proxy_for(&destination),
+            Ok(None)
+        );
+    }
+}
+
+#[test]
 fn selected_proxy_that_is_not_usable_is_an_error() -> Result<(), Box<dyn std::error::Error>> {
     let destination = Url::parse("http://origin.example/")?;
     for (id, proxy) in [("malformed", "http://"), ("unsupported", "ftp://p.example")] {

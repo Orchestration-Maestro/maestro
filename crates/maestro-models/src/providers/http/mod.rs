@@ -3,8 +3,14 @@
 mod body;
 mod client;
 mod failure;
+#[cfg(not(target_arch = "wasm32"))]
+mod get_uri;
 mod headers;
 mod line_decoder;
+#[cfg(not(target_arch = "wasm32"))]
+mod pac_proxy_agent;
+#[cfg(not(target_arch = "wasm32"))]
+mod pac_resolver;
 #[cfg(not(target_arch = "wasm32"))]
 mod proxy_agent;
 mod retry;

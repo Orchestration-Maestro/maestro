@@ -63,6 +63,29 @@ together occupy at most 503 bytes. Longer IDs, larger frames and locally resolve
 addresses use the existing owned exchange; these adapter restrictions do not limit accepted
 proxy URLs or truncate transmitted fields. No library fork is used.
 
+## Proxy script libraries
+
+Native proxy script routing uses `boa_engine =0.22.0` with defaults off and
+`system-time-zone`, under MIT. A retained interpreter runs on a blocking worker;
+DNS uses the supplied asynchronous runtime while that worker waits. Existing
+`regress =0.12.0` handles shell patterns; existing `chrono =0.4.45` (defaults
+off, `std`, MIT OR Apache-2.0) validates dated ranges. No source rewriting or additional HTTP client is used.
+
+`if-addrs =0.15.0` (defaults off, `link-local`, MIT OR BSD-3-Clause, used under MIT)
+reads native interface addresses only after the local-address reachability probe
+fails. The feature preserves link-local addresses rather than filtering them.
+The dependency owns platform-specific system calls; the caller uses its safe API.
+Linux interface order was exercised; macOS and Windows were inspected, not run.
+
+`tracing =0.1.44` (defaults off, `std`, MIT) carries exact script alert messages to
+the caller's subscriber. The interpreter retains that dispatch across its worker
+boundary; routing adds no printing or logger option.
+
+The lockfile adds 40 package identities for the interpreter and interface adapter,
+all offering MIT; no existing identity is removed. The interface adapter accounts
+for one new identity, `if-addrs`; its platform dependencies were already locked.
+All three direct declarations are native-only.
+
 ## Native credentials
 
 Native application-default credentials in `maestro-models` use `google-cloud-auth =1.17.0` with

@@ -67,16 +67,18 @@ impl Environment {
         let Some(proxy) = proxy else {
             return Ok(None);
         };
-        let parsed = if proxy.contains("://") {
+        let parsed = if proxy.contains("://") || proxy.starts_with("pac+data:") {
             Url::parse(proxy)
         } else {
             Url::parse(&format!("{scheme}://{proxy}"))
         }
         .map_err(|error| format!("Invalid proxy URL {proxy}: {error}"))?;
+        if let Some(source) = proxy.strip_prefix("pac+") {
+            Url::parse(source).map_err(|error| format!("Invalid proxy URL {proxy}: {error}"))?;
+        }
         match parsed.scheme() {
-            "http" | "https" | "socks" | "socks4" | "socks4a" | "socks5" | "socks5h" => {
-                Ok(Some(parsed))
-            }
+            "http" | "https" | "socks" | "socks4" | "socks4a" | "socks5" | "socks5h"
+            | "pac+data" | "pac+file" | "pac+http" | "pac+https" => Ok(Some(parsed)),
             _ => Err(format!("Unsupported protocol for proxy URL: {proxy}")),
         }
     }
