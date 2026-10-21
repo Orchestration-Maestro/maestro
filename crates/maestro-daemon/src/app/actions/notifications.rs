@@ -176,6 +176,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                 match pending.kind {
                     ToastKind::NeedsAttention => "needs attention",
                     ToastKind::Finished => "finished",
+                    ToastKind::UpdateInstalled => "updated",
                 }
             ),
             context: notification_context(target, &label, workspace, pending.pane_id),
@@ -302,6 +303,6 @@ fn sound_for_toast_kind(kind: ToastKind, suppressed: bool) -> Option<Notificatio
     match kind {
         ToastKind::NeedsAttention => Some(NotificationShowSound::Request),
         ToastKind::Finished if !suppressed => Some(NotificationShowSound::Done),
-        ToastKind::Finished => None,
+        ToastKind::Finished | ToastKind::UpdateInstalled => None,
     }
 }

@@ -12,6 +12,8 @@ pub enum ToastKind {
     NeedsAttention,
     /// Agent has finished its work.
     Finished,
+    /// An application version or detection update is available.
+    UpdateInstalled,
 }
 
 /// Logical target retained by a notification.

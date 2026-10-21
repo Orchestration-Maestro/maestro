@@ -1256,3 +1256,244 @@ fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
     assert!(state.session_dirty);
     let _ = std::fs::remove_dir_all(cwd);
 }
+
+#[test]
+fn daemon_background_idle_sets_finished_toast() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.active = Some(0);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let bg_pane_id = state.topology.workspaces[1].tabs[0].root_pane;
+    let bg_terminal_id = state.topology.workspaces[1]
+        .pane_state(bg_pane_id)
+        .unwrap()
+        .attached_terminal_id
+        .clone();
+    state.terminals.get_mut(&bg_terminal_id).unwrap().state = AgentState::Working;
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: bg_pane_id,
+        agent: Some(Agent::Droid),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::Finished);
+    assert_eq!(toast.title, "droid finished");
+    assert_eq!(toast.context, "background · 2");
+    let target = toast.target.as_ref().expect("toast target");
+    assert_eq!(&target.workspace_id, &state.topology.workspaces[1].id);
+    assert_eq!(target.pane_id, bg_pane_id);
+}
+
+#[test]
+fn daemon_background_toast_includes_tab_name_when_workspace_has_multiple_tabs() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.active = Some(0);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    state.topology.workspaces[1].tabs[0].set_custom_name("main".into());
+    let bg_pane_id = add_tab(&mut state, 1);
+    populate_terminals(&mut state);
+    let tab = state.topology.workspaces[1].tabs.last_mut().unwrap();
+    tab.set_custom_name("logs".into());
+    state.topology.workspaces[1].active_tab = 0;
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: bg_pane_id,
+        agent: Some(Agent::Pi),
+        state: AgentState::Blocked,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::NeedsAttention);
+    assert_eq!(toast.title, "pi needs attention");
+    assert_eq!(toast.context, "background · 2 · logs");
+}
+
+#[test]
+fn daemon_background_tab_in_active_workspace_still_sets_toast() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active"]);
+    state.active = Some(0);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    state.topology.workspaces[0].tabs[0].set_custom_name("main".into());
+    let bg_pane_id = add_tab(&mut state, 0);
+    populate_terminals(&mut state);
+    let tab = state.topology.workspaces[0].tabs.last_mut().unwrap();
+    tab.set_custom_name("logs".into());
+    state.topology.workspaces[0].active_tab = 0;
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: bg_pane_id,
+        agent: Some(Agent::Pi),
+        state: AgentState::Blocked,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::NeedsAttention);
+    assert_eq!(toast.title, "pi needs attention");
+    assert_eq!(toast.context, "active · 1 · logs");
+}
+
+#[test]
+fn daemon_active_workspace_active_tab_does_not_set_toast() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active"]);
+    state.active = Some(0);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Pi),
+        state: AgentState::Blocked,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    assert!(state.toast.is_none());
+}
+
+#[test]
+fn daemon_active_workspace_active_tab_keeps_workspace_toast_suppressed_when_outer_terminal_is_unfocused()
+ {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active"]);
+    state.active = Some(0);
+    state.outer_terminal_focus = Some(false);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Pi),
+        state: AgentState::Blocked,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+
+    assert!(state.toast.is_none());
+}
+
+#[test]
+fn daemon_active_tab_suppression_preserves_unknown_focus_behavior() {
+    use maestro_daemon::app::actions::active_tab_suppresses_notifications;
+    assert!(active_tab_suppresses_notifications(true, None));
+    assert!(active_tab_suppresses_notifications(true, Some(true)));
+    assert!(!active_tab_suppresses_notifications(true, Some(false)));
+    assert!(!active_tab_suppresses_notifications(false, None));
+}
+
+#[test]
+fn daemon_update_ready_sets_manual_update_toast() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    let mut state = app_with_workspaces(&[]);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+
+    let updates = state.handle_app_event(AppEvent::UpdateReady {
+        version: "0.5.0".into(),
+        install_command: "maestro update".into(),
+    });
+
+    assert!(updates.is_empty());
+    assert_eq!(state.update_available.as_deref(), Some("0.5.0"));
+    assert!(state.latest_release_notes_available);
+    assert!(state.update_dismissed);
+    let toast = state.toast.as_ref().expect("update toast");
+    assert_eq!(toast.kind, ToastKind::UpdateInstalled);
+    assert_eq!(toast.title, "v0.5.0 available");
+    assert_eq!(
+        toast.context,
+        "detach, run `maestro update`, then follow its restart guidance"
+    );
+}
+
+#[test]
+fn daemon_update_ready_uses_event_install_command_in_toast() {
+    use maestro_daemon::events::AppEvent;
+    let mut state = app_with_workspaces(&[]);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+
+    state.handle_app_event(AppEvent::UpdateReady {
+        version: "0.5.0".into(),
+        install_command: "brew update && brew upgrade maestro".into(),
+    });
+
+    assert_eq!(
+        state.update_install_command,
+        "brew update && brew upgrade maestro"
+    );
+    let toast = state.toast.as_ref().expect("update toast");
+    assert_eq!(
+        toast.context,
+        "detach, run `brew update && brew upgrade maestro`, then restart this Maestro session when ready"
+    );
+}
+
+#[test]
+fn update_guidance_keeps_install_manager_and_delivery_policies_separate() {
+    use maestro_daemon::{events::AppEvent, settings::model::ToastDelivery};
+    let mut state = app_with_workspaces(&[]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    for (command, expected) in [
+        (
+            "update through Nix",
+            "detach, update through Nix, then restart this Maestro session when ready",
+        ),
+        (
+            "mise upgrade maestro",
+            "detach, run `mise upgrade maestro`, then restart this Maestro session when ready",
+        ),
+        (
+            "custom-installer --update",
+            "detach, run `custom-installer --update`, then restart this Maestro session when ready",
+        ),
+    ] {
+        assert!(
+            state
+                .handle_app_event(AppEvent::UpdateReady {
+                    version: "0.6.0".into(),
+                    install_command: command.into(),
+                })
+                .is_empty()
+        );
+        assert_eq!(state.toast.as_ref().unwrap().context, expected);
+    }
+    let previous = state.toast.clone();
+    for delivery in [
+        ToastDelivery::Off,
+        ToastDelivery::Terminal,
+        ToastDelivery::System,
+    ] {
+        state.toast_config.delivery = delivery;
+        state.handle_app_event(AppEvent::UpdateReady {
+            version: "0.7.0".into(),
+            install_command: "separate-installer".into(),
+        });
+        assert_eq!(state.update_available.as_deref(), Some("0.7.0"));
+        assert_eq!(state.update_install_command, "separate-installer");
+        assert_eq!(state.toast, previous);
+    }
+}

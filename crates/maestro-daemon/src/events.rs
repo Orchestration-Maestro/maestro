@@ -72,6 +72,13 @@ pub enum AppEvent {
         /// Source-local sequence.
         seq: Option<u64>,
     },
+    /// An application version is available through the active installation manager.
+    UpdateReady {
+        /// Available version spelling.
+        version: String,
+        /// Installation command selected by the producer.
+        install_command: String,
+    },
     /// Fallback screen detection changed a pane's state.
     StateChanged {
         /// Pane whose state changed.

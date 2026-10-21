@@ -13,6 +13,13 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Applies background state observations; host bell and clipboard effects stay with the loop.
     pub fn handle_app_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
         let update = match event {
+            AppEvent::UpdateReady {
+                version,
+                install_command,
+            } => {
+                self.record_update_ready(version, install_command);
+                None
+            }
             AppEvent::PaneDied { pane_id } => {
                 self.handle_pane_died(pane_id);
                 None

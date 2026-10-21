@@ -59,6 +59,14 @@ pub struct DaemonState<C> {
     pub outer_terminal_focus: Option<bool>,
     /// Most recent workspace notification.
     pub toast: Option<ToastNotification>,
+    /// Available application version reported by the update producer.
+    pub update_available: Option<String>,
+    /// Install command supplied by the update producer.
+    pub update_install_command: String,
+    /// Whether release notes are available for the reported version.
+    pub latest_release_notes_available: bool,
+    /// Whether automatic update prompting has been dismissed.
+    pub update_dismissed: bool,
     /// Delayed transitions revalidated before delivery.
     pub pending_agent_notifications: HashMap<PaneId, PendingAgentNotification>,
     /// Sequence shared by effective agent state changes.
@@ -100,6 +108,10 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             sound: config.ui.sound.clone(),
             outer_terminal_focus: None,
             toast: None,
+            update_available: None,
+            update_install_command: "maestro update".into(),
+            latest_release_notes_available: false,
+            update_dismissed: false,
             pending_agent_notifications: HashMap::new(),
             next_agent_state_change_seq: 0,
             mode: Mode::Navigate,

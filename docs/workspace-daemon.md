@@ -142,6 +142,11 @@ focus and the root terminal's directory. Workspace toasts, client notifications
 and sound decisions are independent; terminal delivery does not replace the
 workspace toast. Host notification and sound effects remain with the loop.
 
+Update-ready events retain the available version and the producer's install
+command. Workspace delivery shows installation guidance; other delivery modes
+leave any existing toast unchanged. Receiving an event does not acquire or install
+an update.
+
 `maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
 retains the latest 512 ordered event payloads. Replay returns only events strictly
 newer than the supplied sequence. Events use the shared type-tagged protocol
