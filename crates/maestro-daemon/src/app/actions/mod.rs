@@ -1,5 +1,6 @@
 //! Daemon-owned workspace mutations.
 
+mod focus;
 mod ordering;
 
 use maestro_workspace::{layout::PaneId, workspace::Workspace};

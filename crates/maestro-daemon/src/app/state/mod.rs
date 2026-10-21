@@ -8,6 +8,18 @@ use maestro_workspace::{
 };
 use std::collections::HashMap;
 
+mod selection;
+pub use selection::{CopyModeSelection, CopyModeState, Mode};
+
+/// Logical pane focus that survives workspace reordering.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PaneFocusTarget {
+    /// Stable workspace identity.
+    pub workspace_id: String,
+    /// Pane identity allocated by the topology.
+    pub pane_id: PaneId,
+}
+
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
     /// Sole owner of workspace topology and public identity allocation.
@@ -20,6 +32,14 @@ pub struct DaemonState<C> {
     pub selected: usize,
     /// Structural changes awaiting snapshot scheduling.
     pub session_dirty: bool,
+    /// Current interaction context.
+    pub mode: Mode,
+    /// Keyboard copy pane retained across focus navigation.
+    pub copy_mode: Option<CopyModeState>,
+    /// Current terminal text selection.
+    pub selection: Option<crate::selection::Selection>,
+    /// Previous logical focus for last-pane navigation.
+    pub previous_pane_focus: Option<PaneFocusTarget>,
     /// Historical numeric spellings mapped to their retained pane identity.
     pub pane_id_aliases: HashMap<u32, PaneId>,
     /// Historical public spellings mapped to their retained pane identity.
@@ -40,6 +60,10 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             active: None,
             selected: 0,
             session_dirty: false,
+            previous_pane_focus: None,
+            mode: Mode::Navigate,
+            copy_mode: None,
+            selection: None,
             pane_id_aliases: HashMap::new(),
             public_pane_id_aliases: HashMap::new(),
             headless_size: config.headless_size(),

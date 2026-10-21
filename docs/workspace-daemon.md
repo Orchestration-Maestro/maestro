@@ -114,6 +114,12 @@ and missing members, and leave unchanged orders clean. Accepted moves mark the
 session dirty. Notification context uses the resolved workspace label and adds a
 tab label only for a live pane in a workspace with multiple tabs.
 
+Focus navigation records workspace and pane identities, not display positions.
+Switching workspaces or tabs marks the selected tab's panes seen and the session
+dirty. Last-pane navigation toggles across workspaces and tabs; removed targets
+are discarded. Copy navigation retains its pane while focus is elsewhere, clears
+cross-pane selections, and returns to copy context when that pane is selected.
+
 `maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
 retains the latest 512 ordered event payloads. Replay returns only events strictly
 newer than the supplied sequence. Events use the shared type-tagged protocol

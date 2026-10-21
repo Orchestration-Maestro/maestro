@@ -140,3 +140,209 @@ fn daemon_notification_context_formats_resolved_workspace_label() {
         "resolved · 3"
     );
 }
+
+#[test]
+fn daemon_switch_workspace_updates_active_and_selected() {
+    let mut state = app_with_workspaces(&["a", "b", "c"]);
+    state.switch_workspace(2);
+    assert_eq!(state.active, Some(2));
+    assert_eq!(state.selected, 2);
+}
+
+/// Adds a right-hand pane using the topology's consuming runtime callback.
+fn split(
+    state: &mut DaemonState<fn() -> u128>,
+    workspace: usize,
+) -> maestro_workspace::layout::PaneId {
+    let target = state.topology.workspaces[workspace]
+        .focused_pane_id()
+        .unwrap();
+    state
+        .topology
+        .split_pane_with_runtime(
+            workspace,
+            maestro_workspace::layout::SplitRequest {
+                target,
+                direction: maestro_protocol::schema::SplitDirection::Right,
+                ratio: Some(0.5),
+                focus_new_pane: true,
+            },
+            |_, _| Ok(()),
+        )
+        .unwrap()
+        .unwrap()
+        .0
+}
+
+#[test]
+fn daemon_last_pane_toggles_to_previous_focus_in_active_tab() {
+    let mut state = app_with_workspaces(&["test"]);
+    let root = state.topology.workspaces[0].tabs[0].root_pane;
+    let right = split(&mut state, 0);
+    state.focus_pane_in_workspace(0, root);
+    state.focus_pane_in_workspace(0, right);
+    state.last_pane();
+    assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(root));
+    state.last_pane();
+    assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(right));
+}
+
+#[test]
+fn daemon_removing_background_pane_preserves_last_pane_history() {
+    let mut state = app_with_workspaces(&["test"]);
+    let root = state.topology.workspaces[0].tabs[0].root_pane;
+    let right = split(&mut state, 0);
+    let background = split(&mut state, 0);
+    state.focus_pane_in_workspace(0, root);
+    state.focus_pane_in_workspace(0, right);
+    state.topology.workspaces[0].remove_pane(background);
+    state.last_pane();
+    assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(root));
+}
+
+/// Creates a second tab through the sole topology allocator.
+fn add_tab(
+    state: &mut DaemonState<fn() -> u128>,
+    workspace: usize,
+) -> maestro_workspace::layout::PaneId {
+    state
+        .topology
+        .create_tab_with_runtime(workspace, |_, _| Ok(()))
+        .unwrap()
+        .unwrap()
+        .0
+}
+
+#[test]
+fn daemon_last_pane_jumps_across_workspaces_and_tabs() {
+    let mut state = app_with_workspaces(&["one", "two"]);
+    let first_root = state.topology.workspaces[0].tabs[0].root_pane;
+    let second_root = add_tab(&mut state, 1);
+    state.focus_pane_in_workspace(0, first_root);
+    state.focus_pane_in_workspace(1, second_root);
+    state.last_pane();
+    assert_eq!(state.active, Some(0));
+    assert_eq!(state.topology.workspaces[0].active_tab, 0);
+    assert_eq!(
+        state.topology.workspaces[0].focused_pane_id(),
+        Some(first_root)
+    );
+    state.last_pane();
+    assert_eq!(state.active, Some(1));
+    assert_eq!(state.topology.workspaces[1].active_tab, 1);
+    assert_eq!(
+        state.topology.workspaces[1].focused_pane_id(),
+        Some(second_root)
+    );
+}
+
+#[test]
+fn daemon_last_pane_tracks_tab_and_workspace_switches() {
+    let mut state = app_with_workspaces(&["one", "two"]);
+    let first_root = state.topology.workspaces[0].tabs[0].root_pane;
+    let first_second_root = add_tab(&mut state, 0);
+    let second_root = state.topology.workspaces[1].tabs[0].root_pane;
+    state.switch_workspace_tab(0, 0);
+    state.switch_workspace_tab(0, 1);
+    state.last_pane();
+    assert_eq!(state.active, Some(0));
+    assert_eq!(state.topology.workspaces[0].active_tab, 0);
+    assert_eq!(
+        state.topology.workspaces[0].focused_pane_id(),
+        Some(first_root)
+    );
+    state.last_pane();
+    assert_eq!(state.active, Some(0));
+    assert_eq!(state.topology.workspaces[0].active_tab, 1);
+    assert_eq!(
+        state.topology.workspaces[0].focused_pane_id(),
+        Some(first_second_root)
+    );
+    state.switch_workspace(1);
+    state.last_pane();
+    assert_eq!(state.active, Some(0));
+    assert_eq!(state.topology.workspaces[0].active_tab, 1);
+    assert_eq!(
+        state.topology.workspaces[0].focused_pane_id(),
+        Some(first_second_root)
+    );
+    state.last_pane();
+    assert_eq!(state.active, Some(1));
+    assert_eq!(
+        state.topology.workspaces[1].focused_pane_id(),
+        Some(second_root)
+    );
+}
+
+#[test]
+fn daemon_last_pane_tracks_cross_workspace_tab_selection() {
+    let mut state = app_with_workspaces(&["one", "two"]);
+    let first_root = state.topology.workspaces[0].tabs[0].root_pane;
+    let second_first_root = state.topology.workspaces[1].tabs[0].root_pane;
+    let second_root = add_tab(&mut state, 1);
+    state.switch_workspace_tab(1, 1);
+    state.last_pane();
+    assert_eq!(state.active, Some(0));
+    assert_eq!(
+        state.topology.workspaces[0].focused_pane_id(),
+        Some(first_root)
+    );
+    state.last_pane();
+    assert_eq!(state.active, Some(1));
+    assert_eq!(state.topology.workspaces[1].active_tab, 1);
+    assert_eq!(
+        state.topology.workspaces[1].focused_pane_id(),
+        Some(second_root)
+    );
+    assert_ne!(second_first_root, second_root);
+}
+
+#[test]
+fn daemon_switch_workspace_marks_panes_seen() {
+    let mut state = app_with_workspaces(&["a", "b"]);
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    state.topology.workspaces[1]
+        .pane_state_mut(pane)
+        .unwrap()
+        .seen = false;
+    state.switch_workspace(1);
+    assert!(state.topology.workspaces[1].pane_state(pane).unwrap().seen);
+}
+
+#[test]
+fn daemon_switch_workspace_out_of_bounds_is_noop() {
+    let mut state = app_with_workspaces(&["a"]);
+    state.switch_workspace(5);
+    assert_eq!(state.active, Some(0));
+    assert_eq!(state.selected, 0);
+    assert!(!state.session_dirty);
+}
+
+#[test]
+fn focus_navigation_retains_copy_pane_but_clears_cross_pane_selection() {
+    use maestro_daemon::{
+        app::state::{CopyModeSelection, CopyModeState, Mode},
+        selection::Selection,
+    };
+    let mut state = app_with_workspaces(&["one", "two"]);
+    let root = state.topology.workspaces[0].tabs[0].root_pane;
+    let other = state.topology.workspaces[1].tabs[0].root_pane;
+    state.mode = Mode::Copy;
+    state.copy_mode = Some(CopyModeState {
+        pane_id: root,
+        selection: Some(CopyModeSelection::Character),
+    });
+    state.selection = Some(Selection::range(root, 0, 1, 3, None));
+    state.switch_workspace(0);
+    assert_eq!(state.mode, Mode::Copy);
+    assert!(state.selection.is_some());
+    assert!(state.focus_pane_in_workspace(1, other));
+    assert_eq!(state.mode, Mode::Terminal);
+    assert!(state.selection.is_none());
+    let copy = state.copy_mode.as_ref().unwrap();
+    assert_eq!(copy.pane_id, root);
+    assert_eq!(copy.selection, None);
+    state.last_pane();
+    assert_eq!(state.mode, Mode::Copy);
+    assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(root));
+}
