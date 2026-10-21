@@ -1,7 +1,7 @@
 //! Structured destinations and original-document reference lookup.
 use super::{Tokenizer, decode_operand};
 use crate::{
-    ImageMetadata, Kind, LinkMetadata, LinkType, Text,
+    ImageMetadata, Kind, LinkMetadata, LinkType, MarkedOptions, Text,
     helpers::{ClosingBracket, find_closing_bracket},
     lexer::reference_key,
     rules,
@@ -10,9 +10,9 @@ use crate::{
 use std::ops::Range;
 
 /// Source-local operands selected before recursive label interpretation.
-struct Link {
+pub(super) struct Link {
     /// Complete authored construct length.
-    consumed: usize,
+    pub(super) consumed: usize,
     /// Label, excluding enclosing brackets.
     label: Range<usize>,
     /// Decoded destination.
@@ -29,7 +29,7 @@ impl Tokenizer<'_> {
         admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
-        let link = self.inline_link(text).or_else(|| self.reference(text))?;
+        let link = Self::inline_link(text, self.options).or_else(|| self.reference(text))?;
         let label = range.start + link.label.start..range.start + link.label.end;
         let label_source = self.source.select(std::iter::once(label.clone()));
         let source = label_source.brackets();
@@ -103,8 +103,8 @@ impl Tokenizer<'_> {
     }
 
     /// Balance a direct destination and retain the selected title boundary.
-    fn inline_link(&self, text: &str) -> Option<Link> {
-        let matched = rules::inline_link(self.options)?.find(text)?;
+    pub(super) fn inline_link(text: &str, options: MarkedOptions) -> Option<Link> {
+        let matched = rules::inline_link(options)?.find(text)?;
         let mut href = capture(text, &matched, 2).trim_matches(maestro_text::is_whitespace_scalar);
         let mut consumed = matched.end();
         let mut title = capture(text, &matched, 3);
@@ -114,7 +114,7 @@ impl Tokenizer<'_> {
                 return None;
             }
         } else {
-            match find_closing_bracket(href, ('(', ')'), self.options) {
+            match find_closing_bracket(href, ('(', ')'), options) {
                 ClosingBracket::Unclosed => return None,
                 ClosingBracket::Found(end) => {
                     consumed = matched.group(2)?.start + end + 1;

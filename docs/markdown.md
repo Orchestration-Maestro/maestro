@@ -104,4 +104,6 @@ repeated admissions during container reentry. Their operand materialization is
 counted separately as caller-requested output; contiguous source slices are
 borrowed. Invalid source prefixes or UTF-8 hint boundaries return
 `InvalidBlockToken`. The ordinary parse helpers use the same path without a
-custom tokenizer.
+custom tokenizer. Escaped punctuation alone does not hide a block start hint:
+an unmatched display opener can still split a paragraph's queued inline source,
+so bare links on either side are selected independently.

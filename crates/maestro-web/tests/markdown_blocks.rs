@@ -356,6 +356,48 @@ mod tests {
     pub fn markdown_link_labels_keep_math_but_destinations_stay_literal() {
         contexts_match("markdown_link_labels_keep_math_but_destinations_stay_literal");
     }
+    /// Unmatched display openers split bare links under both HTML policies.
+    #[wasm_bindgen]
+    pub fn markdown_unmatched_escaped_brackets_preserve_ordered_links() {
+        let mut surface = Surface::new();
+        let cases = [false, true].into_iter().flat_map(|escape_html| {
+            ["HTTPS", "HTTP", "FTP"].into_iter().flat_map(move |outer| {
+                ["HTTPS", "hTtPs", "HTTP", "FTP", "WWW", "www"]
+                    .map(move |inner| (escape_html, outer, inner))
+            })
+        });
+        for (escape_html, outer, inner) in cases {
+            let first = format!("{outer}://outer.example/");
+            let second = if matches!(inner, "WWW" | "www") {
+                format!("{inner}.target.example/?url=https://last.example")
+            } else {
+                format!("{inner}://target.example/?url=https://last.example")
+            };
+            let (label, href) = match inner {
+                "WWW" => (
+                    "https://last.example".to_owned(),
+                    "https://last.example".to_owned(),
+                ),
+                "www" => (second.clone(), format!("http://{second}")),
+                _ => (second.clone(), second.clone()),
+            };
+            let mut block = MarkdownBlock::new(surface.host());
+            block.escape_html = escape_html;
+            block.content = format!("See {first}\\[{second}");
+            surface.settle(&mut block);
+            let actual = js(
+                        "JSON.stringify(Array.from(maestro.root().querySelectorAll('a'), a => [a.textContent, a.getAttribute('href')]))",
+                    )
+                    .as_string()
+                    .unwrap();
+            let expected = serde_json::to_string(&[(&first, &first), (&label, &href)]).unwrap();
+            assert_eq!(
+                actual, expected,
+                "{outer}/{inner}, escape_html={escape_html}"
+            );
+        }
+    }
+
     /// Formula preparation retains document-wide reference destinations and titles.
     #[wasm_bindgen]
     pub fn markdown_math_preserves_document_references() {

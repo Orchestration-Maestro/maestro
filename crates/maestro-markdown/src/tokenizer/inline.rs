@@ -421,14 +421,17 @@ impl Barriers {
         crate::tests::WORK.with_borrow_mut(|work| work.mask_bytes += text.len());
         let (projected, spans) = mask_source(text, options);
         let mut ranges = Vec::new();
-        for rule in [
-            rules::INLINE_ANY_PUNCTUATION.as_ref(),
-            rules::inline_block_skip(options),
-        ]
-        .into_iter()
-        .flatten()
-        {
+        if let Some(rule) = rules::inline_block_skip(options) {
             ranges.extend(rule.find_iter(&projected).map(|matched| matched.range()));
+        }
+        let mut end = 0;
+        for (start, _) in projected.match_indices('[') {
+            if start >= end
+                && let Some(link) = Tokenizer::inline_link(&projected[start..], options)
+            {
+                end = start + link.consumed;
+                ranges.push(start..end);
+            }
         }
         ranges.sort_by_key(|range| range.start);
         let mut merged: Vec<Range<usize>> = Vec::new();

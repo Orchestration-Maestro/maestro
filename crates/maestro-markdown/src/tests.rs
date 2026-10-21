@@ -315,6 +315,75 @@ fn hinted_blocks(source: &str, options: crate::MarkedOptions, mut block: Delimit
 }
 
 #[test]
+fn unmatched_escaped_block_hint_separates_link_operands() {
+    let source = "See HTTPS://outer.example/\\[HTTPS://target.example/?url=https://last.example";
+    for options in [
+        crate::MarkedOptions::Browser { escape_html: false },
+        crate::MarkedOptions::Browser { escape_html: true },
+        crate::MarkedOptions::Terminal,
+        crate::MarkedOptions::Export,
+    ] {
+        let browser = matches!(options, crate::MarkedOptions::Browser { .. });
+        let mut block = Delimited("\\[", "\\]");
+        let document = crate::parse_with_tokenizer(
+            source.to_owned(),
+            options,
+            if browser { Some(&mut block) } else { None },
+        )
+        .unwrap();
+        let Kind::Paragraph(children) = &document.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        let links: Vec<_> = children
+            .iter()
+            .filter_map(|node| match &node.kind {
+                Kind::Link(_, label, href, _) => Some((label.as_str(), href.as_str())),
+                _ => None,
+            })
+            .collect();
+        let target = (
+            "HTTPS://target.example/?url=https://last.example",
+            "HTTPS://target.example/?url=https://last.example",
+        );
+        let expected = if browser {
+            vec![("HTTPS://outer.example/", "HTTPS://outer.example/"), target]
+        } else {
+            vec![target]
+        };
+        assert_eq!(links, expected);
+        assert_eq!(document.nodes[0].range, 0..source.len());
+        assert_eq!(document.source, source);
+    }
+}
+
+#[test]
+fn escaped_link_labels_protect_display_block_hints() {
+    for source in [
+        r#"[\[ $x$ \]](/docs "tip")"#,
+        r#"[\\[ $x$ ]](/docs "tip")"#,
+        r#"[\\\[ $x$ \]](/docs "tip")"#,
+    ] {
+        for escape_html in [false, true] {
+            let document = crate::parse_with_tokenizer(
+                source.to_owned(),
+                crate::MarkedOptions::Browser { escape_html },
+                Some(&mut Delimited("\\[", "\\]")),
+            )
+            .unwrap();
+            assert_eq!(document.nodes.len(), 1);
+            let Kind::Paragraph(children) = &document.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            let [link] = children.as_slice() else {
+                panic!("one link")
+            };
+            assert!(matches!(&link.kind, Kind::Link(_, _, href, _) if href == "/docs"));
+            assert_eq!(link.range, 0..source.len());
+        }
+    }
+}
+
+#[test]
 fn display_hint_barriers_are_scanned_once_per_block_source() {
     let counts = [32, 64].map(|count| {
         WORK.with_borrow_mut(|work| *work = Work::default());
