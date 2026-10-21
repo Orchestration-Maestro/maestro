@@ -28,6 +28,7 @@ maestro-process = { path = "../maestro-process" }
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-tracing.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]

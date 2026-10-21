@@ -97,7 +97,7 @@ mod tests {
                 move || output.clone()
             })
             .finish();
-        let (loaded, errors) = tracing::subscriber::with_default(subscriber, || {
+        let (loaded, errors) = maestro_test_tracing::with_default(subscriber, || {
             load_config(&mut manager, Path::new("."))
         });
         assert!(errors.is_empty());
@@ -131,7 +131,7 @@ mod tests {
                     move || output.clone()
                 })
                 .finish();
-            let (report, errors) = tracing::subscriber::with_default(subscriber, || {
+            let (report, errors) = maestro_test_tracing::with_default(subscriber, || {
                 runtime.block_on(reload_config(&mut manager, &mut current, Path::new(".")))
             });
             assert!(errors.is_empty());
