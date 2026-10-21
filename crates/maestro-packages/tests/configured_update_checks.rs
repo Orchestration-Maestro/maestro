@@ -23,7 +23,7 @@ fn updates_selected_unpinned_source_beside_pin() {
     settings.borrow_mut().set_project_packages(entries.clone());
     effects.exists.set(true);
     let scratch = scratch::Scratch::new().unwrap();
-    let cwd = scratch.0.to_string_lossy().into_owned();
+    let cwd = scratch.path().to_string_lossy().into_owned();
     let manifest = format!("{cwd}/.maestro/npm/node_modules/example/package.json");
     native_support::write(&manifest, "{\"version\":\"1\"}");
     let native_settings = Rc::new(RefCell::new(
@@ -713,7 +713,7 @@ fn replacement_callback(
 fn project_batch_preparation_keeps_existing_files() {
     for existing in [false, true] {
         let scratch = scratch::Scratch::new().unwrap();
-        let cwd = scratch.0.to_string_lossy().into_owned();
+        let cwd = scratch.path().to_string_lossy().into_owned();
         let root = format!("{cwd}/.maestro/npm");
         if existing {
             native_support::write(&format!("{root}/package.json"), "existing manifest");

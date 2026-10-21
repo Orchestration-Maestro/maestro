@@ -240,7 +240,7 @@ fn operation() {
 }
 fn replay(name: &str, case: Case<Input, Expected>) {
     let scratch = child::Scratch::new();
-    setup(&scratch.0, &case.input);
+    setup(scratch.0.path(), &case.input);
     let authored = case.input.root.as_deref().unwrap_or("agent");
     let agent = if case.input.relative_root {
         format!("./{authored}")
@@ -254,10 +254,10 @@ fn replay(name: &str, case: Case<Input, Expected>) {
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("COMPLETION_OPERATION", "1"),
-                ("COMPLETION_ROOT", scratch.0.to_str().unwrap()),
+                ("COMPLETION_ROOT", scratch.0.path().to_str().unwrap()),
                 (
                     "COMPLETION_UNREADABLE",
                     &serde_json::to_string(&case.input.unreadable).unwrap(),
@@ -275,14 +275,14 @@ fn replay(name: &str, case: Case<Input, Expected>) {
             normalize_output(&actual.output, case.input.permissions.contains_key("agent")),
             expected.output
         );
-        check_tree(&scratch.0, &expected.tree);
+        check_tree(scratch.0.path(), &expected.tree);
         assert_eq!(
             case.input.observe_modes,
             expected.observed_modes.keys().cloned().collect::<Vec<_>>()
         );
         for (path, mode) in expected.observed_modes {
             assert_eq!(
-                fs::metadata(scratch.0.join(path))
+                fs::metadata(scratch.0.path().join(path))
                     .unwrap()
                     .permissions()
                     .mode()
@@ -292,7 +292,7 @@ fn replay(name: &str, case: Case<Input, Expected>) {
         }
     }
     for name in case.input.permissions.keys() {
-        let path = scratch.0.join(name);
+        let path = scratch.0.path().join(name);
         if path.exists() {
             fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
         }

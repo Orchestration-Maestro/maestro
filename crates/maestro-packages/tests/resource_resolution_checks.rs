@@ -291,11 +291,11 @@ fn canonical_failures_preserve_authored_identity() {
         use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
         use std::{cell::Cell, rc::Rc};
         let dir = scratch::Scratch::new().unwrap();
-        let a = dir.0.join("a.ts");
-        let b = dir.0.join("b.ts");
+        let a = dir.path().join("a.ts");
+        let b = dir.path().join("b.ts");
         std::fs::write(&a, "").unwrap();
         std::fs::write(&b, "").unwrap();
-        let base = dir.0.to_string_lossy().into_owned();
+        let base = dir.path().to_string_lossy().into_owned();
         let calls = Rc::new(Cell::new(0));
         let observed = Rc::clone(&calls);
         let remove = b.clone();
@@ -354,11 +354,11 @@ fn swapped_filesystem_adapters_keep_supplied_entry_order() {
     block_on(Box::pin(async {
         use maestro_packages::PackageManager;
         let dir = scratch::Scratch::new().unwrap();
-        std::fs::create_dir(dir.0.join("extensions")).unwrap();
+        std::fs::create_dir(dir.path().join("extensions")).unwrap();
         for name in ["a.ts", "z.ts"] {
-            std::fs::write(dir.0.join("extensions").join(name), "").unwrap();
+            std::fs::write(dir.path().join("extensions").join(name), "").unwrap();
         }
-        let base = dir.0.to_string_lossy().into_owned();
+        let base = dir.path().to_string_lossy().into_owned();
         let (manager, _) = resolution_support::manager(
             &base,
             resolution_support::Filesystem {
@@ -392,7 +392,7 @@ fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
     block_on(Box::pin(async {
         use maestro_packages::PackageManager;
         let dir = scratch::Scratch::new().unwrap();
-        let path = dir.0.join("opaque.data");
+        let path = dir.path().join("opaque.data");
         std::fs::write(&path, "").unwrap();
         let absolute = path.to_string_lossy().into_owned();
         let (manager, effects) =
@@ -610,13 +610,13 @@ async fn resolve_relative_manifest(
     let scratch = scratch::Scratch::new_in(&current).unwrap();
     let agent = maestro_path::relative(
         &current.to_string_lossy(),
-        &scratch.0.to_string_lossy(),
+        &scratch.path().to_string_lossy(),
         &maestro_path::Cwd {
             current: "",
             drive_directories: &[],
         },
     );
-    let root = scratch.0.join("git/example.com/org/pkg");
+    let root = scratch.path().join("git/example.com/org/pkg");
     fs::create_dir_all(root.join("src")).unwrap();
     fs::create_dir_all(root.join("skills/demo")).unwrap();
     fs::write(root.join("src/a.ts"), "").unwrap();
@@ -867,8 +867,8 @@ fn package_entry_links_preserve_admission_and_failure_fallback() {
     use std::os::unix::fs::symlink;
     let put = |path: &std::path::Path| native_support::write(path.to_str().unwrap(), "{}");
     let dir = scratch::Scratch::new().unwrap();
-    let root = dir.0.join("pkg");
-    let outside = dir.0.join("outside");
+    let root = dir.path().join("pkg");
+    let outside = dir.path().join("outside");
     for (kind, file, nested) in [
         ("extensions", "t.ts", "index.ts"),
         ("skills", "t.md", "SKILL.md"),
@@ -930,9 +930,9 @@ fn package_skill_root_links_follow_the_target_kind() {
     ];
     for (name, failing, expected) in cases {
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.join("pkg");
+        let root = dir.path().join("pkg");
         native_support::write(root.join("skills/child/SKILL.md").to_str().unwrap(), "{}");
-        let target = dir.0.join("target");
+        let target = dir.path().join("target");
         let entry = root.join("skills/SKILL.md");
         let _socket;
         match name {

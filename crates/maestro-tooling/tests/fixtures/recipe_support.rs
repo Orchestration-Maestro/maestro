@@ -1,13 +1,16 @@
 #![cfg(test)]
 
 use std::{
+    ffi::{OsStr, OsString},
     fs,
     path::{Path, PathBuf},
     process::{Command, Output},
-    sync::atomic::{AtomicU64, Ordering},
 };
 
-pub struct Workspace(pub PathBuf);
+pub struct Workspace {
+    parent: maestro_test_directory::Scratch,
+    name: OsString,
+}
 
 /// Copies an executable through a child `install`, so this process never holds a
 /// writable descriptor to a file it later runs (a concurrent fork would otherwise
@@ -25,13 +28,12 @@ pub fn install_executable(source: &Path, target: &Path) {
 impl Workspace {
     pub fn new() -> Self {
         static TOOL: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
-        static NEXT: AtomicU64 = AtomicU64::new(0);
         record("phase: workspace setup");
-        let root = std::env::temp_dir().join(format!(
-            "maestro-recipes-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
+        let workspace = Self {
+            parent: maestro_test_directory::Scratch::new().unwrap(),
+            name: OsString::from("checkout"),
+        };
+        let root = workspace.path();
         fs::create_dir_all(root.join("bin")).unwrap();
         super::toolchain_support::declare_toolchain(
             &root,
@@ -63,21 +65,33 @@ impl Workspace {
         for name in ["mise", "prek", "watchexec", "trunk", "miniserve"] {
             install_executable(tool, &root.join("bin").join(name));
         }
-        Self(root)
+        workspace
+    }
+
+    /// The currently selected checkout below the retained disposable parent.
+    pub fn path(&self) -> PathBuf {
+        self.parent.path().join(&self.name)
+    }
+
+    /// Move the checkout, retaining its old selection when the rename fails.
+    pub fn rename(&mut self, name: &OsStr) -> std::io::Result<()> {
+        fs::rename(self.path(), self.parent.path().join(name))?;
+        self.name = name.to_owned();
+        Ok(())
     }
 
     pub fn command(&self, recipe: &str) -> Command {
         let mut command = super::toolchain_support::command("just");
         command
-            .current_dir(&self.0)
+            .current_dir(self.path())
             .arg(recipe)
-            .env("MAESTRO_LOG", self.0.join("log"))
-            .env("MAESTRO_CWD", self.0.join("cwd"))
+            .env("MAESTRO_LOG", self.path().join("log"))
+            .env("MAESTRO_CWD", self.path().join("cwd"))
             .env(
                 "PATH",
                 format!(
                     "{}:{}",
-                    self.0.join("bin").display(),
+                    self.path().join("bin").display(),
                     std::env::var("PATH").unwrap()
                 ),
             );
@@ -88,13 +102,7 @@ impl Workspace {
         self.command(recipe).output().unwrap()
     }
     pub fn log(&self) -> String {
-        fs::read_to_string(self.0.join("log")).unwrap()
-    }
-}
-
-impl Drop for Workspace {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
+        fs::read_to_string(self.path().join("log")).unwrap()
     }
 }
 

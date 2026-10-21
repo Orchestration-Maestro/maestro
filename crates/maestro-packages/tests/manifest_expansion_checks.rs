@@ -79,8 +79,8 @@ async fn run_recipe(row: Recipe) {
     let inputs = row.setup.unwrap_or_else(|| {
         serde_json::from_str(include_str!("fixtures/glob_native_setup.json")).unwrap()
     });
-    setup(&scene.0, &inputs);
-    let base = scene.0.to_string_lossy().into_owned();
+    setup(scene.path(), &inputs);
+    let base = scene.path().to_string_lossy().into_owned();
     let root = row.root.replace("$SCENE", &base);
     let manifest = row.manifest.to_string().replace("$SCENE", &base);
     let manifest: serde_json::Value = serde_json::from_str(&manifest).unwrap();
@@ -90,8 +90,8 @@ async fn run_recipe(row: Recipe) {
     );
     if row.denied {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o0)).unwrap();
-        assert!(fs::read_dir(scene.0.join("denied")).is_err());
+        fs::set_permissions(scene.path().join("denied"), fs::Permissions::from_mode(0o0)).unwrap();
+        assert!(fs::read_dir(scene.path().join("denied")).is_err());
     }
     let (manager, _) =
         resolution_support::manager(&root, resolution_support::Filesystem::default());
@@ -109,7 +109,11 @@ async fn run_recipe(row: Recipe) {
         .replace("$BASE", "$SCENE");
     if row.denied {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o755)).unwrap();
+        fs::set_permissions(
+            scene.path().join("denied"),
+            fs::Permissions::from_mode(0o755),
+        )
+        .unwrap();
     }
     assert_eq!(
         serde_json::from_str::<serde_json::Value>(&actual).unwrap(),
@@ -215,15 +219,15 @@ fn compare_phase(result: maestro_packages::ResolvedPaths, base: &str, case: &str
 fn manifest_expands_all_entries_before_collecting() {
     resolution_support::run(async {
         let scene = scratch::Scratch::new()?;
-        write(&scene.0.join("phase/a/first.ts"), "fixture");
-        write(&scene.0.join("phase/b/early.ts"), "fixture");
+        write(&scene.path().join("phase/a/first.ts"), "fixture");
+        write(&scene.path().join("phase/b/early.ts"), "fixture");
         write(
-            &scene.0.join("phase/package.json"),
+            &scene.path().join("phase/package.json"),
             r#"{"maestro":{"extensions":["a","b/*.ts"]}}"#,
         );
         let written = std::rc::Rc::new(std::cell::Cell::new(false));
         let observed = std::rc::Rc::clone(&written);
-        let late = scene.0.join("phase/b/late.ts");
+        let late = scene.path().join("phase/b/late.ts");
         let resources = resolution_support::Filesystem {
             on_read: Some(std::rc::Rc::new(move |path| {
                 if path.ends_with("phase/a") && !observed.get() {
@@ -239,7 +243,7 @@ fn manifest_expands_all_entries_before_collecting() {
             })),
             ..Default::default()
         };
-        let base = scene.0.to_string_lossy().into_owned();
+        let base = scene.path().to_string_lossy().into_owned();
         let root = format!("{base}/phase");
         let (manager, _) = resolution_support::manager(&root, resources);
         let first = manager
@@ -259,13 +263,13 @@ fn manifest_expands_all_entries_before_collecting() {
 fn nofollow_failure() {
     resolution_support::run(async {
         let scene = scratch::Scratch::new()?;
-        write(&scene.0.join("failure/bad.ts"), "fixture");
-        write(&scene.0.join("failure/okay.ts"), "fixture");
+        write(&scene.path().join("failure/bad.ts"), "fixture");
+        write(&scene.path().join("failure/okay.ts"), "fixture");
         write(
-            &scene.0.join("failure/package.json"),
+            &scene.path().join("failure/package.json"),
             r#"{"maestro":{"extensions":["{bad.ts,ok*.ts}"]}}"#,
         );
-        let base = scene.0.to_string_lossy().into_owned();
+        let base = scene.path().to_string_lossy().into_owned();
         let root = format!("{base}/failure");
         let resources = resolution_support::Filesystem {
             fail: std::collections::BTreeMap::from([(
@@ -291,13 +295,13 @@ fn installed_wildcards_resolve_relative_constructor_roots() {
     use std::{cell::Cell, rc::Rc};
     resolution_support::run(async {
         let scene = scratch::Scratch::new()?;
-        let package = scene.0.join(".maestro/npm/node_modules/pkg");
+        let package = scene.path().join(".maestro/npm/node_modules/pkg");
         write(&package.join("a.ts"), "fixture");
         write(
             &package.join("package.json"),
             r#"{"maestro":{"extensions":["*.ts"]}}"#,
         );
-        let absolute = scene.0.to_str().unwrap();
+        let absolute = scene.path().to_str().unwrap();
         let current = std::env::current_dir()?;
         let relative = maestro_path::relative(
             current.to_str().unwrap(),
@@ -362,15 +366,15 @@ fn literal_child_promotion_keeps_surviving_alias() {
 fn child_promotion(linked: bool) {
     resolution_support::run(async {
             let scene = scratch::Scratch::new()?;
-            write(&scene.0.join("b/preload.ts"), "fixture");
-            write(&scene.0.join("a/u.ts"), "fixture");
+            write(&scene.path().join("b/preload.ts"), "fixture");
+            write(&scene.path().join("a/u.ts"), "fixture");
             if linked {
-                std::os::unix::fs::symlink("../a/u.ts", scene.0.join("b/u.ts"))?;
+                std::os::unix::fs::symlink("../a/u.ts", scene.path().join("b/u.ts"))?;
             } else {
-                write(&scene.0.join("b/u.ts"), "fixture");
+                write(&scene.path().join("b/u.ts"), "fixture");
             }
-            write(&scene.0.join("package.json"), r#"{"maestro":{"extensions":["{b/preload.ts,*/*.ts}"]}}"#);
-            let base = scene.0.to_str().unwrap();
+            write(&scene.path().join("package.json"), r#"{"maestro":{"extensions":["{b/preload.ts,*/*.ts}"]}}"#);
+            let base = scene.path().to_str().unwrap();
             let (manager, _) = resolution_support::manager(base, resolution_support::Filesystem::default());
             let actual = manager.resolve_extension_sources(&[base.into()], None).await?;
             let resource = |name| json!({"path":format!("$BASE/{name}"),"enabled":true,"metadata":{"source":"$BASE","scope":"user","origin":"package","baseDir":"$BASE"}});

@@ -5,29 +5,18 @@ use maestro_resources::{
 use std::{
     io,
     path::{Path, PathBuf},
-    sync::{
-        Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
+    sync::Mutex,
 };
 
 /// Disposable native resource tree.
-pub struct Directory(pub PathBuf);
+pub struct Directory(pub maestro_test_directory::Scratch);
 impl Directory {
     /// Create a unique tree owned by this test.
     ///
     /// # Panics
     /// Panics when the disposable directory cannot be created.
     pub fn new() -> Self {
-        /// Unique directory suffix within the test process.
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-resources-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
     /// Write a supplied relative fixture.
     ///
@@ -35,7 +24,7 @@ impl Directory {
     /// Panics when a fixture has no parent or its directory/file cannot be written.
     #[must_use]
     pub fn file(&self, path: &str, content: &str) -> PathBuf {
-        let path = self.0.join(path);
+        let path = self.0.path().join(path);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, content).unwrap();
         path
@@ -44,11 +33,6 @@ impl Directory {
 impl Default for Directory {
     fn default() -> Self {
         Self::new()
-    }
-}
-impl Drop for Directory {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
     }
 }
 

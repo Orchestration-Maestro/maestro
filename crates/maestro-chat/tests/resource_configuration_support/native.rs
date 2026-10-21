@@ -26,7 +26,7 @@ pub fn paths() {
             )
             .unwrap()
             .name(),
-            &scratch.0,
+            scratch.path(),
             &[("MAESTRO_RESOURCE_DIRECTORY_CHILD", "1")],
             &[]
         ),

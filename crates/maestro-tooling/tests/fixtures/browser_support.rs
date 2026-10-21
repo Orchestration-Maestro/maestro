@@ -30,12 +30,11 @@ impl Browser {
         lock.lock().unwrap();
         record("phase: browser lock acquired / fixture copy");
         let mut workspace = Workspace::new();
-        let renamed = workspace.0.with_file_name(format!(
+        let renamed = workspace.path().with_file_name(format!(
             "Maestro's browser 東京 {}",
-            workspace.0.file_name().unwrap().to_str().unwrap()
+            workspace.path().file_name().unwrap().to_str().unwrap()
         ));
-        fs::rename(&workspace.0, &renamed).unwrap();
-        workspace.0 = renamed;
+        workspace.rename(renamed.file_name().unwrap()).unwrap();
         let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         for item in ["assets".to_owned()].into_iter().chain(
             [
@@ -51,7 +50,7 @@ impl Browser {
             ]
             .map(|file| format!("{FIXTURE}/{file}")),
         ) {
-            let destination = workspace.0.join(&item);
+            let destination = workspace.path().join(&item);
             fs::create_dir_all(destination.parent().unwrap()).unwrap();
             assert!(
                 Command::new("cp")
@@ -107,7 +106,7 @@ impl Browser {
     /// Share output ownership and native tool settings between recipe and helper calls.
     fn configure(&self, command: &mut Command) {
         command
-            .current_dir(&self.workspace.0)
+            .current_dir(self.workspace.path())
             .env("CARGO_BUILD_JOBS", "3")
             .env(
                 "CARGO_TARGET_DIR",
@@ -123,7 +122,7 @@ impl Browser {
     }
 
     pub fn path(&self, path: &str) -> PathBuf {
-        self.workspace.0.join(path)
+        self.workspace.path().join(path)
     }
 
     pub fn fixture(&self, path: &str) -> PathBuf {
@@ -324,7 +323,7 @@ pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
     let sources = browser.path("local-sources");
     record("phase: cargo vendor cold sources");
     let mut child = super::toolchain_support::command(env!("CARGO"))
-        .current_dir(&browser.workspace.0)
+        .current_dir(browser.workspace.path())
         .args(["vendor", "--locked", "--offline", "--sync"])
         .arg(browser.fixture("Cargo.toml"))
         .arg(&sources)

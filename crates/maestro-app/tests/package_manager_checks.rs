@@ -130,8 +130,8 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
     for case in cases {
         assert_eq!(case.id, format!("root-{}", case.input.branch));
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.to_str().unwrap();
-        fs::create_dir_all(dir.0.join("work")).unwrap();
+        let root = dir.path().to_str().unwrap();
+        fs::create_dir_all(dir.path().join("work")).unwrap();
         let mut envs = vec![
             ("MAESTRO_PACKAGE_CASE", case.id.as_str()),
             ("MAESTRO_CASE_ROOT", root),
@@ -153,7 +153,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
                 )
                 .unwrap()
                 .name(),
-                &dir.0.join("work"),
+                &dir.path().join("work"),
                 &envs,
                 &["MAESTRO_CODING_AGENT_DIR", "MAESTRO_OFFLINE"]
             )
@@ -248,9 +248,9 @@ fn selected_package_roots_keep_update_pins_and_progress() {
     for case in cases {
         assert_eq!(case.id, format!("update-{}", case.input.selected));
         let dir = scratch::Scratch::new().unwrap();
-        let root = dir.0.to_str().unwrap();
-        fs::create_dir_all(dir.0.join("work")).unwrap();
-        let script = dir.0.join("controlled-npm");
+        let root = dir.path().to_str().unwrap();
+        fs::create_dir_all(dir.path().join("work")).unwrap();
+        let script = dir.path().join("controlled-npm");
         assert!(
             std::process::Command::new("install")
                 .args([
@@ -276,7 +276,7 @@ fn selected_package_roots_keep_update_pins_and_progress() {
                 )
                 .unwrap()
                 .name(),
-                &dir.0.join("work"),
+                &dir.path().join("work"),
                 &[
                     ("MAESTRO_PACKAGE_CASE", &case.id),
                     ("MAESTRO_CASE_ROOT", root),

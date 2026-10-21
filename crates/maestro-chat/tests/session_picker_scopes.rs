@@ -140,10 +140,10 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
             maestro_test_process::TestProcess::current(NAME)
                 .unwrap()
                 .name(),
-            &dir.0,
+            dir.0.path(),
             &[
                 ("MAESTRO_SELECTOR_KEYS_CHILD", "yes"),
-                ("MAESTRO_CODING_AGENT_DIR", dir.0.to_str().unwrap()),
+                ("MAESTRO_CODING_AGENT_DIR", dir.0.path().to_str().unwrap()),
             ],
             &[],
         );

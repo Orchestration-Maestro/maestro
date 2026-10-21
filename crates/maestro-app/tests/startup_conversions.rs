@@ -249,8 +249,9 @@ fn relocated_referent(name: &str, alias_first: bool) {
         return;
     }
     let scratch = child::Scratch::new();
+    let root = scratch.0.path();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    let entry = |file: &str| scratch.0.join(file);
+    let entry = |file: &str| root.join(file);
     // Enumeration order follows names or creation, so try both until the wanted role is first.
     let (alias, referent) = [("a.jsonl", "b.jsonl"), ("b.jsonl", "a.jsonl")]
         .into_iter()
@@ -266,7 +267,7 @@ fn relocated_referent(name: &str, alias_first: bool) {
                 fs::remove_file(entry(referent)).unwrap();
                 fs::write(entry(referent), body).unwrap();
             }
-            let first = fs::read_dir(&scratch.0).unwrap().next().unwrap().unwrap();
+            let first = fs::read_dir(root).unwrap().next().unwrap().unwrap();
             ((first.file_name() == alias) == alias_first).then_some((alias, referent))
         })
         .expect("the directory enumerates the wanted role first");
@@ -275,7 +276,7 @@ fn relocated_referent(name: &str, alias_first: bool) {
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .name(),
-            &scratch.0,
+            root,
             &[
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),
@@ -284,18 +285,16 @@ fn relocated_referent(name: &str, alias_first: bool) {
         );
         for file in [alias, referent] {
             assert_eq!(
-                fs::read(scratch.0.join("sessions/--work--").join(file)).unwrap(),
+                fs::read(root.join("sessions/--work--").join(file)).unwrap(),
                 body
             );
             assert_eq!(
-                fs::symlink_metadata(scratch.0.join(file))
-                    .unwrap_err()
-                    .kind(),
+                fs::symlink_metadata(root.join(file)).unwrap_err().kind(),
                 std::io::ErrorKind::NotFound
             );
         }
         assert!(
-            fs::symlink_metadata(scratch.0.join("sessions/--work--").join(alias))
+            fs::symlink_metadata(root.join("sessions/--work--").join(alias))
                 .unwrap()
                 .is_symlink()
         );
@@ -314,9 +313,9 @@ fn relative_session_link_replaces_a_dangling_destination() {
     }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    fs::write(scratch.0.join("original.data"), body).unwrap();
-    symlink("original.data", scratch.0.join("alias.jsonl")).unwrap();
-    let directory = scratch.0.join("sessions/--work--");
+    fs::write(scratch.0.path().join("original.data"), body).unwrap();
+    symlink("original.data", scratch.0.path().join("alias.jsonl")).unwrap();
+    let directory = scratch.0.path().join("sessions/--work--");
     fs::create_dir_all(&directory).unwrap();
     symlink("missing.data", directory.join("alias.jsonl")).unwrap();
     for _ in 0..2 {
@@ -324,15 +323,18 @@ fn relative_session_link_replaces_a_dangling_destination() {
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                (
+                    "MAESTRO_CODING_AGENT_DIR",
+                    scratch.0.path().to_str().unwrap(),
+                ),
             ],
             &[],
         );
         assert_eq!(
-            fs::symlink_metadata(scratch.0.join("alias.jsonl"))
+            fs::symlink_metadata(scratch.0.path().join("alias.jsonl"))
                 .unwrap_err()
                 .kind(),
             std::io::ErrorKind::NotFound
@@ -343,7 +345,10 @@ fn relative_session_link_replaces_a_dangling_destination() {
                 .is_symlink()
         );
         assert_eq!(fs::read(directory.join("alias.jsonl")).unwrap(), body);
-        assert_eq!(fs::read(scratch.0.join("original.data")).unwrap(), body);
+        assert_eq!(
+            fs::read(scratch.0.path().join("original.data")).unwrap(),
+            body
+        );
         assert!(!directory.join("missing.data").exists());
     }
 }
@@ -363,21 +368,24 @@ fn unchanged_absolute_session_link_moves_by_rename() {
     }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    let referent = scratch.0.join("original.data");
+    let referent = scratch.0.path().join("original.data");
     fs::write(&referent, body).unwrap();
-    let source = scratch.0.join("alias.jsonl");
+    let source = scratch.0.path().join("alias.jsonl");
     symlink(&referent, &source).unwrap();
     let identity = fs::symlink_metadata(&source).unwrap().ino();
-    let destination = scratch.0.join("sessions/--work--/alias.jsonl");
+    let destination = scratch.0.path().join("sessions/--work--/alias.jsonl");
     for _ in 0..2 {
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                (
+                    "MAESTRO_CODING_AGENT_DIR",
+                    scratch.0.path().to_str().unwrap(),
+                ),
             ],
             &[],
         );
@@ -424,12 +432,13 @@ fn check_resolution_orders(depth: usize, payload: &str, moving: &str) {
         if payload == "mixed-case"
             && !scratch
                 .0
+                .path()
                 .join(paths[1].file_name().unwrap().to_ascii_uppercase())
                 .exists()
         {
             return;
         }
-        let entries: Vec<_> = std::fs::read_dir(&scratch.0)
+        let entries: Vec<_> = std::fs::read_dir(scratch.0.path())
             .unwrap()
             .map(|entry| entry.unwrap().path())
             .collect();
@@ -472,7 +481,7 @@ fn resolution_chain(
                 depth - index
             };
             let number = (index_in_order + arrangement / 2) % (depth + 1);
-            scratch.0.join(format!(
+            scratch.0.path().join(format!(
                 "session-{number}.{}",
                 if relocates { "jsonl" } else { "data" }
             ))
@@ -492,6 +501,7 @@ fn resolution_chain(
             let target = if payload == "mixed-case" {
                 scratch
                     .0
+                    .path()
                     .join(target.file_name().unwrap().to_ascii_uppercase())
             } else if payload != "relative"
                 && !(index > 0 && (moving == "blocked" || payload == "absolute-relative"))
@@ -524,7 +534,7 @@ fn check_resolution_chain(
             maestro_test_process::TestProcess::current("session_link_resolution_matrix")
                 .unwrap()
                 .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),
@@ -543,6 +553,7 @@ fn check_resolution_chain(
                     );
                     scratch
                         .0
+                        .path()
                         .join("sessions/--work--")
                         .join(path.file_name().unwrap())
                 } else {
@@ -558,6 +569,7 @@ fn check_resolution_chain(
         }
         let destination = scratch
             .0
+            .path()
             .join("sessions/--work--")
             .join(paths[0].file_name().unwrap());
         assert!(fs::symlink_metadata(&destination).unwrap().is_symlink());
@@ -581,6 +593,7 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
     let (scratch, paths) = resolution_chain(2, "absolute", "blocked", 0);
     let alias = scratch
         .0
+        .path()
         .join("sessions/--work--")
         .join(paths[0].file_name().unwrap());
     for call in 0..3 {
@@ -593,7 +606,7 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
             )
             .unwrap()
             .name(),
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),

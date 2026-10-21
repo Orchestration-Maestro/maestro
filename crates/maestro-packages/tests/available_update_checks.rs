@@ -26,7 +26,7 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
     let controlled = Rc::new(manager);
     let (runtime, local) = driver(&effects);
     let scratch = scratch::Scratch::new().unwrap();
-    let cwd = scratch.0.to_string_lossy().into_owned();
+    let cwd = scratch.path().to_string_lossy().into_owned();
     native_support::write(
         &format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
         "{\"version\":\"1\"}",
@@ -999,7 +999,7 @@ fn assert_only_read_commands(calls: &[Vec<String>]) {
 #[test]
 fn native_git_availability_leaves_head_and_contents_unchanged() {
     let scratch = scratch::Scratch::new().unwrap();
-    let root = &scratch.0;
+    let root = scratch.path();
     let (author, install) = seed_git(root);
     let original = git_at(&install, &["rev-parse", "HEAD"]);
     let settings = Rc::new(RefCell::new(

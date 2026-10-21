@@ -13,10 +13,10 @@ use std::{cell::RefCell, fs, path::Path, rc::Rc};
 fn empty_settings_have_no_package_resources() {
     use maestro_packages::PackageManager;
     let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_str().unwrap();
+    let base = scratch.path().to_str().unwrap();
     let (manager, effects) = resolution_support::manager(
         base,
-        configured_resolution_support::owned_filesystem(&scratch.0),
+        configured_resolution_support::owned_filesystem(scratch.path()),
     );
     *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
     let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
@@ -393,7 +393,7 @@ fn project_home_failure_precedes_malformed_user_list() {
 #[test]
 fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
     let scratch = scratch::Scratch::new_in(Path::new(".")).unwrap();
-    let base = scratch.0.to_str().unwrap().strip_prefix("./").unwrap();
+    let base = scratch.path().to_str().unwrap().strip_prefix("./").unwrap();
     let user = format!("{base}/user");
     let project = format!("{base}/project");
     let package = format!("{project}/.maestro/npm/node_modules/pkg");
@@ -408,7 +408,7 @@ fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
     let effects = Rc::new(support::Effects {
         native_exists: true,
         resources: Some(Rc::new(configured_resolution_support::owned_filesystem(
-            &scratch.0,
+            scratch.path(),
         ))),
         ..Default::default()
     });
@@ -490,7 +490,7 @@ fn assert_relative_selection(
 #[test]
 fn automatic_relative_home_keeps_authored_path_and_exact_override() {
     let scratch = scratch::Scratch::new_in(Path::new(".")).unwrap();
-    let base = scratch.0.to_str().unwrap().strip_prefix("./").unwrap();
+    let base = scratch.path().to_str().unwrap().strip_prefix("./").unwrap();
     let home = format!("{base}/home");
     let user = format!("{base}/user");
     let project = format!("{base}/project");
@@ -503,7 +503,7 @@ fn automatic_relative_home_keeps_authored_path_and_exact_override() {
     let effects = Rc::new(support::Effects {
         native_exists: true,
         resources: Some(Rc::new(configured_resolution_support::owned_filesystem(
-            &scratch.0,
+            scratch.path(),
         ))),
         ..Default::default()
     });
@@ -544,9 +544,9 @@ fn automatic_relative_home_keeps_authored_path_and_exact_override() {
 fn symlinked_fixture_parent_keeps_lexical_resource_boundaries() {
     use maestro_packages::PackageManager;
     let scratch = scratch::Scratch::new().unwrap();
-    let parent = scratch.0.join("native");
+    let parent = scratch.path().join("native");
     std::fs::create_dir(&parent).unwrap();
-    let alias = scratch.0.join("alias");
+    let alias = scratch.path().join("alias");
     std::os::unix::fs::symlink(&parent, &alias).unwrap();
     let root = alias.join("owned");
     std::fs::create_dir(&root).unwrap();

@@ -18,7 +18,7 @@ fn skill_loader_decodes_paired_description() {
     let base = support::text(file.parent().unwrap());
     let result = load_skills_from_dir(
         LoadSkillsFromDirOptions {
-            cwd: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
             dir: base,
             source: "user",
         },
@@ -44,9 +44,9 @@ fn skill_loader_decodes_paired_description() {
 fn prompts(dir: &Directory, file: &std::path::Path) -> Vec<PromptTemplate> {
     load_prompt_templates(
         LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(dir.0.path()),
             config_dir_name: ".maestro",
             prompt_paths: &[support::text(file).into()],
             include_defaults: false,
@@ -104,7 +104,7 @@ fn skill_loader_reports_invalid_surrogate_fields() {
         let file = dir.file("invalid-skill/SKILL.md", input);
         let result = load_skills_from_dir(
             LoadSkillsFromDirOptions {
-                cwd: support::text(&dir.0),
+                cwd: support::text(dir.0.path()),
                 dir: support::text(file.parent().unwrap()),
                 source: "user",
             },
@@ -144,7 +144,7 @@ fn loaders_match_escaped_keys_without_sanitizing() {
     let skill_file = dir.file("escaped-key/SKILL.md", input);
     let skills = load_skills_from_dir(
         LoadSkillsFromDirOptions {
-            cwd: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
             dir: support::text(skill_file.parent().unwrap()),
             source: "user",
         },

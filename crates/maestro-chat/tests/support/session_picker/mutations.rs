@@ -1361,26 +1361,26 @@ fn native_launch(test: &str) {
         "unlink-error",
     ] {
         let dir = native_child::Scratch::new();
-        std::fs::create_dir(dir.0.join("bin")).unwrap();
+        std::fs::create_dir(dir.0.path().join("bin")).unwrap();
         let name = if mode == "leading-dash" {
             "-session.jsonl"
         } else {
             "session.jsonl"
         };
         if mode == "unlink-error" {
-            std::fs::create_dir(dir.0.join(name)).unwrap();
+            std::fs::create_dir(dir.0.path().join(name)).unwrap();
         } else {
             std::fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(dir.0.join(name))
+                .open(dir.0.path().join(name))
                 .unwrap();
         }
         if mode != "unavailable" {
             let status = std::process::Command::new("/usr/bin/install")
                 .args(["-m", "0700"])
                 .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/session-trash.sh"))
-                .arg(dir.0.join("bin/trash"))
+                .arg(dir.0.path().join("bin/trash"))
                 .status()
                 .unwrap();
             assert!(status.success());
@@ -1389,7 +1389,7 @@ fn native_launch(test: &str) {
         let log = dir.join("argv");
         let lines = native_child::probe(
             test,
-            &dir.0,
+            dir.0.path(),
             &[
                 ("MAESTRO_NATIVE_MODE", mode),
                 ("PATH", &path),

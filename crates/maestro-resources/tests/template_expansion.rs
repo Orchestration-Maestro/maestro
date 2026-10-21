@@ -941,13 +941,13 @@ fn prompt_hints_retain_optional_string_values() {
         for (name, text) in *files {
             let _ = dir.file(&format!("native/{name}"), text);
         }
-        let folder = dir.0.join("native");
+        let folder = dir.0.path().join("native");
         let paths = vec![support::text(&folder).into()];
         let actual = load_prompt_templates(
             LoadPromptTemplatesOptions {
-                cwd: support::text(&dir.0),
-                home: support::text(&dir.0),
-                agent_dir: support::text(&dir.0),
+                cwd: support::text(dir.0.path()),
+                home: support::text(dir.0.path()),
+                agent_dir: support::text(dir.0.path()),
                 config_dir_name: ".maestro",
                 prompt_paths: &paths,
                 include_defaults: false,
@@ -955,8 +955,8 @@ fn prompt_hints_retain_optional_string_values() {
             &maestro_resources::NativeResourceOperations,
         )
         .unwrap();
-        let paths: Vec<_> = expected.iter().map(|t| dir.0.join(t.path)).collect();
-        let bases: Vec<_> = expected.iter().map(|t| dir.0.join(t.base)).collect();
+        let paths: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.path)).collect();
+        let bases: Vec<_> = expected.iter().map(|t| dir.0.path().join(t.base)).collect();
         let expected: Vec<_> = expected
             .iter()
             .zip(&paths)
@@ -3885,7 +3885,7 @@ fn native_prompt_discovery_reads_authored_file_links() {
     let folder = plain.parent().unwrap();
     std::os::unix::fs::symlink(target, folder.join("alias.md")).unwrap();
     std::os::unix::fs::symlink(folder, folder.join("directory.md")).unwrap();
-    std::os::unix::fs::symlink(dir.0.join("absent"), folder.join("broken.md")).unwrap();
+    std::os::unix::fs::symlink(dir.0.path().join("absent"), folder.join("broken.md")).unwrap();
     let paths = vec![support::text(folder).into()];
     let operations = support::Controlled {
         reads: std::sync::Mutex::default(),
@@ -3897,8 +3897,8 @@ fn native_prompt_discovery_reads_authored_file_links() {
     };
     let actual = load_prompt_templates(
         LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
             agent_dir: "",
             config_dir_name: ".maestro",
             prompt_paths: &paths,
@@ -3934,8 +3934,8 @@ fn native_prompt_discovery_uses_ordered_directory_entries() {
     let paths = vec![support::text(a.parent().unwrap()).into()];
     let result = load_prompt_templates(
         LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
             agent_dir: "",
             config_dir_name: ".maestro",
             prompt_paths: &paths,
