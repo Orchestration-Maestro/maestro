@@ -37,7 +37,7 @@ type LoadFuture = crate::BoxFuture<Result<Arc<Compiled>, String>>;
 /// Live callers, rather than the cache, own a pending operation.
 type Loading = Shared<LoadFuture>;
 
-/// State for a single selected source URI.
+/// State for one destination protocol and selected source URI.
 #[derive(Default)]
 struct State {
     /// Last successful source and interpreter.
@@ -46,11 +46,14 @@ struct State {
     pending: Option<WeakShared<LoadFuture>>,
 }
 
+/// Destination protocol and selected source URI identify one interpreter.
+type SourceKey = (String, String);
+
 /// One bridge retains source instances independently of its timeout-keyed senders.
 #[derive(Default)]
 pub(crate) struct PacProxyAgent {
-    /// The environment's selected source URIs; no process-global state or general LRU.
-    sources: Mutex<BTreeMap<String, Arc<Mutex<State>>>>,
+    /// Destination protocol and source URI pairs; no process-global state or general LRU.
+    sources: Mutex<BTreeMap<SourceKey, Arc<Mutex<State>>>>,
 }
 
 impl PacProxyAgent {
@@ -72,7 +75,10 @@ impl PacProxyAgent {
             .sources
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .entry(uri.to_string())
+            .entry((
+                url::Url::parse(&request.url)?.scheme().into(),
+                uri.to_string(),
+            ))
             .or_default()
             .clone();
         let compiled = load(state, uri).await.map_err(std::io::Error::other)?;

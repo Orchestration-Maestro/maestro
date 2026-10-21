@@ -286,51 +286,60 @@ fn pac_retains_globals_and_replaces_changed_sources() {
 
 #[test]
 fn pac_failed_compilation_never_commits_source_cache() {
-    crate::tests::runtime::run(async {
-        use tokio::io::AsyncWriteExt;
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let source = url::Url::parse(&format!(
-            "pac+http://{}/script",
-            listener.local_addr().unwrap()
-        ))
-        .unwrap();
-        let peer = tokio::spawn(async move {
-            let mut requests = Vec::new();
-            let valid = "var n=0; function FindProxyForURL() { return 'VALID ' + (++n); }";
-            for (status, code) in [
-                (200, valid),
-                (200, "invalid ! code"),
-                (304, ""),
-                (200, valid),
-            ] {
-                let (mut socket, _) = listener.accept().await.unwrap();
-                let bytes = source_head(&mut socket).await;
-                requests.push(String::from_utf8(bytes).unwrap());
-                socket.write_all(format!("HTTP/1.1 {status} Source\r\nETag: one\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{code}", code.len()).as_bytes()).await.unwrap();
-            }
-            requests
-        });
-        let fetch = configured_fetch(Route {
-            proxy: Some(std::sync::Arc::new(move |_| Ok(Some(source.clone())))),
-            ..Route::default()
-        });
-        for expected in [
-            "VALID 1",
-            "SyntaxError",
-            "Source has not been modified",
-            "VALID 1",
-        ] {
-            let error = fetch(request("http://unused.invalid/".into()))
-                .await
-                .err()
-                .unwrap();
-            assert!(error.to_string().contains(expected), "{error}");
+    crate::tests::runtime::run(failed_compilation("invalid ! code", "SyntaxError"));
+}
+
+#[test]
+fn pac_missing_callable_never_commits_source_cache() {
+    crate::tests::runtime::run(failed_compilation("", "ReferenceError"));
+}
+
+#[test]
+fn pac_noncallable_export_never_commits_source_cache() {
+    crate::tests::runtime::run(failed_compilation("var FindProxyForURL=42", "TypeError"));
+}
+
+/// Invalid exports and syntax must not publish conditional source observations.
+async fn failed_compilation(code: &str, expected: &str) {
+    use tokio::io::AsyncWriteExt;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let source = url::Url::parse(&format!(
+        "pac+http://{}/script",
+        listener.local_addr().unwrap()
+    ))
+    .unwrap();
+    let code = code.to_owned();
+    let peer = tokio::spawn(async move {
+        let mut requests = Vec::new();
+        let valid = "var n=0; function FindProxyForURL() { return 'VALID ' + (++n); }";
+        for (status, code) in [(200, valid), (200, code.as_str()), (304, ""), (200, valid)] {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let bytes = source_head(&mut socket).await;
+            requests.push(String::from_utf8(bytes).unwrap());
+            socket.write_all(format!("HTTP/1.1 {status} Source\r\nETag: one\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{code}", code.len()).as_bytes()).await.unwrap();
         }
-        let requests = peer.await.unwrap();
-        assert!(requests[1].contains("if-none-match: one"));
-        assert!(!requests[2].contains("if-none-match"));
-        assert!(!requests[3].contains("if-none-match"));
+        requests
     });
+    let fetch = configured_fetch(Route {
+        proxy: Some(std::sync::Arc::new(move |_| Ok(Some(source.clone())))),
+        ..Route::default()
+    });
+    for expected in [
+        "VALID 1",
+        expected,
+        "Source has not been modified",
+        "VALID 1",
+    ] {
+        let error = fetch(request("http://unused.invalid/".into()))
+            .await
+            .err()
+            .unwrap();
+        assert!(error.to_string().contains(expected), "{error}");
+    }
+    let requests = peer.await.unwrap();
+    assert!(requests[1].contains("if-none-match: one"));
+    assert!(!requests[2].contains("if-none-match"));
+    assert!(!requests[3].contains("if-none-match"));
 }
 
 #[test]
@@ -457,6 +466,7 @@ fn shared_response(count: usize, request: Vec<u8>, code: &str) -> String {
     }
 }
 
+mod callable;
 mod deadlines;
 mod retention;
 mod tls;

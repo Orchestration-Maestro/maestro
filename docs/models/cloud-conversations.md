@@ -190,9 +190,12 @@ non-loopback IPv4 on the first eligible interface, preserving interface and
 per-interface address order. An authored `alert` emits its exact message through
 tracing rather than printing.
 
-Each bridge retains script globals independently of its connection timeout
-settings. Unchanged source keeps that context; successfully compiled replacement
-code creates a new one. Failed compilation cannot publish source metadata or
+Each bridge retains separate script globals for each destination protocol and
+source URL, independently of its connection timeout settings. Compilation resolves
+and retains `FindProxyForURL`, including lexical declarations; later reassignment
+does not replace that callable. Missing or non-callable exports fail compilation.
+Unchanged source keeps that context; successfully compiled replacement code
+creates a new one. Failed compilation cannot publish source metadata or
 revive an old script through a later unchanged response. File sources compare the
 opened file's millisecond modification time; HTTP and HTTPS sources use cache
 headers, validators and up to five redirects. Source requests do not recursively

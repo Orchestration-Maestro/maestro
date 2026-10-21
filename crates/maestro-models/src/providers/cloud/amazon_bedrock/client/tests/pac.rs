@@ -13,7 +13,7 @@ use crate::providers::cloud::amazon_bedrock::proxy::Environment;
 use crate::tests::loopback;
 
 #[test]
-fn pac_bridge_retains_globals_across_protocols_and_timeouts() {
+fn pac_bridge_scopes_globals_by_protocol_across_timeouts() {
     crate::tests::runtime::run(async {
         let (sent, received) = mpsc::channel();
         let server = loopback::serve_routed(move |request| {
@@ -55,11 +55,11 @@ fn pac_bridge_retains_globals_across_protocols_and_timeouts() {
                 ),
                 (
                     "CONNECT destination.invalid:8081 HTTP/1.1".into(),
-                    "Basic Mjo=".into()
+                    "Basic MTo=".into()
                 ),
                 (
                     "GET http://destination.invalid:8081/credentials HTTP/1.1".into(),
-                    "Basic Mzo=".into()
+                    "Basic Mjo=".into()
                 ),
                 (
                     "CONNECT destination.invalid:8081 HTTP/1.1".into(),

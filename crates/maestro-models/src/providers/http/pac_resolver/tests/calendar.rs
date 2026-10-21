@@ -21,7 +21,7 @@ fn calendar_helpers_distinguish_local_and_gmt_at_a_date_transition() {
         .host_hooks(Rc::new(Offset))
         .build()
         .unwrap();
-    super::super::initialize(&mut context, "").unwrap();
+    super::super::initialize(&mut context, "function FindProxyForURL(){return 'DIRECT'}").unwrap();
     let result = context.eval(Source::from_bytes(
         "JSON.stringify([timeRange(19),timeRange(0),timeRange(0,'GMT'),timeRange(19,'GMT'),weekdayRange('THU'),weekdayRange('FRI'),weekdayRange('FRI','GMT'),weekdayRange('FRI','FRI','GMT'),weekdayRange('THU','GMT'),dateRange(29,'FEB',2024),dateRange(1,'MAR',2024),dateRange(1,'MAR',2024,'GMT'),dateRange(29,'FEB',2024,'GMT')])"
     )).unwrap();

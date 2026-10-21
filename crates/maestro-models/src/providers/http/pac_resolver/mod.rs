@@ -18,7 +18,7 @@ mod weekday_range;
 use std::sync::Arc;
 
 use boa_engine::builtins::promise::PromiseState;
-use boa_engine::object::builtins::JsPromise;
+use boa_engine::object::{JsObject, builtins::JsPromise};
 use boa_engine::{Context, JsNativeError, JsResult, JsValue, NativeFunction, Source, js_string};
 use tokio::sync::{mpsc, oneshot};
 
@@ -142,28 +142,34 @@ fn execute(
 ) {
     let mut context = Context::default();
     context.insert_data(util::Host(runtime));
-    let initialized = initialize(&mut context, source).map_err(|error| error.to_string());
-    let success = initialized.is_ok();
-    if ready.send(initialized).is_err() || !success {
+    let initialized = initialize(&mut context, source);
+    let status = initialized
+        .as_ref()
+        .map(|_| ())
+        .map_err(ToString::to_string);
+    if ready.send(status).is_err() {
         return;
     }
+    let Ok(callable) = initialized else {
+        return;
+    };
     let mut pending = Vec::new();
     while let Some(command) = requests.blocking_recv() {
         match command {
             Command::Cancel(token) => {
                 pending.retain(|item: &Pending| !Arc::ptr_eq(&item.request.token, &token));
             }
-            Command::Resolve(request) => admit(&mut context, &mut pending, request),
+            Command::Resolve(request) => admit(&mut context, &callable, &mut pending, request),
         }
     }
 }
 
 /// Admit one live requester before driving jobs that its invocation may settle.
-fn admit(context: &mut Context, pending: &mut Vec<Pending>, request: Request) {
+fn admit(context: &mut Context, callable: &JsObject, pending: &mut Vec<Pending>, request: Request) {
     if request.reply.is_closed() {
         return;
     }
-    match evaluate(context, &request.url) {
+    match evaluate(context, callable, &request.url) {
         Ok(promise) => pending.push(Pending { request, promise }),
         Err(error) => {
             let _ = request.reply.send(Err(error.to_string()));
@@ -173,7 +179,7 @@ fn admit(context: &mut Context, pending: &mut Vec<Pending>, request: Request) {
 }
 
 /// Install native helpers and compile the authored program without rewriting it.
-fn initialize(context: &mut Context, source: &str) -> JsResult<()> {
+fn initialize(context: &mut Context, source: &str) -> JsResult<JsObject> {
     let helpers: &[(
         &str,
         usize,
@@ -207,7 +213,14 @@ fn initialize(context: &mut Context, source: &str) -> JsResult<()> {
         )?;
     }
     context.eval(Source::from_bytes(source))?;
-    Ok(())
+    context
+        .eval(Source::from_bytes("FindProxyForURL"))?
+        .as_callable()
+        .ok_or_else(|| {
+            JsNativeError::typ()
+                .with_message("FindProxyForURL is not callable")
+                .into()
+        })
 }
 
 /// Emit an authored alert without printing or changing its message.
@@ -222,18 +235,13 @@ fn alert(_: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsVal
 }
 
 /// Invoke a retained callable, applying the interpreter's own truth and string conversions.
-fn evaluate(context: &mut Context, text: &str) -> JsResult<JsPromise> {
+fn evaluate(context: &mut Context, callable: &JsObject, text: &str) -> JsResult<JsPromise> {
     let url = url::Url::parse(text)
         .map_err(|error| JsNativeError::typ().with_message(error.to_string()))?;
     let host = url
         .host_str()
         .filter(|host| !host.is_empty())
         .ok_or_else(|| JsNativeError::typ().with_message("Could not determine `host`"))?;
-    let callable = context
-        .global_object()
-        .get(js_string!("FindProxyForURL"), context)?
-        .as_callable()
-        .ok_or_else(|| JsNativeError::typ().with_message("FindProxyForURL is not callable"))?;
     let value = callable.call(
         &JsValue::undefined(),
         &[js_string!(text).into(), js_string!(host).into()],
