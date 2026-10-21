@@ -15,8 +15,8 @@ fn daemon_desktop_notification_separates_option_like_titles() {
         );
         return;
     }
-    let dir = std::env::temp_dir().join(format!("maestro-notify-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let dir = directory.path().to_path_buf();
     let script = dir.join("notify-send");
     std::fs::write(
         &script,
@@ -47,8 +47,8 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
         return;
     }
     let name = "desktop_notification_does_not_claim_unavailable_or_failed_delivery";
-    let dir = std::env::temp_dir().join(format!("maestro-no-notify-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let dir = directory.path().to_path_buf();
     assert!(
         maestro_test_process::TestProcess::current(name)
             .unwrap()

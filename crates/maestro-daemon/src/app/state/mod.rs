@@ -181,6 +181,10 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
         let (sidebar_min, sidebar_max) = config.sidebar_bounds();
         let theme_runtime = ThemeRuntimeConfig::new(config, true);
+        let agent_manifest_summaries = manifests
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .manifest_summaries();
         Self {
             should_quit: maestro_protocol::shared::Flag(false),
             sidebar_width: config.ui.sidebar_width.clamp(sidebar_min, sidebar_max),
@@ -205,7 +209,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             topology: WorkspaceTopology::new(clock),
             terminals: HashMap::new(),
             manifests,
-            agent_manifest_summaries: Vec::new(),
+            agent_manifest_summaries,
             agent_manifest_update_status: ManifestUpdateStatus::default(),
             plugin_panes: HashMap::new(),
             terminal_runtime_shutdowns: Vec::new(),

@@ -1,5 +1,6 @@
 //! Live footer refresh through controlled and native effects.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
 use crate::native;
 #[path = "support/watching.rs"]
@@ -1231,6 +1232,7 @@ async fn footer_reaping_barrier(pid: rustix::process::Pid) {
 }
 
 /// Embedded bare metadata keeps checkout HEAD and common watch paths distinct.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn footer_embedded_checkout_retains_branch_and_watch_identity() {
     use maestro_workspace::workspace::git::native::discover_git_paths;

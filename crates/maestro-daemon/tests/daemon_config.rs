@@ -416,7 +416,8 @@ fn no_session_reload_does_not_admit_reenabled_background_checks() {
 #[test]
 fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_paths() {
     let (mut app, mut manager, storage) = fixture();
-    let root = history_test_root("captured");
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let root = directory.path().to_path_buf();
     let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
     app.config.experimental.pane_history.0 = true;
     std::fs::write(paths.history_path(), "old history").unwrap();
@@ -443,7 +444,7 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     assert_eq!(report.status, ConfigReloadStatus::Applied);
     assert!(!app.config.experimental.pane_history.0);
     release.send(()).unwrap();
-    app.handle_scheduled_tasks(Instant::now(), &paths);
+    block_on(app.handle_scheduled_tasks(Instant::now(), &paths));
     assert!(app.session_save_thread.is_none());
     assert!(!Path::new(&paths.history_path()).exists());
     block_on(app.run(&paths, std::future::ready(())));
@@ -456,23 +457,13 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     std::fs::remove_dir_all(root).unwrap();
 }
 
-fn history_test_root(label: &str) -> std::path::PathBuf {
-    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-    let root = std::env::temp_dir().join(format!(
-        "maestro-reload-history-{label}-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    ));
-    std::fs::create_dir_all(&root).unwrap();
-    root
-}
-
 #[test]
 fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_snapshot() {
     for value in [json!("invalid"), json!(true)] {
         let (mut app, mut manager, storage) = fixture();
         app.config.experimental.pane_history.0 = true;
-        let root = history_test_root("retained");
+        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let root = directory.path().to_path_buf();
         let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "retained history").unwrap();
         std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
@@ -507,7 +498,8 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
 fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_snapshot() {
     for route in ["observed", "run", "shutdown"] {
         let (mut app, mut manager, storage) = fixture();
-        let root = history_test_root("no-session");
+        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let root = directory.path().to_path_buf();
         let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "old history").unwrap();
         std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();

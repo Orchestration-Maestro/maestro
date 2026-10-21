@@ -6,6 +6,8 @@
 //! JavaScript runtime's `path` module for both of its flavors, except where
 //! that module's result is a defect; the crate's tests mark each one. Convert
 //! an authored path to [`std::path::PathBuf`] only at a file-system call.
+//! [`normalize_native`] shares segment reduction with these string operations
+//! when a native filesystem path must retain non-UTF-8 components.
 //!
 //! The [`posix`] and [`win32`] modules behave the same on every platform. The
 //! crate root re-exports the flavor of the compile target; the POSIX-only
@@ -15,7 +17,9 @@ mod os;
 mod path;
 
 pub use os::homedir;
-pub use path::{Cwd, CwdUnavailable, posix, resolve_with, resolve_with_flavor, win32};
+pub use path::{
+    Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, win32,
+};
 
 #[cfg(not(windows))]
 pub use path::posix::{

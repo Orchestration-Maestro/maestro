@@ -409,10 +409,11 @@ metadata owner, its branch, watch, count and status policy and its existing publ
 paths, which re-export the moved declarations.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
-resolution, shared Unicode trimming, and unreadable-link and missing-HEAD stop
-policy. A typed discovery policy preserves caller-specific metadata rules: the
+resolution and shared Unicode trimming without replacing native path bytes.
+A typed discovery policy preserves caller-specific metadata rules: the
 footer requires the spaced worktree marker, accepts an existing HEAD of any kind,
-and reads `commondir` only for worktree links; workspace identity accepts the
+and reads `commondir` only for worktree links; it stops at a marker without HEAD.
+Workspace identity climbs past markers without a regular HEAD, accepts the
 unspaced marker, requires a regular HEAD file and reads shared metadata for all
 repository layouts, falling back to the checkout metadata if `commondir` cannot
 be read. Both policies support standalone bare repositories. The footer
@@ -505,7 +506,9 @@ This declaration creates no crate and moves no code.
 
 `maestro-path` is the foundation utility for lexical path strings. It sits below
 layer 0, has no internal dependencies, and exposes platform-independent path
-operations. Native crates may depend on it without changing their delivery layer.
+operations. Native path normalization shares its segment reducer with the string
+flavors and preserves native component bytes without filesystem observations.
+Native crates may depend on it without changing their delivery layer.
 This optional utility edge is ignored when evaluating leaf status and exact
 direct-dependency sets; every other dependency rule, including cycle and internal
 dev-dependency checks, still applies. The guest authoring crate

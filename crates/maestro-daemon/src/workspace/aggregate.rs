@@ -80,7 +80,7 @@ fn pane_detail<S: std::hash::BuildHasher>(
 }
 
 /// Ranks blocked, unseen completion, working, acknowledged completion, then unknown.
-fn pane_attention_priority(state: AgentState, seen: bool) -> u8 {
+pub(crate) fn pane_attention_priority(state: AgentState, seen: bool) -> u8 {
     match (state, seen) {
         (AgentState::Blocked, _) => 4,
         (AgentState::Idle, false) => 3,

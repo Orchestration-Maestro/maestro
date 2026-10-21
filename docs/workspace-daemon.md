@@ -123,8 +123,8 @@ cross-pane selections, and returns to copy context when that pane is selected.
 Closing a selected parent checkout removes its repository group; closing a linked
 checkout removes only that workspace. Pane death removes only its own workspace
 when its last pane exits, retaining the logical active and selected workspaces.
-Removal clears pane aliases, extension provenance and affected copy/selection
-records. Detached terminal metadata is removed and its identity is queued for the
+Removal clears extension provenance and affected copy/selection records. Pane
+aliases remain recorded; resolving an alias to a removed pane returns no match. Detached terminal metadata is removed and its identity is queued for the
 loop to shut down the existing runtime; still-attached terminals are retained.
 
 Screen, process and hook reports update the existing terminal-state owner.
@@ -752,4 +752,7 @@ spelling for watching; canonical paths remain repository identity keys.
 Caller-specific metadata rules use one typed policy: footer worktree markers
 require a space after `gitdir:`, while workspace identity also accepts the
 unspaced form. Footer directory metadata ignores `commondir`; a worktree link
-uses it. The browser footer has no native repository discovery.
+uses it. Workspace discovery climbs past incomplete nested repositories; footer
+discovery stops at a marker without HEAD. Native directory and link bytes are
+retained. The footer calls the workspace owner through the direct native
+application dependency. The browser footer has no native repository discovery.

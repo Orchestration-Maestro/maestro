@@ -1,6 +1,7 @@
 //! Footer metadata: branch discovery, cached lookup, statuses, count and
 //! branch-change subscriptions.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use crate::footer_support as support;
 
@@ -295,7 +296,7 @@ fn check_discovery_ambient(
             "footer_discovers_metadata_without_skipping_broken_inner_repo",
         )
         .unwrap()
-        .name(),
+        .case("*"),
         Path::new(&ops.path(current)),
         &env,
         &[],
@@ -443,15 +444,11 @@ struct HeadScenario {
 struct CachedExpected {
     first: Branch,
     second: Branch,
-    #[serde(rename = "headReads")]
-    _head_reads: usize,
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct EditedExpected {
-    #[serde(rename = "readsBefore")]
-    _reads_before: usize,
     branch: Branch,
 }
 

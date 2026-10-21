@@ -45,7 +45,8 @@ fn daemon_new_workspace_retains_discovered_git_metadata() {
 }
 
 async fn check_admitted_repository(args: &[String]) {
-    let root = support::temp_test_dir("git-metadata");
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let root = directory.path().to_path_buf();
     std::fs::create_dir(root.join(".git")).unwrap();
     std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
@@ -78,7 +79,8 @@ async fn check_admitted_repository(args: &[String]) {
 
 #[test]
 fn daemon_linked_worktree_auto_label_uses_checkout_name_not_repo_name() {
-    let scratch = support::temp_test_dir("linked-auto-label");
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = directory.path().to_path_buf();
     let repo = scratch.join("maestro");
     let checkout = scratch.join("testr56");
     support::init_repo_with_commit(&repo);

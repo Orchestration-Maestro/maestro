@@ -97,7 +97,9 @@ impl<C: FnMut() -> u128> App<C> {
             {
                 toast.context.clone_from(&context);
             }
-            if let Some(toast) = self.state.toast.as_mut()
+            if self.state.toast_config.delivery == crate::settings::model::ToastDelivery::Workspace
+                && delivery.toast.is_some()
+                && let Some(toast) = self.state.toast.as_mut()
                 && toast.target.as_ref().is_some_and(|target| {
                     target.workspace_id == delivery.workspace_id
                         && target.pane_id == delivery.pane_id

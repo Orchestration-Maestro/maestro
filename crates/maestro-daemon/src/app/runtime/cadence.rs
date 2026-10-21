@@ -32,6 +32,7 @@ impl<C: FnMut() -> u128> App<C> {
             self.toast_deadline,
             self.state.next_pending_agent_notification_deadline(),
             self.state.next_managed_agent_deadline(),
+            self.state.next_agent_metadata_expiry(),
             self.copy_feedback_deadline,
             self.session_save_deadline,
             self.next_tab_bar_status_deadline(),

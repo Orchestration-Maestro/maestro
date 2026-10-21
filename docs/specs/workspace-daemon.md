@@ -194,12 +194,12 @@ need `unsafe` to hand its descriptor to the async runtime.
 - **Repository identity.** Native discovery belongs to the existing
   `maestro-workspace::workspace::git` owner. The daemon and application footer use
   the same directory walk for ordinary, linked, bare and embedded-bare layouts.
-  That owner preserves lexical path and drive resolution, shared Unicode trimming,
-  and stopping at unreadable links or a repository marker without HEAD. The footer
-  keeps branch, detached-head and watch policy. Git subprocess fallbacks stay in
-  the process-owning callers. The footer reaches the shared owner through the
-  daemon's re-export on the already declared application-to-daemon edge; no new
-  crate-graph edge or injected filesystem port is added. Discovery tests use real
+  Native path bytes survive traversal and metadata-link resolution. Shared Unicode
+  trimming applies to link text. Workspace discovery climbs past markers without a
+  regular HEAD; footer discovery stops there and retains its branch, detached-head
+  and watch policy. Git subprocess fallbacks stay in the process-owning callers.
+  The footer calls the workspace owner through a direct native-only
+  application-to-workspace edge. Discovery tests use real
   temporary directories rather than a second, fake-only filesystem adapter.
 - **Geometry.** Topology uses its own rectangle and border set.
 
@@ -295,7 +295,8 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 | A second runtime owner beside the registry | topology without runtimes | 3, 12 |
 | Two WSL detectors that disagree | one detector over the union of both signal sets | 29 |
 | Daemon state mixed with view state; daemon operations inside the input module | the state split above | 12, 27, 28 |
-| The footer branch reader misses bare, embedded-bare and reftable layouts | the footer and daemon share workspace-owned native repository discovery | 12 |
+| The footer discovery walk misses standalone bare repositories | the footer and daemon share workspace-owned native repository discovery | 12 |
+| Delayed terminal-only delivery rewrites an existing workspace toast | retained toast context changes only on workspace delivery | 12 |
 | An unlocked whole-file configuration rewrite can lose a concurrent write | writes through the settings file lock | 8, 12 |
 
 Each fix carries a root-cause table in its delivery report: the reference file and line where the defect

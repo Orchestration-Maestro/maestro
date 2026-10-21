@@ -179,8 +179,8 @@ fn daemon_reload_aborts_an_in_flight_command_task_and_its_descendants() {
 /// Uses FIFO handshakes rather than sleeps to start and release a real descendant.
 async fn check_descendant_reload() {
     use std::io::Write;
-    let root = std::env::temp_dir().join(format!("maestro-status-reload-{}", std::process::id()));
-    std::fs::create_dir_all(&root).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let root = directory.path().to_path_buf();
     let started = root.join("started");
     let gate = root.join("gate");
     let survived = root.join("survived");

@@ -3675,6 +3675,7 @@ dependencies = [
  "maestro-protocol",
  "maestro-settings",
  "maestro-terminal",
+ "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
  "maestro-tui",

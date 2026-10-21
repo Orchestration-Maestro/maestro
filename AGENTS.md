@@ -107,8 +107,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   (non-core) crates as normal or build dependencies; the declared native
   test-process, test-directory and test-tracing development edges are permitted.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
-  below layer 0 and depends on no workspace crate. Native crates may declare it
-  as a production dependency without changing their layer, subject to the
+  below layer 0 and depends on no workspace crate. Native normalization reuses its
+  segment reducer without decoding path bytes or accessing the filesystem.
+  Native crates may declare it as a production dependency without changing their
+  layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Shared path helpers take supplied directory observations
   and add no global environment, filesystem service, directory cache, scheduler

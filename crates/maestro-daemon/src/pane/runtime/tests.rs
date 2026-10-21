@@ -836,6 +836,7 @@ async fn check_manifest_resets(args: &[String]) {
     orphan.detected_agent = Some(Agent::Codex);
     app.state.terminals.insert(orphan_id, orphan);
     assert_manifest_reset_selection(&mut app, &id);
+    assert_hook_runtime_controls(&mut app, &id);
     app.terminal_runtimes.remove(&id).unwrap().shutdown().await;
 }
 
@@ -880,10 +881,6 @@ fn assert_manifest_reset_selection(
         agents::{Agent, AgentState},
         manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
     };
-    use std::{
-        future::Future,
-        task::{Context, Poll, Waker},
-    };
     for (hook, agents, expected) in [
         (None, vec![], false),
         (None, vec![Agent::Claude], false),
@@ -911,19 +908,76 @@ fn assert_manifest_reset_selection(
                 .collect(),
             status: ManifestUpdateStatus::default(),
         });
-        let wait = app
-            .terminal_runtimes
-            .get(id)
-            .unwrap()
-            .control
-            .wait_for_reset();
-        tokio::pin!(wait);
         assert_eq!(
-            matches!(
-                wait.as_mut().poll(&mut Context::from_waker(Waker::noop())),
-                Poll::Ready(())
-            ),
+            detection_reset_ready(app.terminal_runtimes.get(id).unwrap()),
             expected
         );
     }
+}
+
+/// Checks lifecycle pause and release routing on the actual retained runtime control.
+fn assert_hook_runtime_controls(
+    app: &mut crate::app::App<fn() -> u128>,
+    id: &maestro_workspace::terminal_id::TerminalId,
+) {
+    use maestro_detection::agents::{Agent, AgentState};
+    let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
+    app.state.terminals.insert(
+        id.clone(),
+        crate::terminal::state::TerminalState::new(id.clone(), "/tmp".into()),
+    );
+    let terminal = app.state.terminals.get_mut(id).unwrap();
+    terminal.detected_agent = Some(Agent::Pi);
+    terminal.set_persisted_agent_session(crate::agent_resume::PersistedAgentSession {
+        source: "maestro:pi".into(),
+        agent: "pi".into(),
+        session_ref: crate::agent_resume::AgentSessionRef::id("live-session").unwrap(),
+    });
+    let updates = app.handle_internal_event(AppEvent::HookStateReported {
+        pane_id: pane,
+        source: "maestro:pi".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(1),
+        session_ref: Some(crate::agent_resume::AgentSessionRef::id("live-session").unwrap()),
+    });
+    assert!(!updates.is_empty());
+    assert!(detection_reset_ready(
+        app.terminal_runtimes.get(id).unwrap()
+    ));
+    app.state.terminals.get_mut(id).unwrap().hook_authority = None;
+    app.state.terminals.get_mut(id).unwrap().detected_agent = None;
+    app.handle_internal_event(AppEvent::HookStateReported {
+        pane_id: pane,
+        source: "custom".into(),
+        agent_label: "pi".into(),
+        state: AgentState::Working,
+        message: None,
+        seq: Some(1),
+        session_ref: None,
+    });
+    app.handle_internal_event(AppEvent::HookAgentReleased {
+        pane_id: pane,
+        source: "custom".into(),
+        agent_label: "pi".into(),
+        known_agent: Some(Agent::Pi),
+        seq: Some(2),
+    });
+    assert!(detection_reset_ready(
+        app.terminal_runtimes.get(id).unwrap()
+    ));
+}
+
+/// Observes one retained detector reset permit without waiting or changing its owner.
+fn detection_reset_ready(runtime: &PaneRuntime) -> bool {
+    use std::{
+        future::Future,
+        task::{Context, Waker},
+    };
+    let reset = runtime.control.wait_for_reset();
+    tokio::pin!(reset);
+    reset
+        .poll(&mut Context::from_waker(Waker::noop()))
+        .is_ready()
 }

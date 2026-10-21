@@ -67,7 +67,7 @@ pub struct PaneStateUpdate {
 
 impl PaneStateUpdate {
     /// Projects the effective change before applying pane-level acknowledgement.
-    fn from_change(
+    pub(super) fn from_change(
         workspace: usize,
         pane: PaneId,
         seen: bool,

@@ -1,5 +1,4 @@
 //! Native repository paths shared by metadata consumers.
-use maestro_path::{dirname, resolve_with};
 use std::{
     io,
     path::{Path, PathBuf},
@@ -30,38 +29,47 @@ pub fn read_text(path: &Path) -> io::Result<String> {
     std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
 }
 
-/// Resolve a metadata link lexically, observing ambient directories only when needed.
-fn resolve_path(base: &Path, target: &str) -> io::Result<PathBuf> {
-    let base = base.to_string_lossy();
-    let paths = [base.as_ref(), target];
-    let drives: Vec<(char, String)> = paths
-        .iter()
-        .filter_map(|path| {
-            let [letter @ (b'a'..=b'z' | b'A'..=b'Z'), b':', ..] = path.as_bytes() else {
-                return None;
-            };
-            let drive = letter.to_ascii_uppercase() as char;
-            Some((drive, std::env::var(format!("={drive}:")).ok()?))
-        })
-        .collect();
-    resolve_with(
-        &[&paths],
-        || &drives,
-        || std::env::current_dir().map(|path| path.to_string_lossy().into_owned()),
-    )
-    .map(|resolved| PathBuf::from(resolved.into_iter().collect::<String>()))
+/// Trim valid Unicode boundary text without replacing malformed interior bytes.
+fn trim_link(bytes: &[u8]) -> &[u8] {
+    let first = bytes.utf8_chunks().next().map_or("", |chunk| chunk.valid());
+    let bytes = &bytes[first.len()
+        - first
+            .trim_start_matches(maestro_text::is_whitespace_scalar)
+            .len()..];
+    let last = bytes.utf8_chunks().last().map_or("", |chunk| chunk.valid());
+    &bytes[..bytes.len()
+        - (last.len()
+            - last
+                .trim_end_matches(maestro_text::is_whitespace_scalar)
+                .len())]
+}
+
+/// Resolve metadata links without decoding native Unix path components.
+fn resolve_link(base: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
+    #[cfg(unix)]
+    let target = {
+        use std::os::unix::ffi::OsStrExt;
+        Path::new(std::ffi::OsStr::from_bytes(trim_link(bytes)))
+    };
+    #[cfg(not(unix))]
+    let target = Path::new(
+        std::str::from_utf8(trim_link(bytes))
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?,
+    );
+    std::path::absolute(base.join(target)).map(|path| maestro_path::normalize_native(&path))
 }
 
 /// Caller-specific metadata acceptance within the shared repository walk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiscoveryPolicy {
-    /// Workspace identity accepts unspaced links, requires regular HEAD, and tolerates unreadable common metadata.
+    /// Workspace identity accepts unspaced links and requires a regular HEAD.
+    /// Unusable markers are skipped; unreadable common metadata falls back.
     Workspace,
     /// Footer links require a space; directory metadata ignores `commondir`.
     Footer,
 }
 
-/// Find the nearest repository, stopping at an unreadable link or missing HEAD.
+/// Find the nearest workspace repository with a regular HEAD file.
 #[must_use]
 pub fn discover_git_paths(start: &Path) -> Option<GitPaths> {
     discover_git_paths_with(start, DiscoveryPolicy::Workspace)
@@ -88,27 +96,35 @@ fn discover(start: &Path, policy: DiscoveryPolicy) -> io::Result<Option<GitPaths
                 DiscoveryPolicy::Workspace => head.is_file(),
                 DiscoveryPolicy::Footer => head.exists(),
             };
-            if !valid {
+            if !valid && policy == DiscoveryPolicy::Footer {
                 return Ok(None);
             }
-            let git_common_dir =
-                if policy == DiscoveryPolicy::Footer && current.join(".git").is_dir() {
-                    git_dir.clone()
-                } else {
-                    git_common_dir_for_git_dir(&git_dir, policy)?
-                };
-            return Ok(Some(GitPaths {
-                repo_root: current,
-                git_dir,
-                git_common_dir,
-            }));
+            if valid {
+                return paths_for_root(current, git_dir, policy).map(Some);
+            }
         }
-        let parent = PathBuf::from(dirname(&current.to_string_lossy()));
-        if parent == current {
+        if !current.pop() {
             return Ok(None);
         }
-        current = parent;
     }
+}
+
+/// Assemble accepted metadata paths with caller-specific shared-directory policy.
+fn paths_for_root(
+    root: PathBuf,
+    git_dir: PathBuf,
+    policy: DiscoveryPolicy,
+) -> io::Result<GitPaths> {
+    let git_common_dir = if policy == DiscoveryPolicy::Footer && root.join(".git").is_dir() {
+        git_dir.clone()
+    } else {
+        git_common_dir_for_git_dir(&git_dir, policy)?
+    };
+    Ok(GitPaths {
+        repo_root: root,
+        git_dir,
+        git_common_dir,
+    })
 }
 
 /// Locate a directory's metadata marker, including standalone bare layouts.
@@ -122,19 +138,22 @@ fn git_dir_for_root(root: &Path, policy: DiscoveryPolicy) -> io::Result<Option<P
     match std::fs::metadata(&marker) {
         Ok(metadata) if metadata.is_dir() => return Ok(Some(marker)),
         Ok(metadata) if metadata.is_file() => {
-            let contents = read_text(&marker)?;
-            let prefix = match policy {
-                DiscoveryPolicy::Workspace => "gitdir:",
-                DiscoveryPolicy::Footer => "gitdir: ",
+            let contents = match std::fs::read(&marker) {
+                Ok(contents) => contents,
+                Err(_) if policy == DiscoveryPolicy::Workspace => return Ok(None),
+                Err(error) => return Err(error),
             };
-            return trim(&contents)
+            let prefix = match policy {
+                DiscoveryPolicy::Workspace => b"gitdir:".as_slice(),
+                DiscoveryPolicy::Footer => b"gitdir: ".as_slice(),
+            };
+            return trim_link(&contents)
                 .strip_prefix(prefix)
-                .map(|target| resolve_path(root, trim(target)))
+                .map(|target| resolve_link(root, target))
                 .transpose();
         }
         Ok(_) => return Ok(None),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-        Err(error) => return Err(error),
+        Err(_) => {}
     }
     Ok((root.join("HEAD").is_file()
         && root.join("objects").is_dir()
@@ -145,13 +164,13 @@ fn git_dir_for_root(root: &Path, policy: DiscoveryPolicy) -> io::Result<Option<P
 
 /// Resolve shared metadata with caller-specific unreadable-link handling.
 fn git_common_dir_for_git_dir(git_dir: &Path, policy: DiscoveryPolicy) -> io::Result<PathBuf> {
-    match read_text(&git_dir.join("commondir")) {
-        Ok(contents) => resolve_path(git_dir, trim(&contents)),
-        Err(error)
-            if error.kind() == io::ErrorKind::NotFound || policy == DiscoveryPolicy::Workspace =>
-        {
-            Ok(git_dir.to_path_buf())
-        }
+    let common = git_dir.join("commondir");
+    if policy == DiscoveryPolicy::Footer && !common.exists() {
+        return Ok(git_dir.to_path_buf());
+    }
+    match std::fs::read(common) {
+        Ok(contents) => resolve_link(git_dir, &contents),
+        Err(_) if policy == DiscoveryPolicy::Workspace => Ok(git_dir.to_path_buf()),
         Err(error) => Err(error),
     }
 }

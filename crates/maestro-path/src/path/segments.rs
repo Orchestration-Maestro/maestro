@@ -4,22 +4,26 @@
 ///
 /// A `..` with no segment left to cancel, or following another kept `..`, is
 /// kept when `allow_above_root` is set and dropped otherwise.
-pub(super) fn reduce<'a>(
-    segments: impl Iterator<Item = &'a str>,
+pub(super) fn reduce<'a, S: AsRef<std::ffi::OsStr> + ?Sized + 'a>(
+    segments: impl Iterator<Item = &'a S>,
     allow_above_root: bool,
-) -> Vec<&'a str> {
-    let mut kept: Vec<&str> = Vec::new();
+) -> Vec<&'a S> {
+    let mut kept: Vec<&S> = Vec::new();
     for segment in segments {
-        match segment {
-            "" | "." => {}
-            ".." => match kept.last() {
-                Some(&last) if last != ".." => {
+        let value = segment.as_ref();
+        if value.is_empty() || value == "." {
+            continue;
+        }
+        if value == ".." {
+            match kept.last() {
+                Some(last) if last.as_ref() != ".." => {
                     kept.pop();
                 }
-                _ if allow_above_root => kept.push(".."),
+                _ if allow_above_root => kept.push(segment),
                 _ => {}
-            },
-            other => kept.push(other),
+            }
+        } else {
+            kept.push(segment);
         }
     }
     kept

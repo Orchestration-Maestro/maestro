@@ -65,7 +65,16 @@ impl<C: FnMut() -> u128> App<C> {
             } else {
                 None
             };
+        let released = match &event {
+            AppEvent::HookAgentReleased {
+                pane_id,
+                known_agent,
+                ..
+            } => known_agent.map(|agent| (*pane_id, agent)),
+            _ => None,
+        };
         let updates = self.state.handle_app_event(event);
+        self.sync_runtime_detection_controls(released, &updates);
         if let Some(agents) = manifest_update_agents {
             self.reset_agent_detection_for_agents(&agents);
         }
@@ -113,7 +122,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Refreshes only a newly produced workspace toast for this exact pane identity.
-    fn refresh_new_workspace_toast_context_for_update(
+    pub(in crate::app) fn refresh_new_workspace_toast_context_for_update(
         &mut self,
         update: &PaneStateUpdate,
         previous_toast: Option<&ToastNotification>,

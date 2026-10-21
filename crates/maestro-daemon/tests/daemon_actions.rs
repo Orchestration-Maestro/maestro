@@ -1234,8 +1234,8 @@ fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
         .unwrap()
         .attached_terminal_id
         .clone();
-    let cwd = std::env::temp_dir().join(format!("maestro-cwd-report-test-{}", std::process::id()));
-    std::fs::create_dir_all(&cwd).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let cwd = directory.path().to_path_buf();
     state.session_dirty = false;
 
     let updates = state.handle_app_event(AppEvent::TerminalCwdReported {
@@ -1529,12 +1529,13 @@ fn manifest_update_refreshes_the_shared_runtime_snapshot_without_a_toast() {
         manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
     };
     use std::sync::{Arc, RwLock};
-    let root = std::env::temp_dir().join(format!("maestro-manifest-event-{}", std::process::id()));
-    std::fs::create_dir(&root).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let root = directory.path().to_path_buf();
     let cache = Arc::new(RwLock::new(
         ManifestCache::new(Some(root.clone()), None).unwrap(),
     ));
     let mut state = DaemonState::new(&Config::default(), || 0, Arc::clone(&cache));
+    state.agent_manifest_summaries.clear();
     assert!(state.agent_manifest_summaries.is_empty());
     state.handle_app_event(AppEvent::AgentDetectionManifestsUpdated {
         updated: Vec::new(),
@@ -1789,9 +1790,8 @@ fn daemon_close_pane_last_pane_in_parent_worktree_group_prompts() {
 fn daemon_close_tab_in_linked_worktree_closes_workspace_only() {
     let mut state = app_with_workspaces(&["selected", "active"]);
     mark_worktree(&mut state, 1, true);
-    let checkout =
-        std::env::temp_dir().join(format!("maestro-close-linked-tab-{}", std::process::id()));
-    std::fs::create_dir(&checkout).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let checkout = directory.path().to_path_buf();
     state.topology.workspaces[1]
         .worktree_space
         .as_mut()
@@ -1825,9 +1825,8 @@ fn daemon_close_tab_last_tab_in_parent_worktree_group_prompts() {
 fn daemon_close_pane_last_pane_in_linked_worktree_closes_workspace_only() {
     let mut state = app_with_workspaces(&["selected", "active"]);
     mark_worktree(&mut state, 1, true);
-    let checkout =
-        std::env::temp_dir().join(format!("maestro-close-linked-pane-{}", std::process::id()));
-    std::fs::create_dir(&checkout).unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let checkout = directory.path().to_path_buf();
     state.topology.workspaces[1]
         .worktree_space
         .as_mut()

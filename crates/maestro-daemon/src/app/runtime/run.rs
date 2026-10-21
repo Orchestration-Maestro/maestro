@@ -16,7 +16,7 @@ impl<C: FnMut() -> u128> App<C> {
             self.sync_pending_terminal_titles().await;
             self.shutdown_detached_terminal_runtimes().await;
             self.sync_session_save_schedule();
-            self.handle_scheduled_tasks(Instant::now(), paths);
+            self.handle_scheduled_tasks(Instant::now(), paths).await;
             let deadline = self.next_headless_loop_deadline(Instant::now(), false);
             tokio::select! {
                 () = &mut shutdown => self.state.should_quit.0 = true,

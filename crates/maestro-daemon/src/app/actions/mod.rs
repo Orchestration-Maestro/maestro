@@ -5,6 +5,7 @@ mod death;
 mod events;
 mod focus;
 mod managed;
+mod metadata;
 mod notifications;
 mod ordering;
 mod removal;

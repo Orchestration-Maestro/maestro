@@ -54,7 +54,8 @@ fn with_live_root(name: &str, delayed: bool) {
 
 /// Retains stale workspace metadata while the process reports its actual directory.
 async fn check_live_context(args: &[String], delayed: bool) {
-    let root = context_directories();
+    let directory = context_directories();
+    let root = directory.path().to_path_buf();
     let live = root.join("__maestro_projects__");
     let mut app = context_app(root.join("__maestro_original__"), delayed);
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
@@ -126,10 +127,10 @@ fn assert_delayed_context(app: &mut TestApp) {
 }
 
 /// Creates distinct admitted repositories for the original and observed directories.
-fn context_directories() -> std::path::PathBuf {
-    let root = std::env::temp_dir().join(format!("maestro-toast-context-{}", std::process::id()));
+fn context_directories() -> maestro_test_directory::Scratch {
+    let root = maestro_test_directory::Scratch::new().unwrap();
     for name in ["__maestro_original__", "__maestro_projects__"] {
-        let path = root.join(name);
+        let path = root.path().join(name);
         std::fs::create_dir_all(&path).unwrap();
         assert!(
             std::process::Command::new("git")
@@ -362,8 +363,8 @@ fn daemon_overlay_exit_preserves_same_tab_focus_changed_before_exit() {
 #[test]
 fn daemon_overlay_exit_restores_previous_focus_when_overlay_still_focused() {
     let (mut app, pane, previous_focus) = overlay_app(false);
-    let temporary_file =
-        std::env::temp_dir().join(format!("maestro-overlay-exit-{}", std::process::id()));
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let temporary_file = directory.path().join("overlay-owned");
     std::fs::write(&temporary_file, "overlay-owned").unwrap();
     app.overlay_panes
         .get_mut(&pane)
@@ -476,8 +477,18 @@ async fn check_respawn(args: &[String]) {
 
 #[test]
 fn daemon_terminal_delivery_does_not_refresh_existing_targeted_toast() {
+    assert_terminal_delivery_keeps_toast(false);
+}
+
+#[test]
+fn daemon_delayed_terminal_delivery_does_not_refresh_existing_targeted_toast() {
+    assert_terminal_delivery_keeps_toast(true);
+}
+
+/// Keeps an existing target stable when delivery only targets the external client.
+fn assert_terminal_delivery_keeps_toast(delayed: bool) {
     use maestro_daemon::app::state::{ToastKind, ToastNotification, ToastTarget};
-    let mut app = context_app("/__maestro_original__".into(), false);
+    let mut app = context_app("/__maestro_original__".into(), delayed);
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
     let terminal_id = app.state.topology.workspaces[0]
         .terminal_id(pane)
@@ -514,6 +525,15 @@ fn daemon_terminal_delivery_does_not_refresh_existing_targeted_toast() {
         process_exited: false,
         observed_at: Instant::now(),
     });
+    if delayed {
+        let deadline = app
+            .state
+            .next_pending_agent_notification_deadline()
+            .unwrap();
+        let deliveries = app.drain_due_agent_notifications(deadline);
+        assert_eq!(deliveries.len(), 1);
+        assert!(deliveries[0].client_notification.is_some());
+    }
     assert_eq!(
         app.state.toast.as_ref().map(|toast| toast.context.as_str()),
         Some("__maestro_original__ · 1")

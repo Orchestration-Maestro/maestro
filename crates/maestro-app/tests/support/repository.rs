@@ -1,22 +1,11 @@
 //! Real isolated metadata files for footer behavior witnesses.
 use super::Entry;
-use std::{
-    collections::BTreeMap,
-    path::PathBuf,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::collections::BTreeMap;
 
-pub struct Repository(PathBuf);
+pub struct Repository(maestro_test_directory::Scratch);
 impl Default for Repository {
     fn default() -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "maestro-repository-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&root).unwrap();
-        Self(root)
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
 }
 impl Repository {
@@ -29,6 +18,7 @@ impl Repository {
     }
     pub fn path(&self, name: &str) -> String {
         self.0
+            .path()
             .join(name.trim_start_matches('/'))
             .to_string_lossy()
             .into_owned()
@@ -79,10 +69,5 @@ impl Repository {
     pub fn unreadable(&self, name: &str) {
         self.remove(name);
         self.directory(name);
-    }
-}
-impl Drop for Repository {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }

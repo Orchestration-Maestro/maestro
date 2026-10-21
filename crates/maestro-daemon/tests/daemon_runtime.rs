@@ -675,3 +675,14 @@ async fn live_shutdown_app(
     }
     (app, pane)
 }
+
+#[test]
+fn daemon_construction_initializes_supplied_manifest_summaries() {
+    let manifests = std::sync::Arc::new(std::sync::RwLock::new(
+        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+    ));
+    let expected = manifests.read().unwrap().manifest_summaries();
+    assert!(!expected.is_empty());
+    let state = DaemonState::new(&Config::default(), || 0, manifests);
+    assert_eq!(state.agent_manifest_summaries, expected);
+}

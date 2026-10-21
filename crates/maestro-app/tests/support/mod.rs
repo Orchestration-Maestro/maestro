@@ -1,4 +1,5 @@
 //! Controlled footer effects, fixture loading and child-process probes.
+#![cfg(not(target_arch = "wasm32"))]
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;

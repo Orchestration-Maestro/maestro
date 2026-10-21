@@ -188,7 +188,9 @@ impl<C: FnMut() -> u128> App<C> {
                     .get(&pane.attached_terminal_id)
                     .map(|terminal| (terminal.state, pane.seen))
             })
-            .max_by_key(|(state, seen)| super::api_helpers::tab_attention_priority(*state, *seen))
+            .max_by_key(|(state, seen)| {
+                crate::workspace::aggregate::pane_attention_priority(*state, *seen)
+            })
             .unwrap_or((maestro_detection::agents::AgentState::Unknown, true));
         Some(maestro_protocol::schema::TabInfo {
             tab_id: self.state.public_tab_id(workspace, tab)?,
@@ -198,6 +200,46 @@ impl<C: FnMut() -> u128> App<C> {
             focused: self.state.active == Some(workspace) && target.active_tab == tab,
             pane_count: record.panes.len(),
             agent_status: super::actions::pane_agent_status(state, seen),
+        })
+    }
+    /// Projects one retained workspace for metadata subscribers.
+    pub(super) fn workspace_info(
+        &self,
+        index: usize,
+    ) -> Option<maestro_protocol::schema::WorkspaceInfo> {
+        use maestro_protocol::schema::{WorkspaceInfo, WorkspaceWorktreeInfo};
+        let ws = self.state.topology.workspaces.get(index)?;
+        let (state, seen) = crate::workspace::aggregate::aggregate_state(ws, &self.state.terminals);
+        Some(WorkspaceInfo {
+            workspace_id: ws.id.clone(),
+            number: index + 1,
+            label: crate::workspace::display_name_from(
+                ws,
+                &self.state.terminals,
+                &self.terminal_runtimes,
+                None,
+            ),
+            focused: self.state.active == Some(index),
+            pane_count: ws.public_pane_numbers.len(),
+            tab_count: ws.tabs.len(),
+            active_tab_id: self
+                .state
+                .public_tab_id(index, ws.active_tab)
+                .unwrap_or_else(|| {
+                    maestro_workspace::workspace::public_tab_id_for_number(
+                        &ws.id,
+                        ws.active_tab + 1,
+                    )
+                }),
+            agent_status: super::actions::pane_agent_status(state, seen),
+            tokens: ws.metadata_tokens.values(),
+            worktree: ws.worktree_space().map(|space| WorkspaceWorktreeInfo {
+                repo_key: space.key.clone(),
+                repo_name: space.label.clone(),
+                repo_root: space.repo_root.display().to_string(),
+                checkout_path: space.checkout_path.display().to_string(),
+                is_linked_worktree: space.is_linked_worktree,
+            }),
         })
     }
 }
