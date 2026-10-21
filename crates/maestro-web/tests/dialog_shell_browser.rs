@@ -240,8 +240,9 @@ pub async fn dialog_css_size_changes_preserve_native_root_and_body_identity() {
     view.owner.close().unwrap();
     view.props.width = "min(500px, 90vw)".into();
     view.props.height = "min(700px, 90vh)".into();
-    view.props.class_name = "caller-panel literal-class".into();
     view.owner = dialog(&view.dialogs, view.props.clone()).unwrap();
+    view.owner
+        .set_class_name("caller-panel literal-class".into());
     js(
         "document.getElementById('canvas').style.left='13.25px';document.getElementById('canvas').style.top='7.5px'",
     );
@@ -893,5 +894,147 @@ fn assert_native_spread(view: &View, spread: f32) {
             .top_alpha(&view.context, &view.shapes.borrow(), native_close(view)),
         spread,
         0.7,
+    );
+}
+
+/// Literal caller-class operands shared by native document witnesses.
+const CALLER_CLASSES: [&str; 5] = [
+    "",
+    "  \t\n",
+    "caller one one",
+    "<literal>&\"' \u{feff}\u{85}",
+    "日本語 😀",
+];
+
+/// Class updates before mount and after publication preserve literal data and retained roots.
+#[wasm_bindgen]
+pub fn dialog_class_operands_keep_literal_native_readers() {
+    let view = View::new();
+    view.owner.set_class_name(CALLER_CLASSES[3].into());
+    view.draw();
+    assert_eq!(
+        js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native <literal>&\"' \u{feff}\u{85}")
+    );
+    js(
+        "globalThis.classRoot=document.querySelector('.maestro-dialog-native');globalThis.classHeading=classRoot.querySelector('h2');getSelection().selectAllChildren(classHeading)",
+    );
+    for classes in CALLER_CLASSES {
+        let document = web_sys::window().unwrap().document().unwrap();
+        let header = dialog_header(DialogHeaderProps {
+            title: "literal title".into(),
+            description: None,
+            class_name: classes.into(),
+        });
+        let content = dialog_content(DialogContentProps {
+            children: vec![header],
+            class_name: classes.into(),
+        });
+        let root = (content.mount)(&document).unwrap();
+        assert_eq!(
+            root.element.get_attribute("class").unwrap(),
+            format!("maestro-dialog-content {classes}")
+        );
+        assert_eq!(
+            root.element
+                .first_element_child()
+                .unwrap()
+                .get_attribute("class")
+                .unwrap(),
+            format!("maestro-dialog-header {classes}")
+        );
+        view.owner.set_class_name(classes.into());
+        view.owner.set_props(view.props.clone()).unwrap();
+        view.draw();
+        assert_eq!(
+            js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
+                .as_string()
+                .unwrap(),
+            format!("maestro-dialog-native {classes}")
+        );
+        assert_eq!(js("document.querySelector('.maestro-dialog-native')===classRoot && getSelection().anchorNode===classHeading").as_bool(), Some(true));
+    }
+}
+
+/// Caller wrapper classes reach the native host literally, not the editable child's class list.
+#[wasm_bindgen]
+pub fn input_wrapper_classes_reach_host_wrapper_literally() {
+    use maestro_web::{Input, components::input::InputProps};
+    use std::cell::RefCell;
+    let view = View::new();
+    view.owner.close().unwrap();
+    let reference = Rc::new(RefCell::new(None));
+    let mut input = Input::new(InputProps::default(), view.host);
+    let mut frame = attachment_support::Frame::default();
+    for classes in CALLER_CLASSES {
+        input.set_props(InputProps {
+            class_name: classes.into(),
+            input_ref: Some(reference.clone()),
+            ..Default::default()
+        });
+        frame.run(vec![], |context, i18n, presentation| {
+            let mut ui = egui::Ui::new(
+                context.clone(),
+                egui::Id::new("literal-input-wrapper"),
+                egui::UiBuilder::new(),
+            );
+            input.render(&mut ui, i18n, presentation).unwrap();
+        });
+        let slot = reference.borrow();
+        let element = slot.as_ref().unwrap();
+        assert_eq!(
+            element
+                .parent_element()
+                .unwrap()
+                .get_attribute("class")
+                .as_deref(),
+            Some(classes)
+        );
+        assert_eq!(
+            element.get_attribute("class").as_deref(),
+            Some("maestro-input-control")
+        );
+    }
+}
+
+/// Browser classes remain per-owner through native removal, reopening and final release.
+#[wasm_bindgen]
+pub fn dialog_browser_class_lifetime_follows_its_owner() {
+    let first = View::new();
+    first.owner.set_class_name(CALLER_CLASSES[2].into());
+    first.draw();
+    let second = View::new();
+    second.draw();
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native').length").as_f64(),
+        Some(2.)
+    );
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native')[1].getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native ")
+    );
+    first.owner.close().unwrap();
+    first.owner.open().unwrap();
+    first.draw();
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native')[1].getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native caller one one")
+    );
+    drop(first);
+    assert_eq!(
+        js("document.querySelectorAll('.maestro-dialog-native').length").as_f64(),
+        Some(1.)
+    );
+    assert_eq!(
+        js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
+            .as_string()
+            .as_deref(),
+        Some("maestro-dialog-native ")
     );
 }

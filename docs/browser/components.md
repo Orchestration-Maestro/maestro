@@ -72,13 +72,19 @@ editing and scrolling, and retains the old root until a replacement publishes.
 Mounted child guards and Close subscriptions share the single `ReadingRoot.owner`.
 Use weak captures when child callbacks can reach their containing owner.
 
-`DialogProps` forwards literal CSS width/height and classes. Base dimensions are
-`min(600px, 90vw)` by `min(600px, 80vh)`; the standalone `dialog` helper defaults
+`DialogProps` keeps portable open/close, body and literal CSS width/height operands.
+On the browser target, `DialogBase::set_class_name` owns literal panel classes.
+Call it before the first render or a later frame; portable `set_props` updates do
+not erase the class, and closing/reopening preserves it on the same owner.
+Base dimensions are `min(600px, 90vw)` by `min(600px, 80vh)`;
+the standalone `dialog` helper defaults
 to natural `auto` height instead. Empty dimensions remain supplied native CSS
 values. Literal CSS, including intrinsic keywords, is resolved before the shared
-frame transform; text and controls receive that transform once. `dialog_header`
-creates a literal heading and omits only absent/empty
-descriptions; `dialog_content` composes ordered native children with padding/gap.
+frame transform; text and controls receive that transform once. The browser-only
+`DialogHeaderProps`, `DialogContentProps`, `dialog_header` and `dialog_content`
+remain at `dialogs::dialog`. `dialog_header` creates a literal heading and omits
+only absent/empty descriptions; `dialog_content` composes ordered native children
+with padding/gap. Their complete records keep classes with their browser readers.
 The canvas draws the panel, outer shadow and sixteen-point localized Close glyph.
 One non-painting native Close button supplies keyboard/accessibility activation
 and forwards native focus to the canvas focus ring. The entire Close control,
@@ -96,10 +102,10 @@ failures inside `Host(AttachmentHostError)` and preserving leaf causes through
 `Error::source`.
 
 Full-viewport dimming/blur is intentionally absent, owned by
-[the shared backdrop work](https://github.com/Orchestration-Maestro/maestro/issues/1145).
+[the shared backdrop work](https://github.com/Orchestration-Maestro/maestro/issues/1761).
 Close focus decoration is qualified through sampled raster pixels at multiple
 densities; other canvas paint is qualified through visible tessellated primitives.
-Broader canvas raster qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/822).
+Broader canvas raster qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/1760).
 
 ## Tool content
 

@@ -264,3 +264,12 @@ fn focus_target(
         Ok(())
     }))
 }
+
+#[cfg(target_arch = "wasm32")]
+impl DialogBase {
+    /// Set literal panel classes for the next browser render without replacing its body.
+    pub fn set_class_name(&self, class_name: String) {
+        self.state.native.borrow_mut().class_name = class_name.into();
+        self.state.context.drawing().request_repaint();
+    }
+}
