@@ -16,6 +16,7 @@
   "maestro-ipc": "core",
   "maestro-json": "core",
   "maestro-lock": "core",
+  "maestro-listing": "core",
   "maestro-models": "core",
   "maestro-multiplexer": "core",
   "maestro-packages": "core",

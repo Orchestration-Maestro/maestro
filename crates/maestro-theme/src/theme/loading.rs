@@ -44,13 +44,9 @@ impl ThemeOperations for NativeThemeOperations {
         std::path::Path::new(path).exists()
     }
     fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
-        let mut names = std::fs::read_dir(path)?
-            .map(|entry| entry.map(|entry| entry.file_name()))
-            .collect::<std::io::Result<Vec<_>>>()?;
-        names.sort();
-        Ok(names
-            .into_iter()
-            .map(|name| name.to_string_lossy().into_owned())
+        Ok(maestro_listing::read_dir(path)?
+            .iter()
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
             .collect())
     }
     fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()> {

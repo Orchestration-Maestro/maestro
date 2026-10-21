@@ -9,7 +9,7 @@ use crate::{
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use maestro_path::join;
-use maestro_theme::{Collator, NativeThemeOperations, ThemeOperations};
+use maestro_theme::Collator;
 use std::{path::Path, sync::Arc};
 
 /// The settings every listing shares.
@@ -121,7 +121,10 @@ impl LsOperations for NativeLsOperations {
         absolute_path: String,
     ) -> BoxFuture<Result<Vec<String>, DiagnosticErrorInfo>> {
         Box::pin(blocking(move || {
-            NativeThemeOperations.read_dir(&absolute_path)
+            Ok(maestro_listing::read_dir(absolute_path)?
+                .iter()
+                .map(|entry| entry.file_name().to_string_lossy().into_owned())
+                .collect())
         }))
     }
 }

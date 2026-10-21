@@ -159,22 +159,15 @@ impl ResourceOperations for NativeResourceOperations {
         path.exists()
     }
     fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        let entries: Vec<_> = std::fs::read_dir(path)?
+        maestro_listing::read_dir(path)?
+            .into_iter()
             .map(|entry| {
-                let entry = entry?;
                 Ok(ResourceEntry {
                     name: entry.file_name(),
                     file_type: file_type(entry.file_type()?),
                 })
             })
-            .collect::<io::Result<_>>()?;
-        #[cfg(unix)]
-        let entries = {
-            let mut entries = entries;
-            entries.sort_by(|left, right| left.name.cmp(&right.name));
-            entries
-        };
-        Ok(entries)
+            .collect()
     }
     fn read_file(&self, path: &Path) -> io::Result<String> {
         Ok(String::from_utf8_lossy(&std::fs::read(path)?).into_owned())

@@ -151,9 +151,7 @@ impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocomplet
     }
 
     fn read_dir(&self, path: &str) -> io::Result<Vec<DirectoryEntry>> {
-        let mut entries = std::fs::read_dir(path)?.collect::<io::Result<Vec<_>>>()?;
-        entries.sort_by_key(std::fs::DirEntry::file_name);
-        entries
+        maestro_listing::read_dir(path)?
             .into_iter()
             .map(|entry| {
                 let kind = entry.file_type()?;
