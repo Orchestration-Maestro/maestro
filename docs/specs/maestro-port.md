@@ -600,7 +600,8 @@ edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
 `maestro-chat`, `maestro-credentials`, `maestro-daemon`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
-`maestro-resources`, `maestro-test-conventions`, `maestro-theme` and `maestro-tooling`; a caller
+`maestro-resources`, `maestro-session`, `maestro-test-conventions`, `maestro-theme`, `maestro-tooling` and
+`maestro-tools`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.

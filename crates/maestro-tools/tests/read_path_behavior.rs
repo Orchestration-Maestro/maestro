@@ -164,12 +164,10 @@ fn read_paths_keep_lexical_symlink_identity() {
 #[test]
 fn native_path_host_lookups_are_lazy() {
     let test = "native_path_host_lookups_are_lazy";
+    #[cfg(unix)]
     if isolated(test, "cwd", &[]) {
-        let parent = TempDir::new();
-        let gone = parent.0.join("gone");
-        std::fs::create_dir(&gone).unwrap();
-        std::env::set_current_dir(&gone).unwrap();
-        std::fs::remove_dir(&gone).unwrap();
+        let parent = maestro_test_directory::Scratch::new().unwrap();
+        parent.enter_removed("gone").unwrap();
         assert!(std::env::current_dir().is_err());
         assert_eq!(
             resolve_to_cwd("/abs/file", "relative").unwrap(),

@@ -326,9 +326,11 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-models",
     "maestro-packages",
     "maestro-resources",
+    "maestro-session",
     "maestro-test-conventions",
     "maestro-theme",
     "maestro-tooling",
+    "maestro-tools",
 ];
 
 /// Native owner of scoped tracing subscribers that see every callsite.

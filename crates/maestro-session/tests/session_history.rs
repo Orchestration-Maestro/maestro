@@ -133,10 +133,8 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         assert_eq!(case.operation, "native_cwd");
         let original = std::env::current_dir().unwrap();
-        let dir = std::env::temp_dir().join(format!("maestro-history-{}", uuid::Uuid::new_v4()));
-        std::fs::create_dir(&dir).unwrap();
-        std::env::set_current_dir(&dir).unwrap();
-        std::fs::remove_dir(&dir).unwrap();
+        let removed = maestro_test_directory::Scratch::new().unwrap();
+        removed.enter_removed("removed").unwrap();
         let explicit = maestro_session::SessionManager::in_memory(Some("")).unwrap();
         let native = std::env::current_dir().unwrap_err();
         let error = maestro_session::SessionManager::in_memory(None)

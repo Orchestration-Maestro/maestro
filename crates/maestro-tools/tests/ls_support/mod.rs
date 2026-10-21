@@ -251,6 +251,7 @@ pub struct ExecuteInput {
     /// Working directory the tool is built over.
     cwd: Option<String>,
     /// State of the process working directory.
+    #[cfg(unix)]
     ambient_cwd: Option<String>,
 }
 
@@ -268,6 +269,7 @@ impl ExecuteInput {
     }
 
     /// Whether the process working directory is removed first.
+    #[cfg(unix)]
     pub fn removes_cwd(&self) -> bool {
         self.ambient_cwd.as_deref() == Some("removed")
     }

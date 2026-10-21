@@ -791,13 +791,11 @@ fn removed_cwd_child(name: &str) -> bool {
 
 #[cfg(unix)]
 /// Enter then unlink a working directory without altering the parent test process.
-fn remove_cwd() -> Directory {
-    let directory = Directory::new();
-    let removed = directory.path.join("removed");
-    fs::create_dir(&removed).unwrap();
-    std::env::set_current_dir(&removed).unwrap();
-    fs::remove_dir(&removed).unwrap();
-    directory
+/// Returns a fixture directory and the owner of the removed one.
+fn remove_cwd() -> (Directory, maestro_test_directory::Scratch) {
+    let removed = maestro_test_directory::Scratch::new().unwrap();
+    removed.enter_removed("removed").unwrap();
+    (Directory::new(), removed)
 }
 
 #[cfg(unix)]
@@ -806,7 +804,7 @@ fn absolute_open_avoids_unneeded_cwd_reads() {
     if !removed_cwd_child("absolute_open_avoids_unneeded_cwd_reads") {
         return;
     }
-    let directory = remove_cwd();
+    let (directory, _removed) = remove_cwd();
     let path = directory.file("absolute.jsonl", jsonl(&[header(&json!("stored"))]));
     assert!(std::env::current_dir().is_err());
     assert_eq!(
@@ -827,7 +825,7 @@ fn opening_failure_precedence_preserves_native_read_errors() {
     if !removed_cwd_child("opening_failure_precedence_preserves_native_read_errors") {
         return;
     }
-    let directory = remove_cwd();
+    let (directory, _removed) = remove_cwd();
     let path = directory.file("fallback.jsonl", jsonl(&[header(&Value::Null)]));
     let original = std::env::current_dir().unwrap_err();
     assert_eq!(

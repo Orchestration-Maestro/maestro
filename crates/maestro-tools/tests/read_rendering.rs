@@ -636,12 +636,8 @@ fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
     ) {
         return;
     }
-    let parent = std::env::temp_dir().join(format!("maestro-render-gone-{}", std::process::id()));
-    let gone = parent.join("gone");
-    std::fs::create_dir_all(&gone).unwrap();
-    std::env::set_current_dir(&gone).unwrap();
-    std::fs::remove_dir(&gone).unwrap();
-    std::fs::remove_dir(&parent).unwrap();
+    let parent = maestro_test_directory::Scratch::new().unwrap();
+    parent.enter_removed("gone").unwrap();
     assert!(std::env::current_dir().is_err());
     read_renders_without_process_directory();
 }

@@ -244,9 +244,8 @@ fn find_resolution_observes_cwd_only_when_required() {
     ) {
         return;
     }
-    let root = read_support::TempDir::new();
-    std::env::set_current_dir(&root.0).unwrap();
-    std::fs::remove_dir(&root.0).unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    root.enter_removed("removed").unwrap();
     assert!(std::env::current_dir().is_err());
     find_support::check_custom("find_resolution_observes_cwd_only_when_required");
 }

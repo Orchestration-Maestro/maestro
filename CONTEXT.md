@@ -283,7 +283,7 @@ From `docs/specs/tool-additions.md`.
   leaf that owns exclusive disposable-root allocation and cleanup. Automatically
   chosen roots are canonical; supplied parents retain native joining semantics.
   On Unix it also enters removed or unreadable working directories for tests that
-  run alone. Only its eleven declared callers may use it through native development edges.
+  run alone. Only its thirteen declared callers may use it through native development edges.
   See the [contract](docs/specs/maestro-port.md#test-directory-owner).
 
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
