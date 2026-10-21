@@ -190,14 +190,11 @@ fn attachment_suite(name: &str) {
             "url" => AttachmentSource::Url(row.input.url.as_deref().unwrap()),
             _ => panic!("unexpected source"),
         };
-        let result = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(load_attachment(
-                source,
-                row.input.r#override.as_deref(),
-                &fetch,
-            ));
+        let result = crate::support::run(load_attachment(
+            source,
+            row.input.r#override.as_deref(),
+            &fetch,
+        ));
         check_failure(&result, &row.id);
         let actual = support::attachment_observation::observed(result);
         let expected = expected_attachment(row.expected);
@@ -295,19 +292,16 @@ fn workbook_written_formula_escapes_decode_once() {
     let csv = "7,\"=\"\"a\rb\"\"\",\"=\"\"a\nb\"\"\"";
     assert_eq!(ssf::sheet_to_csv(sheet, &format), csv);
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
-    let attachment = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(load_attachment(
-            AttachmentSource::File {
-                bytes,
-                name: "escapes.xlsx",
-                mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            },
-            None,
-            &fetch,
-        ))
-        .unwrap();
+    let attachment = crate::support::run(load_attachment(
+        AttachmentSource::File {
+            bytes,
+            name: "escapes.xlsx",
+            mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+        None,
+        &fetch,
+    ))
+    .unwrap();
     assert_eq!(attachment.extracted_text.as_deref(), Some(format!("<excel filename=\"escapes.xlsx\">\n<sheet name=\"Escapes\" index=\"1\">\n{csv}\n</sheet>\n</excel>").as_str()));
 }
 
@@ -395,22 +389,18 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
     ))
     .unwrap();
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
     for case in cases {
         let bytes = crate::workbook_fixture::bytes(&format!("metadata-{}", case.file));
-        let attachment = runtime
-            .block_on(load_attachment(
-                AttachmentSource::File {
-                    bytes: &bytes,
-                    name: &case.file,
-                    mime_type: "application/vnd.ms-excel",
-                },
-                None,
-                &fetch,
-            ))
-            .unwrap();
+        let attachment = crate::support::run(load_attachment(
+            AttachmentSource::File {
+                bytes: &bytes,
+                name: &case.file,
+                mime_type: "application/vnd.ms-excel",
+            },
+            None,
+            &fetch,
+        ))
+        .unwrap();
         assert_eq!(attachment.file_name, case.file);
         assert_eq!(attachment.size, bytes.len());
         assert_eq!(

@@ -1,6 +1,7 @@
 //! Controlled artifact command observations.
 use super::*;
 use crate as maestro_app;
+use crate::tests::runtime::run_io as run;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
@@ -1024,15 +1025,6 @@ fn advance(clock: &Mutex<TestClock>, millis: u64) {
     if let Some(release) = release {
         release.send(()).unwrap();
     }
-}
-
-/// Run a controlled future without installing macro-generated lint attributes.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 /// Retained map and record identities survive both in-place edit commands.

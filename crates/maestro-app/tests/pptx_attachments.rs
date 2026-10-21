@@ -12,14 +12,11 @@ use std::sync::Arc;
 /// Run the public loader without allowing a local package to fetch.
 fn load(bytes: &[u8]) -> Result<Attachment, AttachmentError> {
     let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(load_attachment(
-            AttachmentSource::Buffer(bytes),
-            Some("a.pptx"),
-            &fetch,
-        ))
+    crate::support::run(load_attachment(
+        AttachmentSource::Buffer(bytes),
+        Some("a.pptx"),
+        &fetch,
+    ))
 }
 
 /// One deflated slide whose headers declare `declared` expanded bytes.

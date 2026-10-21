@@ -74,10 +74,7 @@ fn bash_factories_are_available_from_application_root() {
     #[cfg(unix)]
     {
         use maestro_app::create_bash_tool;
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = crate::support::io_runtime();
         let result = runtime
             .block_on((definition.execute)(
                 "call".into(),

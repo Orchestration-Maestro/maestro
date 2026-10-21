@@ -663,10 +663,7 @@ fn footer_disposal_keeps_other_provider_polling() {
 #[cfg(unix)]
 fn native_runtime() -> (tokio::runtime::Runtime, Rc<tokio::task::LocalSet>) {
     (
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap(),
+        crate::support::io_runtime(),
         Rc::new(tokio::task::LocalSet::new()),
     )
 }
@@ -1159,11 +1156,7 @@ os._exit(0)
 /// Drive the isolated native query while its inherited pipe is held.
 fn footer_pipe_child() {
     use std::io::{BufRead, BufReader, Read, Write};
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap();
+    let runtime = crate::support::paused_io_runtime();
     let local = Rc::new(tokio::task::LocalSet::new());
     runtime.block_on(local.run_until(async {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();

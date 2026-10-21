@@ -233,11 +233,7 @@ pub async fn replay(name: &str) {
 
 /// Drives one controlled behavior without runtime attribute expansion.
 pub fn run(name: &str) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(replay(name));
+    crate::support::run_io(replay(name));
 }
 
 /// Drives one invocation and preserves its ordered observable transcript.

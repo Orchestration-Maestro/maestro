@@ -194,7 +194,7 @@ pub fn instantiate<T: serde::de::DeserializeOwned>(value: &Value, root: &str, pa
 /// Shared subprocess owner.
 pub(crate) use crate::child;
 /// Shared current-thread executor.
-use crate::support::browser_providers as runtime;
+use crate::support::run_io;
 use maestro_app::SettingsManager;
 use maestro_settings::{
     InMemorySettingsStorage, PackageSource, SettingsListEntry, SettingsScope, SettingsStorage,
@@ -474,10 +474,10 @@ fn settings_case(
         text(input.external_project.as_ref(), None),
     );
     if input.reload {
-        runtime::run(manager.reload());
+        run_io(manager.reload());
     }
     actions(&mut manager, input.actions);
-    runtime::run(manager.flush());
+    run_io(manager.flush());
     reads(&manager, &input.reads, &expected.observed);
     if case.test == Group::DefaultsAndOwnedReadsSurviveApplicationRootSelection {
         let mut snapshot = manager.get_global_settings();

@@ -109,7 +109,7 @@ use maestro_app::{
 use std::sync::{Arc, Mutex};
 
 use crate::support;
-use support::browser_providers::run;
+use support::run_io as run;
 
 /// Load a complete controlled model.
 fn model() -> Model {

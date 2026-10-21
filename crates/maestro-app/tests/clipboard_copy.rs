@@ -144,12 +144,7 @@ fn wayland_detection_uses_nonempty_display_or_exact_session_type() {
 fn native_adapter_forwards_launches_without_clipboard_access() {
     use maestro_app::copy_to_clipboard;
     if std::env::var_os("MAESTRO_CLIPBOARD_CHILD").is_some() {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(copy_to_clipboard("a\0é🙂"))
-            .unwrap();
+        crate::support::run_io(copy_to_clipboard("a\0é🙂")).unwrap();
         return;
     }
     let output = maestro_test_process::TestProcess::current(

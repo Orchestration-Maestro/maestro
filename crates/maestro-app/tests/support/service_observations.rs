@@ -285,17 +285,4 @@ async fn response(
         })),
     })
 }
-use crate::support::browser_providers as runtime;
-pub(crate) use runtime::run;
-
-/// Drive controlled deadline work from a paused clock origin.
-///
-/// # Panics
-/// Panics if the runtime cannot be created or controlled work panics.
-pub fn run_paused<T>(future: impl std::future::Future<Output = T>) -> T {
-    runtime::runtime()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
-}
+pub(crate) use crate::support::run_io as run;

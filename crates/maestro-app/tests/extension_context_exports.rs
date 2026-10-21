@@ -70,12 +70,9 @@ fn native_command_context_exports_share_the_extension_records() {
     };
     runner.bind_command_context(Some(actions));
     let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            assert!(ctx.new_session(None).await.unwrap().cancelled);
-        });
+    crate::support::run(async {
+        assert!(ctx.new_session(None).await.unwrap().cancelled);
+    });
 }
 
 /// Builds the real in-memory runner shared by application context export witnesses.
@@ -210,64 +207,56 @@ fn runtime_runner(runtime: Arc<maestro_app::ExtensionRuntime>) -> ExtensionRunne
 
 #[test]
 fn native_registration_exports_resolve_to_shared_records() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let runtime = maestro_app::create_extension_runtime::<Threaded>();
-            let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
-            let factory: maestro_app::ExtensionFactory = Arc::new(|api| {
-                let tool: maestro_extensions::ToolDefinition<
-                    serde_json::Value,
-                    serde_json::Value,
-                    (),
-                > = sdk_registered_definition();
-                api.register_tool(maestro_app::define_tool(tool)).unwrap();
-                Box::pin(async { Ok(()) })
-            });
-            let owner = maestro_app::load_extension_from_factory::<Threaded>(
-                factory,
-                "/factory".into(),
-                bus.for_extension(),
-                runtime.clone(),
-                None,
-            )
+    crate::support::run(async {
+        let runtime = maestro_app::create_extension_runtime::<Threaded>();
+        let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
+        let factory: maestro_app::ExtensionFactory = Arc::new(|api| {
+            let tool: maestro_extensions::ToolDefinition<serde_json::Value, serde_json::Value, ()> =
+                sdk_registered_definition();
+            api.register_tool(maestro_app::define_tool(tool)).unwrap();
+            Box::pin(async { Ok(()) })
+        });
+        let owner = maestro_app::load_extension_from_factory::<Threaded>(
+            factory,
+            "/factory".into(),
+            bus.for_extension(),
+            runtime.clone(),
+            None,
+        )
+        .await
+        .unwrap();
+        let served = runner();
+        let runner = Rc::new(maestro_app::ExtensionRunner::<Threaded>::new(
+            Arc::new(RwLock::new(vec![owner])),
+            runtime,
+            ExtensionRunnerSession {
+                cwd: "/registered".into(),
+                session_manager: served.create_context().session_manager().unwrap(),
+                model_registry: served.create_context().model_registry().unwrap(),
+            },
+            Arc::new(|_| {}),
+            default_operand(),
+        ));
+        let registered: maestro_app::RegisteredTool = runner.get_all_registered_tools().remove(0);
+        assert_eq!(registered.source_info.read().unwrap().path, "<inline>");
+        let wrapped = maestro_app::wrap_registered_tool(&registered, runner);
+        let result = (wrapped.execute)("sdk".into(), serde_json::json!({"value":3}), None, None)
             .await
             .unwrap();
-            let served = runner();
-            let runner = Rc::new(maestro_app::ExtensionRunner::<Threaded>::new(
-                Arc::new(RwLock::new(vec![owner])),
-                runtime,
-                ExtensionRunnerSession {
-                    cwd: "/registered".into(),
-                    session_manager: served.create_context().session_manager().unwrap(),
-                    model_registry: served.create_context().model_registry().unwrap(),
-                },
-                Arc::new(|_| {}),
-                default_operand(),
-            ));
-            let registered: maestro_app::RegisteredTool =
-                runner.get_all_registered_tools().remove(0);
-            assert_eq!(registered.source_info.read().unwrap().path, "<inline>");
-            let wrapped = maestro_app::wrap_registered_tool(&registered, runner);
-            let result =
-                (wrapped.execute)("sdk".into(), serde_json::json!({"value":3}), None, None)
-                    .await
-                    .unwrap();
-            assert_eq!(result.details, Some(serde_json::json!({"value":3})));
-            let event: maestro_app::ToolCallEvent = maestro_app::ToolCallEvent {
-                tool_call_id: "sdk".into(),
-                tool_name: "sdk".into(),
-                input: result.details.unwrap(),
-            };
-            assert!(maestro_app::is_tool_call_event_type("sdk", &event));
-            let response: maestro_app::ToolCallEventResult =
-                serde_json::from_value(serde_json::json!({"block":false})).unwrap();
-            assert_eq!(
-                serde_json::to_value(response).unwrap(),
-                serde_json::json!({"block":false})
-            );
-        });
+        assert_eq!(result.details, Some(serde_json::json!({"value":3})));
+        let event: maestro_app::ToolCallEvent = maestro_app::ToolCallEvent {
+            tool_call_id: "sdk".into(),
+            tool_name: "sdk".into(),
+            input: result.details.unwrap(),
+        };
+        assert!(maestro_app::is_tool_call_event_type("sdk", &event));
+        let response: maestro_app::ToolCallEventResult =
+            serde_json::from_value(serde_json::json!({"block":false})).unwrap();
+        assert_eq!(
+            serde_json::to_value(response).unwrap(),
+            serde_json::json!({"block":false})
+        );
+    });
 }
 
 /// SDK callback captures are thread-safe while registered invocation is local.

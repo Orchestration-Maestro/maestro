@@ -35,10 +35,7 @@ fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     }
     let first = directory("first", "seven77");
     let second = directory("second", "decoy");
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     let local = Rc::new(tokio::task::LocalSet::new());
     let ops = NativeFooterOperations::new(local.clone());
     let original_cwd = std::env::current_dir().unwrap();
