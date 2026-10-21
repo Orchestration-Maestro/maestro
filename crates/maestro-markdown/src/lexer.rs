@@ -8,7 +8,7 @@ use crate::{
     inline::ScopeKey,
     rules,
     source::{ScopeSource, Source},
-    tokenizer::{self, capture},
+    tokenizer,
 };
 use blocks::BlockTokens;
 use maestro_text::is_whitespace_scalar;
@@ -206,14 +206,12 @@ impl<'a, E> Lexer<'a, E> {
         if self.options == MarkedOptions::Documentation {
             return None;
         }
-        #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        let matched = rules::block_table(self.options)?.find(source.text)?;
-        let delimiter = capture(source.text, &matched, 2);
+        let matched = rules::table::Recognizer::new(self.options).finish(source.text)?;
+        let delimiter = &source.text[matched.delimiter];
         if !delimiter.contains(['|', ':']) {
             return None;
         }
-        let headers = helpers::cell_ranges(capture(source.text, &matched, 1));
+        let headers = helpers::cell_ranges(&source.text[matched.header.clone()]);
         let alignments: Vec<_> = helpers::split_cells(delimiter, None)
             .into_iter()
             .map(|cell| match (cell.starts_with(':'), cell.ends_with(':')) {
@@ -227,9 +225,9 @@ impl<'a, E> Lexer<'a, E> {
             return None;
         }
         let count = headers.len();
-        let header = self.cells(source, matched.group(1)?, count);
+        let header = self.cells(source, matched.header, count);
         let rows = matched
-            .group(3)
+            .body
             .into_iter()
             .flat_map(|range| {
                 lines(&source.text[range.clone()])
@@ -246,11 +244,11 @@ impl<'a, E> Lexer<'a, E> {
             header,
             rows,
             alignments,
-            authored: helpers::rtrim(&source.text[matched.range()], '\n').to_owned(),
+            authored: helpers::rtrim(&source.text[..matched.consumed], '\n').to_owned(),
         };
         Some((
-            matched.end(),
-            source.node(matched.range(), Kind::Table(table)),
+            matched.consumed,
+            source.node(0..matched.consumed, Kind::Table(table)),
         ))
     }
 

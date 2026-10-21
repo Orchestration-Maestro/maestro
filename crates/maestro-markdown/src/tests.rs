@@ -5,6 +5,7 @@ use std::cell::RefCell;
 mod container_frames;
 mod paragraph_progress;
 mod shared_text;
+mod table_progress;
 
 pub(crate) use shared_text::Retained;
 
@@ -21,6 +22,8 @@ pub(crate) struct Work {
     pub(crate) definition_bytes: usize,
     /// Bytes searched or supplied to retained paragraph predicates.
     pub(crate) paragraph_bytes: usize,
+    /// Bytes searched or supplied to table grammar predicates.
+    pub(crate) table_bytes: usize,
     /// Bytes visited by physical-line framing, including repeated visits.
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.

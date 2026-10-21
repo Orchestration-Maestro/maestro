@@ -1,6 +1,7 @@
 //! Immutable block and inline recognizers.
 pub(crate) mod definition;
 pub(crate) mod paragraph;
+pub(crate) mod table;
 use crate::MarkedOptions;
 use regress::Regex;
 use std::sync::LazyLock;
@@ -39,17 +40,6 @@ fn interruption(code: bool, html: &str) -> String {
 
 /// Reference table header and delimiter row before body admission.
 const TABLE_HEADER: &str = r" *([^\n ].*)\n {0,3}((?:\| *)?:?-+:? *(?:\| *:?-+:? *)*(?:\| *)?)";
-
-/// Reference table header, delimiter row and body rows up to the first interruption, unanchored.
-fn table(html: &str) -> String {
-    [
-        TABLE_HEADER,
-        r"(?:\n((?:(?! *\n|",
-        &interruption(true, html),
-        r").*(?:\n|$))*)\n*|$)",
-    ]
-    .concat()
-}
 
 /// Reference quoted paragraph lines up to the first interruption, unanchored.
 fn quote_paragraph_source(html: &str) -> String {
@@ -135,10 +125,6 @@ pub(crate) static BLOCK_HTML_SOURCE: LazyLock<String> = LazyLock::new(|| {
 /// Recognize block html syntax without a mutable match cursor.
 pub(crate) static BLOCK_HTML: LazyLock<Option<Regex>> =
     LazyLock::new(|| stepwise(&BLOCK_HTML_SOURCE, "i"));
-
-/// Recognize block table syntax without a mutable match cursor.
-pub(crate) static BLOCK_TABLE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| anchored(&table(&html_openers())));
 
 /// Recognize inline escape syntax without a mutable match cursor.
 pub(crate) static INLINE_ESCAPE: LazyLock<Option<Regex>> = LazyLock::new(|| {
@@ -443,18 +429,5 @@ pub(crate) fn block_blockquote(options: MarkedOptions) -> Option<&'static Regex>
         BLOCK_BLOCKQUOTE_LITERAL.as_ref()
     } else {
         BLOCK_BLOCKQUOTE.as_ref()
-    }
-}
-
-/// Block syntax over caller-displayed tag spans, with directive boundaries retained.
-static BLOCK_TABLE_LITERAL: LazyLock<Option<Regex>> =
-    LazyLock::new(|| anchored(&table(LITERAL_HTML_OPENERS)));
-
-/// Select block table syntax in the caller's literal-markup view.
-pub(crate) fn block_table(options: MarkedOptions) -> Option<&'static Regex> {
-    if options == (MarkedOptions::Browser { escape_html: true }) {
-        BLOCK_TABLE_LITERAL.as_ref()
-    } else {
-        BLOCK_TABLE.as_ref()
     }
 }
