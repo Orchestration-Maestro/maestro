@@ -1,14 +1,8 @@
-//! Extended URL and email recognition on mapped native text runs.
-use crate::{
-    inline::ScopeKey,
-    source::ScopeSource,
-    tokenizer::inline::LinkContext,
-    types::{Document, Kind, MarkedOptions, Node, Text},
-};
+//! Bare addresses admitted only at reached native inline cursors.
+use crate::MarkedOptions;
 use regress::Regex;
-use std::{collections::HashMap, ops::Range, sync::LazyLock};
-
-/// The email local-part class shared by the candidate, scan and membership rules.
+use std::sync::LazyLock;
+/// Email local-part characters shared by admission and failed-run consumption.
 macro_rules! email_local_part {
     () => {
         "[A-Za-z0-9._+-]"
@@ -27,13 +21,13 @@ const SOURCES: [(&str, &str); 3] = [
     (
         concat!(
             email_local_part!(),
-            r"+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+"
+            r"+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])"
         ),
         "",
     ),
 ];
-/// Candidate rules with a non-address alternative consuming failed email-local runs.
-static SCAN: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
+/// Anchored web and email rules, with a shared failed local-part run alternative.
+static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
     std::array::from_fn(|index| {
         let (source, flags) = SOURCES[index];
         let source = if index == 2 {
@@ -41,135 +35,46 @@ static SCAN: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
         } else {
             source.to_owned()
         };
-        Regex::with_flags(&source, flags).ok()
+        Regex::with_flags(&format!("^(?:{source})"), flags).ok()
     })
 });
-/// Lowercase web starts reached inside text rejected by a case-folding caller.
-static LOWERCASE_WEB: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(SOURCES[1].0).ok());
-/// The same rules anchored at an inline token start.
-static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
-    SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
-});
-/// Email local-part membership for one character.
-static EMAIL_LOCAL_PART: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(concat!("^", email_local_part!(), "$")).ok());
-/// Accepted URL prefixes exclude trailing punctuation and unmatched opening parentheses.
+/// Reuse the selected URL suffix grammar.
 static BACKPEDAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::new(r#"(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+"#).ok()
 });
-
-/// Selects valid candidates before excluding overlaps with accepted links.
-fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
-    let mut candidates = Vec::new();
-    for (regex, email) in candidate_rules(options, &SCAN) {
-        let Some(regex) = regex else {
-            continue;
-        };
-        let mut offset = 0;
-        while let Some(matched) = regex.find_from(&run.authored, offset).next() {
-            let range = matched.range();
-            if email && matched.group(1).is_none() {
-                offset = range.end;
-                continue;
-            }
-            let start = run.recognition_start(range.start);
-            if start != range.start {
-                offset = start;
-                continue;
-            }
-            offset = range.end;
-            if let Some(link) = candidate(run, range.clone(), email, options) {
-                candidates.push(link);
-            } else if !email {
-                offset = LOWERCASE_WEB
-                    .as_ref()
-                    .and_then(|rule| rule.find(&run.authored[range.clone()]))
-                    .map_or(range.end, |nested| range.start + nested.start());
-            }
-        }
-    }
-    candidates.sort_by_key(|(range, _)| range.start);
-    let mut end = 0;
-    candidates
-        .into_iter()
-        .filter(|(range, _)| {
-            if range.start < end {
-                false
-            } else {
-                end = range.end;
-                true
-            }
-        })
-        .collect()
-}
-/// The grammar's web rule and the email rule from one rule set.
-fn candidate_rules(
+/// Admit one bare address at the reached cursor, caching failed email-local runs.
+pub(crate) fn address(
+    text: &str,
     options: MarkedOptions,
-    set: &'static [Option<Regex>; 3],
-) -> [(Option<&'static Regex>, bool); 2] {
+    cursor: usize,
+    email_skip: &mut usize,
+) -> Option<(usize, String)> {
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.address_checks += 1);
     let web = usize::from(matches!(
         options,
         MarkedOptions::Terminal | MarkedOptions::Export
     ));
-    [(set[web].as_ref(), false), (set[2].as_ref(), true)]
-}
-
-/// Length of the web or email address the run scan would link at the start of `text`.
-///
-/// `previous` is the character before it in the same text run.
-pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions) -> Option<usize> {
-    #[cfg(test)]
-    crate::tests::WORK.with_borrow_mut(|work| work.address_checks += 1);
-    candidate_rules(options, &START)
-        .into_iter()
-        .find_map(|(regex, email)| {
-            // A preceding local-part character would make this a suffix of an earlier candidate.
-            if email
-                && previous.is_some_and(|c| {
-                    EMAIL_LOCAL_PART
-                        .as_ref()
-                        .is_some_and(|rule| rule.find(c.encode_utf8(&mut [0; 4])).is_some())
-                })
-            {
-                return None;
-            }
-            let matched = regex?.find(text)?;
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.address_bytes += matched.end());
-            Some(accepted(&text[matched.range()], email)?.0)
-        })
-}
-
-/// Validates one web or email match and retains its authored spelling.
-fn candidate(
-    run: &Run,
-    range: Range<usize>,
-    email: bool,
-    options: MarkedOptions,
-) -> Option<(Range<usize>, String)> {
-    let text = &run.authored[range.clone()];
-    let folded = matches!(options, MarkedOptions::Terminal | MarkedOptions::Export)
-        && !["http://", "https://", "ftp://", "www."]
-            .iter()
-            .any(|prefix| text.starts_with(prefix));
-    if !email && folded && range.start != 0 && run.recognition_start(range.start - 1) != range.start
-    {
+    if let Some(matched) = START[web].as_ref().and_then(|rule| rule.find(text)) {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.address_bytes += matched.end());
+        return Some(accepted(&text[matched.range()], false));
+    }
+    if cursor < *email_skip {
         return None;
     }
-    let (length, href) = accepted(text, email)?;
-    Some((range.start..range.start + length, href))
+    let matched = START[2].as_ref()?.find(text)?;
+    if matched.group(1).is_some() {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.address_bytes += matched.end());
+        return Some(accepted(&text[matched.range()], true));
+    }
+    *email_skip = cursor + matched.end();
+    None
 }
-
 /// Retain an admitted candidate's label length and authored destination.
-fn accepted(authored: &str, email: bool) -> Option<(usize, String)> {
-    let label = if email {
-        if authored.ends_with(['-', '_']) {
-            return None;
-        }
-        authored.trim_end_matches('.')
-    } else {
-        suffix(authored)
-    };
+fn accepted(authored: &str, email: bool) -> (usize, String) {
+    let label = if email { authored } else { suffix(authored) };
     let href = if email {
         format!("mailto:{label}")
     } else if label.starts_with("www.") {
@@ -177,7 +82,7 @@ fn accepted(authored: &str, email: bool) -> Option<(usize, String)> {
     } else {
         label.to_owned()
     };
-    Some((label.len(), href))
+    (label.len(), href)
 }
 /// Backpedal repeatedly until the grammar accepts the complete remaining URL prefix.
 fn suffix(candidate: &str) -> &str {
@@ -192,293 +97,4 @@ fn suffix(candidate: &str) -> &str {
         }
         label = next;
     }
-}
-
-/// One contiguous authored text run with mapped native display units.
-struct Run {
-    /// Native-decoded text used outside selected links.
-    decoded: String,
-    /// Authored text used for recognition and selected literal link spelling.
-    authored: String,
-    /// Ordered spans with decoded, authored and original source extents.
-    units: Vec<Unit>,
-}
-/// Buffer extents of an equal span or one atomic native transformation.
-struct Unit {
-    /// Original normalized source extent.
-    source: Range<usize>,
-    /// Decoded buffer extent.
-    decoded: Range<usize>,
-    /// Authored buffer extent.
-    authored: Range<usize>,
-}
-impl Run {
-    /// Builds ordered buffers without container source bytes.
-    fn new(parts: Vec<Node>, mapping: Option<&ScopeSource>) -> Self {
-        let mut run = Self {
-            decoded: String::new(),
-            authored: String::new(),
-            units: Vec::new(),
-        };
-        for part in parts {
-            if let Kind::Text(text) = &part.kind {
-                let decoded = run.decoded.len();
-                let authored = run.authored.len();
-                run.decoded.push_str(&text.decoded);
-                run.authored.push_str(&text.authored);
-                run.spans(part.range, (decoded, authored), mapping);
-            }
-        }
-        run
-    }
-    /// Splits native text into equal spans and individual escaped punctuation.
-    /// A differing remainder is a native entity event, kept atomic.
-    fn spans(
-        &mut self,
-        mut source: Range<usize>,
-        (mut decoded, mut authored): (usize, usize),
-        mapping: Option<&ScopeSource>,
-    ) {
-        let base = authored;
-        let local = mapping
-            .and_then(|mapping| mapping.local(&source))
-            .map(|range| range.start);
-        while decoded < self.decoded.len() {
-            let display = &self.decoded[decoded..];
-            let literal = &self.authored[authored..];
-            let mut equal = display
-                .chars()
-                .zip(literal.chars())
-                .take_while(|(left, right)| left == right)
-                .map(|(left, _)| left.len_utf8())
-                .sum::<usize>();
-            if let Some((mapping, local)) = mapping.zip(local) {
-                equal = equal.min(mapping.remaining(local + authored - base));
-            }
-            let (display_len, literal_len) = if literal.starts_with('\\')
-                && display.as_bytes()[0].is_ascii_punctuation()
-                && literal.as_bytes().get(1) == display.as_bytes().first()
-            {
-                (1, 2)
-            } else if equal > 0 && (!literal.starts_with('&') || display == literal) {
-                (equal, equal)
-            } else {
-                (display.len(), literal.len())
-            };
-            let end = if literal_len == literal.len() {
-                source.end
-            } else {
-                source.start + literal_len
-            };
-            let selected = mapping.zip(local).and_then(|(mapping, local)| {
-                mapping.native(&(local + authored - base..local + authored - base + literal_len))
-            });
-            let selected = selected.unwrap_or(source.start..end);
-            let next = selected.end;
-            self.units.push(Unit {
-                source: selected,
-                decoded: decoded..decoded + display_len,
-                authored: authored..authored + literal_len,
-            });
-            source.start = next;
-            decoded += display_len;
-            authored += literal_len;
-        }
-    }
-    /// Advances a candidate start past punctuation already consumed as an escape.
-    fn recognition_start(&self, offset: usize) -> usize {
-        let index = self
-            .units
-            .partition_point(|unit| unit.authored.end <= offset);
-        self.units.get(index).map_or(offset, |unit| {
-            if unit.authored.start < offset
-                && unit.authored.len() == 2
-                && unit.decoded.len() == 1
-                && self.authored.as_bytes()[unit.authored.start] == b'\\'
-            {
-                unit.authored.end
-            } else {
-                offset
-            }
-        })
-    }
-    /// Maps literal boundaries through the same ordered spans as display text.
-    fn decoded_offset(&self, offset: usize) -> usize {
-        self.units
-            .iter()
-            .find(|unit| unit.authored.end > offset)
-            .map_or(self.decoded.len(), |unit| {
-                unit.decoded.start
-                    + if self.decoded[unit.decoded.clone()] == self.authored[unit.authored.clone()]
-                    {
-                        offset - unit.authored.start
-                    } else {
-                        0
-                    }
-            })
-    }
-    /// Selects literal boundaries and the corresponding decoded display text.
-    fn text(&self, range: Range<usize>) -> Text {
-        Text {
-            decoded: self.decoded[self.decoded_offset(range.start)..self.decoded_offset(range.end)]
-                .to_owned(),
-            authored: self.authored[range].to_owned(),
-        }
-    }
-    /// Preserves the source extent of selected native text units.
-    fn source_range(&self, range: Range<usize>) -> Range<usize> {
-        let first = self.units.partition_point(|unit| {
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.source_examinations += 1);
-            unit.authored.end <= range.start
-        });
-        let start = self.units.get(first).map_or(0, |unit| {
-            if unit.source.len() == unit.authored.len() {
-                unit.source.start + range.start - unit.authored.start
-            } else {
-                unit.source.start
-            }
-        });
-        let last = self.units.partition_point(|unit| {
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.source_examinations += 1);
-            unit.authored.start < range.end
-        });
-        let end = last
-            .checked_sub(1)
-            .and_then(|index| self.units.get(index))
-            .map_or(start, |unit| {
-                if unit.source.len() == unit.authored.len() {
-                    unit.source.start + range.end - unit.authored.start
-                } else {
-                    unit.source.end
-                }
-            });
-        start..end
-    }
-    /// Constructs one surrounding text child without unused link spellings.
-    fn node(&self, range: Range<usize>) -> Node {
-        Node {
-            authored: self.authored[range.clone()].to_owned(),
-            range: self.source_range(range.clone()),
-            kind: Kind::Text(self.text(range)),
-        }
-    }
-}
-
-/// Replaces accepted links while preserving native-decoded surrounding text.
-fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>, options: MarkedOptions) -> Vec<Node> {
-    if parts.is_empty() {
-        return parts;
-    }
-    let run = Run::new(parts, mapping);
-    let mut output = Vec::new();
-    let mut end = 0;
-    for (range, href) in links(&run, options) {
-        if range.start > end {
-            output.push(run.node(end..range.start));
-        }
-        let label = run.authored[range.clone()].to_owned();
-        let absolute = run.source_range(range.clone());
-        let child = Node {
-            authored: label.clone(),
-            range: absolute.clone(),
-            kind: Kind::Text(Text {
-                decoded: label.clone(),
-                authored: label.clone(),
-            }),
-        };
-        output.push(Node {
-            authored: label.clone(),
-            kind: Kind::Link(
-                vec![child],
-                label,
-                href,
-                crate::types::LinkMetadata {
-                    title: String::new(),
-                    link_type: crate::LinkType::Autolink,
-                },
-            ),
-            range: absolute,
-        });
-        end = range.end;
-    }
-    if end < run.authored.len() {
-        output.push(run.node(end..run.authored.len()));
-    }
-    output
-}
-/// Apply shared mapped extended links after caller-owned inline admission.
-pub fn autolinks(document: &mut Document) {
-    map_links(
-        &mut document.nodes,
-        &document.scopes,
-        None,
-        document.options,
-        &mut LinkContext::new(false),
-    );
-}
-
-/// Scan eligible runs in source order, retaining raw-anchor state across containers.
-fn map_links(
-    nodes: &mut Vec<Node>,
-    scopes: &HashMap<ScopeKey, ScopeSource>,
-    mapping: Option<&ScopeSource>,
-    options: MarkedOptions,
-    context: &mut LinkContext,
-) {
-    let mut result = Vec::new();
-    let mut parts = Vec::new();
-    for mut node in std::mem::take(nodes) {
-        if matches!(node.kind, Kind::Text(_)) && !context.active() {
-            parts.push(node);
-            continue;
-        }
-        result.extend(extend(std::mem::take(&mut parts), mapping, options));
-        map_children(&mut node, scopes, mapping, options, context);
-        result.push(node);
-    }
-    result.extend(extend(parts, mapping, options));
-    *nodes = result;
-}
-
-/// Reuse the original scope mapping through formatted spans and table cells.
-fn map_children(
-    node: &mut Node,
-    scopes: &HashMap<ScopeKey, ScopeSource>,
-    mapping: Option<&ScopeSource>,
-    options: MarkedOptions,
-    context: &mut LinkContext,
-) {
-    let mapping = scopes
-        .get(&(node.range.start, node.range.end, false))
-        .or(mapping);
-    match &mut node.kind {
-        Kind::Paragraph(children)
-        | Kind::Inline(children)
-        | Kind::Strong(children)
-        | Kind::Strike(children)
-        | Kind::Emphasis(children)
-        | Kind::Item(children)
-        | Kind::List(_, children)
-        | Kind::Heading(_, children, _)
-        | Kind::Quote(children, _) => map_links(children, scopes, mapping, options, context),
-        Kind::Table(table) => {
-            for cell in table
-                .header
-                .iter_mut()
-                .chain(table.rows.iter_mut().flatten())
-            {
-                map_links(
-                    &mut cell.children,
-                    scopes,
-                    scopes.get(&(cell.range.start, cell.range.end, false)),
-                    options,
-                    context,
-                );
-            }
-        }
-        _ => {}
-    }
-    context.track_anchor(&node.kind);
 }

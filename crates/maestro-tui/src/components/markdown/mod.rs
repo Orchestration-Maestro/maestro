@@ -5,7 +5,7 @@ mod inline;
 mod lists;
 use maestro_markdown as nodes;
 
-/// Applies terminal text policy before shared parsing and mapped links.
+/// Applies terminal text policy before shared parsing.
 fn parse(text: &str, clean_content: bool) -> Vec<nodes::Node> {
     // Binary controls stay until decoding so removal cannot join an entity.
     let stripped = if clean_content {
@@ -16,8 +16,8 @@ fn parse(text: &str, clean_content: bool) -> Vec<nodes::Node> {
     let text = stripped.as_deref().unwrap_or(text);
     let source =
         maestro_text::normalize_to_lf(&text.replace('\t', "   ")).replace('\0', "\u{fffd}");
-    let mut document = nodes::parse(source);
-    nodes::autolinks(&mut document);
+    let document = nodes::parse(source);
+
     document.nodes
 }
 mod tables;

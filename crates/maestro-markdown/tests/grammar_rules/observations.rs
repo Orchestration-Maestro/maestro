@@ -1,7 +1,5 @@
 //! Semantic field observations from the three caller grammars.
-use maestro_markdown::{
-    Alignment, Cell, Kind, MarkedOptions, Node, Table, autolinks, parse_with_options,
-};
+use maestro_markdown::{Alignment, Cell, Kind, MarkedOptions, Node, Table, parse_with_options};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -57,12 +55,11 @@ pub(super) fn check_with_options(
         seen += 1;
         assert_eq!(row.targets.len(), options.len(), "{}", row.id);
         for (target, (options, expected)) in options.iter().copied().zip(&row.targets).enumerate() {
-            let mut document =
-                parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
+            let document = parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
             if let Some(raw) = &row.raw_quotes {
                 check_raw(&document, &raw[target], &row.id);
             }
-            autolinks(&mut document);
+
             if let Some(difference) = metadata_difference(&row, target, &document.nodes, options) {
                 failures.push(format!("{} {options:?}: {difference}", row.id));
             }
@@ -278,8 +275,8 @@ fn source_metadata_respects_export_image_policy() {
         MarkedOptions::Browser { escape_html: true },
         MarkedOptions::Export,
     ] {
-        let mut document = parse_with_options(input.into(), options);
-        autolinks(&mut document);
+        let document = parse_with_options(input.into(), options);
+
         let (mut authored, mut labels, mut destinations) = (Vec::new(), Vec::new(), Vec::new());
         metadata(
             &document.nodes,

@@ -235,7 +235,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 - **Browser SandboxIframe:** The retained loading/execution adapter in `maestro-web`. One native frame owner serves direct execution and the hidden application host, with retryable removal and native result handles; preparation can produce standalone documents. See [sandbox execution](docs/browser/sandbox.md#hidden-javascript-execution).
 
-- **Markdown parser:** `maestro-markdown` owns native structure, source extents and mapped extended links; application exposes it as `markdown`, while adapters retain presentation policy.
+- **Markdown parser:** `maestro-markdown` owns native structure, source extents and cursor-time extended links; application exposes it as `markdown`, while adapters retain presentation policy.
 
 ## Workspace daemon
 

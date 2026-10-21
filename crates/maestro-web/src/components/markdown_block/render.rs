@@ -88,7 +88,7 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     while lower.contains(&slot_attribute) {
         slot_attribute.push('x');
     }
-    let mut document = match markdown::parse_with_tokenizer(
+    let document = match markdown::parse_with_tokenizer(
         source,
         markdown::MarkedOptions::Browser { escape_html },
         Some(&mut MathBlocks),
@@ -102,7 +102,7 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
             };
         }
     };
-    markdown::autolinks(&mut document);
+
     let inline = InlineContext::new(&document);
     let math = katex::KatexContext::default();
     let mut writer = Writer {

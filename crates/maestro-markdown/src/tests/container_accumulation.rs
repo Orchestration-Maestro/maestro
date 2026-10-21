@@ -59,8 +59,7 @@ fn merged_unicode_scopes_keep_native_character_boundaries() {
     assert_eq!(scope.local(&(9..13)), Some(3..7));
     assert_eq!(scope.native(&(2..3)), Some(4..4));
     assert_eq!(scope.native(&(3..7)), Some(9..13));
-    let mut document = document;
-    crate::autolinks(&mut document);
+
     let Kind::Quote(children, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
