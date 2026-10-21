@@ -687,7 +687,8 @@ reloads preserve existing feedback, and the loop can consume the reload observat
 once. Construction requires an explicit `PaneLaunchInputs::no_session` choice;
 that policy suppresses automatic background checks without changing their stored
 preferences. An accepted history disable clears separate history on the next
-loop pass, after joining any captured writer so it cannot recreate the file.
+loop pass or at shutdown, after joining any captured writer so it cannot recreate
+the file. Reading the reload observation does not discard that pending clear.
 Rejected history settings leave both the accepted preference and history intact.
 
 Workspace preference saves use the same settings manager. Related leaves, such

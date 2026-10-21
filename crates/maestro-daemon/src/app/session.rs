@@ -26,6 +26,7 @@ enum SessionSaveJob {
 impl<C: FnMut() -> u128> App<C> {
     /// Settles captured history before clearing an accepted persistence disable.
     pub(super) fn finish_history_reload(&mut self, paths: &DaemonPaths) {
+        self.take_config_reloaded_from_disk();
         if std::mem::take(&mut self.clear_history_after_reload) {
             if let Some(thread) = self.session_save_thread.take() {
                 let _ = thread.join();

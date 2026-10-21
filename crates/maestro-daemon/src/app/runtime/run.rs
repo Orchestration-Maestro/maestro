@@ -35,6 +35,7 @@ impl<C: FnMut() -> u128> App<C> {
     pub async fn shutdown(&mut self, paths: &DaemonPaths) {
         self.state.should_quit.0 = true;
         self.drain_all_internal_events();
+        self.finish_history_reload(paths);
         self.save_session_now(paths);
         self.configure_tab_bar_status(&[], "");
         let terminals: Vec<_> = self

@@ -10,9 +10,7 @@ use std::time::{Duration, Instant};
 impl<C: FnMut() -> u128> App<C> {
     /// Consumes due current-capability deadlines without creating another timer or loop.
     pub fn handle_scheduled_tasks(&mut self, now: Instant, paths: &DaemonPaths) -> bool {
-        if self.take_config_reloaded_from_disk() {
-            self.finish_history_reload(paths);
-        }
+        self.finish_history_reload(paths);
         let mut changed = self.expire_copy_feedback(now);
         if self
             .config_diagnostic_deadline

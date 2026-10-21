@@ -505,22 +505,31 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
 
 #[test]
 fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_snapshot() {
-    let (mut app, mut manager, storage) = fixture();
-    let root = history_test_root("no-session");
-    let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
-    std::fs::write(paths.history_path(), "old history").unwrap();
-    std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
-    put(
-        &*storage,
-        &json!({"daemon":{"paneHistory":false}}).to_string(),
-    );
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    assert!(app.launch.no_session);
-    block_on(app.run(&paths, std::future::ready(())));
-    assert!(!Path::new(&paths.history_path()).exists());
-    assert_eq!(
-        std::fs::read_to_string(paths.snapshot_path()).unwrap(),
-        "unrelated snapshot"
-    );
-    std::fs::remove_dir_all(root).unwrap();
+    for route in ["observed", "run", "shutdown"] {
+        let (mut app, mut manager, storage) = fixture();
+        let root = history_test_root("no-session");
+        let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+        std::fs::write(paths.history_path(), "old history").unwrap();
+        std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
+        put(
+            &*storage,
+            &json!({"daemon":{"paneHistory":false}}).to_string(),
+        );
+        block_on(app.reload_config(&mut manager, Path::new(".")));
+        assert!(app.launch.no_session);
+        if route == "observed" {
+            assert!(app.take_config_reloaded_from_disk());
+        }
+        if route == "shutdown" {
+            block_on(app.shutdown(&paths));
+        } else {
+            block_on(app.run(&paths, std::future::ready(())));
+        }
+        assert!(!Path::new(&paths.history_path()).exists());
+        assert_eq!(
+            std::fs::read_to_string(paths.snapshot_path()).unwrap(),
+            "unrelated snapshot"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }
