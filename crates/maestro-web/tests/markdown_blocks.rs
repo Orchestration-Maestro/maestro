@@ -242,7 +242,7 @@ mod tests {
         );
     }
 
-    /// Relative, fragment, mail and script destinations keep their authored meaning.
+    /// Safe destinations remain links; executable destinations retain their label text.
     #[wasm_bindgen]
     pub fn markdown_link_targets_keep_authored_behavior() {
         rows_match("markdown_link_targets_keep_authored_behavior");
@@ -384,7 +384,7 @@ mod tests {
             ("$a[b$ c]", "/docs", ""),
             ("a $x$\nb", "/docs", "a "),
             (r"\[ $x$ \]", "/docs", "[ "),
-            (r"\\[ $x$ ]", "/docs", r"\[ "),
+            (r"\\[ $x$ ]", "/docs", "[ "),
             (r"\\\[ $x$ \]", "/docs", r"\[ "),
             (" $x$ ", "/docs", " "),
         ] {
