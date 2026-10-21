@@ -41,9 +41,9 @@ impl Producer {
     fn new() -> Self {
         use std::io::{Read, Write};
         let scratch = scratch::Scratch::new().unwrap();
-        let ready = scratch.0.join("ready");
-        let permit = scratch.0.join("permit");
-        let written = scratch.0.join("written");
+        let ready = scratch.path().join("ready");
+        let permit = scratch.path().join("permit");
+        let written = scratch.path().join("written");
         assert!(
             std::process::Command::new("mkfifo")
                 .args([&ready, &permit, &written])
@@ -89,7 +89,7 @@ impl Producer {
     fn after_permit_written(&self) -> String {
         format!(
             "read written < '{}'",
-            self.scratch.0.join("written").display()
+            self.scratch.path().join("written").display()
         )
     }
     /// The shell's acknowledgement followed by its blocking read.
@@ -100,8 +100,8 @@ impl Producer {
     fn gate_after(&self, pause: &str) -> String {
         format!(
             "printf ready > '{}'; {pause}; read permit < '{}'",
-            self.scratch.0.join("ready").display(),
-            self.scratch.0.join("permit").display()
+            self.scratch.path().join("ready").display(),
+            self.scratch.path().join("permit").display()
         )
     }
 }
@@ -200,7 +200,7 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
         "test \"$PATH\" = '{INHERITED_PATH}' && test \"$MAESTRO_INHERITED\" = parent && test -z \"$(cat)\" && printf '%s|%s|%s' \"$MAESTRO_CAPTURE_VALUE\" \"$PWD\" \"$1\""
     );
     let args = ["-c", &script, "fixture", "a; b  c"].map(str::to_owned);
-    let cwd = scratch.0.to_string_lossy();
+    let cwd = scratch.path().to_string_lossy();
     let output = runtime()
         .block_on(operations.run_command_capture(
             "/bin/sh",
@@ -322,7 +322,7 @@ fn capture_completes_when_the_shell_opens_the_permit_late() {
 #[test]
 fn capture_timeout_covers_streams_and_sends_termination() {
     let scratch = scratch::Scratch::new().unwrap();
-    let marker = scratch.0.join("terminated");
+    let marker = scratch.path().join("terminated");
     native_support::write(marker.to_str().unwrap(), "waiting");
     let producer = Producer::new();
     let script = format!(
@@ -405,7 +405,11 @@ fn capture_timeout_covers_descendant_streams() {
 #[test]
 fn capture_spawn_error_does_not_gain_command_wrapping() {
     let scratch = scratch::Scratch::new().unwrap();
-    let missing = scratch.0.join("missing").to_string_lossy().into_owned();
+    let missing = scratch
+        .path()
+        .join("missing")
+        .to_string_lossy()
+        .into_owned();
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
     for (command, cwd) in [

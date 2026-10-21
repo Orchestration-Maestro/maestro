@@ -59,12 +59,14 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
 /// Refreshes a real checkout and retains it after the origin becomes unavailable.
 pub fn refresh() {
     let dir = scratch::Scratch::new().unwrap();
-    let base = dir.0.to_string_lossy().into_owned();
-    let (seed, remote) = repository(&dir.0);
+    let base = dir.path().to_string_lossy().into_owned();
+    let (seed, remote) = repository(dir.path());
     let (_, settings, _) = support::manager(&serde_json::json!({}));
     settings
         .borrow_mut()
-        .set_npm_command(Some(vec![SettingsListEntry::String(executable(&dir.0))]));
+        .set_npm_command(Some(vec![SettingsListEntry::String(executable(
+            dir.path(),
+        ))]));
     let local = Rc::new(tokio::task::LocalSet::new());
     let native = Rc::new(NativePackageOperations::new(
         |_| false,

@@ -3,8 +3,7 @@
 use maestro_credentials::{
     ApiKeyCredential, AuthCredential, AuthStorageBackend, InMemoryAuthStorageBackend,
 };
-use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::path::Path;
 use std::sync::{Mutex, RwLock, RwLockReadGuard};
 
 mod runtime;
@@ -18,22 +17,20 @@ pub(crate) static PROCESS_CREATION: RwLock<()> = RwLock::new(());
 /// Serializes cache observations; acquire before `PROCESS_CREATION` when both are needed.
 pub(crate) static SERIAL: Mutex<()> = Mutex::new(());
 
-/// Distinguishes fixture directories created in the same process.
-static NEXT_DIRECTORY: AtomicUsize = AtomicUsize::new(0);
-
 /// Disposable directory removed when dropped.
-pub struct TempDir(PathBuf, Option<RwLockReadGuard<'static, ()>>);
+pub struct TempDir(
+    maestro_test_directory::Scratch,
+    Option<RwLockReadGuard<'static, ()>>,
+);
 
 impl TempDir {
-    /// Create an empty directory named after the test.
+    /// Create an empty directory with the supplied creation-error context.
     pub fn new(name: &str) -> Self {
-        let sequence = NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-auth-{name}-{}-{sequence}",
-            std::process::id()
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path, None)
+        Self(
+            maestro_test_directory::Scratch::new()
+                .unwrap_or_else(|error| panic!("create {name} fixture: {error}")),
+            None,
+        )
     }
 
     /// Like [`TempDir::new`], and keeps [`run_child`] from creating a process while it lives;
@@ -49,18 +46,12 @@ impl TempDir {
 
     /// The directory itself.
     pub fn root(&self) -> &Path {
-        &self.0
+        self.0.path()
     }
 
     /// A path below the directory, as the text the storage API accepts.
     pub fn path(&self, relative: &str) -> String {
-        self.0.join(relative).to_str().unwrap().to_owned()
-    }
-}
-
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        self.0.path().join(relative).to_str().unwrap().to_owned()
     }
 }
 

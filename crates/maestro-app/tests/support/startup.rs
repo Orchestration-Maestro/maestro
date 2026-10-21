@@ -288,17 +288,20 @@ pub fn check_file_limit_restoration(name: &str) {
     for fail_write in [false, true] {
         if fail_write {
             fs::write(
-                scratch.0.join("settings.json"),
+                scratch.0.path().join("settings.json"),
                 format!("{{\"apiKeys\":{{\"provider\":\"{}\"}}}}", "k".repeat(4096)),
             )
             .unwrap();
         }
         let outcome = invoke(
             name,
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "auth"),
-                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                (
+                    "MAESTRO_CODING_AGENT_DIR",
+                    scratch.0.path().to_str().unwrap(),
+                ),
                 ("STARTUP_EXIT_WRITE", &output),
             ],
             Some(1),
@@ -369,7 +372,7 @@ fn replay(name: &str, index: usize, case: &Case) {
         };
         let actual = invoke(
             name,
-            &scratch.0,
+            scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", &case.input.operation),
                 ("MAESTRO_CODING_AGENT_DIR", &authored),

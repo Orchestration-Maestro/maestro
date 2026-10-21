@@ -213,7 +213,7 @@ fn native_git_observations(args: &[String]) {
             )
             .unwrap()
             .name(),
-            Path::new(&scratch.0),
+            Path::new(scratch.0.path()),
             &[
                 ("FOOTER_PROBE_REPO", &repo),
                 ("PATH", path),

@@ -96,7 +96,7 @@ fn check_group(group: &str) {
             "duplicate recipe {index}"
         );
         let dir = Directory::new();
-        let root = dir.0.join("skills");
+        let root = dir.0.path().join("skills");
         std::fs::create_dir(&root).unwrap();
         for directory in &recipe.directories {
             std::fs::create_dir_all(root.join(directory)).unwrap();
@@ -117,7 +117,7 @@ fn check_group(group: &str) {
         let scan = format!("{}{}", text(&root), recipe.root_suffix);
         let result = load_skills_from_dir(
             LoadSkillsFromDirOptions {
-                cwd: text(&dir.0),
+                cwd: text(dir.0.path()),
                 dir: &scan,
                 source: "path",
             },

@@ -353,7 +353,7 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
 /// Compares ordered effects, surviving files, errors and complete returned trees.
 async fn replay(case: &Recorded) {
     let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_string_lossy().into_owned();
+    let base = scratch.path().to_string_lossy().into_owned();
     setup(case, &base);
     let (_, settings, _) = support::manager(&json!({}));
     let r = Rc::new(case.recipe.clone());

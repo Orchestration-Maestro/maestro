@@ -36,7 +36,7 @@ fn hint(group: Group) {
         );
         let prompts = load_prompt_templates(
             LoadPromptTemplatesOptions {
-                cwd: scratch.0.to_str().unwrap(),
+                cwd: scratch.0.path().to_str().unwrap(),
                 home: &home,
                 agent_dir: &root,
                 config_dir_name: CONFIG_DIR_NAME,
@@ -106,7 +106,7 @@ fn literals() {
         );
         let prompts = load_prompt_templates(
             LoadPromptTemplatesOptions {
-                cwd: scratch.0.to_str().unwrap(),
+                cwd: scratch.0.path().to_str().unwrap(),
                 home: &scratch.join("home"),
                 agent_dir: &root,
                 config_dir_name: CONFIG_DIR_NAME,

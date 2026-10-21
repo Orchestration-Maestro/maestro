@@ -162,7 +162,7 @@ fn native_load(
     let prompt_file = dir.file("sample.md", &input);
     let skill = load_skills_from_dir(
         LoadSkillsFromDirOptions {
-            cwd: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
             dir: support::text(skill_file.parent().unwrap()),
             source: "user",
         },
@@ -170,9 +170,9 @@ fn native_load(
     );
     let prompts = load_prompt_templates(
         LoadPromptTemplatesOptions {
-            cwd: support::text(&dir.0),
-            home: support::text(&dir.0),
-            agent_dir: support::text(&dir.0),
+            cwd: support::text(dir.0.path()),
+            home: support::text(dir.0.path()),
+            agent_dir: support::text(dir.0.path()),
             config_dir_name: ".maestro",
             prompt_paths: &[support::text(&prompt_file).into()],
             include_defaults: false,

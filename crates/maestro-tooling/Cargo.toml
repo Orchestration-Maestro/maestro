@@ -23,6 +23,7 @@ toml = "=1.1.6"
 egui = { version = "=0.36.2", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [[test]]

@@ -895,7 +895,7 @@ fn native_command_probe(root: &native::Scratch) {
         )
         .unwrap()
         .name(),
-        &root.0,
+        root.0.path(),
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
             ("PATH", &root.join("bin")),
@@ -906,7 +906,10 @@ fn native_command_probe(root: &native::Scratch) {
         output,
         [
             "--no-optional-locks symbolic-ref --quiet --short HEAD",
-            std::fs::canonicalize(&root.0).unwrap().to_str().unwrap()
+            std::fs::canonicalize(root.0.path())
+                .unwrap()
+                .to_str()
+                .unwrap()
         ]
     );
     let failed = native::probe(
@@ -915,7 +918,7 @@ fn native_command_probe(root: &native::Scratch) {
         )
         .unwrap()
         .name(),
-        &root.0,
+        root.0.path(),
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
             ("PATH", &root.join("bin")),
@@ -1144,7 +1147,7 @@ os._exit(0)
             )
             .unwrap()
             .name(),
-            &root.0,
+            root.0.path(),
             &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
             &[]
         )

@@ -39,9 +39,9 @@ fn check_removed_working_directory() {
         "skills/calendar/SKILL.md",
         "---\ndescription: Calendar\n---",
     );
-    let alias = dir.0.join("alias");
-    std::os::unix::fs::symlink(dir.0.join("target"), &alias).unwrap();
-    let gone = dir.0.join("gone");
+    let alias = dir.0.path().join("alias");
+    std::os::unix::fs::symlink(dir.0.path().join("target"), &alias).unwrap();
+    let gone = dir.0.path().join("gone");
     std::fs::create_dir(&gone).unwrap();
     std::env::set_current_dir(&gone).unwrap();
     std::fs::remove_dir(&gone).unwrap();
@@ -66,7 +66,7 @@ fn check_removed_working_directory() {
     let error = load_skills(options("work"), &NativeResourceOperations).unwrap_err();
     assert_eq!(error.kind(), ErrorKind::NotFound);
     assert!(
-        load_skills(options(text(&dir.0)), &NativeResourceOperations)
+        load_skills(options(text(dir.0.path())), &NativeResourceOperations)
             .unwrap()
             .skills
             .is_empty()
@@ -82,6 +82,6 @@ fn check_removed_working_directory() {
         )
     };
     assert!(scan("work", "skills").skills.is_empty());
-    let loaded = scan("work", text(&dir.0.join("skills")));
+    let loaded = scan("work", text(&dir.0.path().join("skills")));
     assert_eq!(loaded.skills[0].file_path, text(&skill));
 }

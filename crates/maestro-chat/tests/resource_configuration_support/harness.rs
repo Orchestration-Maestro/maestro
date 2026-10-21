@@ -107,8 +107,8 @@ impl Harness {
         bold: bool,
     ) -> Self {
         let scratch = crate::scratch::Scratch::new().unwrap();
-        let user = scratch.0.join("user");
-        let project = scratch.0.join("project");
+        let user = scratch.path().join("user");
+        let project = scratch.path().join("project");
         std::fs::create_dir_all(&user).unwrap();
         std::fs::create_dir_all(project.join(".maestro")).unwrap();
         let files = [

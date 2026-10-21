@@ -29,8 +29,8 @@ fn matching_pin_selects_last_version_after_deep_duplicate() {
 /// Resolves installed resources and observes the completed command boundary.
 fn check_matching_pin(offline: bool, member: &str) {
     let scratch = scratch::Scratch::new().unwrap();
-    let cwd = scratch.0.to_str().unwrap();
-    let target = scratch.0.join(".maestro/npm/node_modules/pkg");
+    let cwd = scratch.path().to_str().unwrap();
+    let target = scratch.path().join(".maestro/npm/node_modules/pkg");
     fs::create_dir_all(&target).unwrap();
     let deep = format!("{}0{}", "[".repeat(128), "]".repeat(128));
     fs::write(
@@ -45,7 +45,7 @@ fn check_matching_pin(offline: bool, member: &str) {
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: cwd.into(),
-            agent_dir: scratch.0.join("user").to_str().unwrap().into(),
+            agent_dir: scratch.path().join("user").to_str().unwrap().into(),
             settings_manager: settings,
         },
         support::Controlled(Rc::clone(&effects)),

@@ -255,7 +255,7 @@ fn package(input: &Value, expected: &Value, root: &str) {
 /// Run a row in a disposable child with explicitly supplied ambient state.
 fn child_case(name: &str, group: Group, index: usize) {
     let scratch = child::Scratch::new();
-    let root = scratch.0.to_str().unwrap();
+    let root = scratch.0.path().to_str().unwrap();
     let home = scratch.join("home");
     std::fs::create_dir(&home).unwrap();
     let rows = fixture::cases::<Value, Value>(group);
@@ -287,7 +287,7 @@ fn child_case(name: &str, group: Group, index: usize) {
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .name(),
-            &scratch.0,
+            scratch.0.path(),
             &refs,
             fixture::REMOVED
         ),
@@ -322,7 +322,7 @@ fn qualify(name: &str, group: Group) {
                 maestro_test_process::TestProcess::current(name)
                     .unwrap()
                     .name(),
-                &scratch.0,
+                scratch.0.path(),
                 &[
                     ("MAESTRO_DEFAULT_OUTER", "1"),
                     ("MAESTRO_CODING_AGENT_DIR", "inherited-decoy"),

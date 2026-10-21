@@ -116,7 +116,7 @@ pub fn check(names: &[&str]) {
 /// Constructs the configured manager from real scoped settings files.
 fn setup(recipe: &Recipe) -> Fixture {
     let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.0.to_str().unwrap();
+    let base = scratch.path().to_str().unwrap();
     let cwd = recipe
         .cwd
         .as_deref()
@@ -130,7 +130,7 @@ fn setup(recipe: &Recipe) -> Fixture {
     if !recipe.no_git.unwrap_or_default() {
         fs::write(Path::new(&cwd).join(".git"), "gitdir: unused").unwrap();
     }
-    native_tree(&scratch.0, recipe);
+    native_tree(scratch.path(), recipe);
     let mut global = substitute(&recipe.global, base);
     global["npmCommand"] = json!(["npm"]);
     fs::write(Path::new(&user).join("settings.json"), global.to_string()).unwrap();
@@ -156,7 +156,7 @@ fn setup(recipe: &Recipe) -> Fixture {
         denied: recipe
             .denied
             .iter()
-            .map(|name| scratch.0.join(name))
+            .map(|name| scratch.path().join(name))
             .collect(),
         scratch,
         manager,
@@ -223,7 +223,7 @@ async fn observe(fixture: &Fixture, case: &Record) -> std::io::Result<()> {
     let settings = &fixture.settings;
     let effects = &fixture.effects;
     let scratch = &fixture.scratch;
-    let base = scratch.0.to_str().unwrap();
+    let base = scratch.path().to_str().unwrap();
     let events = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
     let sink = Rc::clone(&events);
     manager.set_progress_callback(Some(Rc::new(move |event| {

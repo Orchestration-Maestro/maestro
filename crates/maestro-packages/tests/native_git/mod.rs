@@ -23,16 +23,16 @@ impl Repository {
     /// Creates local repositories without network access.
     pub fn new() -> Self {
         let scratch = super::scratch::Scratch::new().unwrap();
-        let seed = scratch.0.join("seed");
-        let remote = scratch.0.join("remote.git");
-        let target = scratch.0.join("agent/git/github.com/acme/tool");
+        let seed = scratch.path().join("seed");
+        let remote = scratch.path().join("remote.git");
+        let target = scratch.path().join("agent/git/github.com/acme/tool");
         std::fs::create_dir(&seed).unwrap();
         git(&seed, &["init", "-b", "main"]);
         super::native_support::write(seed.join("content").to_str().unwrap(), "initial");
         git(&seed, &["add", "content"]);
         git(&seed, &["commit", "-m", "initial"]);
         git(
-            &scratch.0,
+            scratch.path(),
             &[
                 "clone",
                 "--bare",
@@ -46,7 +46,7 @@ impl Repository {
         );
         std::fs::create_dir_all(target.parent().unwrap()).unwrap();
         git(
-            &scratch.0,
+            scratch.path(),
             &["clone", remote.to_str().unwrap(), target.to_str().unwrap()],
         );
         let original = git(&target, &["rev-parse", "HEAD"]);
@@ -94,8 +94,18 @@ impl Repository {
         let local = Rc::new(tokio::task::LocalSet::new());
         let manager: Rc<dyn PackageManager> = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {
-                cwd: self.scratch.0.join("cwd").to_string_lossy().into_owned(),
-                agent_dir: self.scratch.0.join("agent").to_string_lossy().into_owned(),
+                cwd: self
+                    .scratch
+                    .path()
+                    .join("cwd")
+                    .to_string_lossy()
+                    .into_owned(),
+                agent_dir: self
+                    .scratch
+                    .path()
+                    .join("agent")
+                    .to_string_lossy()
+                    .into_owned(),
                 settings_manager: settings,
             },
             NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
@@ -120,7 +130,7 @@ impl Repository {
         assert!(
             !self
                 .scratch
-                .0
+                .path()
                 .join("cwd/.maestro/git/github.com/acme/tool")
                 .exists()
         );

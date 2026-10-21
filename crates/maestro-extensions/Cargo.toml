@@ -22,6 +22,7 @@ serde_json.workspace = true
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process = { path = "../maestro-test-process" }
 maestro-credentials = { path = "../maestro-credentials" }
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync"] }

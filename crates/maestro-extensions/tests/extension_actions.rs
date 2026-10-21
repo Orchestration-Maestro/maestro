@@ -336,7 +336,8 @@ fn exec_runs_in_the_extension_directory_unless_overridden() {
     {
         return;
     }
-    let dir = std::env::temp_dir();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let dir = directory.path();
     let runtime = create_extension_runtime::<Local>();
     let (_owner, api) = local_api(runtime, &dir.display().to_string());
     let executor = crate::runtime_support::io_runtime();
