@@ -251,7 +251,7 @@ async fn binding_witness(
         |listener| Box::pin(listener.accept()),
     )
     .await;
-    if host == Some(" ") {
+    if server.stopped.result().now_or_never().is_some() {
         assert!(observed_address.result().now_or_never().is_none());
     } else {
         let actual = host.filter(|host| !host.is_empty()).unwrap_or("127.0.0.1");
