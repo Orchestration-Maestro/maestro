@@ -1873,3 +1873,30 @@ fn maestro_skills_render_the_recorded_escaped_prompt() {
         recorded.expected
     );
 }
+
+/// Skills load in the name order of their directories, whatever order the file system lists.
+#[test]
+fn maestro_skills_load_in_directory_name_order() {
+    let dir = Directory::new();
+    // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
+    for name in ["b", "_x", "a", "C"] {
+        let _ = dir.file(
+            &format!("{name}/SKILL.md"),
+            &format!("---\nname: {name}\ndescription: Order\n---\n"),
+        );
+    }
+    let result = load_skills_from_dir(
+        LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(&dir.0),
+            source: "user",
+        },
+        &NativeResourceOperations,
+    );
+    let names: Vec<_> = result
+        .skills
+        .iter()
+        .map(|skill| skill.name.as_str())
+        .collect();
+    assert_eq!(names, ["C", "_x", "a", "b"]);
+}

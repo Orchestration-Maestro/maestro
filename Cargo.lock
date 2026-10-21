@@ -3548,6 +3548,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-listing"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+]
+
+[[package]]
 name = "maestro-lock"
 version = "0.1.0"
 dependencies = [
@@ -3713,6 +3720,7 @@ name = "maestro-resources"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-listing",
  "maestro-path",
  "maestro-pattern",
  "maestro-request",
@@ -3845,6 +3853,7 @@ dependencies = [
  "maestro-brand",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-listing",
  "maestro-path",
  "maestro-request",
  "maestro-text",
@@ -3897,6 +3906,7 @@ dependencies = [
  "maestro-agent",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-listing",
  "maestro-models",
  "maestro-path",
  "maestro-process",
@@ -3924,6 +3934,7 @@ dependencies = [
  "getrandom 0.4.3",
  "maestro-cancellation",
  "maestro-dependencies",
+ "maestro-listing",
  "maestro-markdown",
  "maestro-path",
  "maestro-process",

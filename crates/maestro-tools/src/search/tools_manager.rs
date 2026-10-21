@@ -473,13 +473,11 @@ fn locate(dir: &str, stem: &str, binary: &str) -> io::Result<PathBuf> {
 }
 
 /// The first regular file named `file_name` below `root`; each directory's entries are visited
-/// in byte order of their names and the last subdirectory found is searched first.
+/// in name order and the last subdirectory found is searched first.
 fn find_binary_recursively(root: &Path, file_name: &str) -> io::Result<Option<PathBuf>> {
     let mut stack = vec![root.to_owned()];
     while let Some(dir) = stack.pop() {
-        let mut entries = std::fs::read_dir(&dir)?.collect::<io::Result<Vec<_>>>()?;
-        entries.sort_by_key(std::fs::DirEntry::file_name);
-        for entry in entries {
+        for entry in maestro_listing::read_dir(&dir)? {
             let kind = entry.file_type()?;
             if kind.is_file() && entry.file_name() == file_name {
                 return Ok(Some(entry.path()));
