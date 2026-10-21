@@ -9,7 +9,7 @@ use support::Workspace;
 fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)]) {
     let workspace = Workspace::new();
     workspace.foundation(&[member]);
-    let directory = workspace.root.join("crates").join(member);
+    let directory = workspace.root.path().join("crates").join(member);
     for (file, contents) in files {
         let path = directory.join(file);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -37,7 +37,7 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
             .collect::<Vec<_>>()
             .join("\n"))
     };
-    assert_eq!(check_workspace(&workspace.root), result);
+    assert_eq!(check_workspace(workspace.root.path()), result);
 }
 
 #[test]

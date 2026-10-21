@@ -569,7 +569,7 @@ exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
-`maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
+`maestro-chat`, `maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
 `maestro-resources`, `maestro-test-conventions` and `maestro-tooling`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.
