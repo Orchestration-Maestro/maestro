@@ -578,9 +578,7 @@ pub fn run(group: &str) {
         .filter(|c| c.input.test == group)
         .collect::<Vec<_>>();
     assert!(!cases.is_empty());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime_support::runtime();
     for case in cases {
         tokio::task::LocalSet::new().block_on(&runtime, run_case(case));
     }

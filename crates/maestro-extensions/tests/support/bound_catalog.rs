@@ -179,7 +179,7 @@ pub fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers()
     let account = get_oauth_provider("p").unwrap();
     assert_eq!(account.id(), "p");
     assert_eq!(account.name(), "Account label");
-    let executor = super::action_checks::executor();
+    let executor = crate::runtime_support::runtime();
     let stream_model = model.read().unwrap().clone();
     executor.block_on(async {
         exercise_account(&account).await;
@@ -318,7 +318,7 @@ fn request_variants(
         }
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
-        match super::action_checks::executor()
+        match crate::runtime_support::runtime()
             .block_on(registry.get_api_key_and_headers(&model, &Values))
         {
             maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {

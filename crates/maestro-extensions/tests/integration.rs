@@ -24,6 +24,10 @@ mod support;
 mod local_support;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[path = "support/runtime.rs"]
+mod runtime_support;
+
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "support/model.rs"]
 mod model_support;
 

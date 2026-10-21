@@ -1218,9 +1218,7 @@ fn opaque_native_payloads_keep_key_order_and_zero_bits() {
 /// Default command storage can carry a facade to a native registration worker.
 #[test]
 fn default_command_registers_a_tool_off_thread() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime_support::runtime();
     let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
     let owner = runtime
         .block_on(maestro_extensions::load_extension_from_factory::<
@@ -1246,11 +1244,7 @@ fn default_command_registers_a_tool_off_thread() {
     );
     assert!(runner.get_all_registered_tools().is_empty());
     std::thread::spawn(move || {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(call)
-            .unwrap();
+        crate::runtime_support::runtime().block_on(call).unwrap();
     })
     .join()
     .unwrap();
