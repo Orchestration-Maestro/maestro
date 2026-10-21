@@ -30,7 +30,6 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Expected endpoint paths, owned by the native request observations.
-#[cfg(not(target_arch = "wasm32"))]
 const EXPECTED_PATHS: [(&str, &str); 6] = [
     (PROTOCOLS[0].api, "/v1/messages"),
     (PROTOCOLS[1].api, "/v1/chat/completions"),

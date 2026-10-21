@@ -1,55 +1,198 @@
 {
   "flow": [
-    {"originator":null,"verifier":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8","state":"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff","url":"https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator=maestro"},
-    {"originator":"maestro","verifier":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8","state":"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff","url":"https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator=maestro"},
-    {"originator":"","verifier":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8","state":"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff","url":"https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator="},
-    {"originator":"x +&=😀","verifier":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8","state":"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff","url":"https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator=x+%2B%26%3D%F0%9F%98%80"}
+    {
+      "originator": null,
+      "verifier": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "state": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+      "url": "https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator=maestro"
+    },
+    {
+      "originator": "maestro",
+      "verifier": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "state": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+      "url": "https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator=maestro"
+    },
+    {
+      "originator": "",
+      "verifier": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "state": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+      "url": "https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator="
+    },
+    {
+      "originator": "x +&=😀",
+      "verifier": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "state": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+      "url": "https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email+offline_access&code_challenge=6oZqdX5MOLq_qBJ8vppAnT4fk6AP8UiP9zX8-Rev_9A&code_challenge_method=S256&state=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff&id_token_add_organizations=true&codex_cli_simplified_flow=true&originator=x+%2B%26%3D%F0%9F%98%80"
+    }
   ],
   "decode": [
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s","expected":"acct_123"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX1=.s","expected":"acct_123"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi6SJ9fQ==.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiw6nnjKvwn5iAIn19.s","expected":"é猫😀"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi4KC-In19.s","expected":"࠾"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi4KC_In19.s","expected":"࠿"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi4KC+In19.s","expected":"࠾"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0.s","expected":"acct_123"},
-    {"token":"h. \t\n<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s","expected":"acct_123"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi!.s","expected":null},
-    {"token":"h.eA==","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s.x","expected":null},
-    {"token":"h.@.s","expected":null},
-    {"token":"h.ZmFrZQ==.s","expected":null},
-    {"token":"h.bnVsbA==.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiXHVkODAwIn19.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiXHUwMGU5In19.s","expected":"é"}
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s",
+      "expected": "acct_123"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX1=.s",
+      "expected": "acct_123"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi6SJ9fQ==.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiw6nnjKvwn5iAIn19.s",
+      "expected": "é猫😀"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi4KC-In19.s",
+      "expected": "࠾"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi4KC_In19.s",
+      "expected": "࠿"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi4KC+In19.s",
+      "expected": "࠾"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0.s",
+      "expected": "acct_123"
+    },
+    {
+      "token": "h. \t\n<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s",
+      "expected": "acct_123"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoi!.s",
+      "expected": null
+    },
+    {
+      "token": "h.eA==",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.s.x",
+      "expected": null
+    },
+    {
+      "token": "h.@.s",
+      "expected": null
+    },
+    {
+      "token": "h.ZmFrZQ==.s",
+      "expected": null
+    },
+    {
+      "token": "h.bnVsbA==.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiXHVkODAwIn19.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiXHUwMGU5In19.s",
+      "expected": "é"
+    }
   ],
   "account": [
-    {"token":"h..s","expected":null},
-    {"token":"h.W10=.s","expected":null},
-    {"token":"h.Nw==.s","expected":null},
-    {"token":"h.e30=.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOm51bGx9.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOiJ4In0=.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOlsieCJdfQ==.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiIn19.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiICJ9fQ==.s","expected":" "},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjo3fX0=.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjpbIngiXX19.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjpudWxsfX0=.s","expected":null},
-    {"token":".<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.","expected":"acct_123"},
-    {"token":"h.<fake-account-prefix>dGgiOm51bGwsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X2FjY291bnRfaWQiOiJsYXN0In19.s","expected":"last"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZmlyc3QifSwiaHR0cHM6Ly9hcGkub3BlbmFpLmNvbS9hdXRoIjpudWxsfQ==.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZmlyc3QiLCJjaGF0Z3B0X2FjY291bnRfaWQiOm51bGx9fQ==.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjp0cnVlfX0=.s","expected":null},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjp7IngiOjF9fX0=.s","expected":null}
+    {
+      "token": "h..s",
+      "expected": null
+    },
+    {
+      "token": "h.W10=.s",
+      "expected": null
+    },
+    {
+      "token": "h.Nw==.s",
+      "expected": null
+    },
+    {
+      "token": "h.e30=.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOm51bGx9.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOiJ4In0=.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOlsieCJdfQ==.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiIn19.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiICJ9fQ==.s",
+      "expected": " "
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjo3fX0=.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjpbIngiXX19.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjpudWxsfX0=.s",
+      "expected": null
+    },
+    {
+      "token": ".<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF8xMjMifX0=.",
+      "expected": "acct_123"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOm51bGwsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X2FjY291bnRfaWQiOiJsYXN0In19.s",
+      "expected": "last"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZmlyc3QifSwiaHR0cHM6Ly9hcGkub3BlbmFpLmNvbS9hdXRoIjpudWxsfQ==.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZmlyc3QiLCJjaGF0Z3B0X2FjY291bnRfaWQiOm51bGx9fQ==.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjp0cnVlfX0=.s",
+      "expected": null
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjp7IngiOjF9fX0=.s",
+      "expected": null
+    }
   ],
   "unread_account": [
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiXFx1MDBlOSJ9fQ==.s","expected":"\\u00e9"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjpmYWxzZSwiY2hhdGdwdF9hY2NvdW50X2lkIjoibGFzdCJ9fQ==.s","expected":"last"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9cdTAwNjFjY291bnRfaWQiOiJvayJ9fQ==.s","expected":"ok"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoib2sifSwidW51c2VkIjpbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbWzBdXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXX0=.s","expected":"ok"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoib2sifSwiXHVkODAwIjowfQ==.s","expected":"ok"},
-    {"token":"h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoib2sifSwidW51c2VkIjoxZTQwMH0=.s","expected":"ok"}
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiXFx1MDBlOSJ9fQ==.s",
+      "expected": "\\u00e9"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjpmYWxzZSwiY2hhdGdwdF9hY2NvdW50X2lkIjoibGFzdCJ9fQ==.s",
+      "expected": "last"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9cdTAwNjFjY291bnRfaWQiOiJvayJ9fQ==.s",
+      "expected": "ok"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoib2sifSwidW51c2VkIjpbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbWzBdXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXX0=.s",
+      "expected": "ok"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoib2sifSwiXHVkODAwIjowfQ==.s",
+      "expected": "ok"
+    },
+    {
+      "token": "h.<fake-account-prefix>dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoib2sifSwidW51c2VkIjoxZTQwMH0=.s",
+      "expected": "ok"
+    }
   ]
 }
