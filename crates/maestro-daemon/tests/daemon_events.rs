@@ -145,11 +145,12 @@ fn context_directories() -> std::path::PathBuf {
 /// Builds the background workspace without admitting the process's new directory.
 fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
     let config = Config::default();
-    let (launch, _) = launch_inputs(&[], support::manifest_cache());
+    let (launch, event_rx) = launch_inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &config,
         (|| 0) as fn() -> u128,
         launch,
+        event_rx,
         maestro_daemon::api::event_hub::EventHub::default(),
     );
     let state = &mut app.state;
@@ -679,4 +680,24 @@ fn clipboard_feedback_expires_at_its_deadline_and_disabling_clears_it() {
     });
     assert!(app.state.copy_feedback.is_none());
     assert!(app.copy_feedback_deadline.is_none());
+}
+
+#[test]
+fn daemon_internal_event_drain_limits_work_per_tick() {
+    let mut app = context_app(std::env::temp_dir(), false);
+    let (sender, receiver) = mpsc::channel(65);
+    app.launch.events = sender;
+    app.event_rx = receiver;
+    for index in 0..=64 {
+        app.launch
+            .events
+            .try_send(AppEvent::UpdateReady {
+                version: format!("2.0.{index}"),
+                install_command: "maestro install".into(),
+            })
+            .unwrap();
+    }
+    assert!(app.drain_internal_events());
+    assert_eq!(app.state.update_available.as_deref(), Some("2.0.63"));
+    assert!(app.event_rx.try_recv().is_ok());
 }

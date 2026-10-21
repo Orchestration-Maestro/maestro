@@ -20,7 +20,7 @@ use tokio::sync::{Notify, mpsc};
 type TestApp = App<fn() -> u128>;
 
 /// Supplies a daemon without launching any pane process.
-fn test_app() -> (TestApp, mpsc::Receiver<AppEvent>) {
+fn test_app() -> TestApp {
     let (events, receiver) = mpsc::channel(8);
     let launch = PaneLaunchInputs {
         setup_entry: PtySetupEntry {
@@ -41,6 +41,7 @@ fn test_app() -> (TestApp, mpsc::Receiver<AppEvent>) {
         &Config::default(),
         (|| 0) as fn() -> u128,
         launch,
+        receiver,
         EventHub::default(),
     );
     app.state
@@ -50,7 +51,7 @@ fn test_app() -> (TestApp, mpsc::Receiver<AppEvent>) {
     support::populate_terminals(&mut app.state);
     app.state.active = Some(0);
     support::assert_identity_invariants(&app.state);
-    (app, receiver)
+    app
 }
 
 /// A command that produces two complete lines.
@@ -64,7 +65,7 @@ fn command() -> TabBarRightEntryConfig {
 
 #[test]
 fn daemon_tab_bar_command_events_render_only_when_visible_output_changes() {
-    let (mut app, _) = test_app();
+    let mut app = test_app();
     app.configure_tab_bar_status(&[command()], " ");
     let generation = app.tab_bar_status_generation();
     for (generation, output, changed) in [
@@ -84,7 +85,7 @@ fn daemon_tab_bar_command_events_render_only_when_visible_output_changes() {
 
 #[test]
 fn daemon_stale_command_result_does_not_replace_reloaded_status() {
-    let (mut app, _) = test_app();
+    let mut app = test_app();
     app.configure_tab_bar_status(&[command()], " ");
     let generation = app.tab_bar_status_generation();
     app.configure_tab_bar_status(
@@ -111,7 +112,7 @@ fn daemon_in_flight_command_has_no_second_deadline() {
         .build()
         .unwrap()
         .block_on(async {
-            let (mut app, _events) = test_app();
+            let mut app = test_app();
             app.configure_tab_bar_status(&[command()], " ");
             assert!(app.next_tab_bar_status_deadline().is_some());
             app.handle_tab_bar_status_tasks(Instant::now());
@@ -121,7 +122,7 @@ fn daemon_in_flight_command_has_no_second_deadline() {
 
 #[test]
 fn daemon_datetime_refresh_updates_its_segment_once_per_deadline() {
-    let (mut app, _) = test_app();
+    let mut app = test_app();
     app.configure_tab_bar_status(
         &[TabBarRightEntryConfig::Datetime {
             format: "%Y-%m-%d %H:%M:%S".into(),
@@ -140,10 +141,10 @@ fn daemon_datetime_refresh_updates_its_segment_once_per_deadline() {
 #[test]
 fn tab_status_command_reports_its_sanitized_last_line() {
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    let (mut app, mut events) = test_app();
+    let mut app = test_app();
     app.configure_tab_bar_status(&[command()], " ");
     app.handle_tab_bar_status_tasks(Instant::now());
-    let event = events.recv().await.unwrap();
+    let event = app.event_rx.recv().await.unwrap();
     assert!(
         matches!(&event, AppEvent::TabBarCommandFinished { generation, segment_index: 0, result: Ok(Some(output)) } if *generation == app.tab_bar_status_generation() && output == "final")
     );
@@ -159,7 +160,7 @@ fn tab_status_command_reports_its_sanitized_last_line() {
 #[test]
 fn tab_status_command_drains_large_output_and_keeps_the_last_line() {
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    let (mut app, mut events) = test_app();
+    let mut app = test_app();
     app.configure_tab_bar_status(
         &[TabBarRightEntryConfig::Command {
             command: "head -c 5000 /dev/zero | tr '\\0' x; printf '\\nREADY\\n'".into(),
@@ -170,7 +171,7 @@ fn tab_status_command_drains_large_output_and_keeps_the_last_line() {
     );
     app.handle_tab_bar_status_tasks(Instant::now());
     assert!(
-        matches!(events.recv().await.unwrap(), AppEvent::TabBarCommandFinished { result: Ok(Some(output)), .. } if output == "READY")
+        matches!(app.event_rx.recv().await.unwrap(), AppEvent::TabBarCommandFinished { result: Ok(Some(output)), .. } if output == "READY")
     );
 
     });
@@ -201,7 +202,7 @@ async fn check_descendant_reload() {
             .success()
     );
     let reader = tokio::task::spawn_blocking(move || std::fs::read_to_string(started).unwrap());
-    let (mut app, mut events) = test_app();
+    let mut app = test_app();
     app.configure_tab_bar_status(&[TabBarRightEntryConfig::Command {
         command: format!("sh -c 'printf \"%s\\n\" \"$$\" > \"{}/started\"; read x < \"{}\"; printf survived > \"{}\"' & wait", root.display(), gate.display(), survived.display()),
         interval_seconds: 5,
@@ -228,12 +229,12 @@ async fn check_descendant_reload() {
         "status command descendant survived reload"
     );
     assert!(matches!(
-        events.try_recv(),
+        app.event_rx.try_recv(),
         Err(mpsc::error::TryRecvError::Empty)
     ));
-    drop(app);
+    drop(app.launch);
     assert!(
-        events.recv().await.is_none(),
+        app.event_rx.recv().await.is_none(),
         "cancelled command published a result"
     );
     std::fs::remove_dir_all(root).unwrap();
@@ -282,4 +283,40 @@ fn local_datetime_observes_supplied_timezone_inside_runtime() {
             String::from_utf8_lossy(&output.stderr)
         );
     }
+}
+
+#[test]
+fn internal_drain_retains_status_and_bell_render_impact() {
+    let mut app = test_app();
+    app.configure_tab_bar_status(&[command()], " ");
+    app.launch
+        .events
+        .try_send(AppEvent::TabBarCommandFinished {
+            generation: app.tab_bar_status_generation(),
+            segment_index: 0,
+            result: Ok(None),
+        })
+        .unwrap();
+    app.launch
+        .events
+        .try_send(AppEvent::TerminalBell {
+            pane_id: app.state.topology.workspaces[0].tabs[0].root_pane,
+            count: 1,
+        })
+        .unwrap();
+    assert!(!app.drain_internal_events());
+    assert!(matches!(
+        app.event_rx.try_recv(),
+        Err(mpsc::error::TryRecvError::Empty)
+    ));
+    app.launch
+        .events
+        .try_send(AppEvent::TabBarCommandFinished {
+            generation: app.tab_bar_status_generation(),
+            segment_index: 0,
+            result: Ok(Some("changed".into())),
+        })
+        .unwrap();
+    assert!(app.drain_internal_events());
+    assert!(!app.drain_internal_events());
 }

@@ -6,7 +6,22 @@ use std::time::Instant;
 /// Duration of a clipboard acknowledgement, independent of notification toast policy.
 const COPY_FEEDBACK_DURATION: std::time::Duration = std::time::Duration::from_secs(2);
 
+/// Maximum internal observations processed in one responsive loop pass.
+const APP_EVENT_DRAIN_LIMIT: usize = 64;
+
 impl<C: FnMut() -> u128> App<C> {
+    /// Drains one bounded internal-event batch without starving the next loop operation.
+    pub fn drain_internal_events(&mut self) -> bool {
+        let mut changed = false;
+        for _ in 0..APP_EVENT_DRAIN_LIMIT {
+            let Ok(event) = self.event_rx.try_recv() else {
+                break;
+            };
+            changed |= self.handle_internal_event_with_render_impact(event);
+        }
+        changed
+    }
+
     /// Records clipboard feedback without changing any agent notification.
     pub(crate) fn show_clipboard_feedback(&mut self) {
         if !self.state.toast_config.clipboard.enabled {

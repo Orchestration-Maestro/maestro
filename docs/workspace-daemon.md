@@ -622,3 +622,9 @@ Clipboard write observations retain a separate “copied to clipboard” acknowl
 for two seconds. Disabling clipboard feedback clears its content and deadline.
 Feedback never replaces an agent notification; the daemon scheduler expires it
 at its deadline. Host clipboard emission remains with the terminal effect owner.
+
+`App::new` consumes the matching internal-event receiver alongside the shared
+launch inputs. One drain processes at most sixty-four observations and retains
+later events for the next pass. Render impact comes from the same event dispatch
+used by direct callers: bells alone and unchanged or stale status output do not
+request a render.

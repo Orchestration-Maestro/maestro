@@ -14,27 +14,39 @@ use crate::{events::AppEvent, settings::model::ToastDelivery};
 impl<C: FnMut() -> u128> App<C> {
     /// Applies a background observation through the retained state transition owner.
     pub fn handle_internal_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
+        self.apply_internal_event(event).0
+    }
+
+    /// Applies one observation and reports its visible render impact.
+    pub fn handle_internal_event_with_render_impact(&mut self, event: AppEvent) -> bool {
+        self.apply_internal_event(event).1
+    }
+
+    /// Single dispatch owner shared by state callers and the bounded daemon drain.
+    fn apply_internal_event(&mut self, event: AppEvent) -> (Vec<PaneStateUpdate>, bool) {
         if let AppEvent::TabBarCommandFinished {
             generation,
             segment_index,
             result,
         } = event
         {
-            if self.handle_tab_bar_command_finished(generation, segment_index, result) {
+            let changed = self.handle_tab_bar_command_finished(generation, segment_index, result);
+            if changed {
                 self.launch.render_dirty.request_generic();
                 self.launch.render_notify.notify_one();
             }
-            return Vec::new();
+            return (Vec::new(), changed);
         }
         if let AppEvent::ClipboardWrite { .. } = event {
             self.show_clipboard_feedback();
             self.launch.render_dirty.request_generic();
             self.launch.render_notify.notify_one();
-            return Vec::new();
+            return (Vec::new(), true);
         }
+        let changed = !matches!(&event, AppEvent::TerminalBell { .. });
         self.publish_pane_process_exit(&event);
         if self.respawn_shell_after_exit(&event) {
-            return Vec::new();
+            return (Vec::new(), true);
         }
         self.emit_pane_exit(&event);
         let overlay_exit = self.take_overlay_before_exit(&event);
@@ -47,7 +59,7 @@ impl<C: FnMut() -> u128> App<C> {
         if let Some(exit) = overlay_exit {
             self.restore_overlay_after_exit(exit);
         }
-        updates
+        (updates, changed)
     }
 
     /// Resolves a workspace's label from its first root process before stale metadata.
