@@ -18,10 +18,6 @@ use runtime::block_on;
 struct Nothing;
 
 impl ConfigValueOperations for Nothing {
-    fn environment(&self, _name: &str) -> Option<String> {
-        None
-    }
-
     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
         None
     }

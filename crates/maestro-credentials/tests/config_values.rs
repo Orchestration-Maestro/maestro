@@ -3,60 +3,70 @@
 mod tests {
     use maestro_credentials::*;
     use std::cell::RefCell;
-    use std::collections::HashMap;
     use std::sync::Mutex;
 
-    #[cfg(unix)]
-    use crate::support::PROCESS_CREATION;
-    use crate::support::SERIAL;
-    /// Controlled environment, outputs and executed commands.
+    use crate::support::{SERIAL, TempDir, is_child, run_child};
+    /// Controlled outputs and executed commands.
     #[derive(Default)]
     struct Operations {
-        /// Exact environment keys.
-        env: RefCell<HashMap<String, String>>,
         /// Next command output.
         output: RefCell<Option<Vec<u8>>>,
         /// Commands executed in order.
         calls: RefCell<Vec<String>>,
     }
     impl ConfigValueOperations for Operations {
-        fn environment(&self, name: &str) -> Option<String> {
-            self.env.borrow().get(name).cloned()
-        }
         fn execute(&self, command: &str) -> Option<Vec<u8>> {
             self.calls.borrow_mut().push(command.to_owned());
             self.output.borrow().clone()
         }
     }
+    /// Run the named test again in a child with only `envs` in its environment.
+    fn in_environment(test: &str, envs: &[(&str, &str)]) {
+        let dir = TempDir::new(test);
+        let process =
+            maestro_test_process::TestProcess::named(format!("config_values::tests::{test}"));
+        run_child(process.unwrap().env_clear().case("*"), dir.root(), envs);
+    }
+    /// Values of `KEY`, one child each; `None` leaves it unset.
+    const KEY_VALUES: [Option<&str>; 5] =
+        [None, Some("first"), Some("second"), Some(""), Some(" \n ")];
     #[test]
     fn config_values_choose_exact_environment_or_literal() {
+        if !is_child() {
+            for (index, value) in KEY_VALUES.into_iter().enumerate() {
+                let index = index.to_string();
+                let mut envs = vec![("MAESTRO_CONFIG_CASE", index.as_str())];
+                envs.extend(value.map(|value| ("KEY", value)));
+                in_environment("config_values_choose_exact_environment_or_literal", &envs);
+            }
+            return;
+        }
+        let case = std::env::var("MAESTRO_CONFIG_CASE").unwrap();
+        let value = KEY_VALUES[case.parse::<usize>().unwrap()].filter(|value| !value.is_empty());
         let operations = Operations::default();
         for resolve in [resolve_config_value, resolve_config_value_uncached] {
-            for literal in ["", "literal", " key", "KEY"] {
+            for literal in ["", "literal", " key"] {
                 assert_eq!(resolve(literal, &operations).as_deref(), Some(literal));
             }
-            for value in ["first", "second", "", " \n "] {
-                operations
-                    .env
-                    .borrow_mut()
-                    .insert("KEY".into(), value.into());
-                assert_eq!(
-                    resolve("KEY", &operations).as_deref(),
-                    Some(if value.is_empty() { "KEY" } else { value })
-                );
-                assert_eq!(resolve("key", &operations).as_deref(), Some("key"));
-            }
-            operations.env.borrow_mut().clear();
+            assert_eq!(
+                resolve("KEY", &operations).as_deref(),
+                Some(value.unwrap_or("KEY"))
+            );
+            // Windows matches variable names without regard to case.
+            let folded = value.filter(|_| cfg!(windows)).unwrap_or("key");
+            assert_eq!(resolve("key", &operations).as_deref(), Some(folded));
         }
         assert!(operations.calls.borrow().is_empty());
     }
     #[test]
     fn config_prefix_removes_only_one_bang() {
+        if !is_child() {
+            return in_environment(
+                "config_prefix_removes_only_one_bang",
+                &[("!!command", "wrong")],
+            );
+        }
         let operations = Operations::default();
-        operations
-            .env
-            .borrow_mut()
-            .insert("!!command".into(), "wrong".into());
         *operations.output.borrow_mut() = Some(b"key".to_vec());
         assert_eq!(
             resolve_config_value_uncached("!!command", &operations).as_deref(),
@@ -161,9 +171,6 @@ mod tests {
         output: Option<Vec<u8>>,
     }
     impl ConfigValueOperations for GatedOperations {
-        fn environment(&self, _name: &str) -> Option<String> {
-            unreachable!("command resolution must not read environment")
-        }
         fn execute(&self, _command: &str) -> Option<Vec<u8>> {
             if self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
                 self.entered.send(()).unwrap();
@@ -471,24 +478,11 @@ mod tests {
     /// Reinvoke one test with isolated environment and working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
-        let command = maestro_test_process::TestProcess::current(name)
-            .unwrap()
-            .nocapture()
-            .case("*")
-            .env("MAESTRO_CONFIG_VALUE", "inherited-value")
-            .current_dir(root)
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
-        let child = {
-            let _creation = PROCESS_CREATION.write().unwrap();
-            command.spawn().unwrap()
-        };
-        let output = child.wait_with_output().unwrap();
-        assert!(
-            output.status.success(),
-            "{}\n{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
+        let process = maestro_test_process::TestProcess::current(name).unwrap();
+        run_child(
+            process.case("*"),
+            root,
+            &[("MAESTRO_CONFIG_VALUE", "inherited-value")],
         );
     }
     /// Disposable fixture directory whose contents belong to this test.

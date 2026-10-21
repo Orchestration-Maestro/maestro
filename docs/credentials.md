@@ -122,7 +122,8 @@ operations bypass that cache without replacing it.
 retains successful empty strings and stops at the first resolution error. Both
 preserve literal header names and input insertion order, including `__proto__`.
 
-Callers supply `ConfigValueOperations` for environment and command effects.
+Each call reads environment names from the process environment.
+Callers supply `ConfigValueOperations` for command runs.
 Native callers can use `ProcessConfigValueOperations` with a lazy configured-shell
 selector. Unix uses the default shell without reading that selector. Windows
 tries the configured shell first and falls back after selection, infrastructure

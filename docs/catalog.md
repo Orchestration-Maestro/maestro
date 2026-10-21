@@ -146,8 +146,9 @@ Configured values have three forms:
 
 Configured values selected for a request resolve at request time. The catalog
 adds no cache: it asks the supplied operations for commands afresh on success or
-failure, and reads environment values on each call. Applications
-that want additional caching can supply their own `ConfigValueOperations`.
+failure, and reads environment values from the process on each call.
+Applications that want additional caching can supply their own
+`ConfigValueOperations`.
 See [credentials](credentials.md#configured-values) for delegated value,
 shell and stored-credential behavior. `clear_api_key_cache` is the callable alias
 of the shared credentials command-cache clear, not a catalog cache.

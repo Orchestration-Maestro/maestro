@@ -29,9 +29,6 @@ struct Controlled {
     windows: bool,
 }
 impl ConfigValueOperations for Controlled {
-    fn environment(&self, _: &str) -> Option<String> {
-        None
-    }
     fn execute(&self, command: &str) -> Option<Vec<u8>> {
         routed(
             self.windows,

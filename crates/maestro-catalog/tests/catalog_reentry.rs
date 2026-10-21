@@ -405,10 +405,6 @@ struct EffectOperations<'a> {
     output: Option<&'a str>,
 }
 impl maestro_credentials::ConfigValueOperations for EffectOperations<'_> {
-    fn environment(&self, name: &str) -> Option<String> {
-        (self.effect)(name);
-        None
-    }
     fn execute(&self, command: &str) -> Option<Vec<u8>> {
         (self.effect)(command);
         self.output.map(|s| s.as_bytes().to_vec())
@@ -530,7 +526,7 @@ fn credential_and_metadata_effects_can_reenter_catalog() {
     assert!(registry.has_configured_auth(&model).unwrap());
     assert!(
         registry
-            .get_provider_auth_status("metadata", &request_support::Operations::default())
+            .get_provider_auth_status("metadata")
             .unwrap()
             .configured
     );
@@ -556,9 +552,6 @@ fn credential_and_metadata_effects_can_reenter_catalog() {
         key.as_deref().eq(&Some("resolved")),
         "configured command result"
     );
-    registry
-        .get_provider_auth_status("metadata", &operations)
-        .unwrap();
     assert!(registry.find("configuration", "nested").is_some());
     metadata_error_stops_effects(&registry);
 }
@@ -880,22 +873,13 @@ fn extraction_reenters(registry: &Arc<ModelRegistry>) {
     assert!(registry.find("extraction", "nested").is_some());
 }
 
-/// Credential errors stop later configured-value effects.
+/// Credential errors stop metadata before the configured key is read.
 fn metadata_error_stops_effects(registry: &ModelRegistry) {
     registry
         .auth_storage()
         .set_fallback_resolver(|_| Err(dynamic::account_failure("fallback refused")));
-    let never = |_: &str| panic!("credential failure must stop configured effects");
     dynamic::assert_account_failure(
-        &registry
-            .get_provider_auth_status(
-                "metadata",
-                &EffectOperations {
-                    effect: &never,
-                    output: None,
-                },
-            )
-            .unwrap_err(),
+        &registry.get_provider_auth_status("metadata").unwrap_err(),
         "fallback refused",
     );
 }
