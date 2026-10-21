@@ -391,6 +391,18 @@ and release it before waiting for completion. Pipe both output streams explicitl
 `spawn` otherwise retains inherited stdin. Live pipe-closure transactions use the
 single-test isolation described above, not a process-wide owner lock.
 
+### Compile cache warm-up
+
+Shared CI restores a compiled-cache snapshot in each Linux job, but only pushes
+to `main` save one. `.github/workflows/warm-cache.yml` runs on every push to
+`main` and calls the shared workflow with `warm-cache: true`. That builds the
+full coverage test graph without running tests and saves the snapshot that
+merge-queue test shards restore. The warm-up is never a required check, and a
+newer push cancels a running one. Its `uses:` pin moves with each shared-CI
+release re-pin
+([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
+A stale pin fails nothing; it only costs snapshot hits.
+
 ## Fuzzing
 
 `fuzz/` holds coverage-guided fuzz targets for the parsers that read untrusted
