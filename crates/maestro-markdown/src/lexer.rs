@@ -1,5 +1,6 @@
 //! Document block dispatch and first-wins reference ownership.
 mod blocks;
+mod frames;
 mod quote;
 use crate::parse::Extension;
 use crate::{Alignment, BlockToken, Cell, Definition, Document, Kind, MarkedOptions, Node, Table};
@@ -8,7 +9,7 @@ use crate::{
     inline::ScopeKey,
     rules,
     source::{ScopeSource, Source},
-    tokenizer::{self, capture},
+    tokenizer,
 };
 use blocks::BlockTokens;
 use maestro_text::is_whitespace_scalar;
@@ -96,11 +97,7 @@ impl<'a, E> Lexer<'a, E> {
         };
         let BlockToken { raw, kind, text } = token;
         let consumed = raw.len();
-        output.push(Node {
-            range: source.extent(0..consumed),
-            authored: raw,
-            kind: Kind::CustomBlock(kind, text),
-        });
+        output.push(source.node(0..consumed, Kind::CustomBlock(kind, text)));
         Some(consumed)
     }
 
@@ -109,11 +106,11 @@ impl<'a, E> Lexer<'a, E> {
     fn extension_start(&mut self, source: &Source<'_>) -> usize {
         let (whole, offset) = source.whole();
         let source = source.text;
-        if !self.top || self.tokenizer.is_none() {
+        if self.tokenizer.is_none() {
             return source.len();
         }
         let mut begin = source.chars().next().map_or(0, char::len_utf8);
-        while begin < source.len() {
+        while begin <= source.len() {
             let Some(tokenizer) = self.tokenizer.as_mut() else {
                 break;
             };
@@ -134,7 +131,7 @@ impl<'a, E> Lexer<'a, E> {
             if let Some(range) = barrier {
                 begin = range.end - offset;
             } else {
-                self.clipped = true;
+                self.clipped = start < source.len();
                 return start;
             }
         }
@@ -147,14 +144,17 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Register a recognized definition only once, reporting whether it is new.
-    fn definition(&mut self, source: &Source<'_>, matched: &regress::Match) -> bool {
-        let id = reference_key(capture(source.text, matched, 1));
-        let destination = capture(source.text, matched, 2);
+    fn definition(&mut self, source: &Source<'_>, matched: &rules::definition::Definition) -> bool {
+        let id = reference_key(&source.text[matched.label.clone()]);
+        let destination = &source.text[matched.destination.clone()];
         let destination = destination
             .strip_prefix('<')
             .and_then(|text| text.strip_suffix('>'))
             .unwrap_or(destination);
-        let title = capture(source.text, matched, 3);
+        let title = matched
+            .title
+            .as_ref()
+            .map_or("", |range| &source.text[range.clone()]);
         let title = title.get(1..title.len().saturating_sub(1)).unwrap_or("");
         let Entry::Vacant(entry) = self.definitions.entry(id) else {
             return false;
@@ -168,32 +168,28 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Capture setext headings before selecting top-level paragraphs or item text.
     fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        let heading = rules::block_lheading(self.options).and_then(|rule| rule.find(source.text));
-        let limit = if heading.is_none() {
+        let recognized = rules::paragraph::Recognizer::new(self.options).finish(source.text);
+        let limit = if recognized.heading.is_none() {
             self.extension_start(source)
         } else {
             source.text.len()
         };
-        let window = source.prefix(limit);
-        let (end, content, kind) = if let Some(matched) = heading {
-            let level = if capture(source.text, &matched, 2).starts_with('=') {
-                1
-            } else {
-                2
-            };
-            let label = capture(source.text, &matched, 1).to_owned();
+        let (end, content, kind) = if let Some(heading) = recognized.heading {
+            let label = source.text[heading.content.clone()].to_owned();
             (
-                matched.end(),
-                matched.group(1)?,
-                Kind::Heading(level, Vec::new(), label),
+                heading.consumed,
+                heading.content,
+                Kind::Heading(heading.level, Vec::new(), label),
             )
         } else if self.top {
-            let matched = rules::block_paragraph(self.options)?.find(window.text)?;
-            (
-                matched.end(),
-                matched.group(1)?,
-                Kind::Paragraph(Vec::new()),
-            )
+            let end = if limit == source.text.len() {
+                recognized.paragraph?
+            } else {
+                rules::paragraph::Recognizer::new(self.options)
+                    .finish(&source.text[..limit])
+                    .paragraph?
+            };
+            (end, 0..end, Kind::Paragraph(Vec::new()))
         } else {
             let end = source.text.find('\n').unwrap_or(source.text.len());
             (end, 0..end, Kind::Inline(Vec::new()))
@@ -211,12 +207,12 @@ impl<'a, E> Lexer<'a, E> {
         if self.options == MarkedOptions::Documentation {
             return None;
         }
-        let matched = rules::block_table(self.options)?.find(source.text)?;
-        let delimiter = capture(source.text, &matched, 2);
+        let matched = rules::table::Recognizer::new(self.options).finish(source.text)?;
+        let delimiter = &source.text[matched.delimiter];
         if !delimiter.contains(['|', ':']) {
             return None;
         }
-        let headers = helpers::cell_ranges(capture(source.text, &matched, 1));
+        let headers = helpers::cell_ranges(&source.text[matched.header.clone()]);
         let alignments: Vec<_> = helpers::split_cells(delimiter, None)
             .into_iter()
             .map(|cell| match (cell.starts_with(':'), cell.ends_with(':')) {
@@ -230,9 +226,9 @@ impl<'a, E> Lexer<'a, E> {
             return None;
         }
         let count = headers.len();
-        let header = self.cells(source, matched.group(1)?, count);
+        let header = self.cells(source, matched.header, count);
         let rows = matched
-            .group(3)
+            .body
             .into_iter()
             .flat_map(|range| {
                 lines(&source.text[range.clone()])
@@ -249,11 +245,11 @@ impl<'a, E> Lexer<'a, E> {
             header,
             rows,
             alignments,
-            authored: helpers::rtrim(&source.text[matched.range()], '\n').to_owned(),
+            authored: helpers::rtrim(&source.text[..matched.consumed], '\n').to_owned(),
         };
         Some((
-            matched.end(),
-            source.node(matched.range(), Kind::Table(table)),
+            matched.consumed,
+            source.node(0..matched.consumed, Kind::Table(table)),
         ))
     }
 
@@ -352,6 +348,8 @@ pub(crate) fn reference_id(source: &str) -> String {
 pub(crate) fn lines(source: &str) -> impl Iterator<Item = Range<usize>> {
     let mut offset = 0;
     source.split_inclusive('\n').map(move |line| {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += line.len());
         let start = offset;
         offset += line.len();
         start..offset

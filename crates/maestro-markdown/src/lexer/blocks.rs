@@ -2,14 +2,14 @@
 use super::Lexer;
 use crate::{
     Kind, MarkedOptions, Node, rules,
-    source::{ScopeSource, Source},
+    source::{ScopeSource, Segmented, Source},
     tokenizer,
 };
 
 /// Effective grammar tail, including an invisible retained definition.
 enum Tail {
     /// Last visible block's own raw source when it can reenter a container.
-    Visible(Option<ScopeSource>),
+    Visible(Option<Segmented>),
     /// A browser definition prevents merges with the preceding visible block.
     Definition,
 }
@@ -41,13 +41,19 @@ impl BlockTokens {
     pub(super) fn push(&mut self, source: &Source<'_>, consumed: usize, node: Node) {
         self.tail = Tail::Visible(
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
-                .then(|| source.select(std::iter::once(0..consumed))),
+                .then(|| source.select(std::iter::once(0..consumed)).into()),
         );
         self.nodes.push(node);
     }
 
+    /// Publish a container recognized over retained segmented input.
+    pub(super) fn push_segmented(&mut self, raw: Segmented, node: Node) {
+        self.tail = Tail::Visible(Some(raw));
+        self.nodes.push(node);
+    }
+
     /// Borrow the trailing container's raw source for reentry.
-    pub(super) fn raw(&mut self) -> Option<ScopeSource> {
+    pub(super) fn raw(&mut self) -> Option<Segmented> {
         match &mut self.tail {
             Tail::Visible(raw) => raw.take(),
             Tail::Definition => None,
@@ -133,6 +139,8 @@ impl<E> Lexer<'_, E> {
 
     /// Consume spacing while keeping the visible tail's raw and scope in sync.
     fn space_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         let gap = rules::BLOCK_NEWLINE
             .as_ref()?
             .find(source.text)
@@ -145,7 +153,7 @@ impl<E> Lexer<'_, E> {
             let scope = self
                 .scopes
                 .remove(&(last.range.start, last.range.end, false));
-            last.authored.push_str(&source.text[..1]);
+            last.authored.append(&source.authored(0..1));
             last.range.end = source.extent(0..1).end;
             if let Some(scope) = scope {
                 self.scopes
@@ -153,7 +161,7 @@ impl<E> Lexer<'_, E> {
             }
         }
         if let Tail::Visible(Some(raw)) = &mut output.tail {
-            raw.append(source.select(std::iter::once(0..1)));
+            raw.append(&source.select(std::iter::once(0..1)).into());
         }
         Some(gap.end())
     }
@@ -186,7 +194,9 @@ impl<E> Lexer<'_, E> {
 
     /// Merge literal definitions before registering otherwise first-wins references.
     fn definition_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        let matched = rules::block_def(self.options)?.find(source.text)?;
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
+        let matched = rules::definition::recognize(source.text, self.options)?;
         if output
             .last()
             .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
@@ -194,15 +204,15 @@ impl<E> Lexer<'_, E> {
             self.merge_source(
                 output,
                 source,
-                matched.end(),
-                source.select(std::iter::once(matched.range())),
+                matched.consumed,
+                source.select(std::iter::once(0..matched.consumed)),
             );
         } else if self.definition(source, &matched)
             && matches!(self.options, MarkedOptions::Browser { .. })
         {
             output.tail = Tail::Definition;
         }
-        Some(matched.end())
+        Some(matched.consumed)
     }
 
     /// Join inline operands without reconstructing them from bounding node ranges.
@@ -240,10 +250,10 @@ impl<E> Lexer<'_, E> {
             previous.newline();
         }
         previous.append(body);
-        if !last.authored.ends_with('\n') {
-            last.authored.push('\n');
+        if !last.authored.ends_with_newline() {
+            last.authored.append(&"\n".to_owned().into());
         }
-        last.authored.push_str(&node.authored);
+        last.authored.append(&node.authored);
         last.range.end = node.range.end;
         self.scopes
             .insert((last.range.start, last.range.end, false), previous);

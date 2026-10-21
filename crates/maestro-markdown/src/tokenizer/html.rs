@@ -45,9 +45,7 @@ enum Phase {
 }
 
 /// Source-ordered directive scan, with at most one pending literal tag.
-struct Scanner<'a> {
-    /// Original authored input.
-    source: &'a str,
+struct Scanner {
     /// Entry-point grammar.
     mode: Mode,
     /// Selected delimiter family.
@@ -64,18 +62,66 @@ struct Scanner<'a> {
     phase: Phase,
 }
 
-/// Admit a block directive with the block grammar's optional indentation.
-pub(super) fn block(source: &str) -> Option<Html> {
-    let indent = source.bytes().take_while(|byte| *byte == b' ').count();
-    if indent > 3 {
-        return None;
+/// Retained directive scanning over complete physical lines.
+#[derive(Default)]
+pub(super) struct BlockRecognizer {
+    /// Shared line framing, including incomplete-prefix progress.
+    lines: crate::rules::lines::Cursor,
+    /// Initialized delimiter and semantic payload, absent for a refused opener.
+    scanner: Option<Scanner>,
+    /// Whether the opening physical line has been examined.
+    initialized: bool,
+    /// Whether rejection or a following non-newline fixed the result.
+    stable: bool,
+}
+
+impl BlockRecognizer {
+    /// Supply an extended prefix; return whether later bytes cannot change it.
+    pub(super) fn extend(&mut self, source: &str) -> bool {
+        while !self.stable {
+            let Some(line) = self.lines.next(source) else {
+                break;
+            };
+            self.consume(&source[..line.end]);
+        }
+        self.stable
     }
-    Scanner::new(source, indent, Mode::Block)?.scan()
+
+    /// Settle the operand and transfer the one explicit semantic payload.
+    pub(super) fn finish(&mut self, source: &str) -> Option<Html> {
+        self.extend(source);
+        if !self.stable
+            && let Some(line) = self.lines.finish(source)
+        {
+            self.consume(&source[..line.end]);
+        }
+        self.stable = true;
+        self.scanner.take()?.result()
+    }
+
+    /// Advance the shared directive grammar without reparsing previous lines.
+    fn consume(&mut self, source: &str) {
+        if !self.initialized {
+            self.initialized = true;
+            let indent = source.bytes().take_while(|byte| *byte == b' ').count();
+            self.scanner = (indent <= 3)
+                .then(|| Scanner::new(source, indent, Mode::Block))
+                .flatten();
+        }
+        if let Some(scanner) = &mut self.scanner {
+            scanner.advance(source);
+            self.stable = scanner.phase == Phase::Done;
+        } else {
+            self.stable = true;
+        }
+    }
 }
 
 /// Admit a closed inline directive without changing its source coordinates.
 pub(super) fn inline(source: &str) -> Option<Html> {
-    Scanner::new(source, 0, Mode::Inline)?.scan()
+    let mut scanner = Scanner::new(source, 0, Mode::Inline)?;
+    scanner.advance(source);
+    scanner.result()
 }
 
 /// Whether the caller displays this angle span as text rather than masking HTML.
@@ -123,13 +169,12 @@ impl Directive {
     }
 }
 
-impl<'a> Scanner<'a> {
+impl Scanner {
     /// Bind the original input and its already recognized opening delimiter.
-    fn new(source: &'a str, start: usize, mode: Mode) -> Option<Self> {
+    fn new(source: &str, start: usize, mode: Mode) -> Option<Self> {
         let (directive, width) = Directive::opening(&source[start..], mode)?;
         let cursor = start + width;
         Some(Self {
-            source,
             mode,
             directive,
             cursor,
@@ -141,10 +186,14 @@ impl<'a> Scanner<'a> {
     }
 
     /// Advance monotonically through the original bytes, never parsing an encoded copy.
-    fn scan(mut self) -> Option<Html> {
-        while self.cursor < self.source.len() && self.phase != Phase::Done {
-            let scalar = self.source[self.cursor..].chars().next()?;
+    fn advance(&mut self, source: &str) {
+        while self.cursor < source.len() && self.phase != Phase::Done {
+            let Some(scalar) = source[self.cursor..].chars().next() else {
+                break;
+            };
+            crate::rules::html::charge(scalar.len_utf8());
             if self.phase == Phase::Newlines && scalar != '\n' {
+                self.phase = Phase::Done;
                 break;
             }
             if self.phase == Phase::Newlines {
@@ -155,16 +204,20 @@ impl<'a> Scanner<'a> {
                 self.phase = Phase::Newlines;
             } else if self.tag.is_some() {
                 self.tag_scalar(scalar);
-            } else if self.phase == Phase::Body && self.close() {
+            } else if self.phase == Phase::Body && self.close(source) {
                 self.phase = match self.mode {
                     Mode::Inline => Phase::Done,
                     Mode::Block if self.directive == Directive::Comment => Phase::Tail,
                     Mode::Block => Phase::Newlines,
                 };
             } else {
-                self.literal_scalar(scalar);
+                self.literal_scalar(source, scalar);
             }
         }
+    }
+
+    /// Publish the explicit semantic payload only at the selected final boundary.
+    fn result(mut self) -> Option<Html> {
         self.flush_unclosed();
         if self.mode == Mode::Inline && self.phase != Phase::Done {
             return None;
@@ -181,8 +234,8 @@ impl<'a> Scanner<'a> {
     }
 
     /// Consume an eligible delimiter before ordinary body text.
-    fn close(&mut self) -> bool {
-        let rest = &self.source[self.cursor..];
+    fn close(&mut self, source: &str) -> bool {
+        let rest = &source[self.cursor..];
         let ending = if self.directive == Directive::Comment && self.cursor == self.body_start {
             if rest.starts_with('>') {
                 ">"
@@ -216,17 +269,14 @@ impl<'a> Scanner<'a> {
     }
 
     /// Select literal tags, closing tags and bare less-than spellings at this boundary.
-    fn literal_scalar(&mut self, scalar: char) {
-        match literal(&self.source[self.cursor..]) {
+    fn literal_scalar(&mut self, source: &str, scalar: char) {
+        match literal(&source[self.cursor..]) {
             Some(Literal::Opening) => {
                 self.tag = Some("<".to_owned());
                 self.cursor += 1;
             }
             Some(Literal::Closing(width)) => {
-                append_tag(
-                    &mut self.value,
-                    &self.source[self.cursor..self.cursor + width],
-                );
+                append_tag(&mut self.value, &source[self.cursor..self.cursor + width]);
                 self.cursor += width;
             }
             Some(Literal::Bare) => {
@@ -341,3 +391,6 @@ pub(super) fn literal_mask(source: &str) -> (String, Vec<std::ops::Range<usize>>
     let masked = String::from_utf8(bytes).unwrap_or_else(|_| source.to_owned());
     (masked, spans)
 }
+
+#[cfg(test)]
+mod tests;

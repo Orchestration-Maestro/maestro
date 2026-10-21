@@ -378,7 +378,7 @@ fn append_text(output: &mut Vec<Node>, node: Node, plain_tail: &mut Option<usize
     {
         previous.decoded.push_str(&current.decoded);
         previous.authored.push_str(&current.authored);
-        last.authored.push_str(&node.authored);
+        last.authored.append(&node.authored);
         last.range.end = node.range.end;
         *plain_tail = tail;
         return;

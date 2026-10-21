@@ -107,14 +107,6 @@ fn container_mapping_matches_the_reference_work_shape() {
         assert_eq!(borrowed[1].source_views, 2 * borrowed[0].source_views);
         eprintln!("container {unit:?}: {counts:?}");
     }
-    let counts = [32, 64].map(|n| {
-        measured_containers("> - a\n".to_owned() + &"      p\n> [s]: /y\n".repeat(n) + "e")
-    });
-    assert!(
-        counts[1].list_lines > 3 * counts[0].list_lines,
-        "{counts:?}"
-    );
-    eprintln!("grammar-owned chained reentry: {counts:?}");
 }
 
 /// Compare actual wrong-whole-suffix selection with the borrowed-window control.
@@ -123,7 +115,7 @@ fn measured_suffixes(unit: &str, n: usize, copy: bool) -> super::Work {
     super::WORK.with_borrow_mut(|work| *work = super::Work::default());
     for start in (0..source.text.len()).step_by(unit.len()) {
         if copy {
-            let _piece = source.select(std::iter::once(start..source.text.len()));
+            let _piece = crate::source::ScopeSource::identity(&source.text[start..]);
         } else {
             let _view = source.view(start..source.text.len());
         }
@@ -188,7 +180,7 @@ fn duplicate_definition_keeps_visible_tail() {
 fn raw_list_space_keeps_the_consumed_source_spelling() {
     let document = parse("- a ".into());
     assert_eq!(
-        document.nodes[0].authored,
+        document.nodes[0].authored.to_owned_string(),
         document.source[document.nodes[0].range.clone()]
     );
 }
@@ -225,7 +217,7 @@ fn merged_code_scope_ends_at_consumed_source_prefix() {
     };
     let paragraph = &children[0];
     let scope = &document.scopes[&(paragraph.range.start, paragraph.range.end, false)];
-    assert_eq!(scope.text, "q\ncode");
+    assert_eq!(&*scope.text, "q\ncode");
     assert_eq!(&document.source[paragraph.range.clone()], "q\n    code");
     assert_eq!(scope.native(&(2..6)), Some(8..12));
     assert!(matches!(children[1].kind, Kind::Gap));

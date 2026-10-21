@@ -51,7 +51,7 @@ fn source_framed_images_keep_code_and_document_references() {
         panic!("paragraph")
     };
     let image = &children[0];
-    assert_eq!(image.authored, "![a `[b]` [c][r]][img]");
+    assert_eq!(image.authored.to_owned_string(), "![a `[b]` [c][r]][img]");
     assert_eq!(
         &document.source[image.range.clone()],
         "![a `[b]` [c][r]][img]"
@@ -84,7 +84,7 @@ fn parser_retains_container_source_extents() {
     let Kind::Quote(quote, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
-    assert_eq!(quote[0].authored, "$$x\ny$$");
+    assert_eq!(quote[0].authored.to_owned_string(), "$$x\ny$$");
     assert_eq!(&document.source[quote[0].range.clone()], "$$x\n> y$$");
     let Kind::List(_, items) = &document.nodes[2].kind else {
         panic!("list")
@@ -95,7 +95,10 @@ fn parser_retains_container_source_extents() {
     let Kind::Inline(children) = &item[0].kind else {
         panic!("inline")
     };
-    assert_eq!(item[0].authored, "a \\*b\\* `opaque`\ntail");
+    assert_eq!(
+        item[0].authored.to_owned_string(),
+        "a \\*b\\* `opaque`\ntail"
+    );
     assert!(
         children
             .iter()
@@ -190,7 +193,10 @@ fn mapped_links_retain_source_boundaries_before_escaped_math() {
     };
     for node in children {
         if let Kind::Link(..) = &node.kind {
-            assert_eq!(&document.source[node.range.clone()], node.authored);
+            assert_eq!(
+                &document.source[node.range.clone()],
+                node.authored.to_owned_string()
+            );
         }
     }
 }

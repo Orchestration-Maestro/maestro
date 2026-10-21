@@ -157,7 +157,7 @@ fn blank_lines_retain_block_boundaries() {
     check("space", 9);
     let document = parse("\n\nalpha".into());
     assert_eq!(document.nodes[0].range, 0..2);
-    assert_eq!(document.nodes[0].authored, "\n\n");
+    assert_eq!(document.nodes[0].authored.to_owned_string(), "\n\n");
     assert!(matches!(document.nodes[0].kind, Kind::Gap));
     assert!(matches!(document.nodes[1].kind, Kind::Paragraph(_)));
     assert!(matches!(parse("\n\n  \n".into()).nodes[0].kind, Kind::Gap));
@@ -378,7 +378,10 @@ fn failed_local_runs_preserve_text_and_later_addresses() {
                 panic!("paragraph")
             };
             for node in children {
-                assert_eq!(document.source[node.range.clone()], node.authored);
+                assert_eq!(
+                    document.source[node.range.clone()],
+                    node.authored.to_owned_string()
+                );
             }
         }
     }
@@ -434,7 +437,7 @@ fn quotes_keep_lazy_continuations_and_nested_extents() {
     check("quote", 9);
     for input in ["> > a\n> b\ntail\n", "> - a\n>   b\nc\n"] {
         let document = parse(input.into());
-        assert_eq!(document.nodes[0].authored, input);
+        assert_eq!(document.nodes[0].authored.to_owned_string(), input);
         assert_eq!(&document.source[document.nodes[0].range.clone()], input);
     }
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
@@ -451,7 +454,7 @@ fn quotes_keep_lazy_continuations_and_nested_extents() {
             .find(|node| matches!(node.kind, Kind::Link(..)))
             .unwrap();
         assert_eq!(&document.source[link.range.clone()], "https://frame.test");
-        assert_eq!(link.authored, "https://frame.test");
+        assert_eq!(link.authored.to_owned_string(), "https://frame.test");
     }
 }
 
@@ -703,7 +706,7 @@ fn deletion_in_link_labels_closes_on_raw_tildes() {
 }
 
 /// Observe actual deletion and code leaves, including native link labels.
-fn deletion_leaves(nodes: &[Node]) -> (Vec<&str>, Vec<&str>) {
+fn deletion_leaves(nodes: &[Node]) -> (Vec<String>, Vec<&str>) {
     let mut strikes = Vec::new();
     let mut codes = Vec::new();
     for node in nodes {
@@ -711,7 +714,7 @@ fn deletion_leaves(nodes: &[Node]) -> (Vec<&str>, Vec<&str>) {
             codes.push(code.as_str());
         }
         if let Kind::Strike(_) = &node.kind {
-            strikes.push(node.authored.as_str());
+            strikes.push(node.authored.to_owned_string());
         }
         match &node.kind {
             Kind::Paragraph(children)
@@ -807,7 +810,7 @@ fn enclosing_deletion_uses_raw_closers_in_labels_and_tags() {
         let document = parse_with_options(source.into(), options);
         assert_eq!(
             deletion_leaves(&document.nodes),
-            (vec!["~~<span title=\"`x~~"], vec![])
+            (vec!["~~<span title=\"`x~~".to_owned()], vec![])
         );
     }
 }
@@ -1211,7 +1214,7 @@ fn cursor_label_source_uses_unescaped_brackets() {
         let Kind::Paragraph(children) = &run.nodes[0].kind else {
             panic!("paragraph")
         };
-        assert_eq!(children[0].authored, "$a]b$");
+        assert_eq!(children[0].authored.to_owned_string(), "$a]b$");
         assert_eq!(children[0].range, 1..7);
         assert!(matches!(&link.kind, Kind::Link(_, _, href, _) if href == "u"));
     }
@@ -1425,7 +1428,7 @@ fn cursor_admission_consumes_later_html_without_entering_opaque_operands() {
         panic!("caller atom");
     };
     assert!(matches!(run.atoms[index], InlineAtom::Opaque(0)));
-    assert_eq!(children[0].authored, source);
+    assert_eq!(children[0].authored.to_owned_string(), source);
     for source in [
         "$x `y$`",
         "$x ![y$](u)",

@@ -80,6 +80,13 @@ fn escape(text: &str, out: &mut String) {
     escape_into(text, out, EscapeMode::HtmlDecimal);
 }
 
+/// Escape authored chunks without materializing a contiguous node value.
+fn escape_authored(node: &Node, out: &mut String) {
+    for chunk in node.authored.chunks() {
+        escape(chunk, out);
+    }
+}
+
 /// Prepare `content` as transcript HTML.
 pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     let source = normalize_to_lf(content);
@@ -161,7 +168,7 @@ impl Writer<'_, '_> {
                 if let Some(formula) = block_formula(kind, text, node.authored.len()) {
                     out.push_str(&self.math(&formula));
                 } else {
-                    escape(&node.authored, out);
+                    escape_authored(node, out);
                 }
             }
             Kind::Paragraph(c) => self.flow(c, (&node.range, Flow::Paragraph), atoms, out),
@@ -404,7 +411,7 @@ impl Writer<'_, '_> {
         let href = utf8_percent_encode(href, URL_SAFE).to_string();
         let refused = maestro_app::browser::executable(&href);
         if refused && escape_html && meta.link_type == markdown::LinkType::Autolink {
-            escape(&node.authored, out);
+            escape_authored(node, out);
             return;
         }
         if !refused {
@@ -435,7 +442,7 @@ impl Writer<'_, '_> {
         };
         match atoms.get(index) {
             Some(InlineAtom::Opaque(_)) => {
-                if let Some(formula) = matching(&node.authored, 0, false) {
+                if let Some(formula) = matching(&node.authored.to_owned_string(), 0, false) {
                     out.push_str(&self.math(&formula));
                 }
             }

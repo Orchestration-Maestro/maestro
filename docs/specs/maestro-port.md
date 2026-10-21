@@ -625,11 +625,31 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 `maestro-markdown` owns native Markdown structure, owned source extents and mapped
 extended links. The toolkit keeps terminal normalization and formatting. The
 application re-exports the parser as `markdown`; browser consumers use that edge.
-Document, list-item and quote-chunk parsing share one recursive block accumulator.
-List items enter non-top-level grammar; completed block calls return to top level.
-Quote chunks save and restore the enclosing grammar while appending to the same
-output. Recognized raw consumption is separate from semantic text and its mapped
-source, including empty quote bodies and invisible definitions.
+Document, list-item and quote-chunk parsing share one block accumulator.
+Quotes suspend and resume through retained source handles. List items enter
+non-top-level grammar; completed block calls return to top level. Quote chunks save and restore the enclosing grammar while appending
+to the same output. Recognized raw consumption is separate from semantic text
+and its mapped source, including empty quote bodies and invisible definitions.
+
+`Node.authored` and the body in `Kind::Quote(Vec<Node>, MappedText)` use the
+parser-owned `MappedText` type. Its private storage shares owned UTF-8 source
+and mapped selections; cloned values outlive their document. `Document.source`
+remains a `String`, and native ranges and inline interfaces stay unchanged.
+`MappedText::len() -> usize` returns the logical byte length in constant time;
+`is_empty() -> bool` tests that length. `chunks() -> impl Iterator<Item = &str>`
+yields the exact logical bytes in order without flattening; chunk boundaries
+are not a format. `to_owned_string() -> String` explicitly materializes them.
+`From<String>`, `Clone`, `Debug` and empty `Default` are supported. There is no
+implicit contiguous accessor, `Deref<str>` or per-node flattened cache.
+
+Reply-quote work and retained storage grow linearly in input bytes, admitted
+nodes and mapping records, excluding requested output bytes. List-item admission
+still restarts when its enclosing quote resumes. Caller block tokenizers
+receive the same contiguous operands in the same order, including repeated
+admissions. Materializing those operands is caller-requested output work,
+charged separately from parser work; contiguous source operands are borrowed.
+Quote resumption transfers retained source handles rather than flattening the
+remaining tail.
 The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.

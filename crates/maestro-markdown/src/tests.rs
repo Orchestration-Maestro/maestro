@@ -2,6 +2,16 @@
 use crate::{InlineAtom, InlineContext, Kind, Node, parse};
 use std::cell::RefCell;
 
+mod code_progress;
+mod container_frames;
+mod html_progress;
+mod paragraph_progress;
+mod segment_balance;
+mod shared_text;
+mod table_progress;
+
+pub(crate) use shared_text::Retained;
+
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
@@ -9,6 +19,22 @@ pub(crate) struct Work {
     pub(crate) mask_operands: usize,
     /// Operand visits inside cursor-generated label windows.
     pub(crate) cursor_label_operands: usize,
+    /// Bytes supplied to block recognizers, including failed admission.
+    pub(crate) block_recognizer_bytes: usize,
+    /// Bytes supplied to the definition grammar, including failed admission.
+    pub(crate) definition_bytes: usize,
+    /// Bytes supplied to retained paragraph predicates.
+    pub(crate) paragraph_bytes: usize,
+    /// Bytes searched or supplied to table grammar predicates.
+    pub(crate) table_bytes: usize,
+    /// Bytes supplied to fenced-code grammar.
+    pub(crate) fence_bytes: usize,
+    /// Bytes supplied to indented-code grammar.
+    pub(crate) code_bytes: usize,
+    /// Bytes supplied to HTML recognition.
+    pub(crate) html_bytes: usize,
+    /// Bytes visited by physical-line framing, including repeated visits.
+    pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.
     pub(crate) quote_lines: usize,
     /// Actual list continuation line visits.
@@ -57,6 +83,11 @@ pub(crate) struct Work {
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
     pub(crate) static WORK: RefCell<Work> = RefCell::default();
+}
+
+/// Charge the exact operand supplied to one block recognizer.
+pub(crate) fn block_operand(source: &str) {
+    WORK.with_borrow_mut(|work| work.block_recognizer_bytes += source.len());
 }
 
 /// Exercise original scopes and labels without walking the document per fragment.
@@ -268,10 +299,11 @@ fn hinted_blocks(source: &str, options: crate::MarkedOptions, mut block: Delimit
         .nodes
         .iter()
         .filter_map(|node| match node.kind {
-            Kind::Paragraph(_) => Some(node.authored.trim_end().to_owned()),
-            Kind::CustomBlock(..) => {
-                Some(format!("block {}", node.authored.trim_end_matches('\n')))
-            }
+            Kind::Paragraph(_) => Some(node.authored.to_owned_string().trim_end().to_owned()),
+            Kind::CustomBlock(..) => Some(format!(
+                "block {}",
+                node.authored.to_owned_string().trim_end_matches('\n')
+            )),
             _ => None,
         })
         .collect()

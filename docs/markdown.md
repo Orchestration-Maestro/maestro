@@ -57,12 +57,26 @@ Container-local source removes quote/list continuation prefixes. Aligned list co
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still
 names the original document source, not its container-local spelling.
 
-Documents, list items and quote chunks share one recursive block accumulator.
-Quote reentry keeps the trailing container's own raw source and the unconsumed
-remainder. Semantic text can change spelling or be empty without erasing raw
-consumption. Code continuations reuse one indentation-removal operation;
-definitions continuing paragraph or item text stay literal instead of entering
-the reference index.
+Documents, list items and quote chunks share one block accumulator. Quotes
+suspend and resume through retained source handles. Quote reentry retains the
+trailing container's own raw source and its ancestor's unconsumed remainder. Semantic text can change spelling or be empty
+without erasing raw consumption. Code continuations reuse one indentation-removal
+operation; definitions continuing paragraph or item text stay literal instead
+of entering the reference index.
+
+`Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
+Cloning a value keeps it alive after its document is dropped. Concatenation and
+selection share a balanced sequence, so retained ownership depth stays logarithmic
+in the number of nonempty pieces, including when snapshots remain live. `len()` returns
+its logical byte length in constant time; `is_empty()` tests that length.
+`chunks()` yields the exact bytes as borrowed strings in order, without
+flattening. Chunk boundaries are not part of the text format.
+`to_owned_string()` explicitly allocates the complete logical value.
+`MappedText::from(String)` accepts caller-owned text; the default value is empty.
+The type supports `Clone` and `Debug`, but no implicit `Deref<str>` or flattened
+cache. `Document.source` remains a `String`; source ranges and inline interfaces
+are unchanged. Reading all overlapping quote bodies materializes their combined
+logical lengths, rather than measuring retained parser storage.
 
 Callers own normalization and presentation. The terminal adapter normalizes line
 endings, expands tabs and replaces NUL before parsing; it removes one final code
@@ -78,6 +92,9 @@ inline grammar without adding padding to table content.
 
 `parse_with_tokenizer` accepts one caller-owned block tokenizer with a start hint
 and token admission. Custom blocks retain the caller's kind and text; writers
-render them. Invalid source prefixes or UTF-8 hint boundaries return
+render them. Callbacks receive every contiguous operand in order, including
+repeated admissions during container reentry. Their operand materialization is
+counted separately as caller-requested output; contiguous source slices are
+borrowed. Invalid source prefixes or UTF-8 hint boundaries return
 `InvalidBlockToken`. The ordinary parse helpers use the same path without a
 custom tokenizer.

@@ -232,7 +232,7 @@ fn code_merges_exclude_unconsumed_indented_blank_lines() {
             if actual != expected {
                 failures.push(format!("{source:?} {options:?}: {actual} != {expected}"));
             }
-            assert_eq!(document.nodes[0].authored, source);
+            assert_eq!(document.nodes[0].authored.to_owned_string(), source);
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));

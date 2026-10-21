@@ -34,7 +34,11 @@ impl Marker {
 
 /// Recognize a marker without treating a horizontal rule as an item.
 fn marker(source: &str) -> Option<Marker> {
+    #[cfg(test)]
+    crate::tests::block_operand(source);
     let matched = rules::LIST_ITEM.as_ref()?.find(source)?;
+    #[cfg(test)]
+    crate::tests::block_operand(source);
     if rules::BLOCK_HR.as_ref()?.find(source).is_some() {
         return None;
     }
@@ -93,10 +97,11 @@ impl ItemRules {
 
     /// A current line can end framing before it is dedented.
     fn interrupts(&self, line: &str) -> bool {
-        self.stops
-            .iter()
-            .flatten()
-            .any(|rule| rule.find(line).is_some())
+        self.stops.iter().flatten().any(|rule| {
+            #[cfg(test)]
+            crate::tests::block_operand(line);
+            rule.find(line).is_some()
+        })
     }
 
     /// A previous code line or block opener cannot admit another lazy line.
@@ -113,13 +118,19 @@ impl ItemRules {
         code || [0, 1, 3]
             .into_iter()
             .filter_map(|index| self.stops[index].as_ref())
-            .any(|rule| rule.find(line).is_some())
+            .any(|rule| {
+                #[cfg(test)]
+                crate::tests::block_operand(line);
+                rule.find(line).is_some()
+            })
     }
 }
 
 impl<E> Lexer<'_, E> {
     /// Capture each item's source before recursively admitting its blocks.
     pub(crate) fn list(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+        #[cfg(test)]
+        crate::tests::block_operand(source.text);
         rules::BLOCK_LIST.as_ref()?.find(source.text)?;
         let first = marker(source.text)?;
         let mut cursor = 0;
@@ -143,13 +154,20 @@ impl<E> Lexer<'_, E> {
                 children.insert(0, task_node);
             }
             let raw = &source.text[cursor..cursor + consumed];
-            loose |= rules::LIST_BLANK_END
-                .as_ref()
-                .is_some_and(|rule| rule.find(raw).is_some())
-                && following
+            loose |= rules::LIST_BLANK_END.as_ref().is_some_and(|rule| {
+                #[cfg(test)]
+                crate::tests::block_operand(raw);
+                rule.find(raw).is_some()
+            }) && following
                 || children.iter().any(|node| {
                     matches!(node.kind, Kind::Gap)
-                        && node.authored.bytes().filter(|byte| *byte == b'\n').count() > 1
+                        && node
+                            .authored
+                            .chunks()
+                            .flat_map(str::bytes)
+                            .filter(|byte| *byte == b'\n')
+                            .count()
+                            > 1
                 });
             items.push(source.node(cursor..cursor + consumed, Kind::Item(children)));
             cursor += consumed;
