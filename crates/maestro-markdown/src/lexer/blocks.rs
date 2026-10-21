@@ -105,6 +105,7 @@ impl<E> Lexer<'_, E> {
     fn block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
         if let Some(consumed) = self.extension(source, &mut output.nodes) {
             output.tail = Tail::Visible(None);
+            output.list = None;
             return Some(consumed);
         }
         if let Some(consumed) = self
@@ -214,6 +215,7 @@ impl<E> Lexer<'_, E> {
             && matches!(self.options, MarkedOptions::Browser { .. })
         {
             output.tail = Tail::Definition;
+            output.list = None;
         }
         Some(matched.consumed)
     }
@@ -261,6 +263,7 @@ impl<E> Lexer<'_, E> {
         self.scopes
             .insert((last.range.start, last.range.end, false), previous);
         output.tail = Tail::Visible(None);
+        output.list = None;
     }
 }
 
