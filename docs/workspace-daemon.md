@@ -704,3 +704,9 @@ advance the presentation clock.
 Shutdown retains each runtime while draining its critical exit publication,
 even when the event queue is full. It saves the session before terminating live
 children and does not respawn command shells while stopping.
+
+Terminal titles retain their latest raw text, including progress spinners. Only
+changes to normalized title text advance the pane revision and publish a complete
+pane update. Sidebar redraws follow the title form used by its configured rows.
+Pane and agent observations share one presentation projection; foreground process
+directories are read asynchronously through the retained runtime.

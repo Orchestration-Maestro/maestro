@@ -13,6 +13,7 @@ impl<C: FnMut() -> u128> App<C> {
         tokio::pin!(shutdown);
         while !self.state.should_quit.0 {
             self.drain_internal_events();
+            self.sync_pending_terminal_titles().await;
             self.shutdown_detached_terminal_runtimes().await;
             self.sync_session_save_schedule();
             self.handle_scheduled_tasks(Instant::now(), paths);
@@ -23,6 +24,7 @@ impl<C: FnMut() -> u128> App<C> {
                     if let Some(event) = event { self.handle_internal_event(event); }
                     else { self.state.should_quit.0 = true; }
                 }
+                () = self.launch.render_notify.notified() => {}
                 () = wait_for_deadline(deadline) => {}
             }
         }

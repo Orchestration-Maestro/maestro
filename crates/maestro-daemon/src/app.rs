@@ -1,14 +1,18 @@
 //! Mutable daemon state and workspace operations.
 
+mod agents;
 mod api;
 mod api_helpers;
 mod config;
 mod config_io;
 #[cfg(unix)]
 mod creation;
+mod pane_info;
 mod runtime;
 mod session;
 mod tab_bar_status;
+/// Raw and normalized terminal title synchronization.
+pub mod terminal_titles;
 mod theme_sync;
 
 /// Stable terminal targeting and unambiguous agent-name resolution.
