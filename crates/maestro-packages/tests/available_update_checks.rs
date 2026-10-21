@@ -979,7 +979,7 @@ fn recording_manager(
             settings_manager: settings.clone(),
         },
         RecordingNative {
-            inner: NativePackageOperations::new(|_| false, Rc::new(|| false), local),
+            inner: NativePackageOperations::new(Rc::new(|| false), local),
             captured: captured.clone(),
         },
     ))
@@ -1142,7 +1142,7 @@ fn replacement_manifest(
 ) {
     use maestro_packages::PackageOperations;
     std::fs::write(path, b"{\"version\":\"\xff\"}").unwrap();
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), local);
     assert_eq!(operations.read_file(path).unwrap(), "{\"version\":\"�\"}");
     assert_eq!(
         runtime
@@ -1164,6 +1164,6 @@ fn native_manager(
             agent_dir: format!("{cwd}/agent"),
             settings_manager: settings,
         },
-        NativePackageOperations::new(|_| false, Rc::new(|| false), local),
+        NativePackageOperations::new(Rc::new(|| false), local),
     ))
 }

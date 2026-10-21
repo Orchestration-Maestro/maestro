@@ -480,7 +480,6 @@ fn configured_sources_work_without_acquisition() {
     std::fs::write(maestro_path::join(&[&root, "@scope/pkg"]), "contents").unwrap();
     workflow(
         NativePackageOperations::new(
-            |_| false,
             Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         ),

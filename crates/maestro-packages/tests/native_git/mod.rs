@@ -108,7 +108,7 @@ impl Repository {
                     .into_owned(),
                 settings_manager: settings,
             },
-            NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+            NativePackageOperations::new(Rc::new(|| false), &local),
         ));
         let runtime = crate::runtime::runtime();
         runtime

@@ -11,7 +11,6 @@ use crate::runtime::runtime;
 fn shell(script: &str, timeout: Option<Duration>) -> io::Result<String> {
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(
-        |_| false,
         Rc::new(|| panic!("capture queried stdout takeover")),
         &local,
     );
@@ -146,7 +145,7 @@ fn capture_failure_keeps_stream_precedence_and_signal() {
         "/bin/sh -c kill -34 $$ failed with signal unknown: "
     );
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     assert_eq!(
         runtime()
             .block_on(operations.run_command_capture(
@@ -195,7 +194,7 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
     }
     let scratch = scratch::Scratch::new().unwrap();
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let script = format!(
         "test \"$PATH\" = '{INHERITED_PATH}' && test \"$MAESTRO_INHERITED\" = parent && test -z \"$(cat)\" && printf '%s|%s|%s' \"$MAESTRO_CAPTURE_VALUE\" \"$PWD\" \"$1\""
     );
@@ -216,41 +215,6 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
 }
 
 #[test]
-fn capture_uses_shell_query_without_stdout_takeover() {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    static QUERIES: AtomicUsize = AtomicUsize::new(0);
-    let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(
-        |command| {
-            assert_eq!(command, "printf");
-            QUERIES.fetch_add(1, Ordering::SeqCst);
-            true
-        },
-        Rc::new(|| panic!("capture queried takeover")),
-        &local,
-    );
-    let args = ["'%s'", "'literal text'"].map(str::to_owned);
-    let runtime = runtime();
-    for _ in 0..2 {
-        assert_eq!(
-            runtime
-                .block_on(operations.run_command_capture(
-                    "printf",
-                    &args,
-                    CommandCaptureOptions {
-                        cwd: None,
-                        timeout: None,
-                        env: &[]
-                    }
-                ))
-                .unwrap(),
-            "literal text"
-        );
-    }
-    assert_eq!(QUERIES.load(Ordering::SeqCst), 2);
-}
-
-#[test]
 fn capture_waits_for_exit_and_both_pipe_eofs() {
     let producer = Producer::new();
     let script = format!(
@@ -258,7 +222,7 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
         producer.gate()
     );
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let runtime = runtime();
     let result = local.spawn_local(async move {
         operations
@@ -294,7 +258,7 @@ fn capture_completes_when_the_shell_opens_the_permit_late() {
         producer.gate_after(&producer.after_permit_written())
     );
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let runtime = runtime();
     let result = local.spawn_local(async move {
         operations
@@ -331,7 +295,7 @@ fn capture_timeout_covers_streams_and_sends_termination() {
         producer.gate()
     );
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let runtime = runtime();
     let expected = format!("/bin/sh -c {script} timed out after 100ms");
     let result = local.spawn_local(async move {
@@ -375,7 +339,7 @@ fn capture_timeout_covers_descendant_streams() {
         producer.gate()
     );
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let expected = format!("/bin/sh -c {script} timed out after 10000ms");
     let result = local.spawn_local(async move {
         operations
@@ -411,7 +375,7 @@ fn capture_spawn_error_does_not_gain_command_wrapping() {
         .to_string_lossy()
         .into_owned();
     let local = Rc::new(tokio::task::LocalSet::new());
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     for (command, cwd) in [
         (missing.as_str(), None),
         ("/bin/sh", Some(missing.as_str())),
@@ -445,7 +409,7 @@ fn stopped_native_runtime_rejects_spawn_without_a_cycle() {
     use std::cell::RefCell;
     let local = Rc::new(tokio::task::LocalSet::new());
     let weak = Rc::downgrade(&local);
-    let operations = NativePackageOperations::new(|_| false, Rc::new(|| false), &local);
+    let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));

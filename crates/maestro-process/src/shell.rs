@@ -12,27 +12,162 @@ pub struct Launch {
 }
 
 impl Launch {
-    /// Builds a native command, preserving literal argv unless shell text is verbatim.
-    ///
+    /// Collects the child directory and environment before executable resolution.
+    #[must_use]
+    pub fn with_context<I>(
+        self,
+        environment: I,
+        cwd: Option<&std::path::Path>,
+    ) -> LaunchContext<'_, I> {
+        LaunchContext {
+            executable: self.executable,
+            args: self
+                .args
+                .into_iter()
+                .map(std::ffi::OsString::from)
+                .collect(),
+            #[cfg(windows)]
+            verbatim: self.verbatim,
+            environment,
+            cwd,
+            clear_environment: false,
+            background: false,
+        }
+    }
+}
+
+/// A consuming native launch whose lookup inputs cannot change after resolution.
+///
+/// Stream choices are supplied to the operation that spawns the child.
+/// Command construction stays private:
+/// ```compile_fail,E0624
+/// use maestro_process::Launch;
+/// let launch = Launch { executable: "example".into(), args: vec![], verbatim: false };
+/// launch.with_context([("PATH", "")], None).execute(Ok);
+/// ```
+#[derive(Debug)]
+pub struct LaunchContext<'a, I> {
+    /// Unresolved executable.
+    executable: String,
+    /// Literal native operands, including any appended path.
+    args: Vec<std::ffi::OsString>,
+    /// Whether the final Windows shell operand bypasses quoting.
+    #[cfg(windows)]
+    verbatim: bool,
+    /// Original environment pairs, consumed without an intermediate string copy.
+    environment: I,
+    /// Child working directory; absent inherits the parent directory.
+    cwd: Option<&'a std::path::Path>,
+    /// Whether supplied pairs replace rather than overlay the environment.
+    clear_environment: bool,
+    /// Whether to suppress a Windows console window.
+    background: bool,
+}
+
+impl<I, K, V> LaunchContext<'_, I>
+where
+    I: IntoIterator<Item = (K, V)>,
+    K: AsRef<std::ffi::OsStr>,
+    V: AsRef<std::ffi::OsStr>,
+{
+    /// Appends one literal native argument without converting path bytes to text.
+    #[must_use]
+    pub fn arg(mut self, argument: impl AsRef<std::ffi::OsStr>) -> Self {
+        self.args.push(argument.as_ref().into());
+        self
+    }
+
+    /// Replaces inherited variables with the supplied environment.
+    #[must_use]
+    pub fn clear_environment(mut self) -> Self {
+        self.clear_environment = true;
+        self
+    }
+
+    /// Suppresses the Windows console window; other platforms need no setting.
+    #[must_use]
+    pub fn background(mut self) -> Self {
+        self.background = true;
+        self
+    }
+
+    /// Runs a synchronous child with ignored stdin and captured stdout and stderr.
     /// # Errors
-    /// Returns `NotFound` when a Windows command cannot be resolved.
-    pub fn command(self) -> std::io::Result<std::process::Command> {
+    /// Returns executable resolution, spawn or capture errors unchanged.
+    pub fn output(self) -> std::io::Result<std::process::Output> {
+        self.execute(|mut command| command.output())
+    }
+
+    /// Runs through the shared synchronous bridge with caller-selected capture policy.
+    /// # Errors
+    /// Returns native failures or bridge failures in the existing error variants.
+    pub fn spawn_sync(
+        self,
+        options: crate::SpawnSyncOptions<'_>,
+    ) -> Result<std::process::Output, crate::SpawnSyncError> {
+        self.execute(|command| Ok(crate::spawn_sync(&mut command.into(), options)))
+            .map_err(crate::SpawnSyncError::Spawn)?
+    }
+
+    /// Spawns a Tokio child with caller-selected standard streams.
+    /// # Errors
+    /// Returns executable resolution or native spawn failures unchanged.
+    pub fn spawn(
+        self,
+        [stdin, stdout, stderr]: [std::process::Stdio; 3],
+    ) -> std::io::Result<tokio::process::Child> {
+        self.execute(|command| {
+            tokio::process::Command::from(command)
+                .stdin(stdin)
+                .stdout(stdout)
+                .stderr(stderr)
+                .spawn()
+        })
+    }
+
+    /// Spawns through the shared captured-child owner with ignored stdin.
+    /// # Errors
+    /// Returns executable resolution or native spawn failures unchanged.
+    pub fn spawn_captured(self) -> std::io::Result<crate::child_process::CapturedChild> {
+        self.execute(|command| crate::child_process::CapturedChild::spawn(&mut command.into()))
+    }
+
+    /// Resolves once from the complete context and invokes an operation-private spawn.
+    fn execute<T>(
+        self,
+        operation: impl FnOnce(std::process::Command) -> std::io::Result<T>,
+    ) -> std::io::Result<T> {
+        let environment: Vec<_> = self.environment.into_iter().collect();
         #[cfg(windows)]
-        let executable = native_windows_executable(&self.executable)
-            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))?;
+        let executable = native_windows_executable(
+            &self.executable,
+            &environment,
+            self.cwd,
+            !self.clear_environment,
+        )?;
         #[cfg(not(windows))]
         let executable = &self.executable;
         let mut command = std::process::Command::new(executable);
+        if self.clear_environment {
+            command.env_clear();
+        }
+        command.envs(environment);
+        if let Some(cwd) = self.cwd {
+            command.current_dir(cwd);
+        }
+        if self.background {
+            configure_background_command(&mut command);
+        }
         #[cfg(windows)]
         if self.verbatim {
             use std::os::windows::process::CommandExt;
             if let Some((text, args)) = self.args.split_last() {
                 command.args(args).raw_arg(text);
             }
-            return Ok(command);
+            return operation(command);
         }
         command.args(self.args);
-        Ok(command)
+        operation(command)
     }
 }
 
@@ -65,15 +200,19 @@ pub fn windows_shell_launch(command: &str, comspec: Option<&str>) -> Launch {
 #[cfg(any(windows, test))]
 fn resolve_windows_executable(
     command: &str,
-    directories: &[std::path::PathBuf],
+    directories: impl IntoIterator<Item = impl AsRef<std::path::Path>>,
     extensions: &str,
+    cwd: &std::path::Path,
     exists: impl Fn(&std::path::Path) -> bool,
 ) -> Option<std::path::PathBuf> {
     let name = command.rsplit(['\\', '/']).next()?;
     let candidates = if command.contains(['\\', '/', ':']) {
-        vec![std::path::PathBuf::from(command)]
+        vec![anchor_windows_path(std::path::Path::new(command), cwd)]
     } else {
-        directories.iter().map(|dir| dir.join(command)).collect()
+        directories
+            .into_iter()
+            .map(|dir| anchor_windows_path(dir.as_ref(), cwd).join(command))
+            .collect()
     };
     candidates.into_iter().find_map(|candidate| {
         if name.contains('.') {
@@ -91,16 +230,74 @@ fn resolve_windows_executable(
     })
 }
 
-/// Observes the current directory, search path and executable extensions once per launch.
+/// Anchors native Windows paths, including a relative path on the child's drive.
+#[cfg(any(windows, test))]
+fn anchor_windows_path(path: &std::path::Path, cwd: &std::path::Path) -> std::path::PathBuf {
+    use std::path::{Component, Prefix};
+    let same_drive = match (path.components().next(), cwd.components().next()) {
+        (Some(Component::Prefix(path)), Some(Component::Prefix(base))) => {
+            matches!((path.kind(), base.kind()), (Prefix::Disk(a) | Prefix::VerbatimDisk(a), Prefix::Disk(b) | Prefix::VerbatimDisk(b)) if a.eq_ignore_ascii_case(&b))
+        }
+        _ => false,
+    };
+    if same_drive && !path.has_root() {
+        cwd.join(path.components().skip(1).collect::<std::path::PathBuf>())
+    } else {
+        cwd.join(path)
+    }
+}
+
+/// Resolves against the effective child directory and environment before spawning.
 #[cfg(windows)]
-fn native_windows_executable(command: &str) -> Option<std::path::PathBuf> {
-    let path = std::env::var_os("PATH").unwrap_or_default();
-    let directories: Vec<_> = std::env::current_dir()
+fn native_windows_executable<K, V>(
+    command: &str,
+    environment: &[(K, V)],
+    cwd: Option<&std::path::Path>,
+    inherit: bool,
+) -> std::io::Result<std::path::PathBuf>
+where
+    K: AsRef<std::ffi::OsStr>,
+    V: AsRef<std::ffi::OsStr>,
+{
+    let value = |key: &str| {
+        environment
+            .iter()
+            .rev()
+            .find(|(name, _)| name.as_ref().eq_ignore_ascii_case(key))
+            .map(|(_, value)| std::borrow::Cow::Borrowed(value.as_ref()))
+            .or_else(|| {
+                inherit
+                    .then(|| std::env::var_os(key))
+                    .flatten()
+                    .map(std::borrow::Cow::Owned)
+            })
+    };
+    let cwd = cwd.map_or_else(std::env::current_dir, std::path::absolute)?;
+    let path = value("PATH").unwrap_or_default();
+    let directories = value("NoDefaultCurrentDirectoryInExePath")
+        .is_none()
+        .then_some(cwd.as_path())
         .into_iter()
-        .chain(std::env::split_paths(&path))
-        .collect();
-    let extensions = std::env::var("PATHEXT").unwrap_or_else(|_| ".EXE;.COM;.BAT;.CMD".into());
-    resolve_windows_executable(command, &directories, &extensions, std::path::Path::is_file)
+        .map(std::borrow::Cow::Borrowed)
+        .chain(
+            std::env::split_paths(&path)
+                .filter(|directory| !directory.as_os_str().is_empty())
+                .map(std::borrow::Cow::Owned),
+        );
+    let extensions = value("PATHEXT");
+    let extensions = extensions
+        .as_deref()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or(".EXE;.COM;.BAT;.CMD");
+    let executable = resolve_windows_executable(
+        command,
+        directories,
+        extensions,
+        &cwd,
+        std::path::Path::is_file,
+    )
+    .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))?;
+    std::path::absolute(executable)
 }
 
 /// Serializes one literal POSIX shell operand.

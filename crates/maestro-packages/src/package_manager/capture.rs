@@ -1,8 +1,6 @@
 //! Native stdout capture through child exit, pipe EOFs and an optional deadline.
 use super::{CommandCaptureOptions, NativePackageOperations};
-use maestro_process::child_process::{
-    CapturedChild, Termination, WaitOptions, wait_for_child_process,
-};
+use maestro_process::child_process::{Termination, WaitOptions, wait_for_child_process};
 use std::{cell::Cell, io, process::ExitStatus};
 
 impl NativePackageOperations {
@@ -13,12 +11,7 @@ impl NativePackageOperations {
         args: &[String],
         options: CommandCaptureOptions<'_>,
     ) -> io::Result<String> {
-        let mut builder = tokio::process::Command::from(self.command(command, args));
-        if let Some(cwd) = options.cwd {
-            builder.current_dir(cwd);
-        }
-        builder.envs(options.env.iter().copied());
-        let mut child = CapturedChild::spawn(&mut builder)?;
+        let mut child = Self::command(command, args, options.env, options.cwd).spawn_captured()?;
         let timed_out = Cell::new(false);
         let deadline = async {
             if let Some(timeout) = options.timeout {

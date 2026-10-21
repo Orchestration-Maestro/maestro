@@ -3,8 +3,8 @@
 `maestro-packages` manages configured sources and acquires or removes their
 contents; see [package installation and removal](packages.md). Supply a live
 `SettingsManager` and `PackageOperations`; native callers can use
-`NativePackageOperations` with their own shell-selection function and stdout
-takeover query and a caller-driven `Rc<tokio::task::LocalSet>`.
+`NativePackageOperations` with their own stdout takeover query and a caller-driven
+`Rc<tokio::task::LocalSet>`.
 For read-only availability and configured execution, see [package updates](package-updates.md).
 
 The direct `parse_git_url` parser accepts explicit HTTP, HTTPS, SSH and Git URLs;
@@ -59,7 +59,7 @@ let packages = DefaultPackageManager::new(
         agent_dir: "/agent".into(),
         settings_manager: settings,
     },
-    NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+    NativePackageOperations::new(Rc::new(|| false), &local),
 );
 assert!(packages.add_source_to_settings("https://github.com/user/repository", None)?);
 assert!(!packages.add_source_to_settings("ssh://git@github.com/user/repository", None)?);

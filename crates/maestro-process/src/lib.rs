@@ -13,7 +13,7 @@ pub use child_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spa
 pub mod shell;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use shell::{Launch, windows_shell_launch};
+pub use shell::{Launch, LaunchContext, windows_shell_launch};
 
 pub mod foreground;
 

@@ -129,9 +129,8 @@ pub use native::ProcessConfigValueOperations;
 #[cfg(not(target_arch = "wasm32"))]
 pub(in crate::credentials) mod native {
     use super::ConfigValueOperations;
-    use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+    use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions};
     use std::{io, process::Output, time::Duration};
-    use tokio::process::Command;
 
     /// How long one helper may run before it is stopped without a value.
     const HELPER_TIMEOUT: Duration = Duration::from_millis(10_000);
@@ -242,22 +241,18 @@ pub(in crate::credentials) mod native {
 
     /// Run one launch through the shared synchronous capture.
     fn run(launch: Launch) -> Attempt {
-        let mut command = match launch.command() {
-            Ok(command) => Command::from(command),
-            Err(error) => return attempt(Err(SpawnSyncError::Spawn(error))),
-        };
-        #[cfg(windows)]
-        command.creation_flags(0x0800_0000);
-        attempt(spawn_sync(
-            &mut command,
-            SpawnSyncOptions::Capture {
-                max_buffer_bytes: None,
-                stdout: OutputMode::Capture,
-                input: None,
-                timeout: Some(HELPER_TIMEOUT),
-                stderr: OutputMode::Discard,
-            },
-        ))
+        attempt(
+            launch
+                .with_context(std::iter::empty::<(&str, &str)>(), None)
+                .background()
+                .spawn_sync(SpawnSyncOptions::Capture {
+                    max_buffer_bytes: None,
+                    stdout: OutputMode::Capture,
+                    input: None,
+                    timeout: Some(HELPER_TIMEOUT),
+                    stderr: OutputMode::Discard,
+                }),
+        )
     }
     /// Missing executables and unavailable capture infrastructure permit fallback;
     /// every other outcome completes the attempt, with stdout only on success.

@@ -496,7 +496,6 @@ fn replaced(path: &str, kind: Entry, original: &std::fs::Metadata) {
 fn native_write_mode_keeps_exclusive_and_replacing_semantics() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     let operations = NativePackageOperations::new(
-        |_| false,
         std::rc::Rc::new(|| false),
         &std::rc::Rc::new(tokio::task::LocalSet::new()),
     );

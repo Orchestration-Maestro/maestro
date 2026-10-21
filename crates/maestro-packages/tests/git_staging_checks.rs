@@ -1161,11 +1161,8 @@ fn staging_allocation_skips_collisions() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     use std::rc::Rc;
     let scratch = crate::scratch::Scratch::new().unwrap();
-    let native = NativePackageOperations::new(
-        |_| false,
-        Rc::new(|| false),
-        &Rc::new(tokio::task::LocalSet::new()),
-    );
+    let native =
+        NativePackageOperations::new(Rc::new(|| false), &Rc::new(tokio::task::LocalSet::new()));
     let first = native
         .create_temp_dir(scratch.path().to_str().unwrap())
         .unwrap();

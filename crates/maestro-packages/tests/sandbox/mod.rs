@@ -299,7 +299,7 @@ impl Fixture {
         let local = Rc::new(tokio::task::LocalSet::new());
         let operations = Sandbox {
             script: script.clone(),
-            native: NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+            native: NativePackageOperations::new(Rc::new(|| false), &local),
             home: format!("{root}/home"),
         };
         let manager = Rc::new(DefaultPackageManager::new(

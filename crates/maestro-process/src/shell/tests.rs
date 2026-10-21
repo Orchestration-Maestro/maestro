@@ -4,6 +4,8 @@ use super::resolve_windows_executable;
 use crate::pty::foreground::{ForegroundJob, ForegroundProcess};
 use std::path::{Path, PathBuf};
 
+mod context;
+
 #[test]
 fn extensionless_commands_follow_directory_and_extension_order() {
     let directories = [PathBuf::from("current"), PathBuf::from("bin")];
@@ -18,14 +20,16 @@ fn extensionless_commands_follow_directory_and_extension_order() {
         (".COM;.CMD;.EXE", "custom.CMD"),
     ] {
         assert_eq!(
-            resolve_windows_executable("custom", &directories, extensions, |p| files
-                .contains(&p.to_path_buf())),
+            resolve_windows_executable("custom", &directories, extensions, Path::new(""), |p| {
+                files.contains(&p.to_path_buf())
+            }),
             Some(Path::new("current").join(expected))
         );
     }
     assert_eq!(
-        resolve_windows_executable("missing", &directories, ".CMD;.EXE", |p| files
-            .contains(&p.to_path_buf())),
+        resolve_windows_executable("missing", &directories, ".CMD;.EXE", Path::new(""), |p| {
+            files.contains(&p.to_path_buf())
+        }),
         None
     );
 }
@@ -36,7 +40,7 @@ fn explicit_script_names_prefer_current_directory_over_path_decoys() {
     let current = Path::new("current").join("wrapper.cmd");
     let decoy = Path::new("bin").join("wrapper.cmd");
     assert_eq!(
-        resolve_windows_executable("wrapper.cmd", &directories, ".EXE", |p| {
+        resolve_windows_executable("wrapper.cmd", &directories, ".EXE", Path::new(""), |p| {
             p == current || p == decoy
         }),
         Some(current)
@@ -52,6 +56,7 @@ fn explicit_command_directories_do_not_search_other_directories() {
             command.to_str().unwrap(),
             &[PathBuf::from("other")],
             ".EXE;;.CMD",
+            Path::new(""),
             |p| p == script
         ),
         Some(script)
@@ -62,11 +67,12 @@ fn explicit_command_directories_do_not_search_other_directories() {
 #[cfg(windows)]
 fn verbatim_shell_commands_keep_environment_operands() {
     let output = super::windows_shell_launch("echo \"%MAESTRO_LITERAL_FILE%\"", None)
-        .command()
-        .unwrap()
-        .env(
-            "MAESTRO_LITERAL_FILE",
-            "directory with spaces & literal.txt",
+        .with_context(
+            [(
+                "MAESTRO_LITERAL_FILE",
+                "directory with spaces & literal.txt",
+            )],
+            None,
         )
         .output()
         .unwrap();
@@ -257,5 +263,78 @@ fn pane_custom_commands_keep_the_plain_command_flag() {
         },
     ] {
         assert!(super::available_pane_shell_from_job(10, job).is_none());
+    }
+}
+
+#[test]
+#[cfg(windows)]
+fn launch_resolves_effective_child_path_and_extensions() {
+    const CHILD: &str = "MAESTRO_LAUNCH_PATH_CHILD";
+    if let Some(directory) = std::env::var_os(CHILD) {
+        assert_launch_environment(&PathBuf::from(directory));
+        return;
+    }
+    let directory =
+        std::env::temp_dir().join(format!("maestro-launch-path-{}", std::process::id()));
+    let parent = directory.join("parent");
+    let chosen = directory.join("chosen");
+    std::fs::create_dir_all(&parent).unwrap();
+    std::fs::create_dir(&chosen).unwrap();
+    std::fs::write(parent.join("shared.CMD"), "@echo parent\r\n").unwrap();
+    std::fs::write(parent.join("shared.BAT"), "@echo parent-extension\r\n").unwrap();
+    for name in ["shared.BAT", "only.BAT", "shared.CMD"] {
+        std::fs::write(chosen.join(name), "@echo chosen\r\n").unwrap();
+    }
+    let output = maestro_test_process::TestProcess::current(
+        "launch_resolves_effective_child_path_and_extensions",
+    )
+    .unwrap()
+    .env(CHILD, &directory)
+    .env("PATH", &parent)
+    .env("PATHEXT", ".CMD")
+    .output()
+    .unwrap();
+    std::fs::remove_dir_all(directory).unwrap();
+    assert!(output.status.success(), "{output:?}");
+}
+
+/// Checks lookup overrides and inherited controls in the isolated Windows child.
+#[cfg(windows)]
+fn assert_launch_environment(directory: &Path) {
+    let chosen = directory.join("chosen");
+    let path = chosen.to_str().unwrap();
+    for (name, environment, expected) in [
+        (
+            "shared",
+            vec![("Path", path), ("pathext", ".BAT")],
+            "chosen",
+        ),
+        ("only", vec![("PATH", path), ("PATHEXT", ".BAT")], "chosen"),
+        ("shared", vec![], "parent"),
+        ("shared.cmd", vec![("OTHER", "value")], "parent"),
+        ("shared", vec![("PATH", path)], "chosen"),
+        ("shared", vec![("PATHEXT", ".BAT")], "parent-extension"),
+    ] {
+        let output = super::Launch {
+            executable: name.into(),
+            args: vec![],
+            verbatim: false,
+        }
+        .with_context(environment, None)
+        .output()
+        .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), expected);
+    }
+    for environment in [[("PATH", "")], [("PATHEXT", "")]] {
+        let error = super::Launch {
+            executable: "shared".into(),
+            args: vec![],
+            verbatim: false,
+        }
+        .with_context(environment, None)
+        .output()
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     }
 }
