@@ -84,8 +84,8 @@ select descriptions only: no installation, removal or release lookup is run.
 `NativeSelfUpdateOperations` delegates query capture to the process owner without
 a deadline or buffer limit. Queries pass the executable and literal argument
 vector to the native process API, not through joined shell text. On Windows,
-command names resolve in the current directory before `PATH`, with `PATHEXT`
-used only for extensionless names. Unix access uses the OS write-access operation;
+executable lookup follows the [native launch rules](../../crates/maestro-process/README.md#command-preparation).
+Unix access uses the OS write-access operation;
 Windows checks existence and read-only attributes, not directory ACLs, so a later
 update may still fail with a permissions error. See the
 [configuration library notes](../libraries/application-configuration.md).

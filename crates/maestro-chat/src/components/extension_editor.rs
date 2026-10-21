@@ -132,6 +132,7 @@ impl ExtensionEditorComponent {
             let mut file = options.open(&path)?;
             owned = true;
             file.write_all(self.editor.get_text().as_bytes())?;
+            drop(file);
             tui.stop()?;
             self.edit_file(&command, &path)
         })();
