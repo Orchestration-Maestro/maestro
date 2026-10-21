@@ -4,6 +4,7 @@ use std::cell::RefCell;
 
 mod code_progress;
 mod container_frames;
+mod emphasis_work;
 mod html_progress;
 mod paragraph_progress;
 mod segment_balance;
@@ -15,6 +16,10 @@ pub(crate) use shared_text::Retained;
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
+    /// Bytes visited while constructing or recounting delimiter widths.
+    pub(crate) emphasis_left: usize,
+    /// Matched bytes visited by right-candidate iteration.
+    pub(crate) emphasis_right: usize,
     /// Operand visits while constructing recursive inline masks.
     pub(crate) mask_operands: usize,
     /// Operand visits inside cursor-generated label windows.
