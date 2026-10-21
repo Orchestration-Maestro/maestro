@@ -2,7 +2,7 @@
 use super::{Lexer, blocks::BlockTokens, lines};
 use crate::{
     Kind, Node, helpers, rules,
-    source::{ScopeSource, Source},
+    source::{Cursor, ScopeSource, Source},
 };
 
 impl<E> Lexer<'_, E> {
@@ -148,16 +148,19 @@ fn quote_chunk(source: &str) -> usize {
 
 /// Rewrite unquoted setext spelling within this chunk before removing prefixes.
 fn quote_source(source: &ScopeSource) -> ScopeSource {
-    let mut output = source.select(std::iter::empty());
-    for range in lines(&source.text) {
-        let line = &source.text[range.clone()];
-        let shown = crate::source::strip_quote(line);
-        let mut piece = source.select(std::iter::once(
-            range.start + line.len() - shown.len()..range.end,
+    let mut pending = Cursor::default();
+    pending.append(source.clone());
+    let mut output = Cursor::default();
+    let mut first = true;
+    while let Some(line) = pending.line() {
+        let line = line.materialize();
+        let shown = crate::source::strip_quote(&line.text);
+        let mut piece = line.select(std::iter::once(
+            line.text.len() - shown.len()..line.text.len(),
         ));
-        let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
-        let label = line[spaces..].trim_end_matches([' ', '\n']);
-        if range.start > 0
+        let spaces = line.text.bytes().take_while(|byte| *byte == b' ').count();
+        let label = line.text[spaces..].trim_end_matches([' ', '\n']);
+        if !first
             && spaces <= 3
             && !label.is_empty()
             && (label.bytes().all(|byte| byte == b'=') || label.bytes().all(|byte| byte == b'-'))
@@ -165,6 +168,7 @@ fn quote_source(source: &ScopeSource) -> ScopeSource {
             piece = piece.replace_prefix(spaces, "    ");
         }
         output.append(piece);
+        first = false;
     }
-    output
+    output.materialize()
 }

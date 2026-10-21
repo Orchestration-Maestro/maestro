@@ -76,6 +76,49 @@ fn source_node_views_keep_shared_storage() {
 }
 
 #[test]
+fn segmented_cursor_keeps_unmaterialized_source_and_atomic_provenance() {
+    use crate::source::{Cursor, ScopeSource};
+    let source = ScopeSource::identity("é\\|🦀");
+    let transformed = source.pipes();
+    let mut cursor = Cursor::default();
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    cursor.append(source.select(std::iter::once(0..2)));
+    cursor.append(transformed.select(std::iter::once(2..7)));
+    assert_eq!(cursor.len(), 7);
+    let prefix = cursor.take(3).materialize();
+    assert_eq!(&*prefix.text, "é|");
+    assert_eq!(prefix.native(&(2..3)), Some(2..4));
+    assert_eq!(prefix.local(&(3..4)), Some(2..3));
+    let suffix = cursor.take(cursor.len());
+    assert!(cursor.is_empty());
+    assert_eq!(super::WORK.with_borrow(|work| work.source_bytes), 2);
+    let tail = suffix.materialize();
+    assert_eq!(&*tail.text, "🦀");
+    assert_eq!(tail.text.as_ptr(), transformed.text[3..].as_ptr());
+    assert_eq!(tail.extent(0..tail.text.len()), 4..8);
+    assert!(cursor.take(0).materialize().text.is_empty());
+}
+
+#[test]
+fn segmented_cursor_lines_cross_piece_boundaries_once() {
+    use crate::source::{Cursor, ScopeSource};
+    let source = ScopeSource::identity("é\n🦀\nlast");
+    let mut cursor = Cursor::default();
+    for range in [0..2, 2..3, 3..7, 7..10, 10..12] {
+        cursor.append(source.select(std::iter::once(range)));
+    }
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    for (text, native) in [("é\n", 0..3), ("🦀\n", 3..8), ("last", 8..12)] {
+        let line = cursor.line().unwrap().materialize();
+        assert_eq!(&*line.text, text);
+        assert_eq!(line.extent(0..line.text.len()), native);
+    }
+    assert!(cursor.line().is_none());
+    assert_eq!(cursor.len(), 0);
+    assert_eq!(super::WORK.with_borrow(|work| work.framing_bytes), 12);
+}
+
+#[test]
 fn mapped_text_repeated_reads_keep_storage_shared() {
     let source = "> é\n> 🦀";
     let document = parse(source.to_owned());

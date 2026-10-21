@@ -1,4 +1,6 @@
 //! Container-local source framing.
+mod cursor;
+pub(crate) use cursor::Cursor;
 use std::{
     ops::{Deref, Range},
     sync::Arc,
@@ -201,41 +203,14 @@ impl ScopeSource {
                 units: Arc::clone(&self.units),
             };
         }
-        let mut output = Self {
-            text: SourceText::default(),
-            units: Arc::default(),
-        };
-        self.select_piece(first, &mut output);
-        for piece in pieces {
-            self.select_piece(piece, &mut output);
+        let mut output = Cursor::default();
+        for range in std::iter::once(first).chain(pieces) {
+            output.append(Self {
+                text: self.text.select(range),
+                units: Arc::clone(&self.units),
+            });
         }
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.source_bytes += output.text.len());
-        output
-    }
-    /// Append one authored piece, preserving atomic spelling transformations.
-    fn select_piece(&self, piece: Range<usize>, output: &mut Self) {
-        if piece.is_empty() {
-            return;
-        }
-        let units = self.unit_slice();
-        let first =
-            units.partition_point(|(_, local)| local.end <= self.text.range.start + piece.start);
-        let last =
-            units.partition_point(|(_, local)| local.start < self.text.range.start + piece.end);
-        for unit in &units[first..last] {
-            let (native, local) = self.unit(unit);
-            let start = local.start.max(piece.start);
-            let end = local.end.min(piece.end);
-            let absolute = if native.len() == local.len() {
-                native.start + start - local.start..native.start + end - local.start
-            } else {
-                native.clone()
-            };
-            let begin = output.text.len();
-            output.text.push_str(&self.text[start..end]);
-            Arc::make_mut(&mut output.units).push((absolute, begin..output.text.len()));
-        }
+        output.materialize()
     }
 
     /// Source extent of a local selection, including an empty boundary.
@@ -267,15 +242,17 @@ impl ScopeSource {
 
     /// Replace native spelling units without rebuilding earlier transformation spans.
     pub(crate) fn replace(&self, from: &str, to: &str) -> Self {
-        let mut output = self.select(std::iter::empty());
+        let mut output = Cursor::default();
         let mut start = 0;
         for (offset, _) in self.text.match_indices(from) {
-            self.select_piece(start..offset, &mut output);
-            output.spelling(self.extent(offset..offset + from.len()), to);
+            output.append(self.select(std::iter::once(start..offset)));
+            let mut spelling = self.select(std::iter::empty());
+            spelling.spelling(self.extent(offset..offset + from.len()), to);
+            output.append(spelling);
             start = offset + from.len();
         }
-        self.select_piece(start..self.text.len(), &mut output);
-        output
+        output.append(self.select(std::iter::once(start..self.text.len())));
+        output.materialize()
     }
 
     /// Replace a known leading prefix with one mapped spelling transformation.
@@ -291,8 +268,10 @@ impl ScopeSource {
             self.extent(0..length)
         };
         output.spelling(native, text);
-        self.select_piece(length..self.text.len(), &mut output);
-        output
+        let mut pieces = Cursor::default();
+        pieces.append(output);
+        pieces.append(self.select(std::iter::once(length..self.text.len())));
+        pieces.materialize()
     }
 
     /// Append an atomic spelling while retaining the authored extent it represents.
