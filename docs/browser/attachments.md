@@ -40,8 +40,8 @@ errors. One sheet omits the tab strip. Each multi-sheet body retains its own scr
 offsets; ordinary repaints retain the table and error nodes.
 The registry owns position and scaling, while the spreadsheet root keeps its
 bounded height during measurement. Selecting text, replacing content or closing
-releases that workbook view. Word rendering remains in
-[#797](https://github.com/Orchestration-Maestro/maestro/issues/797); no extracted-text
+releases that workbook view. Word rendering remains pending in
+[#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761); no extracted-text
 fallback is substituted for it. Legacy spreadsheet reading remains in
 [#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046). A file-presentation failure replaces the body
 with centered, selectable native error text while leaving download and close
