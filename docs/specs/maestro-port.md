@@ -405,8 +405,16 @@ The read-only footer contract `ReadonlyFooterDataProvider`, its live
 `ExtensionStatuses` view and the one generic insertion-ordered live map behind it
 belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
 because extension footer factories receive it. The application keeps the footer
-metadata owner, its Git, watch, count and status policy and its existing public
+metadata owner, its branch, watch, count and status policy and its existing public
 paths, which re-export the moved declarations.
+Native repository discovery belongs to `maestro-workspace::workspace::git`.
+The daemon and application footer reuse its directory walk, lexical path and drive
+resolution, shared Unicode trimming, and unreadable-link and missing-HEAD stop
+policy. The footer keeps branch, detached-head and watch policy; Git subprocess
+fallbacks stay with the process-owning callers. The application reaches discovery
+through the daemon's re-export on its declared dependency edge. Use native files
+rather than a new injected discovery port whose only other adapter is a test fake.
+
 
 The crate is core, sits below layer 0 and depends on no workspace crate, including
 `maestro-path`. Only the table entries that list it

@@ -185,13 +185,22 @@ need `unsafe` to hand its descriptor to the async runtime.
 ### Topology without runtimes
 
 - **Scope.** `maestro-workspace` holds topology only: layouts, workspaces, tabs, pane viewport state, public
-  numbers, metadata tokens and git label rules.
+  numbers, metadata tokens, git label rules and native repository discovery.
 - **Identity ownership.** One `WorkspaceTopology` owns its workspace collection and the allocator for
   pane, terminal and workspace identities. Creation and split operations use this allocator. Restore
   admission reserves saved pane/workspace identities and public counters before new allocation; terminal
   identities are allocated afresh. Counters survive workspace removal and are independent between owners.
 - **Runtimes.** The daemon passes the spawn closure and inserts the runtime into its one registry.
-- **Repository identity.** It enters topology as data; discovery runs in the daemon.
+- **Repository identity.** Native discovery belongs to the existing
+  `maestro-workspace::workspace::git` owner. The daemon and application footer use
+  the same directory walk for ordinary, linked, bare and embedded-bare layouts.
+  That owner preserves lexical path and drive resolution, shared Unicode trimming,
+  and stopping at unreadable links or a repository marker without HEAD. The footer
+  keeps branch, detached-head and watch policy. Git subprocess fallbacks stay in
+  the process-owning callers. The footer reaches the shared owner through the
+  daemon's re-export on the already declared application-to-daemon edge; no new
+  crate-graph edge or injected filesystem port is added. Discovery tests use real
+  temporary directories rather than a second, fake-only filesystem adapter.
 - **Geometry.** Topology uses its own rectangle and border set.
 
 ### One pane runtime over the concrete emulator
@@ -286,7 +295,7 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 | A second runtime owner beside the registry | topology without runtimes | 3, 12 |
 | Two WSL detectors that disagree | one detector over the union of both signal sets | 29 |
 | Daemon state mixed with view state; daemon operations inside the input module | the state split above | 12, 27, 28 |
-| The footer branch reader misses bare, embedded-bare and reftable layouts | the footer reads through the daemon's repository discovery | 12 |
+| The footer branch reader misses bare, embedded-bare and reftable layouts | the footer and daemon share workspace-owned native repository discovery | 12 |
 | An unlocked whole-file configuration rewrite can lose a concurrent write | writes through the settings file lock | 8, 12 |
 
 Each fix carries a root-cause table in its delivery report: the reference file and line where the defect
