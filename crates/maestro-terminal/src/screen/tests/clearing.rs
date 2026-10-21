@@ -347,7 +347,7 @@ fn selective_clear_refreshes_metadata_once() {
         stored
             .append_grapheme(crate::page::CellPosition { x: cols - 2, y: 0 }, '\u{301}')
             .unwrap();
-        stored.row_shift_work = 0;
+        crate::tests::WORK.with_borrow_mut(|work| work.row_shift = 0);
         if per_run {
             for x in (1..cols).step_by(2) {
                 s.clear_cells(p.node, 0, x..x + 1);
@@ -357,7 +357,7 @@ fn selective_clear_refreshes_metadata_once() {
         }
         let stored = page(&s);
         (
-            stored.row_shift_work,
+            crate::tests::WORK.with_borrow(|work| work.row_shift),
             stored.get_cells(0).to_vec(),
             *stored.get_row(0),
         )

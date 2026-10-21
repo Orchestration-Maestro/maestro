@@ -170,7 +170,7 @@ fn iteration_work(rows: u16) -> [usize; 4] {
         list.split(pin).unwrap();
     }
     let origin = list.get_top_left(crate::point::Tag::Screen);
-    list.nodes.queries.set(0);
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let mut pages = list.page_iterator(
         Direction::RightDown,
         Point::Screen(Coordinate::default()),
@@ -185,10 +185,11 @@ fn iteration_work(rows: u16) -> [usize; 4] {
             cell_count += page.get_cells(y).len();
         }
     }
-    let indexed = list.nodes.queries.get();
+    let indexed = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
     let rows = usize::from(rows);
     assert_eq!((chunks, row_count, cell_count), (rows / 16, rows, rows * 5));
-    list.nodes.queries.set(0);
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let mut row_it = list.row_iterator(
         Direction::RightDown,
         Point::Screen(Coordinate::default()),
@@ -199,8 +200,9 @@ fn iteration_work(rows: u16) -> [usize; 4] {
         assert_eq!((usize::from(pin.y), pin.x), (row % 16, 0));
     }
     assert!(row_it.next(&list).is_none());
-    let row_queries = list.nodes.queries.get();
-    list.nodes.queries.set(0);
+    let row_queries = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let mut cells = list.cell_iterator(
         Direction::RightDown,
         Point::Screen(Coordinate::default()),
@@ -214,7 +216,8 @@ fn iteration_work(rows: u16) -> [usize; 4] {
         );
     }
     assert!(cells.next(&list).is_none());
-    let cell_queries = list.nodes.queries.get();
+    let cell_queries = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
     let stateful = iteration_controls(&list, origin, rows);
     assert!(indexed < row_queries && row_queries < cell_queries);
     eprintln!(
@@ -225,14 +228,15 @@ fn iteration_work(rows: u16) -> [usize; 4] {
 
 /// Compare stateful single-row advancement with actual repeated prefix walks.
 fn iteration_controls(list: &PageList, origin: Pin, rows: usize) -> usize {
-    list.nodes.queries.set(0);
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let mut pin = origin;
     for _ in 1..rows {
         pin = pin.down(list, 1).unwrap();
     }
     assert!(pin.down(list, 1).is_none());
-    let stateful = list.nodes.queries.get();
-    list.nodes.queries.set(0);
+    let stateful = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let mut repeated = 0;
     for target in 0..rows {
         let mut pin = origin;
@@ -244,7 +248,14 @@ fn iteration_controls(list: &PageList, origin: Pin, rows: usize) -> usize {
     }
     assert_eq!(repeated, rows * (rows - 1) / 2);
     assert_eq!(repeated, if rows == 64 { 2016 } else { 8128 });
-    assert!(list.nodes.queries.get() > stateful * 10);
+    assert!(
+        crate::tests::WORK.with_borrow(|work| work
+            .queries
+            .get(&list.first.arena)
+            .copied()
+            .unwrap_or(0))
+            > stateful * 10
+    );
     stateful
 }
 
@@ -313,11 +324,12 @@ fn reverse_rotation_work(rows: u16, history: u16) -> (usize, usize) {
     }
     let origin = list.pin_at_row(usize::from(history), 0).unwrap();
     let cursor = list.track_pin(origin).unwrap();
-    list.nodes.queries.set(0);
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let origin = *list.tracked_pin(cursor).unwrap();
     list.rotate_rows_down_from(origin).unwrap();
-    let reverse = list.nodes.queries.get();
-    list.nodes.queries.set(0);
+    let reverse = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     for target in 0..rows / 16 {
         let mut node = origin.node;
         for _ in 0..target {
@@ -325,7 +337,35 @@ fn reverse_rotation_work(rows: u16, history: u16) -> (usize, usize) {
         }
         assert!(list.page(node).is_some());
     }
-    let repeated = list.nodes.queries.get();
+    let repeated = crate::tests::WORK
+        .with_borrow(|work| work.queries.get(&list.first.arena).copied().unwrap_or(0));
     eprintln!("ROTATION rows={rows} history={history} reverse={reverse} repeated={repeated}");
     (reverse, repeated)
+}
+
+#[test]
+fn work_observations_keep_arena_owners_separate() {
+    let mut list = screen(5, 3);
+    let other = screen(5, 3);
+    let origin = list.get_top_left(crate::point::Tag::Screen);
+    let foreign = other.get_top_left(crate::point::Tag::Screen);
+    let tracked = list.track_pin(origin).unwrap();
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
+    assert!(list.page(origin.node).is_some());
+    assert_eq!(*list.tracked_pin(tracked).unwrap(), origin);
+    assert!(list.page(foreign.node).is_none());
+    assert!(other.page(foreign.node).is_some());
+    let queries = crate::tests::WORK.with_borrow(|work| work.queries.clone());
+    let selected = queries.get(&origin.node.arena).copied().unwrap_or(0);
+    assert_eq!(selected, 2);
+    assert_eq!(queries.get(&tracked.0.arena), Some(&1));
+    assert_eq!(queries.get(&foreign.node.arena), Some(&1));
+    assert_eq!(queries.len(), 3);
+    assert_ne!(queries.values().sum::<usize>(), selected);
+    crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
+    assert!(list.page(origin.node).is_some());
+    crate::tests::WORK.with_borrow(|work| {
+        assert_eq!(work.queries.get(&origin.node.arena), Some(&1));
+        assert_eq!(work.queries.len(), 1);
+    });
 }

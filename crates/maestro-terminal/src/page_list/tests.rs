@@ -799,7 +799,8 @@ fn same_page_full_row_transfer_does_not_visit_cells() {
         let mut list = resize::screen(cols, 3);
         let source = list.pin(Point::Active(Coordinate { x: 0, y: 0 })).unwrap();
         let destination = source.down(&list, 1).unwrap();
+        crate::tests::WORK.with_borrow_mut(|work| work.row_shift = 0);
         list.transfer_row(source, destination, 0..cols).unwrap();
-        assert_eq!(list.page(source.node).unwrap().row_shift_work, 0);
+        assert_eq!(crate::tests::WORK.with_borrow(|work| work.row_shift), 0);
     }
 }

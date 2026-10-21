@@ -47,9 +47,6 @@ mod hyperlinks;
 
 /// Owned rows, cells and the storage used by their managed content.
 pub struct Page {
-    /// Cell visits made by row movement and suffix-flag refreshes in tests.
-    #[cfg(test)]
-    pub(crate) row_shift_work: usize,
     /// Current addressable dimensions, bounded by capacity.
     pub size: Size,
     /// Fixed storage budgets chosen at initialization.
@@ -87,8 +84,6 @@ impl Page {
     pub fn init(capacity: Capacity) -> Self {
         assert!(capacity.rows > 0);
         Self {
-            #[cfg(test)]
-            row_shift_work: 0,
             size: Size {
                 cols: capacity.cols,
                 rows: capacity.rows,
@@ -213,8 +208,6 @@ mod tests;
 impl Clone for Page {
     fn clone(&self) -> Self {
         Self {
-            #[cfg(test)]
-            row_shift_work: self.row_shift_work,
             size: self.size,
             capacity: self.capacity,
             dirty: self.dirty,

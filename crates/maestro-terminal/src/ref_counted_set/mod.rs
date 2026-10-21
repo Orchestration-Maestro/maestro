@@ -134,14 +134,6 @@ impl<T: Eq + Hash> RefCountedSet<T> {
 pub(crate) struct Layout {
     /// Item slots including reserved zero.
     pub(crate) cap: u64,
-    /// Power-of-two hash table slots.
-    pub(crate) table_cap: u64,
-    /// Wrapped table index mask.
-    pub(crate) table_mask: u16,
-    /// Table byte offset.
-    pub(crate) table_start: u64,
-    /// Aligned item byte offset.
-    pub(crate) items_start: u64,
     /// Combined logical byte size.
     pub(crate) total_size: u64,
 }
@@ -157,10 +149,6 @@ pub(crate) fn layout(capacity: u64, item_bytes: u64, item_align: u64) -> Layout 
     let items_start = (table_cap * 2).div_ceil(item_align) * item_align;
     Layout {
         cap,
-        table_cap,
-        table_mask: u16::try_from(table_cap.saturating_sub(1)).unwrap_or(u16::MAX),
-        table_start: 0,
-        items_start,
         total_size: items_start + cap * item_bytes,
     }
 }

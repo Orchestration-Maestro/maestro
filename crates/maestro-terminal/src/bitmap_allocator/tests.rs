@@ -86,9 +86,6 @@ fn bitmap_layout_matches() {
     check_recorded_layouts::<32>();
 
     let layout = BitmapAllocator::<4>::layout(256);
-    assert_eq!(layout.bitmap_count, 1);
-    assert_eq!(layout.bitmap_start, 0);
-    assert_eq!(layout.chunks_start, 8);
     assert_eq!(layout.total_size, 264);
     assert_eq!(BitmapAllocator::<4>::layout(0).total_size, 0);
     assert_eq!(BitmapAllocator::<4>::layout(257).total_size, 528);
@@ -118,11 +115,14 @@ fn check_addressable<const CHUNK: usize>() {
         8193,
     ] {
         let layout = BitmapAllocator::<CHUNK>::layout(bytes);
+        let allocator = BitmapAllocator::<CHUNK>::init(u32::try_from(bytes).unwrap());
+        let bitmap_count = allocator.bitmap.len() as u64;
+        let metadata_bytes = bitmap_count * 8;
         assert_eq!(
-            layout.total_size - layout.chunks_start,
-            layout.bitmap_count * 64 * CHUNK as u64
+            layout.total_size - metadata_bytes,
+            bitmap_count * 64 * CHUNK as u64
         );
-        assert!(layout.total_size - layout.chunks_start >= bytes);
+        assert!(layout.total_size - metadata_bytes >= bytes);
     }
 }
 
@@ -410,426 +410,48 @@ fn check_recorded_layouts<const CHUNK: usize>() {
 
 /// Chunk size, requested bytes and complete independent logical layout.
 const BITMAP_LAYOUTS: &[(usize, u64, super::Layout)] = &[
-    (
-        1,
-        0,
-        super::Layout {
-            total_size: 0,
-            bitmap_count: 0,
-            bitmap_start: 0,
-            chunks_start: 0,
-        },
-    ),
-    (
-        1,
-        1,
-        super::Layout {
-            total_size: 72,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        1,
-        2,
-        super::Layout {
-            total_size: 72,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        1,
-        63,
-        super::Layout {
-            total_size: 72,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        1,
-        64,
-        super::Layout {
-            total_size: 72,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        1,
-        65,
-        super::Layout {
-            total_size: 144,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        1,
-        128,
-        super::Layout {
-            total_size: 144,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        2,
-        0,
-        super::Layout {
-            total_size: 0,
-            bitmap_count: 0,
-            bitmap_start: 0,
-            chunks_start: 0,
-        },
-    ),
-    (
-        2,
-        1,
-        super::Layout {
-            total_size: 136,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        2,
-        2,
-        super::Layout {
-            total_size: 136,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        2,
-        3,
-        super::Layout {
-            total_size: 136,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        2,
-        126,
-        super::Layout {
-            total_size: 136,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        2,
-        128,
-        super::Layout {
-            total_size: 136,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        2,
-        129,
-        super::Layout {
-            total_size: 272,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        2,
-        256,
-        super::Layout {
-            total_size: 272,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        4,
-        0,
-        super::Layout {
-            total_size: 0,
-            bitmap_count: 0,
-            bitmap_start: 0,
-            chunks_start: 0,
-        },
-    ),
-    (
-        4,
-        1,
-        super::Layout {
-            total_size: 264,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        4,
-        3,
-        super::Layout {
-            total_size: 264,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        4,
-        4,
-        super::Layout {
-            total_size: 264,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        4,
-        5,
-        super::Layout {
-            total_size: 264,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        4,
-        252,
-        super::Layout {
-            total_size: 264,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        4,
-        256,
-        super::Layout {
-            total_size: 264,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        4,
-        257,
-        super::Layout {
-            total_size: 528,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        4,
-        512,
-        super::Layout {
-            total_size: 528,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        16,
-        0,
-        super::Layout {
-            total_size: 0,
-            bitmap_count: 0,
-            bitmap_start: 0,
-            chunks_start: 0,
-        },
-    ),
-    (
-        16,
-        1,
-        super::Layout {
-            total_size: 1_032,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        16,
-        15,
-        super::Layout {
-            total_size: 1_032,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        16,
-        16,
-        super::Layout {
-            total_size: 1_032,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        16,
-        17,
-        super::Layout {
-            total_size: 1_032,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        16,
-        1_008,
-        super::Layout {
-            total_size: 1_032,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        16,
-        1_024,
-        super::Layout {
-            total_size: 1_032,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        16,
-        1_025,
-        super::Layout {
-            total_size: 2_064,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        16,
-        2_048,
-        super::Layout {
-            total_size: 2_064,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        32,
-        0,
-        super::Layout {
-            total_size: 0,
-            bitmap_count: 0,
-            bitmap_start: 0,
-            chunks_start: 0,
-        },
-    ),
-    (
-        32,
-        1,
-        super::Layout {
-            total_size: 2_056,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        32,
-        31,
-        super::Layout {
-            total_size: 2_056,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        32,
-        32,
-        super::Layout {
-            total_size: 2_056,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        32,
-        33,
-        super::Layout {
-            total_size: 2_056,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        32,
-        2_016,
-        super::Layout {
-            total_size: 2_056,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        32,
-        2_048,
-        super::Layout {
-            total_size: 2_056,
-            bitmap_count: 1,
-            bitmap_start: 0,
-            chunks_start: 8,
-        },
-    ),
-    (
-        32,
-        2_049,
-        super::Layout {
-            total_size: 4_112,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
-    (
-        32,
-        4_096,
-        super::Layout {
-            total_size: 4_112,
-            bitmap_count: 2,
-            bitmap_start: 0,
-            chunks_start: 16,
-        },
-    ),
+    (1, 0, super::Layout { total_size: 0 }),
+    (1, 1, super::Layout { total_size: 72 }),
+    (1, 2, super::Layout { total_size: 72 }),
+    (1, 63, super::Layout { total_size: 72 }),
+    (1, 64, super::Layout { total_size: 72 }),
+    (1, 65, super::Layout { total_size: 144 }),
+    (1, 128, super::Layout { total_size: 144 }),
+    (2, 0, super::Layout { total_size: 0 }),
+    (2, 1, super::Layout { total_size: 136 }),
+    (2, 2, super::Layout { total_size: 136 }),
+    (2, 3, super::Layout { total_size: 136 }),
+    (2, 126, super::Layout { total_size: 136 }),
+    (2, 128, super::Layout { total_size: 136 }),
+    (2, 129, super::Layout { total_size: 272 }),
+    (2, 256, super::Layout { total_size: 272 }),
+    (4, 0, super::Layout { total_size: 0 }),
+    (4, 1, super::Layout { total_size: 264 }),
+    (4, 3, super::Layout { total_size: 264 }),
+    (4, 4, super::Layout { total_size: 264 }),
+    (4, 5, super::Layout { total_size: 264 }),
+    (4, 252, super::Layout { total_size: 264 }),
+    (4, 256, super::Layout { total_size: 264 }),
+    (4, 257, super::Layout { total_size: 528 }),
+    (4, 512, super::Layout { total_size: 528 }),
+    (16, 0, super::Layout { total_size: 0 }),
+    (16, 1, super::Layout { total_size: 1_032 }),
+    (16, 15, super::Layout { total_size: 1_032 }),
+    (16, 16, super::Layout { total_size: 1_032 }),
+    (16, 17, super::Layout { total_size: 1_032 }),
+    (16, 1_008, super::Layout { total_size: 1_032 }),
+    (16, 1_024, super::Layout { total_size: 1_032 }),
+    (16, 1_025, super::Layout { total_size: 2_064 }),
+    (16, 2_048, super::Layout { total_size: 2_064 }),
+    (32, 0, super::Layout { total_size: 0 }),
+    (32, 1, super::Layout { total_size: 2_056 }),
+    (32, 31, super::Layout { total_size: 2_056 }),
+    (32, 32, super::Layout { total_size: 2_056 }),
+    (32, 33, super::Layout { total_size: 2_056 }),
+    (32, 2_016, super::Layout { total_size: 2_056 }),
+    (32, 2_048, super::Layout { total_size: 2_056 }),
+    (32, 2_049, super::Layout { total_size: 4_112 }),
+    (32, 4_096, super::Layout { total_size: 4_112 }),
 ];
 
 #[test]
