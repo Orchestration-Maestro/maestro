@@ -521,11 +521,11 @@
     "content": "[script](javascript:alert%281%29) [relative](../file) [fragment](#part) [mail](mailto:a@example.test)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:alert%281%29\">script</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"../file\">relative</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"#part\">fragment</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"mailto:a@example.test\">mail</a></p>\n",
+    "html": "<p>script <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"../file\">relative</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"#part\">fragment</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"mailto:a@example.test\">mail</a></p>\n",
     "tree": null,
     "original_reference": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:alert%281%29\">script</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"../file\">relative</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"#part\">fragment</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"mailto:a@example.test\">mail</a></p>\n",
-    "ruling": "S3315/S3358/S3383/S3785",
-    "target_source": "unchanged public block fixture"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "block-table",
@@ -1093,11 +1093,11 @@
     "content": "$$x$y$$",
     "escape_html": true,
     "thinking": false,
-    "html": "<p>$<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span>y$$</p>\n",
+    "html": "<p>$<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span>y\n$$</p>\n",
     "tree": null,
     "original_reference": "<p>$<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span>y\n$$</p>\n",
-    "ruling": "S3315/S3358/S3383/S3785",
-    "target_source": "unchanged public block fixture"
+    "ruling": null,
+    "target_source": "Unmodified Markdown observation"
   },
   {
     "id": "block-empty-slash",
@@ -3775,88 +3775,88 @@
     "content": "[**label** *child*](<javascript:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:payload\"><strong>label</strong> <em>child</em></a></p>\n",
+    "html": "<p><strong>label</strong> <em>child</em></p>\n",
     "tree": null,
     "original_reference": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"&lt;javascript:payload&gt;\"><strong>label</strong> <em>child</em></a></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-image-javascript",
     "content": "![**literal** &amp; alt](<javascript:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><img src=\"javascript:payload\" alt=\"literal &amp; alt\"></p>\n",
+    "html": "<p>literal &amp; alt</p>\n",
     "tree": null,
     "original_reference": "<p><img src=\"&lt;javascript:payload&gt;\" alt=\"literal &amp; alt\"></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-link-JaVaScRiPt",
     "content": "[**label** *child*](<JaVaScRiPt:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"JaVaScRiPt:payload\"><strong>label</strong> <em>child</em></a></p>\n",
+    "html": "<p><strong>label</strong> <em>child</em></p>\n",
     "tree": null,
     "original_reference": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"&lt;JaVaScRiPt:payload&gt;\"><strong>label</strong> <em>child</em></a></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-image-JaVaScRiPt",
     "content": "![**literal** &amp; alt](<JaVaScRiPt:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><img src=\"JaVaScRiPt:payload\" alt=\"literal &amp; alt\"></p>\n",
+    "html": "<p>literal &amp; alt</p>\n",
     "tree": null,
     "original_reference": "<p><img src=\"&lt;JaVaScRiPt:payload&gt;\" alt=\"literal &amp; alt\"></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-link-vbscript",
     "content": "[**label** *child*](<vbscript:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"vbscript:payload\"><strong>label</strong> <em>child</em></a></p>\n",
+    "html": "<p><strong>label</strong> <em>child</em></p>\n",
     "tree": null,
     "original_reference": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"&lt;vbscript:payload&gt;\"><strong>label</strong> <em>child</em></a></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-image-vbscript",
     "content": "![**literal** &amp; alt](<vbscript:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><img src=\"vbscript:payload\" alt=\"literal &amp; alt\"></p>\n",
+    "html": "<p>literal &amp; alt</p>\n",
     "tree": null,
     "original_reference": "<p><img src=\"&lt;vbscript:payload&gt;\" alt=\"literal &amp; alt\"></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-link-VBSCRIPT",
     "content": "[**label** *child*](<VBSCRIPT:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"VBSCRIPT:payload\"><strong>label</strong> <em>child</em></a></p>\n",
+    "html": "<p><strong>label</strong> <em>child</em></p>\n",
     "tree": null,
     "original_reference": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"&lt;VBSCRIPT:payload&gt;\"><strong>label</strong> <em>child</em></a></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-image-VBSCRIPT",
     "content": "![**literal** &amp; alt](<VBSCRIPT:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><img src=\"VBSCRIPT:payload\" alt=\"literal &amp; alt\"></p>\n",
+    "html": "<p>literal &amp; alt</p>\n",
     "tree": null,
     "original_reference": "<p><img src=\"&lt;VBSCRIPT:payload&gt;\" alt=\"literal &amp; alt\"></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-link-data",
@@ -3973,22 +3973,22 @@
     "content": "[label](<jav&#x61;script:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:payload\">label</a></p>\n",
+    "html": "<p>label</p>\n",
     "tree": null,
     "original_reference": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"&lt;jav&#x61;script:payload&gt;\">label</a></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-boundary-image-entity-scheme",
     "content": "![alt](<jav&#x61;script:payload>)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><img src=\"javascript:payload\" alt=\"alt\"></p>\n",
+    "html": "<p>alt</p>\n",
     "tree": null,
     "original_reference": "<p><img src=\"&lt;jav&#x61;script:payload&gt;\" alt=\"alt\"></p>\n",
-    "ruling": "S3785/S3801",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-boundary-link-encoded-scheme",
@@ -4963,11 +4963,11 @@
     "content": "~~[label](javascript:x)~~",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><del><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:x\">label</a></del></p>\n",
+    "html": "<p><del>label</del></p>\n",
     "tree": null,
     "original_reference": "<p><del><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:x\">label</a></del></p>\n",
-    "ruling": null,
-    "target_source": "unmodified reference"
+    "ruling": "Authored destinations are parsed normally; executable links retain label formatting and executable images retain alternative text.",
+    "target_source": "Independent Markdown observation with the established executable-target correction"
   },
   {
     "id": "export-strike-reference-label",
@@ -5524,11 +5524,11 @@
     "content": "[\\\\[ $x$ ]](/docs \"tip\")",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/docs\" title=\"tip\">\\[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]</a></p>\n",
+    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/docs\" title=\"tip\">[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]</a></p>\n",
     "tree": null,
     "original_reference": "<p>[<br>[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]](/docs &quot;tip&quot;)</p>\n",
-    "ruling": "S3377",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "A formula stays inside its authored link label; bracket unescaping precedes ordinary inline escapes.",
+    "target_source": "Independent ordinary link-label observation with independently recorded inline formula markup"
   },
   {
     "id": "direct-formula-label-8",
