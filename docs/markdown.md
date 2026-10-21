@@ -8,7 +8,7 @@ column alignment and link handling through owned Rust types. Links distinguish
 authored labels (including resolved references), angle-enclosed URIs or mapped
 bare destinations, and angle-enclosed email addresses.
 
-After mapped-link selection, `InlineContext::new(&document)` indexes original
+After parsing, `InlineContext::new(&document)` indexes original
 container and link-label scopes. `scope(range, label)` exposes authored bytes,
 resolved operands and opaque ranges without parsing a fragment for admission.
 `InlineScope::interpret` applies native inline grammar locally with caller spans
@@ -29,22 +29,29 @@ matching. Recursive spans and labels use their selected child windows. Generated
 nodes own their source, while returned runs retain original document operands,
 not the temporary tokenizer. Code, image, HTML and autolink ranges remain barriers.
 
-Parsing keeps accepted bare addresses whole outside link labels and raw anchors in
-the terminal, browser and export grammars. Raw-anchor context is local to each
-inline block; completing an authored link or image label clears it. Scoped
-interpretation starts with the context at the selected range and applies the same
-transitions to retained operands. Documentation grammar still applies emphasis
-inside such text. Call `autolinks(&mut document)` separately to map bare URL, www
-and email spans to links.
-Native code, authored links and images remain opaque to that pass. Identity text
-units retain exact selected source subranges; decoded transformations stay atomic.
-The candidate scan consumes failed email-local runs without retrying each suffix;
+Parsing emits bare URL, www and email links at reached inline cursors outside
+link labels and raw anchors in the terminal, browser and export grammars.
+Raw-anchor context follows the document's queued inline bodies, including bodies
+split by caller block extensions; completing an authored link or image label
+clears it. Scoped interpretation starts with the context at the
+selected range and applies the same transitions to retained operands.
+Documentation grammar still applies emphasis inside such text.
+Bare-link labels and destinations retain their authored spelling, while surrounding
+text is decoded. Source ranges point to the original document, including through
+container framing and escaped table pipes.
+Web prefixes require an ASCII letter, digit or hyphen immediately afterward, not
+a valid domain name; later bytes may include underscores or Unicode. Terminal
+and export grammars admit mixed-case prefixes only at reached text cursors,
+including after consumed escaped punctuation. Browser protocol matching is
+case-insensitive, while its `www.` prefix is lowercase.
+The recognizer skips failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
 
 The parser retains link titles, destinations and inline labels; image destinations,
 titles and alt children; table alignments and authored cell spans; task markers;
-and full code information and bodies. Container-local
-source removes quote/list continuation prefixes. Aligned list continuations expand
+and full code information and bodies. Export renders literal image alt text,
+not its inline children; those children remain available in the shared document.
+Container-local source removes quote/list continuation prefixes. Aligned list continuations expand
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still
 names the original document source, not its container-local spelling.
 

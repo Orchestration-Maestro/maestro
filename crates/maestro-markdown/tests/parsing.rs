@@ -119,17 +119,8 @@ fn parser_retains_container_source_extents() {
 }
 
 #[test]
-fn parser_orders_native_structure_before_mapped_links() {
-    let mut document = parse("$x$ https://example.org/$q$ &amp; www.example.org. \\* https://other.org\n\n| a |\n| - |\n| www.example.org/\\| |\n".to_owned());
-    let Kind::Paragraph(children) = &document.nodes[0].kind else {
-        panic!("paragraph")
-    };
-    assert!(
-        !children
-            .iter()
-            .any(|node| matches!(node.kind, Kind::Link(..)))
-    );
-    maestro_markdown::autolinks(&mut document);
+fn parser_retains_native_structure_with_inline_links() {
+    let document = parse("$x$ https://example.org/$q$ &amp; www.example.org. \\* https://other.org\n\n| a |\n| - |\n| www.example.org/\\| |\n".to_owned());
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
     };
@@ -189,9 +180,9 @@ fn assert_tasks(document: &maestro_markdown::Document) {
 
 #[test]
 fn mapped_links_retain_source_boundaries_before_escaped_math() {
-    let mut document =
+    let document =
         parse("https://example.test/a $x$ www.example.test \\(y\\) a@example.test".into());
-    maestro_markdown::autolinks(&mut document);
+
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
     };
@@ -236,8 +227,8 @@ fn inline_context_keeps_original_reference_operands_and_consumed_suffixes() {
 #[test]
 fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
     use maestro_markdown::InlineContext;
-    let mut document = parse("> - [\\[$x$\\]][r] and \\(x\n>   y\\)\n\n[r]: /docs\n\n| cell |\n| - |\n| https://example.test/a\\|b/$x$ $y$ |".into());
-    maestro_markdown::autolinks(&mut document);
+    let document = parse("> - [\\[$x$\\]][r] and \\(x\n>   y\\)\n\n[r]: /docs\n\n| cell |\n| - |\n| https://example.test/a\\|b/$x$ $y$ |".into());
+
     let context = InlineContext::new(&document);
     let Kind::Quote(c, _) = &document.nodes[0].kind else {
         panic!("quote")
@@ -288,8 +279,8 @@ fn mapped_links_keep_entity_units_and_suffix_source_ranges() {
 /// Observe a complete mapped link and its decoded suffix in one source frame.
 fn assert_mapped_entity_link(entity: &str, frame: &str, source_tail: &str, decoded_tail: &str) {
     let label = format!("https://x.y/a{entity}b");
-    let mut document = parse(format!("{frame}{label}{source_tail}"));
-    maestro_markdown::autolinks(&mut document);
+    let document = parse(format!("{frame}{label}{source_tail}"));
+
     let mut nodes = document.nodes.as_slice();
     let nodes = loop {
         nodes = match &nodes[0].kind {
@@ -346,8 +337,8 @@ fn list_tabs_align_continuations_without_losing_source_ranges() {
 #[test]
 fn tabbed_list_table_operands_keep_original_source_coordinates() {
     let source = "- | a |\n  | - |\n  | x\thttps://x.y/a&amp;b tail |";
-    let mut document = parse(source.into());
-    maestro_markdown::autolinks(&mut document);
+    let document = parse(source.into());
+
     let Kind::List(_, items) = &document.nodes[0].kind else {
         panic!("list")
     };

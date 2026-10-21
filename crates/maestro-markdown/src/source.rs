@@ -25,13 +25,6 @@ impl ScopeSource {
     pub(crate) fn native(&self, range: &Range<usize>) -> Option<Range<usize>> {
         self.project(range, true)
     }
-    /// Bytes remaining in the current identity span or atomic transformed unit.
-    pub(crate) fn remaining(&self, offset: usize) -> usize {
-        let index = self.units.partition_point(|(_, local)| local.end <= offset);
-        self.units
-            .get(index)
-            .map_or(0, |(_, local)| local.end - offset)
-    }
     /// Share boundary projection in both directions, retaining atomic transformations.
     fn project(&self, range: &Range<usize>, reverse: bool) -> Option<Range<usize>> {
         #[cfg(test)]

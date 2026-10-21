@@ -1,5 +1,5 @@
 //! Work and source-identity regressions at the shared inline boundary.
-use crate::{InlineAtom, InlineContext, Kind, Node, autolinks, parse};
+use crate::{InlineAtom, InlineContext, Kind, Node, parse};
 use std::cell::RefCell;
 
 /// Per-thread counters so independent parser tests cannot affect the witness.
@@ -43,14 +43,10 @@ pub(crate) struct Work {
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
-    /// Unit comparisons in actual authored-to-source range searches.
-    pub(crate) source_examinations: usize,
     /// Original definition indexes constructed by the document lexer.
     pub(crate) reference_indexes: usize,
     /// Bytes supplied to the fallback text recognizer.
     pub(crate) text_bytes: usize,
-    /// Bytes searched for the end of a fallback text line.
-    pub(crate) line_bytes: usize,
     /// Authored bytes compared by the plain-text merge check.
     pub(crate) merge_bytes: usize,
     /// Bare-address checks run at inline token starts.
@@ -103,13 +99,13 @@ fn interpret(nodes: &[Node], context: &InlineContext<'_>) {
 fn measured(paragraphs: usize, paragraph: &str, escaping: bool) -> Work {
     let source = paragraph.repeat(paragraphs) + "[r]: /docs \"tip\"\n";
     WORK.with_borrow_mut(|work| *work = Work::default());
-    let mut document = crate::parse_with_options(
+    let document = crate::parse_with_options(
         source,
         crate::MarkedOptions::Browser {
             escape_html: escaping,
         },
     );
-    autolinks(&mut document);
+
     let context = InlineContext::new(&document);
     interpret(&document.nodes, &context);
     WORK.with_borrow(|work| *work)
@@ -219,8 +215,8 @@ fn parser_does_not_repeat_document_admission() {
 fn measured_link_sources(count: usize) -> Work {
     let line = "> https://frame.test/&amp;\n";
     WORK.with_borrow_mut(|work| *work = Work::default());
-    let mut document = parse(line.repeat(count));
-    autolinks(&mut document);
+    let document = parse(line.repeat(count));
+
     let Kind::Quote(children, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
@@ -243,7 +239,8 @@ fn measured_link_sources(count: usize) -> Work {
 fn mapped_link_source_ranges_use_ordered_boundaries() {
     let counts = [32, 64, 128].map(measured_link_sources);
     eprintln!("source-range work={counts:?}");
-    assert!(counts[2].source_examinations < 3 * counts[1].source_examinations);
+    assert!(counts[1].projections <= 2 * counts[0].projections);
+    assert!(counts[2].projections <= 2 * counts[1].projections);
 }
 
 /// A caller block from `open` through the next `close`.
@@ -396,28 +393,6 @@ fn paragraph_work(source: String, options: crate::MarkedOptions) -> Work {
 /// Whether work measured at N, 2N and 4N units grows by the same amount per unit.
 fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
     large - medium == 2 * (medium - small)
-}
-
-#[test]
-fn paragraph_text_work_grows_linearly_with_its_lines() {
-    for options in [
-        crate::MarkedOptions::Documentation,
-        crate::MarkedOptions::Terminal,
-        crate::MarkedOptions::Export,
-        crate::MarkedOptions::Browser { escape_html: false },
-        crate::MarkedOptions::Browser { escape_html: true },
-    ] {
-        let grows = |shape: &str| {
-            let work = [64, 128, 256].map(|count| paragraph_work(shape.repeat(count), options));
-            (
-                grows_linearly(work.map(|work| work.text_bytes)),
-                grows_linearly(work.map(|work| work.line_bytes)),
-            )
-        };
-        assert_eq!(grows("plain line.\n"), (true, true), "{options:?} lines");
-        // One line keeps the rest of the line visible to the recognizer, but finds its end once.
-        assert!(grows("a_ ").1, "{options:?} one line");
-    }
 }
 
 #[test]

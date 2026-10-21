@@ -8,8 +8,8 @@ use std::ops::Range;
 struct InlineState {
     /// Next source byte to consume.
     cursor: usize,
-    /// Cached end of the current authored line.
-    line_end: usize,
+    /// End of the last failed email-local run in this inline window.
+    email_skip: usize,
     /// Previous scalar retained only across plain text.
     kept: Option<char>,
     /// Last plain-text node eligible for extension.
@@ -31,7 +31,6 @@ impl Tokenizer<'_> {
         let mut output = Vec::new();
         let mut state = InlineState {
             cursor: extent.start,
-            line_end: extent.start,
             ..InlineState::default()
         };
         let masked = self.mask(extent.clone(), atoms);
@@ -81,7 +80,7 @@ impl Tokenizer<'_> {
         output
     }
 
-    /// Advance plain text or a bare address while retaining one line and merge cursor.
+    /// Emit a reached bare address or consume one caller-selected fallback token.
     fn fallback(
         &self,
         (range, limit, previous): (Range<usize>, usize, Option<char>),
@@ -91,20 +90,41 @@ impl Tokenizer<'_> {
     ) {
         let text = &self.source.text[range.clone()];
         let cursor = state.cursor;
-        let address = self.address(text, output);
-        if let Some(size) = address.filter(|size| cursor + size <= limit) {
-            self.push_text(cursor..cursor + size, output, &mut state.plain_tail);
+        let address = self.address(range.clone(), &mut state.email_skip);
+        if let Some((size, href)) = address.filter(|(size, _)| cursor + size <= limit) {
+            if self.scopes.is_none() {
+                self.push_text(cursor..cursor + size, output, &mut state.plain_tail);
+                state.cursor += size;
+                return;
+            }
+            let label = text[..size].to_owned();
+            let child = node(
+                self.source,
+                cursor..cursor + size,
+                Kind::Text(crate::Text {
+                    decoded: label.clone(),
+                    authored: label.clone(),
+                }),
+            );
+            output.push(node(
+                self.source,
+                cursor..cursor + size,
+                Kind::Link(
+                    vec![child],
+                    label,
+                    href,
+                    crate::LinkMetadata {
+                        title: String::new(),
+                        link_type: crate::LinkType::Autolink,
+                    },
+                ),
+            ));
             state.cursor += size;
             return;
         }
-        if cursor >= state.line_end {
-            state.line_end = self.line_end(range.clone());
-        }
-        // Only the first line is kept, so the recognizer never reads past its newline.
         let hint = self.caller_hint(range, admission);
-        let line = &text[..state.line_end.min(limit).min(hint) - cursor];
+        let line = &text[..limit.min(hint) - cursor];
         let size = self.text(line);
-        let size = line[..size].find('\n').unwrap_or(size);
         self.push_text(cursor..cursor + size, output, &mut state.plain_tail);
         state.kept = line[..size]
             .chars()
@@ -123,8 +143,7 @@ impl Tokenizer<'_> {
         mut admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
-        self.soft_break(text)
-            .or_else(|| self.admit_operand(range.clone(), atoms, admission.as_deref_mut()))
+        self.admit_operand(range.clone(), atoms, admission.as_deref_mut())
             .or_else(|| self.emphasis(range.clone(), masked, atoms, admission.as_deref_mut()))
             .or_else(|| self.line_break(text))
             .or_else(|| self.deletion(range, atoms, admission))

@@ -10,7 +10,7 @@ use crate::{
 pub(crate) use entities::decode_operand;
 use std::{collections::HashMap, ops::Range};
 
-/// Link-label and raw-anchor state used by tokenization and mapped link selection.
+/// Link-label and raw-anchor state used by inline tokenization.
 #[derive(Clone, Copy)]
 pub(crate) struct LinkContext(bool);
 
@@ -70,7 +70,7 @@ pub(crate) struct Tokenizer<'a> {
     /// Parent run slots for remapped label atoms.
     pub(crate) atom_indices: Option<&'a [usize]>,
     /// Link-label and raw-anchor context shared by recursive inline spans.
-    context: LinkContext,
+    pub(crate) context: LinkContext,
     /// Local interpretation has no document scope collector.
     #[cfg(test)]
     local: bool,
@@ -124,13 +124,16 @@ impl<'a> Tokenizer<'a> {
     }
 
     /// Keep accepted bare addresses whole where the grammar enables URL tokens.
-    fn address(&self, text: &str, output: &[Node]) -> Option<usize> {
-        let previous = match output.last().map(|node| &node.kind) {
-            Some(Kind::Text(text)) => text.authored.chars().next_back(),
-            _ => None,
-        };
+    fn address(&self, range: Range<usize>, email_skip: &mut usize) -> Option<(usize, String)> {
         (!self.context.active() && self.options != MarkedOptions::Documentation)
-            .then(|| crate::autolinks::address(text, previous, self.options))
+            .then(|| {
+                crate::autolinks::address(
+                    &self.source.text[range.clone()],
+                    self.options,
+                    range.start,
+                    email_skip,
+                )
+            })
             .flatten()
     }
 
@@ -141,7 +144,21 @@ impl<'a> Tokenizer<'a> {
         output: &mut Vec<Node>,
         plain_tail: &mut Option<usize>,
     ) {
-        entities::decode_units(&self.source.text[range.clone()], |unit, decoded| {
+        let text = &self.source.text[range.clone()];
+        let trim = text.rfind('\n').map_or(0, |newline| {
+            let indent = self.continuation_indent(&self.source.text[range.start + newline + 1..]);
+            if newline + 1 + indent == text.len() {
+                indent
+            } else {
+                0
+            }
+        });
+        entities::decode_units(text, |unit, decoded| {
+            let decoded = if unit.end == text.len() {
+                &decoded[..decoded.len() - trim]
+            } else {
+                decoded
+            };
             let range = range.start + unit.start..range.start + unit.end;
             append_text(
                 output,
@@ -156,24 +173,6 @@ impl<'a> Tokenizer<'a> {
                 plain_tail,
             );
         });
-    }
-
-    /// Authored soft breaks apply the selected continuation policy before decoding text.
-    fn soft_break(&self, text: &str) -> Option<(usize, Kind)> {
-        let rest = text.strip_prefix('\n')?;
-        if self.options == MarkedOptions::Export
-            && let Some(token) = self.line_break(text)
-        {
-            return Some(token);
-        }
-        let end = 1 + self.continuation_indent(rest);
-        Some((
-            end,
-            Kind::Text(Text {
-                authored: text[..end].to_owned(),
-                decoded: "\n".to_owned(),
-            }),
-        ))
     }
 
     /// Escaped punctuation retains separate authored and display spellings.
@@ -199,15 +198,6 @@ impl<'a> Tokenizer<'a> {
         }
         let matched = rules::INLINE_TAG.as_ref()?.find(text)?;
         Some((matched.end(), Kind::Html(text[matched.range()].to_owned())))
-    }
-
-    /// The end of the line containing `range.start`: just past its newline, or the range end.
-    fn line_end(&self, range: Range<usize>) -> usize {
-        let text = &self.source.text[range.clone()];
-        let end = text.find('\n').map_or(text.len(), |newline| newline + 1);
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.line_bytes += end);
-        range.start + end
     }
 
     /// Select fallback text without crossing a typed operand boundary.

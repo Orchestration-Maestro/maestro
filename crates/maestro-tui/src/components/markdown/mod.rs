@@ -5,12 +5,19 @@ mod inline;
 mod lists;
 use maestro_markdown as nodes;
 
-/// Applies terminal text policy before shared parsing and mapped links.
-fn parse(text: &str) -> Vec<nodes::Node> {
+/// Applies terminal text policy before shared parsing.
+fn parse(text: &str, clean_content: bool) -> Vec<nodes::Node> {
+    // Binary controls stay until decoding so removal cannot join an entity.
+    let stripped = if clean_content {
+        maestro_text::terminal::strip_ansi(text).ok()
+    } else {
+        None
+    };
+    let text = stripped.as_deref().unwrap_or(text);
     let source =
         maestro_text::normalize_to_lf(&text.replace('\t', "   ")).replace('\0', "\u{fffd}");
-    let mut document = nodes::parse(source);
-    nodes::autolinks(&mut document);
+    let document = nodes::parse(source);
+
     document.nodes
 }
 mod tables;
@@ -89,7 +96,7 @@ pub struct MarkdownTheme {
 
 /// Padding and base style supplied to a Markdown component.
 pub struct MarkdownOptions {
-    /// Filters decoded authored values before terminal styling when enabled.
+    /// Strips input escapes before parsing and cleans decoded values before styling when enabled.
     pub clean_content: bool,
     /// Requested margin on each side.
     pub padding_x: usize,
@@ -171,7 +178,11 @@ impl Markdown {
             default_prefix: std::cell::OnceCell::new(),
         };
         let content: Vec<String> = renderer
-            .blocks(&parse(text), content_width, inline::Style::Default)
+            .blocks(
+                &parse(text, self.options.clean_content),
+                content_width,
+                inline::Style::Default,
+            )
             .into_iter()
             .flat_map(|line| {
                 if crate::is_image_line(&line) {

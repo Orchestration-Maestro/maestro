@@ -23,9 +23,9 @@ fn export_writer_needs_no_inline_context() {
         serde_json::from_str(include_str!("../../fixtures/container_export.json")).unwrap();
     let mut failures = Vec::new();
     for case in cases {
-        let mut document =
+        let document =
             markdown::parse_with_options(case.input.clone(), markdown::MarkedOptions::Export);
-        markdown::autolinks(&mut document);
+
         let mut writer = Writer {
             policy: Policy::Export(&highlighter),
             prepared: Prepared::default(),
@@ -47,4 +47,20 @@ struct ContainerExport {
     input: String,
     /// Complete returned HTML.
     html: String,
+}
+
+#[test]
+fn export_images_keep_literal_alt_bytes() {
+    let highlighter = maestro_theme::SyntectHighlighter::new().unwrap();
+    let cases: Vec<ContainerExport> =
+        serde_json::from_str(include_str!("../../fixtures/source_image_export.json")).unwrap();
+    assert_eq!(cases.len(), 6);
+    for case in cases {
+        assert_eq!(
+            super::prepare_export(&case.input, &highlighter),
+            case.html,
+            "{:?}",
+            case.input
+        );
+    }
 }

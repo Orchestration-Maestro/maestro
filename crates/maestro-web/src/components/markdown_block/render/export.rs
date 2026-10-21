@@ -5,9 +5,9 @@ use maestro_theme::{HighlightProfile, SyntaxHighlighter};
 
 /// Prepare standalone viewer markup without retained chat controls.
 pub(crate) fn prepare_export(text: &str, highlighter: &dyn SyntaxHighlighter) -> String {
-    let mut document =
+    let document =
         markdown::parse_with_options(normalize_to_lf(text), markdown::MarkedOptions::Export);
-    markdown::autolinks(&mut document);
+
     let mut writer = Writer {
         policy: Policy::Export(highlighter),
         prepared: Prepared::default(),

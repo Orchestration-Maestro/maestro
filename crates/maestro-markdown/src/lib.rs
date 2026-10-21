@@ -1,4 +1,4 @@
-//! Owned Markdown parsing with a separate mapped extended-link pass.
+//! Owned Markdown parsing with cursor-time extended links.
 mod autolinks;
 mod helpers;
 mod inline;
@@ -9,7 +9,6 @@ mod source;
 mod tokenizer;
 mod types;
 
-pub use autolinks::autolinks;
 pub use inline::{InlineAtom, InlineContext, InlineRun, InlineScope, InlineToken, InlineTokenizer};
 pub use parse::{
     BlockTokenizer, InvalidBlockToken, parse, parse_with_options, parse_with_tokenizer,

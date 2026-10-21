@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! Grammar observations through the owned parser's public entry points.
 use maestro_markdown::{
-    InlineAtom, InlineContext, Kind, MarkedOptions, Node, autolinks, parse, parse_with_options,
+    InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse, parse_with_options,
 };
 use serde::Deserialize;
 
@@ -365,8 +365,8 @@ fn failed_local_runs_preserve_text_and_later_addresses() {
             .flat_map(|scalar| ["", "@localhost", " b@c.io"].map(|tail| (scalar, tail)))
         {
             let input = format!("Payload: {}{tail}", scalar.to_string().repeat(256));
-            let mut document = parse_with_options(input.clone(), options);
-            autolinks(&mut document);
+            let document = parse_with_options(input.clone(), options);
+
             assert_eq!(text(&document.nodes), input);
             let expected = if tail == " b@c.io" {
                 vec!["mailto:b@c.io"]
@@ -401,9 +401,8 @@ fn mapped_links_share_one_policy_aware_scanner() {
             vec!["HTTPS://a.test", "ftp://b.test"],
         ),
     ] {
-        let mut document = parse_with_options("HTTPS://a.test ftp://b.test".into(), options);
-        assert!(hrefs(&document.nodes).is_empty());
-        autolinks(&mut document);
+        let document = parse_with_options("HTTPS://a.test ftp://b.test".into(), options);
+
         assert_eq!(hrefs(&document.nodes), expected);
     }
     for (options, expected) in [
@@ -421,11 +420,11 @@ fn mapped_links_share_one_policy_aware_scanner() {
             vec!["https://inner.test", "https://outer.test"],
         ),
     ] {
-        let mut document = parse_with_options(
+        let document = parse_with_options(
             "a <a href=\"/raw\"> https://inner.test </a> https://outer.test".into(),
             options,
         );
-        autolinks(&mut document);
+
         assert_eq!(hrefs(&document.nodes), expected);
     }
 }
@@ -439,8 +438,8 @@ fn quotes_keep_lazy_continuations_and_nested_extents() {
         assert_eq!(&document.source[document.nodes[0].range.clone()], input);
     }
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
-        let mut document = parse(input.into());
-        maestro_markdown::autolinks(&mut document);
+        let document = parse(input.into());
+
         let Kind::Quote(children, _) = &document.nodes[0].kind else {
             panic!("quote")
         };
@@ -1031,11 +1030,28 @@ fn retained_labels_and_display_splits_share_address_context() {
                 "{source:?} {range:?}"
             );
             assert!(
-                emphasis || text(children).contains("https://a.b/_x_"),
+                emphasis || retained_text(children, &run.atoms).contains("https://a.b/_x_"),
                 "{source:?} {range:?}"
             );
         }
     }
+}
+
+/// Read displayed text through the original operands retained by local interpretation.
+fn retained_text(nodes: &[Node], atoms: &[InlineAtom<'_>]) -> String {
+    nodes
+        .iter()
+        .map(|node| {
+            let original = match node.kind {
+                Kind::Atom(index) => match &atoms[index] {
+                    InlineAtom::Resolved(original) => *original,
+                    InlineAtom::Opaque(_) => node,
+                },
+                _ => node,
+            };
+            text(std::slice::from_ref(original))
+        })
+        .collect()
 }
 
 /// Dollar prefixes used to observe the shared admission contract, not math rendering.
@@ -1257,4 +1273,135 @@ fn cursor_admission_checks_native_prefix_boundaries() {
     );
     assert!(run.atoms.is_empty());
     assert_eq!(cursor_shape(&run.nodes), "xé");
+}
+
+/// One source input with independently recorded ordered operands for every caller.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LinkSource {
+    /// Stable failure attribution.
+    id: String,
+    /// Complete authored source.
+    input: String,
+    /// Terminal, raw browser, escaped browser and export operands.
+    targets: [Vec<(String, String)>; 4],
+}
+
+#[test]
+fn mapped_link_sources_match_selected_grammars() {
+    let rows: Vec<LinkSource> =
+        serde_json::from_str(include_str!("fixtures/link_sources.json")).unwrap();
+    assert_eq!(rows.len(), 84);
+    let mut failures = Vec::new();
+    for row in rows {
+        for (options, expected) in [
+            MarkedOptions::Terminal,
+            MarkedOptions::Browser { escape_html: false },
+            MarkedOptions::Browser { escape_html: true },
+            MarkedOptions::Export,
+        ]
+        .into_iter()
+        .zip(row.targets)
+        {
+            let document = parse_with_options(row.input.clone(), options);
+
+            assert_eq!(document.source, row.input, "{} {options:?}", row.id);
+            let (mut labels, mut destinations) = (Vec::new(), Vec::new());
+            observations::metadata(
+                &document.nodes,
+                &mut Vec::new(),
+                &mut labels,
+                &mut destinations,
+                options,
+            );
+            let actual: Vec<_> = labels.into_iter().zip(destinations).collect();
+            if actual != expected {
+                failures.push(format!(
+                    "{} {options:?}: {actual:?} != {expected:?}",
+                    row.id
+                ));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn rejected_folded_web_spans_keep_nested_candidates() {
+    for prefix in ["HTTPS://", "HTTP://", "FTP://", "WWW."] {
+        for (label, destination) in [
+            ("https://target.example", "https://target.example"),
+            ("http://target.example", "http://target.example"),
+            ("ftp://target.example", "ftp://target.example"),
+            ("www.target.example", "http://www.target.example"),
+        ] {
+            let source = format!("See {prefix}redirect.example/?url={label}");
+            for options in [MarkedOptions::Terminal, MarkedOptions::Export] {
+                let document = parse_with_options(source.clone(), options);
+
+                let (mut labels, mut destinations) = (Vec::new(), Vec::new());
+                observations::metadata(
+                    &document.nodes,
+                    &mut Vec::new(),
+                    &mut labels,
+                    &mut destinations,
+                    options,
+                );
+                assert_eq!(document.source, source);
+                assert_eq!(labels, [label], "{source} {options:?}");
+                assert_eq!(destinations, [destination], "{source} {options:?}");
+            }
+        }
+    }
+}
+
+#[test]
+fn inline_admission_keeps_mixed_case_links_after_escaped_rejected_prefixes() {
+    for options in [MarkedOptions::Terminal, MarkedOptions::Export] {
+        for tail in ["", "/?url=https://last.example"] {
+            let input = format!(r"See HTTPS://outer.example/\*HTTPS://target.example{tail}");
+            let document = parse_with_options(input.clone(), options);
+            assert_eq!(
+                hrefs(&document.nodes),
+                [format!("HTTPS://target.example{tail}")],
+                "{options:?} {input:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn fallback_text_keeps_multiline_spelling_and_reached_cursors() {
+    for options in [
+        MarkedOptions::Documentation,
+        MarkedOptions::Terminal,
+        MarkedOptions::Export,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+    ] {
+        for source in ["plain line.\n".repeat(256), "a_ ".repeat(256)] {
+            let document = parse_with_options(source.clone(), options);
+            let Kind::Paragraph(children) = &document.nodes[0].kind else {
+                panic!("paragraph")
+            };
+            let decoded: String = children
+                .iter()
+                .map(|node| match &node.kind {
+                    Kind::Break => "\n".to_owned(),
+                    _ => text(std::slice::from_ref(node)),
+                })
+                .collect();
+            assert_eq!(decoded, source.trim_end_matches('\n'));
+        }
+        let document = parse_with_options("a\nHTTPS://a.b".into(), options);
+        let expected = if matches!(
+            options,
+            MarkedOptions::Browser { .. } | MarkedOptions::Export
+        ) {
+            vec!["HTTPS://a.b"]
+        } else {
+            vec![]
+        };
+        assert_eq!(hrefs(&document.nodes), expected, "{options:?}");
+    }
 }

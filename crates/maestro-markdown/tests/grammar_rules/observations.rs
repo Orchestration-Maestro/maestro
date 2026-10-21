@@ -1,7 +1,5 @@
 //! Semantic field observations from the three caller grammars.
-use maestro_markdown::{
-    Alignment, Cell, Kind, MarkedOptions, Node, Table, autolinks, parse_with_options,
-};
+use maestro_markdown::{Alignment, Cell, Kind, MarkedOptions, Node, Table, parse_with_options};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -57,13 +55,12 @@ pub(super) fn check_with_options(
         seen += 1;
         assert_eq!(row.targets.len(), options.len(), "{}", row.id);
         for (target, (options, expected)) in options.iter().copied().zip(&row.targets).enumerate() {
-            let mut document =
-                parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
+            let document = parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
             if let Some(raw) = &row.raw_quotes {
                 check_raw(&document, &raw[target], &row.id);
             }
-            autolinks(&mut document);
-            if let Some(difference) = metadata_difference(&row, target, &document.nodes) {
+
+            if let Some(difference) = metadata_difference(&row, target, &document.nodes, options) {
                 failures.push(format!("{} {options:?}: {difference}", row.id));
             }
             // The export grammar's recording keeps only the authored image label.
@@ -78,7 +75,12 @@ pub(super) fn check_with_options(
 }
 
 /// Describe a mismatch only for recorded, non-excluded metadata targets.
-fn metadata_difference(row: &Row, target: usize, nodes: &[Node]) -> Option<String> {
+fn metadata_difference(
+    row: &Row,
+    target: usize,
+    nodes: &[Node],
+    options: MarkedOptions,
+) -> Option<String> {
     let expected = (
         recorded(row.inline_authored.as_ref(), target),
         recorded(row.link_labels.as_ref(), target),
@@ -93,7 +95,13 @@ fn metadata_difference(row: &Row, target: usize, nodes: &[Node]) -> Option<Strin
         return None;
     };
     let (mut actual_authored, mut labels) = (Vec::new(), Vec::new());
-    metadata(nodes, &mut actual_authored, &mut labels);
+    metadata(
+        nodes,
+        &mut actual_authored,
+        &mut labels,
+        &mut Vec::new(),
+        options,
+    );
     (actual_authored != *authored || labels != *expected_labels).then(|| {
         format!("metadata {actual_authored:?} / {labels:?} != {authored:?} / {expected_labels:?}")
     })
@@ -104,8 +112,14 @@ fn recorded(field: Option<&[Option<Vec<String>>; 4]>, target: usize) -> Option<&
     field?[target].as_ref()
 }
 
-/// Collect authored inline scopes and link labels.
-fn metadata(input: &[Node], authored: &mut Vec<String>, labels: &mut Vec<String>) {
+/// Collect authored scopes and ordered link operands consumed by the caller.
+pub(super) fn metadata(
+    input: &[Node],
+    authored: &mut Vec<String>,
+    labels: &mut Vec<String>,
+    destinations: &mut Vec<String>,
+    options: MarkedOptions,
+) {
     for node in input {
         let (scope, children): (bool, Vec<&[Node]>) = match &node.kind {
             Kind::Paragraph(children) | Kind::Inline(children) | Kind::Heading(_, children, _) => {
@@ -120,8 +134,9 @@ fn metadata(input: &[Node], authored: &mut Vec<String>, labels: &mut Vec<String>
                     .map(|cell| cell.children.as_slice())
                     .collect(),
             ),
-            Kind::Link(children, label, ..) => {
+            Kind::Link(children, label, destination, _) => {
                 labels.push(label.clone());
+                destinations.push(destination.clone());
                 (false, vec![children.as_slice()])
             }
             Kind::Item(children)
@@ -130,7 +145,9 @@ fn metadata(input: &[Node], authored: &mut Vec<String>, labels: &mut Vec<String>
             | Kind::Strong(children)
             | Kind::Emphasis(children)
             | Kind::Strike(children) => (false, vec![children.as_slice()]),
-            Kind::Image(_, meta) => (false, vec![meta.children.as_slice()]),
+            Kind::Image(_, meta) if options != MarkedOptions::Export => {
+                (false, vec![meta.children.as_slice()])
+            }
             _ => (false, Vec::new()),
         };
         if scope {
@@ -141,7 +158,7 @@ fn metadata(input: &[Node], authored: &mut Vec<String>, labels: &mut Vec<String>
             );
         }
         for nodes in children {
-            metadata(nodes, authored, labels);
+            metadata(nodes, authored, labels, destinations, options);
         }
     }
 }
@@ -247,4 +264,55 @@ fn observe_table(table: &Table, image_children: bool) -> Value {
         cells(&table.header),
         table.rows.iter().map(|row| cells(row)).collect::<Vec<_>>()
     ])
+}
+
+#[test]
+fn source_metadata_respects_export_image_policy() {
+    let input = "> ![a `[b]` [c][r]][img] [go](/u)\n\n[r]: /c \"child\"\n[img]: /img \"tip\"";
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        let document = parse_with_options(input.into(), options);
+
+        let (mut authored, mut labels, mut destinations) = (Vec::new(), Vec::new(), Vec::new());
+        metadata(
+            &document.nodes,
+            &mut authored,
+            &mut labels,
+            &mut destinations,
+            options,
+        );
+        assert_eq!(authored, ["![a `[b]` [c][r]][img] [go](/u)"]);
+        let expected = if options == MarkedOptions::Export {
+            vec![("go".into(), "/u".into())]
+        } else {
+            vec![("c".into(), "/c".into()), ("go".into(), "/u".into())]
+        };
+        assert_eq!(
+            labels.into_iter().zip(destinations).collect::<Vec<_>>(),
+            expected
+        );
+        let Kind::Quote(quote, _) = &document.nodes[0].kind else {
+            panic!("quote")
+        };
+        let Kind::Paragraph(children) = &quote[0].kind else {
+            panic!("paragraph")
+        };
+        let image = &children[0];
+        assert_eq!(image.authored, "![a `[b]` [c][r]][img]");
+        assert_eq!(document.source[image.range.clone()], image.authored);
+        let Kind::Image(_, meta) = &image.kind else {
+            panic!("image")
+        };
+        assert_eq!((&*meta.destination, &*meta.title), ("/img", "tip"));
+        assert!(matches!(&meta.children[1].kind, Kind::Code(code) if code == "[b]"));
+        let Kind::Link(label, text, href, child) = &meta.children[3].kind else {
+            panic!("child link")
+        };
+        assert_eq!((&**text, &**href, &*child.title), ("c", "/c", "child"));
+        assert!(matches!(&label[0].kind, Kind::Text(text) if text.decoded == "c"));
+    }
 }

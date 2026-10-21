@@ -29,6 +29,8 @@ pub(crate) struct Lexer<'a, E> {
     clipped: bool,
     /// Extension-hint barriers of the current block source, reused across its paragraphs.
     barriers: Option<tokenizer::inline::Barriers>,
+    /// Link context retained across the document's queued inline bodies.
+    context: tokenizer::inline::LinkContext,
     /// Immutable caller grammar.
     pub(crate) options: MarkedOptions,
     /// First definition for each folded identity.
@@ -51,6 +53,7 @@ impl<'a, E> Lexer<'a, E> {
             top: true,
             clipped: false,
             barriers: None,
+            context: tokenizer::inline::LinkContext::new(false),
             options,
             definitions: HashMap::new(),
             scopes: HashMap::new(),
@@ -325,14 +328,16 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Invoke the shared inline grammar using the document's retained definitions.
     fn inline(&mut self, source: &ScopeSource) -> Vec<Node> {
-        tokenizer::inline::Tokenizer::new(
+        let mut tokenizer = tokenizer::inline::Tokenizer::new(
             source,
             self.options,
             &self.definitions,
             Some(&mut self.scopes),
-            false,
-        )
-        .parse(&[], None)
+            self.context.active(),
+        );
+        let nodes = tokenizer.parse(&[], None);
+        self.context = tokenizer.context;
+        nodes
     }
 }
 

@@ -122,7 +122,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
-  parsing, owned source records and mapped extended links, depending only on text.
+  parsing, owned source records and cursor-time extended links, depending only on text.
   The toolkit consumes it; application re-exports it as `markdown`. The dedicated
   conventions checker may consume its code-block source ranges for documentation
   checks. Terminal normalization and formatting remain in the toolkit.

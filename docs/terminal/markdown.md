@@ -7,8 +7,10 @@ uses its terminal grammar by default, including strict double-tilde strikethroug
 Bare HTTP/HTTPS, www and email links are recognized in authored text,
 before entity and backslash decoding, without starting inside a consumed punctuation
 escape. Selected links retain their literal spelling; surrounding text uses native
-decoding. A www link requires a period in the domain
-after its prefix. HTML is literal text,
+decoding. Web prefixes require an ASCII letter, digit or hyphen immediately
+afterward, not a valid domain name. Later bytes may include underscores or
+Unicode. Mixed-case prefixes are recognized only at reached text cursors,
+including after consumed escaped punctuation. HTML is literal text,
 including inside lists; quoted HTML suppresses the message foreground, like other
 quote text. Images display authored label markup without enclosing
 quote/list prefixes, unescaping brackets but retaining other escapes.
@@ -31,8 +33,11 @@ the borders that fit. The minimum content width remains one cell, even at viewpo
 width zero. Wrapping follows the [styled text rules](text.md).
 
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
-`DefaultTextStyle`. Callers set `clean_content` to filter decoded authored values with
-the [shared terminal cleaners](../text.md) before styling and hyperlink generation.
+`DefaultTextStyle`. Callers set `clean_content` to strip complete terminal escapes
+before parsing, then clean decoded authored values before styling and hyperlink
+generation. Both passes use the [shared terminal cleaners](../text.md). Binary
+controls are removed only after decoding, so their removal cannot join an entity
+spelling before the parser reads it.
 Assistant messages and branch and compaction summaries set it to `true`.
 User messages leave it disabled to preserve authored terminal styles.
 
