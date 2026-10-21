@@ -4,6 +4,7 @@ use std::cell::RefCell;
 
 mod code_progress;
 mod container_frames;
+mod html_progress;
 mod paragraph_progress;
 mod shared_text;
 mod table_progress;
@@ -29,6 +30,8 @@ pub(crate) struct Work {
     pub(crate) fence_bytes: usize,
     /// Bytes supplied to indented-code grammar.
     pub(crate) code_bytes: usize,
+    /// Bytes supplied to HTML recognition.
+    pub(crate) html_bytes: usize,
     /// Bytes visited by physical-line framing, including repeated visits.
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.

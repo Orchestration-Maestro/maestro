@@ -116,7 +116,7 @@ pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block>
     if options == (MarkedOptions::Browser { escape_html: true }) {
         #[cfg(test)]
         crate::tests::block_operand(source.text);
-        let html = super::html::block(source.text)?;
+        let html = super::html::BlockRecognizer::default().finish(source.text)?;
         return Some(Block {
             consumed: html.consumed,
             node: source.node(0..html.consumed, Kind::HtmlBlock(html.value)),
@@ -125,14 +125,12 @@ pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block>
     }
     #[cfg(test)]
     crate::tests::block_operand(source.text);
-    let matched = rules::BLOCK_HTML.as_ref()?.find(source.text)?;
+    let consumed = rules::html::Recognizer::default().finish(source.text)?;
     Some(Block {
-        consumed: matched.end(),
+        consumed,
         node: source.node(
-            matched.range(),
-            Kind::HtmlBlock(super::html::block_value(
-                source.text[matched.range()].to_owned(),
-            )),
+            0..consumed,
+            Kind::HtmlBlock(super::html::block_value(source.text[..consumed].to_owned())),
         ),
         inline: None,
     })

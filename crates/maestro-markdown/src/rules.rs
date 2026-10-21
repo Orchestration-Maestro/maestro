@@ -2,7 +2,8 @@
 pub(crate) mod code;
 pub(crate) mod definition;
 pub(crate) mod fence;
-mod lines;
+pub(crate) mod html;
+pub(crate) mod lines;
 pub(crate) mod paragraph;
 pub(crate) mod table;
 use crate::MarkedOptions;
@@ -102,20 +103,6 @@ pub(crate) static LIST_ITEM: LazyLock<Option<Regex>> = LazyLock::new(|| {
 /// Detect a retained blank-line suffix between items of the same list.
 pub(crate) static LIST_BLANK_END: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"\n[ \t]*\n[ \t]*$", "").ok());
-
-/// Reference spelling of block html syntax.
-pub(crate) static BLOCK_HTML_SOURCE: LazyLock<String> = LazyLock::new(|| {
-    [
-        r"^ {0,3}(?:<(script|pre|style|textarea)[\s>][\s\S]*?(?:<\/\1>[^\n]*\n+|$)|<!--(?:-?>|[\s\S]*?(?:-->|$))[^\n]*(\n+|$)|<\?[\s\S]*?(?:\?>\n*|$)|<![A-Z][\s\S]*?(?:>\n*|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>\n*|$)|<\/?(",
-        TAG,
-        r#")(?: +|\n|\/?>)[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<(?!script|pre|style|textarea)([a-z][\w-]*)(?: +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?)*? *\/?>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<\/(?!script|pre|style|textarea)[a-z][\w-]*\s*>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$))"#,
-    ]
-    .concat()
-});
-
-/// Recognize block html syntax without a mutable match cursor.
-pub(crate) static BLOCK_HTML: LazyLock<Option<Regex>> =
-    LazyLock::new(|| stepwise(&BLOCK_HTML_SOURCE, "i"));
 
 /// Recognize inline escape syntax without a mutable match cursor.
 pub(crate) static INLINE_ESCAPE: LazyLock<Option<Regex>> = LazyLock::new(|| {

@@ -483,6 +483,7 @@ fn container_work(work: &super::Work) -> usize {
         + work.paragraph_bytes
         + work.table_bytes
         + work.fence_bytes
+        + work.html_bytes
         + work.code_bytes
         + work.framing_bytes
         + work.source_bytes

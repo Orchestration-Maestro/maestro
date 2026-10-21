@@ -3,7 +3,7 @@ use std::ops::Range;
 
 /// Offsets into an append-only operand, with no borrowed or copied source.
 #[derive(Default)]
-pub(super) struct Cursor {
+pub(crate) struct Cursor {
     /// Bytes already searched for a newline.
     scanned: usize,
     /// Start of the current incomplete line.
@@ -12,7 +12,7 @@ pub(super) struct Cursor {
 
 impl Cursor {
     /// Return one complete line, searching each newly supplied byte once.
-    pub(super) fn next(&mut self, source: &str) -> Option<Range<usize>> {
+    pub(crate) fn next(&mut self, source: &str) -> Option<Range<usize>> {
         let rest = source.get(self.scanned..)?;
         let end = rest.find('\n').map(|offset| self.scanned + offset + 1);
         let scanned = end.unwrap_or(source.len());
@@ -26,7 +26,7 @@ impl Cursor {
     }
 
     /// Return the final unterminated line at an explicit operand boundary.
-    pub(super) fn finish(&mut self, source: &str) -> Option<Range<usize>> {
+    pub(crate) fn finish(&mut self, source: &str) -> Option<Range<usize>> {
         let line = (self.start < source.len()).then_some(self.start..source.len());
         self.start = source.len();
         line
