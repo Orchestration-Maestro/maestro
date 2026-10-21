@@ -182,14 +182,7 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<AnthropicOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            raw_start::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            raw_start::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, raw_start::<Local>, raw_start::<Threaded>)
 }
 
 impl StreamOptionsFamily for AnthropicOptions {
@@ -245,14 +238,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
 /// Resolve thinking and key policy once for either family.

@@ -111,20 +111,7 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<BedrockOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => start::<Local>(ProviderCall {
-            model,
-            context,
-            options,
-            submit,
-        }),
-        ProviderInvocation::Threaded(options, submit) => start::<Threaded>(ProviderCall {
-            model,
-            context,
-            options,
-            submit,
-        }),
-    }
+    invocation.dispatch(model, context, start_call::<Local>, start_call::<Threaded>)
 }
 
 /// Resolve simple options, give a fixed-budget Claude model a budget that fits its token limit,
@@ -398,14 +385,36 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            let raw = simple_options(&model, options);
-            dispatch(model, context, Local::submission(Some(raw), submit))
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            let raw = simple_options(&model, options);
-            dispatch(model, context, Threaded::submission(Some(raw), submit))
-        }
-    }
+    invocation.dispatch(
+        model,
+        context,
+        simple_call::<Local>,
+        simple_call::<Threaded>,
+    )
+}
+
+/// Pack original raw inputs for the existing SDK producer.
+fn start_call<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<BedrockOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
+    start::<E>(ProviderCall {
+        model,
+        context,
+        options,
+        submit,
+    })
+}
+
+/// Project simple controls before the existing SDK dispatch.
+fn simple_call<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
+    let raw = simple_options(&model, options);
+    dispatch(model, context, E::submission(Some(raw), submit))
 }

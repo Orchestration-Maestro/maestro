@@ -83,14 +83,7 @@ pub(crate) fn dispatch(
     context: Context,
     invocation: ProviderInvocation<OpenAICompletionsOptions>,
 ) -> AssistantMessageEventStream {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            produce::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            produce::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, produce::<Local>, produce::<Threaded>)
 }
 
 /// Box the same producer with this concrete family's future bounds.
@@ -178,14 +171,7 @@ pub(crate) fn dispatch_simple(
     context: Context,
     invocation: ProviderInvocation<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
+    invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
 /// Resolve simple options once before using the same retained producer.
