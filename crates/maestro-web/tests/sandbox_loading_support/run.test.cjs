@@ -187,7 +187,7 @@ function request(url, pathname) {
     http.get({hostname: parsed.hostname, port: parsed.port, path: pathname}, response => {
       const chunks = [];
       response.on('data', chunk => chunks.push(chunk));
-      response.on('end', () => resolve({status: response.statusCode, type: response.headers['content-type'], body: Buffer.concat(chunks)}));
+      response.on('end', () => resolve({status: response.statusCode, type: response.headers['content-type'], cors: response.headers['access-control-allow-origin'], body: Buffer.concat(chunks)}));
     }).on('error', reject);
   });
 }
@@ -229,28 +229,74 @@ test('resources_close_after_success_and_failure', async t => {
 });
 
 test('server_exposes_only_packaged_loopback_files', async t => {
-  const root = fixture(t);
-  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-outside-'));
+  const root = fixture(t), outside = root + '-outside';
+  fs.mkdirSync(outside);
   t.after(() => fs.rmSync(outside, {recursive: true, force: true}));
-  fs.writeFileSync(path.join(outside, 'secret'), 'outside sentinel');
-  fs.symlinkSync(path.join(outside, 'secret'), path.join(root, 'escape.js'));
-  fs.writeFileSync(path.join(root, 'module.wasm'), Buffer.from([0, 97, 115, 109]));
+  fs.writeFileSync(path.join(outside, 'secret.js'), 'outside sentinel');
+  fs.symlinkSync(path.join(outside, 'secret.js'), path.join(root, 'escape.js'));
+  fs.symlinkSync(outside, path.join(root, 'escape-dir'));
+  fs.symlinkSync(path.join(root, 'escape.js'), path.join(root, 'chain.js'));
+  fs.symlinkSync(path.join(root, 'absent'), path.join(root, 'dangling.js'));
+  fs.mkdirSync(path.join(root, 'nested'));
   const {server, url} = await runner.serve(root);
   try {
     assert.equal(server.address().address, '127.0.0.1');
-    for (const urlPath of ['/../../Cargo.toml', '/%2e%2e/Cargo.toml', '/escape.js', '/%5c..%5cCargo.toml']) {
-      const response = await request(url, urlPath);
-      assert.equal(response.status, 403);
-      assert.equal(response.body.length, 0);
+    const denied = ['/../../Cargo.toml', '/%2e%2e/Cargo.toml', '/..%2f' + path.basename(outside) + '%2fsecret.js',
+      '/%5c..%5cCargo.toml', '/helper.js%00', '/%', '/%FF', '/' + path.join(outside, 'secret.js'),
+      '/%2f' + path.join(outside, 'secret.js').slice(1), '/escape.js', '/escape-dir/secret.js', '/chain.js',
+      '/.', '/nested/', '/../' + path.basename(outside) + '/helper.js'];
+    for (const pathname of denied) {
+      assert.deepEqual(await request(url, pathname),
+        {status: 403, type: undefined, cors: '*', body: Buffer.alloc(0)}, pathname);
     }
-    assert.equal((await request(url, '/missing.js')).status, 404);
-    for (const [urlPath, type] of [['/', 'text/html'], ['/helper.js', 'application/javascript'], ['/module.wasm', 'application/wasm']]) {
-      const response = await request(url, urlPath);
-      assert.equal(response.status, 200);
-      assert.equal(response.type, type);
-      assert(response.body.length);
+    for (const pathname of ['/missing.js', '/dangling.js']) {
+      assert.deepEqual(await request(url, pathname),
+        {status: 404, type: undefined, cors: '*', body: Buffer.alloc(0)}, pathname);
     }
   } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('server_preserves_packaged_resource_routes', async t => {
+  const root = fixture(t), outside = root + '-outside';
+  fs.mkdirSync(outside);
+  t.after(() => fs.rmSync(outside, {recursive: true, force: true}));
+  fs.writeFileSync(path.join(outside, 'helper.js'), 'outside helper sentinel');
+  fs.symlinkSync(outside, path.join(root, 'escape-dir'));
+  fs.mkdirSync(path.join(root, 'nested'));
+  for (const [file, bytes] of [['module.wasm', Buffer.from([0,97,115,109])], ['雪 space.js', 'unicode sentinel'],
+    ['%2e%2e', 'literal percent sentinel'], ['name?query.js', 'question sentinel'],
+    ['name#fragment.js', 'fragment sentinel'], ['nested/item.js', 'nested sentinel'],
+    ['nested/helper.js', 'decoy helper sentinel']]) fs.writeFileSync(path.join(root, file), bytes);
+  const html = '<!doctype html><body></body>', helper = "export const answer='helper-ok'";
+  const routes = [['/', 'text/html', html], ['/?v=1', 'text/html', html],
+    ['/helper.js', 'application/javascript', helper], ['/module.wasm', 'application/wasm', Buffer.from([0,97,115,109])],
+    ['/nested/item.js', 'application/javascript', 'nested sentinel'], ['/%E9%9B%AA%20space.js', 'application/javascript', 'unicode sentinel'],
+    ['/nested/./item.js', 'application/javascript', 'nested sentinel'], ['/nested//item.js', 'application/javascript', 'nested sentinel'],
+    ['/%252e%252e', 'application/octet-stream', 'literal percent sentinel'], ['/name%3Fquery.js', 'application/javascript', 'question sentinel'],
+    ['/name%23fragment.js', 'application/javascript', 'fragment sentinel'], ['/nested/helper.js', 'application/javascript', helper],
+    ['/snippets/absent/helper.js', 'application/javascript', helper], ['/escape-dir/helper.js', 'application/javascript', helper]];
+  const {server, url} = await runner.serve(root);
+  try {
+    for (const [pathname, type, body] of routes) {
+      assert.deepEqual(await request(url, pathname), {status: 200, type, cors: '*', body: Buffer.from(body)}, pathname);
+    }
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('server_preserves_canonical_root_and_internal_links', async t => {
+  const root = fixture(t), alias = root + '-alias';
+  fs.mkdirSync(path.join(root, 'nested'));
+  fs.writeFileSync(path.join(root, 'nested', 'item.js'), 'nested sentinel');
+  fs.symlinkSync(path.join(root, 'nested', 'item.js'), path.join(root, 'inside-link.js'));
+  fs.symlinkSync(root, alias);
+  t.after(() => fs.rmSync(alias, {force: true}));
+  for (const [directory, pathname] of [[root, '/inside-link.js'], [alias, '/nested/item.js']]) {
+    const {server, url} = await runner.serve(directory);
+    try {
+      assert.deepEqual(await request(url, pathname),
+        {status: 200, type: 'application/javascript', cors: '*', body: Buffer.from('nested sentinel')}, pathname);
+    } finally { await new Promise(resolve => server.close(resolve)); }
+  }
 });
 
 test('tool_versions_must_match_the_supplied_contract', t => {
