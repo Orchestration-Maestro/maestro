@@ -46,9 +46,11 @@ async function execute(root, options = {}) {
 
 function observedBrowser(observe) {
   return {async launch(options) {
+    assert(options.args.includes('--force-device-scale-factor=1.25'));
     const browser = await chromium.launch(options);
     const original = browser.newPage.bind(browser);
     browser.newPage = async (...args) => {
+      assert.deepEqual(args, [{deviceScaleFactor: 1.25}]);
       const page = await original(...args);
       await observe(page, browser);
       return page;
