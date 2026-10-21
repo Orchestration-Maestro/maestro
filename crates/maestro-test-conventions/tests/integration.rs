@@ -12,4 +12,5 @@ mod json_dependencies;
 mod quality;
 mod repetition;
 mod support;
+mod test_directories;
 mod time_limits;

@@ -3787,6 +3787,7 @@ dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
  "maestro-markdown",
+ "maestro-test-directory",
  "maestro-test-process",
  "proc-macro2",
  "ra-ap-rustc_lexer",
@@ -3794,6 +3795,13 @@ dependencies = [
  "serde_json",
  "syn 3.0.6",
  "toml",
+]
+
+[[package]]
+name = "maestro-test-directory"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
 ]
 
 [[package]]

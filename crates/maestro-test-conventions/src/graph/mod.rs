@@ -194,8 +194,7 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
-    if let Some(member) = member
-        && test_support_callers(member).is_some()
+    if let Some(member) = member.filter(|name| test_support_callers(name).is_some())
         && !native_declared(dependency, kind, &Kind::Development)
     {
         return Err(format!(
