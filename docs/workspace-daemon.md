@@ -127,6 +127,17 @@ Removal clears pane aliases, extension provenance and affected copy/selection
 records. Detached terminal metadata is removed and its identity is queued for the
 loop to shut down the existing runtime; still-attached terminals are retained.
 
+Screen and process events update the existing terminal-state owner. Completion
+acknowledgement distinguishes initial idle from finished work and respects active
+tab and outer-terminal focus. State updates retain before/after presentation,
+release status and acquisition suppression for the loop's consumers.
+
+Background notifications can be immediate or delayed. Pending transitions cancel
+when work resumes or their pane dies. Due delivery rechecks live state, identity,
+focus and the root terminal's directory. Workspace toasts, client notifications
+and sound decisions are independent; terminal delivery does not replace the
+workspace toast. Host notification and sound effects remain with the loop.
+
 `maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
 retains the latest 512 ordered event payloads. Replay returns only events strictly
 newer than the supplied sequence. Events use the shared type-tagged protocol

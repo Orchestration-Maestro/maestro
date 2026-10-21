@@ -17,6 +17,11 @@ fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
     }
     populate_terminals(&mut state);
     state.active = (!names.is_empty()).then_some(0);
+    state.toast_config.delay_seconds = 0;
+    state.sound.enabled = false;
+    if state.active.is_some() {
+        state.mode = maestro_daemon::app::state::Mode::Terminal;
+    }
     state
 }
 
@@ -532,4 +537,402 @@ fn pane_death_clears_only_its_selection_and_retires_detached_metadata() {
     assert!(state.terminals.is_empty());
     assert_eq!(state.terminal_runtime_shutdowns.len(), 2);
     assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_state_changed_updates_pane() {
+    use maestro_daemon::events::AppEvent;
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["test"]);
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(Agent::Pi),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    let terminal = &state.terminals[state.topology.workspaces[0].terminal_id(pane).unwrap()];
+    assert_eq!(terminal.state, AgentState::Working);
+    assert_eq!(terminal.detected_agent, Some(Agent::Pi));
+}
+
+#[test]
+fn daemon_state_changed_idle_in_background_marks_unseen() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent, settings::model::ToastDelivery};
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    state.toast_config.delay_seconds = 0;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    let terminal = state.topology.workspaces[1]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.terminals.get_mut(&terminal).unwrap().state = AgentState::Working;
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(Agent::Pi),
+        state: AgentState::Idle,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    assert!(!state.topology.workspaces[1].pane_state(pane).unwrap().seen);
+    assert_eq!(
+        state.toast.as_ref().map(|toast| toast.kind),
+        Some(ToastKind::Finished)
+    );
+}
+
+/// Reports the same screen-state envelope used by the background detector.
+fn report_state(
+    state: &mut DaemonState<fn() -> u128>,
+    pane: maestro_workspace::layout::PaneId,
+    next: maestro_detection::agents::AgentState,
+) -> Vec<maestro_daemon::app::actions::PaneStateUpdate> {
+    report_detected(
+        state,
+        pane,
+        maestro_daemon::terminal::state::DetectedStateUpdate {
+            agent: Some(maestro_detection::agents::Agent::Pi),
+            fallback_state: next,
+            visible: maestro_detection::agents::AgentVisibility {
+                visible_blocker: false,
+                visible_idle: false,
+                visible_working: false,
+            },
+            process_exited: false,
+        },
+    )
+}
+
+#[test]
+fn daemon_active_tab_completion_marks_pane_seen() {
+    use maestro_detection::agents::AgentState;
+    let mut state = app_with_workspaces(&["active"]);
+    state.outer_terminal_focus = Some(true);
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal = state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.terminals.get_mut(&terminal).unwrap().state = AgentState::Working;
+    state.topology.workspaces[0]
+        .pane_state_mut(pane)
+        .unwrap()
+        .seen = false;
+    report_state(&mut state, pane, AgentState::Idle);
+    assert_eq!(state.terminals[&terminal].state, AgentState::Idle);
+    assert!(state.topology.workspaces[0].pane_state(pane).unwrap().seen);
+}
+
+#[test]
+fn daemon_initial_idle_in_background_stays_seen() {
+    let mut state = app_with_workspaces(&["active", "background"]);
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Idle,
+    );
+    assert!(state.topology.workspaces[1].pane_state(pane).unwrap().seen);
+}
+
+#[test]
+fn daemon_idle_after_known_unknown_agent_in_background_marks_done() {
+    use maestro_detection::agents::AgentState;
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delay_seconds = 0;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(&mut state, pane, AgentState::Unknown);
+    report_state(&mut state, pane, AgentState::Idle);
+    assert!(!state.topology.workspaces[1].pane_state(pane).unwrap().seen);
+}
+
+#[test]
+fn daemon_waiting_sound_plays_even_in_active_workspace() {
+    use maestro_daemon::app::actions::notification_sound_for_state_change;
+    use maestro_detection::agents::AgentState;
+    assert_eq!(
+        notification_sound_for_state_change(true, AgentState::Working, AgentState::Blocked),
+        Some(maestro_protocol::schema::NotificationShowSound::Request)
+    );
+}
+
+#[test]
+fn daemon_done_sound_only_plays_in_background() {
+    use maestro_daemon::app::actions::notification_sound_for_state_change;
+    use maestro_detection::agents::AgentState;
+    assert_eq!(
+        notification_sound_for_state_change(false, AgentState::Working, AgentState::Idle),
+        Some(maestro_protocol::schema::NotificationShowSound::Done)
+    );
+    assert_eq!(
+        notification_sound_for_state_change(true, AgentState::Working, AgentState::Idle),
+        None
+    );
+    assert_eq!(
+        notification_sound_for_state_change(false, AgentState::Unknown, AgentState::Idle),
+        None
+    );
+}
+
+#[test]
+fn daemon_background_waiting_sets_attention_toast() {
+    use maestro_daemon::{app::state::ToastKind, settings::model::ToastDelivery};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Blocked,
+    );
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::NeedsAttention);
+    assert_eq!(toast.title, "pi needs attention");
+    assert_eq!(toast.context, "background · 2");
+}
+
+#[test]
+fn daemon_delayed_background_waiting_schedules_before_toast() {
+    use maestro_daemon::{app::state::ToastKind, settings::model::ToastDelivery};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    state.toast_config.delay_seconds = 1;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Blocked,
+    );
+    assert!(state.toast.is_none());
+    assert!(state.pending_agent_notifications.contains_key(&pane));
+    let deadline = state.next_pending_agent_notification_deadline().unwrap();
+    let deliveries = state.drain_due_agent_notifications(deadline);
+    assert_eq!(deliveries.len(), 1);
+    let toast = state.toast.as_ref().unwrap();
+    assert_eq!(toast.kind, ToastKind::NeedsAttention);
+    assert_eq!(toast.title, "pi needs attention");
+    assert_eq!(toast.context, "background · 2");
+    assert!(state.pending_agent_notifications.is_empty());
+}
+
+#[test]
+fn daemon_delayed_background_waiting_cancels_when_agent_resumes_working() {
+    use maestro_daemon::settings::model::ToastDelivery;
+    use maestro_detection::agents::AgentState;
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    state.toast_config.delay_seconds = 1;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(&mut state, pane, AgentState::Blocked);
+    let deadline = state.next_pending_agent_notification_deadline().unwrap();
+    state.handle_app_event(maestro_daemon::events::AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(maestro_detection::agents::Agent::Pi),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: true,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    assert!(state.pending_agent_notifications.is_empty());
+    assert!(state.drain_due_agent_notifications(deadline).is_empty());
+    assert!(state.toast.is_none());
+}
+
+#[test]
+fn daemon_delayed_background_waiting_is_suppressed_if_pane_becomes_active() {
+    use maestro_daemon::settings::model::ToastDelivery;
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    state.toast_config.delay_seconds = 1;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Blocked,
+    );
+    let deadline = state.next_pending_agent_notification_deadline().unwrap();
+    state.active = Some(1);
+    assert!(state.drain_due_agent_notifications(deadline).is_empty());
+    assert!(state.toast.is_none());
+}
+
+#[test]
+fn daemon_delayed_active_tab_unfocused_keeps_client_notification_available() {
+    use maestro_daemon::settings::model::ToastDelivery;
+    let mut state = app_with_workspaces(&["active"]);
+    state.outer_terminal_focus = Some(false);
+    state.toast_config.delivery = ToastDelivery::System;
+    state.toast_config.delay_seconds = 1;
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Blocked,
+    );
+    let deadline = state.next_pending_agent_notification_deadline().unwrap();
+    let deliveries = state.drain_due_agent_notifications(deadline);
+    assert_eq!(deliveries.len(), 1);
+    assert!(deliveries[0].toast.is_none());
+    assert!(deliveries[0].client_notification.is_some());
+    assert!(state.toast.is_none());
+}
+
+#[test]
+fn daemon_delayed_background_waiting_is_cleared_when_pane_dies() {
+    use maestro_daemon::settings::model::ToastDelivery;
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = ToastDelivery::Workspace;
+    state.toast_config.delay_seconds = 1;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Blocked,
+    );
+    let deadline = state.next_pending_agent_notification_deadline().unwrap();
+    state.handle_app_event(maestro_daemon::events::AppEvent::PaneDied { pane_id: pane });
+    assert!(state.pending_agent_notifications.is_empty());
+    assert!(state.drain_due_agent_notifications(deadline).is_empty());
+    assert!(state.toast.is_none());
+}
+
+/// Feeds supplied screen signals through the same event consumer as detection.
+fn report_detected(
+    state: &mut DaemonState<fn() -> u128>,
+    pane: maestro_workspace::layout::PaneId,
+    update: maestro_daemon::terminal::state::DetectedStateUpdate,
+) -> Vec<maestro_daemon::app::actions::PaneStateUpdate> {
+    state.handle_app_event(maestro_daemon::events::AppEvent::StateChanged {
+        pane_id: pane,
+        agent: update.agent,
+        state: update.fallback_state,
+        visible_blocker: update.visible.visible_blocker,
+        visible_working: update.visible.visible_working,
+        process_exited: update.process_exited,
+        observed_at: std::time::Instant::now(),
+    })
+}
+
+/// Reports process acquisition before any screen-state event.
+fn detect_agent(
+    state: &mut DaemonState<fn() -> u128>,
+    pane: maestro_workspace::layout::PaneId,
+    agent: maestro_detection::agents::Agent,
+) {
+    state.handle_app_event(maestro_daemon::events::AppEvent::AgentProcessDetected {
+        pane_id: pane,
+        agent,
+        observed_at: std::time::Instant::now(),
+    });
+}
+
+#[test]
+fn daemon_first_idle_after_process_detection_is_not_completion() {
+    use maestro_daemon::app::{actions::CompletionPolicy, state::ToastKind};
+    use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    detect_agent(&mut state, pane, Agent::Pi);
+    let direct = report_state(&mut state, pane, AgentState::Idle)
+        .pop()
+        .unwrap();
+    assert_eq!(direct.completion, CompletionPolicy::Suppress);
+    detect_agent(&mut state, pane, Agent::Pi);
+    for next in [AgentState::Working, AgentState::Blocked] {
+        report_detected(
+            &mut state,
+            pane,
+            maestro_daemon::terminal::state::DetectedStateUpdate {
+                agent: Some(Agent::Pi),
+                fallback_state: next,
+                process_exited: false,
+                visible: AgentVisibility {
+                    visible_blocker: next == AgentState::Blocked,
+                    visible_working: next == AgentState::Working,
+                    visible_idle: false,
+                },
+            },
+        );
+    }
+    let update = report_state(&mut state, pane, AgentState::Idle)
+        .pop()
+        .unwrap();
+    assert_eq!(update.completion, CompletionPolicy::Suppress);
+    assert!(state.topology.workspaces[1].pane_state(pane).unwrap().seen);
+    assert_ne!(
+        state.toast.as_ref().map(|toast| toast.kind),
+        Some(ToastKind::Finished)
+    );
+    assert_acquired_process_exit_is_completion(&mut state, pane);
+}
+
+/// Acquisition suppression ends when the actual detected process exits.
+fn assert_acquired_process_exit_is_completion(
+    state: &mut DaemonState<fn() -> u128>,
+    pane: maestro_workspace::layout::PaneId,
+) {
+    use maestro_daemon::{app::actions::CompletionPolicy, terminal::state::DetectedStateUpdate};
+    use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
+    detect_agent(state, pane, Agent::Codex);
+    for next in [AgentState::Working, AgentState::Idle] {
+        let update = report_detected(
+            state,
+            pane,
+            DetectedStateUpdate {
+                agent: Some(Agent::Codex),
+                fallback_state: next,
+                process_exited: next == AgentState::Idle,
+                visible: AgentVisibility {
+                    visible_blocker: false,
+                    visible_working: next == AgentState::Working,
+                    visible_idle: false,
+                },
+            },
+        );
+        if next == AgentState::Idle {
+            assert_eq!(update.last().unwrap().completion, CompletionPolicy::Notify);
+        }
+    }
+}
+
+#[test]
+fn delayed_notifications_recheck_live_context_and_select_independent_outputs() {
+    use maestro_daemon::settings::model::ToastDelivery;
+    let mut state = app_with_workspaces(&["active", "old"]);
+    state.toast_config.delivery = ToastDelivery::Terminal;
+    state.toast_config.delay_seconds = 1;
+    state.sound.enabled = true;
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    report_state(
+        &mut state,
+        pane,
+        maestro_detection::agents::AgentState::Blocked,
+    );
+    let deadline = state.next_pending_agent_notification_deadline().unwrap();
+    let terminal = state.topology.workspaces[1]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.terminals.get_mut(&terminal).unwrap().cwd = "/changed".into();
+    let deliveries = state.drain_due_agent_notifications(deadline);
+    assert_eq!(deliveries.len(), 1);
+    assert_eq!(deliveries[0].toast.as_ref().unwrap().context, "changed · 2");
+    assert_eq!(
+        deliveries[0].client_notification.as_ref().unwrap().context,
+        "changed · 2"
+    );
+    assert_eq!(
+        deliveries[0].sound,
+        Some(maestro_protocol::schema::NotificationShowSound::Request)
+    );
+    assert!(state.toast.is_none());
 }

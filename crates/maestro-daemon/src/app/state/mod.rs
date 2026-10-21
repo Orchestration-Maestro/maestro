@@ -8,6 +8,10 @@ use maestro_workspace::{
 };
 use std::collections::HashMap;
 
+mod notification;
+pub use notification::{
+    AgentNotificationDelivery, PendingAgentNotification, ToastKind, ToastNotification, ToastTarget,
+};
 mod selection;
 pub use selection::{
     CopyModeSelection, CopyModeState, Mode, SelectionAutoscroll, SelectionAutoscrollDirection,
@@ -47,6 +51,18 @@ pub struct DaemonState<C> {
     pub selected: usize,
     /// Structural changes awaiting snapshot scheduling.
     pub session_dirty: bool,
+    /// Background notification preferences applied independently of sound.
+    pub toast_config: crate::settings::model::ToastConfig,
+    /// Per-agent sound admission preferences.
+    pub sound: crate::settings::sound::SoundConfig,
+    /// Last known outer terminal focus, absent before the first report.
+    pub outer_terminal_focus: Option<bool>,
+    /// Most recent workspace notification.
+    pub toast: Option<ToastNotification>,
+    /// Delayed transitions revalidated before delivery.
+    pub pending_agent_notifications: HashMap<PaneId, PendingAgentNotification>,
+    /// Sequence shared by effective agent state changes.
+    pub next_agent_state_change_seq: u64,
     /// Current interaction context.
     pub mode: Mode,
     /// Keyboard copy pane retained across focus navigation.
@@ -80,6 +96,12 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             selected: 0,
             session_dirty: false,
             previous_pane_focus: None,
+            toast_config: config.ui.toast.clone(),
+            sound: config.ui.sound.clone(),
+            outer_terminal_focus: None,
+            toast: None,
+            pending_agent_notifications: HashMap::new(),
+            next_agent_state_change_seq: 0,
             mode: Mode::Navigate,
             copy_mode: None,
             selection: None,

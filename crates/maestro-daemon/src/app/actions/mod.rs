@@ -2,9 +2,17 @@
 
 mod close;
 mod death;
+mod events;
 mod focus;
+mod notifications;
 mod ordering;
 mod removal;
+mod state_update;
+pub use notifications::{
+    active_tab_suppresses_notifications, is_completion_transition_parts,
+    notification_sound_for_state_change, notification_toast_for_pane_state_update,
+};
+pub use state_update::{AgentRelease, CompletionPolicy, PaneStateUpdate, pane_agent_status};
 
 use maestro_workspace::{layout::PaneId, workspace::Workspace};
 
