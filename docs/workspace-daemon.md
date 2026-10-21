@@ -577,3 +577,9 @@ owner as workspace closes. Closing the last pane or tab of a parent repository
 group requests confirmation when enabled; closing a linked workspace leaves its
 checkout directory untouched. Agent completion can be published before removing
 the pane, while its identity and notification context are still available.
+
+`app::App` retains daemon state beside the existing terminal runtime registry.
+Immediate workspace toasts use the first tab's live root directory for their
+context, falling back to terminal metadata and then the workspace identity.
+Delayed deliveries reread that directory at delivery time for both workspace and
+client notification context. Explicit workspace names still take precedence.
