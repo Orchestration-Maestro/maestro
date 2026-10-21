@@ -132,7 +132,12 @@ async fn send_selected(
     selected: Option<url::Url>,
     request: HttpRequest,
 ) -> Result<HttpResponse, FetchError> {
-    if selected.is_some_and(|proxy| matches!(proxy.scheme(), "socks" | "socks5" | "socks5h")) {
+    if selected.is_some_and(|proxy| {
+        matches!(
+            proxy.scheme(),
+            "socks" | "socks4" | "socks4a" | "socks5" | "socks5h"
+        )
+    }) {
         let request = prepare(&client, request)?.try_into().map_err(failed)?;
         let response = socks
             .ok_or_else(|| connection("Missing SOCKS sender".into()))?

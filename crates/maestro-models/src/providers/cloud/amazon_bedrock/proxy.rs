@@ -74,7 +74,9 @@ impl Environment {
         }
         .map_err(|error| format!("Invalid proxy URL {proxy}: {error}"))?;
         match parsed.scheme() {
-            "http" | "https" | "socks" | "socks5" | "socks5h" => Ok(Some(parsed)),
+            "http" | "https" | "socks" | "socks4" | "socks4a" | "socks5" | "socks5h" => {
+                Ok(Some(parsed))
+            }
             _ => Err(format!("Unsupported protocol for proxy URL: {proxy}")),
         }
     }
