@@ -171,7 +171,7 @@ fn segmented_quote_body_keeps_one_atomic_list_projection() {
 }
 
 #[test]
-fn flat_container_text_keeps_constant_storage_depth() {
+fn flat_container_text_keeps_logarithmic_storage_depth() {
     // Public list parsing still performs per-line setext suffix recognition.
     for lines in [2_000, 4_000] {
         let source = "- a\n".to_owned() + &"  a\n".repeat(lines);
@@ -192,7 +192,7 @@ fn flat_quote_parse_and_drop() {
         let crate::Kind::Quote(_, body) = &document.nodes[0].kind else {
             panic!("quote");
         };
-        assert_eq!(body.storage_depth(), 1);
+        assert!(body.storage_depth() <= super::segment_balance::depth_bound(body.len()));
         assert_eq!(body.to_owned_string(), "a\n".repeat(lines) + "a");
         drop(document);
         eprintln!("flat quote lines={} parsed and dropped", lines + 1);
@@ -216,7 +216,7 @@ fn assert_flat_document(document: &crate::Document) {
     }
     eprintln!("maximum authored storage depth={depth}");
     assert!(
-        depth <= 3,
+        depth <= super::segment_balance::depth_bound(document.source.len()),
         "flat input retains a per-line ownership chain: {depth}"
     );
 }
@@ -233,7 +233,7 @@ fn flat_mapped_text_append_drop_and_debug_handle_many_continuations() {
     }
     assert_eq!(text.len(), 200_001);
     assert_eq!(text.to_owned_string(), "a\n".repeat(100_000) + "a");
-    assert_eq!(text.storage_depth(), 2);
+    assert!(text.storage_depth() <= super::segment_balance::depth_bound(text.len()));
     let mut diagnostic = String::new();
     write!(&mut diagnostic, "{text:?}").unwrap();
     assert!(!diagnostic.is_empty());
@@ -241,7 +241,7 @@ fn flat_mapped_text_append_drop_and_debug_handle_many_continuations() {
 }
 
 #[test]
-fn mapped_text_selected_window_accounts_for_all_owned_segments() {
+fn mapped_text_selected_window_retires_excluded_segments() {
     let mut text = MappedText::from("one".to_owned());
     for word in ["two", "three", "four"] {
         text.append(&MappedText::from(word.to_owned()));
@@ -253,6 +253,6 @@ fn mapped_text_selected_window_accounts_for_all_owned_segments() {
     let mut window = Retained::default();
     selected.retained(&mut window);
     assert_eq!(full.source_bytes, 15);
-    assert_eq!(window.source_bytes, full.source_bytes);
-    assert_eq!(window.bytes, full.bytes);
+    assert_eq!(window.source_bytes, 8);
+    assert!(window.bytes < full.bytes);
 }

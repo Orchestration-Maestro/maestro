@@ -65,7 +65,9 @@ operation; definitions continuing paragraph or item text stay literal instead
 of entering the reference index.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
-Cloning a value keeps it alive after its document is dropped. `len()` returns
+Cloning a value keeps it alive after its document is dropped. Concatenation and
+selection share a balanced sequence, so retained ownership depth stays logarithmic
+in the number of nonempty pieces, including when snapshots remain live. `len()` returns
 its logical byte length in constant time; `is_empty()` tests that length.
 `chunks()` yields the exact bytes as borrowed strings in order, without
 flattening. Chunk boundaries are not part of the text format.

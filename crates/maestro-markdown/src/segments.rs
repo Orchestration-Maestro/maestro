@@ -1,11 +1,13 @@
-//! Shared, offset-indexed concatenations with bounded flat-input ownership.
+//! Balanced persistent concatenations shared by text and source projections.
 use std::{ops::Range, sync::Arc};
 
 /// A selected logical window with cached native bounds.
 #[derive(Clone, Debug)]
 pub(crate) struct Segments<T> {
-    /// Shared leaf or flat sequence of real snapshots.
+    /// Shared leaf or balanced pair of source operands.
     storage: Arc<Storage<T>>,
+    /// Cached ownership height; selected windows occur only on leaves.
+    height: usize,
     /// Selected logical bytes in this storage.
     window: Range<usize>,
     /// Native bounding range of the selected value.
@@ -18,7 +20,7 @@ enum Storage<T> {
     /// One caller-owned operand.
     Leaf(T),
     /// Logical end offsets paired with ordered source operands.
-    Joined(Vec<(usize, Segments<T>)>),
+    Joined([(usize, Segments<T>); 2]),
 }
 
 impl<T: Clone> Segments<T> {
@@ -26,6 +28,7 @@ impl<T: Clone> Segments<T> {
     pub(crate) fn new(value: T, length: usize, extent: Range<usize>) -> Self {
         Self {
             storage: Arc::new(Storage::Leaf(value)),
+            height: 1,
             window: 0..length,
             extent,
         }
@@ -44,35 +47,80 @@ impl<T: Clone> Segments<T> {
         }
     }
 
-    /// Append in place unless another snapshot or a selected window retains this storage.
+    /// Join roots while preserving logarithmic ownership independently of snapshots.
     pub(crate) fn append(&mut self, other: &Self) {
+        if other.len() != 0 {
+            *self = Self::join(self.clone(), other.clone());
+        }
+    }
+
+    /// Build one parent from balanced operands with adjacent logical offsets.
+    fn branch(left: Self, right: Self) -> Self {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
-        if other.len() == 0 {
-            return;
-        }
-        if self.len() == 0 {
-            *self = other.clone();
-            return;
-        }
-        let length = self.len() + other.len();
-        if Arc::strong_count(&self.storage) == 1
-            && let Storage::Joined(parts) = Arc::make_mut(&mut self.storage)
-            && self.window == (0..parts.last().map_or(0, |part| part.0))
-        {
-            parts.push((length, other.clone()));
-            self.window.end = length;
-            self.extent.end = other.extent.end;
-            return;
-        }
-        *self = Self {
-            storage: Arc::new(Storage::Joined(vec![
-                (self.len(), self.clone()),
-                (length, other.clone()),
-            ])),
+        let length = left.len() + right.len();
+        let extent = left.extent.start..right.extent.end;
+        let height = 1 + left.height.max(right.height);
+        Self {
+            storage: Arc::new(Storage::Joined([(left.len(), left), (length, right)])),
+            height,
             window: 0..length,
-            extent: self.extent.start..other.extent.end,
-        };
+            extent,
+        }
+    }
+
+    /// Descend the taller spine before restoring AVL balance.
+    fn join(left: Self, right: Self) -> Self {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
+        if left.len() == 0 {
+            return right;
+        }
+        if right.len() == 0 {
+            return left;
+        }
+        if left.height > right.height + 1
+            && let Storage::Joined([(_, a), (_, b)]) = left.storage.as_ref()
+        {
+            return Self::balance(a.clone(), Self::join(b.clone(), right));
+        }
+        if right.height > left.height + 1
+            && let Storage::Joined([(_, a), (_, b)]) = right.storage.as_ref()
+        {
+            return Self::balance(Self::join(left, a.clone()), b.clone());
+        }
+        Self::branch(left, right)
+    }
+
+    /// Rotate a joined spine using the inner child's height to choose a double turn.
+    fn balance(left: Self, right: Self) -> Self {
+        if left.height > right.height + 1
+            && let Storage::Joined([(_, a), (_, b)]) = left.storage.as_ref()
+        {
+            if a.height < b.height
+                && let Storage::Joined([(_, c), (_, d)]) = b.storage.as_ref()
+            {
+                return Self::branch(
+                    Self::branch(a.clone(), c.clone()),
+                    Self::branch(d.clone(), right),
+                );
+            }
+            return Self::branch(a.clone(), Self::branch(b.clone(), right));
+        }
+        if right.height > left.height + 1
+            && let Storage::Joined([(_, a), (_, b)]) = right.storage.as_ref()
+        {
+            if b.height < a.height
+                && let Storage::Joined([(_, c), (_, d)]) = a.storage.as_ref()
+            {
+                return Self::branch(
+                    Self::branch(left, c.clone()),
+                    Self::branch(d.clone(), b.clone()),
+                );
+            }
+            return Self::branch(Self::branch(left, a.clone()), b.clone());
+        }
+        Self::branch(left, right)
     }
 
     /// Indexed children intersecting a logical selection, in source order.
@@ -109,34 +157,38 @@ impl<T: Clone> Segments<T> {
         })
     }
 
-    /// Retire excluded ancestors before retaining a selected window.
+    /// Clip leaves and rebuild only the selected balanced spines.
     pub(crate) fn select(
         &self,
-        mut range: Range<usize>,
+        range: Range<usize>,
         project: fn(&T, Range<usize>) -> Option<Range<usize>>,
     ) -> Self {
-        let mut source = self;
-        loop {
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
-            if range == (0..source.len()) {
-                return source.clone();
-            }
-            let mut parts = source.parts(range.clone());
-            if let Some((part, selected, _)) = parts.next()
-                && parts.next().is_none()
-            {
-                source = part;
-                range = selected;
-                continue;
-            }
-            return Self {
-                storage: Arc::clone(&source.storage),
-                window: source.window.start + range.start..source.window.start + range.end,
-                extent: source
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
+        if range == (0..self.len()) {
+            return self.clone();
+        }
+        match self.storage.as_ref() {
+            Storage::Leaf(_) => Self {
+                storage: Arc::clone(&self.storage),
+                height: 1,
+                window: self.window.start + range.start..self.window.start + range.end,
+                extent: self
                     .native(&range, project)
-                    .unwrap_or(source.extent.end..source.extent.end),
-            };
+                    .unwrap_or(self.extent.end..self.extent.end),
+            },
+            Storage::Joined([(split, left), (_, right)]) => {
+                if range.end <= *split {
+                    left.select(range, project)
+                } else if range.start >= *split {
+                    right.select(range.start - split..range.end - split, project)
+                } else {
+                    Self::join(
+                        left.select(range.start..*split, project),
+                        right.select(0..range.end - split, project),
+                    )
+                }
+            }
         }
     }
 
@@ -220,7 +272,7 @@ impl<T: Clone> Segments<T> {
         found
     }
 
-    /// Include operands outside the selected window while their backing vector owns them.
+    /// Visit the two owned children of a branch.
     #[cfg(test)]
     fn owned_parts(&self) -> impl Iterator<Item = &Self> {
         let parts = match self.storage.as_ref() {
@@ -251,11 +303,7 @@ impl<T: Clone> Segments<T> {
     ) {
         let mut pending = vec![self];
         while let Some(source) = pending.pop() {
-            let capacity = match source.storage.as_ref() {
-                Storage::Leaf(_) => 0,
-                Storage::Joined(parts) => parts.capacity() * std::mem::size_of::<(usize, Self)>(),
-            };
-            if !retained.arc(&source.storage, capacity) {
+            if !retained.arc(&source.storage, 0) {
                 continue;
             }
             if let Some((value, _)) = source.leaf() {

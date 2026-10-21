@@ -6,6 +6,7 @@ mod code_progress;
 mod container_frames;
 mod html_progress;
 mod paragraph_progress;
+mod segment_balance;
 mod shared_text;
 mod table_progress;
 

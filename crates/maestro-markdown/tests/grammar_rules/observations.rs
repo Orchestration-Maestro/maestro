@@ -310,8 +310,11 @@ fn source_metadata_respects_export_image_policy() {
             panic!("paragraph")
         };
         let image = &children[0];
-        assert_eq!(image.authored, "![a `[b]` [c][r]][img]");
-        assert_eq!(document.source[image.range.clone()], image.authored);
+        assert_eq!(image.authored.to_owned_string(), "![a `[b]` [c][r]][img]");
+        assert_eq!(
+            document.source[image.range.clone()],
+            image.authored.to_owned_string()
+        );
         let Kind::Image(_, meta) = &image.kind else {
             panic!("image")
         };
