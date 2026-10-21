@@ -11,7 +11,7 @@ pub const FIXTURE: &str = "crates/maestro-tooling/tests/fixtures/browser_author"
 
 pub struct Browser {
     pub workspace: Workspace,
-    // Trunk writes binding/optimizer intermediates outside Cargo's build lock.
+    // Trunk writes its binding/optimizer intermediates outside Cargo's build lock.
     _build_lock: fs::File,
 }
 
