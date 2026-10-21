@@ -247,14 +247,6 @@ fn ids(listed: &[SessionInfo]) -> Vec<&str> {
         .collect()
 }
 
-/// File names in native enumeration order.
-fn native_order(dir: &str) -> Vec<String> {
-    std::fs::read_dir(dir)
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
-        .collect()
-}
-
 #[test]
 fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
     let scratch = Scratch::new();
@@ -295,14 +287,8 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
             .map(|loaded| (loaded, total))
             .collect::<Vec<_>>()
     );
-    let tied: Vec<_> = native_order(scratch.text())
-        .into_iter()
-        .filter(|name| name == "aa.jsonl" || name == "zz.jsonl")
-        .map(|name| name.trim_end_matches(".jsonl").to_owned())
-        .collect();
     let mut expected = if cfg!(unix) { vec!["linked"] } else { vec![] };
-    expected.extend(tied.iter().map(String::as_str));
-    expected.extend(["mid", "old"]);
+    expected.extend(["aa", "zz", "mid", "old"]);
     assert_eq!(ids(&listed), expected);
 }
 
@@ -448,6 +434,28 @@ fn all_projects_lists_real_directories_and_ignores_root_files() {
     assert_eq!(ids(&listed), ["b1", "b2", "a1"]);
 }
 
+/// Equal activity times keep the name order of session files and project
+/// directories, whatever order the file system lists.
+#[test]
+fn activity_ties_follow_name_order_of_files_and_projects() {
+    // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
+    let names = ["b", "_x", "a", "C"];
+    let files = Scratch::new();
+    for name in names {
+        write_session(
+            &files,
+            &format!("{name}.jsonl"),
+            name,
+            &[("user", "x", 5000)],
+        );
+    }
+    assert_eq!(ids(&list(&files)), ["C", "_x", "a", "b"]);
+    let scratch = Scratch::new();
+    let agent = projects(&scratch, &names.map(|name| (name, name, 5000)));
+    let listed = runtime().block_on(SessionManager::list_all(&agent, None));
+    assert_eq!(ids(&listed), ["C", "_x", "a", "b"]);
+}
+
 #[test]
 fn all_projects_counts_candidates_before_reading() {
     let scratch = Scratch::new();
@@ -533,30 +541,10 @@ fn produce(path: std::path::PathBuf, text: String) -> std::thread::JoinHandle<()
 }
 
 #[cfg(unix)]
-/// Create a blocking pipe and a ready session in `dir` so native enumeration lists the pipe first.
+/// Create a blocking pipe and a ready session in `dir`, the pipe first in name order.
 fn pipe_enumerated_first(dir: &Path) -> std::path::PathBuf {
-    for (pipe_name, ready_name) in [("pipe", "ready"), ("ready", "pipe")] {
-        for pipe_first in [true, false] {
-            let make_ready = || {
-                let text = session_text(ready_name, &[]);
-                std::fs::write(dir.join(format!("{ready_name}.jsonl")), text).unwrap();
-            };
-            if !pipe_first {
-                make_ready();
-            }
-            let pipe = fifo(dir, &format!("{pipe_name}.jsonl"));
-            if pipe_first {
-                make_ready();
-            }
-            let order = native_order(dir.to_str().unwrap());
-            if order[0] == format!("{pipe_name}.jsonl") {
-                return pipe;
-            }
-            std::fs::remove_file(&pipe).unwrap();
-            std::fs::remove_file(dir.join(format!("{ready_name}.jsonl"))).unwrap();
-        }
-    }
-    panic!("no creation order lists the pipe first");
+    std::fs::write(dir.join("ready.jsonl"), session_text("ready", &[])).unwrap();
+    fifo(dir, "pipe.jsonl")
 }
 
 #[cfg(unix)]
@@ -597,11 +585,7 @@ fn progress_observes_completion_order_before_stable_results() {
             producer.join().unwrap();
         }
         assert_eq!(seen, [(1, 2), (2, 2)]);
-        let order: Vec<_> = native_order(dir.to_str().unwrap())
-            .into_iter()
-            .map(|name| name.trim_end_matches(".jsonl").to_owned())
-            .collect();
-        assert_eq!(ids(&listed), order);
+        assert_eq!(ids(&listed), ["pipe", "ready"]);
     }
 }
 

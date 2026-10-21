@@ -168,9 +168,9 @@ selected path. A missing explicit file waits for first publication at that path.
 
 Continuation enumerates names, probes the `.jsonl` candidates, then reads the
 valid candidates' metadata in a separate pass. It selects by descending
-millisecond mtime, preserving native enumeration ties. A metadata error discards
-the selection; an individual probe failure skips that candidate. The header
-probe reads at most 512 bytes.
+millisecond mtime; equal times go to the first name in name order. A metadata
+error discards the selection; an individual probe failure skips that candidate.
+The header probe reads at most 512 bytes.
 Historical conversion applies only the ID/parent and custom-message passes;
 current and future versions remain unchanged. Removing a numeric legacy compaction
 cut index preserves the remaining object member order. Loading retains raw records, while

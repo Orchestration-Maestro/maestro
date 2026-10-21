@@ -9,17 +9,17 @@ use super::{
 use crate::messages::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream::FuturesUnordered};
 use serde_json::Value;
-use std::{borrow::Cow, io};
-use tokio::fs::DirEntry;
+use std::{borrow::Cow, fs::DirEntry, io};
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
 pub type SessionListProgress<'a> = dyn FnMut(usize, usize) -> io::Result<()> + 'a;
 
 impl SessionManager {
-    /// List the sessions of one project directory, most recently active first.
-    /// An explicit `session_dir` is used verbatim; otherwise the default directory
-    /// for `cwd` is created beneath `agent_dir`. A failing progress callback stops
-    /// the listing with an empty result.
+    /// List the sessions of one project directory, most recently active first;
+    /// equal times keep the name order of their files. An explicit `session_dir`
+    /// is used verbatim; otherwise the default directory for `cwd` is created
+    /// beneath `agent_dir`. A failing progress callback stops the listing with an
+    /// empty result.
     ///
     /// # Errors
     /// Propagates the error creating an omitted default directory.
@@ -33,53 +33,53 @@ impl SessionManager {
             Some(dir) => Cow::Borrowed(dir),
             None => Cow::Owned(get_default_session_dir(cwd, agent_dir)?),
         };
-        let files = match read_entries(&dir).await {
-            Ok(entries) => jsonl_paths(&dir, &entries),
-            Err(_) => Vec::new(),
-        };
+        let files = read_paths(&dir, jsonl_path).await.unwrap_or_default();
         Ok(collect(files, on_progress).await)
     }
 
-    /// List the sessions of every project directory under `<agent_dir>/sessions`.
-    /// Candidates are counted before any is read; an unreadable root yields an empty list.
+    /// List the sessions of every project directory under `<agent_dir>/sessions`,
+    /// most recently active first; equal times keep the name order of the project
+    /// directories, then of their files. Candidates are counted before any is read;
+    /// an unreadable root yields an empty list.
     pub async fn list_all(
         agent_dir: &str,
         on_progress: Option<&mut SessionListProgress<'_>>,
     ) -> Vec<SessionInfo> {
         let root = maestro_path::join(&[agent_dir, "sessions"]);
-        let Ok(entries) = read_entries(&root).await else {
+        let directories = read_paths(&root, |root, entry| {
+            let name = entry.file_name();
+            let directory = entry.file_type().is_ok_and(|kind| kind.is_dir());
+            directory.then(|| maestro_path::join(&[root, &name.to_string_lossy()]))
+        });
+        let Ok(directories) = directories.await else {
             return Vec::new();
         };
         let mut files = Vec::new();
-        for entry in &entries {
-            if !entry.file_type().await.is_ok_and(|kind| kind.is_dir()) {
-                continue;
-            }
-            let dir = maestro_path::join(&[&root, &entry.file_name().to_string_lossy()]);
-            if let Ok(children) = read_entries(&dir).await {
-                files.extend(jsonl_paths(&dir, &children));
+        for dir in &directories {
+            if let Ok(children) = read_paths(dir, jsonl_path).await {
+                files.extend(children);
             }
         }
         collect(files, on_progress).await
     }
 }
 
-/// Enumerate a directory in native order, failing on any listing error.
-async fn read_entries(dir: &str) -> io::Result<Vec<DirEntry>> {
-    let mut reader = tokio::fs::read_dir(dir).await?;
-    let mut entries = Vec::new();
-    while let Some(entry) = reader.next_entry().await? {
-        entries.push(entry);
-    }
-    Ok(entries)
-}
-
-/// Paths of the entries whose names end in exactly `.jsonl`.
-fn jsonl_paths(dir: &str, entries: &[DirEntry]) -> Vec<String> {
-    entries
-        .iter()
-        .filter_map(|entry| jsonl_path(dir, &entry.file_name()))
-        .collect()
+/// List a directory in name order on the blocking pool, keeping the paths `keep`
+/// derives; any listing error fails the whole listing.
+async fn read_paths(
+    dir: &str,
+    keep: fn(&str, &DirEntry) -> Option<String>,
+) -> io::Result<Vec<String>> {
+    let dir = dir.to_owned();
+    tokio::task::spawn_blocking(move || {
+        let entries = maestro_listing::read_dir(&dir)?;
+        Ok(entries
+            .iter()
+            .filter_map(|entry| keep(&dir, entry))
+            .collect())
+    })
+    .await
+    .map_err(io::Error::other)?
 }
 
 /// Read every candidate concurrently in this task, reporting progress as each completes,
