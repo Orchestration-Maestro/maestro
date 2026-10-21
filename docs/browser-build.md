@@ -153,9 +153,9 @@ graph needs no subsetter or remote font service.
 The six fonts total **1,967,112 raw bytes**; qualification measured **881,586
 bytes** with deterministic gzip.
 
-The fixture page holds only page elements: the mark and one text input, which
-the browser paints from the prepared stylesheet. Native tests read files and
-bytes; they do not render glyphs or certify browser pixels.
+The fixture mounts the mark and prepared page styling beside a native text
+input with browser-default paint. Native tests read files and bytes; they do
+not render glyphs or certify browser pixels.
 
 ## Validation boundary
 
