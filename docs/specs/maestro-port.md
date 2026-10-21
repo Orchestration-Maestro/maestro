@@ -414,7 +414,8 @@ policy. A typed discovery policy preserves caller-specific metadata rules: the
 footer requires the spaced worktree marker, accepts an existing HEAD of any kind,
 and reads `commondir` only for worktree links; workspace identity accepts the
 unspaced marker, requires a regular HEAD file and reads shared metadata for all
-repository layouts. Both policies support standalone bare repositories. The footer
+repository layouts, falling back to the checkout metadata if `commondir` cannot
+be read. Both policies support standalone bare repositories. The footer
 keeps branch, detached-head and watch policy; Git subprocess
 fallbacks stay with the process-owning callers. The application reaches discovery
 through a native-only dependency on the workspace owner, not a daemon re-export. Use native files

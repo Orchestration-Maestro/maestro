@@ -3570,6 +3570,7 @@ dependencies = [
  "maestro-tools",
  "maestro-tui",
  "maestro-watch",
+ "maestro-workspace",
  "num-traits",
  "percent-encoding",
  "rand 0.10.3",

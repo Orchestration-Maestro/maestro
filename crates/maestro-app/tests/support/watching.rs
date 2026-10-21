@@ -1,11 +1,8 @@
 //! Controlled notifications, completions and closed timer queues.
-use maestro_app::presentation_data::footer_data_provider::{
-    FooterFileKind, FooterFileStats, FooterOperations,
-};
+use maestro_app::presentation_data::footer_data_provider::{FooterFileStats, FooterOperations};
 use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
 use std::{
     cell::{Cell, RefCell},
-    collections::BTreeMap,
     io,
     rc::Rc,
     time::Duration,
@@ -13,10 +10,6 @@ use std::{
 
 pub type Finish = Box<dyn FnOnce(io::Result<Option<String>>)>;
 pub type PollListener = Rc<dyn Fn(FooterFileStats, FooterFileStats)>;
-pub enum Entry {
-    Text(String),
-    Directory,
-}
 struct Watch {
     closed: Rc<Cell<bool>>,
     path: String,
@@ -60,7 +53,7 @@ impl Drop for Cancel {
 }
 #[derive(Default)]
 pub struct Effects {
-    pub files: RefCell<BTreeMap<String, Entry>>,
+    pub repository: crate::footer_support::Repository,
     time: Cell<u64>,
     timers: RefCell<Vec<Timer>>,
     watches: RefCell<Vec<Watch>>,
@@ -83,15 +76,17 @@ impl Effects {
         e.text("/other/.git/HEAD", "ref: refs/heads/other");
         e
     }
+    pub fn path(&self, path: &str) -> String {
+        self.repository.path(path)
+    }
+    pub fn paths<const N: usize>(&self, paths: [&str; N]) -> Vec<String> {
+        paths.map(|path| self.path(path)).into()
+    }
     pub fn directory(&self, path: &str) {
-        self.files
-            .borrow_mut()
-            .insert(path.into(), Entry::Directory);
+        self.repository.directory(path);
     }
     pub fn text(&self, path: &str, value: &str) {
-        self.files
-            .borrow_mut()
-            .insert(path.into(), Entry::Text(value.into()));
+        self.repository.text(path, value);
     }
     pub fn event(&self, index: usize, name: Option<&str>) {
         let cb = Rc::clone(&self.watches.borrow()[index].listener);
@@ -176,7 +171,7 @@ impl WatchOperations for Effects {
         let closed = Rc::new(Cell::new(false));
         self.watches.borrow_mut().push(Watch {
             closed: closed.clone(),
-            path: portable(path),
+            path: path.to_owned(),
             listener,
             error,
         });
@@ -200,33 +195,14 @@ impl WatchOperations for Effects {
 }
 impl FooterOperations for Effects {
     fn exists(&self, path: &str) -> bool {
-        self.files.borrow().contains_key(&portable(path))
-    }
-    fn stat_kind(&self, path: &str) -> io::Result<FooterFileKind> {
-        match self.files.borrow().get(&portable(path)) {
-            Some(Entry::Directory) => Ok(FooterFileKind::Directory),
-            Some(Entry::Text(_)) => Ok(FooterFileKind::File),
-            None => Err(io::Error::other("missing")),
-        }
-    }
-    fn read_text(&self, path: &str) -> io::Result<String> {
-        match self.files.borrow().get(&portable(path)) {
-            Some(Entry::Text(text)) => Ok(text.clone()),
-            _ => Err(io::Error::other("unreadable")),
-        }
-    }
-    fn current_dir(&self) -> io::Result<String> {
-        Ok("/".into())
-    }
-    fn drive_directory(&self, _: char) -> Option<String> {
-        None
+        std::fs::exists(path).unwrap_or(false)
     }
     fn symbolic_ref_sync(&self, _: &str) -> io::Result<Option<String>> {
         self.sync_calls.set(self.sync_calls.get() + 1);
         Ok(Some("main\n".into()))
     }
     fn symbolic_ref_async(&self, repo: &str, callback: Finish) {
-        self.query_dirs.borrow_mut().push(portable(repo));
+        self.query_dirs.borrow_mut().push(repo.to_owned());
         self.queries.borrow_mut().push(callback);
     }
     fn watch_file(
@@ -238,7 +214,7 @@ impl FooterOperations for Effects {
         let closed = Rc::new(Cell::new(false));
         self.polls.borrow_mut().push(Poll {
             closed: closed.clone(),
-            path: portable(path),
+            path: path.to_owned(),
             interval,
             listener,
         });
@@ -246,24 +222,5 @@ impl FooterOperations for Effects {
             closed,
             fails: false,
         })
-    }
-}
-
-pub fn target(path: &str) -> String {
-    if cfg!(windows) {
-        if path.starts_with('/') {
-            format!("C:{}", path.replace('/', "\\"))
-        } else {
-            path.replace('/', "\\")
-        }
-    } else {
-        path.into()
-    }
-}
-fn portable(path: &str) -> String {
-    if cfg!(windows) {
-        path.strip_prefix("C:").unwrap_or(path).replace('\\', "/")
-    } else {
-        path.into()
     }
 }

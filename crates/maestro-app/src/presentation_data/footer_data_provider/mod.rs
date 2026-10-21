@@ -3,7 +3,7 @@
 //!
 //! [`FooterDataProvider`] owns the metadata. Frontends read it through
 //! [`ReadonlyFooterDataProvider`]. File and process effects go through
-//! [`FooterOperations`], so native and controlled adapters are interchangeable.
+//! [`FooterOperations`]; repository discovery uses the native workspace owner.
 //! Paths are authored strings; their lexical rules belong to `maestro_path`.
 
 mod git;
@@ -18,5 +18,5 @@ pub use maestro_extensions::footer_data_provider::{
 };
 #[cfg(unix)]
 pub use native::NativeFooterOperations;
-pub use operations::{FooterFileKind, FooterFileStats, FooterOperations};
+pub use operations::{FooterFileStats, FooterOperations};
 pub use provider::FooterDataProvider;

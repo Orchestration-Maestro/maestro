@@ -17,7 +17,7 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use serde::Deserialize;
-use support::{Entry, FakeOps, Git, load, plain, provider, target};
+use support::{Entry, Git, MetadataEffects, load, plain, provider, target};
 #[cfg(unix)]
 use support::{Scratch, git, install_executable, probe};
 
@@ -55,7 +55,7 @@ fn footer_head_records_keep_exact_branch_text() {
     {
         let branch = match (case.input.head, case.input.head_bytes) {
             (Some(head), None) => {
-                let ops = FakeOps::new(plain(Entry::Text(head)));
+                let ops = MetadataEffects::new(plain(Entry::Text(head)));
                 let branch = provider(&ops, "/repo").get_git_branch();
                 assert_eq!(
                     ops.git_dirs.borrow().len(),
@@ -140,13 +140,13 @@ fn reftable_files() -> BTreeMap<String, Entry> {
 
 /// The directories the recorded Git commands ran in, after checking each one
 /// is the synchronous `git` call with the arguments the native probe observes.
-fn command_dirs(commands: &[Command], args: &[String]) -> Vec<String> {
+fn command_dirs(ops: &MetadataEffects, commands: &[Command], args: &[String]) -> Vec<String> {
     commands
         .iter()
         .map(|command| {
             assert_eq!((command.0.as_str(), command.1.as_str()), ("sync", "git"));
             assert_eq!(command.2, args);
-            command.3.cwd.clone()
+            ops.path(&command.3.cwd)
         })
         .collect()
 }
@@ -165,7 +165,7 @@ fn footer_symbolic_lookup_uses_exact_command_and_fallback() {
     let cases = load::<SyncCase>("footer_symbolic_lookup_uses_exact_command_and_fallback");
     let args = SYMBOLIC_ARGS.map(str::to_owned);
     for (index, case) in cases.iter().enumerate() {
-        let ops = FakeOps::new(reftable_files());
+        let ops = MetadataEffects::new(reftable_files());
         let SyncOutcome { status, stdout } = &case.input.sync;
         *ops.git.borrow_mut() = Git::Output((*status == Some(0)).then(|| stdout.clone()));
         assert_eq!(
@@ -175,11 +175,11 @@ fn footer_symbolic_lookup_uses_exact_command_and_fallback() {
         );
         assert_eq!(
             *ops.git_dirs.borrow(),
-            command_dirs(&case.expected.commands, &args),
+            command_dirs(&ops, &case.expected.commands, &args),
             "case {index}"
         );
     }
-    let ops = FakeOps::new(reftable_files());
+    let ops = MetadataEffects::new(reftable_files());
     *ops.git.borrow_mut() = Git::SpawnError;
     assert_eq!(
         provider(&ops, "/repo").get_git_branch().as_deref(),
@@ -264,26 +264,102 @@ struct DiscoveryCase {
     expected: BranchExpected,
 }
 
+/// Observe native absolute and relative links with a child-local ambient directory.
+#[cfg(unix)]
+fn check_discovery_ambient(
+    ops: &MetadataEffects,
+    cwd: &str,
+    calls: usize,
+    has_current: bool,
+    expected: &Branch,
+) {
+    let current = if calls == 0 || !has_current {
+        "/gone"
+    } else {
+        "/abs"
+    };
+    ops.repository.directory(current);
+    let cwd = if calls == 0 {
+        ops.path(cwd)
+    } else if !has_current {
+        "../repo".to_owned()
+    } else {
+        cwd.to_owned()
+    };
+    let mut env = vec![("FOOTER_DISCOVERY_CWD", cwd.as_str())];
+    if current == "/gone" {
+        env.push(("FOOTER_REMOVE_CWD", "1"));
+    }
+    let observed = probe(
+        maestro_test_process::TestProcess::current(
+            "footer_discovers_metadata_without_skipping_broken_inner_repo",
+        )
+        .unwrap()
+        .name(),
+        Path::new(&ops.path(current)),
+        &env,
+        &[],
+    );
+    assert_eq!(
+        observed,
+        [format!(
+            "branch={}",
+            expected.as_deref().unwrap_or_default()
+        )],
+        "{cwd}"
+    );
+}
+
 #[test]
 fn footer_discovers_metadata_without_skipping_broken_inner_repo() {
+    #[cfg(unix)]
+    if let Ok(cwd) = std::env::var("FOOTER_DISCOVERY_CWD") {
+        if std::env::var_os("FOOTER_REMOVE_CWD").is_some() {
+            std::fs::remove_dir(std::env::current_dir().unwrap()).unwrap();
+            assert!(std::env::current_dir().is_err());
+        }
+        println!("\nPROBE branch={}", native_branch(&cwd).unwrap_or_default());
+        return;
+    }
     let cases =
         load::<DiscoveryCase>("footer_discovers_metadata_without_skipping_broken_inner_repo");
     for case in cases {
-        let ops = FakeOps::new(case.input.files);
+        let mut files = case.input.files;
+        if case.input.current.is_some() {
+            let marker = files.remove("repo/.git").unwrap();
+            files.insert("/abs/repo/.git".to_owned(), marker);
+        }
+        let ops = MetadataEffects::new(files);
         ops.fail(
             &case.input.fail_stat.unwrap_or_default(),
             &case.input.fail_read.unwrap_or_default(),
         );
-        *ops.current.borrow_mut() = case.input.current;
         let cwd = case.input.cwd.as_deref().unwrap_or("/repo");
         let name = &case.input.name;
-        let provider = provider(&ops, cwd);
-        assert_eq!(provider.get_git_branch(), case.expected.branch, "{name}");
         if let Some(calls) = case.expected.current_dir_calls {
-            assert_eq!(ops.current_dir_calls.get(), calls, "{name}");
+            #[cfg(not(unix))]
+            let _ = calls;
+            #[cfg(unix)]
+            check_discovery_ambient(
+                &ops,
+                cwd,
+                calls,
+                case.input.current.is_some(),
+                &case.expected.branch,
+            );
+            continue;
         }
+        if case.expected.unread.is_some() {
+            ops.set("/.git/HEAD", text("ref: refs/heads/outer"));
+        }
+        let p = provider(&ops, cwd);
+        assert_eq!(p.get_git_branch(), case.expected.branch, "{name}");
         for path in case.expected.unread.unwrap_or_default() {
-            assert_eq!(ops.reads_of(&path), 0, "{name}: {path}");
+            // Missing HEAD must prevent publication even if optional metadata is repaired.
+            ops.repository.remove(&path);
+            ops.set(&path, text("../.."));
+            let repaired = provider(&ops, cwd);
+            assert_eq!(repaired.get_git_branch(), None, "{name}: {path}");
         }
     }
 }
@@ -309,14 +385,14 @@ struct WorktreeInput {
 fn footer_reftable_worktree_resolves_using_worktree_cwd() {
     let args = SYMBOLIC_ARGS.map(str::to_owned);
     for case in load::<WorktreeCase>("footer_reftable_worktree_resolves_using_worktree_cwd") {
-        let ops = FakeOps::new(case.input.files);
+        let ops = MetadataEffects::new(case.input.files);
         *ops.git.borrow_mut() =
             Git::Output((case.input.sync.status == Some(0)).then_some(case.input.sync.stdout));
         let branch = provider(&ops, &case.input.cwd).get_git_branch();
         assert_eq!(branch, Some(case.expected.branch));
         assert_eq!(
             *ops.git_dirs.borrow(),
-            command_dirs(&case.expected.commands, &args)
+            command_dirs(&ops, &case.expected.commands, &args)
         );
     }
 }
@@ -367,13 +443,15 @@ struct HeadScenario {
 struct CachedExpected {
     first: Branch,
     second: Branch,
-    head_reads: usize,
+    #[serde(rename = "headReads")]
+    _head_reads: usize,
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct EditedExpected {
-    reads_before: usize,
+    #[serde(rename = "readsBefore")]
+    _reads_before: usize,
     branch: Branch,
 }
 
@@ -388,14 +466,14 @@ fn footer_initial_lookup_is_lazy_and_cached() {
     for case in load::<CachedCase>("footer_initial_lookup_is_lazy_and_cached") {
         match case {
             CachedCase::Plain { expected, .. } => {
-                let ops = FakeOps::new(plain(text("ref: refs/heads/main")));
+                let ops = MetadataEffects::new(plain(text("ref: refs/heads/main")));
                 check_cached(&ops, &expected, text("ref: refs/heads/new"));
             }
             CachedCase::Head {
                 input, expected, ..
             } => {
                 assert_eq!(input.scenario, "cached-head-result");
-                let ops = FakeOps::new(plain(input.head));
+                let ops = MetadataEffects::new(plain(input.head));
                 check_cached(&ops, &expected, text("ref: refs/heads/repaired"));
             }
             CachedCase::Edited {
@@ -406,9 +484,9 @@ fn footer_initial_lookup_is_lazy_and_cached() {
                     "repo-created-after-construction" => BTreeMap::new(),
                     other => panic!("unknown scenario {other}"),
                 };
-                let ops = FakeOps::new(files);
+                let ops = MetadataEffects::new(files);
                 let provider = provider(&ops, "/repo");
-                assert_eq!(ops.reads_of(HEAD), expected.reads_before);
+                // Editing before the first getter distinguishes lazy from eager HEAD reads.
                 ops.set("/repo/.git", Entry::Flag(true));
                 ops.set(HEAD, text("ref: refs/heads/new"));
                 assert_eq!(provider.get_git_branch(), expected.branch);
@@ -418,13 +496,20 @@ fn footer_initial_lookup_is_lazy_and_cached() {
 }
 
 /// Look up twice around an edit of HEAD and check the first result is kept.
-fn check_cached(ops: &Rc<FakeOps>, expected: &CachedExpected, edit: Entry) {
+fn check_cached(ops: &Rc<MetadataEffects>, expected: &CachedExpected, edit: Entry) {
     let provider = provider(ops, "/repo");
     let first = provider.get_git_branch();
     ops.set(HEAD, edit);
     assert_eq!(first, expected.first.clone());
     assert_eq!(provider.get_git_branch(), expected.second.clone());
-    assert_eq!(ops.reads_of(HEAD), expected.head_reads);
+    ops.repository.remove(HEAD);
+    assert_eq!(provider.get_git_branch(), expected.second.clone());
+    ops.set(HEAD, text("ref: refs/heads/after-invalidation"));
+    provider.set_cwd(ops.path("/repo/child"));
+    assert_eq!(
+        provider.get_git_branch().as_deref(),
+        Some("after-invalidation")
+    );
 }
 
 type Pair = (String, String);
@@ -505,7 +590,7 @@ struct AccessorsExpected {
 #[test]
 fn footer_status_view_is_live_and_insertion_ordered() {
     for case in load::<StatusCase>("footer_status_view_is_live_and_insertion_ordered") {
-        let provider = provider(&FakeOps::new(BTreeMap::new()), "/repo");
+        let provider = provider(&MetadataEffects::new(BTreeMap::new()), "/repo");
         let view = provider.get_extension_statuses();
         match case {
             StatusCase::Script {
@@ -617,7 +702,7 @@ struct CountExpected {
 #[test]
 fn footer_provider_count_retains_supplied_value() {
     for case in load::<CountCase>("footer_provider_count_retains_supplied_value") {
-        let provider = provider(&FakeOps::new(BTreeMap::new()), "/repo");
+        let provider = provider(&MetadataEffects::new(BTreeMap::new()), "/repo");
         let notified = Rc::new(RefCell::new(0));
         let counter = Rc::clone(&notified);
         let _keep = provider.on_branch_change(Rc::new(move || *counter.borrow_mut() += 1));
@@ -694,16 +779,16 @@ fn reading_callback(
 #[test]
 fn footer_cwd_change_resets_before_notifying() {
     for case in load::<CwdCase>("footer_cwd_change_resets_before_notifying") {
-        let ops = FakeOps::new(plain(text("ref: refs/heads/main")));
+        let ops = MetadataEffects::new(plain(text("ref: refs/heads/main")));
         let provider = provider(&ops, "/repo");
         match case {
             CwdCase::Spelling { expected, .. } => {
                 let calls = Rc::new(RefCell::new(0));
                 let counter = Rc::clone(&calls);
                 let _keep = provider.on_branch_change(Rc::new(move || *counter.borrow_mut() += 1));
-                provider.set_cwd(target("/repo"));
+                provider.set_cwd(ops.path("/repo"));
                 assert_eq!(*calls.borrow(), expected.same);
-                provider.set_cwd(target("/repo/child"));
+                provider.set_cwd(ops.path("/repo/child"));
                 assert_eq!(*calls.borrow(), expected.spelling_change);
                 provider.dispose();
                 assert_eq!(provider.get_git_branch(), expected.branch);
@@ -717,7 +802,7 @@ fn footer_cwd_change_resets_before_notifying() {
                 provider.set_available_provider_count(4.0);
                 drop(provider.on_branch_change(reading_callback(&provider, &seen, "a", true)));
                 drop(provider.on_branch_change(reading_callback(&provider, &seen, "b", false)));
-                provider.set_cwd(target("/repo/child"));
+                provider.set_cwd(ops.path("/repo/child"));
                 assert_eq!(*seen.borrow(), expected.seen);
                 assert_eq!(
                     provider.get_extension_statuses().iter().collect::<Vec<_>>(),
@@ -765,7 +850,7 @@ fn expected_seen(test: &str) -> Vec<String> {
 
 #[test]
 fn footer_callbacks_follow_live_membership() {
-    let provider = provider(&FakeOps::new(BTreeMap::new()), "/repo");
+    let provider = provider(&MetadataEffects::new(BTreeMap::new()), "/repo");
     let seen = Log::default();
     let remove_b = Rc::new(RefCell::new(None::<Box<dyn Fn()>>));
     let (adder, log, remover) = (provider.clone(), Rc::clone(&seen), Rc::clone(&remove_b));
@@ -818,7 +903,7 @@ struct CallsExpected {
 #[test]
 fn footer_unsubscribe_tracks_callback_identity() {
     for case in load::<UnsubscribeCase>("footer_unsubscribe_tracks_callback_identity") {
-        let provider = provider(&FakeOps::new(BTreeMap::new()), "/repo");
+        let provider = provider(&MetadataEffects::new(BTreeMap::new()), "/repo");
         let seen = Log::default();
         let callback = logger(&seen, "called");
         match case {
@@ -846,7 +931,7 @@ fn footer_unsubscribe_tracks_callback_identity() {
 
 #[test]
 fn footer_callbacks_revisit_reinserted_members() {
-    let provider = provider(&FakeOps::new(BTreeMap::new()), "/repo");
+    let provider = provider(&MetadataEffects::new(BTreeMap::new()), "/repo");
     let seen = Log::default();
     let remove = Rc::new(RefCell::new(None::<Box<dyn Fn()>>));
     let slot = Rc::clone(&remove);
@@ -910,7 +995,7 @@ fn read_only(provider: &dyn ReadonlyFooterDataProvider) -> (Branch, Vec<Pair>, f
 #[test]
 fn footer_readonly_aliases_keep_live_metadata() {
     for case in load::<AliasesCase>("footer_readonly_aliases_keep_live_metadata") {
-        let ops = FakeOps::new(plain(text("ref: refs/heads/main")));
+        let ops = MetadataEffects::new(plain(text("ref: refs/heads/main")));
         let owner = provider(&ops, "/repo");
         let reader = owner.clone();
         let statuses = reader.get_extension_statuses();
@@ -1002,7 +1087,7 @@ fn footer_native_and_controlled_adapters_agree() {
         .symbolic_ref_sync(&repo)
         .expect("git runs");
     assert_eq!(output, nested_case.git_output);
-    let controlled = FakeOps::new(plain(text("ref: refs/heads/main\n")));
+    let controlled = MetadataEffects::new(plain(text("ref: refs/heads/main\n")));
     assert_eq!(
         provider(&controlled, "/repo/a/b").get_git_branch(),
         Some(nested_case.branch.clone())
@@ -1032,6 +1117,7 @@ fn footer_native_and_controlled_adapters_agree() {
     );
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct AmbientCase {
@@ -1041,6 +1127,7 @@ struct AmbientCase {
     expected: BranchExpected,
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct AmbientInput {
@@ -1048,6 +1135,7 @@ struct AmbientInput {
     cwd: String,
 }
 
+#[cfg(unix)]
 const AMBIENT: &str = "footer_paths_read_ambient_cwd_only_when_required";
 
 #[cfg(unix)]
@@ -1070,48 +1158,33 @@ fn ambient_child(root: &str) {
     }
 }
 
-/// Controlled files at absolute and relative spellings of the same layout.
-fn ambient_files() -> Rc<FakeOps> {
-    let head = text("ref: refs/heads/updated\n");
-    let gitfile = text("gitdir: ../repo/.git\n");
-    FakeOps::new(BTreeMap::from([
-        ("/scratch/repo/.git".to_owned(), Entry::Flag(true)),
-        ("/scratch/repo/.git/HEAD".to_owned(), head.clone()),
-        ("/scratch/worktree/.git".to_owned(), gitfile.clone()),
-        ("../repo/.git".to_owned(), Entry::Flag(true)),
-        ("../repo/.git/HEAD".to_owned(), head),
-        ("../worktree/.git".to_owned(), gitfile),
-    ]))
-}
-
-/// A worktree link through a drive-lettered target asks for that drive before resolving, whatever anchors it.
+/// Drive-relative links are resolved by native drive observations, not a fake file service.
 #[cfg(windows)]
 #[test]
 fn worktree_resolution_keeps_eager_drive_observations() {
-    let head = text("ref: refs/heads/updated\n");
-    let gitfile = text("gitdir: c:../repo/.git\n");
-    let ops = FakeOps::new(BTreeMap::from([
-        ("/scratch/worktree/.git".to_owned(), gitfile.clone()),
-        ("worktree/.git".to_owned(), gitfile),
-    ]));
-    // Resolution keeps the lowercase spelling of the selected drive.
-    for (path, entry) in [
-        ("/scratch/repo/.git", Entry::Flag(true)),
-        ("/scratch/repo/.git/HEAD", head),
-    ] {
-        ops.files
-            .borrow_mut()
-            .insert(target(path).replacen("C:", "c:", 1), entry);
+    if let Ok(worktree) = std::env::var("FOOTER_DRIVE_WORKTREE") {
+        let ops = MetadataEffects::new(BTreeMap::new());
+        for cwd in [worktree, ".".to_owned()] {
+            let p = FooterDataProvider::new(cwd, ops.clone());
+            assert_eq!(p.get_git_branch().as_deref(), Some("updated"));
+        }
+        return;
     }
-    let branch = provider(&ops, "/scratch/worktree").get_git_branch();
-    assert_eq!(branch.as_deref(), Some("updated"));
-    assert_eq!(*ops.drive_reads.borrow(), ['C', 'C']);
-    assert_eq!(ops.current_dir_calls.get(), 0);
-
-    ops.drive_reads.borrow_mut().clear();
-    assert_eq!(provider(&ops, "worktree").get_git_branch(), None);
-    assert_eq!(*ops.drive_reads.borrow(), ['C']);
-    assert_eq!(ops.current_dir_calls.get(), 1);
+    let scratch = support::Repository::default();
+    scratch.directory("worktree");
+    scratch.text("repo/.git/HEAD", "ref: refs/heads/updated");
+    let repo = scratch.path("repo/.git");
+    let drive = repo[..2].to_lowercase();
+    scratch.text("worktree/.git", &format!("gitdir: {drive}../repo/.git"));
+    let output = maestro_test_process::TestProcess::current(
+        "worktree_resolution_keeps_eager_drive_observations",
+    )
+    .unwrap()
+    .current_dir(scratch.path("worktree"))
+    .env("FOOTER_DRIVE_WORKTREE", scratch.path("worktree"))
+    .output()
+    .unwrap();
+    assert!(output.status.success(), "{output:?}");
 }
 
 /// What the native adapter finds for each ambient case, read in a child whose
@@ -1143,28 +1216,52 @@ fn footer_paths_read_ambient_cwd_only_when_required() {
     }
     #[cfg(unix)]
     let observed = native_ambient_lines();
-    let controlled = ambient_files();
+    #[cfg(unix)]
     for case in load::<AmbientCase>(AMBIENT) {
         let name = &case.input.name;
-        let cwd = if case.input.cwd == "ABSOLUTE_WORKTREE" {
-            "/scratch/worktree"
-        } else {
-            &case.input.cwd
-        };
-        let branch = provider(&controlled, cwd).get_git_branch();
-        let required = usize::from(name == "relative-worktree");
-        assert_eq!(controlled.current_dir_calls.replace(0), required, "{name}");
-        assert_eq!(branch, case.expected.branch, "{name}");
-        #[cfg(unix)]
-        {
-            let native = observed
-                .iter()
-                .find_map(|line| line.strip_prefix(&format!("{name}=")));
-            let native = native.map(|found| (!found.is_empty()).then(|| found.to_owned()));
-            assert_eq!(native, Some(case.expected.branch), "{name}");
-        }
+        let native = observed
+            .iter()
+            .find_map(|line| line.strip_prefix(&format!("{name}=")));
+        let native = native.map(|found| (!found.is_empty()).then(|| found.to_owned()));
+        assert_eq!(native, Some(case.expected.branch), "{name}");
     }
-    *controlled.current.borrow_mut() = Some("/scratch/gone".to_owned());
-    let resolved = provider(&controlled, "../worktree").get_git_branch();
-    assert_eq!(resolved.as_deref(), Some("updated"));
+    let ops = MetadataEffects::new(BTreeMap::from([
+        (
+            "/repo/.git/HEAD".to_owned(),
+            text("ref: refs/heads/updated"),
+        ),
+        ("/worktree/.git".to_owned(), text("gitdir: ../repo/.git")),
+    ]));
+    assert_eq!(
+        provider(&ops, "/worktree").get_git_branch().as_deref(),
+        Some("updated")
+    );
+}
+
+/// Bare metadata is shared by the daemon and footer, including the checkout root.
+#[cfg(unix)]
+#[test]
+fn footer_bare_checkout_uses_shared_repository_discovery() {
+    let scratch = Scratch::new();
+    git(
+        &scratch.join(""),
+        &[
+            "init",
+            "--bare",
+            "--initial-branch=bare-topic",
+            &scratch.join("bare"),
+        ],
+    );
+    let bare = scratch.join("bare");
+    let discovered =
+        maestro_workspace::workspace::git::native::discover_git_paths(Path::new(&bare)).unwrap();
+    assert_eq!(discovered.repo_root, Path::new(&bare));
+    assert_eq!(
+        std::fs::read_to_string(discovered.git_dir.join("HEAD"))
+            .unwrap()
+            .trim()
+            .strip_prefix("ref: refs/heads/"),
+        Some("bare-topic")
+    );
+    assert_eq!(native_branch(&bare).as_deref(), Some("bare-topic"));
 }

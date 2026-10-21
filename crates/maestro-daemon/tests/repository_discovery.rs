@@ -318,9 +318,10 @@ fn repository_native_links_keep_unicode_trim_and_stop_at_missing_head() {
     std::fs::create_dir(scratch.join("metadata/commondir")).unwrap();
     assert_eq!(
         git_repo_root(&linked),
-        None,
-        "an unreadable shared metadata link stops discovery"
+        Some(linked.clone()),
+        "unreadable shared metadata retains the checkout's own metadata"
     );
+    assert_eq!(git_branch(&linked).as_deref(), Some("topic"));
     std::fs::remove_dir_all(scratch).unwrap();
 }
 

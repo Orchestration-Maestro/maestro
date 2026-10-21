@@ -37,9 +37,9 @@ pub(super) struct State {
 
 impl State {
     /// The state of `cwd`, with its repository discovered and no branch looked up.
-    fn new(operations: &dyn FooterOperations, cwd: String) -> Self {
+    fn new(cwd: String) -> Self {
         Self {
-            git_paths: find_git_paths(operations, &cwd),
+            git_paths: find_git_paths(&cwd),
             cwd,
             branch: Lookup::Pending,
         }
@@ -68,7 +68,7 @@ impl FooterDataProvider {
     /// remains lazy until a getter or refresh.
     #[must_use]
     pub fn new(cwd: String, operations: Rc<dyn FooterOperations>) -> Self {
-        let state = Rc::new(RefCell::new(State::new(operations.as_ref(), cwd)));
+        let state = Rc::new(RefCell::new(State::new(cwd)));
         let callbacks = Live::new();
         let watch = super::watch::Watching::new(
             Rc::clone(&operations),
@@ -112,7 +112,7 @@ impl FooterDataProvider {
             return;
         }
         self.watch.changed_cwd();
-        *self.state.borrow_mut() = State::new(self.operations.as_ref(), cwd);
+        *self.state.borrow_mut() = State::new(cwd);
         self.watch.setup();
         for (_, callback) in &self.callbacks {
             callback();

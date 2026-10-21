@@ -733,3 +733,11 @@ of the outer title. Accepted settings reloads replace the parsed template.
 Linux desktop notifications invoke the native notifier with a literal operand
 separator before the title. Missing displays or notifier executables return
 without showing a notification; other launch and wait failures remain errors.
+
+The native footer and daemon share repository discovery, including standalone
+bare repositories and embedded bare worktrees. Checkout paths retain their
+spelling for watching; canonical paths remain repository identity keys.
+Caller-specific metadata rules use one typed policy: footer worktree markers
+require a space after `gitdir:`, while workspace identity also accepts the
+unspaced form. Footer directory metadata ignores `commondir`; a worktree link
+uses it. The browser footer has no native repository discovery.

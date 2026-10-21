@@ -52,26 +52,51 @@ fn resolve_path(base: &Path, target: &str) -> io::Result<PathBuf> {
     .map(|resolved| PathBuf::from(resolved.into_iter().collect::<String>()))
 }
 
+/// Caller-specific metadata acceptance within the shared repository walk.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiscoveryPolicy {
+    /// Workspace identity accepts unspaced links, requires regular HEAD, and tolerates unreadable common metadata.
+    Workspace,
+    /// Footer links require a space; directory metadata ignores `commondir`.
+    Footer,
+}
+
 /// Find the nearest repository, stopping at an unreadable link or missing HEAD.
 #[must_use]
 pub fn discover_git_paths(start: &Path) -> Option<GitPaths> {
-    discover(start).ok().flatten()
+    discover_git_paths_with(start, DiscoveryPolicy::Workspace)
+}
+
+/// Discover native paths with the caller's metadata acceptance rules.
+#[must_use]
+pub fn discover_git_paths_with(start: &Path, policy: DiscoveryPolicy) -> Option<GitPaths> {
+    discover(start, policy).ok().flatten()
 }
 
 /// One native walk, retaining authored checkout paths.
-fn discover(start: &Path) -> io::Result<Option<GitPaths>> {
-    let mut current = if start.is_file() {
+fn discover(start: &Path, policy: DiscoveryPolicy) -> io::Result<Option<GitPaths>> {
+    let mut current = if policy == DiscoveryPolicy::Workspace && start.is_file() {
         start.parent().unwrap_or(start)
     } else {
         start
     }
     .to_path_buf();
     loop {
-        if let Some(git_dir) = git_dir_for_repo_root(&current)? {
-            if !git_dir.join("HEAD").is_file() {
+        if let Some(git_dir) = git_dir_for_root(&current, policy)? {
+            let head = git_dir.join("HEAD");
+            let valid = match policy {
+                DiscoveryPolicy::Workspace => head.is_file(),
+                DiscoveryPolicy::Footer => head.exists(),
+            };
+            if !valid {
                 return Ok(None);
             }
-            let git_common_dir = git_common_dir_for_git_dir(&git_dir)?;
+            let git_common_dir =
+                if policy == DiscoveryPolicy::Footer && current.join(".git").is_dir() {
+                    git_dir.clone()
+                } else {
+                    git_common_dir_for_git_dir(&git_dir, policy)?
+                };
             return Ok(Some(GitPaths {
                 repo_root: current,
                 git_dir,
@@ -88,13 +113,22 @@ fn discover(start: &Path) -> io::Result<Option<GitPaths>> {
 
 /// Locate a directory's metadata marker, including standalone bare layouts.
 pub(super) fn git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> {
+    git_dir_for_root(root, DiscoveryPolicy::Workspace)
+}
+
+/// Locate metadata with the caller's worktree marker syntax.
+fn git_dir_for_root(root: &Path, policy: DiscoveryPolicy) -> io::Result<Option<PathBuf>> {
     let marker = root.join(".git");
     match std::fs::metadata(&marker) {
         Ok(metadata) if metadata.is_dir() => return Ok(Some(marker)),
         Ok(metadata) if metadata.is_file() => {
             let contents = read_text(&marker)?;
+            let prefix = match policy {
+                DiscoveryPolicy::Workspace => "gitdir:",
+                DiscoveryPolicy::Footer => "gitdir: ",
+            };
             return trim(&contents)
-                .strip_prefix("gitdir:")
+                .strip_prefix(prefix)
                 .map(|target| resolve_path(root, trim(target)))
                 .transpose();
         }
@@ -109,11 +143,15 @@ pub(super) fn git_dir_for_repo_root(root: &Path) -> io::Result<Option<PathBuf>> 
     .then(|| root.to_path_buf()))
 }
 
-/// Resolve shared metadata, falling back only when the optional link is absent.
-fn git_common_dir_for_git_dir(git_dir: &Path) -> io::Result<PathBuf> {
+/// Resolve shared metadata with caller-specific unreadable-link handling.
+fn git_common_dir_for_git_dir(git_dir: &Path, policy: DiscoveryPolicy) -> io::Result<PathBuf> {
     match read_text(&git_dir.join("commondir")) {
         Ok(contents) => resolve_path(git_dir, trim(&contents)),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(git_dir.to_path_buf()),
+        Err(error)
+            if error.kind() == io::ErrorKind::NotFound || policy == DiscoveryPolicy::Workspace =>
+        {
+            Ok(git_dir.to_path_buf())
+        }
         Err(error) => Err(error),
     }
 }
