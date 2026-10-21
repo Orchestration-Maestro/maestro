@@ -678,3 +678,7 @@ writers. A failed global write leaves live daemon preferences unchanged and show
 a diagnostic for five seconds; successful saves silently apply the accepted global
 document. The settings manager keeps its existing immediate cache and error-drain
 semantics.
+
+Tab observations expose the stable public number even after an earlier tab is
+closed. Display labels still follow the current position unless explicitly
+named; focus and agent attention are projected from the retained live state.

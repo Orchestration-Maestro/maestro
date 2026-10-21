@@ -170,3 +170,36 @@ impl<C: FnMut() -> u128> App<C> {
             .or_else(|| Some(workspace.identity_cwd.clone()))
     }
 }
+
+impl<C: FnMut() -> u128> App<C> {
+    /// Projects a tab's stable identity independently of its display position.
+    #[must_use]
+    pub fn tab_info(
+        &self,
+        workspace: usize,
+        tab: usize,
+    ) -> Option<maestro_protocol::schema::TabInfo> {
+        let target = self.state.topology.workspaces.get(workspace)?;
+        let record = target.tabs.get(tab)?;
+        let (state, seen) = record
+            .panes
+            .values()
+            .filter_map(|pane| {
+                self.state
+                    .terminals
+                    .get(&pane.attached_terminal_id)
+                    .map(|terminal| (terminal.state, pane.seen))
+            })
+            .max_by_key(|(state, seen)| super::api_helpers::tab_attention_priority(*state, *seen))
+            .unwrap_or((maestro_detection::agents::AgentState::Unknown, true));
+        Some(maestro_protocol::schema::TabInfo {
+            tab_id: self.state.public_tab_id(workspace, tab)?,
+            workspace_id: target.id.clone(),
+            number: record.number,
+            label: target.tab_display_name(tab)?,
+            focused: self.state.active == Some(workspace) && target.active_tab == tab,
+            pane_count: record.panes.len(),
+            agent_status: super::actions::pane_agent_status(state, seen),
+        })
+    }
+}
