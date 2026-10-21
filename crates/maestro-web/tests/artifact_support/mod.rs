@@ -67,6 +67,7 @@ pub fn corpus() -> Corpus {
     use crate::support::strict_record;
     let valid: serde_json::Value =
         serde_json::from_str(include_str!("../fixtures/generic_artifacts_portable.json")).unwrap();
+    strict_record::<Corpus>(&valid, &["mime", "decode"]);
     strict_record::<NameCase>(&valid["mime"][0], &["input", "output"]);
     strict_record::<NameInput>(&valid["mime"][0]["input"], &["filename"]);
     strict_record::<DecodeCase>(&valid["decode"][0], &["input", "output"]);

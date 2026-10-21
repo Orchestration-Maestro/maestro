@@ -261,6 +261,7 @@ pub fn filtering_fixture() -> FilteringFixture {
 fn linear_texture_samples_match_native_filtering() {
     let valid: serde_json::Value =
         serde_json::from_str(include_str!("../fixtures/control_texture_sampling.json")).unwrap();
+    crate::support::strict_record::<FilteringFixture>(&valid, &["rows"]);
     crate::support::strict_record::<FilterRow>(
         &valid["rows"][0],
         &["size", "pixels", "uv", "expected"],

@@ -223,6 +223,7 @@ fn preview_toggle_paints_selected_hover_and_focus() {
         "fixtures/control_texture_sampling_native.json"
     ))
     .unwrap();
+    crate::support::strict_record::<FilteringFixture>(&valid, &["preview"]);
     assert_eq!(valid["preview"].as_array().unwrap().len(), 8);
     crate::support::strict_record::<PreviewRow>(
         &valid["preview"][0],

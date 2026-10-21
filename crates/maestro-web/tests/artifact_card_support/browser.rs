@@ -106,6 +106,11 @@ pub fn languages() {
 /// Panics if a native observation differs from its recorded value.
 pub async fn fields() {
     let mut surface = Surface::new();
+    let valid: serde_json::Value = serde_json::from_str(include_str!(
+        "../fixtures/artifact_value_routes_browser.json"
+    ))
+    .unwrap();
+    crate::support::strict_record::<records::ValueRoute>(&valid[0], &["input", "expected"]);
     let routes: Vec<records::ValueRoute> = serde_json::from_str(include_str!(
         "../fixtures/artifact_value_routes_browser.json"
     ))
@@ -152,7 +157,7 @@ pub async fn fields() {
         let actual =
             js("document.querySelector('.maestro-code code')?.textContent??null").as_string();
         let expected = match row.expected {
-            records::CodeSelection::Omitted => None,
+            records::CodeSelection::Omitted {} => None,
             records::CodeSelection::Text { text } => Some(text),
         };
         assert_eq!(actual, expected, "{}", row.input.phase);

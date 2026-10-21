@@ -22,6 +22,7 @@ pub fn corpus() -> Corpus {
     #[cfg(not(target_arch = "wasm32"))]
     {
         use native_records::{Case, Header, Toggle};
+        strict_record::<Corpus>(&valid, &["toggles", "headers", "content"]);
         strict_record::<Toggle>(
             &valid["toggles"][0],
             &["language", "titles", "states", "events", "configured"],
@@ -40,6 +41,7 @@ pub fn corpus() -> Corpus {
     #[cfg(target_arch = "wasm32")]
     {
         use browser_records::{Case, Lifecycle, UrlEvent};
+        strict_record::<Corpus>(&valid, &["content", "lifecycle"]);
         strict_record::<Case>(
             &valid["content"][0],
             &[

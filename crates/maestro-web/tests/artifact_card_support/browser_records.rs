@@ -118,7 +118,7 @@ pub struct CodeDomain {
 pub enum CodeSelection {
     /// Recorded omitted branch.
     #[serde(rename = "omitted")]
-    Omitted,
+    Omitted {},
     /// Recorded text branch.
     #[serde(rename = "text")]
     Text { text: String },

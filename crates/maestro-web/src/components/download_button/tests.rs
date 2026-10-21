@@ -143,10 +143,9 @@ pub struct DownloadCase {
     /// Recorded observable result.
     pub output: DownloadOutput,
 }
-/// Mouse and keyboard activation preserve the selected slice and original media type.
-#[test]
+/// Decode native byte cases and reject malformed fixture records.
 #[cfg(not(target_arch = "wasm32"))]
-fn download_control_preserves_original_bytes_and_slice_bounds() {
+fn download_corpus() -> Corpus {
     let valid: serde_json::Value = serde_json::from_str(include_str!(
         "../../../tests/fixtures/generic_artifacts_native.json"
     ))
@@ -159,16 +158,55 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
         wrong["kind"] = value;
         assert!(serde_json::from_value::<DownloadInput>(wrong).is_err());
     }
-    assert!(serde_json::from_value::<DownloadInput>(serde_json::json!({})).is_err());
-    assert!(serde_json::from_value::<DownloadCase>(serde_json::json!({})).is_err());
-    assert!(
-        serde_json::from_value::<DownloadOutput>(serde_json::json!({"bytes":null,"mime":null}))
-            .is_err()
-    );
-    let corpus: Corpus = serde_json::from_str(include_str!(
-        "../../../tests/fixtures/generic_artifacts_native.json"
-    ))
-    .unwrap();
+    let rejects: [fn(serde_json::Value) -> bool; 4] = [
+        |value| serde_json::from_value::<Corpus>(value).is_err(),
+        |value| serde_json::from_value::<DownloadCase>(value).is_err(),
+        |value| serde_json::from_value::<DownloadInput>(value).is_err(),
+        |value| serde_json::from_value::<DownloadOutput>(value).is_err(),
+    ];
+    let records: [(_, &[&str]); 4] = [
+        (&valid, &["download"]),
+        (&valid["download"][0], &["input", "output"]),
+        (
+            &valid["download"][0]["input"],
+            &["kind", "bytes", "mimeType", "filename"],
+        ),
+        (&valid["download"][0]["output"], &["bytes", "mime"]),
+    ];
+    for ((record, required), rejects) in records.into_iter().zip(rejects) {
+        assert!(!rejects(record.clone()));
+        for value in [serde_json::Value::Null, serde_json::json!([])] {
+            let mut extra = record.clone();
+            extra["unexpected"] = value;
+            assert!(rejects(extra));
+        }
+        for field in required {
+            let mut missing = record.clone();
+            missing
+                .as_object_mut()
+                .unwrap()
+                .shift_remove(*field)
+                .unwrap();
+            assert!(rejects(missing), "missing {field}");
+            let wrong = if record[field].is_array() || record[field].is_object() {
+                serde_json::json!(false)
+            } else {
+                serde_json::json!([])
+            };
+            for value in [serde_json::Value::Null, wrong] {
+                let mut invalid = record.clone();
+                invalid[field] = value;
+                assert!(rejects(invalid), "invalid {field}");
+            }
+        }
+    }
+    serde_json::from_value(valid).unwrap()
+}
+/// Mouse and keyboard activation preserve the selected slice and original media type.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn download_control_preserves_original_bytes_and_slice_bounds() {
+    let corpus = download_corpus();
     let pack = maestro_theme::load_brand_pack(
         concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
         &maestro_theme::theme::NativeThemeOperations,
