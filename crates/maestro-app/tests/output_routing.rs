@@ -367,10 +367,7 @@ fn package_probe() {
     use std::rc::Rc;
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
             for label in ["A", "B", "C"] {
                 if label == "B" { take_over_stdout(); }

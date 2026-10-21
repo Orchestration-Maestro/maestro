@@ -120,7 +120,8 @@ async fn install_report_discards_all_request_outcomes_run() {
 #[cfg(unix)]
 #[test]
 fn install_report_deadline_stops_waiting_at_headers() {
-    services::run_paused(install_report_deadline_stops_waiting_at_headers_run());
+    crate::support::paused_io_runtime()
+        .block_on(install_report_deadline_stops_waiting_at_headers_run());
 }
 async fn install_report_deadline_stops_waiting_at_headers_run() {
     if services::isolated("install_report_deadline_stops_waiting_at_headers") {

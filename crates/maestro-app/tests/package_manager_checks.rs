@@ -183,10 +183,7 @@ fn root_case(case: &fixtures::Case<RootInput, Roots>) {
         NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local),
     );
     let events = progress(&manager);
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
         let resolved: ResolvedPaths = manager.resolve(None).await.unwrap();
         let resource: &ResolvedResource = &resolved.extensions[0];
@@ -326,10 +323,7 @@ fn update_case(case: &fixtures::Case<UpdateInput, Updated>) {
         NativePackageOperations::new(|_| false, Rc::new(is_stdout_taken_over), &local),
     ));
     let events = progress(manager.as_ref());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
         manager.update(None).await.unwrap();
         let flushed = settings.borrow().flush();

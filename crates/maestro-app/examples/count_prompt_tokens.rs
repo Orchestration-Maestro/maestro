@@ -126,6 +126,12 @@ fn main() {}
 
 #[cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
+#[path = "../tests/support/runtime.rs"]
+#[allow(dead_code, reason = "These tests use only the I/O runtime.")]
+mod runtime;
+
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
     use super::*;
     use futures_util::stream;
@@ -315,18 +321,14 @@ mod tests {
         );
         let formatter = LocaleNumberFormat::new(&|_| Some(case.input.locale.clone())).unwrap();
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(run(
-                case.input.api_key.as_deref().unwrap(),
-                &fetch,
-                &formatter,
-                &mut stdout,
-                &mut stderr,
-            ))
-            .unwrap();
+        runtime::run_io(run(
+            case.input.api_key.as_deref().unwrap(),
+            &fetch,
+            &formatter,
+            &mut stdout,
+            &mut stderr,
+        ))
+        .unwrap();
         assert_report(&case, &stdout, &stderr);
         assert!(replies.lock().unwrap().is_empty());
         let observed = transcript.lock().unwrap();
@@ -475,18 +477,14 @@ mod tests {
             });
             let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
             let formatter = LocaleNumberFormat::new(&|_| Some("en_US.UTF-8".into())).unwrap();
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(run(
-                    "controlled",
-                    &fetch,
-                    &formatter,
-                    &mut stdout,
-                    &mut stderr,
-                ))
-                .unwrap();
+            runtime::run_io(run(
+                "controlled",
+                &fetch,
+                &formatter,
+                &mut stdout,
+                &mut stderr,
+            ))
+            .unwrap();
             assert!(stdout.ends_with(b"\nTotal: 4 tokens\n"));
             assert_eq!(String::from_utf8(stderr).unwrap().lines().count(), 1);
             assert!(replies.lock().unwrap().is_empty());
@@ -530,22 +528,18 @@ mod tests {
         });
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         let formatter = LocaleNumberFormat::new(&|_| Some("en_US.UTF-8".into())).unwrap();
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let work = run("controlled", &fetch, &formatter, &mut stdout, &mut stderr);
-                let mut work = std::pin::pin!(work);
-                let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-                assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
-                assert_eq!(calls.load(Ordering::SeqCst), 1);
-                headers.notify_one();
-                assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
-                assert_eq!(calls.load(Ordering::SeqCst), 1);
-                body.notify_one();
-                work.await.unwrap();
-            });
+        runtime::run_io(async {
+            let work = run("controlled", &fetch, &formatter, &mut stdout, &mut stderr);
+            let mut work = std::pin::pin!(work);
+            let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+            assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            headers.notify_one();
+            assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            body.notify_one();
+            work.await.unwrap();
+        });
         assert_eq!(calls.load(Ordering::SeqCst), 5);
         assert!(stdout.ends_with(b"\nTotal: 5 tokens\n"));
         assert!(stderr.is_empty());
@@ -655,18 +649,14 @@ mod tests {
         });
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         let formatter = LocaleNumberFormat::new(&|key| std::env::var(key).ok()).unwrap();
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(run(
-                &std::env::var("ANTHROPIC_API_KEY").unwrap(),
-                &fetch,
-                &formatter,
-                &mut stdout,
-                &mut stderr,
-            ))
-            .unwrap();
+        runtime::run_io(run(
+            &std::env::var("ANTHROPIC_API_KEY").unwrap(),
+            &fetch,
+            &formatter,
+            &mut stdout,
+            &mut stderr,
+        ))
+        .unwrap();
         let wire = peer.join().unwrap();
         let expected = case.output.requests.unwrap();
         assert_eq!(wire.len(), expected.len());

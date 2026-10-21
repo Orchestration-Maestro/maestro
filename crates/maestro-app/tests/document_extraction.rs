@@ -8,8 +8,8 @@ use maestro_models::{Cancellation, DiagnosticErrorInfo, FetchError};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
-use support::browser_providers::run;
 use support::document_extraction::{Effects, corpus};
+use support::run_io as run;
 
 /// Replay public real-loader rows with the selected constructor transport.
 async fn rows(indices: &[usize]) {

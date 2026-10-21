@@ -75,14 +75,6 @@ pub fn case(name: &str) -> Case {
         .find(|case| case.name == name)
         .unwrap()
 }
-/// Drive a native asynchronous witness.
-pub fn run(future: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future);
-}
 /// Shared observations, with no caller code invoked under its lock.
 #[derive(Default)]
 pub struct Trace {

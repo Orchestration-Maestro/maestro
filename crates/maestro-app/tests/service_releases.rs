@@ -320,7 +320,7 @@ async fn malformed_bodies() {
 #[cfg(unix)]
 #[test]
 fn release_deadline_covers_headers_and_body() {
-    services::run_paused(release_deadline_covers_headers_and_body_run());
+    crate::support::paused_io_runtime().block_on(release_deadline_covers_headers_and_body_run());
 }
 async fn release_deadline_covers_headers_and_body_run() {
     if services::isolated("release_deadline_covers_headers_and_body") {

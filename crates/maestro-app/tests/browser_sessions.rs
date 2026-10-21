@@ -17,7 +17,7 @@ fn session_schemas_keep_both_id_indexes() {
 
 #[test]
 fn session_records_roundtrip_standard_browser_and_open_custom_history() {
-    runtime::run(async {
+    run_io(async {
         for row in
             session_rows("session_records_roundtrip_standard_browser_and_open_custom_history")
         {
@@ -63,7 +63,7 @@ fn session_records_roundtrip_standard_browser_and_open_custom_history() {
         }
     });
 }
-use crate::support::browser_providers as runtime;
+use crate::support::run_io;
 use maestro_agent::{Agent, AgentOptions, CustomAgentMessages};
 use maestro_app::browser::{
     components::messages::{CustomAgentMessages as BrowserCustom, default_convert_to_llm},
@@ -139,7 +139,7 @@ fn observation<T: Serialize>(result: std::io::Result<T>, backend: &storage::Back
 }
 #[test]
 fn session_save_uses_one_ordered_two_store_transaction() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_save_uses_one_ordered_two_store_transaction") {
             let (store, backend) = setup(&row);
             let data: SessionData = serde_json::from_value(row.input["data"].clone()).unwrap();
@@ -154,7 +154,7 @@ fn session_save_uses_one_ordered_two_store_transaction() {
 }
 #[test]
 fn session_delete_and_alias_use_one_ordered_transaction() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_delete_and_alias_use_one_ordered_transaction") {
             let (store, backend) = setup(&row);
             let id = row.input["id"].as_str().unwrap();
@@ -174,7 +174,7 @@ fn session_metadata_listing_requests_descending_index() {
 }
 /// Exercise public typed reads and listing against their complete observations.
 fn reads(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             let id = row.input.get("id").and_then(Value::as_str).unwrap_or("id");
@@ -212,7 +212,7 @@ fn session_title_update_skips_each_absent_record_independently() {
 }
 /// Title edits observe raw records and all four effect boundaries.
 fn titles(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             let result = store
@@ -240,7 +240,7 @@ fn session_title_update_preserves_unread_open_record_fields() {
 
 #[test]
 fn session_quota_and_persistence_delegate_without_policy() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_quota_and_persistence_delegate_without_policy") {
             let (store, backend) = setup(&row);
             *backend.granted.borrow_mut() = row.input["granted"].as_bool().unwrap();
@@ -279,7 +279,7 @@ fn session_alias_defaults_keep_zero_usage_and_separate_timestamps() {
 }
 /// Observe public writes, qualifying only generated clock fields in the call window.
 fn aliases(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             let agent = agent_from(&row.input["state"]);
@@ -373,7 +373,7 @@ fn latest_session_keeps_stable_descending_timestamp_order() {
 }
 /// Latest selection observes the original listing and its failure boundary.
 fn latest(name: &str) {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows(name) {
             let (store, backend) = setup(&row);
             records_equal(
@@ -433,7 +433,7 @@ fn app_storage_retains_supplied_handles_without_binding() {
 }
 #[test]
 fn app_storage_replacement_keeps_old_retained_handles() {
-    runtime::run(async {
+    run_io(async {
         let row = session_rows("app_storage_replacement_keeps_old_retained_handles").remove(0);
         let old = storage::Backend::new();
         let new = storage::Backend::new();
@@ -460,7 +460,7 @@ fn app_storage_replacement_keeps_old_retained_handles() {
 }
 #[test]
 fn app_storage_delegates_quota_to_its_own_backend() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("app_storage_delegates_quota_to_its_own_backend") {
             let backend = storage::Backend::new();
             let app = application(backend.clone());
@@ -486,7 +486,7 @@ fn app_storage_delegates_quota_to_its_own_backend() {
 
 #[test]
 fn session_transactions_keep_live_message_and_model_handles() {
-    runtime::run(async {
+    run_io(async {
         for row in session_rows("session_transactions_keep_live_message_and_model_handles") {
             let (store, backend) = setup(&row);
             let data: SessionData = serde_json::from_value(row.input["data"].clone()).unwrap();
@@ -522,7 +522,7 @@ fn session_transactions_keep_live_message_and_model_handles() {
 }
 #[test]
 fn session_alias_keeps_captured_history_after_state_collection_replacement() {
-    runtime::run(async {
+    run_io(async {
         for row in
             session_rows("session_alias_keeps_captured_history_after_state_collection_replacement")
         {
@@ -574,7 +574,7 @@ fn session_alias_keeps_captured_history_after_state_collection_replacement() {
 }
 #[test]
 fn session_title_rebinding_selects_backend_at_each_phase() {
-    runtime::run(async {
+    run_io(async {
         let row = session_rows("session_title_rebinding_selects_backend_at_each_phase").remove(0);
         let store = Rc::new(SessionsStore::default());
         let backends: Vec<_> = (0..4).map(|_| storage::Backend::new()).collect();
@@ -603,7 +603,7 @@ fn session_title_rebinding_selects_backend_at_each_phase() {
 }
 #[test]
 fn session_transactions_retain_backend_selected_before_callback() {
-    runtime::run(async {
+    run_io(async {
         let row =
             session_rows("session_transactions_retain_backend_selected_before_callback").remove(0);
         let seed = session_rows("session_save_uses_one_ordered_two_store_transaction").remove(0);
@@ -625,7 +625,7 @@ fn session_transactions_retain_backend_selected_before_callback() {
 }
 #[test]
 fn session_load_retains_backend_selected_before_await() {
-    runtime::run(async {
+    run_io(async {
         let row = session_rows("session_load_retains_backend_selected_before_await").remove(0);
         let store = SessionsStore::default();
         let old = storage::Backend::new();
@@ -654,7 +654,7 @@ fn session_load_retains_backend_selected_before_await() {
 
 #[test]
 fn session_operations_require_a_bound_backend() {
-    runtime::run(async {
+    run_io(async {
         let seed = session_rows("session_save_uses_one_ordered_two_store_transaction").remove(0);
         let data: SessionData = serde_json::from_value(seed.input["data"].clone()).unwrap();
         let metadata = serde_json::from_value(seed.input["metadata"].clone()).unwrap();
@@ -692,7 +692,7 @@ fn session_operations_require_a_bound_backend() {
 #[test]
 fn latest_session_uses_host_locale_instead_of_lexical_order() {
     if let Ok(locale) = std::env::var("MAESTRO_SESSION_LOCALE") {
-        runtime::run(async {
+        run_io(async {
             let row = session_rows("latest_session_uses_host_locale_instead_of_lexical_order")
                 .into_iter()
                 .find(|r| r.input["locale"] == locale)

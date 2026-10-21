@@ -10,24 +10,20 @@ use std::sync::Arc;
 fn pdf_detection_prioritizes_mime_or_suffix() {
     let bytes = include_bytes!("fixtures/pdf/synthetic-wide.pdf");
     let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
     for row in support::pdf::routes().iter().take(5) {
         support::pdf::check_route(row);
     }
     let (name, mime) = ("a.pdf", "application/pdf");
-    let attachment = runtime
-        .block_on(load_attachment(
-            AttachmentSource::File {
-                bytes,
-                name,
-                mime_type: mime,
-            },
-            None,
-            &fetch,
-        ))
-        .unwrap();
+    let attachment = crate::support::run(load_attachment(
+        AttachmentSource::File {
+            bytes,
+            name,
+            mime_type: mime,
+        },
+        None,
+        &fetch,
+    ))
+    .unwrap();
     assert_eq!(attachment.r#type, AttachmentType::Document);
     assert_eq!(attachment.mime_type, "application/pdf");
     assert!(

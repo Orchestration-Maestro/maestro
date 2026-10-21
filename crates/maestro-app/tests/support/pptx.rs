@@ -79,14 +79,11 @@ pub fn suite(test: &str) {
             "url" => AttachmentSource::Url(row.input.url.as_deref().unwrap()),
             _ => panic!("unexpected source"),
         };
-        let result = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(load_attachment(
-                source,
-                row.input.r#override.as_deref(),
-                &fetch,
-            ));
+        let result = super::run(load_attachment(
+            source,
+            row.input.r#override.as_deref(),
+            &fetch,
+        ));
         let actual = match result {
             Err(AttachmentError::Fetch(_)) => json!({"error_kind":"Fetch"}),
             Err(AttachmentError::HttpStatus(_)) => json!({"error_kind":"HttpStatus"}),

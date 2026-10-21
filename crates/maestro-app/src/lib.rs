@@ -13,4 +13,7 @@ pub mod output_guard;
 /// Private declarations grouped by their existing domain owners.
 mod exports;
 
+#[cfg(test)]
+mod tests;
+
 pub use exports::*;

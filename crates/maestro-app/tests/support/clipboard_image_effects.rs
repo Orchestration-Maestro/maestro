@@ -342,11 +342,7 @@ fn replay(case: &Case) {
         );
         sender.send(()).unwrap();
     }
-    let result = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(read);
+    let result = crate::support::run_io(read);
     check_result(case, result);
     assert_eq!(
         *effects.trace.borrow(),
