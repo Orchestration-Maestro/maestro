@@ -1,31 +1,45 @@
 //! Request construction and sending for direct message-protocol invocations.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::json;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::loopback;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::messages;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, OnceLock};
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AnthropicClient, AnthropicOptions, AnthropicRequestOptions, AssistantMessageEvent,
     AssistantMessageEventStream, Cancellation, HttpResponse, Model, OnPayload, OnResponse,
     stream_anthropic,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use transport::{Attempt, transport};
 
+#[cfg(not(target_arch = "wasm32"))]
 const FIXTURE: &str = include_str!("fixtures/message_protocol/requests.json");
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A message start followed by the stop that ends the stream.
 fn short_answer() -> Vec<u8> {
     let start = r#"{"type":"message_start","message":{"id":"msg_fixture","usage":{"input_tokens":12,"output_tokens":1}}}"#;
     format!("event: message_start\ndata: {start}\n\n{}", messages::STOP).into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The default client posts the converted request to the model's endpoint.
 async fn default_client_posts_request() -> TestResult {
     let server = loopback::serve(
@@ -59,6 +73,7 @@ async fn default_client_posts_request() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_send_key_request() -> TestResult {
     crate::runtime::run(async {
@@ -70,6 +85,7 @@ fn messages_send_key_request() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Numbers JSON cannot spell are written as `null`, an output limit that is not a number falls
 /// back to the default, and negative zero is written as `0`.
 async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
@@ -111,6 +127,7 @@ async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_apply_raw_token_default() -> TestResult {
     crate::runtime::run(async {
@@ -122,6 +139,7 @@ fn messages_apply_raw_token_default() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_filter_blank_content() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -130,11 +148,13 @@ fn messages_filter_blank_content() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_replay_thinking() -> TestResult {
     crate::runtime::run(messages::assert_rows(FIXTURE, "messages_replay_thinking"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_project_foreign_replay() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -143,6 +163,7 @@ fn messages_project_foreign_replay() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_normalize_tool_ids() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -151,6 +172,7 @@ fn messages_normalize_tool_ids() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_group_tool_results() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -159,6 +181,7 @@ fn messages_group_tool_results() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_place_default_cache() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -167,6 +190,7 @@ fn messages_place_default_cache() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_tool_input_mode() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -175,6 +199,7 @@ fn messages_select_tool_input_mode() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_project_tool_schemas() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -183,6 +208,7 @@ fn messages_project_tool_schemas() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The payload members follow one order in the body text.
 async fn payload_members_are_written_in_order() -> TestResult {
     let case = messages::Case {
@@ -215,6 +241,7 @@ async fn payload_members_are_written_in_order() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_apply_metadata_and_tool_choice() -> TestResult {
     crate::runtime::run(async {
@@ -226,6 +253,7 @@ fn messages_apply_metadata_and_tool_choice() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_resolve_cache_retention() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -234,6 +262,7 @@ fn messages_resolve_cache_retention() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_merge_protocol_headers() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -242,6 +271,7 @@ fn messages_merge_protocol_headers() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_keep_http_error_envelopes() -> TestResult {
     crate::runtime::run(messages::assert_rows(
@@ -250,6 +280,7 @@ fn messages_keep_http_error_envelopes() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Both selected error-detail branches report the native conversion failure above the bound.
 #[test]
 fn messages_report_error_detail_conversion_failure() -> TestResult {
@@ -272,6 +303,7 @@ fn messages_report_error_detail_conversion_failure() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Called outside any Tokio runtime, the call still returns its stream, which ends at once with
 /// an error update.
 fn call_outside_a_runtime_ends_in_error() -> TestResult {
@@ -290,6 +322,7 @@ fn call_outside_a_runtime_ends_in_error() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The payload hook runs before the authentication check that fails the call, and no request is
 /// sent.
 async fn payload_hook_precedes_authentication_failure() -> TestResult {
@@ -325,6 +358,7 @@ async fn payload_hook_precedes_authentication_failure() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_keep_auth_failure_in_stream() -> TestResult {
     crate::runtime::run::<crate::TestResult<_>>(async {
@@ -340,6 +374,7 @@ fn messages_keep_auth_failure_in_stream() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Labels of what happened, in order, and the call whose updates a callback can already see.
 #[derive(Default)]
 struct Steps {
@@ -351,9 +386,11 @@ struct Steps {
     models: Mutex<Vec<Arc<Model>>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The steps of one call, shared with its callbacks.
 type Order = Arc<Steps>;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The kind of an update, as its serialized `type`.
 fn kind_of(event: &AssistantMessageEvent) -> String {
     serde_json::to_value(event)
@@ -362,6 +399,7 @@ fn kind_of(event: &AssistantMessageEvent) -> String {
         .unwrap_or_default()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Steps {
     /// Record a step, preceded by the kind of every update the call had announced by then.
     fn note(&self, label: impl Into<String>) {
@@ -379,6 +417,7 @@ impl Steps {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What a hook does with the payload it receives.
 #[derive(Clone)]
 enum Payload {
@@ -394,6 +433,7 @@ enum Payload {
     Fail(&'static str),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// How one call with an injected client went.
 struct Hooked {
     /// Hook, client and update labels in the order they happened.
@@ -406,6 +446,7 @@ struct Hooked {
     result: Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An injected client that notes its call, keeps the payload and answers with status 201.
 fn answering_client(order: &Order, sent: &Arc<Mutex<Option<Value>>>) -> AnthropicClient {
     let (order, sent) = (Arc::clone(order), Arc::clone(sent));
@@ -423,6 +464,7 @@ fn answering_client(order: &Order, sent: &Arc<Mutex<Option<Value>>>) -> Anthropi
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep the model a hook received.
 fn keep_model(order: &Order, model: Arc<Model>) {
     if let Ok(mut models) = order.models.lock() {
@@ -430,6 +472,7 @@ fn keep_model(order: &Order, model: Arc<Model>) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A payload hook that notes its call and applies `action`.
 fn payload_hook(order: &Order, action: Payload) -> OnPayload {
     let order = Arc::clone(order);
@@ -463,6 +506,7 @@ fn payload_hook(order: &Order, action: Payload) -> OnPayload {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A response hook that notes the status and a header it saw and may fail.
 fn response_hook(order: &Order, failure: Option<&'static str>) -> OnResponse {
     let order = Arc::clone(order);
@@ -481,6 +525,7 @@ fn response_hook(order: &Order, failure: Option<&'static str>) -> OnResponse {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Make one call through an injected client with the given hooks.
 async fn hooked_call(
     payload: Payload,
@@ -525,6 +570,7 @@ async fn hooked_call(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The expected default payload with `members` added or replaced.
 fn default_payload(members: &Value) -> Value {
     let mut payload =
@@ -535,6 +581,7 @@ fn default_payload(members: &Value) -> Value {
     payload
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_keep_callback_order_and_replacement() -> TestResult {
     crate::runtime::run(async {
@@ -589,6 +636,7 @@ fn messages_keep_callback_order_and_replacement() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An injected client that keeps the settings it receives.
 fn recording_client(
     received: &Arc<Mutex<Vec<(Value, AnthropicRequestOptions)>>>,
@@ -609,6 +657,7 @@ fn recording_client(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Call with an injected client, no key and an endpoint that is not a URL.
 async fn injected_call(
     tune: impl FnOnce(&mut AnthropicOptions),
@@ -630,6 +679,7 @@ async fn injected_call(
     Ok((calls, result))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An injected client needs neither the time nor the I/O driver of the runtime.
 fn injected_call_runs_without_drivers() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
@@ -641,6 +691,7 @@ fn injected_call_runs_without_drivers() -> TestResult {
         })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A client's response is read as an event stream whatever its status, and a failure it reports
 /// ends the call with its message as it is.
 async fn client_owns_status_and_failures() -> TestResult {
@@ -662,6 +713,7 @@ async fn client_owns_status_and_failures() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_inject_client_without_auth() -> TestResult {
     injected_call_runs_without_drivers()?;
@@ -700,6 +752,7 @@ fn messages_inject_client_without_auth() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Make one call over the scripted transport and report the final stop reason and hook calls.
 async fn retried_call(
     attempts: Vec<Attempt>,
@@ -727,6 +780,7 @@ async fn retried_call(
     Ok((target, result, statuses))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_reuse_setup_retry_policy() -> TestResult {
     crate::runtime::run_paused(async {
@@ -753,6 +807,7 @@ fn messages_reuse_setup_retry_policy() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CompatibilityQuery {
@@ -760,6 +815,7 @@ struct CompatibilityQuery {
     input: Value,
     expected: Value,
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_open_options_keep_eager_streaming_and_retention() -> TestResult {
     crate::runtime::run(async {

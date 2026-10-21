@@ -1,9 +1,13 @@
 //! Descriptors, destination projection and independently supplied options.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{bundled, chat::TestResult};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{ProviderStreamOptions, complete, get_model, get_models};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_invokes_custom_descriptors() -> TestResult {
     let _registry = bundled::registry();
@@ -54,6 +58,7 @@ fn maestro_guide_invokes_custom_descriptors() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Eight destination projections and one complete persisted conversation.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -64,6 +69,7 @@ struct Histories {
     context: ContextRoundtrip,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One typed input to the public projection operation.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -76,6 +82,7 @@ struct Projection {
     expected: serde_json::Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The input and exact output of context serialization.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -86,6 +93,7 @@ struct ContextRoundtrip {
     expected: serde_json::Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_projects_and_serializes_history() -> TestResult {
     use maestro_models::{Context, Message, transform_messages};
@@ -141,6 +149,7 @@ fn maestro_guide_projects_and_serializes_history() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_selects_thinking_and_transport_options() -> TestResult {
     use maestro_models::{
@@ -193,6 +202,7 @@ fn maestro_guide_selects_thinking_and_transport_options() -> TestResult {
     check_invocation_options()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Independently chosen raw and simple controls reach the actual HTTP request.
 fn check_invocation_options() -> TestResult {
     use maestro_models::{SimpleStreamOptions, ThinkingLevel, complete_simple};

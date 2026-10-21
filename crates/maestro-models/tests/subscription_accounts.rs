@@ -1,9 +1,13 @@
 //! Subscription account authorization through caller-supplied HTTP effects.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Fetch, HttpResponse, refresh_anthropic_token};
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn subscription_refresh_omits_scope() {
     crate::runtime::run(async {
@@ -32,8 +36,10 @@ fn subscription_refresh_omits_scope() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Pasted authorization interaction.
 struct Manual;
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Manual {
     fn on_auth(
         &self,
@@ -93,14 +99,17 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fixed-port scenarios share an admission guard.
 static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Callback-only interaction starts real loopback requests after receiving state.
 struct Callback {
     /// Owned peer producer, observed after login returns.
     peer: maestro_models::EventStream<tokio::task::JoinHandle<tokio::net::TcpStream>, ()>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Callback {
     fn on_auth(
         &self,
@@ -156,8 +165,10 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
         panic!("valid callback must avoid prompt")
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Interaction which must never run after native binding failure.
 struct Uncalled;
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Uncalled {
     fn on_auth(&self, _: maestro_models::OAuthAuthInfo) -> Result<(), maestro_models::OAuthError> {
         panic!("binding failure must precede auth")
@@ -169,6 +180,7 @@ impl maestro_models::OAuthLoginCallbacks for Uncalled {
         panic!("binding failure must precede prompt")
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn subscription_default_client_reads_loopback_body() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
@@ -193,6 +205,7 @@ fn subscription_default_client_reads_loopback_body() {
     server.join().unwrap();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Probe accepting-listener release with the native adapter's Unix reuse policy.
 fn bind_callback_probe() -> tokio::net::TcpListener {
     let socket = tokio::net::TcpSocket::new_v4().unwrap();
@@ -202,6 +215,7 @@ fn bind_callback_probe() -> tokio::net::TcpListener {
     socket.listen(128).unwrap()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read a complete loopback request and write deliberately fragmented response bytes.
 fn serve_token_peer(listener: &std::net::TcpListener) {
     use std::io::{Read as _, Write as _};
@@ -246,6 +260,7 @@ fn serve_token_peer(listener: &std::net::TcpListener) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Attempt a complete request write, stopping quietly if the peer has closed.
 async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
     while !bytes.is_empty() {
@@ -258,6 +273,7 @@ async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read peer bytes after readiness, including the shutdown EOF.
 async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
     loop {
@@ -269,6 +285,7 @@ async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize 
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read one complete HTTP response while keeping the admitted connection open.
 async fn raw_callback(peer: &mut tokio::net::TcpStream, target: &str) -> String {
     write_peer(
@@ -300,6 +317,7 @@ async fn raw_callback(peer: &mut tokio::net::TcpStream, target: &str) -> String 
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A successful JSON response carrying `body`.
 fn json_response(body: &'static [u8]) -> HttpResponse {
     HttpResponse {
@@ -312,8 +330,10 @@ fn json_response(body: &'static [u8]) -> HttpResponse {
 
 /// Tests that bind the fixed callback port live in an `oauth_callback` module.
 mod oauth_callback {
+    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn subscription_manual_login_uses_localhost_redirect() {
         crate::runtime::run(async {
@@ -336,6 +356,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn subscription_callback_login_rejects_then_accepts() {
         crate::runtime::run(async {
@@ -368,6 +389,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn subscription_provider_delegates_without_model_changes() {
         crate::runtime::run(async {
@@ -409,6 +431,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn subscription_occupied_port_reports_native_error() {
         crate::runtime::run(async {

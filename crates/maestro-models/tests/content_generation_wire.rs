@@ -2,14 +2,21 @@
 use crate::chat;
 use crate::content_wire;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
 use chat::TestResult;
-use content_wire::{assert_rows, rows};
+use content_wire::assert_rows;
+#[cfg(not(target_arch = "wasm32"))]
+use content_wire::rows;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::OnPayload;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::content::google::{GoogleOptions, GoogleThinking, build_params};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn hook_replacement_changes_model_content_and_configuration() -> TestResult {
     let model = Arc::new(chat::model(

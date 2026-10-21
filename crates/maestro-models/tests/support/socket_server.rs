@@ -1,5 +1,6 @@
 //! Loopback listener and complete WebSocket upgrade capture shared by test peers.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, PoisonError};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{

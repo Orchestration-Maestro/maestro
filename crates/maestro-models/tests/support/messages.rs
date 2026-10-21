@@ -1,5 +1,6 @@
 //! Fixture rows, a scripted transport and call observation for the message protocol tests.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 

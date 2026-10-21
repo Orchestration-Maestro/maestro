@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use maestro_models::{Cancellation, EventStream};
+    #[cfg(not(target_arch = "wasm32"))]
+    use maestro_models::Cancellation;
+    use maestro_models::EventStream;
     use std::future::Future;
     use std::sync::Arc;
     use std::task::{Context, Poll, Wake, Waker};
@@ -20,6 +22,7 @@ mod tests {
         future.poll(&mut Context::from_waker(Waker::noop()))
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn extraction_drops_reentrant_push() {
         let holder = Arc::new(std::sync::OnceLock::<EventStream<i32>>::new());
         let weak = Arc::downgrade(&holder);
@@ -41,6 +44,7 @@ mod tests {
         assert_eq!(poll(std::pin::pin!(stream.result())), Poll::Ready(-1));
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn extraction_holds_terminal_publication() {
         let arrived = Arc::new(std::sync::Barrier::new(2));
         let release = Arc::new(std::sync::Barrier::new(2));
@@ -69,7 +73,9 @@ mod tests {
         assert_eq!(poll(std::pin::pin!(stream.next())), Poll::Ready(None));
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     struct ReentrantWake(std::sync::Weak<std::sync::OnceLock<EventStream<i32>>>);
+    #[cfg(not(target_arch = "wasm32"))]
     impl ReentrantWake {
         fn end(&self) {
             if let Some(holder) = self.0.upgrade()
@@ -79,6 +85,7 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl Wake for ReentrantWake {
         fn wake(self: Arc<Self>) {
             self.end();
@@ -87,12 +94,14 @@ mod tests {
             self.end();
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl Drop for ReentrantWake {
         fn drop(&mut self) {
             self.end();
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn waker_destruction_can_reenter() {
         let stream = EventStream::new(|_: &i32| false, |value| *value);
         let holder = Arc::new(std::sync::OnceLock::new());
@@ -108,10 +117,12 @@ mod tests {
         assert_eq!(poll(reader.as_mut()), Poll::Ready(None));
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     struct ReentrantResult {
         holder: std::sync::Weak<std::sync::OnceLock<EventStream<i32, ReentrantResult>>>,
         calls: Arc<std::sync::atomic::AtomicUsize>,
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl ReentrantResult {
         fn touch(&self) {
             self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -122,6 +133,7 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl Clone for ReentrantResult {
         fn clone(&self) -> Self {
             self.touch();
@@ -131,11 +143,13 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl Drop for ReentrantResult {
         fn drop(&mut self) {
             self.touch();
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     fn result_lifetime_can_reenter() {
         let holder = Arc::new(std::sync::OnceLock::new());
         let weak = Arc::downgrade(&holder);
@@ -214,6 +228,7 @@ mod tests {
         assert_eq!(poll(std::pin::pin!(terminal.result())), Poll::Ready(99));
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_abandoned_waiters_drop_wakers_after_unlock() {
         use futures_util::FutureExt;
@@ -242,6 +257,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_dropped_observers_leave_producer_running() {
         waker_destruction_can_reenter();
@@ -269,6 +285,7 @@ mod tests {
         assert_eq!(poll(std::pin::pin!(stream.result())), Poll::Ready(-1));
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_terminal_admission_is_atomic() -> Result<(), Box<dyn std::error::Error>> {
         extraction_drops_reentrant_push();

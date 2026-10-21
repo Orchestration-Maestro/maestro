@@ -1,7 +1,10 @@
 //! Native response callback ownership with assigned socket addresses.
+#[cfg(not(target_arch = "wasm32"))]
 use super::super as codex;
+#[cfg(not(target_arch = "wasm32"))]
 use super::*;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe the actual assigned port without releasing its accepting owner.
 async fn bound_callback(
     state: String,
@@ -25,6 +28,7 @@ async fn bound_callback(
     (server, observed)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the page emitted by the native HTTP consumer.
 async fn callback_response(address: std::net::SocketAddr, target: &str) -> String {
     use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
@@ -39,11 +43,13 @@ async fn callback_response(address: std::net::SocketAddr, target: &str) -> Strin
     response
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Callback-only interaction publishes the authorization URL.
 struct Browser {
     /// Authorization identity from the actual operation.
     auth: crate::EventStream<crate::OAuthAuthInfo, crate::OAuthAuthInfo>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl crate::OAuthLoginCallbacks for Browser {
     fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), crate::OAuthError> {
         self.auth.push(info);
@@ -56,6 +62,7 @@ impl crate::OAuthLoginCallbacks for Browser {
         panic!("valid callback avoids prompt")
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Release the same callback-selected token request after page consumption.
 async fn released_fetch(
     gate: crate::EventStream<(), ()>,
@@ -75,6 +82,7 @@ async fn released_fetch(
     .await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare the complete route response through the native HTTP consumer.
 async fn check_page(address: std::net::SocketAddr, target: &str, status: u16, message: &str) {
     let response = callback_response(address, target).await;
@@ -92,6 +100,7 @@ async fn check_page(address: std::net::SocketAddr, target: &str, status: u16, me
     assert_eq!(body, expected.unwrap());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Preserve each callback parser and route response before accepting the browser code.
 async fn check_callback_pages(address: std::net::SocketAddr, state: &str) {
     assert!(
@@ -126,6 +135,7 @@ async fn check_callback_pages(address: std::net::SocketAddr, state: &str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Probe release using the same reuse policy as the native listener.
 fn probe(address: std::net::SocketAddr) -> tokio::net::TcpListener {
     let socket = tokio::net::TcpSocket::new_v4().unwrap();
@@ -134,6 +144,7 @@ fn probe(address: std::net::SocketAddr) -> tokio::net::TcpListener {
     socket.bind(address).unwrap();
     socket.listen(128).unwrap()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Hold supplied token bytes behind a body-consumed witness and release gate.
 async fn controlled_body(
     entered: EventStream<(), ()>,
@@ -144,6 +155,7 @@ async fn controlled_body(
     release.result().await;
     Ok(bytes)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep admission through this token body and observe shutdown after its outcome.
 async fn check_token_cleanup(status: u16, bytes: Vec<u8>) {
     let (server, observed) = bound_callback(
@@ -185,6 +197,7 @@ async fn check_token_cleanup(status: u16, bytes: Vec<u8>) {
     drop(peer);
     drop(probe(address));
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe listener release after interaction failure or future abandonment.
 async fn check_interaction_cleanup(phase: &str) {
     let (server, observed) = bound_callback(
@@ -226,6 +239,7 @@ async fn check_interaction_cleanup(phase: &str) {
     drop(probe(address));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Publish a native accept failure only when its named producer releases it.
 async fn failed_accept(
     gate: EventStream<(), ()>,
@@ -234,6 +248,7 @@ async fn failed_accept(
     Err(std::io::Error::from_raw_os_error(5))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read environment only at native binding and prove the configured host is reached.
 async fn binding_witness(
     state: String,
@@ -262,6 +277,7 @@ async fn binding_witness(
     Ok(server)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fail the selected proof phase without replacing the shared primitive's implementation.
 fn controlled_proof(phase: &str) -> Result<crate::Pkce, OAuthError> {
     if phase == "proof" {
@@ -273,8 +289,10 @@ fn controlled_proof(phase: &str) -> Result<crate::Pkce, OAuthError> {
 
 /// Native callback tests observe the addresses assigned to their listeners.
 mod oauth_callback {
+    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_login_closes_after_token_completion() {
         run(async {
@@ -296,6 +314,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_auth_callback_failure_releases_listener() {
         run(async {
@@ -321,11 +340,13 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_login_environment_is_read_at_binding() {
         run(response_login_environment_is_read_at_binding_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn response_login_environment_is_read_at_binding_flow() {
         for host in [None, Some(""), Some("127.0.0.2"), Some(" ")] {
             let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -373,11 +394,13 @@ mod oauth_callback {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_post_bind_failure_enters_fallback() {
         run(response_post_bind_failure_enters_fallback_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn response_post_bind_failure_enters_fallback_flow() {
         for accepted in [false, true] {
             let release = EventStream::new(|()| true, |()| ());
@@ -418,6 +441,7 @@ mod oauth_callback {
             drop(probe(address));
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_callback_instances_use_independent_addresses() {
         run(async {
@@ -468,6 +492,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_response_login_falls_back_after_bind_failure() {
         run(async {
@@ -510,6 +535,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_response_callback_pages_preserve_status() {
         run(async {

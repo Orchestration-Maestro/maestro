@@ -1,18 +1,29 @@
 //! Cloud conversation registration through generic dispatch and replaceable callbacks.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock_cases as cases;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bundled::{self, registered};
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
+#[cfg(not(target_arch = "wasm32"))]
 use bedrock::diagnostic as error;
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions, stream, stream_simple,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 
+#[cfg(not(target_arch = "wasm32"))]
 const ENDPOINT: &str = "https://bedrock-runtime.us-east-1.amazonaws.com";
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
     let _registry = bundled::registry();
@@ -46,6 +57,7 @@ fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Raw, completion, factory and absent-options calls each reach the default adapter.
 async fn explicit_routes() -> TestResult {
     let scripted = bedrock::serve(bedrock::answer("registered")?);
@@ -108,8 +120,10 @@ async fn explicit_routes() -> TestResult {
     absent_options().await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Restores the default pair and bundled registry after an override test.
 struct Restore;
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Restore {
     fn drop(&mut self) {
         maestro_models::set_bedrock_provider_module(
@@ -119,6 +133,7 @@ impl Drop for Restore {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bedrock_override_setup_failures_settle() -> TestResult {
     let _registry = bundled::registry();
@@ -170,6 +185,7 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bedrock_raw_options_reach_their_consumers() -> TestResult {
     let _registry = bundled::registry();
@@ -208,6 +224,7 @@ fn bedrock_raw_options_reach_their_consumers() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A callback pair whose setup outcome identifies the selected callback.
 fn pair(tag: &str) -> maestro_models::BedrockProviderModule {
     let (raw, simple) = (format!("{tag}:raw"), format!("{tag}:simple"));
@@ -217,6 +234,7 @@ fn pair(tag: &str) -> maestro_models::BedrockProviderModule {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe only the result of this invocation of a retained registry callback.
 async fn selected(provider: &maestro_models::ApiProvider) -> TestResult<String> {
     let stream = provider.stream.call(
@@ -228,6 +246,7 @@ async fn selected(provider: &maestro_models::ApiProvider) -> TestResult<String> 
     Ok(message.error_message.ok_or("no callback marker")?)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
     let _registry = bundled::registry();
@@ -284,6 +303,7 @@ fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bedrock_override_survives_reset_and_registry_changes() -> TestResult {
     let _registry = bundled::registry();
@@ -341,6 +361,7 @@ fn bedrock_override_survives_reset_and_registry_changes() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert that the retained effect handles reach a replacement without default decoding.
 fn assert_common<E: maestro_models::ProviderExecution>(
     actual: &StreamOptions<E>,
@@ -392,6 +413,7 @@ fn assert_common<E: maestro_models::ProviderExecution>(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bedrock_overrides_receive_open_options_unchanged() -> TestResult {
     let _registry = bundled::registry();
@@ -450,6 +472,7 @@ fn bedrock_overrides_receive_open_options_unchanged() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Prove that generic profile options select real profile credentials and their endpoint.
 fn profile_options() -> TestResult {
     let files = cases::AwsFiles::create_with(
@@ -477,6 +500,7 @@ fn profile_options() -> TestResult {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Default-adapter validation rejects wrong shapes before request effects, including sequence records.
 async fn invalid_default_options() -> TestResult {
     let fields = [
@@ -515,6 +539,7 @@ async fn invalid_default_options() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Option-free routes select the native adapter before their local endpoint failure.
 async fn absent_options() -> TestResult {
     // Without transport options, invalid endpoints fail locally after default selection.
@@ -535,6 +560,7 @@ async fn absent_options() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A replacement setup failure preserves the supplied identity without request content or usage.
 async fn assert_setup_failure(
     stream: &maestro_models::AssistantMessageEventStream,
@@ -568,6 +594,7 @@ async fn assert_setup_failure(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Replacement raw callback that observes open values and shared object handles.
 fn raw_override(
     common: StreamOptions,
@@ -581,11 +608,13 @@ fn raw_override(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Replacement simple callback observes the requested level and independent budget slots.
 fn simple_override(common: StreamOptions) -> maestro_models::ApiStreamSimpleFunction {
     std::sync::Arc::new(SimpleOverride { common })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the model and context forwarded to either replacement route.
 fn assert_override_inputs(
     model: &maestro_models::Model,
@@ -603,6 +632,7 @@ fn assert_override_inputs(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Distinguishable common settings and effect handles supplied to replacement callbacks.
 fn open_options(scripted: &transport::Transport) -> StreamOptions {
     StreamOptions {
@@ -621,8 +651,10 @@ fn open_options(scripted: &transport::Transport) -> StreamOptions {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct CloudFailure(String);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for CloudFailure
 {
@@ -633,11 +665,13 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct RunningCloud {
     capture: std::sync::Arc<String>,
     alias: maestro_models::AssistantMessageEventStream,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for RunningCloud
 {
@@ -649,8 +683,10 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct ReplacingCloud;
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ReplacingCloud
 {
@@ -662,12 +698,14 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct RawOverride {
     common: StreamOptions,
     shared: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     expected: Value,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution>
     maestro_models::Invoke<
         E,
@@ -713,10 +751,12 @@ impl<E: maestro_models::ProviderExecution>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct SimpleOverride {
     common: StreamOptions,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution>
     maestro_models::Invoke<
         E,

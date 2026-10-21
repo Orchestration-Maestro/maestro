@@ -2,8 +2,10 @@
 /// Offline public-interface behavior checks.
 mod tests {
     use maestro_models::*;
+    #[cfg(not(target_arch = "wasm32"))]
     mod families;
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Erase only the future representation of the same generic response body.
     macro_rules! factory {
         ($owner:ty, $erase:expr) => {
@@ -52,6 +54,7 @@ mod tests {
         assert_eq!(message.stop_reason, StopReason::ToolUse);
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise context through the public invocation boundary.
     fn context(text: &str) -> Context {
         Context {
@@ -63,6 +66,7 @@ mod tests {
             tools: None,
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise scripted through the public invocation boundary.
     fn scripted(text: &str) -> FauxResponseStep {
         FauxResponseStep::Message(Box::new(faux_assistant_message(
@@ -70,6 +74,7 @@ mod tests {
             FauxAssistantMessageOptions::default(),
         )))
     }
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise registration estimates usage through the public invocation boundary.
     fn maestro_registration_estimates_usage() {
@@ -105,6 +110,7 @@ mod tests {
     fn model(registration: &FauxProviderRegistration) -> Model {
         registration.get_model(None).unwrap().clone()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise invoke through the public invocation boundary.
     fn invoke(
         registration: &FauxProviderRegistration,
@@ -117,6 +123,7 @@ mod tests {
             .unwrap()
             .clone()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise events through the public invocation boundary.
     fn events(
         registration: &FauxProviderRegistration,
@@ -131,6 +138,7 @@ mod tests {
             events
         })
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise fixed through the public invocation boundary.
     fn fixed(speed: Option<f64>) -> FauxProviderRegistration {
         register_faux_provider(RegisterFauxProviderOptions {
@@ -142,6 +150,7 @@ mod tests {
             ..RegisterFauxProviderOptions::default()
         })
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise session through the public invocation boundary.
     fn session(id: &str, retention: Option<CacheRetention>) -> ProviderStreamOptions {
         ProviderStreamOptions {
@@ -153,6 +162,7 @@ mod tests {
             ..ProviderStreamOptions::default()
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise failure through the public invocation boundary.
     fn failure(text: &str) -> DiagnosticErrorInfo {
         DiagnosticErrorInfo {
@@ -335,6 +345,7 @@ mod tests {
         empty.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise responses keep invocation identity through the public invocation boundary.
     fn maestro_responses_keep_invocation_identity() {
@@ -372,6 +383,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise queue exhaustion counts requests through the public invocation boundary.
     fn maestro_queue_exhaustion_counts_requests() {
@@ -400,6 +412,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise queue replacement and append through the public invocation boundary.
     fn maestro_queue_replacement_and_append() {
@@ -425,6 +438,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise caches do not cross sessions through the public invocation boundary.
     fn maestro_caches_do_not_cross_sessions() {
@@ -454,6 +468,7 @@ mod tests {
         second.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise session prefix cache reuses prompt through the public invocation boundary.
     fn maestro_session_prefix_cache_reuses_prompt() {
@@ -475,6 +490,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise disabled cache leaves no state through the public invocation boundary.
     fn maestro_disabled_cache_leaves_no_state() {
@@ -500,6 +516,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise cache totals count prompt once through the public invocation boundary.
     fn maestro_cache_totals_count_prompt_once() {
@@ -528,6 +545,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise event name through the public invocation boundary.
     fn event_name(event: &AssistantMessageEvent) -> String {
         serde_json::to_value(event).unwrap()["type"]
@@ -535,6 +553,7 @@ mod tests {
             .unwrap()
             .into()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise partial through the public invocation boundary.
     fn partial(event: &AssistantMessageEvent) -> SharedAssistantMessage {
         match event {
@@ -551,6 +570,7 @@ mod tests {
             _ => unreachable!(),
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise mixed through the public invocation boundary.
     fn mixed() -> AssistantMessage {
         faux_assistant_message(
@@ -571,6 +591,7 @@ mod tests {
             },
         )
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise collect cancel through the public invocation boundary.
     async fn collect_cancel(
         stream: &AssistantMessageEventStream,
@@ -586,9 +607,11 @@ mod tests {
         }
         observed
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Poll the consumer synchronously when the producer publishes an event.
     struct InlineObserver(std::sync::Mutex<Option<BoxFuture<()>>>);
 
+    #[cfg(not(target_arch = "wasm32"))]
     impl std::task::Wake for InlineObserver {
         fn wake(self: std::sync::Arc<Self>) {
             self.wake_by_ref();
@@ -607,6 +630,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Suspend the actual response factory until the observer is ready.
     fn gated_response(
         message: AssistantMessage,
@@ -626,6 +650,7 @@ mod tests {
         (step, entered_rx, release_tx)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Cancel on the producer's publishing thread before it can schedule another chunk.
     fn observe_cancel(
         stream: AssistantMessageEventStream,
@@ -645,6 +670,7 @@ mod tests {
         received.recv().unwrap()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check cancel through the public invocation boundary.
     fn check_cancel(block: AssistantContent, delta_name: &str) {
         let registration = fixed(Some(100.0));
@@ -695,6 +721,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise mixed content streams argument chunks through the public invocation boundary.
     fn maestro_mixed_content_streams_argument_chunks() {
@@ -727,6 +754,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise fixed chunks have ordered events through the public invocation boundary.
     fn maestro_fixed_chunks_have_ordered_events() {
@@ -770,6 +798,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise tool blocks keep distinct indices through the public invocation boundary.
     fn maestro_tool_blocks_keep_distinct_indices() {
@@ -814,6 +843,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise explicit error retains message through the public invocation boundary.
     fn maestro_explicit_error_retains_message() {
@@ -851,6 +881,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise explicit abort retains message through the public invocation boundary.
     fn maestro_explicit_abort_retains_message() {
@@ -893,6 +924,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced text cancel keeps prefix through the public invocation boundary.
     fn maestro_paced_text_cancel_keeps_prefix() {
@@ -903,6 +935,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced thinking cancel keeps prefix through the public invocation boundary.
     fn maestro_paced_thinking_cancel_keeps_prefix() {
@@ -913,6 +946,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced tool cancel keeps empty arguments through the public invocation boundary.
     fn maestro_paced_tool_cancel_keeps_empty_arguments() {
@@ -927,6 +961,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise partials retain block membership through the public invocation boundary.
     fn maestro_partials_retain_block_membership() {
@@ -972,6 +1007,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise empty blocks still finish through the public invocation boundary.
     fn maestro_empty_blocks_still_finish() {
@@ -1022,6 +1058,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise scalar boundaries keep text valid through the public invocation boundary.
     fn maestro_scalar_boundaries_keep_text_valid() {
@@ -1049,6 +1086,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise chunk bounds preserve unpaced delivery through the public invocation boundary.
     fn maestro_chunk_bounds_preserve_unpaced_delivery() {
@@ -1081,6 +1119,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise factories observe selected model through the public invocation boundary.
     fn maestro_factories_observe_selected_model() {
@@ -1124,6 +1163,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise async factories observe live state through the public invocation boundary.
     fn maestro_async_factories_observe_live_state() {
@@ -1156,12 +1196,14 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `GatedFactory`.
     struct GatedFactory {
         release: std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>,
         entered: std::sync::mpsc::Sender<()>,
         message: AssistantMessage,
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl GatedFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1180,10 +1222,13 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(GatedFactory, |owner: &GatedFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `SelectedModelFactory`.
     struct SelectedModelFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl SelectedModelFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1197,14 +1242,17 @@ mod tests {
             )))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(SelectedModelFactory, |_: &SelectedModelFactory, input| {
         SelectedModelFactory::respond(&input)
     });
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `LiveStateFactory`.
     struct LiveStateFactory {
         release: std::sync::Arc<std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>>,
         entered: std::sync::mpsc::Sender<()>,
     }
+    #[cfg(not(target_arch = "wasm32"))]
     impl LiveStateFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1227,10 +1275,13 @@ mod tests {
             }
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(LiveStateFactory, |owner: &LiveStateFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `CountingFactory`.
     struct CountingFactory(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+    #[cfg(not(target_arch = "wasm32"))]
     impl CountingFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1246,10 +1297,13 @@ mod tests {
             )))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(CountingFactory, |owner: &CountingFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `ForwardedOptionsFactory`.
     struct ForwardedOptionsFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl ForwardedOptionsFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1260,12 +1314,15 @@ mod tests {
             std::future::ready(Ok(check_forwarded_options(input.options)))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(
         ForwardedOptionsFactory,
         |_: &ForwardedOptionsFactory, input| ForwardedOptionsFactory::respond(input)
     );
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `OrderedFactory`.
     struct OrderedFactory(std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>);
+    #[cfg(not(target_arch = "wasm32"))]
     impl OrderedFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1281,10 +1338,13 @@ mod tests {
             )))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(OrderedFactory, |owner: &OrderedFactory, input| owner
         .respond(input));
+    #[cfg(not(target_arch = "wasm32"))]
     /// Scripted response owner for `TimedFactory`.
     struct TimedFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl TimedFactory {
         /// Execute the same response body for either invocation family.
         fn respond<E: ProviderExecution>(
@@ -1295,11 +1355,14 @@ mod tests {
             timed_message()
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(TimedFactory, |_: &TimedFactory, input| {
         TimedFactory::respond(input)
     });
+    #[cfg(not(target_arch = "wasm32"))]
     /// Factory failure supplied by the caller, not a simulator setup failure.
     struct FailingFactory;
+    #[cfg(not(target_arch = "wasm32"))]
     impl FailingFactory {
         /// Return the original caller failure.
         fn respond<E: ProviderExecution>(
@@ -1310,10 +1373,12 @@ mod tests {
             std::future::ready(Err(failure("boom")))
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     factory!(FailingFactory, |_: &FailingFactory, input| {
         FailingFactory::respond(input)
     });
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise factory failure is terminal through the public invocation boundary.
     fn maestro_factory_failure_is_terminal() {
@@ -1341,6 +1406,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise preaborted request consumes response through the public invocation boundary.
     fn maestro_preaborted_request_consumes_response() {
@@ -1397,6 +1463,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise unregister only removes owned source through the public invocation boundary.
     fn maestro_unregister_only_removes_owned_source() {
@@ -1433,15 +1500,18 @@ mod tests {
         second.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Signal when the producer releases its response hook after publication.
     struct ProducerFinished(std::sync::mpsc::Sender<()>);
 
+    #[cfg(not(target_arch = "wasm32"))]
     impl Drop for ProducerFinished {
         fn drop(&mut self) {
             self.0.send(()).unwrap();
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Dropped observers leave production and the detached session cache intact.
     #[test]
     fn maestro_production_survives_dropped_observers() {
@@ -1476,6 +1546,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise context with all roles through the public invocation boundary.
     fn context_with_all_roles() -> Context {
         let image = |mime: &str, data: &str| {
@@ -1531,6 +1602,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise serialized context drives usage through the public invocation boundary.
     fn maestro_serialized_context_drives_usage() {
@@ -1562,6 +1634,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise serialization retains native values through the public invocation boundary.
     fn maestro_serialization_retains_native_values() {
@@ -1596,6 +1669,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check forwarded options through the public invocation boundary.
     fn check_forwarded_options<E: ProviderExecution>(
         options: Option<FauxResponseOptions<E>>,
@@ -1620,6 +1694,7 @@ mod tests {
         faux_assistant_message(text, FauxAssistantMessageOptions::default())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise raw and simple options reach factory through the public invocation boundary.
     fn maestro_raw_and_simple_options_reach_factory() {
@@ -1684,6 +1759,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check exhausted hook through the public invocation boundary.
     fn check_exhausted_hook(registration: &FauxProviderRegistration) {
         let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -1708,6 +1784,7 @@ mod tests {
         );
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise check rejected hook through the public invocation boundary.
     fn check_rejected_hook(registration: &FauxProviderRegistration) {
         registration.set_responses(vec![scripted("discard")]);
@@ -1733,6 +1810,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise response hook precedes factory through the public invocation boundary.
     fn maestro_response_hook_precedes_factory() {
@@ -1786,6 +1864,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise timed message through the public invocation boundary.
     async fn timed_message() -> Result<AssistantMessage, DiagnosticErrorInfo> {
         tokio::time::sleep(std::time::Duration::from_millis(2)).await;
@@ -1794,11 +1873,13 @@ mod tests {
             FauxAssistantMessageOptions::default(),
         ))
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise timed hook through the public invocation boundary.
     async fn timed_hook() -> Result<(), DiagnosticErrorInfo> {
         tokio::time::sleep(std::time::Duration::from_millis(2)).await;
         Ok(())
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise complete in caller through the public invocation boundary.
     async fn complete_in_caller(
         registration: &FauxProviderRegistration,
@@ -1811,6 +1892,7 @@ mod tests {
             .unwrap()
             .clone()
     }
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise pacing needs no caller timer through the public invocation boundary.
     fn maestro_pacing_needs_no_caller_timer() {
@@ -1842,6 +1924,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented context through the public invocation boundary.
     fn documented_context() -> Context {
         Context {
@@ -1853,6 +1936,7 @@ mod tests {
             tools: None,
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented tool response through the public invocation boundary.
     fn documented_tool_response() -> Vec<FauxResponseStep> {
         let arguments =
@@ -1874,6 +1958,7 @@ mod tests {
             },
         )))]
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented summary response through the public invocation boundary.
     fn documented_summary_response() -> Vec<FauxResponseStep> {
         vec![FauxResponseStep::Message(Box::new(faux_assistant_message(
@@ -1884,6 +1969,7 @@ mod tests {
             FauxAssistantMessageOptions::default(),
         )))]
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented multi model through the public invocation boundary.
     fn documented_multi_model() -> FauxProviderRegistration {
         register_faux_provider(RegisterFauxProviderOptions {
@@ -1902,6 +1988,7 @@ mod tests {
             ..RegisterFauxProviderOptions::default()
         })
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise append documented result through the public invocation boundary.
     fn append_documented_result(
         context: &mut Context,
@@ -1928,6 +2015,7 @@ mod tests {
             }));
         Ok(())
     }
+    #[cfg(not(target_arch = "wasm32"))]
     /// Exercise documented flow through the public invocation boundary.
     async fn documented_flow() -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let mut output = Vec::new();
@@ -1977,6 +2065,7 @@ mod tests {
         Ok(output)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise documented flow runs offline through the public invocation boundary.
     fn maestro_documented_flow_runs_offline() {

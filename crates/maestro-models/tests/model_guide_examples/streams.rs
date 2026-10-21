@@ -1,12 +1,16 @@
 //! Invocation and event-consumption examples.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::response_options;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{bundled, chat::TestResult};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StopReason, complete, complete_simple, get_model,
     stream, stream_simple,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_quick_start_completes_without_network() -> TestResult {
     let _registry = bundled::registry();
@@ -34,6 +38,7 @@ fn maestro_guide_quick_start_completes_without_network() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The same observable answer and reported usage through each invocation route.
 fn check_quick_result(result: &maestro_models::SharedAssistantMessage) -> TestResult {
     assert_eq!(bundled::error_of(result), None);
@@ -47,6 +52,7 @@ fn check_quick_result(result: &maestro_models::SharedAssistantMessage) -> TestRe
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Native message frames with three independent content indices.
 fn interleaved_frames() -> Vec<u8> {
     use serde_json::json;
@@ -69,6 +75,7 @@ fn interleaved_frames() -> Vec<u8> {
     ].iter().map(crate::messages::sse).collect::<String>().into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_consumes_interleaved_stream() -> TestResult {
     use maestro_models::{
@@ -129,6 +136,7 @@ fn maestro_guide_consumes_interleaved_stream() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_observes_failure_and_cancellation() -> TestResult {
     use maestro_models::{
@@ -189,6 +197,7 @@ fn maestro_guide_observes_failure_and_cancellation() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Final indexed content agrees with the ordered event transcript.
 fn check_interleaved_content(final_message: &maestro_models::SharedAssistantMessage) -> TestResult {
     use maestro_models::AssistantContent;
@@ -206,6 +215,7 @@ fn check_interleaved_content(final_message: &maestro_models::SharedAssistantMess
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Immediate resolution failure is distinct from a bundled terminal error.
 async fn check_setup_errors() -> TestResult {
     use maestro_models::{AnthropicOptions, AssistantMessageEvent, ErrorReason, stream_anthropic};
@@ -251,6 +261,7 @@ async fn check_setup_errors() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Continue from the returned partial, with request projection omitting the failed attempt.
 async fn continue_partial(
     model: maestro_models::Model,
@@ -280,6 +291,7 @@ async fn continue_partial(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Consume each streaming invocation before independently observing its result.
 async fn check_quick_stream(events: maestro_models::AssistantMessageEventStream) -> TestResult {
     let mut deltas = String::new();

@@ -1,5 +1,6 @@
 //! Corpus selection for controlled reasoning and text observations.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
 
 /// Exact owning test paths and closed case counts.

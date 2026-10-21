@@ -1,5 +1,6 @@
 //! Request rows: a hook edit applied to the conversation input, and what the SDK then sent.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 

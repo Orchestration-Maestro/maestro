@@ -1,8 +1,12 @@
 //! Authorization and thinking through the public message-protocol entries.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::message_options;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::messages;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_subscription_auth() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -10,16 +14,19 @@ fn messages_select_subscription_auth() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_account_auth() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows("messages_select_account_auth"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_gateway_auth() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows("messages_select_gateway_auth"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_preserve_auth_header_precedence() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -27,6 +34,7 @@ fn messages_preserve_auth_header_precedence() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_freeze_auth_before_payload_hook() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -34,6 +42,7 @@ fn messages_freeze_auth_before_payload_hook() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_normalize_subscription_tool_names() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -41,6 +50,7 @@ fn messages_normalize_subscription_tool_names() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_restore_subscription_tool_names() -> chat::TestResult {
     crate::runtime::run(async {
@@ -52,6 +62,7 @@ fn messages_restore_subscription_tool_names() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_align_subscription_named_tool_choice() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -59,6 +70,7 @@ fn messages_align_subscription_named_tool_choice() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_place_subscription_identity() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -66,6 +78,7 @@ fn messages_place_subscription_identity() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_thinking_policy() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -73,6 +86,7 @@ fn messages_select_thinking_policy() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_bypass_auth_for_injected_client() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -80,6 +94,7 @@ fn messages_bypass_auth_for_injected_client() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_thinking_display() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -87,16 +102,19 @@ fn messages_select_thinking_display() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_select_raw_effort() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows("messages_select_raw_effort"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_map_simple_effort() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows("messages_map_simple_effort"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_keep_raw_and_simple_budgets_distinct() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -104,6 +122,7 @@ fn messages_keep_raw_and_simple_budgets_distinct() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_keep_adjusted_zero_budget() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -111,6 +130,7 @@ fn messages_keep_adjusted_zero_budget() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_disable_unrequested_thinking() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -118,6 +138,7 @@ fn messages_disable_unrequested_thinking() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_fail_simple_auth_before_stream() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -125,6 +146,7 @@ fn messages_fail_simple_auth_before_stream() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_forward_simple_callbacks() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -132,6 +154,7 @@ fn messages_forward_simple_callbacks() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_preserve_callback_failures() -> chat::TestResult {
     crate::runtime::run(message_options::assert_rows(
@@ -139,6 +162,7 @@ fn messages_preserve_callback_failures() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A paused producer proves restored spelling before argument updates can happen.
 async fn subscription_name_is_visible_at_open() -> chat::TestResult {
     use maestro_models::{
@@ -190,6 +214,7 @@ async fn subscription_name_is_visible_at_open() -> chat::TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete set of fixture owners; unknown rows cannot be silently filtered out.
 pub(crate) const TEST_NAMES: [&str; 20] = [
     "messages_select_subscription_auth",
@@ -214,6 +239,7 @@ pub(crate) const TEST_NAMES: [&str; 20] = [
     "messages_preserve_callback_failures",
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read a subscription call from a closed scripted response through the public stream.
 async fn subscription_name_result(members: &str) -> chat::TestResult<messages::Run> {
     use serde_json::json;
@@ -228,6 +254,7 @@ async fn subscription_name_result(members: &str) -> chat::TestResult<messages::R
     }).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_report_native_subscription_name_error() -> chat::TestResult {
     crate::runtime::run(async {
@@ -249,6 +276,7 @@ fn messages_report_native_subscription_name_error() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_restore_replacement_character_subscription_name() -> chat::TestResult {
     crate::runtime::run(async {
@@ -265,6 +293,7 @@ fn messages_restore_replacement_character_subscription_name() -> chat::TestResul
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn messages_report_native_error_for_last_duplicate_subscription_name() -> chat::TestResult {
     crate::runtime::run(async {

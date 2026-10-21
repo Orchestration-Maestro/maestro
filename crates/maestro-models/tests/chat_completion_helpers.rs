@@ -2,6 +2,10 @@
 
 use crate::chat::TestResult;
 use indexmap::IndexMap;
+use maestro_models::Message;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::Model;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::chat::cloudflare::{
     CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL, CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL,
     CLOUDFLARE_AI_GATEWAY_OPENAI_BASE_URL, CLOUDFLARE_WORKERS_AI_BASE_URL, is_cloudflare_provider,
@@ -10,9 +14,9 @@ use maestro_models::providers::chat::cloudflare::{
 use maestro_models::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input, infer_copilot_initiator,
 };
-use maestro_models::{Message, Model};
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 fn model_at(base_url: &str) -> TestResult<Model> {
     Ok(serde_json::from_value(json!({
         "id": "model", "name": "Model", "api": "openai-completions",
@@ -23,6 +27,7 @@ fn model_at(base_url: &str) -> TestResult<Model> {
     }))?)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A base URL, the variables set in the child, and the resolution it must produce.
 type Substitution = (
     &'static str,
@@ -30,6 +35,7 @@ type Substitution = (
     Result<&'static str, &'static str>,
 );
 
+#[cfg(not(target_arch = "wasm32"))]
 const SUBSTITUTIONS: &[Substitution] = &[
     ("https://plain", &[], Ok("https://plain")),
     (
@@ -59,8 +65,10 @@ const SUBSTITUTIONS: &[Substitution] = &[
     ),
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 const TEST: &str = "maestro_cloudflare_resolves_account_urls";
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_cloudflare_resolves_account_urls() -> TestResult {
     if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {

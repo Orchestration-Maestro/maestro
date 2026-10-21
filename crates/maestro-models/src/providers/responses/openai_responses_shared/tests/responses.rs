@@ -1,19 +1,24 @@
 //! Fixture rows, builders and reduction runs shared by the response-protocol tests.
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::HashSet;
+#[cfg(not(target_arch = "wasm32"))]
+use std::collections::{BTreeMap, BTreeSet};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, RwLock};
 
 use super::super::messages::{convert_responses_messages, convert_responses_tools};
-use super::super::{
-    ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, OpenAIResponsesStreamOptions,
-    process_responses_stream,
-};
+use super::super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions};
+#[cfg(not(target_arch = "wasm32"))]
+use super::super::{OpenAIResponsesStreamOptions, process_responses_stream};
 use crate as maestro_models;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::providers::json_text::{is_truthy, member, raw_json};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    AssistantMessage, AssistantMessageEventStream, Context, DiagnosticCode, DiagnosticErrorInfo,
-    Model, SharedAssistantMessage, Tool, Usage,
+    AssistantMessage, AssistantMessageEventStream, DiagnosticCode, SharedAssistantMessage, Usage,
 };
+use maestro_models::{Context, DiagnosticErrorInfo, Model, Tool};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::value::RawValue;
 use serde_json::{Map, Value, json};
 
@@ -82,6 +87,7 @@ pub fn rows(fixture: &str, test: &str, count: usize) -> TestResult<Vec<Fields>> 
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fail when two rows of a fixture ask the same question, whichever test owns them.
 ///
 /// A row's question is every member except its owner, name and expectation.
@@ -248,6 +254,7 @@ pub fn check_tools(mut row: Fields) -> TestResult {
     row.finish()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What one reduction left behind.
 pub struct Reduction {
     /// Result the reducer returned.
@@ -260,6 +267,7 @@ pub struct Reduction {
     pub tiers: Vec<Value>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Everything a reduction is run with.
 pub struct Script {
     /// Model the response answers.
@@ -274,6 +282,7 @@ pub struct Script {
     pub options: Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Script {
     /// A reduction of `events` with the shared model and no callbacks.
     pub fn of(events: Vec<String>) -> TestResult<Self> {
@@ -293,6 +302,7 @@ fn ensure_send<T: Send>(future: T) -> T {
     future
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The cost multiplier a tier name stands for in the pricing callback.
 fn tier_multiplier(tier: Option<&str>) -> f64 {
     match tier {
@@ -303,6 +313,7 @@ fn tier_multiplier(tier: Option<&str>) -> f64 {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A fresh shared assistant message answering `model` with the given starting usage.
 pub fn shared_output(model: &Model, usage: &Value) -> TestResult<SharedAssistantMessage> {
     let message = serde_json::from_value(json!({
@@ -312,6 +323,7 @@ pub fn shared_output(model: &Model, usage: &Value) -> TestResult<SharedAssistant
     Ok(Arc::new(RwLock::new(message)))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Every update a finished stream published, without its message handles.
 async fn published(stream: &AssistantMessageEventStream) -> TestResult<Vec<Value>> {
     stream.end(None);
@@ -328,6 +340,7 @@ async fn published(stream: &AssistantMessageEventStream) -> TestResult<Vec<Value
     Ok(events)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A source that yields the events and then the failure, if any, instead of ending.
 fn finite_source(
     events: Vec<String>,
@@ -342,6 +355,7 @@ fn finite_source(
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run the reducer over a script and collect what it published.
 pub async fn reduce(script: Script) -> TestResult<Reduction> {
     let Script {
@@ -401,6 +415,7 @@ pub async fn reduce(script: Script) -> TestResult<Reduction> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// How the classes of non-finite counts spell, which a JSON value cannot hold.
 fn nonfinite(usage: &Usage) -> Value {
     let cost = &usage.cost;
@@ -432,6 +447,7 @@ fn nonfinite(usage: &Usage) -> Value {
     Value::Object(spelled.collect())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The message a reduction should leave: the initial one with the row's changes applied.
 fn expected_message(run: &Reduction, initial: &Value, mut result: Fields) -> TestResult<Value> {
     let message = &run.message;
@@ -449,6 +465,7 @@ fn expected_message(run: &Reduction, initial: &Value, mut result: Fields) -> Tes
     Ok(expected)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare a reduction with the expectation of a row.
 pub fn check_reduction(run: &Reduction, initial: &Value, mut expected: Fields) -> TestResult {
     let id = expected.owner().to_owned();
@@ -484,6 +501,7 @@ pub fn check_reduction(run: &Reduction, initial: &Value, mut expected: Fields) -
     expected.finish()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Reduce the events of a row and compare the outcome with the row's expectation.
 pub async fn check_events(mut row: Fields) -> TestResult {
     let mut script = Script::of(Vec::new())?;
@@ -533,6 +551,7 @@ pub async fn check_events(mut row: Fields) -> TestResult {
     row.finish()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Track whether final-call arguments are selected or replaced by nonempty scratch.
 fn track_call(raw: &RawValue, scratch: &mut Option<bool>) {
     let kind = raw_kind(raw);
@@ -559,6 +578,7 @@ fn track_call(raw: &RawValue, scratch: &mut Option<bool>) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Decode only a record's discriminator for fixture consumer selection.
 fn raw_kind(raw: &RawValue) -> String {
     member(raw, "type")
@@ -566,6 +586,7 @@ fn raw_kind(raw: &RawValue) -> String {
         .unwrap_or_default()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Reject ordinary unread members, retaining unrepresentable probes that test skipped reads.
 fn audit_event(raw: &RawValue, path: &str, scratch: Option<bool>) -> TestResult {
     if !raw.get().starts_with('{') {
@@ -604,6 +625,7 @@ fn audit_event(raw: &RawValue, path: &str, scratch: Option<bool>) -> TestResult 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fields that each selected branch consumes; dynamic data is compared whole.
 fn consumed_fields<'a>(path: &str, kind: &str) -> Option<&'a [&'a str]> {
     Some(match path {
@@ -653,6 +675,7 @@ fn consumed_fields<'a>(path: &str, kind: &str) -> Option<&'a [&'a str]> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The consumer of a nested fixture record selected by its parent's branch.
 fn audit_path(path: &str, kind: &str, key: &str) -> String {
     match (path, key) {

@@ -1,5 +1,6 @@
 //! Closed ownership for the recorded cache, overflow and tool-image invocations.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::{chat::TestResult, response_qualification::assert_corpus_rows};
 
 /// Execute only the named test's recorded invocations.

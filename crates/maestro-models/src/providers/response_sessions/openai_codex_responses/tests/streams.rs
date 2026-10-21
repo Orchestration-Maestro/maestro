@@ -1,11 +1,21 @@
 //! Response-session framing and reduction witnesses.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::super::events::Source;
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::{FutureExt, stream};
 use serde::Deserialize;
 use serde_json::Value;
+#[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Whole event sequences and their normalized retained output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -16,6 +26,7 @@ struct EventCase {
     expected: Vec<Value>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_normalize_terminal_events() {
     crate::tests::runtime::run(async {
@@ -62,6 +73,13 @@ fn maestro_response_sessions_normalize_terminal_status() {
     }
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Event selection result with a typed source failure.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -75,6 +93,7 @@ struct ApiCase {
     error: Option<crate::DiagnosticErrorInfo>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_preserve_api_error_identity() {
     crate::tests::runtime::run(async {
@@ -86,6 +105,7 @@ fn maestro_response_sessions_preserve_api_error_identity() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Encode complete event frames in their supplied order.
 fn event_bytes(events: &[Value]) -> Vec<u8> {
     let mut bytes = String::new();
@@ -95,6 +115,7 @@ fn event_bytes(events: &[Value]) -> Vec<u8> {
     bytes.into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the diagnostic view and the retained category of one selected sequence.
 async fn assert_api_case(row: ApiCase) {
     let bytes = event_bytes(&row.events);
@@ -117,6 +138,7 @@ async fn assert_api_case(row: ApiCase) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_run_http_lifecycle() {
     crate::tests::runtime::run_paused(async {
@@ -128,6 +150,7 @@ fn maestro_response_sessions_run_http_lifecycle() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_bound_setup_retries() {
     crate::tests::runtime::run_paused(async {
@@ -140,6 +163,7 @@ fn maestro_response_sessions_bound_setup_retries() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Close each scripted attempt before checking status-dependent retries and elapsed virtual time.
 async fn assert_retry_sequence(status: u16, text: &str) {
     use std::sync::{
@@ -196,6 +220,7 @@ async fn assert_retry_sequence(status: u16, text: &str) {
     assert_retry_outcome(&times, hooks.load(Ordering::SeqCst), retry, &result, text);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check attempt count, hook count, delay between attempts and the surfaced failure.
 fn assert_retry_outcome(
     times: &[tokio::time::Instant],
@@ -214,6 +239,7 @@ fn assert_retry_outcome(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_price_requested_tier_over_echoed_default() {
     use crate::providers::nullable::Nullable::Value;
@@ -235,6 +261,7 @@ fn maestro_response_sessions_price_requested_tier_over_echoed_default() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete a response that echoes the default tier with one million input and output tokens.
 async fn priced_cost(
     model: &std::sync::Arc<crate::Model>,
@@ -269,6 +296,7 @@ async fn priced_cost(
     output_value(&output)["usage"]["cost"].clone()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke a finite controlled success body, returning the same supplied output.
 async fn finite_body(
     bytes: Vec<u8>,
@@ -303,6 +331,7 @@ async fn finite_body(
     (result, output)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_require_terminal_events() {
     crate::tests::runtime::run(async {
@@ -341,6 +370,13 @@ fn maestro_response_sessions_require_terminal_events() {
     });
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Framed bytes and their complete selected records or native protocol failure.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -353,6 +389,7 @@ struct FrameCase {
     protocol_error: bool,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare recorded frame selection without reimplementing the provider's text policy.
 async fn assert_frames(text: &str) {
     let rows: Vec<FrameCase> = super::fixture_rows(text, &["chunks"]).unwrap();
@@ -378,16 +415,19 @@ async fn assert_frames(text: &str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_frame_legal_line_endings() {
     crate::tests::runtime::run(assert_frames(include_str!("fixtures/framing.json")));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_filter_sse_data() {
     crate::tests::runtime::run(assert_frames(include_str!("fixtures/data.json")));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_keep_hook_and_abort_order() {
     crate::tests::runtime::run_paused(async {
@@ -407,6 +447,7 @@ fn maestro_response_sessions_keep_hook_and_abort_order() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exhaust the authored setup attempts on the controlled clock.
 async fn assert_exhausted_retries() {
     use std::sync::{Arc, Mutex};
@@ -443,6 +484,7 @@ async fn assert_exhausted_retries() {
     assert_eq!(elapsed, [1000, 2000, 4000]);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_reject_bodyless_success() {
     crate::tests::runtime::run(async {
@@ -452,6 +494,7 @@ fn maestro_response_sessions_reject_bodyless_success() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Distinguish absent success bodies from empty usable streams after the response hook.
 async fn assert_empty_success(status: u16) {
     use std::sync::{
@@ -506,6 +549,7 @@ async fn assert_empty_success(status: u16) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Producer that supplies one chunk and rejects any subsequent read.
 struct TerminalBody {
     /// Complete terminal frame, followed by invalid queued data.
@@ -514,6 +558,7 @@ struct TerminalBody {
     dropped: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl futures_core::Stream for TerminalBody {
     type Item = Result<Vec<u8>, crate::FetchError>;
 
@@ -528,6 +573,7 @@ impl futures_core::Stream for TerminalBody {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for TerminalBody {
     fn drop(&mut self) {
         self.dropped
@@ -535,6 +581,7 @@ impl Drop for TerminalBody {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_finish_before_body_eof() {
     crate::tests::runtime::run(async {
@@ -556,6 +603,7 @@ fn maestro_response_sessions_finish_before_body_eof() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke each terminal through reduction without allowing the producer to return EOF.
 async fn assert_open_terminal(kind: &str, status: Value) {
     use std::sync::{
@@ -606,6 +654,7 @@ async fn assert_open_terminal(kind: &str, status: Value) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Deliver one chunk, then acknowledge the next read before waiting for cancellation.
 struct PausedBody {
     /// Initial partial text events.
@@ -616,6 +665,7 @@ struct PausedBody {
     dropped: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl futures_core::Stream for PausedBody {
     type Item = Result<Vec<u8>, crate::FetchError>;
 
@@ -633,6 +683,7 @@ impl futures_core::Stream for PausedBody {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for PausedBody {
     fn drop(&mut self) {
         self.dropped
@@ -640,6 +691,7 @@ impl Drop for PausedBody {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_cancel_body_reads() {
     crate::tests::runtime::run(async {
@@ -664,6 +716,7 @@ fn maestro_response_sessions_cancel_body_reads() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Abort only after the producer acknowledges a read after the retained text delta.
 async fn assert_cancelled_read() {
     use std::sync::{
@@ -700,6 +753,7 @@ async fn assert_cancelled_read() {
     assert!(dropped.load(Ordering::SeqCst));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke one controlled body with no setup replay permitted.
 async fn invoke_body(
     body: crate::HttpBody,
@@ -741,6 +795,7 @@ async fn invoke_body(
     (result, output, events)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_release_retry_waits() {
     crate::tests::runtime::run_paused(async {
@@ -762,6 +817,7 @@ fn maestro_response_sessions_release_retry_waits() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Explicit polling closes each setup decision before cancelling the second scoped wait.
 async fn assert_cancelled_retry_wait() {
     use std::sync::{
@@ -808,6 +864,7 @@ async fn assert_cancelled_retry_wait() {
     assert!(events.next().now_or_never().is_none());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_reduce_shared_content() {
     crate::tests::runtime::run(async {
@@ -850,6 +907,7 @@ fn maestro_response_sessions_reduce_shared_content() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Inspect canonical output after provisional content was replaced and scratch discarded.
 fn assert_reduced_content(output: &crate::SharedAssistantMessage) {
     let wire = output_value(output);
@@ -870,6 +928,7 @@ fn assert_reduced_content(output: &crate::SharedAssistantMessage) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Borrow each published content event's supplied partial handle.
 fn partial_event(
     event: &crate::AssistantMessageEvent,
@@ -892,6 +951,7 @@ fn partial_event(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_use_native_http() {
     use std::sync::Arc;
@@ -943,6 +1003,7 @@ fn maestro_response_sessions_use_native_http() {
     server.join().unwrap();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read one complete native HTTP request, preserving authored body bytes.
 fn read_native_request(peer: &mut std::net::TcpStream) -> (String, Vec<u8>) {
     use std::io::Read as _;
@@ -975,6 +1036,7 @@ fn read_native_request(peer: &mut std::net::TcpStream) -> (String, Vec<u8>) {
     (headers, bytes[boundary..].to_vec())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send split UTF-8 and CRLF event bytes without terminating the chunked HTTP body.
 fn send_native_terminal(peer: &mut std::net::TcpStream) {
     use std::io::Write as _;
@@ -987,6 +1049,7 @@ fn send_native_terminal(peer: &mut std::net::TcpStream) {
     peer.flush().unwrap();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe client body cancellation while the server still has no HTTP EOF to send.
 fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
     use std::io::Read as _;
@@ -998,6 +1061,13 @@ fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
     }
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Selected full invocation and its observed internal outcome.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1014,6 +1084,7 @@ struct LifecycleCase {
     reason: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Owned observations shared with the controlled producers, not the invocation owner.
 #[derive(Default)]
 struct LifecycleObservations {
@@ -1025,6 +1096,7 @@ struct LifecycleObservations {
     payloads: std::sync::atomic::AtomicUsize,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise the reference setup/callback/body boundary rather than deferred outer outcomes.
 async fn assert_lifecycle(row: LifecycleCase) {
     use std::sync::{Arc, atomic::Ordering};
@@ -1067,6 +1139,7 @@ async fn assert_lifecycle(row: LifecycleCase) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Produce the selected response or setup failure, with body reads gated on the response hook.
 fn lifecycle_response(
     scenario: &str,
@@ -1130,6 +1203,7 @@ fn lifecycle_response(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Configure finite callbacks over owned observations without capturing their owner.
 fn configure_lifecycle(
     options: &mut super::super::OpenAICodexResponsesOptions,
@@ -1180,6 +1254,7 @@ fn configure_lifecycle(
     }));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare each settled attempt's exact body against the one retained payload result.
 fn assert_sent_bodies(observed: &LifecycleObservations, body: &Value, attempts: usize) {
     assert_eq!(body["marker"], "replaced");
@@ -1193,6 +1268,7 @@ fn assert_sent_bodies(observed: &LifecycleObservations, body: &Value, attempts: 
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Prove setup precedence through the actual prepared request before any Fetch is allowed.
 async fn assert_preparation_stage(stage: &str) {
     use std::sync::{
@@ -1246,6 +1322,7 @@ async fn assert_preparation_stage(stage: &str) {
     assert_eq!(payloads.load(Ordering::SeqCst), calls);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Cancel after the first failed response entered its scoped wait, before another Fetch.
 async fn assert_first_wait_abort() {
     use std::sync::{
@@ -1299,6 +1376,7 @@ async fn assert_first_wait_abort() {
     assert!(events.next().now_or_never().is_none());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Select only the source inputs needed for a preparation/abort precedence witness.
 fn select_preparation_stage(
     stage: &str,
@@ -1341,6 +1419,7 @@ fn maestro_response_sessions_fixtures_read_every_field() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Incomplete EOF keeps the same operation's already reduced tool arguments.
 async fn assert_tool_eof() {
     let bytes = event_bytes(&[
@@ -1358,6 +1437,7 @@ async fn assert_tool_eof() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Even a pre-aborted call awaits payload completion before the transport checks cancellation.
 async fn assert_preaborted_payload_await() {
     use std::sync::{Arc, Mutex};
@@ -1396,6 +1476,7 @@ async fn assert_preaborted_payload_await() {
     assert_eq!(prepared.body["awaited"], "payload finished");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Aborting during an awaited response hook does not bypass its completion or publish start early.
 async fn assert_response_hook_await() {
     use std::sync::{Arc, Mutex};
@@ -1454,6 +1535,7 @@ async fn assert_response_hook_await() {
     ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Copy only the closed canonical record under the lock; run serialization after releasing it.
 fn output_value(output: &crate::SharedAssistantMessage) -> Value {
     let snapshot = output.read().unwrap().clone();

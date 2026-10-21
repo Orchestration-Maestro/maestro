@@ -1,16 +1,22 @@
 //! The same retained custom provider produces both execution families.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::*;
+#[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     cell::Cell,
     rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Closed recording of callback phases, not presence-derived labels.
 pub(super) type Trace = Arc<Transcript>;
+#[cfg(not(target_arch = "wasm32"))]
 /// Closed event log plus the response hook's completion boundary.
 #[derive(Default)]
 pub(super) struct Transcript {
@@ -19,16 +25,19 @@ pub(super) struct Transcript {
     /// Written only after the response hook has resumed and accepted the response.
     pub response_complete: std::sync::atomic::AtomicBool,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Transcript {
     /// Borrow only the internal log, never caller callbacks.
     pub fn lock(&self) -> std::sync::LockResult<std::sync::MutexGuard<'_, Vec<Value>>> {
         self.events.lock()
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep one phase observation after releasing any caller-owned state.
 pub(super) fn record(trace: &Trace, event: Value) {
     trace.lock().unwrap().push(event);
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded callback input selects the original carrier and failure branch.
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -38,8 +47,10 @@ pub(super) struct CallbackInput {
     /// Caller-supplied failure or success.
     pub outcome: String,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// One registered object; only future boxing differs between families.
 struct HookProvider(Trace);
+#[cfg(not(target_arch = "wasm32"))]
 /// Concrete future erasure for one generic producer body.
 trait Producer: ProviderExecution {
     /// Box the selected producer without transferring its hooks.
@@ -49,6 +60,7 @@ trait Producer: ProviderExecution {
         stream: AssistantMessageEventStream,
     ) -> Self::Future<'static, ()>;
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// The two concrete boxes are representation only.
 macro_rules! producer {
     ($mode:ty) => {
@@ -63,8 +75,11 @@ macro_rules! producer {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 producer!(Local);
+#[cfg(not(target_arch = "wasm32"))]
 producer!(Threaded);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: Producer, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>> for HookProvider {
     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
     fn invoke(&self, call: ProviderCall<E, O>) -> Self::Return {
@@ -84,6 +99,7 @@ impl<E: Producer, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>> 
         Ok(stream)
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Retain original hooks until after the callback returns and its task is admitted.
 async fn produce<E: Producer>(
     call: ProviderCall<E, StreamOptionsInput<E>>,
@@ -119,6 +135,7 @@ async fn produce<E: Producer>(
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Hook invocation belongs to the custom callback, not registry preflight.
 async fn callback_body<E: ProviderExecution>(
     common: StreamOptions<E>,
@@ -153,6 +170,7 @@ async fn callback_body<E: ProviderExecution>(
     record(trace, json!(["body"]));
     Ok(serde_json::to_string(&selected).unwrap())
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Each hook captures a genuinely family-specific handle in its returned future.
 macro_rules! hooks {
     ($name:ident, $mode:ty, $pointer:ident, $capture:expr, $expected:expr) => {
@@ -206,9 +224,12 @@ macro_rules! hooks {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 hooks!(local_hooks, Local, Rc, Rc::new(Cell::new(0)), Cell::new(0));
+#[cfg(not(target_arch = "wasm32"))]
 hooks!(threaded_hooks, Threaded, Arc, Arc::new(0), 0);
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn registered_callback_preserves_hook_phases_and_counts() -> crate::TestResult {
     let _serial = crate::bundled::registry();
@@ -246,6 +267,7 @@ fn registered_callback_preserves_hook_phases_and_counts() -> crate::TestResult {
         Ok(())
     }))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Use the recorded model identity so complete output trees remain comparable.
 fn descriptor() -> Model {
     let mut model = crate::bundled::descriptor("controlled", "https://fixture.invalid").unwrap();
@@ -253,6 +275,7 @@ fn descriptor() -> Model {
     model.provider = "controlled".into();
     model
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Preserve the original raw/simple carrier through the checked local registry call.
 async fn run_local(
     input: &CallbackInput,
@@ -291,6 +314,7 @@ async fn run_local(
     }
     Ok(output)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied threaded admission drives that same producer and is awaited before observation closes.
 async fn run_threaded(
     input: &CallbackInput,
@@ -330,6 +354,7 @@ async fn run_threaded(
     Ok(output)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Select only the caller's hook representation; both paths use checked public dispatch.
 async fn run_case(
     input: &CallbackInput,

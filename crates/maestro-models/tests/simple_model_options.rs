@@ -3,7 +3,8 @@ mod tests {
     use indexmap::IndexMap;
     use maestro_models::{
         CacheRetention, Cancellation, Fetch, FetchError, Model, OnPayload, OnResponse,
-        ProviderResponse, SimpleStreamOptions, StreamOptions, Transport, build_base_options,
+        ProviderResponse, SharedHandle, SimpleStreamOptions, StreamOptions, Transport,
+        build_base_options,
     };
     use std::{
         sync::{
@@ -27,12 +28,12 @@ mod tests {
     fn maestro_simple_options_preserve_explicit_values() {
         let calls = Arc::new(AtomicUsize::new(0));
         let payload_calls = Arc::clone(&calls);
-        let on_payload: OnPayload = Arc::new(move |value, _| {
+        let on_payload: OnPayload = SharedHandle::new(move |value, _| {
             payload_calls.fetch_add(1, Ordering::SeqCst);
             Box::pin(async move { Ok(value) })
         });
         let response_calls = Arc::clone(&calls);
-        let on_response: OnResponse = Arc::new(move |_, _| {
+        let on_response: OnResponse = SharedHandle::new(move |_, _| {
             response_calls.fetch_add(1, Ordering::SeqCst);
             Box::pin(async { Ok(()) })
         });
@@ -48,8 +49,8 @@ mod tests {
                 cache_retention: Some(CacheRetention::Long),
                 session_id: Some("session".into()),
                 headers: Some(IndexMap::from([("header".into(), "value".into())])),
-                on_payload: Some(Arc::clone(&on_payload)),
-                on_response: Some(Arc::clone(&on_response)),
+                on_payload: Some(SharedHandle::clone(&on_payload)),
+                on_response: Some(SharedHandle::clone(&on_response)),
                 timeout_ms: Some(17.0),
                 max_retries: Some(3.0),
                 max_retry_delay_ms: Some(29.0),
@@ -61,8 +62,11 @@ mod tests {
         let base = build_base_options(&model(8.0), Some(&options), None);
         assert_eq!(calls.load(Ordering::SeqCst), 0);
         assert_common_fields(&base, &options.common);
-        assert!(Arc::ptr_eq(base.on_payload.as_ref().unwrap(), &on_payload));
-        assert!(Arc::ptr_eq(
+        assert!(SharedHandle::ptr_eq(
+            base.on_payload.as_ref().unwrap(),
+            &on_payload
+        ));
+        assert!(SharedHandle::ptr_eq(
             base.on_response.as_ref().unwrap(),
             &on_response
         ));

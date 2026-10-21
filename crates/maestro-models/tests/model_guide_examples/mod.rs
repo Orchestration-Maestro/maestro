@@ -5,9 +5,12 @@ mod providers;
 mod streams;
 mod tools;
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bundled;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::StreamOptions;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An explicit key and a finite, recorded chat response; no network is used.
 fn response_options(api: &str, text: &str) -> (StreamOptions, bundled::Requests) {
     let (fetch, requests) = bundled::fetch(bundled::text_body(api, text));
@@ -33,6 +36,7 @@ fn weather_tool() -> maestro_models::Tool {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Wire the existing gated body into the existing controlled HTTP transport.
 fn fed_options() -> (crate::messages::Feed, StreamOptions) {
     let (feed, body) = crate::messages::feed();

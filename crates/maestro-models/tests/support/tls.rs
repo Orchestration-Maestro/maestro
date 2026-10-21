@@ -1,5 +1,6 @@
 //! Shared named certificate and controlled TLS server configuration.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
 /// DER test certificate consumed by trust and server configuration.

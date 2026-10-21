@@ -1,5 +1,6 @@
 //! Recorded message requests observed through public dispatch.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::{
     bundled, chat,
     json::{canonical, event_record, exact_context},

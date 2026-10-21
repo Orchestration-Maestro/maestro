@@ -1,21 +1,27 @@
 //! Request construction for direct chat-completion invocations.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::cases;
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::json;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::loopback;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 use cases::{assert_rows, run_case};
 use chat::{TestResult, context, model, rows};
+#[cfg(not(target_arch = "wasm32"))]
 use json::canonical;
 use maestro_models::providers::chat::openai_completions::ResolvedOpenAICompletionsCompat;
 use maestro_models::providers::chat::openai_completions::messages::convert_messages;
-use maestro_models::{
-    Model, ModelCompat, OpenAICompletionsCompat, ProviderResponse, StopReason, StreamOptions,
-    get_model,
-};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::{Model, ProviderResponse, StopReason, StreamOptions, get_model};
+use maestro_models::{ModelCompat, OpenAICompletionsCompat};
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
 const FIXTURE: &str = include_str!("fixtures/chat_completions/requests.json");
@@ -41,6 +47,7 @@ fn assert_history_rows(test: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_replays_thinking_as_text() -> TestResult {
     crate::runtime::run(async {
@@ -113,6 +120,7 @@ fn maestro_chat_normalizes_tool_identifiers() -> TestResult {
     assert_history_rows("maestro_chat_normalizes_tool_identifiers")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_serializes_replay_arguments() -> TestResult {
     assert_history_rows("maestro_chat_serializes_replay_arguments")?;
@@ -143,6 +151,7 @@ fn maestro_chat_serializes_replay_arguments() -> TestResult {
     crate::runtime::run_paused(replayed_numbers())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Replayed arguments and signatures carry numbers the way their double prints, in the request
 /// text that goes out: integers beyond 2^53 round, and a number beyond the range of a double
 /// is `null` once written but still counts as present when the signature is read.
@@ -195,6 +204,7 @@ async fn replayed_numbers() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check one fixture row's request body, and the headers it names, against what was sent.
 ///
 /// A `headers` object lists header values the request must carry; `null` means absent.
@@ -219,6 +229,7 @@ async fn payload_matches(row: &Value) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check payload rows in fresh processes so ambient environment cannot reach them.
 ///
 /// Rows without environment run together in one child; each row with environment
@@ -263,6 +274,7 @@ async fn assert_payload_rows(test: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send one call with the given numeric options; return the payload the hook saw and the body
 /// that went out. A `replacement` makes the hook swap the payload.
 async fn send_numbers(
@@ -300,6 +312,7 @@ async fn send_numbers(
     Ok((hooked, sent))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Numbers no JSON number can hold are written as `null`, and are visible to, and replaceable
 /// by, the payload hook.
 async fn non_finite_numbers_become_null() -> TestResult {
@@ -327,6 +340,7 @@ async fn non_finite_numbers_become_null() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_numeric_options() -> TestResult {
     crate::runtime::run(async {
@@ -338,6 +352,7 @@ fn maestro_chat_preserves_numeric_options() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send one call whose payload hook turns the payload it receives into the one to send; return
 /// the body that went out.
 async fn send_through_hook(
@@ -367,6 +382,7 @@ async fn send_through_hook(
     Ok(serde_json::from_slice(&target.first_request()?.1)?)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
     crate::runtime::run(async {
@@ -397,6 +413,7 @@ fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_selects_reasoning_payloads() -> TestResult {
     crate::runtime::run(async {
@@ -404,6 +421,7 @@ fn maestro_chat_selects_reasoning_payloads() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_routing_fields() -> TestResult {
     crate::runtime::run(async {
@@ -411,11 +429,13 @@ fn maestro_chat_preserves_routing_fields() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_places_cache_markers() -> TestResult {
     crate::runtime::run(async { assert_payload_rows("maestro_chat_places_cache_markers").await })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_prompt_cache_policy() -> TestResult {
     crate::runtime::run(async {
@@ -423,11 +443,13 @@ fn maestro_chat_preserves_prompt_cache_policy() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_tool_choice() -> TestResult {
     crate::runtime::run(async { assert_payload_rows("maestro_chat_preserves_tool_choice").await })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_tool_declarations() -> TestResult {
     crate::runtime::run(async {
@@ -435,6 +457,7 @@ fn maestro_chat_preserves_tool_declarations() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Whether a request for `model` with or without tools asks the provider to stream tool calls.
 async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -> TestResult<bool> {
     let ping = json!({"name": "ping", "description": "Ping tool", "parameters": {
@@ -450,6 +473,7 @@ async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -
     Ok(body.get("tool_stream") == Some(&json!(true)))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
     crate::runtime::run(async {
@@ -479,6 +503,7 @@ fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A history and options that make every compatibility capability visible in the request.
 fn probe_case(model: &Value, thinking_format: Option<&str>) -> TestResult<Value> {
     let mut model = model.clone();
@@ -514,6 +539,7 @@ fn probe_case(model: &Value, thinking_format: Option<&str>) -> TestResult<Value>
     }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the compatibility a model resolves to from the requests it produces.
 async fn observed_compat(model: &Value) -> TestResult<Value> {
     let observed = run_case(&probe_case(model, None)?).await?;
@@ -560,6 +586,7 @@ async fn observed_compat(model: &Value) -> TestResult<Value> {
     })))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn assert_compat_rows(test: &str) -> TestResult {
     let owned = rows(FIXTURE, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
@@ -578,11 +605,13 @@ async fn assert_compat_rows(test: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_derives_compatibility() -> TestResult {
     crate::runtime::run(async { assert_compat_rows("maestro_chat_derives_compatibility").await })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_applies_compatibility_overrides() -> TestResult {
     crate::runtime::run(async {
@@ -590,6 +619,7 @@ fn maestro_chat_applies_compatibility_overrides() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_header_precedence() -> TestResult {
     crate::runtime::run(async {
@@ -597,6 +627,7 @@ fn maestro_chat_preserves_header_precedence() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one call whose caller headers are `headers`; return the transport and the outcome.
 async fn send_with_headers(
     headers: &[(&str, &str)],
@@ -613,6 +644,7 @@ async fn send_with_headers(
     Ok((target, outcome))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_normalizes_request_header_values() -> TestResult {
     crate::runtime::run_paused(async {
@@ -663,6 +695,7 @@ fn maestro_chat_normalizes_request_header_values() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_gateway_authorization() -> TestResult {
     crate::runtime::run(async {
@@ -670,6 +703,7 @@ fn maestro_chat_preserves_gateway_authorization() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What the hooks of one call received, in the order they ran.
 #[derive(Default)]
 struct HookRecord {
@@ -678,6 +712,7 @@ struct HookRecord {
     responses: Mutex<Vec<ProviderResponse>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Append to a recorded list.
 fn record<T>(list: &Mutex<Vec<T>>, item: T) {
     if let Ok(mut list) = list.lock() {
@@ -685,6 +720,7 @@ fn record<T>(list: &Mutex<Vec<T>>, item: T) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Install hooks that record what they receive and change nothing.
 fn record_hooks(common: &mut StreamOptions) -> Arc<HookRecord> {
     let seen = Arc::new(HookRecord::default());
@@ -712,6 +748,7 @@ fn record_hooks(common: &mut StreamOptions) -> Arc<HookRecord> {
     seen
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_observes_callback_boundaries() -> TestResult {
     crate::runtime::run_paused(async {
@@ -756,6 +793,7 @@ fn maestro_chat_observes_callback_boundaries() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_simple_options() -> TestResult {
     crate::runtime::run(async {
@@ -763,6 +801,7 @@ fn maestro_chat_preserves_simple_options() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_auth_boundaries() -> TestResult {
     crate::runtime::run(async {
@@ -779,6 +818,7 @@ fn replayed_with_signature(signature: &str) -> TestResult<Value> {
     Ok(converted(&row)?[0].clone())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
@@ -811,6 +851,7 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_forwards_control_characters_to_the_transport() -> TestResult {
     crate::runtime::run_paused(async {
@@ -836,6 +877,7 @@ fn maestro_chat_omits_unrepresentable_replayed_signatures() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CompatibilityQuery {
@@ -844,6 +886,7 @@ struct CompatibilityQuery {
     expected: Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn open_chat_options(wrong_types: bool) -> TestResult {
     let rows: Vec<CompatibilityQuery> =
         serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
@@ -893,15 +936,18 @@ async fn open_chat_options(wrong_types: bool) -> TestResult {
     }
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn chat_open_options_control_flags_and_literals() -> TestResult {
     crate::runtime::run(open_chat_options(false))
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn chat_open_options_keep_nullish_and_strict_decisions() -> TestResult {
     crate::runtime::run(open_chat_options(true))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn key_paths(value: &Value) -> Vec<String> {
     match value {
         Value::Object(map) => map
@@ -918,6 +964,7 @@ fn key_paths(value: &Value) -> Vec<String> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn routing_options(gateway: bool) -> TestResult {
     let rows: Vec<CompatibilityQuery> =
         serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
@@ -945,15 +992,18 @@ async fn routing_options(gateway: bool) -> TestResult {
     }
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn chat_forwards_router_values_without_narrowing() -> TestResult {
     crate::runtime::run(routing_options(false))
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn chat_gateway_selects_only_requested_routing_fields() -> TestResult {
     crate::runtime::run(routing_options(true))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn open_reasoning_options(wrong_types: bool) -> TestResult {
     let rows: Vec<CompatibilityQuery> =
         serde_json::from_str(include_str!("fixtures/compatibility_requests.json"))?;
@@ -988,6 +1038,7 @@ async fn open_reasoning_options(wrong_types: bool) -> TestResult {
     }
     Ok(())
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn open_history_options() -> TestResult {
     let all: Vec<Value> = serde_json::from_str(FIXTURE)?;
     for row in all.iter().filter(|row| {

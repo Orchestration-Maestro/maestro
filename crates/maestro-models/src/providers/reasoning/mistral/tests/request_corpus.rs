@@ -2,6 +2,7 @@
 
 use super::super::request;
 use crate::{Context, MistralOptions, Model, StreamOptions};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::{TestProcess, test_name};
 use serde::Deserialize;
 use serde_json::Value;
@@ -148,6 +149,7 @@ pub(super) fn corpus(name: &str, count: usize) {
     assert_eq!(selected, count);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one transport owner's unique cases with isolated credential environments.
 pub(super) async fn async_corpus(name: &str, count: usize) {
     let cases = cases();
@@ -197,6 +199,7 @@ pub(super) async fn async_corpus(name: &str, count: usize) {
     assert_eq!(selected, count);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 #[ignore = "executed in a subprocess with controlled credentials"]
 fn credential_child() {
@@ -300,6 +303,7 @@ fn pure_case(case: &Case) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check URL success or the native failing phase.
 fn endpoint_case(case: &Case) {
     let result = request::transport::base_url(case.input["baseUrl"].as_str().unwrap())

@@ -29,6 +29,13 @@ fn maestro_response_sessions_extract_account_claim() {
     }
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Recorded request selections and their complete wire payload.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -50,6 +57,7 @@ struct BodyCase {
     expected: serde_json::Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_build_request_defaults() {
     crate::tests::runtime::run(async {
@@ -158,6 +166,7 @@ impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_select_text_verbosity() {
     use super::super::OpenAICodexTextVerbosity as Verbosity;
@@ -207,6 +216,13 @@ fn maestro_response_sessions_resolve_sse_endpoint() {
     }
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Recorded header layers.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -226,6 +242,13 @@ struct HeaderInput {
     user_agent: String,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Effective headers at the transport seam.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -264,6 +287,7 @@ fn maestro_response_sessions_join_initial_cookie_headers() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_apply_sse_headers() {
     let rows: Vec<HeaderCase> =
@@ -301,6 +325,7 @@ fn maestro_response_sessions_apply_sse_headers() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_convert_history_and_tools() {
     crate::tests::runtime::run(async {
@@ -323,6 +348,7 @@ fn maestro_response_sessions_convert_history_and_tools() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert complete wire documents from the independent request corpus.
 async fn assert_bodies(text: &str) {
     let rows = body_cases(text).unwrap();
@@ -343,16 +369,19 @@ async fn assert_bodies(text: &str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_map_reasoning_from_descriptor() {
     crate::tests::runtime::run(assert_bodies("reasoning"));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_keep_raw_minimal_without_mapping() {
     crate::tests::runtime::run(assert_bodies("minimal"));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_default_reasoning_summary() {
     crate::tests::runtime::run(assert_bodies("summary"));
@@ -506,6 +535,7 @@ fn maestro_response_sessions_price_all_cost_categories() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_validate_headers_before_fetch() {
     crate::tests::runtime::run(async {
@@ -535,6 +565,7 @@ fn maestro_response_sessions_validate_headers_before_fetch() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe payload preparation before each rejected header layer.
 async fn assert_invalid_header(name: &str, value: &str, replaced: bool, expected: &str) {
     use std::sync::{

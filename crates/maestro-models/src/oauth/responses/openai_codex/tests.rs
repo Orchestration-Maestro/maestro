@@ -1,15 +1,27 @@
 //! Controlled response-account policy and recorded protocol cases.
-use super::{callback, token};
+#[cfg(not(target_arch = "wasm32"))]
+use super::callback;
+use super::token;
 
 mod native;
+use crate::OAuthError;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
-use crate::{
-    BoxFuture, EventStream, Fetch, FetchError, HttpResponse, OAuthCredentials, OAuthError,
-};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{BoxFuture, EventStream, Fetch, FetchError, HttpResponse, OAuthCredentials};
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{collections::BTreeMap, sync::Arc};
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Consumed protocol observations grouped by their owning behavior.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -52,6 +64,13 @@ enum Effect {
     BodyError,
     FetchError,
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Consumed response and expected result.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -78,6 +97,7 @@ enum Body {
     /// Supplied fragment boundaries, including invalid UTF-8.
     Chunks(Vec<Vec<u8>>),
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Body {
     /// Consume the recorded text or boundaries into the actual transport body.
     fn into_chunks(self) -> Vec<Vec<u8>> {
@@ -87,6 +107,13 @@ impl Body {
         }
     }
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Credential or error outcome without copied runtime error text.
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -95,6 +122,13 @@ enum Expected {
     Error(String),
     NativeError(bool),
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// All credential fields retained by the operation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -122,6 +156,13 @@ struct FlowCase {
     /// Full expected URL.
     url: String,
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Callback input and decision, without a duplicated page template.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -196,10 +237,12 @@ fn corpus() -> Corpus {
     corpus
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fixed oracle completion time.
 fn clock() -> f64 {
     1_700_000_000_123.0
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied transport cause, not an authored token failure.
 fn failure(message: &str) -> FetchError {
     FetchError::Connection(crate::DiagnosticErrorInfo {
@@ -209,6 +252,7 @@ fn failure(message: &str) -> FetchError {
         stack: None,
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke the operation through its actual form, transport and catch boundary.
 async fn operation(
     operation: Operation,
@@ -220,6 +264,7 @@ async fn operation(
         Operation::Refresh => token::refresh("r +&😀".into(), fetch, clock).await,
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Supply chunks with a closed successful or failing completion.
 fn response(status: u16, reason: String, chunks: Vec<Vec<u8>>, effect: Effect) -> Fetch {
     Arc::new(move |_| {
@@ -242,6 +287,7 @@ fn response(status: u16, reason: String, chunks: Vec<Vec<u8>>, effect: Effect) -
         })
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Consume every token fixture input and every expected field.
 async fn check_tokens(cases: Vec<TokenCase>) {
     for TokenCase {
@@ -294,6 +340,7 @@ async fn check_tokens(cases: Vec<TokenCase>) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_fields_require_nonempty_strings_and_finite_expiry() {
     run(check_tokens(corpus().fields));
@@ -313,26 +360,31 @@ fn check_accounts(cases: Vec<AccountCase>) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_reads_select_surviving_fields() {
     run(check_tokens(corpus().surviving));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_messages_keep_compact_json_spelling() {
     run(check_tokens(corpus().compact));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_refresh_wraps_fetch_and_json_failures_once() {
     run(check_tokens(corpus().phases));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_error_body_beats_reason_phrase() {
     run(check_tokens(corpus().status));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_text_handles_fragmented_utf8() {
     run(check_tokens(corpus().bytes));
@@ -371,6 +423,7 @@ fn response_account_parser_discards_unread_members() {
     check_accounts(corpus().unread_account);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_callback_route_decisions_preserve_first_fields() {
     for RouteCase {
@@ -457,6 +510,7 @@ fn proof() -> crate::Pkce {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied interactions at the coordinator boundary.
 struct Interaction {
     /// Independently owned manual work.
@@ -470,6 +524,7 @@ struct Interaction {
     /// Supplied signal whose cancellation is not this flow's policy.
     signal: crate::Cancellation,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Interaction {
     /// Supply an optional immediate manual result and a prompt answer.
     fn new(
@@ -488,6 +543,7 @@ impl Interaction {
         })
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl crate::OAuthLoginCallbacks for Interaction {
     fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
         assert_eq!(
@@ -538,6 +594,7 @@ impl crate::OAuthLoginCallbacks for Interaction {
         Some(&self.signal)
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Owned listener effect with a shutdown witness, without a socket.
 fn listener() -> crate::oauth::native::CallbackServer {
     let server = crate::oauth::native::CallbackServer::new();
@@ -549,6 +606,7 @@ fn listener() -> crate::oauth::native::CallbackServer {
     });
     server
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Accepted callback applied to the same pending listener identity.
 fn accept(wait: &EventStream<crate::oauth::native::CallbackOutcome, ()>, code: &str) {
     let response = callback::route(&format!("/auth/callback?state=s&code={code}"), "s");
@@ -557,6 +615,7 @@ fn accept(wait: &EventStream<crate::oauth::native::CallbackOutcome, ()>, code: &
         response.accepted.unwrap(),
     ));
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Successful token bytes for interaction tests.
 fn success_bytes(account: &str) -> Vec<u8> {
     use base64::Engine as _;
@@ -569,6 +628,7 @@ fn success_bytes(account: &str) -> Vec<u8> {
     format!(r#"{{"access_token":"h.{payload}.s","refresh_token":"rotated","expires_in":0.5}}"#)
         .into_bytes()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled successful transport.
 fn success_fetch() -> Fetch {
     response(
@@ -578,6 +638,7 @@ fn success_fetch() -> Fetch {
         Effect::Normal,
     )
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise the real coordinator while controlling only entropy and listener effects.
 async fn login(
     callbacks: crate::OAuthCallbacks,
@@ -600,6 +661,7 @@ async fn login(
     .await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_prompt_fallback_validates_optional_state() {
     run(async {
@@ -646,6 +708,7 @@ fn response_prompt_fallback_validates_optional_state() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_manual_and_browser_have_controlled_winners() {
     run(async {
@@ -654,6 +717,7 @@ fn response_manual_and_browser_have_controlled_winners() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep one winning input and complete the losing producer before releasing that operation.
 async fn check_winner(winner: &str) {
     let producer = EventStream::new(|_: &String| false, |_| ());
@@ -711,6 +775,7 @@ async fn check_winner(winner: &str) {
     assert_eq!(entered.result().await, selected);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Release the same selected token request through a named gate.
 async fn released_token(
     gate: EventStream<(), ()>,
@@ -720,6 +785,7 @@ async fn released_token(
     success_fetch()(request).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_native_refusal_leaves_shared_primitives_available() {
     run(async {
@@ -759,6 +825,7 @@ fn response_native_refusal_leaves_shared_primitives_available() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_forms_preserve_order_and_encoding() {
     run(async {
@@ -788,18 +855,22 @@ fn response_token_forms_preserve_order_and_encoding() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 thread_local! {
     /// Completion clock for one current-thread operation.
     static CLOCK: std::cell::Cell<f64> = const { std::cell::Cell::new(100.0) };
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the controlled completion clock.
 fn controlled_clock() -> f64 {
     CLOCK.get()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Make premature clock reads fail at their decision boundary.
 fn unread_clock() -> f64 {
     panic!("invalid token fields must not consult the clock")
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Body operation that witnesses consumption before waiting for its release.
 async fn held_body(
     entered: EventStream<(), ()>,
@@ -809,6 +880,7 @@ async fn held_body(
     gate.result().await;
     Ok(success_bytes("acct_123"))
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_expiry_uses_unbuffered_completion_clock() {
     run(async {
@@ -850,6 +922,7 @@ fn response_expiry_uses_unbuffered_completion_clock() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_settled_manual_errors_precede_code_selection() {
     run(async {
@@ -899,6 +972,7 @@ fn response_settled_manual_errors_precede_code_selection() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_ignores_progress_selector_signal_and_deadlines() {
     run(async {
@@ -946,6 +1020,7 @@ fn response_ignores_progress_selector_signal_and_deadlines() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Authored form spellings from controlled protocol observations.
 fn expected_form(operation: Operation) -> &'static str {
     match operation {
@@ -958,6 +1033,7 @@ fn expected_form(operation: Operation) -> &'static str {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete losing manual work through the same producer's success or failure branch.
 async fn late_manual(input: EventStream<bool, ()>) -> Result<String, OAuthError> {
     if input.next().await.unwrap() {

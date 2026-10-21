@@ -1,5 +1,6 @@
 //! Requests sent by the default client to loopback origins and proxies, from a child process.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::net::TcpListener;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

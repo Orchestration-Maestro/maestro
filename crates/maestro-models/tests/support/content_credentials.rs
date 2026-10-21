@@ -1,5 +1,6 @@
 //! File-backed credential fixtures shared by entry and credential witnesses.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 /// Disposable exclusively created files owned by one test transaction.
 pub(crate) struct Files(

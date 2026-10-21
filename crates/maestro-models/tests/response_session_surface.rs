@@ -1,8 +1,11 @@
 //! External response-session records and operation paths.
 
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::response_sessions::openai_codex_responses::*;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Context, Model, OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats};
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_public_surface() {
     let options = public_records();
@@ -38,6 +41,7 @@ fn maestro_response_sessions_public_surface() {
     assert!(get_openai_codex_web_socket_debug_stats("public-surface").is_none());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Construct every published field and nullable/union representation externally.
 #[cfg(test)]
 fn public_records() -> OpenAICodexResponsesOptions {

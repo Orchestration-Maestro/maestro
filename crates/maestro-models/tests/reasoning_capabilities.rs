@@ -1,15 +1,22 @@
 //! Raw `xhigh` effort reaches the wire unchanged and the server decides.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bundled;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     FetchError, HttpResponse, Model, ProviderStreamOptions, StopReason, StreamOptions, get_model,
     reset_api_providers, stream,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, PoisonError};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// `xhigh` as raw effort.
 fn raw_xhigh(fetch: maestro_models::Fetch) -> TestResult<ProviderStreamOptions> {
     Ok(ProviderStreamOptions {
@@ -23,6 +30,7 @@ fn raw_xhigh(fetch: maestro_models::Fetch) -> TestResult<ProviderStreamOptions> 
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A transport answering every request with `status` and `body`, recording the bodies sent.
 fn answering(status: u16, body: Vec<u8>) -> (maestro_models::Fetch, Arc<Mutex<Vec<Value>>>) {
     let bodies = Arc::new(Mutex::new(Vec::new()));
@@ -44,6 +52,7 @@ fn answering(status: u16, body: Vec<u8>) -> (maestro_models::Fetch, Arc<Mutex<Ve
     (fetch, bodies)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled reasoning summary then an answer, in the response wire format.
 fn thinking_body() -> Vec<u8> {
     bundled::sse_frames(&[
@@ -60,11 +69,13 @@ fn thinking_body() -> Vec<u8> {
     ])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A catalog model.
 fn catalog(provider: &str, id: &str) -> TestResult<Model> {
     get_model(provider, id).ok_or_else(|| format!("{provider}/{id} is in the catalog").into())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_raw_xhigh_returns_thinking() -> TestResult {
     let _registry = bundled::registry();
@@ -91,6 +102,7 @@ fn maestro_raw_xhigh_returns_thinking() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_raw_xhigh_preserves_server_rejection() -> TestResult {
     let _registry = bundled::registry();

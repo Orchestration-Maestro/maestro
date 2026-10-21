@@ -1,6 +1,8 @@
 //! Shared integration-test executable.
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel};
 
 mod account_message_routing;

@@ -1,12 +1,17 @@
 //! The literal gateway catalogs route to the bundled adapters.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bundled;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     ProviderStreamOptions, StopReason, StreamOptions, complete, get_models, reset_api_providers,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 const OPENCODE: [&str; 38] = [
     "big-pickle",
     "claude-haiku-4-5",
@@ -48,6 +53,7 @@ const OPENCODE: [&str; 38] = [
     "qwen3.6-plus",
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 const OPENCODE_GO: [&str; 14] = [
     "deepseek-v4-flash",
     "deepseek-v4-pro",
@@ -65,9 +71,11 @@ const OPENCODE_GO: [&str; 14] = [
     "qwen3.6-plus",
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Content-generation descriptors, which no registered adapter serves yet.
 const DEFERRED: [&str; 2] = ["gemini-3-flash", "gemini-3.1-pro"];
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_catalog_routes_use_available_adapters() -> TestResult {
     let _registry = bundled::registry();

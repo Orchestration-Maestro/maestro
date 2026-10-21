@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};

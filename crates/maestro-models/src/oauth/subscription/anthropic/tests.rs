@@ -1,17 +1,28 @@
 //! Controlled subscription policy cases.
-use super::{
-    callback::{AuthorizationCode, parse_authorization_input, route},
-    exchange,
-};
+use super::callback::{AuthorizationCode, parse_authorization_input};
+#[cfg(not(target_arch = "wasm32"))]
+use super::{callback::route, exchange};
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{
     DiagnosticCode, DiagnosticErrorInfo, Fetch, FetchError, HttpResponse, OAuthCredentials,
     OAuthError,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
 use serde::Deserialize;
-use std::{cell::Cell, collections::BTreeMap, future::Future, sync::Arc};
+use std::collections::BTreeMap;
+#[cfg(not(target_arch = "wasm32"))]
+use std::{cell::Cell, future::Future, sync::Arc};
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle corpus.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -44,6 +55,13 @@ struct InputCase {
     expected: AuthorizationCode,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle diagnosticcase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -54,6 +72,13 @@ struct DiagnosticCase {
     expected: String,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Supplied numeric marker or scalar code.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -65,6 +90,13 @@ enum CodeInput {
     /// Nonfinite or signed-zero marker.
     Marker(NumberMarker),
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle numbermarker.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -73,6 +105,13 @@ struct NumberMarker {
     number: String,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Structured error or literal text.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -82,6 +121,13 @@ enum ErrorInput {
     /// Literal diagnostic text.
     Text(String),
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle errorrecord.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -100,6 +146,13 @@ struct ErrorRecord {
     cause: Option<Box<ErrorInput>>,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle routecase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -127,6 +180,13 @@ enum Mode {
     /// Refresh grant.
     Refresh,
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Oracle token outcome.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -138,6 +198,13 @@ enum ExpectedToken {
     /// HTTP failure status.
     Http(HttpStatus),
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Recorded non-success status.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -154,6 +221,13 @@ enum FailurePhase {
     /// Invalid JSON syntax.
     InvalidJson,
 }
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle success.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -162,6 +236,13 @@ struct Success {
     credentials: ExpectedCredentials,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle expectedcredentials.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -174,6 +255,13 @@ struct ExpectedCredentials {
     expires: f64,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle tokencase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -190,6 +278,13 @@ struct TokenCase {
     expected: ExpectedToken,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle requestcase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -204,6 +299,13 @@ struct RequestCase {
     result: ExpectedCredentials,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle expectedrequest.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -218,6 +320,13 @@ struct ExpectedRequest {
     body: String,
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    expect(
+        dead_code,
+        reason = "fields read only by native runtime tests; parsed strictly on every target"
+    )
+)]
 /// Stored oracle textcase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -235,14 +344,17 @@ fn corpus() -> Corpus {
     ))
     .unwrap()
 }
+#[cfg(not(target_arch = "wasm32"))]
 thread_local! {
     /// Completion time supplied by token cases.
     static CLOCK: Cell<f64> = const { Cell::new(0.0) };
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the test operation's completion clock.
 fn clock() -> f64 {
     CLOCK.get()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Return controlled chunked text from one Fetch call.
 fn response(status: u16, bytes: Vec<u8>) -> Fetch {
     Arc::new(move |_| {
@@ -259,6 +371,7 @@ fn response(status: u16, bytes: Vec<u8>) -> Fetch {
         })
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke the authored grant rather than duplicating its request policy.
 async fn operation(
     mode: Mode,
@@ -272,6 +385,7 @@ async fn operation(
         Mode::Refresh => exchange::refresh(input, fetch, clock).await,
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare every stored credential field and rejection of unrelated fields.
 fn credentials(actual: &OAuthCredentials, expected: ExpectedCredentials) {
     let ExpectedCredentials {
@@ -284,6 +398,7 @@ fn credentials(actual: &OAuthCredentials, expected: ExpectedCredentials) {
     assert_eq!(actual.expires.to_bits(), expires.to_bits());
     assert!(actual.extra.is_empty());
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Verify each selected token query once through complete-body consumption.
 fn token_cases(indices: &[usize]) {
     run(async {
@@ -364,6 +479,7 @@ fn authorization_input_decodes_first_query_values() {
         assert_eq!(parse_authorization_input(&input), expected, "{input:?}");
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Convert diagnostic markers into their exact supplied doubles.
 fn code(input: CodeInput) -> DiagnosticCode {
     match input {
@@ -380,6 +496,7 @@ fn code(input: CodeInput) -> DiagnosticCode {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Retain all supplied error fields including nested literal causes.
 fn diagnostic(input: ErrorInput) -> OAuthError {
     match input {
@@ -403,6 +520,7 @@ fn diagnostic(input: ErrorInput) -> OAuthError {
         },
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn oauth_errors_print_only_supplied_details() {
     for DiagnosticCase { input, expected } in corpus().diagnostics {
@@ -436,6 +554,7 @@ fn oauth_errors_print_only_supplied_details() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_requests_keep_field_order() {
     run(async {
@@ -458,6 +577,7 @@ fn token_requests_keep_field_order() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_text_decodes_fragmented_utf8() {
     run(async {
@@ -472,6 +592,7 @@ fn token_text_decodes_fragmented_utf8() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_expiry_uses_completion_clock() {
     token_cases(&[0, 1, 2, 3, 25, 26, 27, 35, 36, 37, 38, 60, 61, 62]);
@@ -497,6 +618,7 @@ fn token_expiry_uses_completion_clock() {
         );
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn malformed_success_tokens_fail_typed_decode() {
     let indices: Vec<_> = (4..22).chain(39..57).chain([33, 68, 86, 87]).collect();
@@ -515,14 +637,17 @@ fn malformed_success_tokens_fail_typed_decode() {
         );
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_records_select_last_members_before_decode() {
     token_cases(&[28, 29, 30, 31, 32, 34, 63, 64, 65, 66, 67, 69]);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_json_failure_keeps_operation_context() {
     token_cases(&[22, 23, 24, 57, 58, 59]);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_status_is_checked_after_body() {
     token_cases(&(70..86).collect::<Vec<_>>());
@@ -551,6 +676,7 @@ fn token_status_is_checked_after_body() {
         assert!(!error.to_string().contains("status=500"));
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_fetch_is_not_retried() {
     run(async {
@@ -575,6 +701,7 @@ fn token_fetch_is_not_retried() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn token_deadline_covers_headers_and_body() {
     run(async {
@@ -626,6 +753,7 @@ fn token_deadline_covers_headers_and_body() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled interaction choices and a producer witness.
 struct Interaction {
     /// Manual producer, supplied at most once.
@@ -639,6 +767,7 @@ struct Interaction {
     /// Ignored caller cancellation.
     signal: crate::Cancellation,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl crate::OAuthLoginCallbacks for Interaction {
     fn on_auth(&self, _: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
         self.phase("auth")
@@ -675,6 +804,7 @@ impl crate::OAuthLoginCallbacks for Interaction {
         panic!("signal is not used")
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Interaction {
     /// Construct controlled manual input with prompt fallback.
     fn new(
@@ -702,6 +832,7 @@ impl Interaction {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Fixed proof input, independent of code and prompt strings.
 fn pkce() -> crate::Pkce {
     crate::Pkce {
@@ -709,6 +840,7 @@ fn pkce() -> crate::Pkce {
         challenge: "challenge".into(),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Owned listener seam whose stopped witness follows shutdown observation.
 fn listener() -> super::native::CallbackServer {
     let server = super::native::CallbackServer::new();
@@ -720,6 +852,7 @@ fn listener() -> super::native::CallbackServer {
     });
     server
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Accepted callback input used at the real routing boundary.
 fn accept(wait: &crate::EventStream<super::native::CallbackOutcome, ()>, code: &str) {
     let response = route(&format!("/callback?code={code}&state=verifier"), "verifier");
@@ -728,6 +861,7 @@ fn accept(wait: &crate::EventStream<super::native::CallbackOutcome, ()>, code: &
         response.accepted.unwrap(),
     ));
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Successful token response for controlled interaction flows.
 fn success_fetch() -> Fetch {
     response(
@@ -736,6 +870,7 @@ fn success_fetch() -> Fetch {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn callback_wait_settles_once() {
     run(async {
@@ -763,6 +898,7 @@ fn callback_wait_settles_once() {
         ));
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn prompt_fallback_validates_code_and_state() {
     run(async {
@@ -791,6 +927,7 @@ fn prompt_fallback_validates_code_and_state() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn login_callbacks_run_in_source_order_and_fail_cleanly() {
     run(async {
@@ -830,6 +967,7 @@ fn login_callbacks_run_in_source_order_and_fail_cleanly() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn login_wait_has_no_deadline() {
     run(async {
@@ -847,6 +985,7 @@ fn login_wait_has_no_deadline() {
         assert_eq!(login.await.unwrap().access, "access");
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn subscription_ignores_signal_and_selector() {
     run(async {
@@ -870,6 +1009,7 @@ fn subscription_ignores_signal_and_selector() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn pkce_failure_prevents_binding() {
     run(async {
@@ -895,6 +1035,7 @@ fn pkce_failure_prevents_binding() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn manual_code_and_callback_have_controlled_winners() {
     run(async {
@@ -952,6 +1093,7 @@ fn manual_code_and_callback_have_controlled_winners() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn manual_failure_propagates_and_late_input_cannot_replace_code() {
     run(async {
@@ -1006,6 +1148,7 @@ fn manual_failure_propagates_and_late_input_cannot_replace_code() {
         );
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_unavailable_does_not_block_refresh() {
     run(async {
@@ -1038,6 +1181,7 @@ fn native_unavailable_does_not_block_refresh() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read every recorded request field through the production transport seam.
 fn check_request(actual: &crate::HttpRequest, expected: &ExpectedRequest) {
     assert_eq!(actual.url, expected.url);
@@ -1047,6 +1191,7 @@ fn check_request(actual: &crate::HttpRequest, expected: &ExpectedRequest) {
         assert_eq!(&actual.headers[&name.to_lowercase()], value);
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Release token bytes after changing the completion clock.
 fn delayed_bytes() -> impl Future<Output = Result<Vec<u8>, FetchError>> {
     std::future::poll_fn(|_| {
@@ -1057,6 +1202,7 @@ fn delayed_bytes() -> impl Future<Output = Result<Vec<u8>, FetchError>> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe the closed single-attempt failure decision.
 async fn check_attempt(mode: Mode, failure: FetchError) {
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -1077,6 +1223,7 @@ async fn check_attempt(mode: Mode, failure: FetchError) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check one completed body/status failure without relying on an observation window.
 async fn check_response_attempt(mode: Mode, status: u16) {
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -1107,6 +1254,7 @@ async fn check_response_attempt(mode: Mode, status: u16) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Admit headers immediately and release successful bytes through the named body gate.
 fn gated_body_response(
     gate: crate::EventStream<(), ()>,
@@ -1122,6 +1270,7 @@ fn gated_body_response(
     }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Admit headers after a controlled delay, keeping body unresolved.
 async fn pending_body(delay: u64) -> Result<HttpResponse, FetchError> {
     tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
@@ -1133,6 +1282,7 @@ async fn pending_body(delay: u64) -> Result<HttpResponse, FetchError> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Produce late manual success or failure without replacing the selected callback.
 fn manual_answer(failure: bool) -> Result<String, OAuthError> {
     if failure {
@@ -1141,6 +1291,7 @@ fn manual_answer(failure: bool) -> Result<String, OAuthError> {
         Ok("late-code".into())
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Release headers of the same controlled token operation.
 async fn released_headers(
     headers: crate::EventStream<(), ()>,
@@ -1155,9 +1306,11 @@ async fn released_headers(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Serialize cases that bind the native callback port.
 static NATIVE_PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe real accepting socket release with the adapter's address reuse policy.
 fn native_probe(host: &str) -> tokio::net::TcpListener {
     let socket = tokio::net::TcpSocket::new_v4().unwrap();
@@ -1169,6 +1322,7 @@ fn native_probe(host: &str) -> tokio::net::TcpListener {
     socket.listen(128).unwrap()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Send a complete native request using readiness rather than sleeps.
 async fn write_native(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
     while !bytes.is_empty() {
@@ -1181,6 +1335,7 @@ async fn write_native(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read native response bytes or the peer's orderly EOF.
 async fn read_native(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
     loop {
@@ -1193,6 +1348,7 @@ async fn read_native(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usiz
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the response set closed by the native peer's EOF.
 async fn native_response(peer: &mut tokio::net::TcpStream) -> String {
     let mut response = Vec::new();
@@ -1207,6 +1363,7 @@ async fn native_response(peer: &mut tokio::net::TcpStream) -> String {
     String::from_utf8(response).unwrap()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Hold either headers or the body of this one token operation behind its release gate.
 async fn held_token(
     release: crate::EventStream<(), ()>,
@@ -1234,14 +1391,17 @@ async fn held_token(
 
 /// Tests that bind the fixed callback port live in an `oauth_callback` module.
 mod oauth_callback {
+    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn callback_routes_preserve_status_and_escaped_text() {
         check_routes();
         run(native_requests_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn check_routes() {
         for RouteCase {
             path,
@@ -1265,6 +1425,7 @@ mod oauth_callback {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn native_requests_flow() {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         let server = super::super::callback::bind("good".into()).await.unwrap();
@@ -1284,11 +1445,13 @@ mod oauth_callback {
         server.close().await;
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn listener_failure_reaches_pending_login() {
         run(listener_failure_reaches_pending_login_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn listener_failure_reaches_pending_login_flow() {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         let callbacks = Interaction::new(None, "unused", "");
@@ -1328,11 +1491,13 @@ mod oauth_callback {
         let _released = native_probe("127.0.0.1");
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn callback_host_changes_bind_only() {
         run(callback_host_changes_bind_only_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn callback_host_changes_bind_only_flow() {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         for (input, expected) in [
@@ -1389,11 +1554,13 @@ mod oauth_callback {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn listener_stops_after_exchange_starts() {
         run(listener_stops_after_exchange_starts_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn listener_stops_after_exchange_starts_flow() {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         for (token_failure, body_pending) in [(false, false), (true, false), (false, true)] {
@@ -1435,6 +1602,7 @@ mod oauth_callback {
         listener_stops_after_drop_and_auth_failure().await;
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn listener_stops_after_drop_and_auth_failure() {
         let server = super::super::callback::bind("verifier".into())
             .await
@@ -1467,6 +1635,7 @@ mod oauth_callback {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn manual_settled_failure_overrides_accepted_callback() {
     run(async {

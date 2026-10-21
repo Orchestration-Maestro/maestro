@@ -1,5 +1,6 @@
 //! Recorded simple-key selection cases shared by the six existing protocols.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::{BTreeMap, BTreeSet};
 
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};

@@ -1,16 +1,22 @@
 //! Numeric expiry and lazy clock selection through the production operation.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use super::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, MutexGuard};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Serialize observations of this binary's registry.
 static ADMISSION: Mutex<()> = Mutex::new(());
+#[cfg(not(target_arch = "wasm32"))]
 /// Reset membership after observations, including unwinding.
 struct Admission {
     /// Retain admission until cleanup.
     _guard: MutexGuard<'static, ()>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Admission {
     /// Prepare an isolated registry.
     fn enter() -> Self {
@@ -21,16 +27,19 @@ impl Admission {
         Self { _guard: guard }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Admission {
     fn drop(&mut self) {
         reset_oauth_providers();
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Provider recording completed selection phases.
 struct Provider {
     /// Ordered phase observations.
     events: Arc<Mutex<Vec<&'static str>>>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthProviderInterface for Provider {
     fn id(&self) -> &'static str {
         "controlled"
@@ -61,6 +70,7 @@ impl OAuthProviderInterface for Provider {
         Ok(&record.refresh)
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied record with distinguishable fields and retained extension data.
 fn record(expires: f64) -> OAuthCredentials {
     OAuthCredentials {
@@ -73,6 +83,7 @@ fn record(expires: f64) -> OAuthCredentials {
         )]),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert one numeric decision and the resulting credential selection.
 fn check_expiry(now: f64, expiry: f64, refresh: bool, events: &Arc<Mutex<Vec<&'static str>>>) {
     events.lock().unwrap().clear();
@@ -118,6 +129,7 @@ fn check_expiry(now: f64, expiry: f64, refresh: bool, events: &Arc<Mutex<Vec<&'s
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_expiry_uses_numeric_comparison() {
     let _admission = Admission::enter();
@@ -152,6 +164,7 @@ fn maestro_oauth_expiry_uses_numeric_comparison() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_oauth_clock_is_read_only_for_present_credentials() {
     let _admission = Admission::enter();
@@ -194,6 +207,7 @@ fn maestro_oauth_clock_is_read_only_for_present_credentials() {
     assert_eq!(*events.lock().unwrap(), ["refresh"]);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Present credentials read the clock before their selected callback phases.
 fn check_present_clock(events: &Arc<Mutex<Vec<&'static str>>>) {
     let clock = || {
