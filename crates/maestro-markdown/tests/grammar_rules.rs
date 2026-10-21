@@ -1405,3 +1405,42 @@ fn fallback_text_keeps_multiline_spelling_and_reached_cursors() {
         assert_eq!(hrefs(&document.nodes), expected, "{options:?}");
     }
 }
+
+#[test]
+fn cursor_admission_consumes_later_html_without_entering_opaque_operands() {
+    let source = "$x <img src=x onerror=alert(1)>$";
+    let document = parse_with_options(source.into(), MarkedOptions::Browser { escape_html: false });
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret_with_tokenizer(scope.content_range(), &mut CursorDollar::default());
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph");
+    };
+    assert_eq!(
+        children.len(),
+        1,
+        "earlier caller consumes the later HTML operand"
+    );
+    let Kind::Atom(index) = children[0].kind else {
+        panic!("caller atom");
+    };
+    assert!(matches!(run.atoms[index], InlineAtom::Opaque(0)));
+    assert_eq!(children[0].authored, source);
+    for source in [
+        "$x `y$`",
+        "$x ![y$](u)",
+        "$x <https://example.test/y$>",
+        "before <i title='$x$'>kept</i>",
+    ] {
+        let document =
+            parse_with_options(source.into(), MarkedOptions::Browser { escape_html: false });
+        let context = InlineContext::new(&document);
+        let scope = context.scope(&document.nodes[0].range, false).unwrap();
+        let run =
+            scope.interpret_with_tokenizer(scope.content_range(), &mut CursorDollar::default());
+        let Kind::Paragraph(children) = &run.nodes[0].kind else {
+            panic!("paragraph");
+        };
+        assert!(!children.iter().any(|node| matches!(node.kind, Kind::Atom(i) if matches!(run.atoms[i], InlineAtom::Opaque(_)))), "opaque control");
+    }
+}

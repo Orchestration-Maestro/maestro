@@ -9,6 +9,51 @@ mod tests {
     use maestro_web::components::markdown_block::MarkdownBlock;
     use wasm_bindgen::prelude::*;
 
+    /// Bare, grouped, indexed and scripted radicals match recorded glyph and SVG geometry.
+    #[wasm_bindgen]
+    pub async fn math_roots_pad_bare_symbols_without_changing_groups() {
+        crate::markdown_support::math_rows_match(
+            "math_roots_pad_bare_symbols_without_changing_groups",
+        )
+        .await;
+    }
+
+    /// Explicit size retains separate inline and display clearance.
+    #[wasm_bindgen]
+    pub async fn math_scaled_roots_preserve_display_style() {
+        crate::markdown_support::math_rows_match("math_scaled_roots_preserve_display_style").await;
+    }
+
+    /// Arrow labels and SVGs retain their measured positions without an alignment override.
+    #[wasm_bindgen]
+    pub async fn math_arrows_keep_measured_label_and_svg_alignment() {
+        crate::markdown_support::math_rows_match(
+            "math_arrows_keep_measured_label_and_svg_alignment",
+        )
+        .await;
+    }
+
+    /// Builtin and user macro failures keep the inline error owner.
+    #[wasm_bindgen]
+    pub async fn math_macro_failures_keep_inline_error_spans() {
+        crate::markdown_support::math_rows_match("math_macro_failures_keep_inline_error_spans")
+            .await;
+    }
+
+    /// Invalid formulas retain escaped errors or delimiter fallbacks.
+    #[wasm_bindgen]
+    pub async fn math_error_paths_keep_fallback_and_escaped_text() {
+        crate::markdown_support::math_rows_match("math_error_paths_keep_fallback_and_escaped_text")
+            .await;
+    }
+
+    /// Valid character producers and macro overrides keep decoded output.
+    #[wasm_bindgen]
+    pub async fn math_macro_overrides_keep_valid_expansions() {
+        crate::markdown_support::math_rows_match("math_macro_overrides_keep_valid_expansions")
+            .await;
+    }
+
     /// The markup a row must produce, given the recorded library observations.
     fn target(row: &BlockRow) -> &str {
         match (&row.current_html, &row.original_html) {

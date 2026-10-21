@@ -687,6 +687,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 `crates/maestro-web/assets/katex/` embeds the stylesheet and `woff2` fonts of
 KaTeX 0.18.5, edited only to keep the `woff2` font source of each face.
+The typed math adapter in `crates/maestro-web/src/components/markdown_block/math/`
+also derives from KaTeX 0.16.45's radical, sizing, macro and error-handling code.
 
 ```text
 The MIT License (MIT)

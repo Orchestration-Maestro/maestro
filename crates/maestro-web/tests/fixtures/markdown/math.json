@@ -1,0 +1,2826 @@
+[
+  {
+    "id": "sqrt-bare-x",
+    "expression": "\\sqrt x",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 27.203125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 16.125,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 0.734375,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-bare-x",
+    "expression": "\\sqrt x",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 402.515625,
+          "top": 2.4375,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 386.390625,
+          "top": -0.765625,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-bare-digit",
+    "expression": "\\sqrt2",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "2​",
+      "width": 25.8125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "2",
+          "left": 16.125,
+          "top": 0,
+          "width": 9.6875,
+          "height": 22
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": -1.328125,
+          "width": 25.8125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-bare-digit",
+    "expression": "\\sqrt2",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "2​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "2",
+          "left": 403.21875,
+          "top": 1.515625,
+          "width": 9.6875,
+          "height": 22
+        }
+      ],
+      "svg": [
+        {
+          "left": 387.09375,
+          "top": -0.765625,
+          "width": 25.8125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-braced",
+    "expression": "\\sqrt{x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 27.203125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 16.125,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 0.734375,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-braced",
+    "expression": "\\sqrt{x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 402.515625,
+          "top": 2.4375,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 386.390625,
+          "top": -0.765625,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-empty",
+    "expression": "\\sqrt{}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "​",
+      "width": 16.5,
+      "height": 22,
+      "glyphs": [],
+      "svg": [
+        {
+          "left": 0,
+          "top": 0.734375,
+          "width": 16.5,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-empty",
+    "expression": "\\sqrt{}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [],
+      "svg": [
+        {
+          "left": 391.75,
+          "top": -0.765625,
+          "width": 16.5,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-indexed-bare",
+    "expression": "\\sqrt[3]x",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "3x​",
+      "width": 26.671875,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "3",
+          "left": 5.375,
+          "top": 1.484375,
+          "width": 4.84375,
+          "height": 12
+        },
+        {
+          "text": "x",
+          "left": 15.59375,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": -0.53125,
+          "top": 0.734375,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-indexed-bare",
+    "expression": "\\sqrt[3]x",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "3x​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "3",
+          "left": 392.03125,
+          "top": -0.21875,
+          "width": 4.84375,
+          "height": 12
+        },
+        {
+          "text": "x",
+          "left": 402.25,
+          "top": 2.4375,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 386.125,
+          "top": -0.765625,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-indexed-braced",
+    "expression": "\\sqrt[3]{x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "3x​",
+      "width": 26.671875,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "3",
+          "left": 5.375,
+          "top": 1.484375,
+          "width": 4.84375,
+          "height": 12
+        },
+        {
+          "text": "x",
+          "left": 15.59375,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": -0.53125,
+          "top": 0.734375,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-indexed-braced",
+    "expression": "\\sqrt[3]{x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "3x​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "3",
+          "left": 392.03125,
+          "top": -0.21875,
+          "width": 4.84375,
+          "height": 12
+        },
+        {
+          "text": "x",
+          "left": 402.25,
+          "top": 2.4375,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 386.125,
+          "top": -0.765625,
+          "width": 27.203125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-nested",
+    "expression": "\\sqrt{\\sqrt x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​​",
+      "width": 46.5625,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 35.484375,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 19.359375,
+          "top": 0.734375,
+          "width": 27.203125,
+          "height": 20.90625
+        },
+        {
+          "left": 0,
+          "top": -2.453125,
+          "width": 46.5625,
+          "height": 24.765625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-nested",
+    "expression": "\\sqrt{\\sqrt x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​​",
+      "width": 800,
+      "height": 35.609375,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 412.203125,
+          "top": 12.375,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 396.078125,
+          "top": 9.171875,
+          "width": 27.203125,
+          "height": 20.90625
+        },
+        {
+          "left": 376.71875,
+          "top": -0.78125,
+          "width": 46.5625,
+          "height": 36.390625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-script",
+    "expression": "a^{\\sqrt x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "ax​",
+      "width": 30.234375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "a",
+          "left": 0,
+          "top": 3,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "x",
+          "left": 21.53125,
+          "top": -0.03125,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 10.25,
+          "top": -1.484375,
+          "width": 19.03125,
+          "height": 14.625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-script",
+    "expression": "a^{\\sqrt x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "ax​",
+      "width": 800,
+      "height": 26.125,
+      "glyphs": [
+        {
+          "text": "a",
+          "left": 384.875,
+          "top": 4.90625,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "x",
+          "left": 406.40625,
+          "top": 0.90625,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 395.125,
+          "top": -0.546875,
+          "width": 19.03125,
+          "height": 14.625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-tall",
+    "expression": "\\sqrt{\\frac{a}{b}}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "ba​​",
+      "width": 31.15625,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "b",
+          "left": 22.34375,
+          "top": 13.6875,
+          "width": 5.8125,
+          "height": 13
+        },
+        {
+          "text": "a",
+          "left": 21.671875,
+          "top": -0.625,
+          "width": 7.171875,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": -0.421875,
+          "width": 31.15625,
+          "height": 24.765625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-tall",
+    "expression": "\\sqrt{\\frac{a}{b}}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "ba​​",
+      "width": 800,
+      "height": 47.234375,
+      "glyphs": [
+        {
+          "text": "b",
+          "left": 405.515625,
+          "top": 29.1875,
+          "width": 8.3125,
+          "height": 18
+        },
+        {
+          "text": "a",
+          "left": 404.546875,
+          "top": 2.8125,
+          "width": 10.25,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 382.875,
+          "top": -0.765625,
+          "width": 34.234375,
+          "height": 48
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-sized-bare",
+    "expression": "\\Huge\\sqrt x",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 67.65625,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 40.109375,
+          "top": -18,
+          "width": 27.546875,
+          "height": 45
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": -23.46875,
+          "width": 67.65625,
+          "height": 52.015625
+        }
+      ]
+    },
+    "test": "math_scaled_roots_preserve_display_style"
+  },
+  {
+    "id": "sqrt-sized-bare",
+    "expression": "\\Huge\\sqrt x",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 800,
+      "height": 50.09375,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 406.28125,
+          "top": 5.90625,
+          "width": 27.546875,
+          "height": 45
+        }
+      ],
+      "svg": [
+        {
+          "left": 366.171875,
+          "top": -1.921875,
+          "width": 67.65625,
+          "height": 52.015625
+        }
+      ]
+    },
+    "test": "math_scaled_roots_preserve_display_style"
+  },
+  {
+    "id": "sqrt-sized-braced",
+    "expression": "\\Huge\\sqrt{x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 67.65625,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 40.109375,
+          "top": -18,
+          "width": 27.546875,
+          "height": 45
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": -23.46875,
+          "width": 67.65625,
+          "height": 52.015625
+        }
+      ]
+    },
+    "test": "math_scaled_roots_preserve_display_style"
+  },
+  {
+    "id": "sqrt-sized-braced",
+    "expression": "\\Huge\\sqrt{x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 800,
+      "height": 50.09375,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 406.28125,
+          "top": 5.90625,
+          "width": 27.546875,
+          "height": 45
+        }
+      ],
+      "svg": [
+        {
+          "left": 366.171875,
+          "top": -1.921875,
+          "width": 67.65625,
+          "height": 52.015625
+        }
+      ]
+    },
+    "test": "math_scaled_roots_preserve_display_style"
+  },
+  {
+    "id": "sqrt-symbol",
+    "expression": "\\sqrt\\alpha",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "α​",
+      "width": 28.578125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "α",
+          "left": 16.125,
+          "top": 3,
+          "width": 12.390625,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 0.734375,
+          "width": 28.578125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-symbol",
+    "expression": "\\sqrt\\alpha",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "α​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "α",
+          "left": 401.828125,
+          "top": 2.4375,
+          "width": 12.390625,
+          "height": 18
+        }
+      ],
+      "svg": [
+        {
+          "left": 385.703125,
+          "top": -0.765625,
+          "width": 28.578125,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-operator",
+    "expression": "\\sqrt+",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "+​",
+      "width": 31.1875,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "+",
+          "left": 16.125,
+          "top": 0,
+          "width": 15.0625,
+          "height": 22
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 0.0625,
+          "width": 31.1875,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "sqrt-operator",
+    "expression": "\\sqrt+",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "+​",
+      "width": 800,
+      "height": 20.125,
+      "glyphs": [
+        {
+          "text": "+",
+          "left": 400.53125,
+          "top": 0.109375,
+          "width": 15.0625,
+          "height": 22
+        }
+      ],
+      "svg": [
+        {
+          "left": 384.40625,
+          "top": -0.765625,
+          "width": 31.1875,
+          "height": 20.90625
+        }
+      ]
+    },
+    "test": "math_roots_pad_bare_symbols_without_changing_groups"
+  },
+  {
+    "id": "arrow-bare",
+    "expression": "\\xrightarrow x",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 28.4375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 10.34375,
+          "top": -5.046875,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.125,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-bare",
+    "expression": "\\xrightarrow x",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 800,
+      "height": 18.078125,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 396.125,
+          "top": -4.171875,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 385.78125,
+          "top": 8,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-braced",
+    "expression": "\\xrightarrow{x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 28.4375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 10.34375,
+          "top": -5.046875,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.125,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-braced",
+    "expression": "\\xrightarrow{x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​",
+      "width": 800,
+      "height": 18.078125,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 396.125,
+          "top": -4.171875,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 385.78125,
+          "top": 8,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-lower",
+    "expression": "\\xrightarrow[y]{x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "xy​",
+      "width": 28.4375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 10.34375,
+          "top": -5.046875,
+          "width": 7.75,
+          "height": 13
+        },
+        {
+          "text": "y",
+          "left": 10.65625,
+          "top": 15.203125,
+          "width": 6.640625,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.125,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-lower",
+    "expression": "\\xrightarrow[y]{x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "xy​",
+      "width": 800,
+      "height": 28.703125,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 396.125,
+          "top": -4.171875,
+          "width": 7.75,
+          "height": 13
+        },
+        {
+          "text": "y",
+          "left": 396.4375,
+          "top": 16.078125,
+          "width": 6.640625,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 385.78125,
+          "top": 8,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-wide",
+    "expression": "\\xrightarrow{longer label}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "longerlabel​",
+      "width": 80.265625,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "l",
+          "left": 6.765625,
+          "top": -5.046875,
+          "width": 4.046875,
+          "height": 13
+        },
+        {
+          "text": "o",
+          "left": 11.078125,
+          "top": -5.046875,
+          "width": 6.578125,
+          "height": 13
+        },
+        {
+          "text": "n",
+          "left": 17.65625,
+          "top": -5.046875,
+          "width": 8.140625,
+          "height": 13
+        },
+        {
+          "text": "g",
+          "left": 25.796875,
+          "top": -5.046875,
+          "width": 6.46875,
+          "height": 13
+        },
+        {
+          "text": "er",
+          "left": 32.75,
+          "top": -5.046875,
+          "width": 12.4375,
+          "height": 13
+        },
+        {
+          "text": "l",
+          "left": 45.5625,
+          "top": -5.046875,
+          "width": 4.046875,
+          "height": 13
+        },
+        {
+          "text": "ab",
+          "left": 49.875,
+          "top": -5.046875,
+          "width": 12.984375,
+          "height": 13
+        },
+        {
+          "text": "e",
+          "left": 62.859375,
+          "top": -5.046875,
+          "width": 6.328125,
+          "height": 13
+        },
+        {
+          "text": "l",
+          "left": 69.1875,
+          "top": -5.046875,
+          "width": 4.046875,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.125,
+          "width": 80.265625,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-wide",
+    "expression": "\\xrightarrow{longer label}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "longerlabel​",
+      "width": 800,
+      "height": 21.65625,
+      "glyphs": [
+        {
+          "text": "l",
+          "left": 366.625,
+          "top": -0.59375,
+          "width": 4.046875,
+          "height": 13
+        },
+        {
+          "text": "o",
+          "left": 370.9375,
+          "top": -0.59375,
+          "width": 6.578125,
+          "height": 13
+        },
+        {
+          "text": "n",
+          "left": 377.515625,
+          "top": -0.59375,
+          "width": 8.140625,
+          "height": 13
+        },
+        {
+          "text": "g",
+          "left": 385.65625,
+          "top": -0.59375,
+          "width": 6.46875,
+          "height": 13
+        },
+        {
+          "text": "er",
+          "left": 392.609375,
+          "top": -0.59375,
+          "width": 12.4375,
+          "height": 13
+        },
+        {
+          "text": "l",
+          "left": 405.421875,
+          "top": -0.59375,
+          "width": 4.046875,
+          "height": 13
+        },
+        {
+          "text": "ab",
+          "left": 409.734375,
+          "top": -0.59375,
+          "width": 12.984375,
+          "height": 13
+        },
+        {
+          "text": "e",
+          "left": 422.71875,
+          "top": -0.59375,
+          "width": 6.328125,
+          "height": 13
+        },
+        {
+          "text": "l",
+          "left": 429.046875,
+          "top": -0.59375,
+          "width": 4.046875,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 359.859375,
+          "top": 11.578125,
+          "width": 80.265625,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-empty",
+    "expression": "\\xrightarrow{}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "​",
+      "width": 28.4375,
+      "height": 22,
+      "glyphs": [],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.109375,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-empty",
+    "expression": "\\xrightarrow{}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "​",
+      "width": 800,
+      "height": 12.25,
+      "glyphs": [],
+      "svg": [
+        {
+          "left": 385.78125,
+          "top": 2.15625,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-script",
+    "expression": "a^{\\xrightarrow x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "ax​",
+      "width": 31.109375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "a",
+          "left": 0,
+          "top": 3,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "x",
+          "left": 17.421875,
+          "top": -5.453125,
+          "width": 5.546875,
+          "height": 9
+        }
+      ],
+      "svg": [
+        {
+          "left": 10.25,
+          "top": 3.0625,
+          "width": 19.90625,
+          "height": 7.0625
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-script",
+    "expression": "a^{\\xrightarrow x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "ax​",
+      "width": 800,
+      "height": 27.796875,
+      "glyphs": [
+        {
+          "text": "a",
+          "left": 384.4375,
+          "top": 6.578125,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "x",
+          "left": 401.859375,
+          "top": -2.84375,
+          "width": 5.546875,
+          "height": 9
+        }
+      ],
+      "svg": [
+        {
+          "left": 394.6875,
+          "top": 5.671875,
+          "width": 19.90625,
+          "height": 7.0625
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-left",
+    "expression": "\\xleftarrow[y]{x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "xy​",
+      "width": 28.4375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 10.34375,
+          "top": -5.046875,
+          "width": 7.75,
+          "height": 13
+        },
+        {
+          "text": "y",
+          "left": 10.65625,
+          "top": 15.203125,
+          "width": 6.640625,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.125,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-left",
+    "expression": "\\xleftarrow[y]{x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "xy​",
+      "width": 800,
+      "height": 28.703125,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 396.125,
+          "top": -4.171875,
+          "width": 7.75,
+          "height": 13
+        },
+        {
+          "text": "y",
+          "left": 396.4375,
+          "top": 16.078125,
+          "width": 6.640625,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 385.78125,
+          "top": 8,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-deep-label",
+    "expression": "\\xrightarrow{g}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "g​",
+      "width": 28.4375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "g",
+          "left": 10.734375,
+          "top": -5.046875,
+          "width": 6.46875,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 0,
+          "top": 7.125,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-deep-label",
+    "expression": "\\xrightarrow{g}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "g​",
+      "width": 800,
+      "height": 18.078125,
+      "glyphs": [
+        {
+          "text": "g",
+          "left": 396.515625,
+          "top": -4.171875,
+          "width": 6.46875,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 385.78125,
+          "top": 8,
+          "width": 28.4375,
+          "height": 10.09375
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-neighbor",
+    "expression": "x\\rightarrow y",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x→y",
+      "width": 51.375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 0,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        },
+        {
+          "text": "→",
+          "left": 16.453125,
+          "top": 0,
+          "width": 19.359375,
+          "height": 22
+        },
+        {
+          "text": "y",
+          "left": 41.1875,
+          "top": 3,
+          "width": 9.5,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-neighbor",
+    "expression": "x\\rightarrow y",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x→y",
+      "width": 800,
+      "height": 24.21875,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 374.3125,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        },
+        {
+          "text": "→",
+          "left": 390.765625,
+          "top": 0,
+          "width": 19.359375,
+          "height": 22
+        },
+        {
+          "text": "y",
+          "left": 415.5,
+          "top": 3,
+          "width": 9.5,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-nested-root",
+    "expression": "\\sqrt{\\xrightarrow x}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x​​",
+      "width": 47.796875,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 29.703125,
+          "top": -5.046875,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 19.359375,
+          "top": 7.125,
+          "width": 28.4375,
+          "height": 10.09375
+        },
+        {
+          "left": 0,
+          "top": -5.859375,
+          "width": 47.796875,
+          "height": 24.765625
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "arrow-nested-root",
+    "expression": "\\sqrt{\\xrightarrow x}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x​​",
+      "width": 800,
+      "height": 24,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 405.796875,
+          "top": 1,
+          "width": 7.75,
+          "height": 13
+        }
+      ],
+      "svg": [
+        {
+          "left": 395.453125,
+          "top": 13.171875,
+          "width": 28.4375,
+          "height": 10.09375
+        },
+        {
+          "left": 376.09375,
+          "top": -0.765625,
+          "width": 47.796875,
+          "height": 24.765625
+        }
+      ]
+    },
+    "test": "math_arrows_keep_measured_label_and_svg_alignment"
+  },
+  {
+    "id": "char-missing",
+    "expression": "\\char",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char",
+      "width": 31.984375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char",
+          "left": 0,
+          "top": 0,
+          "width": 31.984375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing",
+    "expression": "\\char",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char",
+      "width": 31.984375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char",
+          "left": 0,
+          "top": 0,
+          "width": 31.984375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing-octal",
+    "expression": "\\char'",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char'",
+      "width": 34.859375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char'",
+          "left": 0,
+          "top": 0,
+          "width": 34.859375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing-octal",
+    "expression": "\\char'",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char'",
+      "width": 34.859375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char'",
+          "left": 0,
+          "top": 0,
+          "width": 34.859375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing-hex",
+    "expression": "\\char\"",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char\"",
+      "width": 38.515625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char\"",
+          "left": 0,
+          "top": 0,
+          "width": 38.515625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing-hex",
+    "expression": "\\char\"",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char\"",
+      "width": 38.515625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char\"",
+          "left": 0,
+          "top": 0,
+          "width": 38.515625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing-literal",
+    "expression": "\\char`",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char`",
+      "width": 37.3125,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char`",
+          "left": 0,
+          "top": 0,
+          "width": 37.3125,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-missing-literal",
+    "expression": "\\char`",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char`",
+      "width": 37.3125,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char`",
+          "left": 0,
+          "top": 0,
+          "width": 37.3125,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-bad-decimal",
+    "expression": "\\char x",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char x",
+      "width": 43.984375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char x",
+          "left": 0,
+          "top": 0,
+          "width": 43.984375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-bad-decimal",
+    "expression": "\\char x",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char x",
+      "width": 43.984375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char x",
+          "left": 0,
+          "top": 0,
+          "width": 43.984375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-bad-octal",
+    "expression": "\\char'8",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char'8",
+      "width": 42.859375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char'8",
+          "left": 0,
+          "top": 0,
+          "width": 42.859375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-bad-octal",
+    "expression": "\\char'8",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char'8",
+      "width": 42.859375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char'8",
+          "left": 0,
+          "top": 0,
+          "width": 42.859375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-bad-hex",
+    "expression": "\\char\"G",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char\"G",
+      "width": 50.0625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char\"G",
+          "left": 0,
+          "top": 0,
+          "width": 50.0625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-bad-hex",
+    "expression": "\\char\"G",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char\"G",
+      "width": 50.0625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char\"G",
+          "left": 0,
+          "top": 0,
+          "width": 50.0625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-decimal",
+    "expression": "\\char65",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 14.53125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 0,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-decimal",
+    "expression": "\\char65",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 392.734375,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-octal",
+    "expression": "\\char'101",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 14.53125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 0,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-octal",
+    "expression": "\\char'101",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 392.734375,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-hex",
+    "expression": "\\char\"41",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 14.53125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 0,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-hex",
+    "expression": "\\char\"41",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 392.734375,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-literal",
+    "expression": "\\char`A",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 14.53125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 0,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-literal",
+    "expression": "\\char`A",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "A",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "A",
+          "left": 392.734375,
+          "top": 0,
+          "width": 14.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-escaped-literal",
+    "expression": "\\char`\\%",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "%",
+      "width": 16.140625,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "%",
+          "left": 0,
+          "top": 0,
+          "width": 16.140625,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-escaped-literal",
+    "expression": "\\char`\\%",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "%",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "%",
+          "left": 391.921875,
+          "top": 0,
+          "width": 16.140625,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-alias-invalid",
+    "expression": "\\def\\broken{\\char}\\broken",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\def\\broken{\\char}\\broken",
+      "width": 169.96875,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\def\\broken{\\char}\\broken",
+          "left": 0,
+          "top": 0,
+          "width": 169.96875,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-alias-invalid",
+    "expression": "\\def\\broken{\\char}\\broken",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\def\\broken{\\char}\\broken",
+      "width": 169.96875,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\def\\broken{\\char}\\broken",
+          "left": 0,
+          "top": 0,
+          "width": 169.96875,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "char-redefined",
+    "expression": "\\def\\char{x}\\char",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x",
+      "width": 11.078125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 0,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "char-redefined",
+    "expression": "\\def\\char{x}\\char",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 394.453125,
+          "top": 2,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "unknown",
+    "expression": "\\unknowncommand",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "\\unknowncommand",
+      "width": 168.359375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "\\unknowncommand",
+          "left": 0,
+          "top": 0,
+          "width": 168.359375,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "unknown",
+    "expression": "\\unknowncommand",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "\\unknowncommand",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "\\unknowncommand",
+          "left": 315.8125,
+          "top": 0,
+          "width": 168.359375,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "fraction-invalid",
+    "expression": "\\frac{",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\frac{",
+      "width": 36.984375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\frac{",
+          "left": 0,
+          "top": 0,
+          "width": 36.984375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "fraction-invalid",
+    "expression": "\\frac{",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\frac{",
+      "width": 36.984375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\frac{",
+          "left": 0,
+          "top": 0,
+          "width": 36.984375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "fraction-valid",
+    "expression": "\\frac{a}{b}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "ba​",
+      "width": 11.796875,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "b",
+          "left": 2.984375,
+          "top": 13.6875,
+          "width": 5.8125,
+          "height": 13
+        },
+        {
+          "text": "a",
+          "left": 2.3125,
+          "top": -0.625,
+          "width": 7.171875,
+          "height": 13
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "fraction-valid",
+    "expression": "\\frac{a}{b}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "ba​",
+      "width": 800,
+      "height": 34.71875,
+      "glyphs": [
+        {
+          "text": "b",
+          "left": 395.84375,
+          "top": 20.734375,
+          "width": 8.3125,
+          "height": 18
+        },
+        {
+          "text": "a",
+          "left": 394.875,
+          "top": -5.640625,
+          "width": 10.25,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "environment-invalid",
+    "expression": "\\begin{\\foo}x\\end{\\foo}",
+    "display": false,
+    "branch": "throw",
+    "fallbacks": [
+      {
+        "delimiter": "dollar-inline",
+        "html": "<p><span class=\"text-red-500 font-mono\">$\\begin{\\foo}x\\end{\\foo}$</span></p>\n"
+      },
+      {
+        "delimiter": "backslash-inline",
+        "html": "<p><span class=\"text-red-500 font-mono\">\\(\\begin{\\foo}x\\end{\\foo}\\)</span></p>\n"
+      }
+    ],
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "environment-invalid",
+    "expression": "\\begin{\\foo}x\\end{\\foo}",
+    "display": true,
+    "branch": "throw",
+    "fallbacks": [
+      {
+        "delimiter": "dollar-display",
+        "html": "<div class=\"my-4 text-red-500 font-mono\">$$\\begin{\\foo}x\\end{\\foo}$$</div>"
+      },
+      {
+        "delimiter": "backslash-display",
+        "html": "<div class=\"my-4 text-red-500 font-mono\">\\[\\begin{\\foo}x\\end{\\foo}\\]</div>"
+      }
+    ],
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "environment-valid",
+    "expression": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "(ac​bd​)",
+      "width": 68.171875,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "(",
+          "left": 0,
+          "top": -11,
+          "width": 14.25,
+          "height": 46
+        },
+        {
+          "text": "a",
+          "left": 14.25,
+          "top": -8.796875,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "c",
+          "left": 15.171875,
+          "top": 14.421875,
+          "width": 8.390625,
+          "height": 18
+        },
+        {
+          "text": "b",
+          "left": 44.71875,
+          "top": -8.796875,
+          "width": 8.3125,
+          "height": 18
+        },
+        {
+          "text": "d",
+          "left": 43.84375,
+          "top": 14.421875,
+          "width": 10.078125,
+          "height": 18
+        },
+        {
+          "text": ")",
+          "left": 53.921875,
+          "top": -11,
+          "width": 14.25,
+          "height": 46
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "environment-valid",
+    "expression": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "(ac​bd​)",
+      "width": 800,
+      "height": 46.453125,
+      "glyphs": [
+        {
+          "text": "(",
+          "left": 365.90625,
+          "top": 0.0625,
+          "width": 14.25,
+          "height": 46
+        },
+        {
+          "text": "a",
+          "left": 380.15625,
+          "top": 2.265625,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "c",
+          "left": 381.078125,
+          "top": 25.484375,
+          "width": 8.390625,
+          "height": 18
+        },
+        {
+          "text": "b",
+          "left": 410.625,
+          "top": 2.265625,
+          "width": 8.3125,
+          "height": 18
+        },
+        {
+          "text": "d",
+          "left": 409.75,
+          "top": 25.484375,
+          "width": 10.078125,
+          "height": 18
+        },
+        {
+          "text": ")",
+          "left": 419.828125,
+          "top": 0.0625,
+          "width": 14.25,
+          "height": 46
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "char-html-tail",
+    "expression": "\\char <img src=x onerror=alert(1)>",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\char <img src=x onerror=alert(1)>",
+      "width": 225.78125,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char <img src=x onerror=alert(1)>",
+          "left": 0,
+          "top": 0,
+          "width": 225.78125,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "char-html-tail",
+    "expression": "\\char <img src=x onerror=alert(1)>",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\char <img src=x onerror=alert(1)>",
+      "width": 225.78125,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\char <img src=x onerror=alert(1)>",
+          "left": 0,
+          "top": 0,
+          "width": 225.78125,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "macro-redefinition-invalid",
+    "expression": "\\newcommand{\\sqrt}{x}",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\newcommand{\\sqrt}{x}",
+      "width": 161.359375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\newcommand{\\sqrt}{x}",
+          "left": 0,
+          "top": 0,
+          "width": 161.359375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "macro-redefinition-invalid",
+    "expression": "\\newcommand{\\sqrt}{x}",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\newcommand{\\sqrt}{x}",
+      "width": 161.359375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\newcommand{\\sqrt}{x}",
+          "left": 0,
+          "top": 0,
+          "width": 161.359375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "macro-nonexistent-invalid",
+    "expression": "\\renewcommand{\\zzz}{x}",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\renewcommand{\\zzz}{x}",
+      "width": 171.09375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\renewcommand{\\zzz}{x}",
+          "left": 0,
+          "top": 0,
+          "width": 171.09375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "macro-nonexistent-invalid",
+    "expression": "\\renewcommand{\\zzz}{x}",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\renewcommand{\\zzz}{x}",
+      "width": 171.09375,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\renewcommand{\\zzz}{x}",
+          "left": 0,
+          "top": 0,
+          "width": 171.09375,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "macro-malformed-invalid",
+    "expression": "\\newcommand{ab}{x}",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\newcommand{ab}{x}",
+      "width": 148.015625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\newcommand{ab}{x}",
+          "left": 0,
+          "top": 0,
+          "width": 148.015625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "macro-malformed-invalid",
+    "expression": "\\newcommand{ab}{x}",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\newcommand{ab}{x}",
+      "width": 148.015625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\newcommand{ab}{x}",
+          "left": 0,
+          "top": 0,
+          "width": 148.015625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_failures_keep_inline_error_spans"
+  },
+  {
+    "id": "macro-valid",
+    "expression": "\\newcommand{\\fresh}{x}\\fresh",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "x",
+      "width": 11.078125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 0,
+          "top": 3,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "macro-valid",
+    "expression": "\\newcommand{\\fresh}{x}\\fresh",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "x",
+      "width": 800,
+      "height": 23.21875,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 394.453125,
+          "top": 2,
+          "width": 11.078125,
+          "height": 18
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "macro-braket-valid",
+    "expression": "\\Braket{a|b}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "⟨a∣b⟩",
+      "width": 45.453125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "⟨",
+          "left": 0,
+          "top": 0,
+          "width": 7.53125,
+          "height": 22
+        },
+        {
+          "text": "a",
+          "left": 7.53125,
+          "top": 3,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "∣",
+          "left": 21,
+          "top": 0,
+          "width": 5.390625,
+          "height": 22
+        },
+        {
+          "text": "b",
+          "left": 29.609375,
+          "top": 3,
+          "width": 8.3125,
+          "height": 18
+        },
+        {
+          "text": "⟩",
+          "left": 37.921875,
+          "top": 0,
+          "width": 7.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "macro-braket-valid",
+    "expression": "\\Braket{a|b}",
+    "display": true,
+    "branch": "html",
+    "observed": {
+      "text": "⟨a∣b⟩",
+      "width": 800,
+      "height": 24.21875,
+      "glyphs": [
+        {
+          "text": "⟨",
+          "left": 377.265625,
+          "top": 0,
+          "width": 7.53125,
+          "height": 22
+        },
+        {
+          "text": "a",
+          "left": 384.796875,
+          "top": 3,
+          "width": 10.25,
+          "height": 18
+        },
+        {
+          "text": "∣",
+          "left": 398.265625,
+          "top": 0,
+          "width": 5.390625,
+          "height": 22
+        },
+        {
+          "text": "b",
+          "left": 406.875,
+          "top": 3,
+          "width": 8.3125,
+          "height": 18
+        },
+        {
+          "text": "⟩",
+          "left": 415.1875,
+          "top": 0,
+          "width": 7.53125,
+          "height": 22
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_macro_overrides_keep_valid_expansions"
+  },
+  {
+    "id": "macro-braket-invalid",
+    "expression": "\\Braket{a|\u0000}",
+    "display": false,
+    "branch": "error",
+    "observed": {
+      "text": "\\Braket{a|}",
+      "width": 72.765625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\Braket{a|}",
+          "left": 0,
+          "top": 0,
+          "width": 72.765625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "macro-braket-invalid",
+    "expression": "\\Braket{a|\u0000}",
+    "display": true,
+    "branch": "error",
+    "observed": {
+      "text": "\\Braket{a|}",
+      "width": 72.765625,
+      "height": 17,
+      "glyphs": [
+        {
+          "text": "\\Braket{a|}",
+          "left": 0,
+          "top": 0,
+          "width": 72.765625,
+          "height": 17
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_error_paths_keep_fallback_and_escaped_text"
+  }
+]

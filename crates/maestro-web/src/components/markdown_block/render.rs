@@ -104,7 +104,7 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     };
 
     let inline = InlineContext::new(&document);
-    let math = katex::KatexContext::default();
+    let math = super::math::context();
     let mut writer = Writer {
         policy: Policy::Transcript {
             math: &math,
@@ -458,7 +458,7 @@ impl Writer<'_, '_> {
         let Policy::Transcript { math, .. } = &self.policy else {
             return String::new();
         };
-        let rendered = katex::render_to_string(math, formula.tex, &settings);
+        let rendered = super::math::render_to_string(math, formula.tex, &settings);
         match (rendered, display) {
             (Ok(html), true) => format!("<div class=\"maestro-math-block\">{html}</div>"),
             (Ok(html), false) => html,
