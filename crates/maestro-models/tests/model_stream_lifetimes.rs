@@ -2,7 +2,7 @@
 mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     use maestro_models::Cancellation;
-    use maestro_models::EventStream;
+    use maestro_models::{EventStream, SharedHandle};
     use std::future::Future;
     use std::sync::Arc;
     use std::task::{Context, Poll, Wake, Waker};
@@ -433,36 +433,38 @@ mod tests {
             SessionResourceCleanup, cleanup_session_resources, register_session_resource_cleanup,
         };
         let _serial = crate::bundled::registry();
-        let visits = Arc::new(std::sync::Mutex::new(Vec::new()));
-        let log = Arc::clone(&visits);
-        let first: SessionResourceCleanup = Arc::new(move |_| {
+        let visits = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
+        let log = SharedHandle::clone(&visits);
+        let first: SessionResourceCleanup = SharedHandle::new(move |_| {
             log.lock().unwrap().push(1);
             Ok(())
         });
-        let first_removal = register_session_resource_cleanup(Arc::clone(&first));
-        let duplicate = register_session_resource_cleanup(Arc::clone(&first));
-        let log = Arc::clone(&visits);
-        let second: SessionResourceCleanup = Arc::new(move |_| {
+        let first_removal = register_session_resource_cleanup(SharedHandle::clone(&first));
+        let duplicate = register_session_resource_cleanup(SharedHandle::clone(&first));
+        let log = SharedHandle::clone(&visits);
+        let second: SessionResourceCleanup = SharedHandle::new(move |_| {
             log.lock().unwrap().push(2);
             Ok(())
         });
-        let second_removal = register_session_resource_cleanup(Arc::clone(&second));
+        let second_removal = register_session_resource_cleanup(SharedHandle::clone(&second));
         cleanup_session_resources(None).unwrap();
         assert_eq!(*visits.lock().unwrap(), [1, 2]);
         duplicate.remove();
         duplicate.remove();
-        drop(register_session_resource_cleanup(Arc::clone(&first)));
+        drop(register_session_resource_cleanup(SharedHandle::clone(
+            &first,
+        )));
         first_removal.remove();
         visits.lock().unwrap().clear();
         cleanup_session_resources(None).unwrap();
         assert_eq!(*visits.lock().unwrap(), [2]);
         second_removal.remove();
         drop((first_removal, duplicate, second_removal));
-        assert_eq!(Arc::strong_count(&first), 1);
-        assert_eq!(Arc::strong_count(&second), 1);
+        assert_eq!(SharedHandle::strong_count(&first), 1);
+        assert_eq!(SharedHandle::strong_count(&second), 1);
         for _ in 0..100 {
-            let callback: SessionResourceCleanup = Arc::new(|_| Ok(()));
-            let weak = Arc::downgrade(&callback);
+            let callback: SessionResourceCleanup = SharedHandle::new(|_| Ok(()));
+            let weak = SharedHandle::downgrade(&callback);
             let removal = register_session_resource_cleanup(callback);
             removal.remove();
             drop(removal);
@@ -477,35 +479,39 @@ mod tests {
             register_session_resource_cleanup,
         };
         let _serial = crate::bundled::registry();
-        let visits = Arc::new(std::sync::Mutex::new(Vec::new()));
-        let unvisited = Arc::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
-        let added = Arc::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
-        let holder = Arc::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
-        let log = Arc::clone(&visits);
-        let extra: SessionResourceCleanup = Arc::new(move |_| {
+        let visits = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
+        let unvisited = SharedHandle::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
+        let added = SharedHandle::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
+        let holder = SharedHandle::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
+        let log = SharedHandle::clone(&visits);
+        let extra: SessionResourceCleanup = SharedHandle::new(move |_| {
             log.lock().unwrap().push("new");
             Ok(())
         });
         let (log, remove, keep, self_remove) = (
-            Arc::clone(&visits),
-            Arc::clone(&unvisited),
-            Arc::clone(&added),
-            Arc::clone(&holder),
+            SharedHandle::clone(&visits),
+            SharedHandle::clone(&unvisited),
+            SharedHandle::clone(&added),
+            SharedHandle::clone(&holder),
         );
-        let first = register_session_resource_cleanup(Arc::new(move |_| {
+        let first = register_session_resource_cleanup(SharedHandle::new(move |_| {
             log.lock().unwrap().push("first");
             remove.lock().unwrap().as_ref().unwrap().remove();
-            *keep.lock().unwrap() = Some(register_session_resource_cleanup(Arc::clone(&extra)));
+            *keep.lock().unwrap() = Some(register_session_resource_cleanup(SharedHandle::clone(
+                &extra,
+            )));
             self_remove.lock().unwrap().as_ref().unwrap().remove();
             cleanup_session_resources(Some("nested")).unwrap();
             Ok(())
         }));
         *holder.lock().unwrap() = Some(first);
-        let log = Arc::clone(&visits);
-        *unvisited.lock().unwrap() = Some(register_session_resource_cleanup(Arc::new(move |_| {
-            log.lock().unwrap().push("removed");
-            Ok(())
-        })));
+        let log = SharedHandle::clone(&visits);
+        *unvisited.lock().unwrap() = Some(register_session_resource_cleanup(SharedHandle::new(
+            move |_| {
+                log.lock().unwrap().push("removed");
+                Ok(())
+            },
+        )));
         cleanup_session_resources(None).unwrap();
         assert_eq!(*visits.lock().unwrap(), ["first", "new", "new"]);
         added.lock().unwrap().take().unwrap().remove();

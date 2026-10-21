@@ -15,7 +15,7 @@ mod tests {
             .into_iter()
             .map(|name| {
                 let visits = Arc::clone(&visits);
-                register_session_resource_cleanup(Arc::new(move |session| {
+                register_session_resource_cleanup(SharedHandle::new(move |session| {
                     assert_eq!(session, Some("session"));
                     visits.lock().unwrap().push(name);
                     match name {
@@ -141,7 +141,7 @@ mod tests {
         }
         let visits = Arc::new(Mutex::new(Vec::new()));
         let recorded = Arc::clone(&visits);
-        let removal = register_session_resource_cleanup(Arc::new(move |session| {
+        let removal = register_session_resource_cleanup(SharedHandle::new(move |session| {
             recorded.lock().unwrap().push(session.map(str::to_owned));
             Ok(())
         }));
@@ -708,7 +708,7 @@ mod tests {
             use maestro_models::records::api_registry::{get_api_provider, get_api_providers};
             let _entries = get_api_providers();
             let _entry = get_api_provider("absent");
-            let removal = register_session_resource_cleanup(Arc::new(|_| Ok(())));
+            let removal = register_session_resource_cleanup(SharedHandle::new(|_| Ok(())));
             removal.remove();
             cleanup_session_resources(None).unwrap();
             self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -755,9 +755,9 @@ mod tests {
         clear_api_providers();
         assert_eq!(drops.load(std::sync::atomic::Ordering::SeqCst), 3);
         let probe = ReenterDrop(Arc::clone(&drops));
-        let removal = register_session_resource_cleanup(Arc::new(move |_| {
+        let removal = register_session_resource_cleanup(SharedHandle::new(move |_| {
             let _probe = &probe;
-            let removal = register_session_resource_cleanup(Arc::new(|_| Ok(())));
+            let removal = register_session_resource_cleanup(SharedHandle::new(|_| Ok(())));
             removal.remove();
             Ok(())
         }));

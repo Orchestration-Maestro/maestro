@@ -1,16 +1,17 @@
 //! Live ordered resource cleanup with explicit identity-based removal.
 
 use super::diagnostics::DiagnosticErrorInfo;
+use super::types::SharedHandle;
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 /// One fallible cleanup callback receiving the selected session identity.
 #[cfg(not(target_arch = "wasm32"))]
 pub type SessionResourceCleanup =
-    Arc<dyn Fn(Option<&str>) -> Result<(), DiagnosticErrorInfo> + Send + Sync>;
+    SharedHandle<dyn Fn(Option<&str>) -> Result<(), DiagnosticErrorInfo> + Send + Sync>;
 /// One browser-local fallible cleanup callback.
 #[cfg(target_arch = "wasm32")]
-pub type SessionResourceCleanup = Arc<dyn Fn(Option<&str>) -> Result<(), DiagnosticErrorInfo>>;
+pub type SessionResourceCleanup =
+    SharedHandle<dyn Fn(Option<&str>) -> Result<(), DiagnosticErrorInfo>>;
 
 #[derive(Default)]
 /// Ordered cleanup registrations with monotonically assigned identifiers.
@@ -47,10 +48,9 @@ impl SessionResourceRemoval {
     /// Remove the current registration, including a re-registration of this callback.
     pub fn remove(&self) {
         let removed = with_resources(|resources| {
-            let key = resources
-                .entries
-                .iter()
-                .find_map(|(key, entry)| Arc::ptr_eq(entry, &self.cleanup).then_some(*key));
+            let key = resources.entries.iter().find_map(|(key, entry)| {
+                SharedHandle::ptr_eq(entry, &self.cleanup).then_some(*key)
+            });
             key.and_then(|key| resources.entries.remove(&key))
         });
         drop(removed);
@@ -66,11 +66,11 @@ pub fn register_session_resource_cleanup(
         if !resources
             .entries
             .values()
-            .any(|entry| Arc::ptr_eq(entry, &cleanup))
+            .any(|entry| SharedHandle::ptr_eq(entry, &cleanup))
         {
             let key = resources.next;
             resources.next += 1;
-            resources.entries.insert(key, Arc::clone(&cleanup));
+            resources.entries.insert(key, SharedHandle::clone(&cleanup));
         }
     });
     SessionResourceRemoval { cleanup }
@@ -106,7 +106,7 @@ pub fn cleanup_session_resources(
                 .entries
                 .range((lower, Unbounded))
                 .next()
-                .map(|(key, callback)| (*key, Arc::clone(callback)))
+                .map(|(key, callback)| (*key, SharedHandle::clone(callback)))
         });
         let Some((key, callback)) = next else { break };
         cursor = Some(key);

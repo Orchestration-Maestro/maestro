@@ -223,10 +223,11 @@ async fn run<E: ProviderExecution>(
 fn register_cleanup() {
     static REGISTER: std::sync::Once = std::sync::Once::new();
     REGISTER.call_once(|| {
-        let _removal = crate::register_session_resource_cleanup(Arc::new(|session| {
-            super::close_openai_codex_web_socket_sessions(session);
-            Ok(())
-        }));
+        let _removal =
+            crate::register_session_resource_cleanup(crate::SharedHandle::new(|session| {
+                super::close_openai_codex_web_socket_sessions(session);
+                Ok(())
+            }));
     });
 }
 
