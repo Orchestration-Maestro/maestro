@@ -88,7 +88,7 @@ fn failed_directory_link_publication_cleans_staging_and_retries() {
 #[cfg(windows)]
 #[test]
 fn directory_link_collision_removes_only_source_entry() {
-    if std::env::var_os("MAESTRO_LINK_COLLISION_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         migrate_tools_to_bin(&mut |_, _| panic!("collision is not a move")).unwrap();
         return;
     }
@@ -105,7 +105,7 @@ fn directory_link_collision_removes_only_source_entry() {
     )
     .unwrap()
     .nocapture()
-    .env("MAESTRO_LINK_COLLISION_CHILD", "1")
+    .case("*")
     .env("MAESTRO_CODING_AGENT_DIR", &root)
     .output()
     .unwrap();

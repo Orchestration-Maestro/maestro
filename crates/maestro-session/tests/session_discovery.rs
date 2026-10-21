@@ -159,12 +159,12 @@ fn discovery_missing_timestamp_uses_parsed_entry_time() {
 #[test]
 fn discovery_local_dates_use_native_local_zone() {
     let name = "discovery_local_dates_use_native_local_zone";
-    if std::env::var("MAESTRO_DATE_CHILD").as_deref() != Ok(name) {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .env("TZ", "America/New_York")
-            .env("MAESTRO_DATE_CHILD", name)
+            .case(name)
             .output()
             .unwrap();
         assert!(output.status.success());

@@ -365,7 +365,7 @@ impl maestro_tools::BashOperations for ArtifactPending {
 
 #[test]
 fn bash_artifact_creation_failure_is_reported() {
-    if std::env::var_os("MAESTRO_ARTIFACT_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let dir = TempDir::new();
         let missing = dir.0.join("missing");
         let output = maestro_test_process::TestProcess::current(
@@ -373,7 +373,7 @@ fn bash_artifact_creation_failure_is_reported() {
         )
         .unwrap()
         .nocapture()
-        .env("MAESTRO_ARTIFACT_CHILD", "1")
+        .case("*")
         .env("TMPDIR", &missing)
         .env("TMP", &missing)
         .env("TEMP", &missing)

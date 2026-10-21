@@ -267,7 +267,7 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case("*"),
             cwd,
             envs,
             &[],

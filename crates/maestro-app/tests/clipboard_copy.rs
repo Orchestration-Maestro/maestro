@@ -143,7 +143,7 @@ fn wayland_detection_uses_nonempty_display_or_exact_session_type() {
 #[test]
 fn native_adapter_forwards_launches_without_clipboard_access() {
     use maestro_app::copy_to_clipboard;
-    if std::env::var_os("MAESTRO_CLIPBOARD_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         crate::support::run_io(copy_to_clipboard("a\0é🙂")).unwrap();
         return;
     }
@@ -152,7 +152,7 @@ fn native_adapter_forwards_launches_without_clipboard_access() {
     )
     .unwrap()
     .nocapture()
-    .env("MAESTRO_CLIPBOARD_CHILD", "1")
+    .case("*")
     .env_remove("SSH_CONNECTION")
     .env_remove("SSH_CLIENT")
     .env_remove("MOSH_CONNECTION")

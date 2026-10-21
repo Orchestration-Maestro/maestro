@@ -7,7 +7,7 @@ use maestro_session::session_manager::ReadonlySessionManager;
 
 #[test]
 fn memory_session_starts_with_current_header() {
-    if std::env::var_os("MAESTRO_HISTORY_UTC_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         assert_ne!(chrono::Local::now().offset().local_minus_utc(), 0);
         support::session_history::group("memory_session_starts_with_current_header");
         return;
@@ -16,7 +16,7 @@ fn memory_session_starts_with_current_header() {
         maestro_test_process::TestProcess::current("memory_session_starts_with_current_header")
             .unwrap()
             .nocapture()
-            .env("MAESTRO_HISTORY_UTC_CHILD", "1")
+            .case("*")
             .env("TZ", "America/New_York")
             .output()
             .unwrap();
@@ -116,7 +116,7 @@ struct NativeCase {
 #[test]
 #[cfg(unix)]
 fn explicit_cwd_survives_a_missing_process_directory() {
-    if std::env::var_os("MAESTRO_HISTORY_CWD_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let rows: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("fixtures/session_history.json")).unwrap();
         let selected: Vec<NativeCase> = rows
@@ -156,7 +156,7 @@ fn explicit_cwd_survives_a_missing_process_directory() {
     )
     .unwrap()
     .nocapture()
-    .env("MAESTRO_HISTORY_CWD_CHILD", "1")
+    .case("*")
     .output()
     .unwrap();
     assert!(

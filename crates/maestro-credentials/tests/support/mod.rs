@@ -57,16 +57,13 @@ impl TempDir {
 
 /// Whether this process is a child started by [`run_child`].
 pub fn is_child() -> bool {
-    std::env::var_os("MAESTRO_AUTH_CHILD").is_some()
+    maestro_test_process::selection().is_child()
 }
 
-/// Rerun one test with a cleared environment, inherited profile, supplied edits and cwd.
-pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
-    let command = maestro_test_process::TestProcess::named(test)
-        .unwrap()
+/// Run the configured test process with supplied edits and cwd.
+pub fn run_child(process: maestro_test_process::TestProcess, cwd: &Path, envs: &[(&str, &str)]) {
+    let command = process
         .nocapture()
-        .env_clear()
-        .env("MAESTRO_AUTH_CHILD", "1")
         .envs(envs.iter().copied())
         .current_dir(cwd)
         .stdout(std::process::Stdio::piped())

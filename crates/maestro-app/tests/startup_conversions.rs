@@ -275,7 +275,7 @@ fn relocated_referent(name: &str, alias_first: bool) {
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case("*"),
             root,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -322,7 +322,7 @@ fn relative_session_link_replaces_a_dangling_destination() {
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case("*"),
             scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -378,7 +378,7 @@ fn unchanged_absolute_session_link_moves_by_rename() {
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case("*"),
             scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -533,7 +533,7 @@ fn check_resolution_chain(
         child::probe(
             maestro_test_process::TestProcess::current("session_link_resolution_matrix")
                 .unwrap()
-                .name(),
+                .case("*"),
             scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -605,7 +605,7 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
                 "blocked_intermediate_retry_keeps_migrated_alias_readable",
             )
             .unwrap()
-            .name(),
+            .case("*"),
             scratch.0.path(),
             &[
                 ("STARTUP_OPERATION", "sessions"),

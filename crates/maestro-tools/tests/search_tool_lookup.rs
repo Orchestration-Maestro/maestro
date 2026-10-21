@@ -75,7 +75,7 @@ fn child_root() -> std::path::PathBuf {
 #[test]
 fn binary_directory_entry_wins_before_any_probe() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        if !maestro_test_process::selection().is_child() {
             for mode in ["entries", "dangling"] {
                 let scripts = TempDir::new();
                 probe_scripts(&scripts.0, mode);
@@ -94,7 +94,7 @@ fn binary_directory_entry_wins_before_any_probe() {
         let manager = ToolsManager::new(format!("{}/./", bin.text()), Some(counting_fetch(&calls)));
         let candidate = bin.0.join("fd");
         let mut output = Vec::new();
-        if std::env::var("MAESTRO_READ_CHILD").unwrap() == "dangling" {
+        if maestro_test_process::selection().runs_case("dangling") {
             std::os::unix::fs::symlink("absent", &candidate).unwrap();
             assert_eq!(manager.get_tool_path(SearchTool::Fd).await, None);
             assert_eq!(
@@ -166,7 +166,7 @@ async fn existing_entries(manager: &ToolsManager, bin: &TempDir) {
 #[test]
 fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        if !maestro_test_process::selection().is_child() {
             for mode in ["none", "alias", "failed-fd", "fd", "rg"] {
                 let scripts = TempDir::new();
                 probe_scripts(&scripts.0, mode);
@@ -179,12 +179,15 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
             }
             return;
         }
-        let mode = std::env::var("MAESTRO_READ_CHILD").unwrap();
+        let mode = ["none", "alias", "failed-fd", "fd", "rg"]
+            .into_iter()
+            .find(|mode| maestro_test_process::selection().runs_case(mode))
+            .expect("selected probe mode");
         let root = child_root();
         let bin = TempDir::new();
         let calls = Arc::new(AtomicUsize::new(0));
         let manager = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)));
-        let expected = match mode.as_str() {
+        let expected = match mode {
             "alias" => Some("fdfind"),
             "fd" | "failed-fd" => Some("fd"),
             _ => None,
@@ -216,7 +219,7 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
 #[test]
 fn offline_flag_stops_a_missing_install_with_advice() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        if !maestro_test_process::selection().is_child() {
             let scripts = TempDir::new();
             assert!(!child(
                 "offline_flag_stops_a_missing_install_with_advice",
@@ -239,7 +242,7 @@ fn offline_flag_stops_a_missing_install_with_advice() {
             bin.to_str().unwrap().to_owned(),
             Some(counting_fetch(&calls)),
         );
-        let color = std::env::var("MAESTRO_READ_CHILD").unwrap() == "styled";
+        let color = maestro_test_process::selection().runs_case("styled");
         for (tool, name) in [(SearchTool::Fd, "fd"), (SearchTool::Rg, "ripgrep")] {
             let mut output = Vec::new();
             assert_eq!(
@@ -284,7 +287,7 @@ fn probe_scripts(root: &Path, mode: &str) {
 #[test]
 fn dropping_discovery_kills_the_running_probe() {
     run(async {
-        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        if !maestro_test_process::selection().is_child() {
             let scripts = TempDir::new();
             let source = scripts.file("probe.source", b"#!/usr/bin/python3\nimport os, socket\ns = socket.socket(socket.AF_UNIX)\ns.connect(os.environ['MAESTRO_SEARCH_ROOT'] + '/probe.sock')\ns.sendall(b'ready')\ns.recv(1)\n");
             assert!(

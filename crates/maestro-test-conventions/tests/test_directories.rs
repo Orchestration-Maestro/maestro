@@ -6,8 +6,12 @@ use std::{fs, io};
 
 #[test]
 fn chosen_temporary_parent_is_canonical_and_errors_stay_native() {
-    if let Ok(case) = std::env::var("MAESTRO_DIRECTORY_CHILD") {
-        match case.as_str() {
+    if maestro_test_process::selection().is_child() {
+        let case = ["linked", "missing", "file"]
+            .into_iter()
+            .find(|case| maestro_test_process::selection().runs_case(case))
+            .expect("selected directory case");
+        match case {
             "linked" => {
                 let root = Scratch::new().unwrap();
                 assert_eq!(
@@ -48,7 +52,7 @@ fn chosen_temporary_parent_is_canonical_and_errors_stay_native() {
         let output =
             TestProcess::current("chosen_temporary_parent_is_canonical_and_errors_stay_native")
                 .unwrap()
-                .env("MAESTRO_DIRECTORY_CHILD", case)
+                .case(case)
                 .env("TMPDIR", temporary)
                 .output()
                 .unwrap();

@@ -300,7 +300,9 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
 }
 /// Runs native effects in a fresh process with a private temporary directory and PATH.
 fn isolated(name: &str) -> bool {
-    if std::env::var("MAESTRO_EDITOR_CHILD").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         return false;
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -308,7 +310,7 @@ fn isolated(name: &str) -> bool {
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .nocapture()
-        .env("MAESTRO_EDITOR_CHILD", name)
+        .case(name)
         .env("TMPDIR", directory)
         .env("TEMP", directory)
         .env("TMP", directory)

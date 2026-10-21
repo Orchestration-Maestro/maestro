@@ -123,12 +123,12 @@ struct Effects {
 
 /// Replays all cases belonging to one named public witness in isolated zones.
 pub fn group(name: &str) {
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             subprocess::run_child(
                 maestro_test_process::TestProcess::current(name)
                     .unwrap()
-                    .name(),
+                    .case("*"),
                 &[("TZ", Some(tz))],
             );
         }

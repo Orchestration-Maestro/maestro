@@ -43,8 +43,12 @@ fn child(mode: &str) {
 }
 /// Actual default opener with argv capture, release handshake and silent startup failure.
 pub fn launch() {
-    if let Ok(mode) = std::env::var("MAESTRO_BROWSER_CHILD") {
-        child(&mode);
+    if maestro_test_process::selection().is_child() {
+        let mode = ["open", "explorer.exe", "xdg-open", "missing"]
+            .into_iter()
+            .find(|mode| maestro_test_process::selection().runs_case(mode))
+            .expect("selected native mode");
+        child(mode);
         return;
     }
     let scratch = crate::live::Scratch::new();
@@ -70,7 +74,7 @@ pub fn launch() {
         )
         .unwrap()
         .nocapture()
-        .env("MAESTRO_BROWSER_CHILD", program)
+        .case(program)
         .env(
             "MAESTRO_BROWSER_PORT",
             listener.local_addr().unwrap().port().to_string(),

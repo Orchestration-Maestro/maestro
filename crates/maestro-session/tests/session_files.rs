@@ -143,7 +143,7 @@ fn continuation_probe_is_raw_first_line_with_a_512_byte_bound() {
 
 #[test]
 fn default_directory_encodes_authored_cwd_before_joining() {
-    if std::env::var_os("MAESTRO_DIRECTORY_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let directory = Directory::new();
         let output = maestro_test_process::TestProcess::current(
             "default_directory_encodes_authored_cwd_before_joining",
@@ -151,7 +151,7 @@ fn default_directory_encodes_authored_cwd_before_joining() {
         .unwrap()
         .nocapture()
         .current_dir(&directory.path)
-        .env("MAESTRO_DIRECTORY_CHILD", "1")
+        .case("*")
         .output()
         .unwrap();
         assert!(
@@ -768,14 +768,14 @@ fn jsonl_uses_compact_finite_number_spelling() {
 #[cfg(unix)]
 /// Run one named test in a disposable removed working directory child.
 fn removed_cwd_child(name: &str) -> bool {
-    if std::env::var_os("MAESTRO_REMOVED_CWD_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         return true;
     }
     let directory = Directory::new();
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .nocapture()
-        .env("MAESTRO_REMOVED_CWD_CHILD", "1")
+        .case("*")
         .env("MAESTRO_REMOVED_CWD_PARENT", directory.text())
         .output()
         .unwrap();

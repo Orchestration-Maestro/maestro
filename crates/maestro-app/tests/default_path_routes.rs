@@ -263,7 +263,6 @@ fn child_case(name: &str, group: Group, index: usize) {
     let mut envs = vec![
         ("HOME".to_owned(), home),
         ("MAESTRO_DEFAULT_ROOT".into(), root.into()),
-        ("MAESTRO_DEFAULT_CASE".into(), index.to_string()),
     ];
     if group == Group::PackageAndBinaryPathsReachRealFiles {
         let input: PackageInput = fixture::instantiate(&row.input, root, "");
@@ -286,7 +285,7 @@ fn child_case(name: &str, group: Group, index: usize) {
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case(index.to_string()),
             scratch.0.path(),
             &refs,
             fixture::REMOVED
@@ -296,10 +295,17 @@ fn child_case(name: &str, group: Group, index: usize) {
 }
 /// Exercise removal from an outer child with competing environment overrides.
 fn qualify(name: &str, group: Group) {
-    if let Ok(index) = std::env::var("MAESTRO_DEFAULT_CASE") {
+    if maestro_test_process::selection().is_child()
+        && !maestro_test_process::selection().runs_case("outer")
+    {
         let root = std::env::var("MAESTRO_DEFAULT_ROOT").unwrap();
         let rows = fixture::cases::<Value, Value>(group);
-        let row = &rows[index.parse::<usize>().unwrap()];
+        let row = rows
+            .iter()
+            .enumerate()
+            .find(|(index, _)| maestro_test_process::selection().runs_case(&index.to_string()))
+            .map(|(_, row)| row)
+            .expect("selected route row");
         if group == Group::PackageAndBinaryPathsReachRealFiles {
             package(&row.input, &row.expected, &root);
         } else {
@@ -321,7 +327,7 @@ fn qualify(name: &str, group: Group) {
             child::probe(
                 maestro_test_process::TestProcess::current(name)
                     .unwrap()
-                    .name(),
+                    .case("outer"),
                 scratch.0.path(),
                 &[
                     ("MAESTRO_DEFAULT_OUTER", "1"),

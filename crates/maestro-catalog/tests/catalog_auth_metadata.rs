@@ -230,12 +230,12 @@ fn available_models_keep_order_duplicates_and_shared_descriptors() {
 }
 #[test]
 fn display_table_mutations_are_shared_between_registries() {
-    if std::env::var_os("MAESTRO_DISPLAY_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(
             "display_table_mutations_are_shared_between_registries",
         )
         .unwrap()
-        .env("MAESTRO_DISPLAY_CHILD", "1")
+        .case("*")
         .output()
         .unwrap();
         assert!(output.status.success(), "display subprocess failed");
@@ -383,12 +383,12 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
 /// Isolated native environment metadata keeps the lower-layer configured flag.
 fn metadata_known_environment() {
     // The child runs only the metadata test with a controlled environment.
-    if std::env::var_os("MAESTRO_METADATA_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(
             "metadata_preserves_sources_without_helper_or_refresh_effects",
         )
         .unwrap()
-        .env("MAESTRO_METADATA_CHILD", "1")
+        .case("*")
         .env("OPENAI_API_KEY", "ambient-key")
         .output()
         .unwrap();

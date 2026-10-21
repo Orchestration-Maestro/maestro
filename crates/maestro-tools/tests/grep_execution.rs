@@ -124,7 +124,7 @@ fn grep_count_byte_and_clip_notices_keep_order() {
 #[test]
 fn grep_failures_keep_acquisition_path_and_exit_precedence() {
     use crate::{grep_support as g, read_support};
-    if std::env::var_os("MAESTRO_READ_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let root = read_support::TempDir::new();
         let case = g::cases("grep_failures_keep_acquisition_path_and_exit_precedence")
             .into_iter()
@@ -329,7 +329,7 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
 fn grep_cancellation_drops_pending_operations() {
     use crate::{grep_support as g, read_support};
     use maestro_models::Cancellation;
-    if std::env::var_os("MAESTRO_READ_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         cancel_pending_acquisition();
         return;
     }

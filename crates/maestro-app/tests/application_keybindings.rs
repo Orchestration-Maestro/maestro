@@ -373,19 +373,18 @@ fn file_loading_follows_native_symlinks_without_rewriting_the_target() {
 }
 
 fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
-    if std::env::var("MAESTRO_KEYS_CHILD").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         run(&std::env::current_dir().unwrap());
     } else {
         let dir = child::Scratch::new();
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case(name),
             dir.0.path(),
-            &[
-                ("MAESTRO_KEYS_CHILD", name),
-                ("MAESTRO_CODING_AGENT_DIR", "decoy"),
-            ],
+            &[("MAESTRO_CODING_AGENT_DIR", "decoy")],
             &[],
         );
     }

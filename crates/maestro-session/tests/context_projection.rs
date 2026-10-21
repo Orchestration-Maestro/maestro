@@ -211,12 +211,12 @@ fn projected_context_reaches_the_shared_converter() {
 #[test]
 fn context_timestamps_use_local_time_only_for_offsetless_datetimes() {
     let name = "context_timestamps_use_local_time_only_for_offsetless_datetimes";
-    if std::env::var("MAESTRO_CONTEXT_DATE_CHILD").as_deref() != Ok(name) {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .env("TZ", "America/New_York")
-            .env("MAESTRO_CONTEXT_DATE_CHILD", name)
+            .case(name)
             .output()
             .unwrap();
         assert!(

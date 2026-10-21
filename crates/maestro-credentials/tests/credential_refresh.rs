@@ -388,7 +388,12 @@ mod tests {
         }
         let dir = TempDir::new("refresh-failures");
         run_child(
-            "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
+            maestro_test_process::TestProcess::named(
+                "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
+            )
+            .unwrap()
+            .env_clear()
+            .case("*"),
             dir.root(),
             &[("OPENAI_API_KEY", "env-key")],
         );

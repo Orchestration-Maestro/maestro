@@ -388,8 +388,8 @@ pub fn isolated(test: &str, mode: &str, envs: &[(&str, Option<&str>)]) -> bool {
 ///
 /// The parent also checks that the selected child test ran and passed.
 pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsStr>)]) -> bool {
-    if let Ok(current) = std::env::var("MAESTRO_READ_CHILD") {
-        return current == mode;
+    if maestro_test_process::selection().is_child() {
+        return maestro_test_process::selection().runs_case(mode);
     }
     isolated_os_output(test, mode, envs);
     false
@@ -404,7 +404,7 @@ pub fn isolated_os_output(
     let mut command = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .nocapture()
-        .env("MAESTRO_READ_CHILD", mode);
+        .case(mode);
     for (key, value) in envs {
         command = match value {
             Some(value) => command.env(key, value),

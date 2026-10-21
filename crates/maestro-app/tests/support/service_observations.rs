@@ -179,15 +179,17 @@ use crate::child;
 /// Panics when fixture data or controlled observations violate the test contract.
 #[must_use]
 pub fn isolated(name: &str) -> bool {
-    if std::env::var("MAESTRO_SERVICE_PROBE").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         return false;
     }
     child::probe(
         maestro_test_process::TestProcess::current(name)
             .unwrap()
-            .name(),
+            .case(name),
         &std::env::current_dir().unwrap(),
-        &[("MAESTRO_SERVICE_PROBE", name)],
+        &[],
         FLAGS,
     );
     true
@@ -200,13 +202,20 @@ pub fn isolated(name: &str) -> bool {
 #[must_use]
 pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<Case> {
     let cases = cases(group);
-    if let Ok(index) = std::env::var("MAESTRO_SERVICE_CASE") {
-        return Some(cases.into_iter().nth(index.parse().unwrap()).unwrap());
+    if maestro_test_process::selection().is_child() {
+        return Some(
+            cases
+                .into_iter()
+                .enumerate()
+                .find(|(index, _)| maestro_test_process::selection().runs_case(&index.to_string()))
+                .expect("selected service row")
+                .1,
+        );
     }
     for &index in indices {
         let case = &cases[index];
         let index = index.to_string();
-        let mut envs = vec![("MAESTRO_SERVICE_CASE", index.as_str())];
+        let mut envs = Vec::new();
         if let Some(flag) = case.input["flag"].as_str()
             && let Some(value) = case.input["value"].as_str()
         {
@@ -220,7 +229,7 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
         child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case(&index),
             &std::env::current_dir().unwrap(),
             &envs,
             FLAGS,
@@ -237,7 +246,7 @@ pub fn native_probe(name: &str, envs: &[(&str, &str)], removed: &[&str]) {
     child::probe(
         maestro_test_process::TestProcess::current(name)
             .unwrap()
-            .name(),
+            .case(name),
         &std::env::current_dir().unwrap(),
         envs,
         removed,

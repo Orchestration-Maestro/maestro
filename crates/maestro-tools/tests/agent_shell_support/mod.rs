@@ -588,11 +588,11 @@ pub fn environment_sequence() {
         .into_iter()
         .find(|value| value["id"] == "fresh_spawn_context_per_call")
         .unwrap();
-    if std::env::var_os("MAESTRO_SHELL_SEQUENCE_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(SEQUENCE_TEST)
             .unwrap()
             .nocapture()
-            .env("MAESTRO_SHELL_SEQUENCE_CHILD", "1")
+            .case("*")
             .env_remove("ADDED")
             .envs(
                 sequence["input"]["env"]

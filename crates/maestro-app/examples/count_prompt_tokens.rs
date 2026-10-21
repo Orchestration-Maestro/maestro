@@ -380,7 +380,7 @@ mod tests {
     /// Invokes the real entry point with isolated absent and empty key observations.
     #[test]
     fn token_measurement_requires_an_environment_key() {
-        if std::env::var_os("MAESTRO_COUNT_ENTRY_CHILD").is_some() {
+        if maestro_test_process::selection().is_child() {
             std::process::exit(i32::from(main().unwrap() == ExitCode::FAILURE));
         }
         for name in ["missing_key", "empty_key"] {
@@ -396,7 +396,7 @@ mod tests {
             .unwrap();
             command = command
                 .nocapture()
-                .env("MAESTRO_COUNT_ENTRY_CHILD", "1")
+                .case("*")
                 .env("LC_ALL", &case.input.locale)
                 .env("LANG", &case.input.locale)
                 .env("LC_MESSAGES", &case.input.locale)

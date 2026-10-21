@@ -212,7 +212,7 @@ fn native_git_observations(args: &[String]) {
                 "footer_symbolic_lookup_uses_exact_command_and_fallback",
             )
             .unwrap()
-            .name(),
+            .case("*"),
             Path::new(scratch.0.path()),
             &[
                 ("FOOTER_PROBE_REPO", &repo),
@@ -1128,7 +1128,7 @@ fn native_ambient_lines() -> Vec<String> {
     probe(
         maestro_test_process::TestProcess::current(AMBIENT)
             .unwrap()
-            .name(),
+            .case("*"),
         Path::new(&scratch.join("gone")),
         &[("FOOTER_PROBE_AMBIENT", &root)],
         &[],

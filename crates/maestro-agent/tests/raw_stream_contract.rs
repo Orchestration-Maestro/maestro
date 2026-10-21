@@ -438,7 +438,7 @@ fn maestro_wrapper_uses_registered_default_stream() {
 /// Rejections retain their prefix and remain unsettled, with one native diagnostic.
 #[test]
 fn maestro_raw_failure_reports_without_finishing_stream() {
-    if std::env::var_os("MAESTRO_RAW_FAILURE_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         failure_child();
         return;
     }
@@ -447,7 +447,7 @@ fn maestro_raw_failure_reports_without_finishing_stream() {
     )
     .unwrap()
     .nocapture()
-    .env("MAESTRO_RAW_FAILURE_CHILD", "1")
+    .case("*")
     .output()
     .unwrap();
     assert!(output.status.success());
