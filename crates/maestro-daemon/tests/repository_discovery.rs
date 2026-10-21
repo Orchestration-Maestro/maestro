@@ -323,3 +323,53 @@ fn repository_native_links_keep_unicode_trim_and_stop_at_missing_head() {
     );
     std::fs::remove_dir_all(scratch).unwrap();
 }
+
+#[cfg(unix)]
+#[test]
+fn repository_reftable_queries_use_native_process_owner() {
+    use std::os::unix::fs::PermissionsExt;
+    const NAME: &str = "repository_reftable_queries_use_native_process_owner";
+    if let Some(root) = std::env::var_os("MAESTRO_REFTABLE_PROBE") {
+        let root = PathBuf::from(root);
+        assert_eq!(git_branch(&root).as_deref(), Some("topic"));
+        assert_eq!(
+            git_rev_parse_verify(&root, "HEAD").as_deref(),
+            Some("0123456789abcdef")
+        );
+        assert_eq!(git_rev_parse_verify(&root, "missing"), None);
+        return;
+    }
+    let root = temp_test_dir("reftable-query");
+    std::fs::create_dir(root.join(".git")).unwrap();
+    std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/.invalid\n").unwrap();
+    std::fs::write(
+        root.join(".git/config"),
+        "[extensions]\nrefStorage = RefTable # selected storage\n",
+    )
+    .unwrap();
+    std::fs::create_dir(root.join("bin")).unwrap();
+    let executable = root.join("bin/git");
+    std::fs::write(
+        &executable,
+        r#"#!/bin/sh
+[ "$1" = -C ] && [ "$2" = "$MAESTRO_REFTABLE_PROBE" ] || exit 2
+shift 2
+case "$*" in
+  'symbolic-ref --quiet --short HEAD') printf ' topic\n';;
+  'rev-parse --verify HEAD') printf ' 0123456789abcdef\n';;
+  'rev-parse --verify missing') printf 'discard this output\n'; exit 1;;
+  *) exit 2;;
+esac
+"#,
+    )
+    .unwrap();
+    std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let output = maestro_test_process::TestProcess::current(NAME)
+        .unwrap()
+        .env("MAESTRO_REFTABLE_PROBE", &root)
+        .env("PATH", root.join("bin"))
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    std::fs::remove_dir_all(root).unwrap();
+}
