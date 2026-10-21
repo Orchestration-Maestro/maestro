@@ -5,16 +5,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Preparing artifact...",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -48,16 +39,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Preparing artifact...",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -91,18 +73,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Processing artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -110,16 +81,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Preparing artifact...",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -153,16 +115,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Preparing artifact...",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -196,18 +149,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Processing artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -216,16 +158,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Preparing artifact...",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -260,16 +193,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -304,18 +228,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Processing artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -324,16 +237,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Preparing artifact...",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -368,16 +272,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -412,18 +307,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Processing artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -435,16 +319,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processing artifact",
-        "pill": "a.rs",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -482,16 +357,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": "a.rs",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -529,18 +395,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Processing artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -552,16 +407,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Processing artifact",
-        "pill": "a.rs",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -599,16 +445,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": "a.rs",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -646,18 +483,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Processing artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -672,22 +498,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -728,27 +539,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -789,27 +580,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -824,22 +595,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -880,27 +636,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -941,27 +677,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -976,22 +692,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1032,27 +733,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1093,27 +774,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1128,22 +789,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1184,27 +830,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1245,27 +871,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "<b>雪</b>",
-            "language": "html",
-            "decoded": "<b>雪</b>"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1280,33 +886,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          },
-          {
-            "text": "- b",
-            "kind": "removed"
-          },
-          {
-            "text": "+ c",
-            "kind": "added"
-          },
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -1347,38 +927,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          },
-          {
-            "text": "- b",
-            "kind": "removed"
-          },
-          {
-            "text": "+ c",
-            "kind": "added"
-          },
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -1419,38 +968,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          },
-          {
-            "text": "- b",
-            "kind": "removed"
-          },
-          {
-            "text": "+ c",
-            "kind": "added"
-          },
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -1465,33 +983,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          },
-          {
-            "text": "- b",
-            "kind": "removed"
-          },
-          {
-            "text": "+ c",
-            "kind": "added"
-          },
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -1532,38 +1024,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          },
-          {
-            "text": "- b",
-            "kind": "removed"
-          },
-          {
-            "text": "+ c",
-            "kind": "added"
-          },
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -1604,38 +1065,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          },
-          {
-            "text": "- b",
-            "kind": "removed"
-          },
-          {
-            "text": "+ c",
-            "kind": "added"
-          },
-          {
-            "text": "  a",
-            "kind": "unchanged"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -1650,16 +1080,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Getting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1700,22 +1121,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "last\nfirst\nlast",
-            "language": "html",
-            "decoded": "last\nfirst\nlast"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1756,18 +1162,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1782,16 +1177,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Getting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1832,22 +1218,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "last\nfirst\nlast",
-            "language": "html",
-            "decoded": "last\nfirst\nlast"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1888,18 +1259,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1914,16 +1274,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Getting logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -1964,21 +1315,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2019,18 +1356,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2045,16 +1371,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Getting logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2095,21 +1412,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2150,18 +1453,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2176,16 +1468,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleting artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2226,16 +1509,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2276,18 +1550,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2302,16 +1565,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "inprogress",
-        "caption": "Deleting artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2352,16 +1606,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2402,18 +1647,7 @@
         "isStreaming": true
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     }
   ],
@@ -2438,22 +1672,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2482,16 +1701,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2519,22 +1729,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2566,21 +1761,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2621,27 +1802,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2669,21 +1830,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2711,27 +1858,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2759,21 +1886,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2796,27 +1909,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2845,21 +1938,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2887,27 +1966,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2939,21 +1998,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -2994,27 +2039,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3042,21 +2067,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3084,27 +2095,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3132,21 +2123,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3169,22 +2146,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3213,16 +2175,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3250,22 +2203,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3297,16 +2235,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3347,22 +2276,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3390,16 +2304,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3427,22 +2332,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3470,16 +2360,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3502,24 +2383,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3548,18 +2412,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3587,24 +2440,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3636,18 +2472,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3688,24 +2513,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3733,18 +2541,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3772,24 +2569,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3817,18 +2597,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3851,22 +2620,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3895,16 +2649,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3932,22 +2677,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -3979,16 +2709,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4029,22 +2750,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4072,16 +2778,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4109,22 +2806,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4152,16 +2834,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4184,24 +2857,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4230,18 +2886,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4269,24 +2914,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4318,18 +2946,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4370,24 +2987,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4415,18 +3015,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4454,24 +3043,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4499,18 +3071,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4533,22 +3094,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4577,16 +3123,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4614,22 +3151,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4661,21 +3183,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4716,27 +3224,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4764,21 +3252,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4806,27 +3280,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4854,21 +3308,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4891,27 +3331,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4940,21 +3360,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -4982,27 +3388,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5034,21 +3420,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5089,27 +3461,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5137,21 +3489,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5179,27 +3517,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5227,21 +3545,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5264,22 +3568,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5308,16 +3597,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5345,22 +3625,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5392,16 +3657,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5442,22 +3698,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5485,16 +3726,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5522,22 +3754,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5565,16 +3782,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5597,24 +3805,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5643,18 +3834,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5682,24 +3862,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5731,18 +3894,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5783,24 +3935,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5828,18 +3963,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5867,24 +3991,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5912,18 +4019,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5946,22 +4042,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -5990,16 +4071,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6027,22 +4099,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6074,16 +4131,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6124,22 +4172,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6167,16 +4200,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6204,22 +4228,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6247,16 +4256,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6279,24 +4279,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6325,18 +4308,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6364,24 +4336,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6413,18 +4368,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6465,24 +4409,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6510,18 +4437,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6549,24 +4465,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "text",
-            "decoded": "literal"
-          }
-        ],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6594,18 +4493,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -6628,21 +4516,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6671,21 +4545,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6713,21 +4573,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6759,26 +4605,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6819,26 +4646,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6866,26 +4674,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6913,26 +4702,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -6960,26 +4730,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7002,26 +4753,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7050,26 +4782,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7097,26 +4810,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "An error occurred",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7148,26 +4842,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7208,26 +4883,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7255,26 +4911,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7302,26 +4939,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7349,26 +4967,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7391,21 +4990,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7434,21 +5019,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7476,21 +5047,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7522,21 +5079,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7577,21 +5120,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7619,21 +5148,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7661,21 +5176,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7703,21 +5204,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7740,23 +5227,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7785,23 +5256,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7829,23 +5284,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7877,23 +5316,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7934,23 +5357,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -7978,23 +5385,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8022,23 +5413,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8066,23 +5441,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8105,21 +5464,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8148,21 +5493,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8190,21 +5521,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8236,21 +5553,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8291,21 +5594,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8333,21 +5622,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8375,21 +5650,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8417,21 +5678,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8454,23 +5701,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8499,23 +5730,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8543,23 +5758,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8591,23 +5790,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8648,23 +5831,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8692,23 +5859,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8736,23 +5887,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8780,23 +5915,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -8819,22 +5938,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "html",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -8863,22 +5967,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "html",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -8906,22 +5995,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "html",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -8953,22 +6027,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "\n",
-            "language": "html",
-            "decoded": "\n"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9009,22 +6068,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "last\nfirst\nlast",
-            "language": "html",
-            "decoded": "last\nfirst\nlast"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9052,22 +6096,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "YWJj",
-            "language": "html",
-            "decoded": "YWJj"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9095,22 +6124,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": " {\"z\":1,\"a\":2} ",
-            "language": "html",
-            "decoded": " {\"z\":1,\"a\":2} "
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9138,22 +6152,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": " \t\r\n<&>雪﻿",
-            "language": "html",
-            "decoded": " \t\r\n<&>雪﻿"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9176,18 +6175,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9216,18 +6204,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9255,18 +6232,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9298,18 +6264,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9350,18 +6305,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9389,18 +6333,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9428,18 +6361,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9467,18 +6389,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9501,22 +6412,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "html",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9545,22 +6441,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "html",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9588,22 +6469,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "html",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9635,22 +6501,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "\n",
-            "language": "html",
-            "decoded": "\n"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9691,22 +6542,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "last\nfirst\nlast",
-            "language": "html",
-            "decoded": "last\nfirst\nlast"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9734,22 +6570,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "YWJj",
-            "language": "html",
-            "decoded": "YWJj"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9777,22 +6598,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": " {\"z\":1,\"a\":2} ",
-            "language": "html",
-            "decoded": " {\"z\":1,\"a\":2} "
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9820,22 +6626,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": " \t\r\n<&>雪﻿",
-            "language": "html",
-            "decoded": " \t\r\n<&>雪﻿"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9858,18 +6649,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9898,18 +6678,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9937,18 +6706,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -9980,18 +6738,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10032,18 +6779,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10071,18 +6807,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10110,18 +6835,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10149,18 +6863,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10183,22 +6886,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "text",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10227,22 +6915,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "text",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10270,22 +6943,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "(no output)",
-            "language": "text",
-            "decoded": "(no output)"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10317,22 +6975,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "\n",
-            "language": "text",
-            "decoded": "\n"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10373,22 +7016,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "last\nfirst\nlast",
-            "language": "text",
-            "decoded": "last\nfirst\nlast"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10416,22 +7044,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "YWJj",
-            "language": "text",
-            "decoded": "YWJj"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10459,22 +7072,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": " {\"z\":1,\"a\":2} ",
-            "language": "text",
-            "decoded": " {\"z\":1,\"a\":2} "
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10502,22 +7100,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": " \t\r\n<&>雪﻿",
-            "language": "text",
-            "decoded": " \t\r\n<&>雪﻿"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10540,18 +7123,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10580,18 +7152,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10619,18 +7180,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10662,18 +7212,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10714,18 +7253,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10753,18 +7281,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10792,18 +7309,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10831,18 +7337,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10865,21 +7360,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10908,21 +7389,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10950,21 +7417,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -10996,21 +7449,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11051,21 +7490,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11093,21 +7518,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11135,21 +7546,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11177,21 +7574,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11214,18 +7597,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11254,18 +7626,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11293,18 +7654,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11336,18 +7686,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11388,18 +7727,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11427,18 +7755,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11466,18 +7783,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11505,18 +7811,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11539,21 +7834,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11582,21 +7863,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11624,21 +7891,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11670,21 +7923,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11725,21 +7964,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11767,21 +7992,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11809,21 +8020,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11851,21 +8048,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.HTML",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11888,18 +8071,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11928,18 +8100,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -11967,18 +8128,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12010,18 +8160,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12062,18 +8201,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12101,18 +8229,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12140,18 +8257,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12179,18 +8285,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12213,21 +8308,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12256,21 +8337,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12298,21 +8365,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "(no output)",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12344,21 +8397,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "\n",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12399,21 +8438,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "last\nfirst\nlast",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12441,21 +8466,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "YWJj",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12483,21 +8494,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " {\"z\":1,\"a\":2} ",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12525,21 +8522,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "a.html.txt",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": " \t\r\n<&>雪﻿",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12562,18 +8545,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12602,18 +8574,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12641,18 +8602,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12684,18 +8634,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12736,18 +8675,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12775,18 +8703,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12814,18 +8731,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12853,18 +8759,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting logs",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12887,16 +8782,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12925,16 +8811,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -12962,16 +8839,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13003,16 +8871,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13053,16 +8912,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13090,16 +8940,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13127,16 +8968,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13164,16 +8996,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13196,18 +9019,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13236,18 +9048,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13275,18 +9076,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13318,18 +9108,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13370,18 +9149,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13409,18 +9177,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13448,18 +9205,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13487,18 +9233,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13521,16 +9256,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13559,16 +9285,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13596,16 +9313,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13637,16 +9345,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13687,16 +9386,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13724,16 +9414,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13761,16 +9442,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13798,16 +9470,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.HTML",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13830,18 +9493,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13870,18 +9522,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13909,18 +9550,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -13952,18 +9582,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14004,18 +9623,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14043,18 +9651,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14082,18 +9679,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14121,18 +9707,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14155,16 +9730,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14193,16 +9759,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14230,16 +9787,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14271,16 +9819,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14321,16 +9860,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14358,16 +9888,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14395,16 +9916,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14432,16 +9944,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "a.html.txt",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14464,18 +9967,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14504,18 +9996,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14543,18 +10024,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14586,18 +10056,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "\n"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14638,18 +10097,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "last\nfirst\nlast"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14677,18 +10125,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "YWJj"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14716,18 +10153,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " {\"z\":1,\"a\":2} "
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14755,18 +10181,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Deleting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          " \t\r\n<&>雪﻿"
-        ],
-        "diff": []
+        "isCustom": false
       }
     }
   ],
@@ -14793,22 +10208,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "x",
-            "language": "text",
-            "decoded": "x"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14834,22 +10234,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "x",
-            "language": "text",
-            "decoded": "x"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14875,22 +10260,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Created artifact",
-        "pill": "<&> 雪.py",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "x",
-            "language": "python",
-            "decoded": "x"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14915,22 +10285,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "x",
-            "language": "text",
-            "decoded": "x"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14956,22 +10311,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "x",
-            "language": "text",
-            "decoded": "x"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -14997,22 +10337,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Rewrote artifact",
-        "pill": "<&> 雪.py",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "x",
-            "language": "python",
-            "decoded": "x"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15037,16 +10362,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15072,16 +10388,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15107,16 +10414,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "<&> 雪.py",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15141,22 +10439,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "R",
-            "language": "text",
-            "decoded": "R"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15182,22 +10465,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "R",
-            "language": "text",
-            "decoded": "R"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15223,22 +10491,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got artifact",
-        "pill": "<&> 雪.py",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "R",
-            "language": "python",
-            "decoded": "R"
-          }
-        ],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15263,21 +10516,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "R",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15303,21 +10542,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": null,
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "R",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15343,21 +10568,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Got logs",
-        "pill": "<&> 雪.py",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [
-          {
-            "content": "R",
-            "variant": "default"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15382,16 +10593,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15417,16 +10619,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15452,16 +10645,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Deleted artifact",
-        "pill": "<&> 雪.py",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15486,16 +10670,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15521,16 +10696,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15556,16 +10722,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Processed artifact",
-        "pill": "<&> 雪.py",
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     }
   ],
@@ -15579,16 +10736,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15608,16 +10756,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15637,18 +10776,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15661,16 +10789,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15691,16 +10810,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15721,18 +10831,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15745,16 +10844,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15775,21 +10865,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -15810,18 +10886,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15834,16 +10899,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15864,16 +10920,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15894,18 +10941,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15919,16 +10955,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15950,16 +10977,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -15981,18 +10999,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -16006,21 +11013,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16042,21 +11035,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16078,23 +11057,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16107,16 +11070,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -16137,21 +11091,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16172,18 +11112,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": []
+        "isCustom": false
       }
     },
     {
@@ -16197,21 +11126,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16233,21 +11148,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16269,23 +11170,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16299,25 +11184,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          },
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16339,25 +11206,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "complete",
-        "caption": "Updated artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          },
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     },
     {
@@ -16379,27 +11228,7 @@
         "isStreaming": false
       },
       "expected": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Updating artifact",
-        "pill": "a.rs",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [],
-        "console": [],
-        "errors": [
-          "An error occurred"
-        ],
-        "diff": [
-          {
-            "text": "- same",
-            "kind": "removed"
-          },
-          {
-            "text": "+ next",
-            "kind": "added"
-          }
-        ]
+        "isCustom": false
       }
     }
   ]

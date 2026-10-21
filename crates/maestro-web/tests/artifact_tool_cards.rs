@@ -46,7 +46,7 @@ fn assert_preparation(name: &str, count: usize) {
     let rows = crate::artifact_card_support::rows(name);
     assert_eq!(rows.len(), count);
     for (index, row) in rows.into_iter().enumerate() {
-        let recipe = crate::artifact_card_support::prepare(&row).unwrap();
+        let recipe = crate::artifact_card_support::prepare(&row.input).unwrap();
         assert_eq!(recipe.is_custom, row.expected.is_custom, "row {index}");
     }
 }
@@ -83,6 +83,16 @@ fn artifact_update_distinguishes_absent_and_empty_replacements() {
 fn artifact_languages_keep_literal_suffix_rules() {
     use crate::artifact_card_support as cards;
     use serde_json::json;
+    let valid: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/artifact_languages.json")).unwrap();
+    crate::support::strict_record::<crate::artifact_card_support::Language>(&valid[0], &["input"]);
+    crate::support::strict_record::<crate::artifact_card_support::Filename>(
+        &valid[0]["input"],
+        &[],
+    );
+    let mut sibling = valid[0].clone();
+    sibling["expected"] = "browser language".into();
+    assert!(serde_json::from_value::<crate::artifact_card_support::Language>(sibling).is_err());
     let languages = cards::languages();
     assert_eq!(languages.len(), 77);
     for row in languages {
@@ -119,8 +129,7 @@ fn artifact_fields_are_read_only_by_the_reached_branch() {
             !cards::value(Some(&row.input.params), &row.input.phase)
                 .unwrap()
                 .is_custom,
-            "{} {}",
-            row.input.kind,
+            "{}",
             row.input.phase
         );
     }
@@ -139,6 +148,30 @@ fn artifact_fields_are_read_only_by_the_reached_branch() {
 
 fn assert_unused_diffs() {
     use crate::artifact_card_support::{self as cards, Branch};
+    use crate::support::strict_record;
+    let valid: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/artifact_unused_diff.json")).unwrap();
+    strict_record::<crate::artifact_card_support::UnusedDiff>(&valid[0], &["input", "expected"]);
+    strict_record::<crate::support::tool_input::Input>(&valid[0]["input"], &["isStreaming"]);
+    strict_record::<crate::artifact_card_support::Branch>(
+        &valid[0]["expected"],
+        &["branch", "card"],
+    );
+    strict_record::<crate::artifact_card_support::Branch>(
+        &valid[2]["expected"],
+        &["branch", "kind"],
+    );
+    strict_record::<crate::artifact_card_support::Expected>(
+        &valid[0]["expected"]["card"],
+        &["isCustom"],
+    );
+    let mut wrong = valid[0]["expected"].clone();
+    wrong["branch"] = "unknown".into();
+    assert!(serde_json::from_value::<crate::artifact_card_support::Branch>(wrong).is_err());
+    let mut sibling = valid[0]["expected"]["card"].clone();
+    sibling["caption"] = "browser caption".into();
+    assert!(serde_json::from_value::<crate::artifact_card_support::Expected>(sibling).is_err());
+
     for row in cards::unused_diffs() {
         let actual = maestro_web::ToolRenderer::render(
             &maestro_web::ArtifactsToolRenderer::new(None),

@@ -1,0 +1,106 @@
+{
+  "download": [
+    {
+      "input": {
+        "kind": "bytes",
+        "bytes": [
+          0,
+          1,
+          255
+        ],
+        "filename": "literal\"[x].zip",
+        "mimeType": "text/plain"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          255
+        ],
+        "mime": "text/plain"
+      }
+    },
+    {
+      "input": {
+        "kind": "slice",
+        "bytes": [
+          77,
+          1,
+          2,
+          88
+        ],
+        "start": 1,
+        "end": 3,
+        "filename": "literal\"[x].zip",
+        "mimeType": "text/plain"
+      },
+      "output": {
+        "bytes": [
+          1,
+          2
+        ],
+        "mime": "text/plain"
+      }
+    },
+    {
+      "input": {
+        "kind": "bytes",
+        "bytes": [],
+        "mimeType": "application/octet-stream",
+        "filename": ""
+      },
+      "output": {
+        "bytes": [],
+        "mime": "application/octet-stream"
+      }
+    },
+    {
+      "input": {
+        "kind": "bytes",
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ],
+        "mimeType": "application/zip",
+        "filename": "a.md.zip"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ],
+        "mime": "application/zip"
+      }
+    },
+    {
+      "input": {
+        "kind": "slice",
+        "bytes": [
+          77,
+          1,
+          2,
+          88
+        ],
+        "start": 1,
+        "end": 3,
+        "mimeType": "application/octet-stream",
+        "filename": " <script>雪 & \"quotes\"</script>.zip"
+      },
+      "output": {
+        "bytes": [
+          1,
+          2
+        ],
+        "mime": "application/octet-stream"
+      }
+    }
+  ]
+}

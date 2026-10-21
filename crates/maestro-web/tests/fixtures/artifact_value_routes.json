@@ -4,16 +4,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -21,16 +12,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -38,18 +20,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -58,16 +29,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -76,16 +38,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -94,18 +47,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -114,16 +56,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -132,16 +65,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -150,18 +74,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -170,16 +83,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -188,16 +92,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -206,18 +101,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -226,16 +110,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -244,16 +119,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -262,18 +128,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -282,16 +137,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -300,16 +146,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -318,18 +155,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -338,16 +164,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -356,16 +173,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -374,18 +182,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -394,16 +191,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -412,16 +200,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -430,18 +209,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -450,16 +218,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -468,16 +227,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -486,18 +236,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -506,16 +245,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -524,16 +254,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -542,18 +263,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -565,16 +275,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -586,16 +287,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -607,18 +299,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -627,16 +308,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -645,16 +317,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -663,18 +326,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -687,16 +339,7 @@
       "phase": "pending"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Preparing artifact...",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -709,16 +352,7 @@
       "phase": "success"
     },
     "expected": {
-      "isCustom": false,
-      "status": "complete",
-      "caption": "Processed artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [],
-      "diff": []
+      "isCustom": false
     }
   },
   {
@@ -731,18 +365,7 @@
       "phase": "error"
     },
     "expected": {
-      "isCustom": false,
-      "status": "error",
-      "caption": "Processing artifact",
-      "pill": null,
-      "collapsible": false,
-      "initiallyCollapsed": null,
-      "code": [],
-      "console": [],
-      "errors": [
-        "An error occurred"
-      ],
-      "diff": []
+      "isCustom": false
     }
   }
 ]

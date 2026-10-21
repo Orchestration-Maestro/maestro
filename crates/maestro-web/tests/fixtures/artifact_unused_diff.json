@@ -28,27 +28,7 @@
     "expected": {
       "branch": "rendered",
       "card": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Creating artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "Error detail",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     }
   },
@@ -81,27 +61,7 @@
     "expected": {
       "branch": "rendered",
       "card": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Rewriting artifact",
-        "pill": "a.html",
-        "collapsible": true,
-        "initiallyCollapsed": true,
-        "code": [
-          {
-            "code": "literal",
-            "language": "html",
-            "decoded": "literal"
-          }
-        ],
-        "console": [
-          {
-            "content": "Error detail",
-            "variant": "error"
-          }
-        ],
-        "errors": [],
-        "diff": []
+        "isCustom": false
       }
     }
   },
@@ -165,18 +125,7 @@
     "expected": {
       "branch": "rendered",
       "card": {
-        "isCustom": false,
-        "status": "error",
-        "caption": "Getting artifact",
-        "pill": null,
-        "collapsible": false,
-        "initiallyCollapsed": null,
-        "code": [],
-        "console": [],
-        "errors": [
-          "Error detail"
-        ],
-        "diff": []
+        "isCustom": false
       }
     }
   }

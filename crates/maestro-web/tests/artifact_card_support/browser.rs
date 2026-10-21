@@ -1,6 +1,6 @@
 //! Real native text, status, selected children and disposal observations.
 #![cfg(all(test, target_arch = "wasm32"))]
-use super::{Expected, Row};
+use super::browser_records::{self as records, Expected, Row};
 use crate::{
     document_card_support::browser::open,
     markdown_support::{Surface, check, js, publish},
@@ -12,12 +12,22 @@ use maestro_web::tools::types::{ToolRenderResult, ToolRenderState};
 /// # Panics
 /// Panics if a native observation differs from its recorded value.
 pub async fn rows(name: &str, count: usize) {
+    let valid: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/artifact_tool_cards_browser.json")).unwrap();
+    crate::support::strict_record::<Row>(&valid[name][0], &["input", "expected"]);
     let mut surface = Surface::new();
-    let rows = super::rows(name);
+    let mut groups: std::collections::BTreeMap<String, Vec<Row>> =
+        serde_json::from_str(include_str!("../fixtures/artifact_tool_cards_browser.json")).unwrap();
+    let rows = groups.remove(name).unwrap();
     assert_eq!(rows.len(), count);
     for (index, row) in rows.into_iter().enumerate() {
         publish("artifactIndex", &index.to_string().into());
-        observe(&mut surface, &super::prepare(&row).unwrap(), &row.expected).await;
+        observe(
+            &mut surface,
+            &super::prepare(&row.input).unwrap(),
+            &row.expected,
+        )
+        .await;
     }
 }
 /// Draw one card through its closed and opened states.
@@ -65,7 +75,12 @@ fn body() {
 /// Panics if a native observation differs from its recorded value.
 pub fn languages() {
     let mut surface = Surface::new();
-    let cases = super::languages();
+    let valid: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/artifact_languages_browser.json")).unwrap();
+    crate::support::strict_record::<records::Language>(&valid[0], &["input", "expected"]);
+    crate::support::strict_record::<super::Filename>(&valid[0]["input"], &[]);
+    let cases: Vec<records::Language> =
+        serde_json::from_str(include_str!("../fixtures/artifact_languages_browser.json")).unwrap();
     assert_eq!(cases.len(), 77);
     for row in cases {
         let mut params = serde_json::json!({"command":"create", "content":"literal"});
@@ -91,25 +106,47 @@ pub fn languages() {
 /// Panics if a native observation differs from its recorded value.
 pub async fn fields() {
     let mut surface = Surface::new();
-    let routes = super::value_routes();
+    let valid: serde_json::Value = serde_json::from_str(include_str!(
+        "../fixtures/artifact_value_routes_browser.json"
+    ))
+    .unwrap();
+    crate::support::strict_record::<records::ValueRoute>(&valid[0], &["input", "expected"]);
+    let routes: Vec<records::ValueRoute> = serde_json::from_str(include_str!(
+        "../fixtures/artifact_value_routes_browser.json"
+    ))
+    .unwrap();
     assert_eq!(routes.len(), 39);
     for row in routes {
         let recipe = super::value(row.input.params.as_ref(), &row.input.phase).unwrap();
         observe(&mut surface, &recipe, &row.expected).await;
     }
-    for row in super::unused_diffs() {
+    let unused: Vec<records::UnusedDiff> = serde_json::from_str(include_str!(
+        "../fixtures/artifact_unused_diff_browser.json"
+    ))
+    .unwrap();
+    for row in unused {
         let card = match row.expected {
-            super::Branch::Rendered { card } => card,
-            super::Branch::Error { .. } => continue,
-            super::Branch::Prepared { .. } => panic!("unexpected discarded diff branch"),
+            records::Branch::Rendered { card } => card,
+            records::Branch::Error { kind } => {
+                assert_eq!(kind, "TypeError");
+                continue;
+            }
         };
         let row = Row {
             input: row.input,
             expected: card,
         };
-        observe(&mut surface, &super::prepare(&row).unwrap(), &row.expected).await;
+        observe(
+            &mut surface,
+            &super::prepare(&row.input).unwrap(),
+            &row.expected,
+        )
+        .await;
     }
-    let domains = super::code_domains();
+    let domains: Vec<records::CodeDomain> = serde_json::from_str(include_str!(
+        "../fixtures/artifact_code_domains_browser.json"
+    ))
+    .unwrap();
     assert_eq!(domains.len(), 42);
     for row in domains {
         let recipe = super::value(Some(&row.input.params), &row.input.phase).unwrap();
@@ -120,10 +157,10 @@ pub async fn fields() {
         let actual =
             js("document.querySelector('.maestro-code code')?.textContent??null").as_string();
         let expected = match row.expected {
-            super::CodeSelection::Omitted => None,
-            super::CodeSelection::Text { text } => Some(text),
+            records::CodeSelection::Omitted {} => None,
+            records::CodeSelection::Text { text } => Some(text),
         };
-        assert_eq!(actual, expected, "{} {}", row.input.kind, row.input.phase);
+        assert_eq!(actual, expected, "{}", row.input.phase);
     }
 }
 
@@ -148,7 +185,7 @@ pub fn diffs() {
         let mut state = ToolRenderState::default();
         drawing::draw(&mut surface, &recipe, &mut state);
         drawing::draw(&mut surface, &recipe, &mut state);
-        let observed: Vec<super::DiffRow> = serde_json::from_str(&js("JSON.stringify([...document.querySelectorAll('.maestro-diff-scroll pre')].map(n=>({text:n.textContent,kind:n.classList.contains('maestro-diff-added')?'added':n.classList.contains('maestro-diff-removed')?'removed':'unchanged'})))").as_string().unwrap()).unwrap();
+        let observed: Vec<records::DiffRow> = serde_json::from_str(&js("JSON.stringify([...document.querySelectorAll('.maestro-diff-scroll pre')].map(n=>({text:n.textContent,kind:n.classList.contains('maestro-diff-added')?'added':n.classList.contains('maestro-diff-removed')?'removed':'unchanged'})))").as_string().unwrap()).unwrap();
         assert_eq!(
             serde_json::to_value(observed).unwrap(),
             serde_json::to_value(row.expected.rows).unwrap(),
@@ -188,7 +225,12 @@ pub async fn localized() {
             .i18n
             .set_language(row.input.language.as_deref().unwrap())
             .unwrap();
-        observe(&mut surface, &super::prepare(&row).unwrap(), &row.expected).await;
+        observe(
+            &mut surface,
+            &super::prepare(&row.input).unwrap(),
+            &row.expected,
+        )
+        .await;
     }
 }
 

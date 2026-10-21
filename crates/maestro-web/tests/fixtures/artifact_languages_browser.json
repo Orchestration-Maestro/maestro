@@ -1,0 +1,462 @@
+[
+  {
+    "input": {},
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": ""
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "plain"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "a."
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "a.unknown"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "a.js"
+    },
+    "expected": "javascript"
+  },
+  {
+    "input": {
+      "filename": "a.JS"
+    },
+    "expected": "javascript"
+  },
+  {
+    "input": {
+      "filename": "a.jsx"
+    },
+    "expected": "javascript"
+  },
+  {
+    "input": {
+      "filename": "a.JSX"
+    },
+    "expected": "javascript"
+  },
+  {
+    "input": {
+      "filename": "a.ts"
+    },
+    "expected": "typescript"
+  },
+  {
+    "input": {
+      "filename": "a.TS"
+    },
+    "expected": "typescript"
+  },
+  {
+    "input": {
+      "filename": "a.tsx"
+    },
+    "expected": "typescript"
+  },
+  {
+    "input": {
+      "filename": "a.TSX"
+    },
+    "expected": "typescript"
+  },
+  {
+    "input": {
+      "filename": "a.html"
+    },
+    "expected": "html"
+  },
+  {
+    "input": {
+      "filename": "a.HTML"
+    },
+    "expected": "html"
+  },
+  {
+    "input": {
+      "filename": "a.css"
+    },
+    "expected": "css"
+  },
+  {
+    "input": {
+      "filename": "a.CSS"
+    },
+    "expected": "css"
+  },
+  {
+    "input": {
+      "filename": "a.scss"
+    },
+    "expected": "scss"
+  },
+  {
+    "input": {
+      "filename": "a.SCSS"
+    },
+    "expected": "scss"
+  },
+  {
+    "input": {
+      "filename": "a.json"
+    },
+    "expected": "json"
+  },
+  {
+    "input": {
+      "filename": "a.JSON"
+    },
+    "expected": "json"
+  },
+  {
+    "input": {
+      "filename": "a.py"
+    },
+    "expected": "python"
+  },
+  {
+    "input": {
+      "filename": "a.PY"
+    },
+    "expected": "python"
+  },
+  {
+    "input": {
+      "filename": "a.md"
+    },
+    "expected": "markdown"
+  },
+  {
+    "input": {
+      "filename": "a.MD"
+    },
+    "expected": "markdown"
+  },
+  {
+    "input": {
+      "filename": "a.svg"
+    },
+    "expected": "xml"
+  },
+  {
+    "input": {
+      "filename": "a.SVG"
+    },
+    "expected": "xml"
+  },
+  {
+    "input": {
+      "filename": "a.xml"
+    },
+    "expected": "xml"
+  },
+  {
+    "input": {
+      "filename": "a.XML"
+    },
+    "expected": "xml"
+  },
+  {
+    "input": {
+      "filename": "a.yaml"
+    },
+    "expected": "yaml"
+  },
+  {
+    "input": {
+      "filename": "a.YAML"
+    },
+    "expected": "yaml"
+  },
+  {
+    "input": {
+      "filename": "a.yml"
+    },
+    "expected": "yaml"
+  },
+  {
+    "input": {
+      "filename": "a.YML"
+    },
+    "expected": "yaml"
+  },
+  {
+    "input": {
+      "filename": "a.sh"
+    },
+    "expected": "bash"
+  },
+  {
+    "input": {
+      "filename": "a.SH"
+    },
+    "expected": "bash"
+  },
+  {
+    "input": {
+      "filename": "a.bash"
+    },
+    "expected": "bash"
+  },
+  {
+    "input": {
+      "filename": "a.BASH"
+    },
+    "expected": "bash"
+  },
+  {
+    "input": {
+      "filename": "a.sql"
+    },
+    "expected": "sql"
+  },
+  {
+    "input": {
+      "filename": "a.SQL"
+    },
+    "expected": "sql"
+  },
+  {
+    "input": {
+      "filename": "a.java"
+    },
+    "expected": "java"
+  },
+  {
+    "input": {
+      "filename": "a.JAVA"
+    },
+    "expected": "java"
+  },
+  {
+    "input": {
+      "filename": "a.c"
+    },
+    "expected": "c"
+  },
+  {
+    "input": {
+      "filename": "a.C"
+    },
+    "expected": "c"
+  },
+  {
+    "input": {
+      "filename": "a.cpp"
+    },
+    "expected": "cpp"
+  },
+  {
+    "input": {
+      "filename": "a.CPP"
+    },
+    "expected": "cpp"
+  },
+  {
+    "input": {
+      "filename": "a.cs"
+    },
+    "expected": "csharp"
+  },
+  {
+    "input": {
+      "filename": "a.CS"
+    },
+    "expected": "csharp"
+  },
+  {
+    "input": {
+      "filename": "a.go"
+    },
+    "expected": "go"
+  },
+  {
+    "input": {
+      "filename": "a.GO"
+    },
+    "expected": "go"
+  },
+  {
+    "input": {
+      "filename": "a.rs"
+    },
+    "expected": "rust"
+  },
+  {
+    "input": {
+      "filename": "a.RS"
+    },
+    "expected": "rust"
+  },
+  {
+    "input": {
+      "filename": "a.php"
+    },
+    "expected": "php"
+  },
+  {
+    "input": {
+      "filename": "a.PHP"
+    },
+    "expected": "php"
+  },
+  {
+    "input": {
+      "filename": "a.rb"
+    },
+    "expected": "ruby"
+  },
+  {
+    "input": {
+      "filename": "a.RB"
+    },
+    "expected": "ruby"
+  },
+  {
+    "input": {
+      "filename": "a.swift"
+    },
+    "expected": "swift"
+  },
+  {
+    "input": {
+      "filename": "a.SWIFT"
+    },
+    "expected": "swift"
+  },
+  {
+    "input": {
+      "filename": "a.kt"
+    },
+    "expected": "kotlin"
+  },
+  {
+    "input": {
+      "filename": "a.KT"
+    },
+    "expected": "kotlin"
+  },
+  {
+    "input": {
+      "filename": "a.r"
+    },
+    "expected": "r"
+  },
+  {
+    "input": {
+      "filename": "a.R"
+    },
+    "expected": "r"
+  },
+  {
+    "input": {
+      "filename": "x/a.PY"
+    },
+    "expected": "python"
+  },
+  {
+    "input": {
+      "filename": "a.py?x"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "a.html.txt"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": ".RS"
+    },
+    "expected": "rust"
+  },
+  {
+    "input": {
+      "filename": "İ.RS"
+    },
+    "expected": "rust"
+  },
+  {
+    "input": {
+      "filename": "a.İ"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "script.javascript"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "note.markdown"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "notes.txt"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "js"
+    },
+    "expected": "javascript"
+  },
+  {
+    "input": {
+      "filename": "x.KT"
+    },
+    "expected": "kotlin"
+  },
+  {
+    "input": {
+      "filename": "folder.py/a"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": " a.js"
+    },
+    "expected": "javascript"
+  },
+  {
+    "input": {
+      "filename": "a.js "
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "a.﻿js"
+    },
+    "expected": "text"
+  },
+  {
+    "input": {
+      "filename": "a.js"
+    },
+    "expected": "text"
+  }
+]
