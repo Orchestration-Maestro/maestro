@@ -7,7 +7,9 @@ impl Tokenizer<'_> {
     /// Check left flanking before searching any right-delimiter runs.
     fn opening(&self, range: &Range<usize>, previous: Option<char>) -> Option<(usize, u8)> {
         let text = &self.source.text[range.clone()];
-        let left = rules::inline_em_strong_l_delim(self.options)?.find(text)?;
+        let width = self.runs.width(range)?;
+        let tail = &text[width - 1..];
+        let left = rules::inline_em_strong_l_delim(self.options)?.find(tail)?;
         if left.group(3).is_some()
             && previous.is_some_and(|previous| {
                 rules::INLINE_UNICODE_ALPHA_NUMERIC
@@ -17,9 +19,9 @@ impl Tokenizer<'_> {
         {
             return None;
         }
-        let punctuation = capture(text, &left, 1);
+        let punctuation = capture(tail, &left, 1);
         let punctuation = if punctuation.is_empty() {
-            capture(text, &left, 2)
+            capture(tail, &left, 2)
         } else {
             punctuation
         };
@@ -31,7 +33,6 @@ impl Tokenizer<'_> {
             return None;
         }
         let delimiter = text.as_bytes()[0];
-        let width = text.bytes().take_while(|byte| *byte == delimiter).count();
         Some((width, delimiter))
     }
 
@@ -55,6 +56,8 @@ impl Tokenizer<'_> {
         let mut balance = isize::try_from(width).ok()?;
         let mut middle = 0;
         for right in rule.find_iter(suffix) {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.emphasis_right += right.range().len());
             let Some((group, run)) =
                 (1..=6).find_map(|index| right.group(index).map(|range| (index, range)))
             else {

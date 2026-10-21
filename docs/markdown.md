@@ -31,6 +31,13 @@ not the temporary tokenizer. Code, image and autolink ranges remain barriers.
 An earlier caller token may consume an authored HTML tag; otherwise the tag remains
 one retained operand, so tokens never start inside its attributes.
 
+Each inline tokenizer indexes its source's `*` and `_` run endpoints once.
+Recursive emphasis reuses that index with widths clipped to its selected window;
+projected link labels build an index for their own source. Masks remain local
+to each window because clipping can reveal syntax hidden by an enclosing mask.
+Run-width lookup is constant time; right matching and recursive masking still
+have their own traversal costs.
+
 Parsing emits bare URL, www and email links at reached inline cursors outside
 link labels and raw anchors in the terminal, browser and export grammars.
 Raw-anchor context follows the document's queued inline bodies, including bodies

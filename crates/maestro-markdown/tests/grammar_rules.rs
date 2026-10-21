@@ -1447,3 +1447,36 @@ fn cursor_admission_consumes_later_html_without_entering_opaque_operands() {
         assert!(!children.iter().any(|node| matches!(node.kind, Kind::Atom(i) if matches!(run.atoms[i], InlineAtom::Opaque(_)))), "opaque control");
     }
 }
+
+/// Compare delimiter-run families through every caller grammar selection.
+#[test]
+fn delimiter_runs_keep_caller_flanking_and_nesting() {
+    observations::check_with_options(
+        "delimiter-runs",
+        1441,
+        include_str!("fixtures/delimiter_runs.json"),
+        &delimiter_options(),
+    );
+}
+
+/// Recursive windows can reveal syntax hidden by their enclosing mask.
+#[test]
+fn recursive_delimiter_windows_keep_inner_syntax() {
+    observations::check_with_options(
+        "delimiter-windows",
+        13,
+        include_str!("fixtures/delimiter_runs.json"),
+        &delimiter_options(),
+    );
+}
+
+/// Caller policies sharing delimiter recognition and source-window selection.
+fn delimiter_options() -> [MarkedOptions; 5] {
+    [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+        MarkedOptions::Documentation,
+    ]
+}

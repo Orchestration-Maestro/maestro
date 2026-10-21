@@ -1,4 +1,5 @@
 //! Inline precedence over original source and typed atom boundaries.
+mod delimiter_runs;
 mod emphasis;
 mod entities;
 mod links;
@@ -52,6 +53,8 @@ impl LinkContext {
 
 /// One inline invocation; original definitions and policy are never reconstructed.
 pub(crate) struct Tokenizer<'a> {
+    /// Source-owned delimiter endpoints shared by recursive calls.
+    runs: delimiter_runs::DelimiterRuns,
     /// Framed authored source.
     pub(crate) source: &'a ScopeSource,
     /// Immutable grammar selection.
@@ -77,6 +80,7 @@ impl<'a> Tokenizer<'a> {
         in_link: bool,
     ) -> Self {
         Self {
+            runs: delimiter_runs::DelimiterRuns::new(&source.text),
             source,
             options,
             definitions,
