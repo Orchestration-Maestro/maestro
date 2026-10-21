@@ -29,7 +29,7 @@ fn repeated() -> Vec<(String, String)> {
 #[test]
 fn manifest_tables_keep_native_types() {
     let scratch = Scratch::new();
-    let path = scratch.root.join("manifest.toml");
+    let path = scratch.root.path().join("manifest.toml");
     std::fs::write(&path, "").unwrap();
     assert_eq!(read_manifest(&path).unwrap(), toml::Table::new());
     std::fs::write(
@@ -53,7 +53,7 @@ fn manifest_tables_keep_native_types() {
 #[test]
 fn manifest_failures_keep_the_requested_path() {
     let scratch = Scratch::new();
-    let path = scratch.root.join("Cargo.toml");
+    let path = scratch.root.path().join("Cargo.toml");
     let prefix = format!("{}: ", path.display());
     let read = std::fs::read_to_string(&path).unwrap_err();
     assert_eq!(read_manifest(&path).unwrap_err(), format!("{prefix}{read}"));

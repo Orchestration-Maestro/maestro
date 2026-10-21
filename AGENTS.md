@@ -224,7 +224,7 @@ general dev-dependency target.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
-foundation utility permission. Only app, credentials, extensions, models,
+foundation utility permission. Only app, chat, credentials, extensions, models,
 packages, resources, conventions and tooling may declare it, as a non-optional
 native development dependency when used. `Scratch::new` canonicalizes its chosen
 root; `Scratch::new_in` keeps native supplied-parent spelling. Both graph cycle

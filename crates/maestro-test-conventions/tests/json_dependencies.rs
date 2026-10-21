@@ -12,7 +12,7 @@ const JSON: &str = "{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }
 fn fixture() -> Workspace {
     let workspace = Workspace::new();
     workspace.external("serde_json");
-    let external = workspace.root.join("external/Cargo.toml");
+    let external = workspace.root.path().join("external/Cargo.toml");
     let text = std::fs::read_to_string(&external).unwrap();
     std::fs::write(
         external,
@@ -29,7 +29,7 @@ fn fixture() -> Workspace {
 
 /// Replace the canonical workspace entry without changing unrelated declarations.
 fn root_json(workspace: &Workspace, declaration: &str) {
-    let path = workspace.root.join("Cargo.toml");
+    let path = workspace.root.path().join("Cargo.toml");
     let text = std::fs::read_to_string(&path).unwrap();
     let mut document: toml::Table = text.parse().unwrap();
     let dependencies = document["workspace"]["dependencies"]
@@ -47,7 +47,7 @@ fn root_json(workspace: &Workspace, declaration: &str) {
 fn root_error(workspace: &Workspace) -> String {
     format!(
         "{}: workspace.dependencies.serde_json must declare serde_json with float_roundtrip on the normal dependency path",
-        workspace.root.join("Cargo.toml").display()
+        workspace.root.path().join("Cargo.toml").display()
     )
 }
 
@@ -63,11 +63,11 @@ fn workspace_json_requires_normal_float_roundtrip() {
         let workspace = fixture();
         root_json(&workspace, declaration);
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(root_error(&workspace))
         );
         root_json(&workspace, JSON);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     for declaration in [
         "{ package = \"serde_json\", version = \"=1.0.151\", features = [\"float_roundtrip\", \"raw_value\"] }",
@@ -75,7 +75,7 @@ fn workspace_json_requires_normal_float_roundtrip() {
     ] {
         let workspace = fixture();
         root_json(&workspace, declaration);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -91,11 +91,11 @@ fn dev_and_build_features_do_not_supply_normal_precision() {
         workspace.member("tui", "maestro-tui", &format!("[dependencies]\nserde_json.workspace = true\n[{section}]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n"));
         root_json(&workspace, "{ version = \"=1.0.151\" }");
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(root_error(&workspace))
         );
         root_json(&workspace, JSON);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -103,7 +103,12 @@ fn dev_and_build_features_do_not_supply_normal_precision() {
 fn member_error(workspace: &Workspace, directory: &str, section: &str, alias: &str) -> String {
     format!(
         "{}: {section}.{alias} must inherit workspace.dependencies.{alias} with float_roundtrip on the normal dependency path",
-        workspace.root.join(directory).join("Cargo.toml").display()
+        workspace
+            .root
+            .path()
+            .join(directory)
+            .join("Cargo.toml")
+            .display()
     )
 }
 
@@ -117,7 +122,7 @@ fn normal_json_dependencies_must_inherit_workspace() {
             &format!("[dependencies]\nserde_json = {declaration}\n"),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(member_error(
                 &workspace,
                 "crates/tui",
@@ -130,13 +135,13 @@ fn normal_json_dependencies_must_inherit_workspace() {
             "maestro-tui",
             "[dependencies]\nserde_json.workspace = true\n",
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
 /// Set the same-key workspace entry used by renamed dependency fixtures.
 fn workspace_alias(workspace: &Workspace, declaration: &str) {
-    let path = workspace.root.join("Cargo.toml");
+    let path = workspace.root.path().join("Cargo.toml");
     let mut document: toml::Table = std::fs::read_to_string(&path).unwrap().parse().unwrap();
     let entry: toml::Table = format!("json = {declaration}").parse().unwrap();
     document["workspace"]["dependencies"]
@@ -152,7 +157,7 @@ fn renamed_json_dependencies_must_inherit_workspace() {
         let workspace = fixture();
         workspace.member("tui", "maestro-tui", &format!("[dependencies]\njson = {{ package = \"serde_json\", version = \"=1.0.151\"{features} }}\n"));
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(member_error(
                 &workspace,
                 "crates/tui",
@@ -169,7 +174,7 @@ fn renamed_json_dependencies_must_inherit_workspace() {
             "maestro-tui",
             "[dependencies]\njson.workspace = true\n",
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -188,7 +193,7 @@ fn inherited_json_aliases_require_workspace_precision() {
             );
             workspace.member("tui", "maestro-tui", declaration);
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(member_error(
                     &workspace,
                     "crates/tui",
@@ -200,7 +205,7 @@ fn inherited_json_aliases_require_workspace_precision() {
                 &workspace,
                 "{ package = \"serde_json\", version = \"=1.0.151\", features = [\"float_roundtrip\"] }",
             );
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
     }
 }
@@ -220,7 +225,7 @@ fn target_json_dependencies_keep_normal_precision() {
             );
             workspace.member("tui", "maestro-tui", &format!("[target.{target:?}.dependencies]\n{alias} = {{ {package}version = \"=1.0.151\"{optional} }}\n"));
             assert_eq!(
-                check_workspace(&workspace.root),
+                check_workspace(workspace.root.path()),
                 Err(member_error(
                     &workspace,
                     "crates/tui",
@@ -235,7 +240,7 @@ fn target_json_dependencies_keep_normal_precision() {
                     "[target.{target:?}.dependencies]\n{alias} = {{ workspace = true{optional} }}\n"
                 ),
             );
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
     }
 }
@@ -252,7 +257,7 @@ fn optional_json_dependencies_keep_normal_precision() {
             ),
         );
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(member_error(
                 &workspace,
                 "crates/tui",
@@ -269,7 +274,7 @@ fn optional_json_dependencies_keep_normal_precision() {
             "maestro-tui",
             &format!("[dependencies]\n{alias} = {{ workspace = true, optional = true }}\n"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -285,7 +290,7 @@ fn inherited_json_dependencies_preserve_added_features() {
                 root_json(&workspace, &entry);
                 workspace_alias(&workspace, &entry);
                 workspace.member("tui", "maestro-tui", &format!("[dependencies]\n{alias} = {{ workspace = true, features = {features}{defaults} }}\n"));
-                assert_eq!(check_workspace(&workspace.root), Ok(()));
+                assert_eq!(check_workspace(workspace.root.path()), Ok(()));
             }
         }
     }
@@ -307,7 +312,7 @@ fn dependency_package_identity_controls_json_check() {
         workspace.member("tui", "maestro-tui", "");
         workspace.list(&[("maestro-tui", "core")]);
         let entry = if inherited {
-            let path = workspace.root.join("Cargo.toml");
+            let path = workspace.root.path().join("Cargo.toml");
             let mut document: toml::Table =
                 std::fs::read_to_string(&path).unwrap().parse().unwrap();
             document["workspace"]["dependencies"]
@@ -324,7 +329,7 @@ fn dependency_package_identity_controls_json_check() {
             "maestro-tui",
             &format!("[dependencies]\n{alias} = {entry}\n"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
 
@@ -356,7 +361,7 @@ fn nonproduction_json_dependencies_are_outside_inheritance_check() {
                 "maestro-tui",
                 &format!("[{section}]\n{alias} = {entry}\n"),
             );
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
+            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
     }
     let workspace = fixture();
@@ -364,7 +369,7 @@ fn nonproduction_json_dependencies_are_outside_inheritance_check() {
         &workspace,
         "{ package = \"serde_json\", version = \"=1.0.151\" }",
     );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -381,7 +386,7 @@ fn json_rule_reads_toml_structure_not_text() {
             "{ package = \"serde_json\", version = \"=1.0.151\", features = [\"float_roundtrip\"] }",
         );
         workspace.member("tui", "maestro-tui", declaration);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     for distraction in [
         "# float_roundtrip\n",
@@ -390,12 +395,12 @@ fn json_rule_reads_toml_structure_not_text() {
     ] {
         let workspace = fixture();
         root_json(&workspace, "{ version = \"=1.0.151\" }");
-        let path = workspace.root.join("Cargo.toml");
+        let path = workspace.root.path().join("Cargo.toml");
         let text = std::fs::read_to_string(&path).unwrap();
         if distraction.contains("name =") {
-            std::fs::create_dir(workspace.root.join("src")).unwrap();
-            std::fs::write(workspace.root.join("src/lib.rs"), "").unwrap();
-            std::fs::remove_dir_all(workspace.root.join("crates/tui")).unwrap();
+            std::fs::create_dir(workspace.root.path().join("src")).unwrap();
+            std::fs::write(workspace.root.path().join("src/lib.rs"), "").unwrap();
+            std::fs::remove_dir_all(workspace.root.path().join("crates/tui")).unwrap();
         }
         std::fs::write(
             &path,
@@ -410,11 +415,11 @@ fn json_rule_reads_toml_structure_not_text() {
         )
         .unwrap();
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(root_error(&workspace))
         );
         root_json(&workspace, JSON);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     let workspace = fixture();
     root_json(
@@ -427,11 +432,11 @@ fn json_rule_reads_toml_structure_not_text() {
         "[dependencies]\nserde_json.workspace = true\n",
     );
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(root_error(&workspace))
     );
     root_json(&workspace, JSON);
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -459,7 +464,7 @@ fn json_checks_include_guest_and_all_workspace_members() {
             workspace.list(&[("maestro-tui", "core"), (name, "core")]);
         }
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(member_error(
                 &workspace,
                 &format!("crates/{directory}"),
@@ -472,19 +477,19 @@ fn json_checks_include_guest_and_all_workspace_members() {
             name,
             "[dependencies]\nserde_json.workspace = true\n",
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     let workspace = fixture();
-    let path = workspace.root.join("Cargo.toml");
-    std::fs::remove_dir_all(workspace.root.join("crates/tui")).unwrap();
-    std::fs::create_dir(workspace.root.join("src")).unwrap();
-    std::fs::write(workspace.root.join("src/lib.rs"), "").unwrap();
+    let path = workspace.root.path().join("Cargo.toml");
+    std::fs::remove_dir_all(workspace.root.path().join("crates/tui")).unwrap();
+    std::fs::create_dir(workspace.root.path().join("src")).unwrap();
+    std::fs::write(workspace.root.path().join("src/lib.rs"), "").unwrap();
     let text = std::fs::read_to_string(&path).unwrap();
     let text = text.replace("members = [\"crates/*\"]", "members = []");
     let package = "[package]\nname = \"maestro-tui\"\nversion = \"0.1.0\"\n[lints]\nworkspace = true\n[dependencies]\nserde_json = \"=1.0.151\"\n";
     std::fs::write(&path, format!("{text}\n{package}")).unwrap();
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(member_error(&workspace, "", "dependencies", "serde_json"))
     );
     std::fs::write(
@@ -495,7 +500,7 @@ fn json_checks_include_guest_and_all_workspace_members() {
         ),
     )
     .unwrap();
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// Add the generated unifier with its own direct JSON entries and a native edge from `tui`.
@@ -519,11 +524,11 @@ fn generated_unifier_json_keeps_member_precision_rules() {
     let direct = "[dependencies]\nserde_json = { version = \"=1.0.151\", default-features = false, features = [\"float_roundtrip\"] }\n[target.'cfg(unix)'.dependencies]\njson = { package = \"serde_json\", version = \"=1.0.151\", optional = true }\n";
     let workspace = fixture();
     with_unifier(&workspace, direct, "serde_json.workspace = true\n");
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 
     root_json(&workspace, "{ version = \"=1.0.151\" }");
     assert_eq!(
-        check_workspace(&workspace.root),
+        check_workspace(workspace.root.path()),
         Err(root_error(&workspace))
     );
     root_json(&workspace, JSON);
@@ -535,7 +540,7 @@ fn generated_unifier_json_keeps_member_precision_rules() {
         with_unifier(&workspace, direct, entry);
         let alias = entry.split(' ').next().unwrap();
         assert_eq!(
-            check_workspace(&workspace.root),
+            check_workspace(workspace.root.path()),
             Err(member_error(
                 &workspace,
                 "crates/tui",

@@ -316,6 +316,7 @@ pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
 /// Declared consumers of disposable native directory ownership.
 pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
+    "maestro-chat",
     "maestro-credentials",
     "maestro-extensions",
     "maestro-models",
