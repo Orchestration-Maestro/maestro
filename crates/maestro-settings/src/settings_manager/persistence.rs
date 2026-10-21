@@ -7,6 +7,7 @@ use std::io;
 use serde_json::{Map, Value};
 use tokio::sync::oneshot;
 
+use super::change::Edit;
 use super::conversion::parse_document;
 use super::preferences::SettingsStorageHandle;
 use super::preferences::{SettingsError, SettingsScope, SettingsStorage, SettingsStorageError};
@@ -18,15 +19,6 @@ type Cell<T> = std::sync::Arc<std::sync::Mutex<T>>;
 /// Shared state handle: reference counted and borrow checked in the browser.
 #[cfg(target_arch = "wasm32")]
 type Cell<T> = std::rc::Rc<std::cell::RefCell<T>>;
-
-/// Identifies one edited preference: a whole top-level member or one key of it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) enum Edit {
-    /// A top-level member.
-    Field(String),
-    /// A key inside a top-level object member.
-    Key(String, String),
-}
 
 /// The monotonic number that distinguishes two edits of the same preference.
 type Revision = u64;
@@ -204,38 +196,10 @@ fn persist(
     storage.with_write_lock(scope, &mut |current| {
         let mut fresh = parse_document(current.unwrap_or_default())?;
         for (edit, _) in edits {
-            apply_edit(&mut fresh, snapshot, edit);
+            edit.apply(&mut fresh, edit.value_in(snapshot).cloned());
         }
         Ok(Some(pretty_object(&fresh)?))
     })
-}
-
-/// Copies one edited preference from the snapshot into the fresh document.
-fn apply_edit(fresh: &mut Map<String, Value>, snapshot: &Map<String, Value>, edit: &Edit) {
-    match edit {
-        Edit::Field(field) => match snapshot.get(field) {
-            Some(value) => {
-                fresh.insert(field.clone(), value.clone());
-            }
-            None => {
-                fresh.shift_remove(field);
-            }
-        },
-        Edit::Key(field, key) => {
-            let Some(value) = snapshot.get(field).and_then(|member| member.get(key)) else {
-                return;
-            };
-            let slot = fresh
-                .entry(field.clone())
-                .or_insert_with(|| Value::Object(Map::new()));
-            if !slot.is_object() {
-                *slot = Value::Object(Map::new());
-            }
-            if let Value::Object(members) = slot {
-                members.insert(key.clone(), value.clone());
-            }
-        }
-    }
 }
 
 /// Hands jobs to one background worker thread.

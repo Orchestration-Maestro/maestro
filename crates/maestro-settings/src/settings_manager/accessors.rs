@@ -62,6 +62,18 @@ impl SettingsManager {
         );
     }
 
+    /// Sets or removes a global preference at a literal field and nested key path.
+    ///
+    /// Empty `keys` addresses the field itself. `None` removes only the addressed
+    /// preference; absent parents stay absent. Each queued edit merges into fresh
+    /// storage under the existing write lock, preserving unedited sibling keys.
+    pub fn set_global_key_path(&mut self, field: &str, keys: &[&str], value: Option<Value>) {
+        self.edit(
+            SettingsScope::Global,
+            vec![Change::path(field, keys, value)],
+        );
+    }
+
     /// Returns the last changelog version shown, if any.
     #[must_use]
     pub fn get_last_changelog_version(&self) -> Option<String> {

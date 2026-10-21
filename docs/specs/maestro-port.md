@@ -49,6 +49,15 @@ Settings retain user/project scopes, runtime overrides, established names/defaul
 
 Settings persistence uses explicit write intent: native `SettingsStorage::with_write_lock` creates the parent as needed and holds the stable sidecar lock before reading, through its single callback and optional write, including first creation. `Ok(None)` and callback failure may leave a parent/sidecar but never create the settings file. Concurrent independent manager edits therefore merge against fresh text under exclusion. The legacy `with_lock` remains noncreating for missing-file reads and calls its callback before locking a first replacement; raw callers needing concurrent first-write exclusion choose write intent. Supplied adapters default to their existing `with_lock` contract; native decorators forward write intent to retain native exclusion.
 
+Workspace preference saves use the same captured-edit queue at literal nested
+key paths. `SettingsManager::set_global_key_path(field, keys, value)` publishes
+immediately and merges only the addressed leaf into fresh storage under the
+existing write lock. `None` removes that leaf without creating absent parents;
+an empty key path addresses the whole field. Existing whole-field and object-key
+setters retain replacement semantics through this same path representation.
+Layered scope merging remains one object level; nested write intent does not
+change read precedence or introduce another writer.
+
 Local model files use partial nested overrides, validated supplied limits and zero defaults for omitted price fields. Dynamic provider replacement/removal is separate and restores underlying catalog entries. Selection preserves distinct command-line, exact-reference and scope matching: saved model within scope first, otherwise first scoped model; catalog-order exact matches where specified; uniqueness only for the exact-reference operation; provider-prefix/raw-ID/suffix/alias/date/glob ordering and warnings. Internal mode has no manifest, origins or locked values; [manifest mode](manifest-mode.md) adds them only when settings name a manifest.
 
 The model catalog owns private synchronization; registration, removal and refresh use shared receivers. Release catalog, configuration and descriptor guards before supplied file, credential, OAuth, configured-value or display-name effects, global registration/reset, awaits and callback retirement. Successful transformations publish exactly their selected list; failures retain prior effects without retaining the failed incoming registration. Loading publishes only after its local transformation chain succeeds. Refresh traverses live retained insertion order, including callback additions; replacement keeps its position and removal followed by insertion moves to the end. Request authentication retains the early provider-source entry while sampling model sources later; provider-only fallback is sampled after credentials. Load diagnostics are owned observations. Native file effects are thread-safe; browser effects may remain local. Do not expose a state guard or require an outer lock.
