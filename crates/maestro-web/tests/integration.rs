@@ -22,6 +22,7 @@ mod composed_consumer;
 mod copy_buttons;
 mod dialog_shell;
 mod dialog_shell_browser;
+mod diff_factory;
 mod document_card_support;
 mod document_tool_cards;
 mod document_tool_cards_browser;

@@ -6,11 +6,10 @@ use crate::{
     },
     tools::types::{ToolContent, ToolContentOutput, ToolRenderView},
 };
-use maestro_app::ToolRendererState;
+use maestro_app::{Change, ToolRendererState, diff_lines};
 use std::rc::Rc;
 
 /// Literal operands for a line difference view.
-#[derive(PartialEq, Eq)]
 pub struct DiffProps {
     /// Original text, including its line endings.
     pub old_text: String,
@@ -21,25 +20,56 @@ pub struct DiffProps {
     /// Caller-supplied native CSS classes.
     pub class_name: String,
 }
-/// Browser row preparation and its native mount.
+/// Browser count projection and retained native nodes.
 #[cfg(target_arch = "wasm32")]
 mod browser;
-/// Browser cache equality uses the selected rendered lines.
-#[cfg(target_arch = "wasm32")]
-use browser::Lines as Prepared;
-/// Native cache equality needs only the authored operands.
-#[cfg(not(target_arch = "wasm32"))]
-type Prepared = DiffProps;
+
+/// Selected line content used by retained equality and browser projection.
+#[derive(PartialEq, Eq)]
+struct Row {
+    /// Change sign, or a space for context.
+    sign: char,
+    /// Literal text after the sign and separator.
+    text: String,
+}
+/// One semantic input shared by the retained key and browser presentation.
+#[derive(PartialEq, Eq)]
+struct Normalized {
+    /// Optional nonempty literal title.
+    title: Option<String>,
+    /// Caller-supplied class names, preserved literally.
+    class_name: String,
+    /// Ordered selected lines with repetition preserved.
+    rows: Vec<Row>,
+}
+/// Select lines after differencing so line endings still determine matching order.
+fn normalize(props: DiffProps) -> Normalized {
+    let mut rows = Vec::new();
+    for change in diff_lines(&props.old_text, &props.new_text) {
+        let (sign, text) = match change {
+            Change::Unchanged(text) => (' ', text),
+            Change::Added(text) => ('+', text),
+            Change::Removed(text) => ('-', text),
+        };
+        rows.extend(text.split_terminator('\n').map(|text| Row {
+            sign,
+            text: text.into(),
+        }));
+    }
+    Normalized {
+        title: props.title.filter(|title| !title.is_empty()),
+        class_name: props.class_name,
+        rows,
+    }
+}
 
 /// Prepare a bordered native line difference with a locally scrolling body.
 #[must_use]
 pub fn diff(props: DiffProps) -> Box<dyn ToolContent> {
-    #[cfg(target_arch = "wasm32")]
-    let props = browser::prepare(props);
-    Box::new(DiffContent(Rc::new(props)))
+    Box::new(DiffContent(Rc::new(normalize(props))))
 }
 /// Immutable recipe; native roots belong to each rendered row.
-struct DiffContent(Rc<Prepared>);
+struct DiffContent(Rc<Normalized>);
 /// Native publication lifetime for a single diff.
 struct Retained {
     /// Platform which owns the mounted surface.
@@ -47,7 +77,7 @@ struct Retained {
     /// Stable surface identity.
     id: egui::Id,
     /// Last successfully published operands and factory.
-    shown: Option<(Rc<Prepared>, Rc<ReadingContent>)>,
+    shown: Option<(Rc<Normalized>, Rc<ReadingContent>)>,
 }
 impl Drop for Retained {
     fn drop(&mut self) {
@@ -100,10 +130,10 @@ impl ToolContent for DiffContent {
     }
 }
 /// Build an owned literal native factory without retaining a mounted owner.
-fn content(lines: &Rc<Prepared>) -> Rc<ReadingContent> {
+fn content(lines: &Rc<Normalized>) -> Rc<ReadingContent> {
     #[cfg(target_arch = "wasm32")]
     {
-        let lines = Rc::clone(lines);
+        let lines = Rc::new(browser::prepare(Rc::clone(lines)));
         Rc::new(ReadingContent {
             mount: Rc::new(move |document| browser::mount(document, &lines)),
         })

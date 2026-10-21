@@ -225,8 +225,13 @@ The standalone `artifact_pill` helper uses the same retained native filename
 owner. Formatted non-string fields are display-only, never artifact identities.
 
 `components::diff::diff` accepts literal old/new text, an optional title and
-caller-supplied native CSS classes through `DiffProps`. The optional header shows
-added/removed line counts in the selected success/error colors. Its selectable
+caller-supplied native CSS classes through `DiffProps`. The retained cache
+compares the normalized title, literal classes and selected lines on every
+target. An empty title is absent. LF splitting happens after differencing and
+omits each run's final empty split item; blank lines, carriage returns and run
+order stay significant. The browser derives counts and mounts rows from that
+same input. The optional header shows added/removed line counts in the selected
+success/error colors. Its selectable
 rows preserve line order and carriage returns, with a local scrolling body capped
 at 384 CSS pixels. Text updates retain the native root, local scroll and
 unchanged rows, including when rows grow or shrink or the title appears or
