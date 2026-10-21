@@ -374,10 +374,9 @@ fn preview_reads_ambient_cwd_only_when_required() {
     }
     let saved = std::env::current_dir().unwrap();
     let original = TempDir::new();
-    let removed = TempDir::new();
+    let removed = maestro_test_directory::Scratch::new().unwrap();
     let target = original.file("target.txt", b"left\nright\n");
-    std::env::set_current_dir(&removed.0).unwrap();
-    fs::remove_dir(&removed.0).unwrap();
+    removed.enter_removed("removed").unwrap();
     for single in [false, true] {
         assert_original(&run(binding_preview(single, &target, ".").unwrap()).unwrap());
         assert_original(

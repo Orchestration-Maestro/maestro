@@ -582,14 +582,14 @@ impl maestro_tools::WriteOperations for GatedNative {
     }
 }
 
+#[cfg(unix)]
 #[test]
 fn edit_empty_list_fails_before_path_or_queue() {
     if !read_support::isolated("edit_empty_list_fails_before_path_or_queue", "empty", &[]) {
         return;
     }
-    let dir = TempDir::new();
-    std::env::set_current_dir(&dir.0).unwrap();
-    std::fs::remove_dir(&dir.0).unwrap();
+    let removed = maestro_test_directory::Scratch::new().unwrap();
+    removed.enter_removed("removed").unwrap();
     let signal = Cancellation::new();
     signal.abort();
     let ops = Arc::new(Operations::new(b"hello"));
@@ -791,6 +791,7 @@ fn edit_queue_preserves_aliases_and_independent_files() {
     assert_eq!(std::fs::read(path).unwrap(), b"aliased");
 }
 
+#[cfg(unix)]
 #[test]
 fn edit_path_capture_reads_ambient_state_only_when_needed() {
     if !read_support::isolated(
@@ -801,10 +802,9 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
         return;
     }
     let dir = TempDir::new();
-    let gone = TempDir::new();
+    let gone = maestro_test_directory::Scratch::new().unwrap();
     let absolute = dir.file("file", b"hello");
-    std::env::set_current_dir(&gone.0).unwrap();
-    std::fs::remove_dir(&gone.0).unwrap();
+    gone.enter_removed("removed").unwrap();
     for wrapped in [false, true] {
         for (cwd, path, success) in [
             (".".to_owned(), absolute.clone(), true),

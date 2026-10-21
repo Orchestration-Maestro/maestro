@@ -20,13 +20,12 @@ use maestro_tools::{
 use read_support::{TempDir, content_json, isolated};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
-    },
-    task::Poll,
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
 };
+#[cfg(unix)]
+use std::task::Poll;
 use write_support::{
     Gate, Journal, Mode, ScriptedWrite, failure, hex, input, poll_once, ready, rows,
     single_expected,
@@ -504,12 +503,10 @@ fn wrapped_write_runs_through_agent_loop() {
 #[test]
 fn write_path_capture_avoids_unneeded_ambient_reads() {
     let test = "write_path_capture_avoids_unneeded_ambient_reads";
+    #[cfg(unix)]
     if isolated(test, "no-cwd", &[]) {
-        let parent = TempDir::new();
-        let gone = parent.0.join("gone");
-        std::fs::create_dir(&gone).unwrap();
-        std::env::set_current_dir(&gone).unwrap();
-        std::fs::remove_dir(&gone).unwrap();
+        let parent = maestro_test_directory::Scratch::new().unwrap();
+        parent.enter_removed("gone").unwrap();
         assert!(std::env::current_dir().is_err());
         let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
         let anchored = start(&tool_over(&ops, "relative"), input("/abs/f.txt", "x"), None);

@@ -268,6 +268,7 @@ impl ExecuteInput {
     }
 
     /// Whether the process working directory is removed first.
+    #[cfg(unix)]
     pub fn removes_cwd(&self) -> bool {
         self.ambient_cwd.as_deref() == Some("removed")
     }

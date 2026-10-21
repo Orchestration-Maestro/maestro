@@ -60,9 +60,7 @@ fn child() {
     let root = std::env::current_dir().unwrap();
     let a = root.join("a");
     let b = a.join("b");
-    let gone = root.join("gone");
     std::fs::create_dir_all(&b).unwrap();
-    std::fs::create_dir(&gone).unwrap();
     let target = a
         .join("target/extensions/a.wasm")
         .to_string_lossy()
@@ -78,8 +76,8 @@ fn child() {
     std::env::set_current_dir(&root).unwrap();
     let failed = native(&target, "", &scopes());
     let before = failed.frame(80);
-    std::env::set_current_dir(&gone).unwrap();
-    std::fs::remove_dir(&gone).unwrap();
+    let removed = maestro_test_directory::Scratch::new_in(&root).unwrap();
+    removed.enter_removed("gone").unwrap();
     failures(&failed, &before);
     no_directory_needed(&target, &a);
     std::env::set_current_dir(&root).unwrap();
