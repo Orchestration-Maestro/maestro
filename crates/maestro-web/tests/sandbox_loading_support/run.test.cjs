@@ -13,6 +13,7 @@ const executablePath = process.env.CHROMIUM_PATH;
 const policy = inventory.expectedError.export;
 const first = inventory.execution[0];
 const all = [...inventory.execution, ...inventory.loading];
+const pointerDocument = import('./programs.js').then(module => module.program_input('click-document'));
 
 function fixture(t, overrides = {}, setup = '') {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-driver-test-'));
@@ -312,7 +313,7 @@ test('packaging_keeps_linked_modules_and_locked_sources', t => {
 
 
 const sandboxId = 'probe:"雪]';
-const sandboxSetup = String.raw`window.mountWitness = async function(nested, count = 0) {
+const sandboxSetup = String.raw`window.mountWitness = async function(nested, count = 0, svg = false) {
   for (let i = 0; i <= count; i++) {
     const frame = document.createElement('iframe');
     if (i === 0) frame.id = 'obsolete';
@@ -332,19 +333,26 @@ const sandboxSetup = String.raw`window.mountWitness = async function(nested, cou
   decoy.append(wrong); await wrongLoaded; window.decoyWitness = wrong;
   const box = doc.createElement('div'); box.id = 'probe:"雪]'; doc.body.append(box);
   const target = doc.createElement('iframe'); target.sandbox = 'allow-scripts allow-modals';
-  target.srcdoc = '<head><meta http-equiv="x-test" content="retained"><script>window.S={value:"right",started:true};window.done=Promise.resolve();</script></head><body><button id="target" onclick="window.S.clicked=true">click</button></body>';
+  target.srcdoc = POINTER_DOCUMENT
+    .replace('<head>', '<head><meta http-equiv="x-test" content="retained">')
+    .replace('</script>', 'window.S={value:"right",started:true};window.done=Promise.resolve();</script>')
+    + (svg ? '<body><svg width="200" height="40"><rect id="target" width="150" height="30"/></svg>' : '<body><button id="target" onclick="window.S.clicked=true">click</button>') + '</body>';
   const loaded = new Promise(resolve => target.onload = resolve);
   box.append(target); await loaded;
 }`;
 
-function sandboxFixture(t, body, inspect, setup = sandboxSetup) {
+async function sandboxFixture(t, body, inspect, setup = sandboxSetup, options = {}) {
   const driver = observedBrowser(async page => {
     const expose = page.exposeBinding.bind(page);
     page.exposeBinding = (name, callback, ...options) => expose(name, name === 'inspectSandbox'
       ? (context, id, action) => inspect(page, () => callback(context, id, action), action)
       : callback, ...options);
   });
-  return execute(fixture(t, {[first]: body}, setup), {chromium: driver});
+  if (options.shared) {
+    const launch = driver.launch.bind(driver);
+    driver.launch = config => launch({...config, args: [...config.args, '--disable-features=IsolateSandboxedIframes']});
+  }
+  return execute(fixture(t, {[first]: body}, setup.replace('POINTER_DOCUMENT', JSON.stringify(await pointerDocument))), {...options, chromium: driver});
 }
 
 const sandboxState = {
@@ -524,4 +532,123 @@ test('sandbox_inspection_walks_each_document_once', async t => {
     });
     assert.deepEqual(lines.filter(line => line.startsWith('WITNESS_STATE ')).map(line => JSON.parse(line.slice(14))), [sandboxState]);
   }
+});
+
+
+async function clickDelivery(t, scenario) {
+  for (const nested of [false, true]) for (const svg of [false, true]) for (const shared of [false, true]) {
+    const lines = [];
+    const setup = sandboxSetup + String.raw`
+window.prepareDelivery = async function(nested, svg) {
+  await mountWitness(nested, 0, svg);
+  let doc = nested ? document.querySelectorAll('iframe')[1].contentDocument : document;
+  const frame = doc.getElementById('probe:"雪]').firstElementChild;
+  window.deliveryFrame = frame;
+  window.containingRecords = [];
+  document.addEventListener('click', e => window.containingRecords.push({trusted:e.isTrusted,target:e.target.tagName}), true);
+  window.receipts = [];
+  window.nextReceipt = () => new Promise(resolve => {
+    const listener = e => {
+      if (e.source !== frame.contentWindow || e.data?.type !== 'pointer-done') return;
+      doc.defaultView.removeEventListener('message', listener);
+      window.receipts.push(e.data); resolve(e.data);
+    };
+    doc.defaultView.addEventListener('message', listener);
+  });
+  window.receipt = window.nextReceipt();
+};`;
+    const body = `await prepareDelivery(${nested}, ${svg});
+      await window.inspectSandbox(${JSON.stringify(sandboxId)}, 'click');
+      await window.receipt;`;
+    let armed = false;
+    const running = sandboxFixture(t, body, async (page, inspect, action) => {
+      if (armed || action !== 'click') return inspect();
+      armed = true;
+      const handle = await page.evaluateHandle(() => window.deliveryFrame);
+      let child;
+      try { child = await handle.asElement().contentFrame(); } finally { await handle.dispose(); }
+      let separate = false;
+      try {
+        const own = await page.context().newCDPSession(child);
+        separate = true; await own.detach();
+      } catch (error) { assert.match(error.message, /does not have a separate CDP session/); }
+      assert.equal(separate, !shared, 'actual selected-frame session route');
+      const session = await page.context().newCDPSession(page);
+      const suppressed = scenario === 'ignored' || scenario === 'stale';
+      try {
+        if (scenario === 'stale') {
+          await inspect();
+          await page.evaluate(async () => {
+            await window.receipt;
+            window.receipts = []; window.receipt = window.nextReceipt();
+          });
+          assert.deepEqual(await child.evaluate(() => window.pointerDone), {
+            type: 'pointer-done', prevented: false, trusted: true, atTarget: true,
+          }, 'earlier native receipt exists on the retained frame');
+        }
+        if (suppressed) await session.send('Input.setIgnoreInputEvents', {ignore: true});
+        if (['containing', 'other-target', 'untrusted'].includes(scenario)) {
+          if (scenario === 'other-target') await child.evaluate(() => {
+            const other = document.createElement('button'); other.id = 'other'; other.textContent = 'other'; document.body.append(other);
+          });
+          const acquire = child.locator.bind(child);
+          child.locator = (...args) => {
+            const locator = acquire(...args);
+            locator.click = scenario === 'containing' ? () => page.mouse.click(1, 1)
+              : scenario === 'other-target' ? () => acquire('#other').click()
+              : () => locator.evaluate(node => node.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, composed: true})));
+            return locator;
+          };
+        }
+        let caught;
+        try { await inspect(); } catch (error) { caught = error; }
+        const record = await child.evaluate(() => window.pointerDone);
+        t.diagnostic(JSON.stringify({scenario, nested, svg, shared, record, error: caught?.message}));
+        if (scenario === 'control') {
+          assert.ifError(caught);
+          assert.deepEqual(record, {type: 'pointer-done', prevented: false, trusted: true, atTarget: true});
+          await page.evaluate(async () => { await window.receipt; });
+          assert.deepEqual(await page.evaluate(() => window.receipts), [record]);
+          return;
+        }
+        assert(caught, 'native click inspection must reject when selected target received no trusted click');
+        assert.equal(caught.message, 'native click did not reach mounted target ' + sandboxId);
+        if (suppressed || scenario === 'containing') {
+          assert.equal(record, null, 'no event reached selected child after reset');
+          assert.deepEqual(await page.evaluate(() => window.receipts), [], 'no second selected-child message settled');
+          if (scenario === 'containing') assert.deepEqual(await page.evaluate(() => window.containingRecords), [{trusted: true, target: 'HTML'}]);
+        } else assert.deepEqual(record, {
+          type: 'pointer-done', prevented: false, trusted: scenario !== 'untrusted', atTarget: scenario !== 'other-target',
+        });
+        throw caught;
+      } finally {
+        if (suppressed) await session.send('Input.setIgnoreInputEvents', {ignore: false});
+        await session.detach();
+      }
+    }, setup, {shared, log: line => lines.push(line)});
+    if (scenario === 'control') {
+      await running;
+      assert.equal(lines.at(-1), 'COMPLETE 45/45');
+      assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
+    } else {
+      await assert.rejects(running, error => {
+        assert.equal(error.cause.message.split('\n')[0], 'page.evaluate: Error: native click did not reach mounted target ' + sandboxId);
+        return true;
+      });
+      assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, scenario === 'stale' ? 1 : 0);
+      assert(!lines.some(line => line.startsWith('PASS ') || line.startsWith('COMPLETE ')));
+    }
+  }
+}
+
+test('sandbox_click_rejects_absent_or_untrusted_delivery', async t => {
+  for (const scenario of ['ignored', 'containing', 'other-target', 'untrusted']) await clickDelivery(t, scenario);
+});
+
+test('sandbox_click_does_not_reuse_an_earlier_receipt', async t => {
+  await clickDelivery(t, 'stale');
+});
+
+test('sandbox_click_confirms_native_delivery_before_receipt_wait', async t => {
+  await clickDelivery(t, 'control');
 });

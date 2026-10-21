@@ -197,7 +197,12 @@ async function inspectSandbox({page}, id, action, phase) {
   if (!selected) throw new Error('mounted frame not found ' + id);
   if (action === 'click') {
     phase(`waiting for pointer-done ${id}; frame ${selected.url()}`);
+    await selected.evaluate(() => { window.pointerDone = null; });
     await selected.locator('#target').click();
+    const delivered = await selected.evaluate(() => window.pointerDone);
+    if (!delivered?.trusted || !delivered.atTarget) {
+      throw new Error('native click did not reach mounted target ' + id);
+    }
     phase(`click returned ${id}`);
     return;
   }
