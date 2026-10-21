@@ -157,27 +157,23 @@ pub enum SpaceSidebarToken {
     },
 }
 
-impl AgentSidebarToken {
-    /// Underlying token and occurrence-local style.
-    #[must_use]
-    pub fn parts(&self) -> (&Self, SidebarTokenStyle) {
-        match self {
-            Self::Styled { token, style } => (token, *style),
-            token => (token, SidebarTokenStyle::default()),
+/// Supplies the shared occurrence-style projection for each token family.
+macro_rules! sidebar_token_parts {
+    ($token:ty) => {
+        impl $token {
+            /// Underlying token and occurrence-local style.
+            #[must_use]
+            pub fn parts(&self) -> (&Self, SidebarTokenStyle) {
+                match self {
+                    Self::Styled { token, style } => (token, *style),
+                    token => (token, SidebarTokenStyle::default()),
+                }
+            }
         }
-    }
+    };
 }
-
-impl SpaceSidebarToken {
-    /// Underlying token and occurrence-local style.
-    #[must_use]
-    pub fn parts(&self) -> (&Self, SidebarTokenStyle) {
-        match self {
-            Self::Styled { token, style } => (token, *style),
-            token => (token, SidebarTokenStyle::default()),
-        }
-    }
-}
+sidebar_token_parts!(AgentSidebarToken);
+sidebar_token_parts!(SpaceSidebarToken);
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

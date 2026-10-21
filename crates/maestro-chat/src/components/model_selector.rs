@@ -244,10 +244,7 @@ impl SelectionState {
     }
     /// Wraps one navigation action, leaving empty views untouched.
     fn navigate(&self, up: bool) {
-        let count = self.filtered.borrow().len();
-        if super::navigate_list(&self.selected, count, up) {
-            self.update_list();
-        }
+        super::navigate_list(&self.selected, &self.filtered, up, || self.update_list());
     }
 }
 /// Model search panel with retained Input and editable Container children.

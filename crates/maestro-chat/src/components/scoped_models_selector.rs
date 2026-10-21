@@ -350,10 +350,7 @@ impl ScopedModelsSelectorComponent {
     }
     /// Wraps navigation while keeping empty results inert.
     fn navigate(&self, up: bool) {
-        let count = self.filtered.borrow().len();
-        if super::navigate_list(&self.selected, count, up) {
-            self.update_list();
-        }
+        super::navigate_list(&self.selected, &self.filtered, up, || self.update_list());
     }
     /// Toggles the selected occurrence without calling out under state borrows.
     fn confirm(&self) {
