@@ -182,11 +182,7 @@ impl Tokenizer<'_> {
                 destination,
                 LinkMetadata {
                     title: String::new(),
-                    link_type: if email {
-                        LinkType::Email
-                    } else {
-                        LinkType::Autolink
-                    },
+                    link_type: LinkType::Autolink,
                 },
             ),
         ))
@@ -196,9 +192,7 @@ impl Tokenizer<'_> {
 /// Ordinary link labels cannot publish nested anchors; images and code stay opaque.
 fn contains_link(nodes: &[crate::Node]) -> bool {
     nodes.iter().any(|node| match &node.kind {
-        Kind::Link(_, _, _, metadata) => {
-            !matches!(metadata.link_type, LinkType::Autolink | LinkType::Email)
-        }
+        Kind::Link(_, _, _, metadata) => metadata.link_type != LinkType::Autolink,
         Kind::Strong(children) | Kind::Emphasis(children) | Kind::Strike(children) => {
             contains_link(children)
         }
