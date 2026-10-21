@@ -223,13 +223,10 @@ impl Default for Frame {
         let host = Rc::new(crate::support::Host::default());
         Self {
             ctx: Context::default(),
-            pack: maestro_theme::load_brand_pack(
-                concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-                #[cfg(not(target_arch = "wasm32"))]
-                &maestro_theme::theme::NativeThemeOperations,
-                #[cfg(target_arch = "wasm32")]
-                &crate::support::brand::Pack,
-            )
+            pack: crate::support::brand::pack(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../assets/brand/brand.json"
+            ))
             .unwrap(),
             mode: BrandMode::Dark,
             i18n: I18n::new(host).unwrap(),

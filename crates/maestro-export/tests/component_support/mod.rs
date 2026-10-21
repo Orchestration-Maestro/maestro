@@ -8,8 +8,7 @@ use maestro_export::{
 };
 use maestro_models::{DiagnosticErrorInfo, Tool};
 use maestro_theme::{
-    ColorMode, NativeThemeOperations, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories,
-    ThemeOptions, ThemeState,
+    ColorMode, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories, ThemeOptions, ThemeState,
 };
 use maestro_tools::types::local::ToolDefinition;
 use maestro_tools::{ToolRenderContext, ToolRenderEnvironment};
@@ -59,13 +58,10 @@ pub fn theme() -> Theme {
     Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap()
 }
 pub fn environment() -> Rc<ToolRenderEnvironment> {
-    let state = ThemeState::new(
-        ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(NativeThemeOperations),
-    );
+    let state = ThemeState::new(ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
     Rc::new(ToolRenderEnvironment {
         runtime: Rc::new(manual_runtime::ManualRuntime::default()),
         readme_path: "/opt/maestro/README.md".into(),

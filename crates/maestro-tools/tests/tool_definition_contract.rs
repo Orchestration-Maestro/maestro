@@ -11,9 +11,7 @@ use maestro_agent::{
     ToolExecutionMode,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
-use maestro_theme::{
-    ColorMode, NativeThemeOperations, Theme, ThemeDirectories, ThemeOptions, ThemeState,
-};
+use maestro_theme::{ColorMode, Theme, ThemeDirectories, ThemeOptions, ThemeState};
 use maestro_tools::{
     ToolContextFactory, ToolDefinition, ToolRenderContext, ToolRenderPhase,
     ToolRenderResultOptions, ToolRenderShell, create_tool_definition_from_agent_tool, define_tool,
@@ -457,13 +455,10 @@ fn row_context<'a>(
     invalidations: &Rc<RefCell<u32>>,
 ) -> ToolRenderContext<'a, u32> {
     let counter = Rc::clone(invalidations);
-    let themes = ThemeState::new(
-        ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(NativeThemeOperations),
-    );
+    let themes = ThemeState::new(ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
     ToolRenderContext {
         renderer_state: None,
         args: Some(args),

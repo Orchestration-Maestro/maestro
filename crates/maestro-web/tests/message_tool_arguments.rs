@@ -242,7 +242,7 @@ fn default_object_input_keeps_canonical_json_spelling() {
     let highlighter = recording_highlighter::Highlighter::default();
     let host: Rc<dyn AttachmentHost> = Rc::new(effects_support::Host::default());
     let i18n = maestro_web::I18n::new(Rc::new(support::Host::default())).unwrap();
-    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let pack = brand::pack("brand.json").unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let context = egui::Context::default();
     let mut row = ToolRenderState::default();

@@ -120,7 +120,7 @@ pub fn pdf_overlay_native_page_gap_follows_source_spacing() {
 pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
     let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -196,7 +196,7 @@ pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
 pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
     let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -604,7 +604,7 @@ pub async fn reading_frame_shadow_paints_outside_clipped_viewport() {
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("overlay-shadow").await;
     for path in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(path, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(path).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -626,7 +626,7 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.density = js("devicePixelRatio").as_f64().unwrap().to_f32().unwrap();
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -665,8 +665,7 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
 #[wasm_bindgen]
 pub fn pptx_native_failures_retag_only_the_content_call() -> Result<(), JsValue> {
     let host = reading_browser_support::Host::new();
-    let pack = maestro_theme::load_brand_pack("brand.json", &support::brand::Pack)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let pack = support::brand::pack("brand.json").map_err(|e| JsValue::from_str(&e.to_string()))?;
     let presentation = pack
         .presentation(maestro_theme::BrandMode::Dark)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;

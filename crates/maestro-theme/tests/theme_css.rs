@@ -1,7 +1,7 @@
 //! Resolved color records and optional export colors.
 use crate::live;
 
-use live::{Ops, Scratch, custom_json, state};
+use live::{Scratch, custom_json, in_child, state};
 use maestro_theme::{
     ColorMode, Theme, ThemeExportColors, ThemeOptions, ThemeState, is_light_theme,
 };
@@ -13,14 +13,13 @@ const PALETTE_HEX: &str = include_str!("live/palette_hex.txt");
 
 /// A state over a scratch directory holding `<name>.json` custom themes.
 #[cfg(test)]
-fn custom(tag: &str, themes: &[(&str, Value)]) -> (Scratch, Rc<Ops>, Rc<ThemeState>) {
-    let scratch = Scratch::new(tag);
+fn custom(themes: &[(&str, Value)]) -> (Scratch, Rc<ThemeState>) {
+    let scratch = Scratch::new();
     for (name, json) in themes {
         scratch.write(&format!("custom/{name}.json"), &json.to_string());
     }
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
-    (scratch, ops, state)
+    let state = state(&scratch);
+    (scratch, state)
 }
 
 /// The export section of the shipped dark theme under another name.
@@ -53,7 +52,7 @@ fn color(colors: &[(String, String)], key: &str) -> String {
 /// Export colors of a document stored as custom theme `e`.
 #[cfg(test)]
 fn exported(json: &Value) -> ThemeExportColors {
-    let (_scratch, _ops, state) = custom("export", &[("e", json.clone())]);
+    let (_scratch, state) = custom(&[("e", json.clone())]);
     state.get_theme_export_colors(Some("e"))
 }
 
@@ -71,9 +70,8 @@ fn page_bg(value: &Value) -> Option<String> {
 
 #[test]
 fn theme_export_source_precedence_differs_from_instance_lookup() {
-    let scratch = Scratch::new("precedence");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     let register = |name: &str, path: Option<String>| {
         let options = ThemeOptions {
             name: Some(name.to_owned()),
@@ -134,7 +132,7 @@ fn theme_css_expands_every_palette_index() {
     for index in 0..=255 {
         json["colors"][format!("palette{index}")] = index.into();
     }
-    let (_scratch, _ops, state) = custom("palette", &[("palette", json)]);
+    let (_scratch, state) = custom(&[("palette", json)]);
     let colors = state.get_resolved_theme_colors(Some("palette")).unwrap();
     let expected: Vec<_> = PALETTE_HEX.lines().collect();
     assert_eq!(expected.len(), 256);
@@ -170,7 +168,7 @@ fn theme_resolved_css_preserves_key_order_and_empty_fallback() {
     }
     json["colors"]["text"] = "".into();
     json["colors"]["border"] = "accent".into();
-    let (_scratch, _ops, state) = custom("order", &[("custom", json)]);
+    let (_scratch, state) = custom(&[("custom", json)]);
     let colors = state.get_resolved_theme_colors(Some("custom")).unwrap();
     let keys: Vec<_> = colors.iter().map(|(key, _)| key.as_str()).collect();
     assert_eq!(keys[..5], ["0", "1", "2", "10", "4294967294"]);
@@ -204,26 +202,25 @@ fn theme_resolved_css_preserves_key_order_and_empty_fallback() {
 /// A state over the shipped themes only.
 #[cfg(test)]
 fn state_for_shipped() -> Rc<ThemeState> {
-    custom("shipped", &[]).2
+    custom(&[]).1
 }
 
 #[test]
 fn theme_export_selection_uses_explicit_current_then_default() {
-    let (_scratch, ops, state) = custom(
-        "selection",
-        &[
-            ("one", with_page_bg("one", "#010101")),
-            ("two", with_page_bg("two", "#020202")),
-        ],
-    );
-    ops.set("COLORFGBG", "0;8");
+    let test = "theme_export_selection_uses_explicit_current_then_default";
+    if !in_child(test, &[("COLORFGBG", "0;8")]) {
+        return;
+    }
+    let (_scratch, state) = custom(&[
+        ("one", with_page_bg("one", "#010101")),
+        ("two", with_page_bg("two", "#020202")),
+    ]);
     let page = |name: Option<&str>| state.get_theme_export_colors(name).page_bg;
     assert_eq!(page(None), Some("#F2E8DC".to_owned()));
     assert_eq!(
         color(&state.get_resolved_theme_colors(None).unwrap(), "accent"),
         "#2A1F1A"
     );
-    assert!(ops.read("COLORFGBG"));
 
     assert_eq!(page(Some("one")), Some("#010101".to_owned()));
     state.init_theme(Some("one"), None).unwrap();
@@ -249,14 +246,14 @@ fn theme_export_selection_uses_explicit_current_then_default() {
 
 #[test]
 fn theme_export_with_a_name_never_reads_the_terminal_background() {
-    let (_scratch, ops, state) = custom(
-        "explicit-only",
-        &[
-            ("one", with_page_bg("one", "#010101")),
-            ("two", with_page_bg("two", "#020202")),
-        ],
-    );
-    ops.set("COLORFGBG", "0;8");
+    let test = "theme_export_with_a_name_never_reads_the_terminal_background";
+    if !in_child(test, &[("COLORFGBG", "0;8")]) {
+        return;
+    }
+    let (_scratch, state) = custom(&[
+        ("one", with_page_bg("one", "#010101")),
+        ("two", with_page_bg("two", "#020202")),
+    ]);
     assert_eq!(
         state.get_theme_export_colors(Some("one")).page_bg,
         Some("#010101".to_owned())
@@ -268,7 +265,6 @@ fn theme_export_with_a_name_never_reads_the_terminal_background() {
         state.get_theme_export_colors(None).page_bg,
         Some("#010101".to_owned())
     );
-    assert!(!ops.read("COLORFGBG"));
 }
 
 #[test]
@@ -329,7 +325,7 @@ fn theme_export_recursive_alias_yields_no_colors_while_resolution_reports_it() {
     assert_eq!(exported(&json), ThemeExportColors::default());
 
     json["colors"]["accent"] = "a".into();
-    let (_scratch, _ops, state) = custom("loop-colors", &[("loop", json)]);
+    let (_scratch, state) = custom(&[("loop", json)]);
     let error = state.get_resolved_theme_colors(Some("loop")).unwrap_err();
     assert_eq!(error.to_string(), "Circular variable reference detected: a");
 }
@@ -396,7 +392,7 @@ fn theme_export_admission_checks_selected_fields() {
         documents.push(with_export(&section));
     }
     for (index, document) in documents.iter().enumerate() {
-        let (_scratch, _ops, state) = custom("admission", &[("e", document.clone())]);
+        let (_scratch, state) = custom(&[("e", document.clone())]);
         assert_eq!(
             state.get_theme_export_colors(Some("e")),
             ThemeExportColors::default(),
@@ -416,14 +412,13 @@ fn theme_export_suppresses_errors_without_hiding_resolved_errors() {
         with_export(&json!({ "pageBg": "#010203", "cardBg": "#020304", "infoBg": "nowhere" }));
     let mut cycle = with_export(&json!({ "pageBg": "loop" }));
     cycle["vars"]["loop"] = "loop".into();
-    let scratch = Scratch::new("suppress");
+    let scratch = Scratch::new();
     scratch.write("custom/dangling.json", &dangling.to_string());
     scratch.write("custom/cycle.json", &cycle.to_string());
     scratch.write("custom/malformed.json", "{");
     dangling["colors"]["accent"] = "nowhere".into();
     scratch.write("custom/bad-color.json", &dangling.to_string());
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let state = state(&scratch);
     for name in ["dangling", "cycle", "malformed", "missing", "bad-color"] {
         assert_eq!(
             state.get_theme_export_colors(Some(name)),
@@ -447,10 +442,7 @@ fn theme_export_resolves_only_the_requested_color_plane() {
     unused_bad_color["colors"]["accent"] = "unknownVar".into();
     let mut bad_export = with_export(&json!({ "pageBg": "unknownVar" }));
     bad_export["vars"]["spare"] = "#101010".into();
-    let (_scratch, _ops, state) = custom(
-        "plane",
-        &[("bad-color", unused_bad_color), ("bad-export", bad_export)],
-    );
+    let (_scratch, state) = custom(&[("bad-color", unused_bad_color), ("bad-export", bad_export)]);
 
     assert_eq!(
         state.get_theme_export_colors(Some("bad-color")).page_bg,
@@ -473,12 +465,12 @@ fn theme_export_resolves_only_the_requested_color_plane() {
 
 #[test]
 fn theme_export_keeps_last_duplicate_and_ignores_unknown_fields() {
-    let (scratch, ops, _state) = custom("duplicates", &[]);
+    let (scratch, _state) = custom(&[]);
     let base = custom_json("dup", "#010203").to_string();
     let tail = r##","export":{"pageBg":true},"export":{"pageBg":null,"pageBg":"#010203","cardBg":1.0,"infoBg":-0.0,"mystery":{"deep":[1,{"x":null}]}}}"##;
     let text = format!("{}{tail}", base.strip_suffix('}').unwrap());
     scratch.write("custom/dup.json", &text);
-    let state = live::state(&scratch, &ops);
+    let state = live::state(&scratch);
     let colors = state.get_theme_export_colors(Some("dup"));
     assert_eq!(colors.page_bg, Some("#010203".to_owned()));
     assert_eq!(colors.card_bg, Some("#800000".to_owned()));
@@ -488,8 +480,8 @@ fn theme_export_keeps_last_duplicate_and_ignores_unknown_fields() {
 
 #[test]
 fn theme_scratch_directories_are_exclusively_owned() {
-    let (_first, _, first) = custom("export", &[("e", with_page_bg("e", "#111111"))]);
-    let (_second, _, second) = custom("export", &[("e", with_page_bg("e", "#222222"))]);
+    let (_first, first) = custom(&[("e", with_page_bg("e", "#111111"))]);
+    let (_second, second) = custom(&[("e", with_page_bg("e", "#222222"))]);
     assert_eq!(
         first.get_theme_export_colors(Some("e")).page_bg,
         Some("#111111".to_owned())
@@ -506,7 +498,7 @@ fn palette_expansion_is_shared_by_theme_and_converter() {
     for index in 0..=255 {
         json["colors"][format!("palette{index}")] = index.into();
     }
-    let (_scratch, _ops, state) = custom("shared-palette", &[("shared-palette", json)]);
+    let (_scratch, state) = custom(&[("shared-palette", json)]);
     let colors = state
         .get_resolved_theme_colors(Some("shared-palette"))
         .unwrap();

@@ -188,7 +188,7 @@ pub struct Rows {
 }
 /// A native registry over disposable files, using the existing theme fixture owner.
 pub fn registry(names: &[String]) -> (super::live::Scratch, Rc<maestro_theme::ThemeState>) {
-    let scratch = super::live::Scratch::new("selectors");
+    let scratch = super::live::Scratch::new();
     for name in names
         .iter()
         .filter(|name| !matches!(name.as_str(), "dark" | "light"))
@@ -204,7 +204,6 @@ pub fn registry(names: &[String]) -> (super::live::Scratch, Rc<maestro_theme::Th
                 .into(),
             custom_themes_dir: scratch.path("custom"),
         },
-        super::live::Ops::new(&[]),
     ));
     state.set_theme_instance(colors(0)).unwrap();
     (scratch, state)

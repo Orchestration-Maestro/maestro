@@ -4203,6 +4203,8 @@ dependencies = [
  "maestro-listing",
  "maestro-path",
  "maestro-request",
+ "maestro-test-directory",
+ "maestro-test-process",
  "maestro-text",
  "maestro-tui",
  "maestro-watch",

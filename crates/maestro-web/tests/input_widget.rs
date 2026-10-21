@@ -151,13 +151,10 @@ fn input_defaults_keep_native_text_and_medium_size() {
     let host = Rc::new(DefaultHost::default());
     let mut input = Input::new(InputProps::default(), host.clone());
     let context = egui::Context::default();
-    let pack = maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        #[cfg(not(target_arch = "wasm32"))]
-        &maestro_theme::theme::NativeThemeOperations,
-        #[cfg(target_arch = "wasm32")]
-        &crate::support::brand::Pack,
-    )
+    let pack = crate::support::brand::pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
+    ))
     .unwrap();
     let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
@@ -471,13 +468,10 @@ fn input_styles_use_caller_tokens_without_replacing_layout() {
         ("packs/signal.json", maestro_theme::BrandMode::Dark),
     ] {
         let mut frame = attachment_support::Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
-                #[cfg(not(target_arch = "wasm32"))]
-                &maestro_theme::theme::NativeThemeOperations,
-                #[cfg(target_arch = "wasm32")]
-                &crate::support::brand::Pack,
-            )
+            pack: crate::support::brand::pack(&format!(
+                "{}/../../assets/brand/{path}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap(),
             mode,
             density: 1.5,

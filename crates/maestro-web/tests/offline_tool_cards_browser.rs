@@ -121,7 +121,7 @@ mod tests {
         .unwrap();
         let mut slots = Slots::new();
         for pack in ["brand.json", "signal.json"] {
-            slots.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+            slots.pack = support::brand::pack(pack).unwrap();
             for mode in [BrandMode::Dark, BrandMode::Light] {
                 slots.mode = mode;
                 export_mount::mount(

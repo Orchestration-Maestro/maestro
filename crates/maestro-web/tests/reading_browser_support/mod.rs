@@ -196,7 +196,7 @@ impl View {
             element: create_artifact_element(filename, content, host.clone()).unwrap(),
             host,
             context: egui::Context::default(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             mode: maestro_theme::BrandMode::Dark,
             size: egui::vec2(400., 300.),
             density: 1.,

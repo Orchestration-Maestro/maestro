@@ -249,13 +249,10 @@ pub fn document(id: &serde_json::Value) -> maestro_web::export_html::template::S
 /// Panics when controlled fixture input is invalid.
 #[must_use]
 pub fn pack() -> maestro_theme::BrandPack {
-    maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        #[cfg(not(target_arch = "wasm32"))]
-        &maestro_theme::theme::NativeThemeOperations,
-        #[cfg(target_arch = "wasm32")]
-        &crate::support::brand::Pack,
-    )
+    crate::support::brand::pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
+    ))
     .unwrap()
 }
 /// Render through the public operation in a caller-selected layout.

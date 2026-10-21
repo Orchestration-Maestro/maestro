@@ -231,8 +231,7 @@ fn factory_for(
     let host = std::rc::Rc::new(crate::session_header_support::Host::default());
     host.height.set(120.);
     let mut state = maestro_web::export_html::template::HeaderState::new(host.clone());
-    let pack =
-        maestro_theme::load_brand_pack("brand.json", &crate::session_header_browser::Pack).unwrap();
+    let pack = crate::session_header_browser::pack("brand.json").unwrap();
     let doc = crate::session_header_browser::load_document(
         &base64::engine::general_purpose::STANDARD.encode(data.to_string()),
         "",
@@ -391,8 +390,7 @@ async fn style_corpus() {
         ("signal.json", maestro_theme::BrandMode::Dark),
     ] {
         let mut slots = super::Slots::new();
-        slots.pack =
-            maestro_theme::load_brand_pack(pack, &crate::session_header_browser::Pack).unwrap();
+        slots.pack = crate::session_header_browser::pack(pack).unwrap();
         slots.mode = mode;
         let mut count = 0;
         for row in cases.iter().filter(|r| r["branch"] == "success") {

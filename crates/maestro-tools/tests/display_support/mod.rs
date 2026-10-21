@@ -11,8 +11,8 @@ pub mod manual_runtime;
 use maestro_agent::AgentToolResult;
 use maestro_models::UserBlock;
 use maestro_theme::{
-    ColorMode, ColorValue, LiveTheme, NativeThemeOperations, SyntaxHighlighter, SyntaxSpan,
-    SyntectHighlighter, Theme, ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,
+    ColorMode, ColorValue, LiveTheme, SyntaxHighlighter, SyntaxSpan, SyntectHighlighter, Theme,
+    ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,
 };
 use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tools::output::truncate::{
@@ -417,13 +417,10 @@ impl Env {
 
     /// An environment publishing `theme` and highlighting with `highlighter`.
     pub fn with(theme: Rc<Theme>, highlighter: Rc<dyn SyntaxHighlighter>) -> Self {
-        let state = Rc::new(ThemeState::new(
-            ThemeDirectories {
-                themes_dir: String::new(),
-                custom_themes_dir: String::new(),
-            },
-            Rc::new(NativeThemeOperations),
-        ));
+        let state = Rc::new(ThemeState::new(ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: String::new(),
+        }));
         state.set_theme_instance(Rc::clone(&theme)).unwrap();
         let live = state.theme();
         Self {
@@ -687,7 +684,7 @@ pub fn shipped_theme(name: &str, mode: Option<ColorMode>) -> Rc<Theme> {
         "{}/../maestro-theme/assets/theme/{name}.json",
         env!("CARGO_MANIFEST_DIR")
     );
-    Rc::new(maestro_theme::load_theme_from_path(&path, mode, &NativeThemeOperations).unwrap())
+    Rc::new(maestro_theme::load_theme_from_path(&path, mode).unwrap())
 }
 
 /// Invoke a native callback with conversion only at its raw boundary.

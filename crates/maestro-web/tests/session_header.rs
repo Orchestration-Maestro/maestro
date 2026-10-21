@@ -193,16 +193,10 @@ fn header_native_failures_preserve_the_reached_phase() {
 #[test]
 fn header_scope_uses_shared_theme_and_preserves_caller_style() {
     let default = pack();
-    let alternate = maestro_theme::load_brand_pack(
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../assets/brand/packs/signal.json"
-        ),
-        #[cfg(not(target_arch = "wasm32"))]
-        &maestro_theme::theme::NativeThemeOperations,
-        #[cfg(target_arch = "wasm32")]
-        &crate::support::brand::Pack,
-    )
+    let alternate = crate::support::brand::pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/packs/signal.json"
+    ))
     .unwrap();
     for pack in [&default, &alternate] {
         for mode in [BrandMode::Light, BrandMode::Dark] {

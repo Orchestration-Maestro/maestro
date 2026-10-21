@@ -1,20 +1,21 @@
-//! Controlled pack operations, pack documents and recorded expectations for the brand pack tests.
+//! Pack files, pack documents and recorded expectations for the brand pack tests.
+use crate::live::Scratch;
 use maestro_theme::{
-    BrandMode, BrandPack, ColorMode, ThemeBg, ThemeColor, ThemeError, ThemeInfo, ThemeOperations,
-    load_brand_pack, load_theme_from_path,
+    BrandMode, BrandPack, ColorMode, ThemeBg, ThemeColor, ThemeError, load_brand_pack,
 };
 use serde::Deserialize;
 use serde_json::Value;
-use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::io;
 
 /// The shared pack document.
 const FORGE: &str = include_str!("../../../../assets/brand/brand.json");
-/// Where the controlled operations serve the shared pack.
+/// The path decoded shared-pack text is labelled with.
 pub const FORGE_PATH: &str = "/forge/brand.json";
-/// Where the controlled operations serve the alternate pack.
-pub const ALTERNATE_PATH: &str = "/alt/packs/alternate.json";
+/// The alternate pack and its marks on the native filesystem.
+pub const ALTERNATE_NATIVE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/brand_support/alternate/packs/alternate.json"
+);
 /// The shared pack on the native filesystem.
 pub const FORGE_NATIVE: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json");
@@ -24,115 +25,36 @@ pub const SIGNAL_NATIVE: &str = concat!(
     "/../../assets/brand/packs/signal.json"
 );
 
-/// Serves fixed files and records each read in order.
-pub struct Mem {
-    /// File text by path.
-    files: RefCell<BTreeMap<String, String>>,
-    /// Paths read, in call order.
-    pub reads: RefCell<Vec<String>>,
+/// Write each `(relative path, text)` below a fresh directory.
+pub fn files(entries: &[(&str, &str)]) -> Scratch {
+    let scratch = Scratch::new();
+    for (path, text) in entries {
+        scratch.write(path, text);
+    }
+    scratch
 }
 
-impl Mem {
-    /// Serve exactly the given files.
-    pub fn new(files: &[(&str, &str)]) -> Self {
-        Self {
-            files: RefCell::new(
-                files
-                    .iter()
-                    .map(|(path, text)| ((*path).to_owned(), (*text).to_owned()))
-                    .collect(),
-            ),
-            reads: RefCell::default(),
-        }
-    }
-
-    /// Serve the shared pack and its four templates beside it.
-    pub fn forge() -> Self {
-        Self::new(&[
-            (FORGE_PATH, FORGE),
-            (
-                "/forge/mark.svg",
-                include_str!("../../../../assets/brand/mark.svg"),
-            ),
-            (
-                "/forge/mark-flat.svg",
-                include_str!("../../../../assets/brand/mark-flat.svg"),
-            ),
-            (
-                "/forge/mark-mono.svg",
-                include_str!("../../../../assets/brand/mark-mono.svg"),
-            ),
-            (
-                "/forge/mark-small.svg",
-                include_str!("../../../../assets/brand/mark-small.svg"),
-            ),
-        ])
-    }
-
-    /// Serve the alternate pack and its five templates.
-    pub fn alternate() -> Self {
-        Self::new(&[
-            (
-                ALTERNATE_PATH,
-                include_str!("alternate/packs/alternate.json"),
-            ),
-            (
-                "/alt/marks/alternate.svg",
-                include_str!("alternate/marks/alternate.svg"),
-            ),
-            (
-                "/alt/marks/alternate-flat.svg",
-                include_str!("alternate/marks/alternate-flat.svg"),
-            ),
-            (
-                "/alt/marks/alternate-mono.svg",
-                include_str!("alternate/marks/alternate-mono.svg"),
-            ),
-            (
-                "/alt/marks/alternate-small.svg",
-                include_str!("alternate/marks/alternate-small.svg"),
-            ),
-            (
-                "/alt/marks/alternate-badge.svg",
-                include_str!("alternate/marks/alternate-badge.svg"),
-            ),
-        ])
-    }
-
-    /// Serve one more file.
-    pub fn with(self, path: &str, text: &str) -> Self {
-        self.files
-            .borrow_mut()
-            .insert(path.to_owned(), text.to_owned());
-        self
-    }
-}
-
-impl ThemeOperations for Mem {
-    fn read_to_string(&self, path: &str) -> io::Result<String> {
-        self.reads.borrow_mut().push(path.to_owned());
-        self.files
-            .borrow()
-            .get(path)
-            .cloned()
-            .ok_or_else(|| io::ErrorKind::NotFound.into())
-    }
-
-    fn environment(&self, _name: &str) -> Option<String> {
-        None
-    }
-
-    fn exists(&self, path: &str) -> bool {
-        self.files.borrow().contains_key(path)
-    }
-
-    fn read_dir(&self, _path: &str) -> io::Result<Vec<String>> {
-        Err(io::ErrorKind::Unsupported.into())
-    }
-
-    fn sort_by_name(&self, _themes: &mut [ThemeInfo]) -> io::Result<()> {
-        Ok(())
-    }
+/// The shared pack at `forge/brand.json` and its four templates beside it.
+pub fn forge_files() -> Scratch {
+    files(&[
+        ("forge/brand.json", FORGE),
+        (
+            "forge/mark.svg",
+            include_str!("../../../../assets/brand/mark.svg"),
+        ),
+        (
+            "forge/mark-flat.svg",
+            include_str!("../../../../assets/brand/mark-flat.svg"),
+        ),
+        (
+            "forge/mark-mono.svg",
+            include_str!("../../../../assets/brand/mark-mono.svg"),
+        ),
+        (
+            "forge/mark-small.svg",
+            include_str!("../../../../assets/brand/mark-small.svg"),
+        ),
+    ])
 }
 
 /// The shared pack as editable JSON.
@@ -140,19 +62,19 @@ pub fn forge_json() -> Value {
     serde_json::from_str(FORGE).unwrap()
 }
 
-/// Decode a pack document served at the shared pack's path.
+/// Decode a pack document labelled with the shared pack's path.
 pub fn load_value(value: &Value) -> Result<BrandPack, ThemeError> {
-    load_brand_pack(FORGE_PATH, &Mem::new(&[(FORGE_PATH, &value.to_string())]))
+    BrandPack::parse(FORGE_PATH, &value.to_string())
 }
 
-/// Decode the shared pack from the controlled files.
+/// Load the shared pack from the native filesystem.
 pub fn forge() -> BrandPack {
-    load_brand_pack(FORGE_PATH, &Mem::forge()).unwrap()
+    load_brand_pack(FORGE_NATIVE).unwrap()
 }
 
-/// Decode the alternate pack from the controlled files.
+/// Load the alternate pack from the native filesystem.
 pub fn alternate() -> BrandPack {
-    load_brand_pack(ALTERNATE_PATH, &Mem::alternate()).unwrap()
+    load_brand_pack(ALTERNATE_NATIVE).unwrap()
 }
 
 /// Recorded export colors of one projected theme.
@@ -252,12 +174,7 @@ pub fn check_prefixes(document: &str, expected: &Terminal) {
         (ColorMode::Truecolor, &expected.truecolor),
         (ColorMode::Color256, &expected.color256),
     ] {
-        let theme = load_theme_from_path(
-            "theme.json",
-            Some(mode),
-            &Mem::new(&[("theme.json", document)]),
-        )
-        .unwrap();
+        let theme = crate::support::load(document, Some(mode)).unwrap();
         assert_eq!(table.len(), 51);
         for (key, prefix) in table {
             let found = if key.ends_with("Bg") {

@@ -48,10 +48,10 @@ fn artifact_panel_wide_header_cannot_displace_close() {
         "wide".into(),
         Rc::new(RefCell::new(Some(Box::new(WideHeader)))),
     );
-    let pack = maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        &maestro_theme::theme::NativeThemeOperations,
-    )
+    let pack = maestro_theme::load_brand_pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
+    ))
     .unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let i18n = crate::I18n::new(Rc::new(Language)).unwrap();

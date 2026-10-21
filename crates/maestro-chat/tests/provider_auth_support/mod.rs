@@ -384,12 +384,7 @@ pub fn brand_roles() {
             env!("CARGO_MANIFEST_DIR")
         );
         let theme = Rc::new(
-            maestro_theme::load_theme_from_path(
-                &path,
-                Some(ColorMode::Truecolor),
-                &maestro_theme::NativeThemeOperations,
-            )
-            .unwrap(),
+            maestro_theme::load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap(),
         );
         let (_state, live) = super::published::published(&theme);
         let panel = brand_panel(live);

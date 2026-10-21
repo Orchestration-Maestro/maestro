@@ -30,7 +30,7 @@ a failure of the existence check or of the directory check keeps its own message
 a failure of the directory read is reported as `Cannot read directory: <message>`.
 
 The names are sorted by comparing their lowercase forms with the
-[locale collator](theme.md#replaceable-operations), keeping the order of names that compare
+[locale collator](theme.md#files-environment-and-sorting), keeping the order of names that compare
 equal, so upper and lower case of one letter stay adjacent and digits are not read as numbers.
 The collator's locale comes from the process environment, whichever operations list the
 directory.

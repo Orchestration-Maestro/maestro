@@ -4,6 +4,7 @@ use super::fs_watch::{
 };
 use super::{ThemeState, load_theme_from_path};
 use maestro_path::join;
+use std::path::Path;
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
@@ -47,7 +48,7 @@ impl ThemeState {
         }
         let dir = &self.directories.custom_themes_dir;
         let file = format!("{name}.json");
-        if !self.operations.exists(&join(&[dir, &file])) {
+        if !Path::new(&join(&[dir, &file])).exists() {
             return;
         }
         let state = Rc::downgrade(self);
@@ -108,10 +109,10 @@ impl ThemeState {
     /// nothing the callback changed is rolled back.
     fn reload(&self, name: &str, path: &str) {
         let _fired = self.lifecycle.watch.borrow_mut().timer.take();
-        if self.lifecycle.name.borrow().as_deref() != Some(name) || !self.operations.exists(path) {
+        if self.lifecycle.name.borrow().as_deref() != Some(name) || !Path::new(path).exists() {
             return;
         }
-        if let Ok(theme) = load_theme_from_path(path, None, self.operations.as_ref()) {
+        if let Ok(theme) = load_theme_from_path(path, None) {
             let theme = Rc::new(theme);
             self.registered
                 .borrow_mut()

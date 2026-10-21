@@ -484,13 +484,10 @@ fn native_environment() -> (
     Rc<maestro_tools::ToolRenderEnvironment>,
 ) {
     let theme = native_palette(2);
-    let state = maestro_theme::ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(maestro_theme::NativeThemeOperations),
-    );
+    let state = maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
     state.set_theme_instance(Rc::clone(&theme)).unwrap();
     let mut environment = component_support::environment();
     Rc::get_mut(&mut environment).unwrap().live_theme = state.theme();

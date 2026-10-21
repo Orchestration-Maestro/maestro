@@ -42,7 +42,7 @@ fn sample(
 }
 /// Selected source operands, independent of the composed image.
 fn colors(pack: &str, mode: BrandMode, copied: bool) -> [egui::Color32; 3] {
-    let pack = maestro_theme::load_brand_pack(pack, &brand::Pack).unwrap();
+    let pack = brand::pack(pack).unwrap();
     let p = pack.presentation(mode).unwrap();
     let roles = if copied {
         ["success", "on-accent", "success"]
@@ -311,7 +311,7 @@ fn copy_link_composition_uses_live_selected_typography() {
 }
 /// Exercise each selected font route through live symbol/type-size changes.
 fn typography_case(name: &str, registered: bool) {
-    let pack = maestro_theme::load_brand_pack(name, &brand::Pack).unwrap();
+    let pack = brand::pack(name).unwrap();
     let p = pack.presentation(BrandMode::Dark).unwrap();
     let family = p.fonts[&p.typography["body"].font].family.clone();
     let native_family = if registered {
@@ -416,7 +416,7 @@ fn register_font(context: &egui::Context, name: &str, alternate: bool) {
 /// Changed raster operands refresh pixels; preparation failures leave the retained image owned.
 #[test]
 fn copy_link_composition_refreshes_only_changed_raster_inputs() {
-    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let pack = brand::pack("brand.json").unwrap();
     let mut p = pack.presentation(BrandMode::Dark).unwrap();
     let mut canvas = Canvas::new();
     let initial = canvas.styled_frame(vec![], &p).1;

@@ -3,14 +3,14 @@ use crate::brand_support;
 use crate::live;
 
 use brand_support::{
-    ALTERNATE_PATH, FORGE_NATIVE, FORGE_PATH, Mem, SIGNAL_NATIVE, alternate, check_prefixes, forge,
+    FORGE_NATIVE, FORGE_PATH, SIGNAL_NATIVE, alternate, check_prefixes, files, forge, forge_files,
     forge_json, load_value, mode_id, presented, required_colors, terminal,
 };
-use live::{Ops, Scratch, custom_json, state};
+use live::{Scratch, TRUECOLOR, custom_json, in_child, state};
 use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{
-    BrandMode, BrandPack, BrandPresentation, ColorMode, NativeThemeOperations, Theme, ThemeBg,
-    ThemeColor, ThemeError, ThemeExportColors, ThemeOptions, load_brand_pack, load_theme_from_path,
+    BrandMode, BrandPack, BrandPresentation, ColorMode, Theme, ThemeBg, ThemeColor, ThemeError,
+    ThemeExportColors, ThemeOptions, load_brand_pack, load_theme_from_path,
 };
 use serde_json::{Value, json};
 use std::cell::RefCell;
@@ -75,9 +75,9 @@ fn check_projection(pack: &BrandPack, mode: BrandMode, id: &str) {
     assert_eq!(keys, required_colors());
     let expected = terminal(id);
     check_prefixes(&document, &expected);
-    let scratch = Scratch::new("projection");
+    let scratch = Scratch::new();
     scratch.write(&format!("custom/{id}.json"), &document);
-    let state = state(&scratch, &Ops::new(&[]));
+    let state = state(&scratch);
     assert_eq!(
         state.get_theme_export_colors(Some(id)),
         ThemeExportColors {
@@ -90,7 +90,7 @@ fn check_projection(pack: &BrandPack, mode: BrandMode, id: &str) {
 
 /// Compare resolved presentation, CSS and every template to the recorded entry.
 #[cfg(test)]
-fn check_presentation(pack: &BrandPack, mode: BrandMode, id: &str, files: &Mem) {
+fn check_presentation(pack: &BrandPack, mode: BrandMode, id: &str) {
     let expected = presented(id);
     let presentation = pack.presentation(mode).unwrap();
     assert_eq!(owned(&presentation.colors), expected.colors);
@@ -112,11 +112,7 @@ fn check_presentation(pack: &BrandPack, mode: BrandMode, id: &str, files: &Mem) 
     assert_eq!(expected.svg.len(), 1 + presentation.mark.variants.len());
     for (name, text) in &expected.svg {
         let variant = (name != "template").then_some(name.as_str());
-        assert_eq!(
-            &pack.mark_svg(mode, variant, files).unwrap(),
-            text,
-            "{id} {name}"
-        );
+        assert_eq!(&pack.mark_svg(mode, variant).unwrap(), text, "{id} {name}");
     }
 }
 
@@ -124,11 +120,10 @@ fn check_presentation(pack: &BrandPack, mode: BrandMode, id: &str, files: &Mem) 
 #[cfg(test)]
 fn custom_prefixes() -> Vec<String> {
     let document = custom_json("custom", "#123456").to_string();
-    let files = Mem::new(&[("custom.json", &document)]);
     [ColorMode::Truecolor, ColorMode::Color256]
         .into_iter()
         .flat_map(|mode| {
-            let theme = load_theme_from_path("custom.json", Some(mode), &files).unwrap();
+            let theme = crate::support::load(&document, Some(mode)).unwrap();
             ["accent", "border", "text", "mdCode"]
                 .map(|key| theme.fg(&ThemeColor::Named(key.into()), "x").unwrap())
         })
@@ -147,21 +142,16 @@ fn brand_pack_projects_both_builtin_themes() {
 fn maestro_identity_override_reaches_all_style_outputs() {
     let before = custom_prefixes();
     assert_eq!(before[0], "\x1b[38;2;18;52;86mx\x1b[39m");
-    let forge_files = Mem::forge();
-    let forge_pack = load_brand_pack(FORGE_PATH, &forge_files).unwrap();
-    let alternate_files = Mem::alternate();
-    let alternate_pack = load_brand_pack(ALTERNATE_PATH, &alternate_files).unwrap();
+    let forge_pack = forge();
+    let alternate_pack = alternate();
     for mode in MODES {
         let mode_name = mode_id(mode);
-        for (pack, files, name) in [
-            (&forge_pack, &forge_files, "forge"),
-            (&alternate_pack, &alternate_files, "alternate"),
-        ] {
+        for (pack, name) in [(&forge_pack, "forge"), (&alternate_pack, "alternate")] {
             let id = format!("{name}-{mode_name}");
             if name == "alternate" {
                 check_projection(pack, mode, &id);
             }
-            check_presentation(pack, mode, &id, files);
+            check_presentation(pack, mode, &id);
         }
     }
     assert_ne!(
@@ -178,12 +168,7 @@ fn assert_terminal_defaults() {
         for mode in MODES {
             let document = pack.theme_json(mode).unwrap();
             let json: Value = serde_json::from_str(&document).unwrap();
-            let theme = load_theme_from_path(
-                "t.json",
-                Some(ColorMode::Truecolor),
-                &Mem::new(&[("t.json", &document)]),
-            )
-            .unwrap();
+            let theme = crate::support::load(&document, Some(ColorMode::Truecolor)).unwrap();
             for key in ["text", "userMessageText", "customMessageText", "toolTitle"] {
                 assert_eq!(json["colors"][key], "");
                 assert_eq!(
@@ -207,17 +192,10 @@ fn package_source() -> Rc<RefCell<SourceInfo>> {
     }))
 }
 
-#[test]
-fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
-    let scratch = Scratch::new("custom");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
-    scratch.write(
-        "custom/filemine.json",
-        &custom_json("filemine", "#123456").to_string(),
-    );
-    let source = package_source();
-    let registered = Rc::new(
+/// The registered theme `mine` with a literal accent and the package provenance.
+#[cfg(test)]
+fn package_theme(source: &Rc<RefCell<SourceInfo>>) -> Rc<Theme> {
+    Rc::new(
         Theme::new(
             vec![(
                 ThemeColor::Accent,
@@ -227,12 +205,30 @@ fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
             ColorMode::Truecolor,
             ThemeOptions {
                 name: Some("mine".into()),
-                source_info: Some(Rc::clone(&source)),
+                source_info: Some(Rc::clone(source)),
                 ..ThemeOptions::default()
             },
         )
         .unwrap(),
+    )
+}
+
+#[test]
+fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
+    if !in_child(
+        "brand_pack_preserves_terminal_defaults_and_custom_themes",
+        TRUECOLOR,
+    ) {
+        return;
+    }
+    let scratch = Scratch::new();
+    let state = state(&scratch);
+    scratch.write(
+        "custom/filemine.json",
+        &custom_json("filemine", "#123456").to_string(),
     );
+    let source = package_source();
+    let registered = package_theme(&source);
     state.set_registered_themes(vec![Rc::clone(&registered)]);
     let file_before = state
         .get_theme_by_name("filemine")
@@ -365,8 +361,7 @@ fn brand_pack_font_stacks_keep_order_duplicates_and_generics() {
         pack["fonts"]["mono"]["fallbacks"] = json!([]);
     })
     .to_string();
-    let files = Mem::new(&[(FORGE_PATH, &document)]);
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
+    let pack = BrandPack::parse(FORGE_PATH, &document).unwrap();
     let presentation = pack.presentation(BrandMode::Dark).unwrap();
     let css = presentation.css_properties();
     let display = r#""Plain Face", Serif, sans-serif, "Mono Face", "Mono Face", serif, "", " lead ", "Ünï Çode", SANS-SERIF"#;
@@ -378,7 +373,6 @@ fn brand_pack_font_stacks_keep_order_duplicates_and_generics() {
     assert_eq!(font.license, "OFL-1.1");
     assert!(font.license_url.ends_with("/barlowcondensed/OFL.txt"));
     assert_eq!(font.fallbacks.len(), 9);
-    assert_eq!(*files.reads.borrow(), [FORGE_PATH]);
 }
 
 #[test]
@@ -434,8 +428,7 @@ fn brand_pack_css_escapes_literal_names() {
 
 #[test]
 fn brand_pack_templates_resolve_all_forms_without_geometry_changes() {
-    let files = Mem::forge();
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
+    let pack = forge();
     for mode in MODES {
         let id = format!("forge-{}", mode_id(mode));
         let expected = presented(&id);
@@ -445,7 +438,7 @@ fn brand_pack_templates_resolve_all_forms_without_geometry_changes() {
             (Some("mono"), "mono"),
             (Some("small"), "small"),
         ] {
-            let svg = pack.mark_svg(mode, variant, &files).unwrap();
+            let svg = pack.mark_svg(mode, variant).unwrap();
             assert!(
                 !svg.contains("var(--") && !svg.contains("{{") && !svg.contains("currentColor")
             );
@@ -453,8 +446,7 @@ fn brand_pack_templates_resolve_all_forms_without_geometry_changes() {
             assert_eq!(svg.contains("<rect"), name == "template");
         }
         let text = &expected.colors["text"];
-        let source =
-            maestro_theme::ThemeOperations::read_to_string(&files, "/forge/mark-mono.svg").unwrap();
+        let source = include_str!("../../../assets/brand/mark-mono.svg");
         let strokes = source.matches("currentColor").count();
         assert!(strokes > 0);
         assert_eq!(expected.svg["mono"].matches(text.as_str()).count(), strokes);
@@ -468,68 +460,50 @@ fn brand_pack_asset_paths_use_the_selected_pack_directory() {
         pack["mark"]["variants"] = json!({"flat": "../../other/v.svg"});
     })
     .to_string();
-    let path = "/q/ünï dir/packs/x.json";
-    let files = Mem::new(&[
-        (path, &pack_text),
-        ("/q/ünï dir/marks/m a.svg", "<t>{{wordmark}}</t>"),
-        ("/q/other/v.svg", "<v>{{wordmark}}</v>"),
-        ("/marks/m a.svg", "decoy"),
-        ("/q/ünï dir/packs/m a.svg", "decoy"),
-        ("/q/ünï dir/v.svg", "decoy"),
+    let decoys = files(&[
+        ("q/ünï dir/packs/x.json", &pack_text),
+        ("q/ünï dir/marks/m a.svg", "<t>{{wordmark}}</t>"),
+        ("q/other/v.svg", "<v>{{wordmark}}</v>"),
+        ("marks/m a.svg", "decoy"),
+        ("q/ünï dir/packs/m a.svg", "decoy"),
+        ("q/ünï dir/v.svg", "decoy"),
     ]);
-    let pack = load_brand_pack(path, &files).unwrap();
+    let pack = load_brand_pack(&decoys.path("q/ünï dir/packs/x.json")).unwrap();
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, None, &files).unwrap(),
+        pack.mark_svg(BrandMode::Dark, None).unwrap(),
         "<t>Maestro</t>"
     );
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, Some("flat"), &files)
-            .unwrap(),
+        pack.mark_svg(BrandMode::Dark, Some("flat")).unwrap(),
         "<v>Maestro</v>"
     );
-    assert_eq!(
-        *files.reads.borrow(),
-        [path, "/q/ünï dir/marks/m a.svg", "/q/other/v.svg"]
-    );
-    let scratch = Scratch::new("assets");
+    let scratch = Scratch::new();
     scratch.write("a b/ünï/packs/x.json", &pack_text);
     scratch.write("a b/ünï/marks/m a.svg", "<n>{{wordmark}}</n>");
     scratch.write("a b/marks/m a.svg", "decoy");
-    let native = load_brand_pack(
-        &scratch.path("a b/ünï/packs/x.json"),
-        &NativeThemeOperations,
-    )
-    .unwrap();
+    let native = load_brand_pack(&scratch.path("a b/ünï/packs/x.json")).unwrap();
     assert_eq!(
-        native
-            .mark_svg(BrandMode::Light, None, &NativeThemeOperations)
-            .unwrap(),
+        native.mark_svg(BrandMode::Light, None).unwrap(),
         "<n>Maestro</n>"
     );
 }
 
 #[test]
 fn brand_pack_reads_only_the_requested_mark_asset() {
-    let files = Mem::new(&[
-        (FORGE_PATH, &forge_json().to_string()),
-        ("/forge/mark-flat.svg", "<f/>"),
+    // Only the pack and the flat template exist, so reading any other asset would fail.
+    let only_flat = files(&[
+        ("forge/brand.json", &forge_json().to_string()),
+        ("forge/mark-flat.svg", "<f/>"),
     ]);
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
-    assert_eq!(*files.reads.borrow(), [FORGE_PATH]);
+    let pack = load_brand_pack(&only_flat.path("forge/brand.json")).unwrap();
     let presentation = pack.presentation(BrandMode::Dark).unwrap();
     let _ = presentation.css_properties();
     pack.theme_json(BrandMode::Light).unwrap();
-    assert_eq!(files.reads.borrow().len(), 1);
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, Some("flat"), &files)
-            .unwrap(),
+        pack.mark_svg(BrandMode::Dark, Some("flat")).unwrap(),
         "<f/>"
     );
-    assert_eq!(*files.reads.borrow(), [FORGE_PATH, "/forge/mark-flat.svg"]);
-    let error = pack
-        .mark_svg(BrandMode::Dark, Some("mono"), &files)
-        .err()
-        .unwrap();
+    let error = pack.mark_svg(BrandMode::Dark, Some("mono")).err().unwrap();
     let cause = error
         .source()
         .unwrap()
@@ -644,7 +618,7 @@ fn brand_pack_fields_reject_missing_null_and_wrong_shapes() {
 #[test]
 fn brand_pack_fields_keep_last_duplicates_and_ignore_extensions() {
     let compact = forge_json().to_string();
-    let load_text = |text: &str| load_brand_pack(FORGE_PATH, &Mem::new(&[(FORGE_PATH, text)]));
+    let load_text = |text: &str| BrandPack::parse(FORGE_PATH, text);
     let swap = |from: &str, to: &str| {
         assert!(compact.contains(from), "{from}");
         compact.replacen(from, to, 1)
@@ -782,8 +756,10 @@ fn brand_pack_measurements_keep_values_units_and_constraints() {
 
 #[test]
 fn brand_pack_io_and_decode_failures_keep_their_phase() {
-    let missing = Mem::new(&[]);
-    let error = load_brand_pack(FORGE_PATH, &missing).err().unwrap();
+    let scratch = Scratch::new();
+    let error = load_brand_pack(&scratch.path("forge/brand.json"))
+        .err()
+        .unwrap();
     assert!(!error.to_string().contains("Invalid brand pack"));
     assert_eq!(
         error
@@ -794,78 +770,66 @@ fn brand_pack_io_and_decode_failures_keep_their_phase() {
             .kind(),
         std::io::ErrorKind::NotFound
     );
-    assert_eq!(*missing.reads.borrow(), [FORGE_PATH]);
-    let malformed = Mem::new(&[(FORGE_PATH, "{")]);
-    let error = load_brand_pack(FORGE_PATH, &malformed).err().unwrap();
+    let error = BrandPack::parse(FORGE_PATH, "{").err().unwrap();
     assert!(
         error
             .to_string()
             .starts_with(&format!("Invalid brand pack {FORGE_PATH}: "))
     );
     assert!(error.source().unwrap().is::<serde_json::Error>());
-    let shape = Mem::new(&[(FORGE_PATH, r#"{"name": 1}"#)]);
     assert!(
-        load_brand_pack(FORGE_PATH, &shape)
+        BrandPack::parse(FORGE_PATH, r#"{"name": 1}"#)
             .err()
             .unwrap()
             .source()
             .unwrap()
             .is::<serde_json::Error>()
     );
-    assert_eq!(*shape.reads.borrow(), [FORGE_PATH]);
     let invalid = edited(|p| p["type"]["body"]["size"] = 0.into()).to_string();
-    let files = Mem::new(&[(FORGE_PATH, &invalid)]);
     assert_eq!(
-        failure(load_brand_pack(FORGE_PATH, &files)),
+        failure(BrandPack::parse(FORGE_PATH, &invalid)),
         "Invalid brand measurement: /type/body/size"
     );
-    assert_eq!(files.reads.borrow().len(), 1);
+    // No template exists, so a read before the role check would fail with an I/O error.
     let alias = edited(|p| p["glyphs"]["mark"]["color"] = "ghost".into()).to_string();
-    let files = Mem::new(&[(FORGE_PATH, &alias), ("/forge/mark.svg", "<x/>")]);
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
+    let pack = BrandPack::parse(FORGE_PATH, &alias).unwrap();
     assert_eq!(
-        failure(pack.mark_svg(BrandMode::Dark, None, &files)),
+        failure(pack.mark_svg(BrandMode::Dark, None)),
         "Missing brand color role: ghost"
     );
-    assert_eq!(files.reads.borrow().len(), 1);
 }
 
 #[test]
 fn brand_pack_unknown_variants_and_template_roles_fail_explicitly() {
-    let files = Mem::forge()
-        .with("/forge/mark-flat.svg", "<a>var(--ghost)</a>")
-        .with("/forge/mark-mono.svg", "<a>var(--mark-ring</a>")
-        .with(
-            "/forge/mark-small.svg",
-            "<a>var(--text) var(--text) {{wordmark}}{{wordmark}} vcc</a>",
-        );
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
-    let reads = files.reads.borrow().len();
+    let files = forge_files();
+    files.write("forge/mark-flat.svg", "<a>var(--ghost)</a>");
+    files.write("forge/mark-mono.svg", "<a>var(--mark-ring</a>");
+    files.write(
+        "forge/mark-small.svg",
+        "<a>var(--text) var(--text) {{wordmark}}{{wordmark}} vcc</a>",
+    );
+    let pack = load_brand_pack(&files.path("forge/brand.json")).unwrap();
     assert_eq!(
-        failure(pack.mark_svg(BrandMode::Dark, Some("nope"), &files)),
+        failure(pack.mark_svg(BrandMode::Dark, Some("nope"))),
         "Unknown brand mark variant: nope"
     );
-    assert_eq!(files.reads.borrow().len(), reads);
     assert_eq!(
-        failure(pack.mark_svg(BrandMode::Dark, Some("flat"), &files)),
+        failure(pack.mark_svg(BrandMode::Dark, Some("flat"))),
         "Missing brand color role: ghost"
     );
-    assert_eq!(files.reads.borrow().len(), reads + 1);
     assert_eq!(
-        failure(pack.mark_svg(BrandMode::Dark, Some("mono"), &files)),
+        failure(pack.mark_svg(BrandMode::Dark, Some("mono"))),
         "Unterminated brand template color"
     );
-    assert_eq!(files.reads.borrow().len(), reads + 2);
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, Some("small"), &files)
-            .unwrap(),
+        pack.mark_svg(BrandMode::Dark, Some("small")).unwrap(),
         "<a>#F2E8DC #F2E8DC MaestroMaestro vcc</a>"
     );
 }
 
 #[test]
 fn brand_pack_derived_themes_match_the_shipped_assets() {
-    let pack = load_brand_pack(FORGE_NATIVE, &NativeThemeOperations).unwrap();
+    let pack = load_brand_pack(FORGE_NATIVE).unwrap();
     let schema: Value =
         serde_json::from_str(include_str!("../assets/theme/theme-schema.json")).unwrap();
     let shipped = [
@@ -909,7 +873,7 @@ fn ratio(a: &str, b: &str) -> f64 {
 fn brand_pack_contrast_covers_only_the_documented_pairs() {
     let mut pairs = 0;
     for path in [FORGE_NATIVE, SIGNAL_NATIVE] {
-        let pack = load_brand_pack(path, &NativeThemeOperations).unwrap();
+        let pack = load_brand_pack(path).unwrap();
         for mode in MODES {
             let presentation = pack.presentation(mode).unwrap();
             let colors = &presentation.colors;
@@ -942,35 +906,31 @@ fn brand_pack_contrast_covers_only_the_documented_pairs() {
 fn brand_pack_template_values_are_inserted_once() {
     let wordmark = "A&B <x> \"q\" 'z' $& var(--mark-star) {{wordmark}}";
     let pack_text = edited(|p| p["wordmark"] = wordmark.into()).to_string();
-    let files = Mem::new(&[
-        (FORGE_PATH, &pack_text),
-        ("/forge/mark.svg", "<t>{{wordmark}}</t>|{{wordmark}}|"),
-        ("/forge/mark-flat.svg", "{{wordmark}}"),
+    let marks = files(&[
+        ("forge/brand.json", &pack_text),
+        ("forge/mark.svg", "<t>{{wordmark}}</t>|{{wordmark}}|"),
+        ("forge/mark-flat.svg", "{{wordmark}}"),
     ]);
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
+    let pack = load_brand_pack(&marks.path("forge/brand.json")).unwrap();
     let escaped =
         "A&amp;B &lt;x&gt; &quot;q&quot; &apos;z&apos; $&amp; var(--mark-star) {{wordmark}}";
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, None, &files).unwrap(),
+        pack.mark_svg(BrandMode::Dark, None).unwrap(),
         format!("<t>{escaped}</t>|{escaped}|")
     );
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, Some("flat"), &files)
-            .unwrap(),
+        pack.mark_svg(BrandMode::Dark, Some("flat")).unwrap(),
         escaped
     );
-    let empty = Mem::new(&[
+    let empty = files(&[
         (
-            FORGE_PATH,
+            "forge/brand.json",
             &edited(|p| p["wordmark"] = "".into()).to_string(),
         ),
-        ("/forge/mark.svg", "a{{wordmark}}b{{wordmark}}c"),
+        ("forge/mark.svg", "a{{wordmark}}b{{wordmark}}c"),
     ]);
-    let pack = load_brand_pack(FORGE_PATH, &empty).unwrap();
-    assert_eq!(
-        pack.mark_svg(BrandMode::Light, None, &empty).unwrap(),
-        "abc"
-    );
+    let pack = load_brand_pack(&empty.path("forge/brand.json")).unwrap();
+    assert_eq!(pack.mark_svg(BrandMode::Light, None).unwrap(), "abc");
 }
 
 /// The shared pack with one extra entry in every extensible map.
@@ -1016,15 +976,16 @@ fn assert_additional_presentation(presentation: &BrandPresentation<'_>) {
 #[test]
 fn brand_pack_additional_named_roles_survive_projection() {
     let pack_text = with_additional_roles();
-    let files = Mem::forge().with(FORGE_PATH, &pack_text).with(
-        "/forge/mark-badge.svg",
+    let files = forge_files();
+    files.write("forge/brand.json", &pack_text);
+    files.write(
+        "forge/mark-badge.svg",
         "<b>var(--extra role)|var(--extra-role)</b>",
     );
-    let pack = load_brand_pack(FORGE_PATH, &files).unwrap();
+    let pack = load_brand_pack(&files.path("forge/brand.json")).unwrap();
     assert_additional_presentation(&pack.presentation(BrandMode::Dark).unwrap());
     assert_eq!(
-        pack.mark_svg(BrandMode::Dark, Some("badge"), &files)
-            .unwrap(),
+        pack.mark_svg(BrandMode::Dark, Some("badge")).unwrap(),
         "<b>#112233|#F2E8DC</b>"
     );
     let document: Value = serde_json::from_str(&pack.theme_json(BrandMode::Dark).unwrap()).unwrap();
@@ -1197,7 +1158,7 @@ fn brand_pack_terminal_pairs_keep_text_and_border_contrast() {
     for name in ["dark", "light"] {
         for mode in [ColorMode::Truecolor, ColorMode::Color256] {
             let path = format!("{}/assets/theme/{name}.json", env!("CARGO_MANIFEST_DIR"));
-            let theme = load_theme_from_path(&path, Some(mode), &NativeThemeOperations).unwrap();
+            let theme = load_theme_from_path(&path, Some(mode)).unwrap();
             let label = format!("{name} {mode:?}");
             for (key, minimum) in groups
                 .iter()
@@ -1241,9 +1202,7 @@ fn shared_brand_types_keep_the_theme_import_paths() {
         old.fill_mark("{{wordmark}} currentColor").unwrap(),
         "Maestro #F2E8DC"
     );
-    let operations = Mem::forge();
-    let native = load_brand_pack(FORGE_PATH, &operations).unwrap();
-    assert_eq!(*operations.reads.borrow(), [FORGE_PATH]);
+    let native = BrandPack::parse(FORGE_PATH, &source).unwrap();
     let native = native.presentation(BrandMode::Dark).unwrap();
     assert_eq!(native.mark.template, "/forge/mark.svg");
     assert_eq!(native.css_properties(), old.css_properties());

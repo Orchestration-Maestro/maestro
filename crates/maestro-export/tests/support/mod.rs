@@ -615,13 +615,10 @@ pub fn native_theme(scratch: &Scratch) -> maestro_theme::ThemeState {
         )
         .unwrap();
     }
-    maestro_theme::ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: directory,
-            custom_themes_dir: scratch.path("custom"),
-        },
-        std::rc::Rc::new(maestro_theme::NativeThemeOperations),
-    )
+    maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: directory,
+        custom_themes_dir: scratch.path("custom"),
+    })
 }
 /// Publish supplied assets to an actual native bundle.
 pub fn bundle(scratch: &Scratch, assets: &[String; 5]) -> String {
@@ -675,11 +672,7 @@ pub fn brand_swap() {
     let mut outputs = Vec::new();
     for name in ["brand.json", "packs/signal.json"] {
         let scratch = Scratch::new();
-        let pack = maestro_theme::load_brand_pack(
-            &maestro_path::join(&[root, name]),
-            &maestro_theme::NativeThemeOperations,
-        )
-        .unwrap();
+        let pack = maestro_theme::load_brand_pack(&maestro_path::join(&[root, name])).unwrap();
         let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
         let properties = presentation.css_properties();
         let css = properties
@@ -687,13 +680,7 @@ pub fn brand_swap() {
             .map(|(key, value)| format!("{key}: {value};"))
             .collect::<Vec<_>>()
             .join("\n");
-        let mark = pack
-            .mark_svg(
-                maestro_theme::BrandMode::Dark,
-                None,
-                &maestro_theme::NativeThemeOperations,
-            )
-            .unwrap();
+        let mark = pack.mark_svg(maestro_theme::BrandMode::Dark, None).unwrap();
         let mut operations = Operations::default();
         operations.assets[1] = format!("{CSS}\n{css}");
         operations.assets[2] = format!("/* supplied mark */\n{mark}");
@@ -771,34 +758,25 @@ pub fn adapter_swap() {
         Err(ExportError::Io(_))
     ));
 }
-/// Native theme read failure, generated through the owning public operation.
+/// A theme failure with `message`, raised through the owner's public change callback.
 fn theme_error(message: &str) -> ThemeError {
-    /// Supplied read failure below the theme owner's wrapper.
-    struct Failure<'a>(&'a str);
-    impl maestro_theme::ThemeOperations for Failure<'_> {
-        fn read_to_string(&self, _: &str) -> io::Result<String> {
-            Err(io::Error::other(self.0.to_owned()))
-        }
-        fn environment(&self, _: &str) -> Option<String> {
-            None
-        }
-        fn exists(&self, _: &str) -> bool {
-            false
-        }
-        fn read_dir(&self, _: &str) -> io::Result<Vec<String>> {
-            Err(io::ErrorKind::Unsupported.into())
-        }
-        fn sort_by_name(&self, _: &mut [maestro_theme::ThemeInfo]) -> io::Result<()> {
-            Ok(())
-        }
-    }
-    maestro_theme::load_theme_from_path(
-        "missing",
-        Some(maestro_theme::ColorMode::Truecolor),
-        &Failure(message),
+    let state = maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
+    let message = message.to_owned();
+    state.on_theme_change(std::rc::Rc::new(move || Err(message.clone().into())));
+    let theme = maestro_theme::Theme::new(
+        [],
+        [],
+        maestro_theme::ColorMode::Truecolor,
+        maestro_theme::ThemeOptions::default(),
     )
-    .err()
-    .unwrap()
+    .unwrap();
+    state
+        .set_theme_instance(std::rc::Rc::new(theme))
+        .err()
+        .unwrap()
 }
 
 /// Native theme state projected from the selected supplied pack.
@@ -815,11 +793,8 @@ fn pack_theme(scratch: &Scratch, pack: &maestro_theme::BrandPack) -> maestro_the
         )
         .unwrap();
     }
-    maestro_theme::ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: theme_dir,
-            custom_themes_dir: scratch.path("custom"),
-        },
-        std::rc::Rc::new(maestro_theme::NativeThemeOperations),
-    )
+    maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: theme_dir,
+        custom_themes_dir: scratch.path("custom"),
+    })
 }

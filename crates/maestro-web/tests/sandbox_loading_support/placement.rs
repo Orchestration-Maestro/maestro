@@ -1,32 +1,7 @@
 //! Shared selected-pack placement for native sandbox browser witnesses.
-use maestro_theme::{BrandMode, ThemeInfo, ThemeOperations};
+use maestro_theme::{BrandMode, BrandPack};
 use maestro_web::SandboxIframe;
 use wasm_bindgen::JsCast as _;
-/// Selected same-format pack supplied without filesystem access.
-pub struct Pack(
-    /// Optional same-format selection, falling back to the checked-in pack.
-    pub Option<String>,
-);
-impl ThemeOperations for Pack {
-    fn read_to_string(&self, _: &str) -> std::io::Result<String> {
-        Ok(self
-            .0
-            .clone()
-            .unwrap_or_else(|| include_str!("../../../../assets/brand/brand.json").into()))
-    }
-    fn environment(&self, _: &str) -> Option<String> {
-        unreachable!()
-    }
-    fn exists(&self, _: &str) -> bool {
-        unreachable!()
-    }
-    fn read_dir(&self, _: &str) -> std::io::Result<Vec<String>> {
-        unreachable!()
-    }
-    fn sort_by_name(&self, _: &mut [ThemeInfo]) -> std::io::Result<()> {
-        unreachable!()
-    }
-}
 /// Construct a mounted owner from the selected brand pack.
 #[must_use]
 pub(crate) fn adapter() -> SandboxIframe {
@@ -45,7 +20,7 @@ pub(crate) fn adapter_pack(alternate: bool, mode: BrandMode) -> (SandboxIframe, 
         json["modes"]["light"]["colors"]["panel"] = "burnished-brass".into();
         json["fonts"]["mono"] = json["fonts"]["body"].clone();
     }
-    let pack = maestro_theme::load_brand_pack("brand.json", &Pack(Some(json.to_string()))).unwrap();
+    let pack = BrandPack::parse("brand.json", &json.to_string()).unwrap();
     let presentation = pack.presentation(mode).unwrap();
     let css = serde_json::to_string(&presentation.css_properties()).unwrap();
     let document = web_sys::window().unwrap().document().unwrap();

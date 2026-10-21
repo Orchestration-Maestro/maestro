@@ -173,7 +173,7 @@ pub fn excel_sheet_tabs_switch_without_losing_sheet_scroll() {
 pub fn excel_native_states_follow_live_brand_and_localization() {
     let mut view = View::new("a.xlsx", &encoded("two"));
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -303,7 +303,7 @@ pub fn excel_native_host_failures_preserve_error_controls_and_download() {
 pub fn excel_links_follow_live_accent() {
     let mut view = View::new("a.xlsx", &encoded("links"));
     for pack in ["brand.json", "signal.json"] {
-        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.pack = support::brand::pack(pack).unwrap();
         for mode in [
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
@@ -549,8 +549,8 @@ pub fn excel_sheet_errors_are_literal_localized_and_live() -> Result<(), JsValue
         );
         view.i18n.set_translations(translations);
         for pack in ["brand.json", "signal.json"] {
-            view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack)
-                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            view.pack =
+                support::brand::pack(pack).map_err(|e| JsValue::from_str(&e.to_string()))?;
             for mode in [
                 maestro_theme::BrandMode::Dark,
                 maestro_theme::BrandMode::Light,

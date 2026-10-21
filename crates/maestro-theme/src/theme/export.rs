@@ -69,7 +69,7 @@ impl ThemeState {
     fn export_name<'a>(&self, name: Option<&'a str>) -> Cow<'a, str> {
         name.map(Cow::Borrowed)
             .or_else(|| self.lifecycle.name.borrow().clone().map(Cow::Owned))
-            .unwrap_or_else(|| Cow::Owned(self.default_theme()))
+            .unwrap_or_else(|| Cow::Owned(super::lifecycle::default_theme()))
     }
 
     /// Resolve each export field after the one before it.

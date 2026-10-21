@@ -468,16 +468,10 @@ struct Dimensions {
 fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
     let host = input_support::Host::new(|_, _| {});
     let mut frame = attachment_support::Frame {
-        pack: maestro_theme::load_brand_pack(
-            &format!(
-                "{}/../../assets/brand/{filename}",
-                env!("CARGO_MANIFEST_DIR")
-            ),
-            #[cfg(not(target_arch = "wasm32"))]
-            &maestro_theme::theme::NativeThemeOperations,
-            #[cfg(target_arch = "wasm32")]
-            &crate::support::brand::Pack,
-        )
+        pack: crate::support::brand::pack(&format!(
+            "{}/../../assets/brand/{filename}",
+            env!("CARGO_MANIFEST_DIR")
+        ))
         .unwrap(),
         mode,
         ..Default::default()
@@ -1157,7 +1151,7 @@ fn dialog_close_composition_keeps_fractional_ring_and_glyph_pixels() {
 /// Drive a real containing dialog through each fractional focus frame.
 fn close_composition_case(name: &str, mode: maestro_theme::BrandMode, density: f32, clipped: bool) {
     let mut frame = attachment_support::Frame {
-        pack: maestro_theme::load_brand_pack(name, &brand::Pack).unwrap(),
+        pack: brand::pack(name).unwrap(),
         mode,
         density,
         time: Some(0.),

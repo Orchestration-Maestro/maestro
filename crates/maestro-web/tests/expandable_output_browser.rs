@@ -233,7 +233,7 @@ pub(crate) mod tests {
             "<div class='markdown-content'>{markdown}</div>{output}<div class='tool-output'><div class='plain-row'>{long}</div><div class='ansi-line'><span style='background:var(--maestro-color-accent);color:var(--maestro-color-background);text-decoration:underline'>{long}</span></div></div>"
         );
         for pack in ["brand.json", "signal.json"] {
-            slots.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+            slots.pack = support::brand::pack(pack).unwrap();
             for mode in [
                 maestro_theme::BrandMode::Dark,
                 maestro_theme::BrandMode::Light,

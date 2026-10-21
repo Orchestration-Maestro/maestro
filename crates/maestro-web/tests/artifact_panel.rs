@@ -684,10 +684,10 @@ fn artifact_panel_colors_follow_caller_packs() {
                 active: Some("a.zip".into()),
                 ..Default::default()
             });
-            harness.frame.pack = maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{file}", env!("CARGO_MANIFEST_DIR")),
-                &maestro_theme::theme::NativeThemeOperations,
-            )
+            harness.frame.pack = maestro_theme::load_brand_pack(&format!(
+                "{}/../../assets/brand/{file}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap();
             harness.frame.mode = if case.input.dark {
                 maestro_theme::BrandMode::Dark

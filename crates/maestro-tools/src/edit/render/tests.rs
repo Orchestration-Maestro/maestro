@@ -7,20 +7,15 @@ use maestro_agent::AgentToolResult;
 mod manual_runtime;
 #[path = "../../../tests/edit_render_support/mod.rs"]
 mod support;
-use maestro_theme::{
-    LiveTheme, NativeThemeOperations, SyntectHighlighter, ThemeDirectories, ThemeState,
-};
+use maestro_theme::{LiveTheme, SyntectHighlighter, ThemeDirectories, ThemeState};
 use serde_json::json;
 
 /// Publish a controlled theme for one test.
 fn live(theme: Rc<Theme>) -> LiveTheme {
-    let state = ThemeState::new(
-        ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(NativeThemeOperations),
-    );
+    let state = ThemeState::new(ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
     state.set_theme_instance(theme).unwrap();
     state.theme()
 }

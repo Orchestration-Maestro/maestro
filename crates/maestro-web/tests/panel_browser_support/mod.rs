@@ -47,7 +47,7 @@ impl Panel {
             panel,
             caller,
             context: egui::Context::default(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
         }
     }

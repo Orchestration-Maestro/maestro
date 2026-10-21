@@ -117,7 +117,7 @@ pub fn terminal() -> recording_terminal::RecordingTerminal {
 
 /// Create source input independently from the expected post-operation file.
 fn setup(case: &Case) -> (live::Scratch, super::records::Input) {
-    let scratch = live::Scratch::new(&case.kind);
+    let scratch = live::Scratch::new();
     let filename = case.input["path"].as_str().unwrap();
     let text = if case.kind == "preflight" {
         "line 0\nline 1\n".into()
