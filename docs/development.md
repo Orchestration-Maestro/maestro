@@ -84,6 +84,14 @@ inventory before invoking assertions, then awaits each export in a fresh page:
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
+After each native sandbox click completes, the driver checks the selected
+fixture document for a fresh trusted click whose composed path contains its
+`#target`. Missing, untrusted or wrong-target delivery fails with
+`native click did not reach mounted target <id>` before waiting for the pointer
+message. This detects misrouting rather than preventing it: the pinned browser
+exposes no hit-test-ready barrier, and the original stall's compositor cause
+remains unknown. The check does not bound a native click that never completes.
+
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
 page crashes and unexpected browser disconnection fail the command. One deliberate
 policy-negative export, `inline_programs_preserve_text_policies_and_order`, must

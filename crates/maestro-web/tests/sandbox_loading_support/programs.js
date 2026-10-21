@@ -10,7 +10,7 @@ export function program_input(kind) {
     if(kind === 'raw') return RAW;
     if(kind === 'provider') return `function(){window.S={dcl:false,started:false};S.runtime=document.currentScript.textContent;S.raw=String.raw\`</ScRiPt> <!--<script> </script> 雪\`;S.data=window.obsData;document.addEventListener('DOMContentLoaded',()=>S.dcl=true);window.done=new Promise(r=>window.complete=async(error,value)=>{S.error=error;S.value=value;r()});if(location.hash==='#tt'){const m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content="script-src 'self' 'unsafe-inline'; require-trusted-types-for 'script'; trusted-types 'none'";document.head.append(m);}}`;
     if(kind === 'user') return `S.started=true;S.ready=document.readyState;S.beforeDcl=!S.dcl;S.metaUrl=import.meta.url;S.base=document.baseURI;S.cr=(()=>{/*\r*/}).toString().includes('\\r');S.helper=(await import('./helper.js')).answer;return String.raw\`</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪\`;`;
-    return `<head><script>document.addEventListener('click',e=>parent.postMessage({type:'pointer-done',prevented:e.defaultPrevented},'*'),true);</script></head>`;
+    return `<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>`;
 }
 export function artifact() {
     return `<html><head><meta http-equiv="Content-Security-Policy" content="img-src 'none'"><title>artifact</title><script>S.before=!!S.runtime;</script></head><body><img src="/pixel.png" onerror="S.blocked=true" onload="S.blocked=false"></body></html>`;
