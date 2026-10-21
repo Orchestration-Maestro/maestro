@@ -410,7 +410,12 @@ paths, which re-export the moved declarations.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution, shared Unicode trimming, and unreadable-link and missing-HEAD stop
-policy. The footer keeps branch, detached-head and watch policy; Git subprocess
+policy. A typed discovery policy preserves caller-specific metadata rules: the
+footer requires the spaced worktree marker, accepts an existing HEAD of any kind,
+and reads `commondir` only for worktree links; workspace identity accepts the
+unspaced marker, requires a regular HEAD file and reads shared metadata for all
+repository layouts. Both policies support standalone bare repositories. The footer
+keeps branch, detached-head and watch policy; Git subprocess
 fallbacks stay with the process-owning callers. The application reaches discovery
 through the daemon's re-export on its declared dependency edge. Use native files
 rather than a new injected discovery port whose only other adapter is a test fake.
