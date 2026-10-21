@@ -121,8 +121,16 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Recognize quote/list containers before definitions and ordinary paragraphs.
-    fn container(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        self.quote(source).or_else(|| self.list(source))
+    fn container(
+        &mut self,
+        source: &Source<'_>,
+    ) -> Option<(usize, Node, Option<Box<tokenizer::block::ListState>>)> {
+        self.quote(source)
+            .map(|(end, node)| (end, node, None))
+            .or_else(|| {
+                self.list(source)
+                    .map(|(end, node, state)| (end, node, Some(state)))
+            })
     }
 
     /// Register a recognized definition only once, reporting whether it is new.

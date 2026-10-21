@@ -21,6 +21,8 @@ pub(super) struct BlockTokens {
     pub(super) nodes: Vec<Node>,
     /// Last grammar token, independent of visible output.
     tail: Tail,
+    /// Admission history of the visible trailing list, if present.
+    pub(super) list: Option<Box<tokenizer::block::ListState>>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -39,6 +41,7 @@ impl BlockTokens {
 
     /// Publish a block and retain a container's own recognized raw source.
     pub(super) fn push(&mut self, source: &Source<'_>, consumed: usize, node: Node) {
+        self.list = None;
         self.tail = Tail::Visible(
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
                 .then(|| source.select(std::iter::once(0..consumed)).into()),
@@ -48,6 +51,7 @@ impl BlockTokens {
 
     /// Publish a container recognized over retained segmented input.
     pub(super) fn push_segmented(&mut self, raw: Segmented, node: Node) {
+        self.list = None;
         self.tail = Tail::Visible(Some(raw));
         self.nodes.push(node);
     }
@@ -119,8 +123,9 @@ impl<E> Lexer<'_, E> {
             output.push(source, block.consumed, block.node);
             return Some(block.consumed);
         }
-        if let Some((consumed, node)) = self.container(source) {
+        if let Some((consumed, node, list)) = self.container(source) {
             output.push(source, consumed, node);
+            output.list = list;
             return Some(consumed);
         }
         if let Some(block) = tokenizer::block::html(source, self.options) {

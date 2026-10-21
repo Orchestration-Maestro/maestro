@@ -350,14 +350,6 @@ impl ScopeSource {
     }
 }
 impl Source<'_> {
-    /// Borrow the unconsumed suffix without copying its text or mapping.
-    pub(crate) fn suffix(&self, start: usize) -> Source<'_> {
-        Source {
-            text: &self.text[start..],
-            owner: self.owner,
-            offset: self.offset + start,
-        }
-    }
     /// Retain only selected construct bytes, never the unconsumed document suffix.
     pub(crate) fn select(&self, pieces: impl IntoIterator<Item = Range<usize>>) -> ScopeSource {
         self.owner.select(

@@ -138,14 +138,15 @@ impl<E> Lexer<'_, E> {
             frame.finished = true;
             return Some(Resume::Quote(joined));
         }
-        let operand = joined.materialize();
-        let (consumed, node) = self.list(&operand.view(0..operand.text.len()))?;
+        let state = frame.output.list.take()?;
+        let (consumed, node, state) = self.resume_list(&joined, state)?;
         Self::publish_resume(
             frame,
             joined.select(0..consumed),
             node,
             joined.select(consumed..joined.len()),
         )?;
+        frame.output.list = Some(state);
         Some(Resume::Continue)
     }
 
