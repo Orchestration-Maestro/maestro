@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+#[cfg(unix)]
+use maestro_test_directory::Scratch;
 use maestro_test_process::TestProcess;
 use maestro_tooling as tooling;
 
@@ -1817,12 +1819,8 @@ fn maestro_hook_missing_tool_announces_failed_step() {
 fn author_setup_runs_the_built_example_only_while_fresh() {
     use std::os::unix::fs::PermissionsExt;
     use std::time::{Duration, SystemTime};
-    static NEXT: AtomicU64 = AtomicU64::new(0);
-    let root = std::env::temp_dir().join(format!(
-        "maestro-author-setup-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
     let profile = root.join("target/debug");
     fs::create_dir_all(profile.join("deps")).unwrap();
     fs::create_dir_all(profile.join("examples")).unwrap();
@@ -1846,7 +1844,7 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
         fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
         fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
     }
-    let run = || run_author_setup(&root, &profile);
+    let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
     for source in sources {
         let file = fs::File::options()
@@ -1860,7 +1858,6 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
     }
     fs::remove_file(&example).unwrap();
     assert!(run().starts_with("cargo run "));
-    fs::remove_dir_all(&root).unwrap();
 }
 
 /// Run the author setup script from `root` with `profile` as nextest's artifact directory.

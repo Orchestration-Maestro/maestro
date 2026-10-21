@@ -598,11 +598,12 @@ uses it. The directory owner's declaration, alias and cycle rules apply.
 
 `with_default(subscriber, action)` keeps one subscriber that records nothing
 registered for the life of the test process, then runs the action under
-`tracing::subscriber::with_default`. While only one subscriber is registered,
-`tracing` decides a callsite's process-wide interest from the registering
-thread's own subscriber. Without the kept subscriber, a sibling test thread
-with no subscriber that reaches a callsite first turns it off for the
-capturing thread too.
+`tracing::subscriber::with_default`. Callsite interest is cached process-wide
+and rebuilt when dispatchers register or the interest cache is explicitly
+rebuilt. While only one subscriber is registered, `tracing` decides a callsite's
+interest from the registering thread's own subscriber. Without the kept
+subscriber, a sibling test thread with no subscriber can cache disabled interest
+for the capturing thread too, until a rebuild.
 
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The
