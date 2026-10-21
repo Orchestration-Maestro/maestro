@@ -35,13 +35,9 @@ pub struct DialogProps {
     pub width: String,
     /// Literal native CSS height.
     pub height: String,
-    /// Caller panel classes.
-    pub class_name: String,
-    /// Caller outside-region classes; full-viewport paint is separate.
-    pub backdrop_class_name: String,
 }
 impl DialogProps {
-    /// Supply standalone dimensions and empty classes.
+    /// Supply standalone dimensions.
     #[must_use]
     pub fn new(is_open: bool, children: DialogBody) -> Self {
         Self {
@@ -50,8 +46,6 @@ impl DialogProps {
             children,
             width: "min(600px, 90vw)".into(),
             height: "auto".into(),
-            class_name: String::new(),
-            backdrop_class_name: String::new(),
         }
     }
 }
@@ -126,7 +120,7 @@ impl Placement<'_> {
     fn render(&self, ui: &mut egui::Ui, close_name: &str) -> Result<bool, DialogUiError> {
         use crate::browser::attachment_content::{self as content, ReadingPhase};
         #[cfg(target_arch = "wasm32")]
-        browser::configure(self.state, close_name, &self.props.class_name)?;
+        browser::configure(self.state, close_name)?;
         self.place(ui, ui.ctx().content_rect(), ReadingPhase::Measure, vec![])?;
         let rect = self
             .state
@@ -262,42 +256,8 @@ pub(super) fn draw<F: ?Sized>(
     Ok(())
 }
 
-/// Literal heading and optional description operands.
-pub struct DialogHeaderProps {
-    /// Heading text, including an empty heading.
-    pub title: String,
-    /// Only absent or empty descriptions omit the paragraph.
-    pub description: Option<String>,
-    /// Literal wrapper classes.
-    pub class_name: String,
-}
-/// Ordered native content operands.
-pub struct DialogContentProps {
-    /// Owned arbitrary native children.
-    pub children: Vec<Rc<ReadingContent>>,
-    /// Literal wrapper classes.
-    pub class_name: String,
-}
-/// Retain a literal native heading factory.
-#[must_use]
-pub fn dialog_header(props: DialogHeaderProps) -> Rc<ReadingContent> {
-    #[cfg(not(target_arch = "wasm32"))]
-    drop(props);
-    Rc::new(ReadingContent {
-        #[cfg(target_arch = "wasm32")]
-        mount: Rc::new(move |document| browser::header(document, &props)),
-    })
-}
-/// Retain ordered mixed native children with their mounted guards.
-#[must_use]
-pub fn dialog_content(props: DialogContentProps) -> Rc<ReadingContent> {
-    #[cfg(not(target_arch = "wasm32"))]
-    drop(props);
-    Rc::new(ReadingContent {
-        #[cfg(target_arch = "wasm32")]
-        mount: Rc::new(move |document| browser::content(document, &props)),
-    })
-}
+#[cfg(target_arch = "wasm32")]
+pub use browser::{DialogContentProps, DialogHeaderProps, dialog_content, dialog_header};
 #[cfg(target_arch = "wasm32")]
 pub(super) mod browser;
 

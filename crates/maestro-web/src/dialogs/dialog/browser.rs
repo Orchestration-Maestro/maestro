@@ -1,5 +1,4 @@
 //! Native literal content and root-owned dialog semantics.
-use super::{DialogContentProps, DialogHeaderProps};
 use crate::browser::attachment_content::{AttachmentHostError, ReadingRoot, browser::host_error};
 use web_sys::{Document, Element};
 /// Set literal classes without parsing caller text as markup.
@@ -87,6 +86,8 @@ pub(crate) struct Native {
     committed: Weak<Semantic>,
     /// Selected localization for newly mounted candidates.
     close_name: String,
+    /// Literal caller classes for initial and retained native roots.
+    pub(in crate::dialogs) class_name: Rc<str>,
 }
 /// Non-painting native state retained by the mounted root only.
 struct Semantic {
@@ -158,7 +159,7 @@ fn mount(
         focused: Cell::new(false),
     });
     if let Some(owner) = state.upgrade() {
-        let classes = owner.props.borrow().class_name.clone();
+        let classes = Rc::clone(&owner.native.borrow().class_name);
         let name = owner.native.borrow().close_name.clone();
         update(&semantic, &name, &classes)?;
     }
@@ -253,14 +254,14 @@ fn target(state: &State) -> Option<Rc<Semantic>> {
         .or_else(|| native.committed.upgrade())
 }
 /// Update only literal caller classes and the live localized accessible name.
-pub(super) fn configure(
-    state: &State,
-    name: &str,
-    classes: &str,
-) -> Result<(), AttachmentHostError> {
-    state.native.borrow_mut().close_name = name.into();
+pub(super) fn configure(state: &State, name: &str) -> Result<(), AttachmentHostError> {
+    let classes = {
+        let mut native = state.native.borrow_mut();
+        native.close_name = name.into();
+        Rc::clone(&native.class_name)
+    };
     if let Some(target) = target(state) {
-        update(&target, name, classes)?;
+        update(&target, name, &classes)?;
     }
     Ok(())
 }
@@ -286,4 +287,35 @@ fn update(target: &Semantic, name: &str, classes: &str) -> Result<(), Attachment
         .button
         .set_attribute("aria-label", name)
         .map_err(|e| host_error(&e))
+}
+
+/// Literal heading and optional description operands.
+pub struct DialogHeaderProps {
+    /// Heading text, including an empty heading.
+    pub title: String,
+    /// Only absent or empty descriptions omit the paragraph.
+    pub description: Option<String>,
+    /// Literal wrapper classes.
+    pub class_name: String,
+}
+/// Ordered native content operands.
+pub struct DialogContentProps {
+    /// Owned arbitrary native children.
+    pub children: Vec<Rc<ReadingContent>>,
+    /// Literal wrapper classes.
+    pub class_name: String,
+}
+/// Retain a literal native heading factory.
+#[must_use]
+pub fn dialog_header(props: DialogHeaderProps) -> Rc<ReadingContent> {
+    Rc::new(ReadingContent {
+        mount: Rc::new(move |document| header(document, &props)),
+    })
+}
+/// Retain ordered mixed native children with their mounted guards.
+#[must_use]
+pub fn dialog_content(props: DialogContentProps) -> Rc<ReadingContent> {
+    Rc::new(ReadingContent {
+        mount: Rc::new(move |document| content(document, &props)),
+    })
 }
