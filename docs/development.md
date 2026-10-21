@@ -39,6 +39,28 @@ otherwise hide missing normal precision. The generated `maestro-dependencies`
 member is exempt from member JSON inheritance; the workspace `serde_json`
 precision requirement still applies.
 
+## Platform test qualification
+
+Compile every declared browser crate's test and example targets without running them:
+
+```sh
+mapfile -t wasm_packages < <(
+  python3 -c 'import tomllib; print("\n".join(tomllib.load(open(".github/ci.toml", "rb"))["wasm_crates"]))'
+)
+wasm_args=()
+for package in "${wasm_packages[@]}"; do wasm_args+=(-p "$package"); done
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
+  --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
+  --tests --examples --keep-going --message-format=json
+```
+
+Native socket, process and runtime fixtures stay with their native tests. Portable
+assertions remain in browser targets, with strictly parsed fixture records owned
+by their readers. Compilation does not replace the browser assertions below.
+The theme examples `brand_themes` and `browser_author_inputs` run their author
+work on native targets; their browser entrypoints do nothing. Native usage
+messages and generated filenames are unchanged.
+
 ## Browser integration qualification
 
 Lint the browser library, examples and complete integration target with the

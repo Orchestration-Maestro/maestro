@@ -1,0 +1,48 @@
+{
+  "rows": [
+    {
+      "name": "no_hooks",
+      "input": {
+        "payload": false,
+        "response": false
+      },
+      "expected": {
+        "payloadIdentity": true,
+        "responseIdentity": true
+      }
+    },
+    {
+      "name": "payload_only",
+      "input": {
+        "payload": true,
+        "response": false
+      },
+      "expected": {
+        "payloadIdentity": true,
+        "responseIdentity": true
+      }
+    },
+    {
+      "name": "response_only",
+      "input": {
+        "payload": false,
+        "response": true
+      },
+      "expected": {
+        "payloadIdentity": true,
+        "responseIdentity": true
+      }
+    },
+    {
+      "name": "both_hooks",
+      "input": {
+        "payload": true,
+        "response": true
+      },
+      "expected": {
+        "payloadIdentity": true,
+        "responseIdentity": true
+      }
+    }
+  ]
+}

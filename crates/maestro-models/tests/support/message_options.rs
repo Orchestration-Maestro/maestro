@@ -2,6 +2,7 @@
 
 //! Controlled option calls and exact request/stream observations.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::{chat::TestResult, messages};
 use maestro_models::providers::messages::anthropic::{AnthropicEffort, stream_simple_anthropic};
 use maestro_models::{

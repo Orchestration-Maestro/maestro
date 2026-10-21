@@ -79,7 +79,7 @@ fn response_after_deadline(socks_proxy: bool) {
         let server = loopback::start_routed(Arc::new(move |mut socket| {
             use std::io::Write;
             if socks_proxy {
-                socks::negotiate(&mut socket, false)?;
+                socks::negotiate_observing(&mut socket, false, socks::DEFAULT_REPLY, |_, _, _| ())?;
             }
             assert!(loopback::read_request(&mut socket)?.is_some());
             socket
@@ -188,7 +188,7 @@ fn socks_sender_reuses_configuration_without_replaying_requests() {
         use crate::tests::{loopback, socks};
         let (sent, received) = std::sync::mpsc::channel();
         let server = loopback::start_routed(Arc::new(move |mut socket| {
-            socks::negotiate(&mut socket, false)?;
+            socks::negotiate_observing(&mut socket, false, socks::DEFAULT_REPLY, |_, _, _| ())?;
             loopback::answer_connection(socket, &|request| {
                 sent.send(request.body.clone()).unwrap();
                 loopback::Reply {

@@ -1,24 +1,33 @@
 //! Controlled public response invocations with finite producers and consumed observations.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::environment_rows::selected;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::response_support::{
     Log, body_keys, common as common_options, compare, failure, fetch as shared_fetch, history,
     observe, option, reasoning_summary, request, target as target_with_descriptor,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::responses::azure_openai_responses::{
     stream_azure_openai_responses, stream_simple_azure_openai_responses,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AssistantMessageEventStream, AzureOpenAIResponsesOptions, Cancellation, Fetch, OnPayload,
     OnResponse, StreamOptions,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, PoisonError};
 
 /// Reduced recorded cases.
 pub const FIXTURE: &str = include_str!("../fixtures/azure_endpoint_cases.json");
+#[cfg(not(target_arch = "wasm32"))]
 /// Finish event used by request-only cases.
 pub const COMPLETE: &str = "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r-final\",\"status\":\"completed\",\"usage\":{\"input_tokens\":1000,\"output_tokens\":80,\"total_tokens\":1080,\"input_tokens_details\":{\"cached_tokens\":200}}}}\n\n";
+#[cfg(not(target_arch = "wasm32"))]
 /// Model with the recording's rates and limits.
 fn target(case: &Value) -> TestResult<maestro_models::Model> {
     target_with_descriptor(
@@ -26,6 +35,7 @@ fn target(case: &Value) -> TestResult<maestro_models::Model> {
         json!({"id":"gpt-4o-mini","name":"Controlled","api":"azure-openai-responses","provider":"azure-openai-responses","baseUrl":"https://controlled.invalid/v1","cost":{"input":2,"output":7,"cacheRead":0.3,"cacheWrite":0.9},"contextWindow":100_000,"maxTokens":64_000}),
     )
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled transport with provider-specific wire observations.
 fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
     shared_fetch(case, log, signal, COMPLETE, move |request_value| {
@@ -34,6 +44,7 @@ fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
         captured
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Payload edits reach the transport, and failures prevent it.
 fn payload_hook(case: &Value, log: &Log) -> OnPayload {
     let (recorded, hook) = (
@@ -75,6 +86,7 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         },
     )
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Response hook records the response after endpoint preparation.
 fn response_hook(case: &Value, log: &Log, signal: Cancellation) -> OnResponse {
     let (recorded, hook, cancel) = (
@@ -98,6 +110,7 @@ fn response_hook(case: &Value, log: &Log, signal: Cancellation) -> OnResponse {
         }))
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Attach provider-specific transport and hooks to the common options.
 fn common(case: &Value, log: &Log) -> TestResult<StreamOptions> {
     let mut options = common_options(case)?;
@@ -108,6 +121,7 @@ fn common(case: &Value, log: &Log) -> TestResult<StreamOptions> {
     options.on_response = Some(response_hook(case, log, signal));
     Ok(options)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Choose the public raw or simple entry point.
 fn start(
     case: &Value,
@@ -141,6 +155,7 @@ fn start(
         }),
     )))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Run one operation until its finite source and stream close.
 pub async fn run_case(case: &Value) -> TestResult<Value> {
     let log = Log::default();
@@ -158,6 +173,7 @@ pub async fn run_case(case: &Value) -> TestResult<Value> {
     }
     Ok(actual)
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Run each query in an isolated child with its explicit environment.
 pub async fn assert_rows(test: &str) -> TestResult {
     let decoded = crate::azure_cases::rows(FIXTURE)?;

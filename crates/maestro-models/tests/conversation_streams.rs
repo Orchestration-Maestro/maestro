@@ -1,11 +1,17 @@
 //! Direct reasoning conversation stream behavior.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::stream_mistral;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
     let model = chat::model(&json!({"provider": "oracle-no-env", "api": "mistral-conversations"}))?;
@@ -40,9 +46,11 @@ fn conversation_streams_keep_raw_and_simple_failure_boundaries() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "conversation_streams/corpus.rs"]
 mod corpus;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_share_message_updates_after_admission() -> TestResult {
     crate::runtime::run(async {
@@ -53,6 +61,7 @@ fn conversation_streams_share_message_updates_after_admission() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_retain_first_id_and_usage() -> TestResult {
     crate::runtime::run(corpus::rows(
@@ -60,11 +69,13 @@ fn conversation_streams_retain_first_id_and_usage() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_map_finish_outcomes() -> TestResult {
     crate::runtime::run(corpus::rows("conversation_streams_map_finish_outcomes"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_order_text_and_thinking_blocks() -> TestResult {
     crate::runtime::run(corpus::rows(
@@ -72,6 +83,7 @@ fn conversation_streams_order_text_and_thinking_blocks() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_accumulate_and_finalize_tool_calls() -> TestResult {
     crate::runtime::run(corpus::rows(
@@ -79,6 +91,7 @@ fn conversation_streams_accumulate_and_finalize_tool_calls() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
     crate::runtime::run_paused(async {
@@ -89,6 +102,7 @@ fn conversation_streams_preserve_partial_results_on_failure() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_respect_framing_and_completion() -> TestResult {
     crate::runtime::run(corpus::rows(
@@ -96,6 +110,7 @@ fn conversation_streams_respect_framing_and_completion() -> TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn conversation_streams_validate_complete_events_before_reduction() -> TestResult {
     crate::runtime::run(corpus::rows(
@@ -103,5 +118,6 @@ fn conversation_streams_validate_complete_events_before_reduction() -> TestResul
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "conversation_streams/lifecycle.rs"]
 mod lifecycle;

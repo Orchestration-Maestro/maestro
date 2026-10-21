@@ -1,5 +1,6 @@
 //! Recorded preparation rows, their materialization into typed inputs and their checks.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 
 use maestro_models::providers::content::google::{

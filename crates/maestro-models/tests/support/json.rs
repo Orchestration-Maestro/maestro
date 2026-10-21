@@ -1,5 +1,6 @@
 //! JSON value comparison and decoding helpers shared by the protocol tests.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
 use maestro_models::Context;
 use serde::Deserialize as _;

@@ -1,22 +1,30 @@
 //! Provider invocation ownership through the public SDK.
 
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::Model;
 use maestro_models::{
-    Local, Model, OnPayload, OnResponse, SimpleStreamOptions, StreamOptions, build_base_options_for,
+    Local, OnPayload, OnResponse, SimpleStreamOptions, StreamOptions, build_base_options_for,
 };
-use std::{cell::Cell, rc::Rc, sync::Arc};
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Arc;
+use std::{cell::Cell, rc::Rc};
 
 mod bundled_cases;
+#[cfg(not(target_arch = "wasm32"))]
 mod controls;
 mod corpus;
 mod dispatch_corpus;
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "support/original_options.rs"]
 mod original_options;
 mod registered;
 mod registry_corpus;
 mod response_policies;
 mod scripted;
+#[cfg(not(target_arch = "wasm32"))]
 mod session_transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn raw_simple_and_catalog_keep_original_option_families() -> crate::TestResult {
     let _serial = crate::bundled::registry();
@@ -54,8 +62,7 @@ fn base_options_share_hooks_without_calling_them() {
         response_calls.set(response_calls.get() + 1);
         Box::pin(async { Ok(()) })
     });
-    for row in corpus::load()
-        .registered
+    for row in corpus::hooks()
         .rows
         .into_iter()
         .filter(|row| row.input.get("payload").is_some())
@@ -155,6 +162,7 @@ fn default_sdk_futures_remain_thread_safe() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
     let _registry = crate::bundled::registry();
@@ -176,6 +184,7 @@ fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
     }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Keep authentication and transport selection on the real direct entry route.
 fn local_direct_options(
     protocol: &str,
@@ -189,6 +198,7 @@ fn local_direct_options(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Protocol-shaped empty success bodies remain independent of the renderer.
 fn direct_response(protocol: &str) -> crate::transport::Attempt {
     use crate::transport;
@@ -207,6 +217,7 @@ fn direct_response(protocol: &str) -> crate::transport::Attempt {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Drive each invocation to completion before checking its closed phase transcript.
 async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     use crate::{chat, transport};
@@ -248,6 +259,7 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The closed hook transcript one protocol's response-hook policy produces.
 fn hook_phases(policy: &crate::bundled::ProtocolPolicy) -> &'static [&'static str] {
     if policy.response_hook {
@@ -262,6 +274,7 @@ fn hook_phases(policy: &crate::bundled::ProtocolPolicy) -> &'static [&'static st
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Inspect the protocol's actual post-hook wire field.
 fn assert_sent_temperature(protocol: &str, body: &serde_json::Value) {
     use serde_json::json;
@@ -275,6 +288,7 @@ fn assert_sent_temperature(protocol: &str, body: &serde_json::Value) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Record and retain every admitted local task until its producer completes.
 fn local_submission(
     tasks: Rc<std::cell::RefCell<Vec<tokio::task::JoinHandle<()>>>>,
@@ -288,6 +302,7 @@ fn local_submission(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Use the public raw direct entry for each protocol.
 fn direct_stream<E: maestro_models::ProviderExecution>(
     protocol: &str,
@@ -353,6 +368,7 @@ fn direct_stream<E: maestro_models::ProviderExecution>(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Use the direct response-family exports with the same local settings.
 fn direct_response_stream<E: maestro_models::ProviderExecution>(
     protocol: &str,
@@ -395,6 +411,7 @@ fn direct_response_stream<E: maestro_models::ProviderExecution>(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Root simple entries preserve their settled-stream boundary in either family.
 fn direct_simple_stream<E: maestro_models::ProviderExecution>(
     protocol: &str,
@@ -426,20 +443,25 @@ fn direct_simple_stream<E: maestro_models::ProviderExecution>(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Caller-local hook observations survive suspension without requiring thread safety.
 type LocalPhases = Rc<std::cell::RefCell<Vec<&'static str>>>;
+#[cfg(not(target_arch = "wasm32"))]
 /// Threaded observations retain the same phase order through the existing producer.
 type ThreadedPhases = std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>;
+#[cfg(not(target_arch = "wasm32"))]
 /// Record a local hook observation without retaining a borrow across user work.
 #[cfg(test)]
 fn local_phase(phases: &LocalPhases, phase: &'static str) {
     phases.borrow_mut().push(phase);
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Record a threaded hook observation without retaining a guard across user work.
 #[cfg(test)]
 fn threaded_phase(phases: &ThreadedPhases, phase: &'static str) {
     phases.lock().unwrap().push(phase);
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// One hook body, with only concrete pointer/log erasures differing by family.
 macro_rules! common_options {
     ($name:ident, $mode:ty, $pointer:ident, $log:ty, $push:ident) => {
@@ -481,7 +503,9 @@ macro_rules! common_options {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 common_options!(local_common_options, Local, Rc, LocalPhases, local_phase);
+#[cfg(not(target_arch = "wasm32"))]
 common_options!(
     threaded_common_options,
     maestro_models::Threaded,
@@ -490,6 +514,7 @@ common_options!(
     threaded_phase
 );
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestResult {
     use crate::{chat, transport};
@@ -635,8 +660,10 @@ fn direct_cloud_stream<E: maestro_models::ProviderExecution>(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Synchronous setup owner shared by the two original option families.
 struct EagerProvider(std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E, O> maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for EagerProvider
 where
     E: maestro_models::ProviderExecution,
@@ -686,6 +713,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Setup failure is immediate for streams and eager but independently observed for completions.
 macro_rules! eager_failure_operations {
     ($model:ident, $context:ident, $calls:ident, $mode:ty, $shape:ident,
@@ -707,6 +735,7 @@ macro_rules! eager_failure_operations {
     }};
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run each original option shape through all four eager public operations.
 macro_rules! eager_operations {
     ($model:ident, $context:ident, $calls:ident, $mode:ty,
@@ -735,6 +764,7 @@ macro_rules! eager_operations {
     }};
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Absent, supplied-empty and supplied-full original options, with independent expected labels.
 #[cfg(test)]
 fn eager_options<E: maestro_models::ProviderExecution>(
@@ -768,6 +798,7 @@ fn eager_options<E: maestro_models::ProviderExecution>(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn dispatch_and_completion_keep_eager_error_boundaries() -> crate::TestResult {
     use maestro_models::{ApiProvider, Context};
@@ -796,6 +827,7 @@ fn dispatch_and_completion_keep_eager_error_boundaries() -> crate::TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise local eager success and setup failure with each original option shape.
 #[cfg(test)]
 fn eager_local(
@@ -819,6 +851,7 @@ fn eager_local(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise threaded eager success and setup failure with each original option shape.
 #[cfg(test)]
 fn eager_threaded(
@@ -842,6 +875,7 @@ fn eager_threaded(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise default eager success and setup failure with each original option shape.
 #[cfg(test)]
 fn eager_default(
@@ -862,6 +896,7 @@ fn eager_default(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn registered_scripted_submission_keeps_local_hooks() -> crate::TestResult {
     use maestro_models::{ProviderInvocation, ProviderStreamOptions, RegisterFauxProviderOptions};
@@ -915,6 +950,7 @@ fn registered_scripted_submission_keeps_local_hooks() -> crate::TestResult {
     }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Count both sides of a suspended response hook on its caller-local state.
 #[cfg(test)]
 fn scripted_local_observer(hook_calls: Rc<Cell<usize>>) -> StreamOptions<Local> {
@@ -932,6 +968,7 @@ fn scripted_local_observer(hook_calls: Rc<Cell<usize>>) -> StreamOptions<Local> 
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A retained simple handle consumes the next response through its original native default.
 #[cfg(test)]
 async fn retained_scripted_threaded(
@@ -962,6 +999,7 @@ async fn retained_scripted_threaded(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Supply two distinguishable responses to the shared retained FIFO.
 #[cfg(test)]
 fn queue_scripted_pair(registration: &maestro_models::FauxProviderRegistration) {
@@ -979,6 +1017,7 @@ fn queue_scripted_pair(registration: &maestro_models::FauxProviderRegistration) 
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retain each admitted threaded task using the same test admission owner.
 #[cfg(test)]
 fn threaded_submission(
@@ -991,6 +1030,7 @@ fn threaded_submission(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exercise both cloud hook-capture families with the shared synchronized witnesses.
 pub(crate) fn cloud_affinity() -> crate::TestResult {
     crate::runtime::run(tokio::task::LocalSet::new().run_until(bundled_cases::cloud_affinity()))

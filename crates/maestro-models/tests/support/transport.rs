@@ -1,17 +1,19 @@
 //! A scripted HTTP transport that records when and how it was called.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use maestro_models::{AssistantMessage, AssistantMessageEventStream};
 use maestro_models::{
-    AssistantMessage, AssistantMessageEventStream, BoxFuture, Context, Fetch, FetchError, HttpBody,
-    HttpRequest, HttpResponse, Model, OpenAICompletionsOptions, StopReason, StreamOptions,
-    stream_openai_completions,
+    BoxFuture, Context, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, Model,
+    OpenAICompletionsOptions, StopReason, StreamOptions, stream_openai_completions,
 };
 use tokio::time::Instant;
 
-use crate::chat::{TestResult, context, model};
+use crate::chat::TestResult;
+use crate::chat::{context, model};
 
 /// How one attempt ends.
 pub enum Attempt {

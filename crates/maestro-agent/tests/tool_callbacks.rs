@@ -1,6 +1,7 @@
 //! Public typed callback conversion through the common tool record.
 #![cfg(test)]
 use maestro_agent::{AgentTool, AgentToolResult, ExecuteTool};
+use maestro_models::SharedHandle;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, Tool, UserBlock};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -47,7 +48,7 @@ fn definition() -> Tool {
 }
 /// Controlled body with a distinct progress result.
 fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
-    Arc::new(move |id, args, signal, update| {
+    SharedHandle::new(move |id, args, signal, update| {
         assert_eq!(id, "call-1");
         assert!(signal.is_none());
         calls.fetch_add(1, Ordering::SeqCst);
@@ -85,7 +86,7 @@ fn maestro_typed_tool_round_trips_arguments_results_and_progress() {
         "call-1".into(),
         json!({"count":7}),
         None,
-        Some(Arc::new(move |partial| {
+        Some(SharedHandle::new(move |partial| {
             captured.lock().unwrap().push(partial);
         })),
     ))
@@ -130,7 +131,7 @@ fn maestro_typed_tool_uses_host_json_number_semantics() {
     let tool = AgentTool::typed::<u32, f64>(
         definition(),
         "Numbers".into(),
-        Arc::new(|_, _, _, _| {
+        SharedHandle::new(|_, _, _, _| {
             Box::pin(async {
                 Ok(AgentToolResult {
                     content: Vec::new(),
@@ -160,7 +161,7 @@ fn encoding_failure_tool(progress: bool) -> AgentTool {
     AgentTool::typed::<u32, Unencodable>(
         definition(),
         "Failure".into(),
-        Arc::new(move |_, _, _, update| {
+        SharedHandle::new(move |_, _, _, update| {
             Box::pin(async move {
                 if progress {
                     update.unwrap()(AgentToolResult {
@@ -187,7 +188,9 @@ fn maestro_typed_tool_returns_callback_and_encoding_failures() {
             "failure".into(),
             json!(1),
             None,
-            Some(Arc::new(|_| panic!("failed progress must not publish"))),
+            Some(SharedHandle::new(|_| {
+                panic!("failed progress must not publish")
+            })),
         ))
         .err()
         .unwrap();
@@ -196,7 +199,7 @@ fn maestro_typed_tool_returns_callback_and_encoding_failures() {
     let absent = AgentTool::typed::<u32, Unencodable>(
         definition(),
         "Absent".into(),
-        Arc::new(|_, _, _, _| {
+        SharedHandle::new(|_, _, _, _| {
             Box::pin(async {
                 Ok(AgentToolResult {
                     content: Vec::new(),
@@ -211,7 +214,7 @@ fn maestro_typed_tool_returns_callback_and_encoding_failures() {
     let tool = AgentTool::typed::<u32, ()>(
         definition(),
         "Failure".into(),
-        Arc::new(|_, _, _, _| {
+        SharedHandle::new(|_, _, _, _| {
             Box::pin(async { Err(DiagnosticErrorInfo::new(None, "body failed")) })
         }),
     );

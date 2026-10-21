@@ -1,9 +1,13 @@
 //! Controlled response-account authorization through supplied effects.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Fetch, HttpResponse, refresh_openai_codex_token};
+#[cfg(not(target_arch = "wasm32"))]
 use std::{collections::BTreeMap, sync::Arc};
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_refresh_keeps_stderr_clean() {
     if std::env::var_os("MAESTRO_RESPONSE_STDERR_CHILD").is_none() {
@@ -38,6 +42,7 @@ fn maestro_response_refresh_keeps_stderr_clean() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Token response with supplied account metadata.
 fn token_fetch(account: &str) -> Fetch {
     use base64::Engine as _;
@@ -62,8 +67,10 @@ fn token_fetch(account: &str) -> Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Interaction that recovers with a pasted code.
 struct Manual;
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Manual {
     fn on_auth(
         &self,
@@ -89,6 +96,7 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Protocol-aware manual interaction retaining the actual authorization URL.
 struct Protocol {
     /// Expected explicit or default originator.
@@ -96,6 +104,7 @@ struct Protocol {
     /// Auth notification retained for the token-request witness.
     auth: maestro_models::EventStream<maestro_models::OAuthAuthInfo, maestro_models::OAuthAuthInfo>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Protocol {
     fn on_auth(
         &self,
@@ -171,6 +180,7 @@ impl maestro_models::OAuthLoginCallbacks for Protocol {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Write bytes after readiness, without fixed delays.
 async fn write_native(peer: &tokio::net::TcpStream, mut bytes: &[u8]) {
     while !bytes.is_empty() {
@@ -185,6 +195,7 @@ async fn write_native(peer: &tokio::net::TcpStream, mut bytes: &[u8]) {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read the request body using the client's framing, keeping received bytes intact.
 async fn read_request(peer: &tokio::net::TcpStream) -> Vec<u8> {
     let mut bytes = Vec::new();
@@ -211,6 +222,7 @@ async fn read_request(peer: &tokio::net::TcpStream) -> Vec<u8> {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_default_fetch_reads_complete_loopback_response() {
     crate::runtime::run(async {
@@ -238,6 +250,7 @@ fn response_default_fetch_reads_complete_loopback_response() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Produce one complete fragmented reply after reading the actual default client's POST.
 async fn loopback_token(listener: tokio::net::TcpListener, reason: Option<&str>) {
     use base64::Engine as _;
@@ -275,6 +288,7 @@ async fn loopback_token(listener: tokio::net::TcpListener, reason: Option<&str>)
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run public fallback assertions in a checked child without opening a callback listener.
 fn public_fallback_child(test: &str) -> bool {
     if std::env::var("MAESTRO_OAUTH_CALLBACK_HOST").as_deref() == Ok(" ") {
@@ -295,8 +309,10 @@ fn public_fallback_child(test: &str) -> bool {
 
 /// Public callback checks exercise manual fallback in an isolated process.
 mod oauth_callback {
+    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_response_tokens_require_account_claim() {
         if public_fallback_child("maestro_response_tokens_require_account_claim") {
@@ -305,6 +321,7 @@ mod oauth_callback {
         crate::runtime::run(maestro_response_tokens_require_account_claim_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn maestro_response_tokens_require_account_claim_flow() {
         for (account, operation) in ["é猫😀", " ", ""]
             .into_iter()
@@ -342,6 +359,7 @@ mod oauth_callback {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn response_provider_delegates_and_borrows_access_key() {
         if public_fallback_child("response_provider_delegates_and_borrows_access_key") {
@@ -393,6 +411,7 @@ mod oauth_callback {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn maestro_response_authorization_keeps_protocol_fields() {
         if public_fallback_child("maestro_response_authorization_keeps_protocol_fields") {
@@ -401,6 +420,7 @@ mod oauth_callback {
         crate::runtime::run(maestro_response_authorization_keeps_protocol_fields_flow());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn maestro_response_authorization_keeps_protocol_fields_flow() {
         for originator in [None, Some(""), Some("x +&=😀")] {
             let callbacks = Arc::new(Protocol {

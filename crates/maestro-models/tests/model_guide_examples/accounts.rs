@@ -1,20 +1,26 @@
 //! Supplied account credentials and retained registration handles in fresh processes.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{bundled, chat::TestResult};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::oauth::{OAuthCallbacks, OAuthLoginCallbacks, OAuthProviderInterface};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     BoxFuture, Fetch, OAuthAuthInfo, OAuthCredentials, OAuthError, OAuthPrompt, get_oauth_api_key,
     register_oauth_provider,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     clear_api_providers, get_api_provider, get_api_providers, register_api_provider,
     reset_api_providers, unregister_api_providers,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A custom account provider with owned refresh state and a distinguishing result.
 struct Account {
     /// Replacement access text supplied by refresh.
@@ -23,6 +29,7 @@ struct Account {
     refreshes: Arc<AtomicUsize>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthProviderInterface for Account {
     fn id(&self) -> &'static str {
         "guide-account"
@@ -69,8 +76,10 @@ impl OAuthProviderInterface for Account {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Caller interaction that observes both phases without opening a browser.
 struct Interaction(Arc<AtomicUsize>);
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuthLoginCallbacks for Interaction {
     fn on_auth(&self, info: OAuthAuthInfo) -> Result<(), OAuthError> {
         assert_eq!(info.url, "https://controlled.invalid/authorize");
@@ -84,6 +93,7 @@ impl OAuthLoginCallbacks for Interaction {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fake account data; the caller, not the library, owns persistence.
 fn credentials(expires: f64) -> OAuthCredentials {
     OAuthCredentials {
@@ -94,6 +104,7 @@ fn credentials(expires: f64) -> OAuthCredentials {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
@@ -149,6 +160,7 @@ fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Pure registered callback, using the public message builder and event producer.
 fn api_callback<O: maestro_models::StreamOptionsFamily>(
     text: &'static str,
@@ -156,6 +168,7 @@ fn api_callback<O: maestro_models::StreamOptionsFamily>(
     Arc::new(GuideProvider(text))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Both callback forms share the same selected result, not a new executor.
 fn api_provider(text: &'static str) -> maestro_models::ApiProvider {
     maestro_models::ApiProvider {
@@ -165,6 +178,7 @@ fn api_provider(text: &'static str) -> maestro_models::ApiProvider {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
@@ -216,6 +230,7 @@ fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained account implementations survive replacement and reset.
 async fn check_account_handles() -> TestResult {
     use maestro_models::{
@@ -266,8 +281,10 @@ async fn check_account_handles() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct GuideProvider(&'static str);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for GuideProvider
 {

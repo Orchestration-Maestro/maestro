@@ -1,9 +1,13 @@
 //! Project shared presentation into embedded author-fixture data.
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_theme::{BrandMode, NativeThemeOperations, load_brand_pack};
+#[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{error::Error, fs, path::PathBuf};
 
 /// Prepare values before compilation, retaining no borrowed presentation.
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let [path, mode, output] = args.as_slice() else {
@@ -61,6 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 /// Observe authored paths and canonical targets without retaining borrowed presentation.
+#[cfg(not(target_arch = "wasm32"))]
 fn watch_directories(
     path: &str,
     template: &str,
@@ -85,3 +90,7 @@ fn watch_directories(
     )?;
     Ok(())
 }
+
+/// Native author preparation is unavailable in browser builds.
+#[cfg(target_arch = "wasm32")]
+fn main() {}

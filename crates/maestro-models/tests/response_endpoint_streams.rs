@@ -4,6 +4,7 @@ use crate::response_cases;
 use crate::response_endpoint as endpoint;
 use crate::response_runtime as runtime;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_price_echoed_tier_before_requested_tier() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -11,6 +12,7 @@ fn responses_price_echoed_tier_before_requested_tier() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_run_hooks_before_body_and_propagate_failures() -> chat::TestResult {
     crate::runtime::run(async {
@@ -28,6 +30,7 @@ fn responses_run_hooks_before_body_and_propagate_failures() -> chat::TestResult 
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_finish_success_or_error_once_with_partial_output() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -35,6 +38,7 @@ fn responses_finish_success_or_error_once_with_partial_output() -> chat::TestRes
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_preserve_cancellation_stage_and_message() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -42,6 +46,7 @@ fn responses_preserve_cancellation_stage_and_message() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_return_http_failure_without_start() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -49,6 +54,7 @@ fn responses_return_http_failure_without_start() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_interpret_named_events_and_done_prefix() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -56,6 +62,7 @@ fn responses_interpret_named_events_and_done_prefix() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_map_terminal_outcomes_without_replacing_usage() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -63,6 +70,7 @@ fn responses_map_terminal_outcomes_without_replacing_usage() -> chat::TestResult
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_keep_earlier_setup_failures_ahead_of_hooks() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -70,6 +78,7 @@ fn responses_keep_earlier_setup_failures_ahead_of_hooks() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_preserve_raw_effort_endpoint_outcomes() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -77,6 +86,7 @@ fn responses_preserve_raw_effort_endpoint_outcomes() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_compute_catalog_costs_for_priority_and_flex() -> chat::TestResult {
     crate::runtime::run(endpoint::assert_rows(
@@ -84,21 +94,25 @@ fn responses_compute_catalog_costs_for_priority_and_flex() -> chat::TestResult {
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_native_endpoint_delivers_both_entry_results() -> chat::TestResult {
     crate::runtime::run(runtime::native(runtime::Endpoint::Standard))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_gate_hooks_and_cancel_a_pending_body() -> chat::TestResult {
     crate::runtime::run(runtime::gated(runtime::Endpoint::Standard))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_forward_retry_timeout_and_cancellation_options() -> chat::TestResult {
     crate::runtime::run_paused(runtime::transport_options(runtime::Endpoint::Standard))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_native_runtime_failure_finishes_stream() -> chat::TestResult {
     runtime::without_runtime(runtime::Endpoint::Standard)
@@ -118,6 +132,7 @@ fn responses_fixture_cases_have_complete_consumers() -> chat::TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_errors_do_not_append_chat_metadata() -> chat::TestResult {
     crate::runtime::run(async {
@@ -141,6 +156,7 @@ fn responses_errors_do_not_append_chat_metadata() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_edited_stream_controls_processing_and_failure_order() -> chat::TestResult {
     crate::runtime::run(async {
@@ -185,6 +201,7 @@ fn responses_edited_stream_controls_processing_and_failure_order() -> chat::Test
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_render_selected_error_json_without_erasing_failures() -> chat::TestResult {
     crate::runtime::run(async {
@@ -228,6 +245,7 @@ fn responses_render_selected_error_json_without_erasing_failures() -> chat::Test
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Consume a selected error through the HTTP or SSE public invocation.
 async fn error_message(status: u16, error: &str) -> chat::TestResult<String> {
     let envelope = format!(r#"{{"error":{error}}}"#);
@@ -243,6 +261,7 @@ async fn error_message(status: u16, error: &str) -> chat::TestResult<String> {
         .to_owned())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_forward_array_payload_unchanged() -> chat::TestResult {
     crate::runtime::run(async {
@@ -256,6 +275,7 @@ fn responses_forward_array_payload_unchanged() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_keep_body_failure_text_when_aborted() -> chat::TestResult {
     crate::runtime::run(async {
@@ -274,6 +294,7 @@ fn responses_keep_body_failure_text_when_aborted() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_trim_media_type_with_script_whitespace() -> chat::TestResult {
     crate::runtime::run(async {
@@ -303,6 +324,7 @@ fn responses_trim_media_type_with_script_whitespace() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_send_false_payload_as_json() -> chat::TestResult {
     crate::runtime::run(async {
@@ -321,6 +343,7 @@ fn responses_send_false_payload_as_json() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
     use futures_util::FutureExt as _;
@@ -376,6 +399,7 @@ fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A finite body whose second poll is acknowledged before terminal bytes are released.
 fn carriage_transport() -> (
     maestro_models::Fetch,

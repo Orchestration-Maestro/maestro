@@ -226,26 +226,31 @@ fn launch_other(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn content_stream_keeps_its_protocol_identity() -> chat::TestResult {
     crate::runtime::run(protocol_identity("content", "google-generative-ai"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_content_stream_keeps_its_protocol_identity() -> chat::TestResult {
     crate::runtime::run(protocol_identity("content", "google-vertex"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_response_stream_keeps_its_protocol_identity() -> chat::TestResult {
     crate::runtime::run(protocol_identity("content", "azure-openai-responses"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_conversation_keeps_its_protocol_identity() -> chat::TestResult {
     crate::runtime::run(protocol_identity("bedrock", "bedrock-converse-stream"))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Replay both recorded identities and a matching-API control through each outcome.
 async fn protocol_identity(owner: &str, api: &str) -> chat::TestResult {
     let rows: Vec<Value> = serde_json::from_str(include_str!("fixtures/assistant-output.json"))?;
@@ -265,6 +270,7 @@ async fn protocol_identity(owner: &str, api: &str) -> chat::TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe the initialized record before draining and compare all terminal observations.
 async fn identity_invocation(row: &Value, api: &str, fail: bool) -> chat::TestResult {
     use maestro_models::{AssistantMessageEvent as Event, DoneReason, ErrorReason, StopReason};
@@ -312,6 +318,7 @@ async fn identity_invocation(row: &Value, api: &str, fail: bool) -> chat::TestRe
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare every field on a test-owned snapshot, with a bounded real timestamp.
 fn assert_identity_record(
     handle: &maestro_models::SharedAssistantMessage,
@@ -325,6 +332,7 @@ fn assert_identity_record(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Install a controlled response and a hook that observes the original descriptor.
 fn identity_options(
     model: &maestro_models::Model,
@@ -381,6 +389,7 @@ fn identity_options(
     Ok((common, scripted, calls))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke the public direct entry, never selecting a provider by the supplied API.
 fn identity_stream(
     model: maestro_models::Model,

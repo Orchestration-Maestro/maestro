@@ -1,5 +1,6 @@
 //! Configuration cases that run in a child process holding only the case's environment.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};

@@ -1,15 +1,23 @@
 //! Shared recorded response inputs, transport assembly and comparison.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat::{TestResult, context, model, overlay};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::responses::openai_responses::OpenAIResponsesReasoningSummary;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Cancellation, Fetch, FetchError, HttpRequest, HttpResponse, StreamOptions};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex, PoisonError};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Model with the recording's rates and limits.
 pub fn target(case: &Value, descriptor: Value) -> TestResult<maestro_models::Model> {
     model(&overlay(descriptor, &case["model"]))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Conversation defaults overridden by a selected fixture history.
 pub fn history(case: &Value) -> TestResult<maestro_models::Context> {
     context(&overlay(
@@ -17,6 +25,7 @@ pub fn history(case: &Value) -> TestResult<maestro_models::Context> {
         &case["context"],
     ))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Read a tagged nonfinite test number.
 pub fn number(value: &Value) -> Option<f64> {
     match value["number"].as_str() {
@@ -25,6 +34,7 @@ pub fn number(value: &Value) -> Option<f64> {
         _ => value.as_f64(),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Decode an optional typed fixture option.
 pub fn option<T: serde::de::DeserializeOwned>(value: &Value, key: &str) -> TestResult<Option<T>> {
     Ok(value
@@ -37,6 +47,7 @@ pub fn option<T: serde::de::DeserializeOwned>(value: &Value, key: &str) -> TestR
 pub fn failure(text: &str) -> maestro_models::DiagnosticErrorInfo {
     maestro_models::extract_diagnostic_error(maestro_models::DiagnosticInput::Text(text))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Return the raw body, else framed events, else `complete`.
 pub fn body(case: &Value, complete: &str) -> Vec<u8> {
     if let Some(body) = case["body"].as_str() {
@@ -53,6 +64,7 @@ pub fn body(case: &Value, complete: &str) -> Vec<u8> {
         })
         .into_bytes()
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Finite observation logs containing only owned JSON data.
 #[derive(Clone, Default)]
 pub struct Log {
@@ -61,6 +73,7 @@ pub struct Log {
     /// Payload/response hook observations.
     pub hooks: Arc<Mutex<Vec<Value>>>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Controlled transport; body construction never runs under a log lock.
 pub fn fetch(
     case: &Value,
@@ -109,6 +122,7 @@ pub fn fetch(
         })))
     }))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Common option projection from the reduced recording.
 pub fn common(case: &Value) -> TestResult<StreamOptions> {
     let signal = Cancellation::new();
@@ -136,6 +150,7 @@ pub fn common(case: &Value) -> TestResult<StreamOptions> {
         ..Default::default()
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Decode the recorded summary selection.
 pub fn reasoning_summary(value: &Value) -> Option<OpenAIResponsesReasoningSummary> {
     match value.as_str() {
@@ -145,10 +160,12 @@ pub fn reasoning_summary(value: &Value) -> Option<OpenAIResponsesReasoningSummar
         _ => None,
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Capture the common request fields before provider-specific wire observations.
 pub fn request(request: &HttpRequest) -> Value {
     json!({"url":request.url,"headers":request.headers,"body":serde_json::from_slice::<Value>(&request.body).unwrap_or(Value::Null)})
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Preserve the body's authored key order.
 pub fn body_keys(captured: &mut Value) {
     captured["bodyKeys"] = json!(
@@ -157,6 +174,7 @@ pub fn body_keys(captured: &mut Value) {
             .map(|body| body.keys().collect::<Vec<_>>())
     );
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe a closed stream and its recorded requests and hooks.
 pub async fn observe(
     stream: &maestro_models::AssistantMessageEventStream,
@@ -167,6 +185,7 @@ pub async fn observe(
     let hooks = log.hooks.lock().map_err(|e| e.to_string())?.clone();
     Ok(json!({"requests":requests,"hooks":hooks,"events":events,"result":result}))
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare recorded observations, with native parser text checked at its own boundary.
 pub fn compare(row: &Value, mut actual: Value, replacement: &Value) {
     if row["case"]["hook"] == "replace" {

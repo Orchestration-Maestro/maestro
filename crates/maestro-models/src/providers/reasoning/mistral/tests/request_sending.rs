@@ -1,12 +1,16 @@
 //! Controlled transports and callback phases.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::super::request;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::Value;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Execute cases against a transport whose producer finishes before inspection.
 pub(super) async fn check(input: &Value, expected: &Value) {
     let (model, mut options) = configuration(input);
@@ -62,6 +66,7 @@ pub(super) async fn check(input: &Value, expected: &Value) {
     outcome(result, &expected["outcome"], input);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Native cause fixture.
 fn error_info(message: &str) -> crate::DiagnosticErrorInfo {
     crate::DiagnosticErrorInfo {
@@ -72,6 +77,7 @@ fn error_info(message: &str) -> crate::DiagnosticErrorInfo {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Set the host-only selected numeric value.
 fn nonfinite(options: &mut crate::MistralOptions, input: &Value) {
     if let Some(field) = input["nonfinite"]["field"].as_str() {
@@ -89,6 +95,7 @@ fn nonfinite(options: &mut crate::MistralOptions, input: &Value) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Capture a completed attempt and return a controlled response.
 fn fetch(input: &Value, requests: Arc<Mutex<Vec<Value>>>) -> crate::Fetch {
     let input = input.clone();
@@ -120,6 +127,7 @@ fn fetch(input: &Value, requests: Arc<Mutex<Vec<Value>>>) -> crate::Fetch {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check authored text or a nonempty native boundary failure.
 fn outcome(
     result: Result<(), crate::providers::http::RequestFailure>,
@@ -144,6 +152,7 @@ fn outcome(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Install callbacks with independent counters and no owner capture.
 fn install_hooks(
     options: &mut crate::MistralOptions,
@@ -185,6 +194,7 @@ fn install_hooks(
     }));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Decode only the controlled body producer's fixture operands.
 fn body_bytes(input: &Value) -> Vec<u8> {
     input.get("bodyBytes").map_or_else(
@@ -199,6 +209,7 @@ fn body_bytes(input: &Value) -> Vec<u8> {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The oracle's default media type depends on its producer path.
 fn response_headers(input: &Value) -> std::collections::BTreeMap<String, String> {
     let default = if input["bodyFailure"].as_bool() == Some(true) {
@@ -212,6 +223,7 @@ fn response_headers(input: &Value) -> std::collections::BTreeMap<String, String>
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Construct the typed descriptor and credential operand for an effect query.
 fn configuration(input: &Value) -> (crate::Model, crate::MistralOptions) {
     let mut model = super::request_corpus::model(input);

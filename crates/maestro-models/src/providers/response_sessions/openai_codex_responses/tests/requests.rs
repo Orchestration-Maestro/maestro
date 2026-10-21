@@ -29,6 +29,7 @@ fn maestro_response_sessions_extract_account_claim() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded request selections and their complete wire payload.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -50,6 +51,7 @@ struct BodyCase {
     expected: serde_json::Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_build_request_defaults() {
     crate::tests::runtime::run(async {
@@ -77,6 +79,7 @@ fn maestro_response_sessions_build_request_defaults() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Common settings present in the request corpus.
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -109,6 +112,7 @@ pub(super) fn present<'de, D: serde::Deserializer<'de>>(
     serde_json::Value::deserialize(decoder).map(Some)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
     fn from(input: RequestOptions) -> Self {
         use super::super::OpenAICodexReasoningSummary as Summary;
@@ -158,6 +162,7 @@ impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_select_text_verbosity() {
     use super::super::OpenAICodexTextVerbosity as Verbosity;
@@ -207,6 +212,7 @@ fn maestro_response_sessions_resolve_sse_endpoint() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded header layers.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -226,6 +232,7 @@ struct HeaderInput {
     user_agent: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Effective headers at the transport seam.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -238,7 +245,7 @@ struct HeaderCase {
 
 #[test]
 fn maestro_response_sessions_join_initial_cookie_headers() {
-    let mut model = body_cases("defaults").unwrap().remove(0).model;
+    let mut model = super::controlled_model();
     model.headers = Some(indexmap::IndexMap::from([
         ("cookie".to_owned(), "a=1".to_owned()),
         ("Cookie".to_owned(), "b=2".to_owned()),
@@ -264,6 +271,7 @@ fn maestro_response_sessions_join_initial_cookie_headers() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_apply_sse_headers() {
     let rows: Vec<HeaderCase> =
@@ -301,6 +309,7 @@ fn maestro_response_sessions_apply_sse_headers() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_convert_history_and_tools() {
     crate::tests::runtime::run(async {
@@ -323,6 +332,7 @@ fn maestro_response_sessions_convert_history_and_tools() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert complete wire documents from the independent request corpus.
 async fn assert_bodies(text: &str) {
     let rows = body_cases(text).unwrap();
@@ -343,16 +353,19 @@ async fn assert_bodies(text: &str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_map_reasoning_from_descriptor() {
     crate::tests::runtime::run(assert_bodies("reasoning"));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_keep_raw_minimal_without_mapping() {
     crate::tests::runtime::run(assert_bodies("minimal"));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_default_reasoning_summary() {
     crate::tests::runtime::run(assert_bodies("summary"));
@@ -506,6 +519,7 @@ fn maestro_response_sessions_price_all_cost_categories() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_sessions_validate_headers_before_fetch() {
     crate::tests::runtime::run(async {
@@ -535,6 +549,7 @@ fn maestro_response_sessions_validate_headers_before_fetch() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe payload preparation before each rejected header layer.
 async fn assert_invalid_header(name: &str, value: &str, replaced: bool, expected: &str) {
     use std::sync::{
@@ -574,6 +589,7 @@ async fn assert_invalid_header(name: &str, value: &str, replaced: bool, expected
     assert_eq!(payloads.load(Ordering::SeqCst), 1);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Only changing descriptor fields are recorded; unchanged fields come from one typed fixture.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -586,6 +602,7 @@ struct DescriptorInput {
     thinking_level_map: Option<crate::ThinkingLevelMap>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Reject unused descriptor fields before applying the recorded changes.
 fn descriptor<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<crate::Model, D::Error> {
     let input = DescriptorInput::deserialize(decoder)?;
@@ -600,11 +617,13 @@ fn descriptor<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<crate::Mod
     Ok(model)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Decode the conversation and require every authored member to survive the typed input.
 fn conversation<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<crate::Context, D::Error> {
     super::consumed(decoder)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Load one unique full-query corpus, then let each named witness select its associations.
 fn body_cases(case: &str) -> Result<Vec<BodyCase>, serde_json::Error> {
     let text = super::fixture_text(include_str!("fixtures/requests.json"));
@@ -633,9 +652,11 @@ fn body_cases(case: &str) -> Result<Vec<BodyCase>, serde_json::Error> {
 
 /// Exercise each request corpus's real load boundary without repeating transformation assertions.
 pub(super) fn audit_fixture_inputs() -> Result<(), serde_json::Error> {
+    #[cfg(not(target_arch = "wasm32"))]
     body_cases("defaults")?;
     super::fixture_rows::<AccountCase>(include_str!("fixtures/account.json"), &["token"])?;
     super::fixture_rows::<EndpointCase>(include_str!("fixtures/endpoints.json"), &["base"])?;
+    #[cfg(not(target_arch = "wasm32"))]
     super::fixture_rows::<HeaderCase>(include_str!("fixtures/headers.json"), &["input"])?;
     super::fixture_rows::<RetryCase>(include_str!("fixtures/retries.json"), &["status", "text"])?;
     super::fixture_rows::<ErrorCase>(
@@ -653,6 +674,7 @@ pub(super) fn audit_fixture_inputs() -> Result<(), serde_json::Error> {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare full operation inputs after expanding the compact descriptor/context fields.
 fn unique_body_queries(text: &str, rows: &[BodyCase]) -> Result<(), serde_json::Error> {
     use serde::de::Error as _;

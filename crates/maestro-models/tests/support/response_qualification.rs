@@ -1,5 +1,6 @@
 //! Recorded response invocations exercised through public dispatch.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::{bundled, chat, json::canonical, messages, transport};
 use chat::TestResult;
 use maestro_models::{CacheRetention, Context, Model, ThinkingLevel};

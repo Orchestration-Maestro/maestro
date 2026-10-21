@@ -1,7 +1,9 @@
 //! Tool declarations, argument progress and caller-owned execution.
 
 use super::weather_tool;
-use crate::{bundled, chat::TestResult};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::bundled;
+use crate::chat::TestResult;
 use maestro_models::{StringEnumOptions, string_enum};
 use serde_json::json;
 
@@ -40,6 +42,7 @@ fn maestro_guide_builds_portable_tool_schemas() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A controlled server completes a syntactically valid but disallowed enum value.
 pub(super) async fn invalid_completed_call()
 -> TestResult<(maestro_models::AssistantMessage, maestro_models::ToolCall)> {
@@ -76,6 +79,7 @@ pub(super) async fn invalid_completed_call()
     Ok((assistant, completed.ok_or("completed tool call")?))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Only checked arguments reach this example's tool effect.
 fn execute_weather(
     call: &maestro_models::ToolCall,
@@ -89,6 +93,7 @@ fn execute_weather(
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Exact feedback and absence semantics of the recorded validation inputs.
 fn check_validation_inputs(invalid: &maestro_models::ToolCall) -> TestResult {
     use maestro_models::validate_tool_call;
@@ -139,6 +144,7 @@ fn check_validation_inputs(invalid: &maestro_models::ToolCall) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_validates_before_tool_execution() -> TestResult {
     use maestro_models::{Message, ProviderStreamOptions, complete};
@@ -184,6 +190,7 @@ fn maestro_guide_validates_before_tool_execution() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_reads_partial_arguments_without_execution() -> TestResult {
     use maestro_models::{
@@ -241,6 +248,7 @@ fn maestro_guide_reads_partial_arguments_without_execution() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded partial JSON values, before any execution validation.
 fn check_partial_parser() {
     use maestro_models::parse_streaming_json;
@@ -261,6 +269,7 @@ fn check_partial_parser() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Finite segments released after each live argument observation.
 fn argument_frames() -> Vec<Vec<u8>> {
     let segments = [
@@ -293,6 +302,7 @@ fn argument_frames() -> Vec<Vec<u8>> {
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Borrow the live block only until the next body fragment is released.
 fn check_live_arguments(
     partial: &maestro_models::SharedAssistantMessage,

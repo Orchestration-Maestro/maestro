@@ -1,7 +1,9 @@
 //! Closed ownership for recorded streaming invocations.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::model_streaming::{chat::TestResult, response_qualification::assert_corpus_rows};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Execute only the named test's recorded invocations.
 pub(super) fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(
@@ -44,6 +46,7 @@ pub(super) fn assert_rows(test: &str) -> TestResult {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Execute the native socket corpus with its own closed case inventory.
 pub(super) fn assert_socket_rows(test: &str) -> TestResult {
     assert_corpus_rows(

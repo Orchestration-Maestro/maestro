@@ -1,25 +1,40 @@
 //! Reduction of content-generation response items through the public processor.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::{HashMap, HashSet};
+#[cfg(not(target_arch = "wasm32"))]
 use std::future::Future;
+#[cfg(not(target_arch = "wasm32"))]
 use std::pin::{Pin, pin};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, RwLock};
+#[cfg(not(target_arch = "wasm32"))]
 use std::task::{Context, Poll, Waker};
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::{TestResult, model};
+#[cfg(not(target_arch = "wasm32"))]
 use json::{canonical, event_record};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::providers::content::google_shared::process_google_stream;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, DiagnosticCode, DiagnosticErrorInfo,
     DoneReason, SharedAssistantMessage,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Every test name a fixture row may select.
 const TEST_NAMES: [&str; 36] = [
     "empty_and_metadata_only_streams_leave_the_message_unchanged",
@@ -60,6 +75,7 @@ const TEST_NAMES: [&str; 36] = [
     "duplicate_selected_fields_keep_the_last_member",
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Rates the model charges per million tokens.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -74,6 +90,7 @@ struct Rates {
     cache_write: f64,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What the processor is given.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -88,6 +105,7 @@ struct Input {
     cost: Option<Rates>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The selected fields of the final message.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -103,6 +121,7 @@ struct Message {
     response_id: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What the processor must leave behind.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -116,6 +135,7 @@ struct Expected {
     error: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One recorded case.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -128,6 +148,7 @@ struct Row {
     expected: Expected,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The rows owned by `test`, after checking the whole fixture.
 fn rows(test: &str) -> TestResult<Vec<Row>> {
     let all: Vec<Row> = serde_json::from_str(include_str!("fixtures/content_reduction.json"))?;
@@ -148,6 +169,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
     Ok(owned)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A failure with only a message.
 fn failure(message: &str) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {
@@ -158,6 +180,7 @@ fn failure(message: &str) -> DiagnosticErrorInfo {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The message an invocation fills in.
 fn initial_message() -> TestResult<SharedAssistantMessage> {
     Ok(Arc::new(RwLock::new(serde_json::from_value(json!({
@@ -169,6 +192,7 @@ fn initial_message() -> TestResult<SharedAssistantMessage> {
     }))?)))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A model that charges `rates`, or the default rates.
 fn priced(rates: Option<&Rates>) -> TestResult<maestro_models::Model> {
     let rates = rates.cloned().unwrap_or(Rates {
@@ -180,6 +204,7 @@ fn priced(rates: Option<&Rates>) -> TestResult<maestro_models::Model> {
     model(&json!({"api": "google-generative-ai", "provider": "google", "cost": rates}))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What one invocation left behind.
 struct Observed {
     /// Selected fields of the final message.
@@ -190,6 +215,7 @@ struct Observed {
     error: Option<DiagnosticErrorInfo>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run the processor over `input` with `counter`.
 async fn reduce(input: &Input, counter: &AtomicU64) -> TestResult<Observed> {
     let output = initial_message()?;
@@ -230,6 +256,7 @@ async fn reduce(input: &Input, counter: &AtomicU64) -> TestResult<Observed> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check a generated call identifier and replace it with the placeholder the fixture uses.
 ///
 /// A placeholder reads `@generated:<name part>:<counter>`; `seen` keeps the identifier each
@@ -278,6 +305,7 @@ fn normalize_ids(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Compare one row's complete observation with its recorded result.
 fn assert_row(row: &Row, observed: Observed) -> TestResult {
     let expected = &row.expected;
@@ -313,6 +341,7 @@ fn assert_row(row: &Row, observed: Observed) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run every fixture row owned by `test`, each with a fresh counter.
 fn check(test: &str) -> TestResult {
     for row in rows(test)? {
@@ -322,6 +351,7 @@ fn check(test: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Collect the events of a finished invocation.
 async fn drain(events: &AssistantMessageEventStream) -> TestResult<Vec<AssistantMessageEvent>> {
     let mut all = Vec::new();
@@ -331,6 +361,7 @@ async fn drain(events: &AssistantMessageEventStream) -> TestResult<Vec<Assistant
     Ok(all)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A one-chunk invocation with a generated call and the given counter.
 fn generated_suffix(counter: &AtomicU64) -> TestResult<String> {
     let input = Input {
@@ -349,66 +380,79 @@ fn generated_suffix(counter: &AtomicU64) -> TestResult<String> {
     Ok(id.rsplit('_').next().ok_or("suffix")?.to_owned())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_and_metadata_only_streams_leave_the_message_unchanged() -> TestResult {
     check("empty_and_metadata_only_streams_leave_the_message_unchanged")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn first_nonempty_response_identity_survives_later_chunks() -> TestResult {
     check("first_nonempty_response_identity_survives_later_chunks")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_response_identity_can_be_replaced_by_absence() -> TestResult {
     check("empty_response_identity_can_be_replaced_by_absence")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn first_candidate_wins_without_reading_later_content() -> TestResult {
     check("first_candidate_wins_without_reading_later_content")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn text_deltas_join_without_trimming_or_deduplication() -> TestResult {
     check("text_deltas_join_without_trimming_or_deduplication")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_switches_close_the_previous_block_in_order() -> TestResult {
     check("thinking_switches_close_the_previous_block_in_order")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn signature_alone_never_makes_a_thinking_block() -> TestResult {
     check("signature_alone_never_makes_a_thinking_block")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn last_nonempty_signature_survives_missing_and_empty_deltas() -> TestResult {
     check("last_nonempty_signature_survives_missing_and_empty_deltas")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn nontext_parts_do_not_change_the_current_block() -> TestResult {
     check("nontext_parts_do_not_change_the_current_block")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn one_part_can_emit_text_before_its_function_call() -> TestResult {
     check("one_part_can_emit_text_before_its_function_call")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_calls_close_text_or_thinking_before_three_tool_events() -> TestResult {
     check("tool_calls_close_text_or_thinking_before_three_tool_events")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_calls_keep_server_ids_and_distinct_arguments() -> TestResult {
     check("tool_calls_keep_server_ids_and_distinct_arguments")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn missing_empty_and_duplicate_ids_get_unique_generated_ids() -> TestResult {
     check("missing_empty_and_duplicate_ids_get_unique_generated_ids")?;
@@ -424,6 +468,7 @@ fn missing_empty_and_duplicate_ids_get_unique_generated_ids() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn generated_call_names_preserve_missing_and_empty_distinctions() -> TestResult {
     check("generated_call_names_preserve_missing_and_empty_distinctions")?;
@@ -446,116 +491,139 @@ fn generated_call_names_preserve_missing_and_empty_distinctions() -> TestResult 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_signatures_are_retained_only_when_nonempty() -> TestResult {
     check("tool_signatures_are_retained_only_when_nonempty")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_arguments_keep_objects_and_compact_numeric_key_order() -> TestResult {
     check("tool_arguments_keep_objects_and_compact_numeric_key_order")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn duplicate_argument_keys_keep_the_last_value_and_first_position() -> TestResult {
     check("duplicate_argument_keys_keep_the_last_value_and_first_position")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn finish_reason_maps_every_declared_outcome() -> TestResult {
     check("finish_reason_maps_every_declared_outcome")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn existing_tool_call_overrides_each_recognized_finish_reason() -> TestResult {
     check("existing_tool_call_overrides_each_recognized_finish_reason")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_without_finish_reason_keeps_the_previous_stop_outcome() -> TestResult {
     check("tool_without_finish_reason_keeps_the_previous_stop_outcome")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn later_finish_reason_replaces_the_previous_one() -> TestResult {
     check("later_finish_reason_replaces_the_previous_one")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_finish_reason_does_not_change_the_outcome() -> TestResult {
     check("empty_finish_reason_does_not_change_the_outcome")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unknown_finish_preserves_content_but_skips_usage_and_eof_close() -> TestResult {
     check("unknown_finish_preserves_content_but_skips_usage_and_eof_close")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unknown_finish_still_fails_after_a_tool_call() -> TestResult {
     check("unknown_finish_still_fails_after_a_tool_call")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn usage_replaces_reports_and_keeps_the_reported_total() -> TestResult {
     check("usage_replaces_reports_and_keeps_the_reported_total")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn usage_defaults_missing_counts_without_clamping_or_summing_total() -> TestResult {
     check("usage_defaults_missing_counts_without_clamping_or_summing_total")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn absent_or_null_usage_keeps_the_previous_report() -> TestResult {
     check("absent_or_null_usage_keeps_the_previous_report")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn pricing_uses_each_model_rate_with_source_expression_order() -> TestResult {
     check("pricing_uses_each_model_rate_with_source_expression_order")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn usage_updates_without_candidates_and_after_selected_parts() -> TestResult {
     check("usage_updates_without_candidates_and_after_selected_parts")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn clean_eof_closes_only_the_active_text_or_thinking_block() -> TestResult {
     check("clean_eof_closes_only_the_active_text_or_thinking_block")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn source_failure_keeps_partial_content_without_closing_it() -> TestResult {
     check("source_failure_keeps_partial_content_without_closing_it")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn malformed_json_fails_after_prior_chunks_without_eof_close() -> TestResult {
     check("malformed_json_fails_after_prior_chunks_without_eof_close")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn later_invalid_part_keeps_earlier_updates_and_response_id() -> TestResult {
     check("later_invalid_part_keeps_earlier_updates_and_response_id")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unknown_finish_wins_over_later_invalid_usage() -> TestResult {
     check("unknown_finish_wins_over_later_invalid_usage")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unknown_members_and_unselected_deep_content_are_not_decoded() -> TestResult {
     check("unknown_members_and_unselected_deep_content_are_not_decoded")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn duplicate_selected_fields_keep_the_last_member() -> TestResult {
     check("duplicate_selected_fields_keep_the_last_member")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A call whose only argument holds `depth` nested arrays.
 fn deep_call(depth: usize) -> String {
     let value = format!("{}0{}", "[".repeat(depth), "]".repeat(depth));
@@ -564,6 +632,7 @@ fn deep_call(depth: usize) -> String {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn selected_tool_arguments_enforce_the_existing_json_depth_bound() -> TestResult {
     for (depth, accepted) in [(126, true), (127, false), (128, false)] {
@@ -593,6 +662,7 @@ fn selected_tool_arguments_enforce_the_existing_json_depth_bound() -> TestResult
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn generated_identifier_counter_advances_before_arguments_fail() -> TestResult {
     let deep = deep_call(127).replace(r#""id":"c","#, "");
@@ -611,9 +681,11 @@ fn generated_identifier_counter_advances_before_arguments_fail() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A source fed through a channel, so a test controls when each item arrives.
 struct Gate(tokio::sync::mpsc::UnboundedReceiver<Result<String, DiagnosticErrorInfo>>);
 
+#[cfg(not(target_arch = "wasm32"))]
 impl futures_core::Stream for Gate {
     type Item = Result<String, DiagnosticErrorInfo>;
 
@@ -622,6 +694,7 @@ impl futures_core::Stream for Gate {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The partial message an event carries, when it has one.
 fn partial(event: &AssistantMessageEvent) -> Option<&SharedAssistantMessage> {
     match event {
@@ -632,6 +705,7 @@ fn partial(event: &AssistantMessageEvent) -> Option<&SharedAssistantMessage> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The text of the first content block.
 fn first_text(message: &SharedAssistantMessage) -> TestResult<String> {
     let value = serde_json::to_value(&*message.read().map_err(|_| "poisoned")?)?;
@@ -641,6 +715,7 @@ fn first_text(message: &SharedAssistantMessage) -> TestResult<String> {
         .to_owned())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn partial_handles_observe_later_updates_without_retaining_the_owner() -> TestResult {
     crate::runtime::run(async {
@@ -697,6 +772,7 @@ fn partial_handles_observe_later_updates_without_retaining_the_owner() -> TestRe
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A source that records how often it is polled.
 struct Counted {
     /// Items still to yield.
@@ -705,6 +781,7 @@ struct Counted {
     polls: Arc<AtomicUsize>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl futures_core::Stream for Counted {
     type Item = Result<String, DiagnosticErrorInfo>;
 
@@ -714,6 +791,7 @@ impl futures_core::Stream for Counted {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn source_diagnostics_return_unchanged_and_stop_polling() -> TestResult {
     let diagnostic = DiagnosticErrorInfo {
@@ -745,6 +823,7 @@ fn source_diagnostics_return_unchanged_and_stop_polling() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn reducer_leaves_lifecycle_updates_to_its_caller() -> TestResult {
     crate::runtime::run(async {
@@ -783,6 +862,7 @@ fn reducer_leaves_lifecycle_updates_to_its_caller() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Replay retained response fixtures with a fresh module-owned counter per invocation.
 pub(crate) fn cloud_entry_rows() -> TestResult {
     let mut selected = Vec::new();
@@ -819,6 +899,7 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe one recorded response through framing, reduction and final settlement.
 async fn cloud_entry_row(row: &Row) -> TestResult {
     use crate::content_generation_invocation::native;

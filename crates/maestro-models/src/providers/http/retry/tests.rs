@@ -1,11 +1,14 @@
 //! Independent limits for authentication HTTP attempts.
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::*;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn http_request_policies_keep_connection_and_status_limits_independent() {
     crate::tests::runtime::run_paused(async {
@@ -47,6 +50,7 @@ fn http_request_policies_keep_connection_and_status_limits_independent() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Produce a controlled status or a no-response failure.
 fn attempt(status: Option<u16>) -> Result<HttpResponse, FetchError> {
     status.map_or(Err(FetchError::Timeout), |status| {

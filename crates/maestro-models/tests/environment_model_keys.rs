@@ -1,9 +1,13 @@
+#[cfg(not(target_arch = "wasm32"))]
 use crate::environment_children as children;
 
+#[cfg(not(target_arch = "wasm32"))]
 use children::{Directory, TestResult, child, run, vars};
 
+#[cfg(not(target_arch = "wasm32"))]
 const PRECEDENCE: &str = "maestro_environment_keys_follow_provider_precedence";
 
+#[cfg(not(target_arch = "wasm32"))]
 const PROVIDERS: &[(&str, &[&str])] = &[
     (
         "github-copilot",
@@ -39,6 +43,7 @@ const PROVIDERS: &[(&str, &[&str])] = &[
     ("xiaomi-token-plan-sgp", &["XIAOMI_TOKEN_PLAN_SGP_API_KEY"]),
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
     if child()? {
@@ -92,6 +97,7 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn assert_presence_combinations(
     directory: &Directory,
     provider: &str,
@@ -131,8 +137,10 @@ fn assert_presence_combinations(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 const VERTEX: &str = "maestro_vertex_keys_distinguish_explicit_and_ambient_credentials";
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestResult {
     if child()? {
@@ -149,6 +157,7 @@ fn maestro_vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestRes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn vertex_variables(path: &std::path::Path) -> Vec<(std::ffi::OsString, std::ffi::OsString)> {
     let mut variables = vars(&[
         ("GOOGLE_CLOUD_PROJECT", "project"),
@@ -161,6 +170,7 @@ fn vertex_variables(path: &std::path::Path) -> Vec<(std::ffi::OsString, std::ffi
     variables
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn vertex_run(
     directory: &Directory,
     variables: &[(std::ffi::OsString, std::ffi::OsString)],
@@ -176,6 +186,7 @@ fn vertex_run(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> TestResult {
     for project in ["GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"] {
         let mut variables = vars(&[(project, "project"), ("GOOGLE_CLOUD_LOCATION", "location")]);
@@ -214,6 +225,7 @@ fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> 
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg_attr(not(unix), allow(unused_variables))]
 fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> TestResult {
     vertex_run(
@@ -262,6 +274,7 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn assert_vertex_cache(directory: &Directory) -> TestResult {
     let path = directory.0.join("cached");
     let mut variables = vertex_variables(&path);
@@ -273,6 +286,7 @@ fn assert_vertex_cache(directory: &Directory) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
 fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
     use std::os::unix::ffi::OsStringExt;
@@ -292,6 +306,7 @@ fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_bedrock_configuration_signals_remain_distinct() -> TestResult {
     if child()? {
@@ -352,6 +367,7 @@ fn maestro_bedrock_configuration_signals_remain_distinct() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     use maestro_models::{ModelCost, ModelInput, get_model};
@@ -394,6 +410,7 @@ fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn bedrock_run(
     directory: &Directory,
     variables: &[(std::ffi::OsString, std::ffi::OsString)],
@@ -408,6 +425,7 @@ fn bedrock_run(
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Cleared children preserve native operands and caller profile precedence.
 #[test]
 fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResult {
@@ -465,6 +483,7 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe native operands in the actual cleared child before consuming its expectation.
 fn native_environment_observations(profile: &str) -> TestResult {
     let cwd = std::env::current_dir()?;

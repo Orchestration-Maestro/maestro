@@ -1,5 +1,6 @@
 //! Checks of recorded rows, each in a process holding the environment its row records.
 
+#![cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};

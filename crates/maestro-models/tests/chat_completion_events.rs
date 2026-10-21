@@ -1,41 +1,62 @@
 //! Stream reduction for direct chat-completion invocations.
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::cases;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::json;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::loopback;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
+#[cfg(not(target_arch = "wasm32"))]
 use std::future::poll_fn;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
+#[cfg(not(target_arch = "wasm32"))]
 use std::task::{Context, Poll, Wake, Waker};
 
+#[cfg(not(target_arch = "wasm32"))]
 use cases::assert_rows;
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
+#[cfg(not(target_arch = "wasm32"))]
 use futures_util::StreamExt;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
     Cancellation, DiagnosticErrorInfo, FetchError, HttpBody, OpenAICompletionsOptions,
     SharedAssistantMessage, StopReason, StreamOptions, stream_openai_completions,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
 use tokio::sync::oneshot;
+#[cfg(not(target_arch = "wasm32"))]
 use transport::{Attempt, call_inputs, drain, transport};
 
+#[cfg(not(target_arch = "wasm32"))]
 const FIXTURE: &str = include_str!("fixtures/chat_completions/events.json");
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run the rows a test owns.
 fn rows_of(test: &str) -> TestResult {
     crate::runtime::run(assert_rows(FIXTURE, test))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_frames_fragmented_events() -> TestResult {
     rows_of("maestro_chat_frames_fragmented_events")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Chunks whose fields have the wrong type, followed by one valid text chunk.
 async fn wrong_typed_fields_read_as_absent() -> TestResult {
     let valid = json!({"id": "r", "model": "model",
@@ -62,6 +83,7 @@ async fn wrong_typed_fields_read_as_absent() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_ignores_noncontent_chunks() -> TestResult {
     crate::runtime::run(async {
@@ -70,6 +92,7 @@ fn maestro_chat_ignores_noncontent_chunks() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_requires_a_running_runtime() -> TestResult {
     let options = OpenAICompletionsOptions {
@@ -91,51 +114,61 @@ fn maestro_chat_requires_a_running_runtime() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_retains_invocation_identity() -> TestResult {
     rows_of("maestro_chat_retains_invocation_identity")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_keeps_parallel_tool_deltas_independent() -> TestResult {
     rows_of("maestro_chat_keeps_parallel_tool_deltas_independent")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_accounts_for_usage_locations() -> TestResult {
     rows_of("maestro_chat_accounts_for_usage_locations")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_stream_outcomes() -> TestResult {
     rows_of("maestro_chat_preserves_stream_outcomes")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_resolves_late_tool_fields() -> TestResult {
     rows_of("maestro_chat_resolves_late_tool_fields")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_retains_thought_signatures() -> TestResult {
     rows_of("maestro_chat_retains_thought_signatures")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_finalizes_partial_arguments() -> TestResult {
     rows_of("maestro_chat_finalizes_partial_arguments")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The JSON of a response chunk carrying text.
 fn chunk_json(text: &str) -> Value {
     json!({"id": "r", "model": "model", "choices": [{"index": 0, "delta": {"content": text}}]})
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An event stream chunk carrying text.
 fn text_chunk(text: &str) -> Vec<u8> {
     format!("data: {}\n\n", chunk_json(text)).into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An attempt that answers with `chunks` and then the given tail of the body.
 fn chunks_then(
     chunks: Vec<Vec<u8>>,
@@ -147,6 +180,7 @@ fn chunks_then(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The test's side of a body that waits to be released.
 struct Gate {
     /// Resolves once the body has delivered its first chunks and waits.
@@ -155,6 +189,7 @@ struct Gate {
     release: oneshot::Sender<()>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An attempt that delivers `head`, tells the gate it was reached, waits for the gate to
 /// release it and then delivers `rest`.
 fn gated(head: Vec<Vec<u8>>, rest: Vec<u8>) -> (Attempt, Gate) {
@@ -175,6 +210,7 @@ fn gated(head: Vec<Vec<u8>>, rest: Vec<u8>) -> (Attempt, Gate) {
     (attempt, Gate { reached, release })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Start a call over `attempt`, cancellable through `signal`.
 fn start(
     attempt: Attempt,
@@ -194,6 +230,7 @@ fn start(
     ))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the text of a message that kept exactly one text block.
 fn assert_only_text(message: &AssistantMessage, expected: &str) {
     assert!(
@@ -203,6 +240,7 @@ fn assert_only_text(message: &AssistantMessage, expected: &str) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A body that delivers `text` and then stalls until the signal aborts.
 async fn abort_while_the_body_is_pending() -> TestResult {
     let signal = Cancellation::new();
@@ -228,6 +266,7 @@ async fn abort_while_the_body_is_pending() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A body that aborts the signal at the moment it ends.
 async fn abort_as_the_body_ends() -> TestResult {
     let signal = Cancellation::new();
@@ -254,6 +293,7 @@ async fn abort_as_the_body_ends() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Dropping the reader leaves the request running; its result still arrives.
 async fn dropped_reader_keeps_the_request_running() -> TestResult {
     let (held, Gate { reached, release }) = gated(Vec::new(), b"data: [DONE]\n\n".to_vec());
@@ -269,6 +309,7 @@ async fn dropped_reader_keeps_the_request_running() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A body that reports an abort of its own while the caller's signal stays unset.
 async fn body_aborts_by_itself() -> TestResult {
     let aborted = Attempt::streaming(|| {
@@ -289,6 +330,7 @@ async fn body_aborts_by_itself() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A body that aborts the caller's signal and reports its own abort in the same step.
 async fn body_aborts_with_the_signal() -> TestResult {
     let signal = Cancellation::new();
@@ -315,6 +357,7 @@ async fn body_aborts_with_the_signal() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_cancels_owned_request_work() -> TestResult {
     crate::runtime::run_paused(async {
@@ -327,6 +370,7 @@ fn maestro_chat_cancels_owned_request_work() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A body whose read fails after `text` was delivered.
 async fn body_fails_midstream() -> TestResult {
     let cut = Attempt::streaming(|| {
@@ -350,6 +394,7 @@ async fn body_fails_midstream() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_retains_failure_context() -> TestResult {
     crate::runtime::run_paused(async {
@@ -358,6 +403,7 @@ fn maestro_chat_retains_failure_context() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The update labels and final message of a call whose body arrives as `chunks`.
 async fn outcome_of_body(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, AssistantMessage)> {
     let body = chunks_then(chunks, || Box::pin(futures_util::stream::empty()));
@@ -365,6 +411,7 @@ async fn outcome_of_body(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, Assis
     drain(&stream).await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The message a call keeps when its body arrives as `chunks`; the call must complete.
 async fn message_of_body(chunks: Vec<Vec<u8>>) -> TestResult<AssistantMessage> {
     let (labels, message) = outcome_of_body(chunks).await?;
@@ -377,6 +424,7 @@ async fn message_of_body(chunks: Vec<Vec<u8>>) -> TestResult<AssistantMessage> {
     Ok(message)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The text a call keeps when its body arrives as `chunks`; the call must complete.
 async fn text_of_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
     match &message_of_body(chunks).await?.content[..] {
@@ -385,6 +433,7 @@ async fn text_of_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check that `body` keeps `expected` as text when it arrives whole and when it is cut in two at
 /// every offset.
 async fn assert_text_at_every_cut(body: &[u8], expected: &str) -> TestResult {
@@ -397,6 +446,7 @@ async fn assert_text_at_every_cut(body: &[u8], expected: &str) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One event carrying `content` bytes inside the text delta, after a byte-order mark.
 fn marked_event(content: &[u8]) -> Vec<u8> {
     let mut body = vec![0xEF, 0xBB, 0xBF];
@@ -407,6 +457,7 @@ fn marked_event(content: &[u8]) -> Vec<u8> {
     body
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A leading byte-order mark is dropped, invalid bytes become replacement characters and a
 /// character cut by a chunk boundary is completed, wherever the chunks are cut.
 async fn text_is_decoded_whatever_the_chunk_boundaries() -> TestResult {
@@ -418,6 +469,7 @@ async fn text_is_decoded_whatever_the_chunk_boundaries() -> TestResult {
     assert_text_at_every_cut(&marked_event(&content), "雪a\u{FFFD}b\u{FFFD}A").await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Bytes that are not text and form a blank line are an unknown field, not a failure.
 async fn undecodable_trailer_is_an_ignored_field() -> TestResult {
     let chunks = vec![text_chunk("so far"), vec![0xFF, 0xFE, b'\n', b'\n']];
@@ -425,6 +477,7 @@ async fn undecodable_trailer_is_an_ignored_field() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The failure text of a call whose response has status 400 and a body made of `chunks`.
 async fn failure_of_error_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
     let rejected = Attempt::streaming_with_status(400, move || {
@@ -437,6 +490,7 @@ async fn failure_of_error_body(chunks: Vec<Vec<u8>>) -> TestResult<String> {
     message.error_message.ok_or_else(|| "no error text".into())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An error body is decoded as one text: the byte-order mark is dropped, so the JSON error
 /// object is read, and bytes that are not text become replacement characters.
 async fn error_body_is_decoded_as_text() -> TestResult {
@@ -458,6 +512,7 @@ async fn error_body_is_decoded_as_text() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_decodes_body_text_leniently() -> TestResult {
     crate::runtime::run_paused(async {
@@ -467,9 +522,11 @@ fn maestro_chat_decodes_body_text_leniently() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The bytes of a byte-order mark.
 const MARK: [u8; 3] = [0xEF, 0xBB, 0xBF];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A line that starts with several marks loses one of them and the rest make it an unknown
 /// field; the call still reads the event after it, with the line ending at once or followed by
 /// a blank line.
@@ -483,12 +540,14 @@ async fn repeated_marks_open_an_ignored_field() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Each line is decoded on its own, so one mark opening a later line is dropped from it.
 async fn a_mark_opens_a_later_line() -> TestResult {
     let body = [text_chunk("one"), MARK.to_vec(), text_chunk("two")].concat();
     assert_text_at_every_cut(&body, "onetwo").await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_drops_one_byte_order_mark_per_line() -> TestResult {
     crate::runtime::run_paused(async {
@@ -497,6 +556,7 @@ fn maestro_chat_drops_one_byte_order_mark_per_line() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Events ended by each kind of line ending, and by all of them in one body.
 async fn every_line_ending_ends_a_line() -> TestResult {
     let event = |text: &str, ending: &str| format!("data: {}{ending}{ending}", chunk_json(text));
@@ -513,11 +573,13 @@ async fn every_line_ending_ends_a_line() -> TestResult {
     assert_text_at_every_cut(mixed.as_bytes(), "onetwothree").await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_ends_lines_at_every_line_ending() -> TestResult {
     crate::runtime::run_paused(every_line_ending_ends_a_line())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fields other than `data` and `event` do not change the event they appear in.
 async fn unknown_fields_are_ignored() -> TestResult {
     let body = [
@@ -528,6 +590,7 @@ async fn unknown_fields_are_ignored() -> TestResult {
     assert_text_at_every_cut(&body, "kept").await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One space after the colon belongs to the field syntax; any further space is part of the data.
 async fn one_space_after_the_colon_is_dropped() -> TestResult {
     for field in ["data:", "data: ", "data:  "] {
@@ -537,6 +600,7 @@ async fn one_space_after_the_colon_is_dropped() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A last event the body ends before a blank line completes is not delivered, even when its
 /// final line is whole.
 async fn an_open_event_is_not_delivered() -> TestResult {
@@ -551,6 +615,7 @@ async fn an_open_event_is_not_delivered() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_reads_event_fields() -> TestResult {
     crate::runtime::run_paused(async {
@@ -560,6 +625,7 @@ fn maestro_chat_reads_event_fields() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One tool-call fragment as event bytes; `index` is spliced in as written.
 fn tool_fragment(index: &str, id: &str, name: &str, arguments: &str) -> Vec<u8> {
     let (id, name, arguments) = (json!(id), json!(name), json!(arguments));
@@ -570,6 +636,7 @@ fn tool_fragment(index: &str, id: &str, name: &str, arguments: &str) -> Vec<u8> 
     .into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert that a body of tool-call fragments, each given as index, identifier, name and argument
 /// text, produces `expected` as identifier, name and decoded arguments.
 async fn assert_calls(
@@ -596,6 +663,7 @@ async fn assert_calls(
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fragments whose indices are spelled differently continue one call exactly when the spellings
 /// name the same number, even though each carries another identifier.
 async fn equal_numbers_are_one_position() -> TestResult {
@@ -619,6 +687,7 @@ async fn equal_numbers_are_one_position() -> TestResult {
     .await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Numbers beyond the range of a double are the signed infinity or zero they round to, and
 /// those are positions like any other.
 async fn extreme_numbers_are_positions() -> TestResult {
@@ -647,6 +716,7 @@ async fn extreme_numbers_are_positions() -> TestResult {
     .await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_matches_tool_indices_by_number() -> TestResult {
     crate::runtime::run_paused(async {
@@ -655,11 +725,13 @@ fn maestro_chat_matches_tool_indices_by_number() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One event whose data is `data`, written exactly as given.
 fn raw_event(data: &str) -> Vec<u8> {
     format!("data: {data}\n\n").into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
     crate::runtime::run_paused(async {
@@ -704,6 +776,7 @@ fn maestro_chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The signature a tool call `a` keeps after a reasoning detail whose `data` is `data`.
 async fn signature_after(data: &str) -> TestResult<Option<String>> {
     let detail = format!(r#"{{"type":"reasoning.encrypted","id":"a","data":{data}}}"#);
@@ -721,6 +794,7 @@ async fn signature_after(data: &str) -> TestResult<Option<String>> {
     Ok(signature.ok_or("the call is missing")?)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_serializes_numeric_signatures() -> TestResult {
     crate::runtime::run_paused(async {
@@ -751,6 +825,7 @@ fn maestro_chat_serializes_numeric_signatures() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The failure text of a call that receives `events` after some text; the call must fail with
 /// that text retained.
 async fn failure_after_text(event: &str) -> TestResult<String> {
@@ -762,6 +837,7 @@ async fn failure_after_text(event: &str) -> TestResult<String> {
     message.error_message.ok_or_else(|| "no error text".into())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_formats_numeric_failures() -> TestResult {
     crate::runtime::run_paused(async {
@@ -815,12 +891,14 @@ fn maestro_chat_formats_numeric_failures() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The usage a call keeps when a chunk reports `usage` as written.
 async fn usage_of(usage: &str) -> TestResult<maestro_models::Usage> {
     let event = raw_event(&format!(r#"{{"choices":[],"usage":{usage}}}"#));
     Ok(message_of_body(vec![event]).await?.usage)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
     crate::runtime::run_paused(async {
@@ -863,12 +941,14 @@ fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A chunk that carries only a finish reason.
 fn finish_chunk(reason: &str) -> Vec<u8> {
     let chunk = json!({"choices": [{"index": 0, "delta": {}, "finish_reason": reason}]});
     format!("data: {chunk}\n\n").into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The last label, stop reason and error text of a call that receives `reasons` in order.
 async fn ending_after(reasons: &[&str]) -> TestResult<(String, StopReason, Option<String>)> {
     let chunks = reasons.iter().map(|reason| finish_chunk(reason)).collect();
@@ -877,6 +957,7 @@ async fn ending_after(reasons: &[&str]) -> TestResult<(String, StopReason, Optio
     Ok((last, message.stop_reason, message.error_message))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_replaces_earlier_finish_reasons() -> TestResult {
     crate::runtime::run_paused(async {
@@ -899,6 +980,7 @@ fn maestro_chat_replaces_earlier_finish_reasons() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Counts whether the message could be written at the moment a reader is woken.
 #[derive(Default)]
 struct WriteProbe {
@@ -907,12 +989,14 @@ struct WriteProbe {
     locked: AtomicUsize,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Wakes the reading task after the probe has checked the message lock.
 struct ProbedWaker {
     probe: Arc<WriteProbe>,
     task: Waker,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Wake for ProbedWaker {
     fn wake(self: Arc<Self>) {
         if let Some(message) = self.probe.message.get() {
@@ -927,6 +1011,7 @@ impl Wake for ProbedWaker {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An attempt that delivers text and holds the end of the stream back until released.
 fn held_back_attempt() -> (Attempt, oneshot::Sender<()>) {
     let (attempt, Gate { release, .. }) =
@@ -934,6 +1019,7 @@ fn held_back_attempt() -> (Attempt, oneshot::Sender<()>) {
     (attempt, release)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Wait for the next update, waking the awaiting task through the probe.
 async fn next_probed(
     stream: &AssistantMessageEventStream,
@@ -950,6 +1036,7 @@ async fn next_probed(
     .await
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read every update through a waker that probes the message lock, setting the stop reason
 /// to an error as soon as text arrives and then releasing the end of the stream. Returns the
 /// handles the updates carried.
@@ -977,6 +1064,7 @@ async fn read_with_probe(
     Ok(handles)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_shares_partial_observations() -> TestResult {
     crate::runtime::run_paused(async {
@@ -1007,6 +1095,7 @@ fn maestro_chat_shares_partial_observations() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Run a call whose reader sets the shared message's stop reason and error text when the first
 /// text arrives and only then lets the stream end, returning the update labels and the final
 /// message.
@@ -1040,6 +1129,7 @@ async fn finish_after_edit(
     Ok((labels, message))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_reports_supplied_stop_reasons() -> TestResult {
     crate::runtime::run_paused(async {
@@ -1064,6 +1154,7 @@ fn maestro_chat_reports_supplied_stop_reasons() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What a caller sees of a finished call: event labels and the final message as JSON.
 async fn observe(
     model: maestro_models::Model,
@@ -1083,6 +1174,7 @@ async fn observe(
     Ok((labels, message))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A response with reasoning, non-Latin text, usage and a finish reason, as CRLF events.
 fn framed_response() -> Vec<u8> {
     let events = [
@@ -1101,6 +1193,7 @@ fn framed_response() -> Vec<u8> {
     body
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The headers `on_response` receives when a loopback server answers with `head_lines` after the
 /// status line, then an empty event stream.
 async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String, String>> {
@@ -1129,6 +1222,7 @@ async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String
     Ok(reported.pop().ok_or("no response was reported")?.headers)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_observes_repeated_response_headers() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
@@ -1172,6 +1266,7 @@ fn maestro_chat_observes_repeated_response_headers() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_transport_is_replaceable() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
@@ -1237,6 +1332,7 @@ fn maestro_chat_transport_is_replaceable() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// An error payload whose `error` value holds `containers` containers; its spaces tell the
 /// written form from the compact one.
 fn deep_error(containers: usize) -> String {
@@ -1246,11 +1342,13 @@ fn deep_error(containers: usize) -> String {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The compact text of the `error` member of [`deep_error`].
 fn compact_error(containers: usize) -> String {
     format!(r#"{{"x":{}}}"#, cases::nested_json(containers - 1))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Fields the call never reads may nest to any depth: the chunk, error body and streamed error
 /// still deliver the fields that are read, and a field read as another type is absent.
 async fn deep_unread_fields_are_passed_over() -> TestResult {
@@ -1279,6 +1377,7 @@ async fn deep_unread_fields_are_passed_over() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
@@ -1297,6 +1396,7 @@ fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Selected error details within the conversion bound render; deeper details report the
 /// native conversion failure.
 async fn error_details_convert_to_the_json_limit() -> TestResult {
@@ -1321,6 +1421,7 @@ async fn error_details_convert_to_the_json_limit() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
@@ -1338,6 +1439,7 @@ fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A streamed signature is kept up to 127 nested arrays or objects; a deeper one is dropped
 /// and the call still completes.
 async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
@@ -1356,6 +1458,7 @@ async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
@@ -1374,6 +1477,7 @@ fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the sole tool call without changing its argument record type.
 fn assert_argument_call(message: &AssistantMessage, expected: &Value) -> TestResult {
     let [AssistantContent::ToolCall(call)] = &message.content[..] else {
@@ -1387,6 +1491,7 @@ fn assert_argument_call(message: &AssistantMessage, expected: &Value) -> TestRes
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe a numeric preview before the producer may deliver the closing fragment.
 async fn projected_call(ending: &str) -> TestResult {
     let head = tool_fragment(
@@ -1438,6 +1543,7 @@ async fn projected_call(ending: &str) -> TestResult {
     assert_argument_call(&*result.read().map_err(|e| e.to_string())?, &expected)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_projects_streamed_argument_numbers() -> TestResult {
     crate::runtime::run_paused(async {
@@ -1448,6 +1554,7 @@ fn maestro_chat_projects_streamed_argument_numbers() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Check the accepted nested null leaf or the excessive-depth fallback.
 fn assert_bounded_call(value: &Value, depth: usize) -> TestResult {
     if depth == 128 {
@@ -1462,6 +1569,7 @@ fn assert_bounded_call(value: &Value, depth: usize) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe normal tool-call termination despite a bounded argument conversion.
 async fn bounded_call(depth: usize, complete: bool) -> TestResult {
     let closes = if complete {
@@ -1503,6 +1611,7 @@ async fn bounded_call(depth: usize, complete: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
     crate::runtime::run_paused(async {
@@ -1515,6 +1624,7 @@ fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
     crate::runtime::run_paused(async {
@@ -1523,6 +1633,7 @@ fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_emits_carriage_delimited_events() -> TestResult {
     use futures_util::FutureExt as _;

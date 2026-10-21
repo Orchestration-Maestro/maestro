@@ -1,5 +1,6 @@
 //! Controlled Bedrock conversations: event-stream frames and the scripted transport that serves them.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
 use maestro_models::{Context, HttpBody, Model};

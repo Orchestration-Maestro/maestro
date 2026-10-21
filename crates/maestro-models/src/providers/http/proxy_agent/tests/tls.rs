@@ -1,8 +1,8 @@
 //! Shared TLS trust, server name and origin header witnesses.
 
-use super::run;
+use super::{run, socks};
 use crate::tests::{
-    loopback, socks,
+    loopback,
     tls::{CERT, server_config},
 };
 use std::sync::Arc;

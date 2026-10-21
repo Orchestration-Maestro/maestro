@@ -1,11 +1,17 @@
 //! Cloud conversation reduction through controlled native event-stream frames.
+#[cfg(not(target_arch = "wasm32"))]
 use crate::bedrock;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::chat;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::transport;
 
+#[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
 
+#[cfg(not(target_arch = "wasm32"))]
 use bedrock::corpus;
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_text_and_signatures_follow_separate_updates() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -13,6 +19,7 @@ fn thinking_text_and_signatures_follow_separate_updates() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn tool_arguments_repair_each_fragment_and_finalize() -> TestResult {
     crate::runtime::run(async {
@@ -22,6 +29,7 @@ fn tool_arguments_repair_each_fragment_and_finalize() -> TestResult {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn interleaved_blocks_keep_content_indices_and_shared_result() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -29,6 +37,7 @@ fn interleaved_blocks_keep_content_indices_and_shared_result() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn text_blocks_keep_arrival_order_and_reused_numbers() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -36,6 +45,7 @@ fn text_blocks_keep_arrival_order_and_reused_numbers() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn unmatched_deltas_and_stops_do_not_create_tool_calls() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -43,6 +53,7 @@ fn unmatched_deltas_and_stops_do_not_create_tool_calls() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn usage_replaces_reports_without_inventing_cache_totals() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -50,6 +61,7 @@ fn usage_replaces_reports_without_inventing_cache_totals() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn stop_reasons_preserve_the_terminal_outcome() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -57,6 +69,7 @@ fn stop_reasons_preserve_the_terminal_outcome() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn failures_keep_thinking_and_tool_arguments_without_scratch() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -64,6 +77,7 @@ fn failures_keep_thinking_and_tool_arguments_without_scratch() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn empty_and_unknown_streams_conclude_without_synthetic_blocks() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -71,6 +85,7 @@ fn empty_and_unknown_streams_conclude_without_synthetic_blocks() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn stream_fields_keep_sdk_selection_and_failure_phases() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -78,6 +93,7 @@ fn stream_fields_keep_sdk_selection_and_failure_phases() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Frames opening a thinking block and a tool with an incomplete argument.
 fn partial_frames() -> TestResult<Vec<Vec<u8>>> {
     Ok(vec![
@@ -101,6 +117,7 @@ fn partial_frames() -> TestResult<Vec<Vec<u8>>> {
     ])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Observe repaired arguments before the gated producer can supply their completion.
 async fn partial_arguments() -> TestResult {
     let mut pending = bedrock::held(
@@ -151,6 +168,7 @@ async fn partial_arguments() -> TestResult {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
     crate::runtime::run(corpus(include_str!(
@@ -158,6 +176,7 @@ fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
@@ -183,6 +202,7 @@ fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Complete, unfinished and nested objects retain canonical numeric keys without sorting text keys.
 fn canonical_argument_keys() -> TestResult {
     for input in [

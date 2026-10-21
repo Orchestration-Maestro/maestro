@@ -56,8 +56,10 @@ fn converse_peer(
     sent: &std::sync::mpsc::Sender<Destination>,
     identity: Option<&[u8]>,
 ) -> std::io::Result<()> {
-    let proxy = socks::negotiate(&mut socket, false)?;
-    assert!(proxy.user.as_deref() == identity, "proxy identity bytes");
+    let (proxy, ()) =
+        socks::negotiate_observing(&mut socket, false, socks::DEFAULT_REPLY, |_, user, _| {
+            assert!(user.as_deref() == identity, "proxy identity bytes");
+        })?;
     loopback::answer_connection(socket, &|request| {
         assert!(
             sent.send((
@@ -213,8 +215,9 @@ fn cancellation_peer(
 ) -> std::io::Result<()> {
     use std::io::Read;
     let body = if after_request {
-        let proxy = socks::negotiate(&mut socket, false)?;
-        assert!(proxy.user.as_deref() == identity, "proxy identity bytes");
+        socks::negotiate_observing(&mut socket, false, socks::DEFAULT_REPLY, |_, user, _| {
+            assert!(user.as_deref() == identity, "proxy identity bytes");
+        })?;
         loopback::read_request(&mut socket)?
             .ok_or_else(|| std::io::Error::other("missing request"))?
             .body
@@ -222,8 +225,9 @@ fn cancellation_peer(
         let mut version = [0];
         socket.read_exact(&mut version)?;
         if version == [4] {
-            let proxy = socks::read4(&mut socket)?;
-            assert!(proxy.user.as_deref() == identity, "proxy identity bytes");
+            socks::read4(&mut socket, |_, user, _| {
+                assert!(user.as_deref() == identity, "proxy identity bytes");
+            })?;
         } else {
             assert_eq!(version, [5]);
             let mut hello = [0; 2];

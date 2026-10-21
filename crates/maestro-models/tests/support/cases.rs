@@ -1,5 +1,6 @@
 //! Stream cases: calls described by fixture rows, run against a controlled transport.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
 use maestro_models::providers::chat::openai_completions::stream_simple_openai_completions;

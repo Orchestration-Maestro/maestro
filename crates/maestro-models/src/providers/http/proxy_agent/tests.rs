@@ -1,6 +1,8 @@
 //! Controlled native SOCKS transport behavior.
 
-use crate::tests::{loopback, socks};
+use crate::tests::loopback;
+
+mod socks;
 
 use crate::providers::http::{HttpRequest, Route, configured_fetch};
 use crate::tests::runtime::run;
