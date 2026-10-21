@@ -59,7 +59,7 @@ let packages = DefaultPackageManager::new(
         agent_dir: "/agent".into(),
         settings_manager: settings,
     },
-    NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
+    NativePackageOperations::new(Rc::new(|| false), &local),
 );
 assert!(packages.add_source_to_settings("https://github.com/user/repository", None)?);
 assert!(!packages.add_source_to_settings("ssh://git@github.com/user/repository", None)?);
