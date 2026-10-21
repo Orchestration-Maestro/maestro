@@ -18,3 +18,41 @@ pub fn local_datetime() -> Option<time::PrimitiveDateTime> {
         .to_offset(offset);
     Some(time::PrimitiveDateTime::new(value.date(), value.time()))
 }
+
+/// Shows a native desktop notification when a Linux display and notifier are available.
+///
+/// # Errors
+/// Returns native launch or wait failures other than an absent notifier executable.
+#[cfg(target_os = "linux")]
+pub fn show_desktop_notification(title: &str, body: Option<&str>) -> std::io::Result<bool> {
+    use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+    if std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none() {
+        return Ok(false);
+    }
+    let mut command = tokio::process::Command::new("notify-send");
+    command.arg("--").arg(title);
+    if let Some(body) = body.filter(|body| !body.is_empty()) {
+        command.arg(body);
+    }
+    match spawn_sync(
+        &mut command,
+        SpawnSyncOptions::Capture {
+            stdout: OutputMode::Discard,
+            input: None,
+            timeout: None,
+            stderr: OutputMode::Discard,
+            max_buffer_bytes: None,
+        },
+    ) {
+        Ok(output) => Ok(output.status.success()),
+        Err(SpawnSyncError::Spawn(error)) if error.kind() == std::io::ErrorKind::NotFound => {
+            Ok(false)
+        }
+        Err(
+            SpawnSyncError::Spawn(error)
+            | SpawnSyncError::Wait(error)
+            | SpawnSyncError::Infrastructure(error),
+        ) => Err(error),
+        Err(error @ SpawnSyncError::Timeout) => Err(std::io::Error::other(error)),
+    }
+}
