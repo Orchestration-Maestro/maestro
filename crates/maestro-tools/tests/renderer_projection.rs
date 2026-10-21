@@ -419,7 +419,7 @@ fn renderer_binding_drop_releases_captures_and_row_state() {
 
 #[test]
 fn renderer_binding_can_wrap_a_builtin_callback() {
-    crate::read_support::run(async {
+    crate::runtime::run(async {
         let dir = crate::read_support::TempDir::new();
         dir.file("file", b"alpha\n");
         let env = Env::with(

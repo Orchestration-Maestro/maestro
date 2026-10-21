@@ -5,7 +5,8 @@ use crate::display_support::{Case, search_cases, search_keys};
 use crate::{
     find_support::{executable, manager},
     ls_support::{canon, result_json, with_home},
-    read_support::{TempDir, run},
+    read_support::TempDir,
+    runtime::run,
 };
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 #[cfg(unix)]

@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::runtime::run;
 use maestro_agent::AgentToolResult;
 use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, Model, ModelCost, ModelInput, UserBlock,
@@ -18,15 +19,6 @@ use std::{
         atomic::{AtomicUsize, Ordering},
     },
 };
-
-/// Complete the future on a test-owned runtime.
-pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
 
 /// A directory removed when dropped.
 pub struct TempDir(pub PathBuf);

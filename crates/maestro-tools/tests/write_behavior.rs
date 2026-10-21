@@ -4,6 +4,7 @@
 
 use crate::loop_support;
 use crate::read_support;
+use crate::runtime;
 use crate::write_support;
 
 use loop_support::run_turn;
@@ -72,8 +73,7 @@ fn write_reports_written_utf8_bytes() {
         let expected: Expected = serde_json::from_value(row.expected).unwrap();
         let dir = TempDir::new();
         let tool: Tool = create_write_tool_definition(dir.text(), WriteToolOptions::default());
-        let result =
-            read_support::run(start(&tool, input(&args.path, &args.content), None)).unwrap();
+        let result = runtime::run(start(&tool, input(&args.path, &args.content), None)).unwrap();
         assert_eq!(json!({"content": content_json(&result)}), expected.result);
         assert!(result.details.is_none() && result.terminate.is_none());
         let written = std::fs::read(dir.0.join(&args.path)).unwrap();
@@ -158,7 +158,7 @@ fn write_resolves_paths_before_filesystem_work() {
         let args: Input = serde_json::from_value(row.input).unwrap();
         let expected: Expected = serde_json::from_value(row.expected).unwrap();
         let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
-        let result = read_support::run(start(
+        let result = runtime::run(start(
             &tool_over(&ops, &args.cwd),
             input(&args.path, "x"),
             None,
@@ -170,7 +170,7 @@ fn write_resolves_paths_before_filesystem_work() {
     let dir = TempDir::new();
     dir.file("shot\u{202F}PM.png", b"existing");
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
-    read_support::run(start(
+    runtime::run(start(
         &tool_over(&ops, &dir.text()),
         input("shot PM.png", "x"),
         None,
@@ -206,7 +206,7 @@ fn write_propagates_adapter_failures_without_progress() {
         let progress: AgentToolUpdateCallback<()> = Arc::new(move |_| {
             counter.fetch_add(1, Ordering::SeqCst);
         });
-        let error = read_support::run((tool_over(&ops, "/work").execute)(
+        let error = runtime::run((tool_over(&ops, "/work").execute)(
             "call".into(),
             input("f.txt", "x"),
             None,
@@ -227,7 +227,7 @@ fn write_preaborted_call_starts_no_operations() {
     let signal = Cancellation::new();
     signal.abort();
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
-    let error = read_support::run(start(
+    let error = runtime::run(start(
         &tool_over(&ops, "/work"),
         input("f.txt", "x"),
         Some(signal),
@@ -281,7 +281,7 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
             .mkdir_mode(Mode::AbortThenSucceed)
             .signal(&synchronous),
     );
-    let error = read_support::run(start(
+    let error = runtime::run(start(
         &tool_over(&ops, "/work"),
         input(&path, "x"),
         Some(synchronous),
@@ -331,7 +331,7 @@ fn write_late_abort_cannot_replace_success() {
                 .write_mode(write)
                 .signal(&signal),
         );
-        let error = read_support::run(start(
+        let error = runtime::run(start(
             &tool_over(&ops, "/work"),
             input("f.txt", "x"),
             Some(signal),
@@ -347,7 +347,7 @@ fn write_late_abort_cannot_replace_success() {
 fn write_abort_after_completed_success_keeps_the_result() {
     let signal = Cancellation::new();
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
-    let result = read_support::run(start(
+    let result = runtime::run(start(
         &tool_over(&ops, "/work"),
         input("f.txt", "x"),
         Some(signal.clone()),
@@ -403,7 +403,7 @@ fn through(
     content: &str,
 ) -> Result<AgentToolResult, DiagnosticErrorInfo> {
     let tool = create_write_tool(cwd.into(), options);
-    read_support::run((tool.execute)(
+    runtime::run((tool.execute)(
         "id".into(),
         json!({"path": path, "content": content}),
         None,
@@ -514,7 +514,7 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
         let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
         let anchored = start(&tool_over(&ops, "relative"), input("/abs/f.txt", "x"), None);
         assert_eq!(ops.calls().len(), 0);
-        read_support::run(anchored).unwrap();
+        runtime::run(anchored).unwrap();
         assert_eq!(ops.names(), ["mkdir", "write"]);
         let mut needs = start(&tool_over(&ops, "relative"), input("rel.txt", "x"), None);
         assert!(matches!(poll_once(&mut needs), Poll::Ready(Err(_))));
@@ -526,7 +526,7 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
         let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
         let pending = start(&tool_over(&ops, "."), input("f.txt", "x"), None);
         std::env::set_current_dir(&decoy.0).unwrap();
-        read_support::run(pending).unwrap();
+        runtime::run(pending).unwrap();
         let written = std::fs::canonicalize(original.0.join("f.txt").parent().unwrap()).unwrap();
         assert_eq!(ops.calls()[1][1], written.join("f.txt").to_str().unwrap());
     }

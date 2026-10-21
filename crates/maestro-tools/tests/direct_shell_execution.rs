@@ -113,7 +113,7 @@ impl Supplied<'_> {
         }
     }
 }
-use read_support::run;
+use crate::runtime::run;
 
 fn corpus(name: &str) {
     if std::env::var_os("MAESTRO_READ_CHILD").is_none() {

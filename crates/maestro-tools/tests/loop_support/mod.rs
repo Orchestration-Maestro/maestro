@@ -92,7 +92,7 @@ pub fn run_turn(tools: Vec<AgentTool>, calls: &[(&str, &str, Value)]) -> Turn {
         vec![Arc::clone(&requested), assistant("done", &[])],
         Arc::clone(&replay),
     );
-    let returned = crate::read_support::run(run_agent_loop(
+    let returned = crate::runtime::run(run_agent_loop(
         vec![user("go")],
         context,
         &config(),

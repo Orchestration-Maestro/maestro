@@ -1,5 +1,6 @@
 //! Selected definitions retain the producing owner's typed render callbacks.
 #![cfg(test)]
+use crate::runtime;
 use crate::{display_support, read_support};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_tools::output::render_utils::ToolRenderResultLike;
@@ -52,7 +53,7 @@ fn compare<P, D: serde::Serialize, S>(
     };
     assert_eq!(draw(selected), draw(original));
     let futures = env.runtime.take_futures();
-    read_support::run(async {
+    runtime::run(async {
         for future in futures {
             future.await.unwrap();
         }

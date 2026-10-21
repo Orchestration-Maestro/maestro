@@ -1,7 +1,7 @@
 //! Cancellable delay observed through its public operation.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::{agent_shell_support, process_support};
+use crate::{process_support, runtime};
 
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
@@ -12,7 +12,7 @@ use std::time::Duration;
 
 #[test]
 fn delay_obeys_its_selected_duration() {
-    agent_shell_support::runtime().block_on(async {
+    runtime::run_paused(async {
         let live = Cancellation::new();
         for signal in [None, Some(&live)] {
             let wait = sleep(Duration::from_millis(25), signal);
@@ -42,7 +42,7 @@ fn preaborted_delay_does_not_arm_a_timer() {
 
 #[test]
 fn active_abort_releases_delay_with_exact_error() {
-    agent_shell_support::runtime().block_on(async {
+    runtime::run_paused(async {
         let signal = Cancellation::new();
         let wait = sleep(Duration::from_millis(25), Some(&signal));
         tokio::pin!(wait);
@@ -58,7 +58,7 @@ fn active_abort_releases_delay_with_exact_error() {
 
 #[test]
 fn completed_delay_releases_cancellation_observer() {
-    agent_shell_support::runtime().block_on(async {
+    runtime::run_paused(async {
         let signal = Cancellation::new();
         let (result, forward) =
             polled_to_completion(sleep(Duration::from_millis(25), Some(&signal))).await;

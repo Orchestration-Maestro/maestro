@@ -4,10 +4,12 @@
 use crate::agent_shell_support;
 use crate::process_support;
 use crate::read_support;
+use crate::runtime;
 
+use crate::runtime::run;
 use agent_shell_support::{Immediate, result_value};
 use maestro_tools::{BashExecResult, BashSpawnContext, BashToolOptions, create_bash_tool};
-use read_support::{TempDir, run};
+use read_support::TempDir;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
 
@@ -381,7 +383,7 @@ fn bash_artifact_creation_failure_is_reported() {
 
         return;
     }
-    agent_shell_support::runtime().block_on(async {
+    runtime::run_paused(async {
         let release = Arc::new(tokio::sync::Notify::new());
         let settled = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let tool = create_bash_tool(

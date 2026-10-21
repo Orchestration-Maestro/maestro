@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::read_support;
+use crate::runtime::run;
 
 use maestro_tools::{
     ReadToolOptions, create_read_tool_definition, expand_path, resolve_read_path, resolve_to_cwd,

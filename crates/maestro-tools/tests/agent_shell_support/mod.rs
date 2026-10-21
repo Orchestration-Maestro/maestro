@@ -1,6 +1,7 @@
 //! Recorded shell inputs driven through the public operation seam.
 #![cfg(test)]
 
+use crate::runtime::run_paused;
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
 use maestro_models::{
     Cancellation, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
@@ -249,20 +250,12 @@ pub fn fixture() -> Fixture {
     }
     fixture
 }
-/// Test runtime with externally advanced time.
-pub fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-}
 /// Replay selected cases, each owning a fresh transcript and completed operation.
 pub fn cases(ids: &[&str]) {
     let fixture = fixture();
     for id in ids {
         let row = fixture.rows.iter().find(|row| &row.id == id).unwrap();
-        runtime().block_on(check_row(row, None));
+        run_paused(check_row(row, None));
     }
 }
 /// Replay the existing controlled oracle with a caller-supplied public constructor.
@@ -270,7 +263,7 @@ pub fn cases_with(ids: &[&str], factory: &dyn Fn(BashToolOptions) -> maestro_age
     let fixture = fixture();
     for id in ids {
         let row = fixture.rows.iter().find(|row| &row.id == id).unwrap();
-        runtime().block_on(check_row(row, Some(factory)));
+        run_paused(check_row(row, Some(factory)));
     }
 }
 /// Invoke the public definition or wrapped tool and inspect every expected field.
@@ -562,7 +555,7 @@ pub fn hook_sequence() {
     for _ in 0..2 {
         let update_phases = phases.clone();
         let update = Arc::new(move |_| update_phases.lock().unwrap().push("update"));
-        let result = runtime().block_on((definition.execute)(
+        let result = run_paused((definition.execute)(
             "call".into(),
             BashToolInput {
                 command: sequence["input"]["command"].as_str().unwrap().into(),
@@ -626,18 +619,17 @@ pub fn environment_sequence() {
         sequence["input"]["prefix"].as_str().unwrap().into(),
     );
     for command in sequence["input"]["commands"].as_array().unwrap() {
-        let result = runtime()
-            .block_on((definition.execute)(
-                "call".into(),
-                BashToolInput {
-                    command: command.as_str().unwrap().into(),
-                    timeout: None,
-                },
-                None,
-                None,
-                None,
-            ))
-            .unwrap();
+        let result = run_paused((definition.execute)(
+            "call".into(),
+            BashToolInput {
+                command: command.as_str().unwrap().into(),
+                timeout: None,
+            },
+            None,
+            None,
+            None,
+        ))
+        .unwrap();
         assert_eq!(
             result_value(result),
             json!({"content":[{"type":"text", "text":"(no output)"}]})

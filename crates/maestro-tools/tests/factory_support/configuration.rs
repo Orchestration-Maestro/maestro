@@ -1,6 +1,7 @@
 //! Observable native environment, progress and pending-operation consumption.
 #![cfg(test)]
 use super::{execution, factories, select};
+use crate::runtime;
 use crate::{agent_shell_support, read_support, write_support};
 use maestro_models::Cancellation;
 use maestro_tools::*;
@@ -79,7 +80,7 @@ fn pending_read() {
         assert!(ops.polled.load(Ordering::SeqCst) > 0);
         signal.abort();
         assert_eq!(
-            read_support::run(future).unwrap_err().message,
+            runtime::run(future).unwrap_err().message,
             "Operation aborted"
         );
         assert_eq!(ops.dropped.load(Ordering::SeqCst), 1);

@@ -477,7 +477,7 @@ fn local_bash_progress_keeps_prefix_and_settlement() {
             None,
         );
         assert_eq!(updates.lock().unwrap().len(), usize::from(!hook_error));
-        let result = crate::read_support::run(future);
+        let result = crate::runtime::run(future);
         let mut observed = json!({"calls":*calls.lock().unwrap(),"beforeAwait":updates.lock().unwrap().iter().map(|u|u["content"].clone()).collect::<Vec<_>>(),"updates":*updates.lock().unwrap()});
         match result {
             Ok(result) => observed["result"] = result_value(result),
@@ -569,7 +569,7 @@ fn local_bash_sink_uses_native_child_waiter() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
     let root = crate::read_support::TempDir::new();
-    crate::read_support::run(async {
+    crate::runtime::run(async {
         let tool = maestro_tools::local::create_bash_tool_definition::<()>(
             root.text(),
             String::new(),
@@ -768,8 +768,8 @@ fn local_builtin_execution_reuses_existing_operations() {
         images: vec![],
     });
     let work: <Local as Execution>::Future<'static, ()> = tasks.borrow_mut().pop().unwrap();
-    crate::read_support::run(work);
-    crate::read_support::run(result).unwrap();
+    crate::runtime::run(work);
+    crate::runtime::run(result).unwrap();
     subscription.unsubscribe();
     let messages = agent.state().read().unwrap().messages().clone();
     let results = messages
