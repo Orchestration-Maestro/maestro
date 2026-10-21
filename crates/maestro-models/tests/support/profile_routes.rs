@@ -222,8 +222,14 @@ fn environment(row: &Row, work: &Workdir, input: &Input, urls: [&str; 3]) -> Vec
         "off" => {}
         "pac" => {
             let endpoint = proxy.trim_start_matches("http://");
+            let expected = row
+                .expected
+                .seen
+                .iter()
+                .filter(|seen| seen.route == "proxy")
+                .count();
             let script = format!(
-                "var calls=0;function FindProxyForURL(url){{++calls;if(url.includes('/converse-stream')&&calls<2)throw Error('lost credential resolver');return 'PROXY {endpoint}'}}"
+                "var calls=0;function FindProxyForURL(url){{++calls;if(url.includes('/converse-stream')&&calls!=={expected})throw Error('lost credential resolver or proxied metadata');return 'PROXY {endpoint}'}}"
             );
             let encoded =
                 percent_encoding::utf8_percent_encode(&script, percent_encoding::NON_ALPHANUMERIC);
@@ -522,7 +528,7 @@ pub fn check(test: &str) -> TestResult {
                 && !row.input.denied
                 && matches!(
                     row.input.source.as_str(),
-                    "login" | "role" | "web" | "sso" | "oidc"
+                    "login" | "role" | "web" | "sso" | "oidc" | "container" | "instance"
                 )
         });
         for row in &mut all {

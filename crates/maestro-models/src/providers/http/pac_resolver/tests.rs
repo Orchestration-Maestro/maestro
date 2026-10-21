@@ -145,24 +145,43 @@ fn pac_date_ranges_match_documented_calendar_forms() {
 
 #[test]
 fn pac_interface_fallback_keeps_order_and_loopback_default() {
-    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+    let select = |observations: &[(&str, &str)]| {
+        super::ip::select(
+            observations
+                .iter()
+                .map(|(name, ip)| (*name, ip.parse().unwrap())),
+        )
+        .to_string()
+    };
     assert_eq!(
-        super::ip::select([
-            IpAddr::V6(Ipv6Addr::LOCALHOST),
-            IpAddr::V4(Ipv4Addr::LOCALHOST),
-            IpAddr::V4(Ipv4Addr::new(169, 254, 1, 2)),
-            IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1))
-        ]),
-        Ipv4Addr::new(169, 254, 1, 2)
+        select(&[("A", "::1"), ("B", "10.0.0.1"), ("A", "169.254.1.2")]),
+        "169.254.1.2"
     );
     assert_eq!(
-        super::ip::select([
-            IpAddr::V4(Ipv4Addr::new(127, 2, 3, 4)),
-            IpAddr::V6(Ipv6Addr::LOCALHOST)
-        ]),
-        Ipv4Addr::LOCALHOST
+        select(&[("B", "10.0.0.1"), ("A", "::1"), ("A", "169.254.1.2")]),
+        "10.0.0.1"
     );
-    assert_eq!(super::ip::select([]), Ipv4Addr::LOCALHOST);
+    assert_eq!(
+        select(&[
+            ("v6", "::1"),
+            ("z-first", "127.2.3.4"),
+            ("z-first", "::1"),
+            ("z-first", "169.254.1.2"),
+            ("z-first", "10.0.0.2"),
+            ("a-second", "10.0.0.1")
+        ]),
+        "169.254.1.2"
+    );
+    assert_eq!(
+        select(&[
+            ("first", "10.0.0.2"),
+            ("first", "169.254.1.2"),
+            ("second", "10.0.0.1")
+        ]),
+        "10.0.0.2"
+    );
+    assert_eq!(select(&[("lo", "127.2.3.4"), ("v6", "::1")]), "127.0.0.1");
+    assert_eq!(select(&[]), "127.0.0.1");
 }
 
 #[test]
@@ -189,7 +208,7 @@ fn pac_local_address_falls_back_to_native_interfaces() {
             if_addrs::get_if_addrs()
                 .unwrap()
                 .iter()
-                .map(if_addrs::Interface::ip),
+                .map(|interface| (interface.name.as_str(), interface.ip())),
         );
         assert_eq!(
             super::my_ip_address::address(endpoint).await.unwrap(),
@@ -200,6 +219,7 @@ fn pac_local_address_falls_back_to_native_interfaces() {
 
 mod alerts;
 mod calendar;
+mod cancellation;
 
 #[test]
 fn pac_helpers_are_available_to_authored_scripts() {
@@ -212,6 +232,15 @@ fn pac_helpers_are_available_to_authored_scripts() {
             );
         }
         resolver.close().await.unwrap();
+        let address: String = serde_json::from_str(&expression("myIpAddress()").await).unwrap();
+        let ip = address.parse::<std::net::Ipv4Addr>().unwrap();
+        assert!(
+            ip == std::net::Ipv4Addr::LOCALHOST
+                || if_addrs::get_if_addrs()
+                    .unwrap()
+                    .iter()
+                    .any(|interface| interface.ip() == ip)
+        );
     });
 }
 

@@ -237,3 +237,5 @@ fn socks_sender_reuses_configuration_without_replaying_requests() {
         );
     });
 }
+
+mod pac;

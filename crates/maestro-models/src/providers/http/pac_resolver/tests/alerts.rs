@@ -110,3 +110,47 @@ fn pac_containing_source_owner_releases_interpreter() {
         finished.await.unwrap();
     });
 }
+
+#[test]
+fn pac_cancelled_startup_releases_queued_interpreter() {
+    use tracing::instrument::WithSubscriber;
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .max_blocking_threads(1)
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (started, ready) = tokio::sync::oneshot::channel();
+            let (release, released) = std::sync::mpsc::channel();
+            let blocker = tokio::task::spawn_blocking(move || {
+                started.send(()).unwrap();
+                released.recv().unwrap();
+            });
+            ready.await.unwrap();
+            let (released, finished) = tokio::sync::oneshot::channel();
+            let messages = Messages(Arc::new(Recording {
+                messages: Mutex::default(),
+                released: Mutex::new(Some(released)),
+            }));
+            let mut startup = Box::pin(
+                super::super::Resolver::new(
+                    "alert('started');function FindProxyForURL(){return 'DIRECT'}".into(),
+                )
+                .with_subscriber(messages.clone()),
+            );
+            assert!(
+                std::future::Future::poll(
+                    startup.as_mut(),
+                    &mut std::task::Context::from_waker(std::task::Waker::noop())
+                )
+                .is_pending()
+            );
+            drop(startup);
+            release.send(()).unwrap();
+            blocker.await.unwrap();
+            tokio::task::spawn_blocking(|| {}).await.unwrap();
+            assert!(messages.0.messages.lock().unwrap().is_empty());
+            drop(messages);
+            finished.await.unwrap();
+        });
+}

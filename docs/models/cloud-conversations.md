@@ -185,8 +185,10 @@ CONNECT refusal is returned with its status, headers and body, without replay.
 
 Scripts have the standard host, DNS, network, local-address, time, weekday and
 calendar helpers. Local-address discovery first probes `8.8.8.8:53`, closes that
-socket, and falls back to native interfaces on failure. An authored `alert` emits
-its exact message through tracing rather than printing.
+socket, and falls back to native interfaces on failure. It selects the first
+non-loopback IPv4 on the first eligible interface, preserving interface and
+per-interface address order. An authored `alert` emits its exact message through
+tracing rather than printing.
 
 Each bridge retains script globals independently of its connection timeout
 settings. Unchanged source keeps that context; successfully compiled replacement

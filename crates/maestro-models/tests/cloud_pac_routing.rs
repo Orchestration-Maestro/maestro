@@ -11,7 +11,11 @@ fn pac_bedrock_routes_reach_raw_and_simple_streams() -> TestResult {
         return crate::runtime::run(async {
             let (labels, message) =
                 cloud_proxy_transports::conversation(StreamOptions::default()).await?;
-            cloud_proxy_transports::completed(&labels, &message)
+            cloud_proxy_transports::completed(&labels, &message)?;
+            if std::env::var("MAESTRO_CHILD_CASE")? == "PROXY" {
+                direct_conversation().await?;
+            }
+            Ok(())
         });
     }
     for simple in [false, true] {
@@ -20,6 +24,20 @@ fn pac_bedrock_routes_reach_raw_and_simple_streams() -> TestResult {
         }
     }
     Ok(())
+}
+
+/// Consume the same script with a destination that selects DIRECT instead of the proxy.
+async fn direct_conversation() -> TestResult {
+    use maestro_models::providers::cloud::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
+    let model = bedrock::model(&std::env::var("MAESTRO_DIRECT_ORIGIN")?)?;
+    let context = bedrock::context("question")?;
+    let stream = if std::env::var_os("MAESTRO_SIMPLE").is_some() {
+        stream_simple_bedrock(model, context, None)
+    } else {
+        stream_bedrock(model, context, None)
+    };
+    let (labels, message) = crate::transport::drain(&stream).await?;
+    cloud_proxy_transports::completed(&labels, &message)
 }
 
 /// Record one admitted destination and route for a complete public conversation.
@@ -54,7 +72,7 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
         )
     };
     let script = format!(
-        "async function FindProxyForURL(url,host){{if(!url.endsWith('/converse-stream'))throw Error('lost URL');return {{then(resolve){{resolve('{result}')}}}}}}"
+        "async function FindProxyForURL(url,host){{if(!url.endsWith('/a%20b/model/meta.llama-controlled/converse-stream')||!url.includes(host+':'))throw Error('lost URL');return {{then(resolve){{resolve(host==='127.0.0.1'?'DIRECT':'{result}')}}}}}}"
     );
     let encoded =
         percent_encoding::utf8_percent_encode(&script, percent_encoding::NON_ALPHANUMERIC);
@@ -65,7 +83,11 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     .nocapture()
     .env_clear()
     .env("HTTP_PROXY", &proxy)
-    .env("MAESTRO_ORIGIN", origin)
+    .env("MAESTRO_ORIGIN", format!("{origin}/a%20b?x=1&x=2"))
+    .env(
+        "MAESTRO_DIRECT_ORIGIN",
+        format!("{}/a%20b?x=1&x=2", server.url),
+    )
     .env("AWS_REGION", "us-east-1")
     .env("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer")
     .env("AWS_MAX_ATTEMPTS", "1")
@@ -76,14 +98,22 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     let output = child.output()?;
     server.finish()?;
     assert!(output.status.success(), "{output:?}");
-    let requests: Vec<_> = received.try_iter().collect();
-    let target = if directive == "PROXY" {
-        "http://destination.invalid:8081/model/meta.llama-controlled/converse-stream"
-    } else {
-        "/model/meta.llama-controlled/converse-stream"
-    };
-    assert_eq!(requests, [format!("POST {target} HTTP/1.1")]);
+    check_request_lines(directive, &received.try_iter().collect::<Vec<_>>());
     Ok(())
+}
+
+/// Both destination branches retain the SDK's encoded path and omit its discarded query.
+fn check_request_lines(directive: &str, requests: &[String]) {
+    let target = if directive == "PROXY" {
+        "http://destination.invalid:8081/a%20b/model/meta.llama-controlled/converse-stream"
+    } else {
+        "/a%20b/model/meta.llama-controlled/converse-stream"
+    };
+    let mut expected = vec![format!("POST {target} HTTP/1.1")];
+    if directive == "PROXY" {
+        expected.push("POST /a%20b/model/meta.llama-controlled/converse-stream HTTP/1.1".into());
+    }
+    assert_eq!(requests, expected);
 }
 
 #[test]
