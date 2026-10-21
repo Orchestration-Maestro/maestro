@@ -323,9 +323,10 @@ directory and profile. Cargo builds the example on demand, including for `--lib`
 and filtered selections; release and coverage runs reuse their own host build.
 The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
-`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `NEXTEST_PATH` through Git's
-shell on Windows. The example builds the author component, warms the Wasmtime
-compilation cache beside it and exports its path to the tests' processes.
+`NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
+on Windows, where the shell converts the search list to colon-separated paths.
+The example builds the author component, warms the Wasmtime compilation cache
+beside it and exports its path to the tests' processes.
 Plain Cargo tests retain their self-building fallback. Response-account native
 callback tests use assigned listener addresses through the private binding seam;
 the advertised redirect URI remains unchanged. Public protocol, account and

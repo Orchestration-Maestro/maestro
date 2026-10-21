@@ -3,14 +3,11 @@
 set -eu
 case "$(uname -s)" in
     Darwin) paths=${NEXTEST_DYLD_FALLBACK_LIBRARY_PATH-}; separator=: ;;
-    MINGW*|MSYS*|CYGWIN*) paths=${NEXTEST_PATH-}; separator=';' ;;
+    MINGW*|MSYS*|CYGWIN*) paths=$PATH; separator=: ;;
     *) paths=${NEXTEST_LD_LIBRARY_PATH-}; separator=: ;;
 esac
 IFS=$separator
 for directory in $paths; do
-    if [ "$separator" = ';' ]; then
-        directory=$(cygpath -u "$directory")
-    fi
     [ -d "$directory/deps" ] || continue
     profile=$(basename "$directory")
     [ "$profile" != debug ] || profile=dev
