@@ -59,7 +59,16 @@ impl<C: FnMut() -> u128> App<C> {
         self.emit_pane_exit(&event);
         let overlay_exit = self.take_overlay_before_exit(&event);
         let previous_toast = self.state.toast.clone();
+        let manifest_update_agents =
+            if let AppEvent::AgentDetectionManifestsUpdated { updated, .. } = &event {
+                Some(updated.iter().map(|item| item.agent).collect::<Vec<_>>())
+            } else {
+                None
+            };
         let updates = self.state.handle_app_event(event);
+        if let Some(agents) = manifest_update_agents {
+            self.reset_agent_detection_for_agents(&agents);
+        }
         for update in &updates {
             self.refresh_new_workspace_toast_context_for_update(update, previous_toast.as_ref());
             self.emit_pane_state_update(update);
@@ -68,6 +77,23 @@ impl<C: FnMut() -> u128> App<C> {
             self.restore_overlay_after_exit(exit);
         }
         (updates, changed)
+    }
+
+    /// Refreshes matching retained detectors after their shared manifests have changed.
+    fn reset_agent_detection_for_agents(&self, agents: &[maestro_detection::agents::Agent]) {
+        if agents.is_empty() {
+            return;
+        }
+        for (terminal_id, terminal) in &self.state.terminals {
+            let Some(agent) = terminal.effective_known_agent().or(terminal.detected_agent) else {
+                continue;
+            };
+            if agents.contains(&agent)
+                && let Some(runtime) = self.terminal_runtimes.get(terminal_id)
+            {
+                runtime.reset_agent_detection();
+            }
+        }
     }
 
     /// Resolves a workspace's label from its first root process before stale metadata.

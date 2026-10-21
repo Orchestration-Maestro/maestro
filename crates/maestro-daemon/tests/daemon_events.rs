@@ -741,3 +741,96 @@ async fn check_workspace_creation(args: &[String]) {
         runtime.shutdown().await;
     }
 }
+
+#[test]
+fn agent_event_publication_keeps_complete_ordered_payloads() {
+    use maestro_protocol::{events::EventData, schema::AgentStatus};
+    let mut app = context_app("/payloads".into(), false);
+    let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
+    let event = || AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(Agent::Codex),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: true,
+        process_exited: false,
+        observed_at: Instant::now(),
+    };
+    app.handle_internal_event(event());
+    assert_initial_agent_events(&app);
+    let sequence = app.event_hub.current_sequence();
+    app.handle_internal_event(event());
+    assert!(app.event_hub.events_after(sequence).is_empty());
+    let labels = std::collections::HashMap::from([("blocked".into(), "approval".into())]);
+    app.state
+        .terminals
+        .values_mut()
+        .next()
+        .unwrap()
+        .set_agent_metadata(maestro_daemon::terminal::state::AgentMetadataReport {
+            source: "test".into(),
+            agent_label: Some("codex".into()),
+            applies_to_source: None,
+            title: Some("review".into()),
+            display_agent: Some("planner".into()),
+            state_labels: labels.clone(),
+            clear_title: false,
+            clear_display_agent: false,
+            clear_state_labels: false,
+            ttl: None,
+            seq: None,
+        })
+        .unwrap();
+    app.handle_internal_event(AppEvent::StateChanged {
+        pane_id: pane,
+        agent: Some(Agent::Codex),
+        state: AgentState::Blocked,
+        visible_blocker: true,
+        visible_working: false,
+        process_exited: false,
+        observed_at: Instant::now(),
+    });
+    let events = app.event_hub.events_after(sequence);
+    assert_eq!(events.len(), 1);
+    assert_eq!(
+        events[0].1,
+        EventData::PaneAgentStatusChanged {
+            pane_id: "w1:p1".into(),
+            workspace_id: "w1".into(),
+            agent_status: AgentStatus::Blocked,
+            agent: Some("codex".into()),
+            title: Some("review".into()),
+            display_agent: Some("planner".into()),
+            state_labels: labels,
+        }
+    );
+}
+
+/// Initial identity precedes its complete execution-state payload.
+fn assert_initial_agent_events(app: &TestApp) {
+    use maestro_protocol::{events::EventData, schema::AgentStatus};
+    let events = app.event_hub.events_after(0);
+    assert_eq!(events.len(), 2);
+    assert_eq!(
+        events[0].1,
+        EventData::PaneAgentDetected {
+            pane_id: "w1:p1".into(),
+            workspace_id: "w1".into(),
+            agent: Some("codex".into()),
+            released: false,
+            final_status: None,
+        }
+    );
+    assert_eq!(
+        events[1].1,
+        EventData::PaneAgentStatusChanged {
+            pane_id: "w1:p1".into(),
+            workspace_id: "w1".into(),
+            agent_status: AgentStatus::Working,
+            agent: Some("codex".into()),
+            title: None,
+            display_agent: None,
+            state_labels: std::collections::HashMap::new(),
+        }
+    );
+}

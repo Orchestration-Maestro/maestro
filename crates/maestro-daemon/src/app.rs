@@ -49,6 +49,8 @@ pub struct App<C> {
     pub config_diagnostic_deadline: Option<std::time::Instant>,
     /// Whether a disk reload awaits acknowledgement by the loop.
     config_reloaded_from_disk: bool,
+    /// Accepted history disable awaiting the supplied persistence paths.
+    clear_history_after_reload: bool,
     /// Single internal observation queue drained by the daemon loop.
     pub event_rx: tokio::sync::mpsc::Receiver<crate::events::AppEvent>,
     /// Earliest time to remove the current clipboard acknowledgement.

@@ -71,8 +71,14 @@ impl<C: FnMut() -> u128> App<C> {
         }
         let valid_ui = !loaded.invalid_sections.iter().any(|area| area == "ui");
         let valid_theme = !loaded.invalid_sections.iter().any(|area| area == "theme");
+        let valid_experimental = !loaded
+            .invalid_sections
+            .iter()
+            .any(|area| area == "experimental");
         let previous = self.config.clone();
         let report = apply_loaded(&mut self.config, loaded);
+        self.clear_history_after_reload |=
+            valid_experimental && !self.config.experimental.pane_history.0;
         if valid_ui {
             if self.state.sidebar_width_source == super::state::SidebarWidthSource::ConfigDefault {
                 self.state.sidebar_width = self.config.ui.sidebar_width;
@@ -104,20 +110,25 @@ impl<C: FnMut() -> u128> App<C> {
             self.refresh_effective_app_theme();
         }
         if notify_success {
-            self.state.toast = Some(ToastNotification {
-                kind: ToastKind::UpdateInstalled,
-                title: "reloaded config".into(),
-                context: if report.diagnostics.is_empty() {
-                    "using settings.json"
-                } else {
-                    "with warnings"
-                }
-                .into(),
-                position: None,
-                target: None,
-            });
+            self.show_config_reloaded_toast(report.diagnostics.is_empty());
         }
         report
+    }
+
+    /// Shows explicit reload feedback independently of settings application.
+    fn show_config_reloaded_toast(&mut self, without_diagnostics: bool) {
+        self.state.toast = Some(ToastNotification {
+            kind: ToastKind::UpdateInstalled,
+            title: "reloaded config".into(),
+            context: if without_diagnostics {
+                "using settings.json"
+            } else {
+                "with warnings"
+            }
+            .into(),
+            position: None,
+            target: None,
+        });
     }
 
     /// Cancels disabled checks and admits newly enabled background producers.

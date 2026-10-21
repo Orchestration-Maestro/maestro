@@ -76,6 +76,11 @@ impl DetectionControl {
         self.reset.notify_one();
     }
 
+    /// Waits for the next retained request to refresh detection observations.
+    pub(super) async fn wait_for_reset(&self) {
+        self.reset.notified().await;
+    }
+
     /// Temporarily suppresses a released identity and resets fallback tracking.
     pub fn begin_graceful_release(&self, agent: Agent) {
         if let Ok(mut pending) = self.pending_release.lock() {
@@ -162,7 +167,7 @@ pub fn spawn_detection_task(
             let delay = detector.delay(&config, spawned.is_some());
             tokio::select! {
                 () = tokio::time::sleep(delay) => {},
-                () = config.control.reset.notified() => {
+                () = config.control.wait_for_reset() => {
                     detector = Detector::new(tokio::time::Instant::now().into_std());
                 }
             }

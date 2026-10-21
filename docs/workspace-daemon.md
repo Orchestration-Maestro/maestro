@@ -566,7 +566,9 @@ Direct history clear tolerates absence and reports other native removal errors.
 Detection catalogue events retain update diagnostics and refresh source/version
 summaries from the same caller-supplied `ManifestCache` shared with pane runtimes.
 Successful updates show agent labels and versions when workspace toast delivery
-is enabled. Empty updates still refresh diagnostics and summaries without a toast.
+is enabled. Matching retained runtimes reset their fallback detectors after the
+shared cache changes. Empty updates refresh diagnostics and summaries without
+a toast or detector reset.
 
 The daemon can toggle zoom on the active split tab without changing its layout.
 A single-pane tab is unchanged; a zoom change marks the session dirty.
@@ -684,7 +686,9 @@ Explicit reloads report success or warnings through a workspace toast. Silent
 reloads preserve existing feedback, and the loop can consume the reload observation
 once. Construction requires an explicit `PaneLaunchInputs::no_session` choice;
 that policy suppresses automatic background checks without changing their stored
-preferences.
+preferences. An accepted history disable clears separate history on the next
+loop pass, after joining any captured writer so it cannot recreate the file.
+Rejected history settings leave both the accepted preference and history intact.
 
 Workspace preference saves use the same settings manager. Related leaves, such
 as a manual theme name and automatic-switch flag, reach storage in one batch.
@@ -697,6 +701,9 @@ semantics.
 Tab observations expose the stable public number even after an earlier tab is
 closed. Display labels still follow the current position unless explicitly
 named; focus and agent attention are projected from the retained live state.
+Workspace attention ranks blocked panes above unseen completions, working panes,
+seen completions and unknown panes. Pane details follow tab and layout order,
+retain tab vector positions, and qualify agent labels when multiple tabs exist.
 
 Terminal targets resolve a terminal handle before a current public pane handle,
 then an agent name or detected label. Agent targets accept a current public pane

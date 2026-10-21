@@ -412,3 +412,115 @@ fn no_session_reload_does_not_admit_reenabled_background_checks() {
     assert!(app.next_auto_update_check.is_none());
     assert!(app.next_agent_manifest_update_check.is_none());
 }
+
+#[test]
+fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_paths() {
+    let (mut app, mut manager, storage) = fixture();
+    let root = history_test_root("captured");
+    let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+    app.config.experimental.pane_history.0 = true;
+    std::fs::write(paths.history_path(), "old history").unwrap();
+    let snapshot = maestro_daemon::persist::capture(&app.state, &app.terminal_runtimes);
+    let expected = serde_json::to_string_pretty(&snapshot).unwrap();
+    let history = maestro_daemon::persist::capture_history(
+        &app.state.topology.workspaces,
+        &app.terminal_runtimes,
+    );
+    let (release, wait) = std::sync::mpsc::channel();
+    let (ready, waiting) = std::sync::mpsc::channel();
+    let target = paths.clone();
+    app.session_save_thread = Some(std::thread::spawn(move || {
+        ready.send(()).unwrap();
+        wait.recv().unwrap();
+        maestro_daemon::persist::save(&target, &snapshot, Some(&history));
+    }));
+    waiting.recv().unwrap();
+    put(
+        &*storage,
+        &json!({"daemon":{"paneHistory":false}}).to_string(),
+    );
+    let report = block_on(app.reload_config(&mut manager, Path::new("."))).0;
+    assert_eq!(report.status, ConfigReloadStatus::Applied);
+    assert!(!app.config.experimental.pane_history.0);
+    release.send(()).unwrap();
+    app.handle_scheduled_tasks(Instant::now(), &paths);
+    assert!(app.session_save_thread.is_none());
+    assert!(!Path::new(&paths.history_path()).exists());
+    block_on(app.run(&paths, std::future::ready(())));
+    assert!(!Path::new(&paths.history_path()).exists());
+    assert_eq!(
+        std::fs::read_to_string(paths.snapshot_path()).unwrap(),
+        expected
+    );
+    assert!(!app.take_config_reloaded_from_disk());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+fn history_test_root(label: &str) -> std::path::PathBuf {
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let root = std::env::temp_dir().join(format!(
+        "maestro-reload-history-{label}-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    root
+}
+
+#[test]
+fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_snapshot() {
+    for value in [json!("invalid"), json!(true)] {
+        let (mut app, mut manager, storage) = fixture();
+        app.config.experimental.pane_history.0 = true;
+        let root = history_test_root("retained");
+        let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+        std::fs::write(paths.history_path(), "retained history").unwrap();
+        std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
+        put(
+            &*storage,
+            &json!({"daemon":{"paneHistory":value}}).to_string(),
+        );
+        let report = block_on(app.reload_config(&mut manager, Path::new("."))).0;
+        assert_eq!(
+            report.status,
+            if value.is_string() {
+                ConfigReloadStatus::Partial
+            } else {
+                ConfigReloadStatus::Applied
+            }
+        );
+        assert!(app.config.experimental.pane_history.0);
+        block_on(app.run(&paths, std::future::ready(())));
+        assert_eq!(
+            std::fs::read_to_string(paths.history_path()).unwrap(),
+            "retained history"
+        );
+        assert_eq!(
+            std::fs::read_to_string(paths.snapshot_path()).unwrap(),
+            "unrelated snapshot"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_snapshot() {
+    let (mut app, mut manager, storage) = fixture();
+    let root = history_test_root("no-session");
+    let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+    std::fs::write(paths.history_path(), "old history").unwrap();
+    std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
+    put(
+        &*storage,
+        &json!({"daemon":{"paneHistory":false}}).to_string(),
+    );
+    block_on(app.reload_config(&mut manager, Path::new(".")));
+    assert!(app.launch.no_session);
+    block_on(app.run(&paths, std::future::ready(())));
+    assert!(!Path::new(&paths.history_path()).exists());
+    assert_eq!(
+        std::fs::read_to_string(paths.snapshot_path()).unwrap(),
+        "unrelated snapshot"
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}

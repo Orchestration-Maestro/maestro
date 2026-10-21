@@ -58,11 +58,13 @@ fn daemon_tab_bar_command_events_render_only_when_visible_output_changes() {
         (generation, Some("ready"), false),
         (generation.wrapping_add(1), Some("stale"), false),
     ] {
-        app.handle_internal_event(AppEvent::TabBarCommandFinished {
-            generation,
-            segment_index: 0,
-            result: Ok(output.map(str::to_owned)),
-        });
+        let impact =
+            app.handle_internal_event_with_render_impact(AppEvent::TabBarCommandFinished {
+                generation,
+                segment_index: 0,
+                result: Ok(output.map(str::to_owned)),
+            });
+        assert_eq!(impact, changed);
         assert_eq!(app.launch.render_dirty.take().generic, changed);
     }
 }
@@ -101,6 +103,10 @@ fn daemon_in_flight_command_has_no_second_deadline() {
             assert!(app.next_tab_bar_status_deadline().is_some());
             app.handle_tab_bar_status_tasks(Instant::now());
             assert_eq!(app.next_tab_bar_status_deadline(), None);
+            let completion = app.event_rx.recv().await.unwrap();
+            assert!(matches!(&completion, AppEvent::TabBarCommandFinished { result: Ok(Some(output)), .. } if output == "final"));
+            app.handle_internal_event(completion);
+            assert!(app.next_tab_bar_status_deadline().is_some());
         });
 }
 

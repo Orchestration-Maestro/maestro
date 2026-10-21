@@ -1,5 +1,8 @@
 //! Live process observations over topology-owned workspaces.
 
+/// Terminal-aware workspace attention and pane details.
+pub mod aggregate;
+
 use crate::terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState};
 use maestro_workspace::{terminal_id::TerminalId, workspace::Workspace};
 use std::{collections::HashMap, path::PathBuf};

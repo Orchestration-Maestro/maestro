@@ -104,6 +104,7 @@ impl<C: FnMut() -> u128> App<C> {
             next_agent_manifest_update_check: None,
             config_diagnostic_deadline: None,
             config_reloaded_from_disk: false,
+            clear_history_after_reload: false,
             copy_feedback_deadline: None,
             tab_bar_status: super::tab_bar_status::TabBarStatus::default(),
             state: DaemonState::new(config, clock, Arc::clone(&launch.manifests)),
