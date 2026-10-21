@@ -62,8 +62,9 @@ async fn check_live_context(args: &[String], delayed: bool) {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let (launch, mut events) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
     app.launch = launch;
+    app.event_rx = event_rx;
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
     config.agent_detection = AgentDetection::Disabled;
     let command = format!(
@@ -74,7 +75,7 @@ async fn check_live_context(args: &[String], delayed: bool) {
         PaneRuntime::spawn_shell_command(config, &command, live.clone(), &PaneLaunchEnv::default())
             .unwrap();
     loop {
-        if let Some(AppEvent::TerminalCwdReported { cwd, .. }) = events.recv().await {
+        if let Some(AppEvent::TerminalCwdReported { cwd, .. }) = app.event_rx.recv().await {
             assert_eq!(cwd, live);
             break;
         }
@@ -435,8 +436,9 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
 /// A launch-command exit keeps its pane but replaces its process and clears agent ownership.
 async fn check_respawn(args: &[String]) {
     let mut app = context_app(std::env::temp_dir(), false);
-    let (launch, _events) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
     app.launch = launch;
+    app.event_rx = event_rx;
     app.config.terminal.default_shell = "/bin/sh".into();
     app.config.terminal.shell_mode = maestro_daemon::settings::model::ShellModeConfig::NonLogin;
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
