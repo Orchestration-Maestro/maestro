@@ -170,8 +170,13 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
 Canvas session-header tests and offline tool cards are not executed; the latter
 still depend on the canvas renderer. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
-Browser execution is separate from native tests and coverage. Shared-job activation
-follows the workflow release and caller re-pin; a local pass is not hosted-CI proof.
+Browser execution is separate from native tests and coverage. `.github/ci.toml`
+requests the shared Chromium job with `browser_test_crates = ["maestro-web"]`.
+The job runs when the existing package selection includes a requested package,
+when a nonempty request changes, or for merge groups and main pushes; advisory-only
+runs skip it. Native package selection and the coverage floor stay unchanged.
+See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.15.0/docs/caller-checks.md#chromium-browser-tests).
+A local pass is not hosted-CI proof; activation requires a successful shared job.
 
 ## Feature unification
 
