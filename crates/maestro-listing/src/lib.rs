@@ -1,9 +1,9 @@
 //! Directory listing in name order.
 //!
 //! File systems return a directory's entries in their own order: hash order on
-//! many Unix file systems, case-insensitive name order on NTFS. Every reader
-//! that lists a directory goes through [`read_dir`], so they all see the same
-//! order on every platform.
+//! many Unix file systems, case-insensitive name order on NTFS. Resources, theme,
+//! autocomplete and tool readers use [`read_dir`] to see the same name order
+//! on every platform.
 
 use std::{fs::DirEntry, io, path::Path};
 
