@@ -24,6 +24,31 @@ mod tests {
         crate::markdown_support::math_rows_match("math_scaled_roots_preserve_display_style").await;
     }
 
+    /// Unchanged explicit size preserves measured superscript glyph spacing.
+    #[wasm_bindgen]
+    pub async fn math_unchanged_size_preserves_superscript_spacing() {
+        crate::markdown_support::math_rows_match(
+            "math_unchanged_size_preserves_superscript_spacing",
+        )
+        .await;
+    }
+
+    /// Unchanged explicit size preserves measured subscript glyph spacing.
+    #[wasm_bindgen]
+    pub async fn math_unchanged_size_preserves_subscript_spacing() {
+        crate::markdown_support::math_rows_match("math_unchanged_size_preserves_subscript_spacing")
+            .await;
+    }
+
+    /// Unchanged explicit size preserves measured nested script glyph spacing.
+    #[wasm_bindgen]
+    pub async fn math_unchanged_size_preserves_nested_script_spacing() {
+        crate::markdown_support::math_rows_match(
+            "math_unchanged_size_preserves_nested_script_spacing",
+        )
+        .await;
+    }
+
     /// Arrow labels and SVGs retain their measured positions without an alignment override.
     #[wasm_bindgen]
     pub async fn math_arrows_keep_measured_label_and_svg_alignment() {

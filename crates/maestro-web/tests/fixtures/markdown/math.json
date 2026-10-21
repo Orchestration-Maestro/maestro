@@ -2822,5 +2822,141 @@
       "svg": []
     },
     "test": "math_error_paths_keep_fallback_and_escaped_text"
+  },
+  {
+    "id": "unchanged-size-superscript",
+    "expression": "\\tiny x^{\\tiny a+b}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "xa+b",
+      "width": 23.3125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 0,
+          "top": 10,
+          "width": 5.546875,
+          "height": 9
+        },
+        {
+          "text": "a",
+          "left": 5.546875,
+          "top": 6.09375,
+          "width": 5.125,
+          "height": 9
+        },
+        {
+          "text": "+",
+          "left": 10.671875,
+          "top": 4.09375,
+          "width": 7.53125,
+          "height": 12
+        },
+        {
+          "text": "b",
+          "left": 18.203125,
+          "top": 6.09375,
+          "width": 4.15625,
+          "height": 9
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_unchanged_size_preserves_superscript_spacing"
+  },
+  {
+    "id": "unchanged-size-subscript",
+    "expression": "\\tiny x_{\\tiny a+b}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "xa+b​",
+      "width": 23.3125,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 0,
+          "top": 10,
+          "width": 5.546875,
+          "height": 9
+        },
+        {
+          "text": "a",
+          "left": 5.546875,
+          "top": 13.390625,
+          "width": 5.125,
+          "height": 9
+        },
+        {
+          "text": "+",
+          "left": 10.671875,
+          "top": 11.390625,
+          "width": 7.53125,
+          "height": 12
+        },
+        {
+          "text": "b",
+          "left": 18.203125,
+          "top": 13.390625,
+          "width": 4.15625,
+          "height": 9
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_unchanged_size_preserves_subscript_spacing"
+  },
+  {
+    "id": "unchanged-size-nested_script",
+    "expression": "\\tiny x^{y^{\\tiny a+b}}",
+    "display": false,
+    "branch": "html",
+    "observed": {
+      "text": "xya+b",
+      "width": 29.359375,
+      "height": 22,
+      "glyphs": [
+        {
+          "text": "x",
+          "left": 0,
+          "top": 10,
+          "width": 5.546875,
+          "height": 9
+        },
+        {
+          "text": "y",
+          "left": 5.546875,
+          "top": 6.09375,
+          "width": 4.75,
+          "height": 9
+        },
+        {
+          "text": "a",
+          "left": 10.640625,
+          "top": 2.1875,
+          "width": 5.125,
+          "height": 9
+        },
+        {
+          "text": "+",
+          "left": 15.765625,
+          "top": 0.1875,
+          "width": 7.53125,
+          "height": 12
+        },
+        {
+          "text": "b",
+          "left": 23.296875,
+          "top": 2.1875,
+          "width": 4.15625,
+          "height": 9
+        }
+      ],
+      "svg": []
+    },
+    "test": "math_unchanged_size_preserves_nested_script_spacing"
   }
 ]

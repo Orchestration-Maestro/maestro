@@ -125,7 +125,7 @@ mod tests {
     pub async fn math_rows_match(test: &str) {
         let all: Vec<MathRow> =
             serde_json::from_str(include_str!("../fixtures/markdown/math.json")).unwrap();
-        assert_eq!(all.len(), 98);
+        assert_eq!(all.len(), 101);
         let inputs: std::collections::BTreeSet<_> =
             all.iter().map(|r| (&r.expression, r.display)).collect();
         assert_eq!(inputs.len(), all.len());
@@ -166,6 +166,9 @@ mod tests {
             "math_roots_pad_bare_symbols_without_changing_groups"
             | "math_macro_failures_keep_inline_error_spans" => 22,
             "math_scaled_roots_preserve_display_style" => 4,
+            "math_unchanged_size_preserves_superscript_spacing"
+            | "math_unchanged_size_preserves_subscript_spacing"
+            | "math_unchanged_size_preserves_nested_script_spacing" => 1,
             "math_arrows_keep_measured_label_and_svg_alignment" => 20,
             "math_error_paths_keep_fallback_and_escaped_text" => 14,
             "math_macro_overrides_keep_valid_expansions" => 16,

@@ -56,6 +56,36 @@ fn explicit_size_builder_keeps_display_clearance() {
 }
 
 #[test]
+fn unchanged_size_preserves_superscript_spacing() {
+    let ctx = context();
+    assert_eq!(
+        render(&ctx, r"\tiny x^{\tiny a+b}", false),
+        render(&ctx, r"\tiny x^{a+b}", false),
+        "unchanged size must preserve script spacing"
+    );
+}
+
+#[test]
+fn unchanged_size_preserves_subscript_spacing() {
+    let ctx = context();
+    assert_eq!(
+        render(&ctx, r"\tiny x_{\tiny a+b}", false),
+        render(&ctx, r"\tiny x_{a+b}", false),
+        "unchanged size must preserve script spacing"
+    );
+}
+
+#[test]
+fn unchanged_size_preserves_nested_script_spacing() {
+    let ctx = context();
+    assert_eq!(
+        render(&ctx, r"\tiny x^{y^{\tiny a+b}}", false),
+        render(&ctx, r"\tiny x^{y^{a+b}}", false),
+        "unchanged size must preserve script spacing"
+    );
+}
+
+#[test]
 fn builtin_macro_failure_reaches_inline_error_owner() {
     let ctx = context();
     assert!(

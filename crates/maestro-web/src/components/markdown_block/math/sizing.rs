@@ -4,7 +4,7 @@ use katex::options::Options;
 use katex::parser::parse_node::{NodeType, ParseNode};
 use katex::types::ParseErrorKind;
 use katex::{KatexContext, ParseError};
-/// Preserve the current display style while changing explicit size.
+/// Keep unchanged styles and preserve display style when changing explicit size.
 pub(super) fn sizing(
     node: &ParseNode,
     options: &Options,
@@ -16,7 +16,9 @@ pub(super) fn sizing(
         }));
     };
     let mut adjusted = options.having_size(sizing.size);
-    adjusted.style = options.style.text();
+    if options.size != sizing.size || options.text_size != sizing.size {
+        adjusted.style = options.style.text();
+    }
     sizing_group(ctx, &sizing.body, &adjusted, options)
 }
 
