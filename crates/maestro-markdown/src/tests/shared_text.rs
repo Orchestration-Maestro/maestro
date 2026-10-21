@@ -91,7 +91,10 @@ fn segmented_cursor_keeps_unmaterialized_source_and_atomic_provenance() {
     assert_eq!(prefix.local(&(3..4)), Some(2..3));
     let suffix = cursor.take(cursor.len());
     assert!(cursor.is_empty());
-    assert_eq!(super::WORK.with_borrow(|work| work.source_bytes), 2);
+    assert_eq!(
+        super::WORK.with_borrow(|work| work.source_bytes + work.joined_bytes),
+        3
+    );
     let tail = suffix.materialize();
     assert_eq!(&*tail.text, "🦀");
     assert_eq!(tail.text.as_ptr(), transformed.text[3..].as_ptr());
@@ -142,4 +145,23 @@ fn mapped_text_repeated_reads_keep_storage_shared() {
         clone.retained(&mut after);
         assert_eq!(after.bytes, before);
     }
+}
+
+#[test]
+fn segmented_quote_body_keeps_one_atomic_list_projection() {
+    use crate::source::{ScopeSource, Segmented};
+    let raw = ScopeSource::identity("> - é\n>   🦀");
+    let mut body = Segmented::from(raw.select(std::iter::once(2..6)));
+    body.append(Segmented::from(raw.select(std::iter::once(6..7))));
+    body.append(Segmented::from(raw.select(std::iter::once(11..15))));
+    let spelling = Segmented::spelling(body.mapped(), 0..raw.text.len());
+    assert_eq!(spelling.mapped().to_owned_string(), "- é\n🦀");
+    assert_eq!(spelling.native(&(2..4)), Some(0..15));
+    assert_eq!(spelling.local(&(8..10)), Some(0..9));
+    let list = spelling.materialize();
+    assert_eq!(list.native(&(2..4)), Some(0..15));
+    assert_eq!(list.local(&(8..10)), Some(0..9));
+    let identity = Segmented::from(raw);
+    assert_eq!(identity.native(&(2..4)), Some(2..4));
+    assert_eq!(identity.local(&(8..10)), Some(8..10));
 }

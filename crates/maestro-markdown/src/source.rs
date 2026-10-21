@@ -1,6 +1,8 @@
 //! Container-local source framing.
 mod cursor;
+mod segmented;
 pub(crate) use cursor::Cursor;
+pub(crate) use segmented::Segmented;
 use std::{
     ops::{Deref, Range},
     sync::Arc,

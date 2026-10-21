@@ -506,6 +506,7 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
     for (cycle, sizes) in [
         (3, [64, 128, 256]),
         (3, [120, 240, 480]),
+        (3, [256, 512, 1024]),
         (40, [120, 240, 480]),
     ] {
         let samples = sizes.map(|lines| measured_reply(lines, cycle));

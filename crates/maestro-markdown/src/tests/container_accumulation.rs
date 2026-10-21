@@ -107,12 +107,14 @@ fn container_mapping_matches_the_reference_work_shape() {
         assert_eq!(borrowed[1].source_views, 2 * borrowed[0].source_views);
         eprintln!("container {unit:?}: {counts:?}");
     }
-    let counts = [32, 64].map(|n| {
+    let counts = [32, 64, 128].map(|n| {
         measured_containers("> - a\n".to_owned() + &"      p\n> [s]: /y\n".repeat(n) + "e")
     });
     assert!(
-        counts[1].list_lines > 3 * counts[0].list_lines,
-        "{counts:?}"
+        counts
+            .windows(2)
+            .all(|pair| pair[1].list_lines <= 3 * pair[0].list_lines),
+        "repeated item framing: {counts:?}"
     );
     eprintln!("grammar-owned chained reentry: {counts:?}");
 }

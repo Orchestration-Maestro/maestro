@@ -81,6 +81,53 @@ impl MappedText {
         }
     }
 
+    /// Retain a logical UTF-8 selection without materializing its bytes.
+    pub(crate) fn select(&self, range: Range<usize>) -> Self {
+        let mut output = Self::default();
+        let mut pending = vec![(self, range)];
+        while let Some((text, range)) = pending.pop() {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
+            if range.is_empty() {
+                continue;
+            }
+            if range == (0..text.len()) {
+                output.append(text);
+                continue;
+            }
+            text.select_parts(range, &mut pending, &mut output);
+        }
+        output
+    }
+
+    /// Split a partial selection at its retained concatenation boundary.
+    fn select_parts<'a>(
+        &'a self,
+        range: Range<usize>,
+        pending: &mut Vec<(&'a Self, Range<usize>)>,
+        output: &mut Self,
+    ) {
+        match self.storage.as_ref() {
+            Storage::Bytes(bytes, selected) => {
+                output.append(&Self::shared(
+                    Arc::clone(bytes),
+                    selected.start + range.start..selected.start + range.end,
+                ));
+            }
+            Storage::Joined(left, right) => {
+                if range.end > left.len() {
+                    pending.push((
+                        right,
+                        range.start.saturating_sub(left.len())..range.end - left.len(),
+                    ));
+                }
+                if range.start < left.len() {
+                    pending.push((left, range.start..range.end.min(left.len())));
+                }
+            }
+        }
+    }
+
     /// Whether the authored value already ends in a semantic line separator.
     pub(crate) fn ends_with_newline(&self) -> bool {
         self.last_byte == Some(b'\n')
@@ -106,6 +153,8 @@ impl MappedText {
 /// Advance a chunk cursor without recursive traversal of concatenations.
 fn next_chunk<'a>(pending: &mut Vec<&'a MappedText>) -> Option<&'a str> {
     while let Some(text) = pending.pop() {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
         match text.storage.as_ref() {
             Storage::Bytes(bytes, range) if !range.is_empty() => {
                 return Some(&bytes[range.clone()]);

@@ -1,5 +1,6 @@
 //! Document block dispatch and first-wins reference ownership.
 mod blocks;
+mod frames;
 mod quote;
 use crate::parse::Extension;
 use crate::{Alignment, BlockToken, Cell, Definition, Document, Kind, MarkedOptions, Node, Table};

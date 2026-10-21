@@ -2,14 +2,14 @@
 use super::Lexer;
 use crate::{
     Kind, MarkedOptions, Node, rules,
-    source::{ScopeSource, Source},
+    source::{ScopeSource, Segmented, Source},
     tokenizer,
 };
 
 /// Effective grammar tail, including an invisible retained definition.
 enum Tail {
     /// Last visible block's own raw source when it can reenter a container.
-    Visible(Option<ScopeSource>),
+    Visible(Option<Segmented>),
     /// A browser definition prevents merges with the preceding visible block.
     Definition,
 }
@@ -41,13 +41,19 @@ impl BlockTokens {
     pub(super) fn push(&mut self, source: &Source<'_>, consumed: usize, node: Node) {
         self.tail = Tail::Visible(
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
-                .then(|| source.select(std::iter::once(0..consumed))),
+                .then(|| source.select(std::iter::once(0..consumed)).into()),
         );
         self.nodes.push(node);
     }
 
+    /// Publish a container recognized over retained segmented input.
+    pub(super) fn push_segmented(&mut self, raw: Segmented, node: Node) {
+        self.tail = Tail::Visible(Some(raw));
+        self.nodes.push(node);
+    }
+
     /// Borrow the trailing container's raw source for reentry.
-    pub(super) fn raw(&mut self) -> Option<ScopeSource> {
+    pub(super) fn raw(&mut self) -> Option<Segmented> {
         match &mut self.tail {
             Tail::Visible(raw) => raw.take(),
             Tail::Definition => None,
@@ -155,7 +161,7 @@ impl<E> Lexer<'_, E> {
             }
         }
         if let Tail::Visible(Some(raw)) = &mut output.tail {
-            raw.append(source.select(std::iter::once(0..1)));
+            raw.append(source.select(std::iter::once(0..1)).into());
         }
         Some(gap.end())
     }
