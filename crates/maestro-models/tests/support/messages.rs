@@ -403,8 +403,8 @@ pub fn rows_of(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 
 /// Check every row a test owns in fresh processes, so ambient environment cannot reach a call.
 ///
-/// Rows without an environment run together in one child with an empty environment; each row
-/// with one runs alone in a child holding exactly those variables.
+/// Rows with equal environments share one child holding exactly those variables.
+/// Rows without an environment join the empty-environment group.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows_of(fixture, test)?;
     for row in crate::environment_rows::selected(test, &owned, |row| {
