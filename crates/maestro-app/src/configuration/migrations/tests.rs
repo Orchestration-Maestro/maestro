@@ -97,7 +97,8 @@ fn directory_link_collision_removes_only_source_entry() {
     fs::create_dir(root.join("bin")).unwrap();
     fs::create_dir(root.join("original")).unwrap();
     fs::write(root.join("original/payload"), b"retained").unwrap();
-    symlink_dir("../original", root.join("tools/fd")).unwrap();
+    // Windows resolves a relative link target only when it uses its own separator.
+    symlink_dir(r"..\original", root.join("tools/fd")).unwrap();
     fs::write(root.join("bin/fd"), b"destination").unwrap();
     let output = maestro_test_process::TestProcess::current(
         "directory_link_collision_removes_only_source_entry",
