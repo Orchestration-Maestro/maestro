@@ -51,6 +51,9 @@ pub mod api;
 /// Workspace key-combination grammar.
 pub mod key_combo;
 
+/// Retained daemon state and workspace operations.
+pub mod app;
+
 #[cfg(test)]
 mod tests;
 

@@ -95,6 +95,28 @@ not expire them.
 The topology API starts no terminal, background task or daemon listener. See the
 [daemon design](specs/workspace-daemon.md) for the remaining runtime boundaries.
 
+## Retained daemon state
+
+`maestro_daemon::app::state::DaemonState` retains one `WorkspaceTopology`,
+terminal metadata, active and selected workspace positions, and historical pane
+aliases. Its supplied clock feeds the topology allocator. Pane-size estimation
+uses the first supplied pane rectangle, falling back to the configured headless
+rows and columns before a view attaches.
+
+Public target parsing distinguishes stable numbers (`w1:t4`, `w1:p2`) from
+historical positional tabs (`w1:4`) and raw pane spellings (`p_3`). A stale pane
+alias returns no match rather than selecting a different live pane. Current-only
+pane lookup excludes historical spellings.
+
+`maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
+retains the latest 512 ordered event payloads. Replay returns only events strictly
+newer than the supplied sequence. Events use the shared type-tagged protocol
+records without another envelope.
+
+`maestro_daemon::key_combo` parses, formats and matches workspace key combinations
+using shared key codes. It preserves named punctuation, Unicode characters,
+modifier aliases and shifted-key matching; shifted Tab normalizes to BackTab.
+
 ## Snapshot
 
 [`maestro_workspace::persist`](../crates/maestro-workspace/src/persist/mod.rs)
