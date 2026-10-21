@@ -1,26 +1,20 @@
 //! A scripted HTTP transport that records when and how it was called.
 
-#[cfg(not(target_arch = "wasm32"))]
+#![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
-#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
-#[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 
 use maestro_models::{AssistantMessage, AssistantMessageEventStream};
-#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     BoxFuture, Context, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, Model,
     OpenAICompletionsOptions, StopReason, StreamOptions, stream_openai_completions,
 };
-#[cfg(not(target_arch = "wasm32"))]
 use tokio::time::Instant;
 
 use crate::chat::TestResult;
-#[cfg(not(target_arch = "wasm32"))]
 use crate::chat::{context, model};
 
-#[cfg(not(target_arch = "wasm32"))]
 /// How one attempt ends.
 pub enum Attempt {
     /// Headers arrive at once; the body follows after `body_delay`.
@@ -56,7 +50,6 @@ pub enum Attempt {
     },
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 impl Attempt {
     /// A complete event stream that ends immediately.
     pub fn success() -> Self {
@@ -177,7 +170,6 @@ impl Attempt {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 /// The scripted transport and what it observed.
 #[derive(Clone)]
 pub struct Transport {
@@ -189,7 +181,6 @@ pub struct Transport {
     pub requests: Arc<Mutex<Vec<HttpRequest>>>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 impl Transport {
     /// Number of attempts started.
     pub fn attempts(&self) -> usize {
@@ -219,7 +210,6 @@ impl Transport {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 /// Answer the n-th call with the n-th attempt; the last attempt repeats.
 pub fn transport(attempts: Vec<Attempt>) -> Transport {
     let starts = Arc::new(Mutex::new(Vec::new()));
@@ -245,7 +235,6 @@ pub fn transport(attempts: Vec<Attempt>) -> Transport {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 /// How a chat call ended.
 pub struct Outcome {
     /// Final stop reason.
@@ -254,7 +243,6 @@ pub struct Outcome {
     pub error: Option<String>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 /// Options, model and context for a plain call through `transport`.
 pub fn call_inputs(transport: &Transport) -> TestResult<(Model, Context, StreamOptions)> {
     let options = StreamOptions {
@@ -283,7 +271,6 @@ pub async fn drain(
     Ok((labels, message))
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 /// Run the call to its terminal update.
 pub async fn finish(model: Model, context: Context, common: StreamOptions) -> TestResult<Outcome> {
     let options = OpenAICompletionsOptions {

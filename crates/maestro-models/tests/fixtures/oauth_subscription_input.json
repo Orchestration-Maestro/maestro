@@ -1,0 +1,739 @@
+{
+  "precedence": [
+    {
+      "input": "",
+      "expected": {}
+    },
+    {
+      "input": "\t\r\n",
+      "expected": {}
+    },
+    {
+      "input": "code",
+      "expected": {
+        "code": "code"
+      }
+    },
+    {
+      "input": " code ",
+      "expected": {
+        "code": "code"
+      }
+    },
+    {
+      "input": "code#state",
+      "expected": {
+        "code": "code",
+        "state": "state"
+      }
+    },
+    {
+      "input": "code#state#ignored",
+      "expected": {
+        "code": "code",
+        "state": "state"
+      }
+    },
+    {
+      "input": "#state",
+      "expected": {
+        "code": "",
+        "state": "state"
+      }
+    },
+    {
+      "input": "code#",
+      "expected": {
+        "code": "code",
+        "state": ""
+      }
+    },
+    {
+      "input": "a##b",
+      "expected": {
+        "code": "a",
+        "state": ""
+      }
+    },
+    {
+      "input": "CODE=a&state=s",
+      "expected": {
+        "code": "CODE=a&state=s"
+      }
+    },
+    {
+      "input": "state=s",
+      "expected": {
+        "code": "state=s"
+      }
+    },
+    {
+      "input": "https://x/cb?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/cb?code=a&code=b&state=s&state=t",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/cb#code=a&state=s",
+      "expected": {}
+    },
+    {
+      "input": "https://x/cb?code=&state=",
+      "expected": {
+        "code": "",
+        "state": ""
+      }
+    },
+    {
+      "input": "https://x/cb?state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/",
+      "expected": {}
+    },
+    {
+      "input": "mailto:code#state",
+      "expected": {}
+    },
+    {
+      "input": "http://[bad]?code=a&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=a#state=s",
+      "expected": {
+        "code": "code=a",
+        "state": "state=s"
+      }
+    },
+    {
+      "input": "a#b?code=c",
+      "expected": {
+        "code": "a",
+        "state": "b?code=c"
+      }
+    },
+    {
+      "input": "﻿https://x/?code=a&state=s﻿",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/?%63ode=decoded&state=s",
+      "expected": {
+        "code": "decoded",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/?code=a\nb&state=s",
+      "expected": {
+        "code": "ab",
+        "state": "s"
+      }
+    },
+    {
+      "input": " \t\n",
+      "expected": {}
+    },
+    {
+      "input": "plain",
+      "expected": {
+        "code": "plain"
+      }
+    },
+    {
+      "input": "plain#state#ignored",
+      "expected": {
+        "code": "plain",
+        "state": "state"
+      }
+    },
+    {
+      "input": "plain#",
+      "expected": {
+        "code": "plain",
+        "state": ""
+      }
+    },
+    {
+      "input": "?code=a+%2B&state=s",
+      "expected": {
+        "code": "a +",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=first&code=second&state=s&state=t",
+      "expected": {
+        "code": "first",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=&code=second&state=",
+      "expected": {
+        "code": "",
+        "state": ""
+      }
+    },
+    {
+      "input": "xcode=a",
+      "expected": {}
+    },
+    {
+      "input": "CODE=a",
+      "expected": {
+        "code": "CODE=a"
+      }
+    },
+    {
+      "input": "relative/path?code=x",
+      "expected": {}
+    },
+    {
+      "input": "https://example.test/p?code=x&state=y#z",
+      "expected": {
+        "code": "x",
+        "state": "y"
+      }
+    },
+    {
+      "input": "https://example.test/#code=x",
+      "expected": {}
+    },
+    {
+      "input": "mailto:user@example.test?code=x",
+      "expected": {
+        "code": "x"
+      }
+    },
+    {
+      "input": "urn:a?code=x&state=s",
+      "expected": {
+        "code": "x",
+        "state": "s"
+      }
+    },
+    {
+      "input": "http://[",
+      "expected": {
+        "code": "http://["
+      }
+    },
+    {
+      "input": "a#code=x&state=s",
+      "expected": {
+        "code": "a",
+        "state": "code=x&state=s"
+      }
+    },
+    {
+      "input": "a:b#state",
+      "expected": {}
+    },
+    {
+      "input": "%63ode=A&state=S",
+      "expected": {
+        "code": "%63ode=A&state=S"
+      }
+    },
+    {
+      "input": "code=%00%FF%ED%A0%80%ZZ%2&state=x+y",
+      "expected": {
+        "code": "\u0000����%ZZ%2",
+        "state": "x y"
+      }
+    },
+    {
+      "input": "code=a=b;c&state=",
+      "expected": {
+        "code": "a=b;c",
+        "state": ""
+      }
+    },
+    {
+      "input": "?code=x&state=s",
+      "expected": {
+        "code": "x",
+        "state": "s"
+      }
+    },
+    {
+      "input": "??code=x&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": " code=x\t&state=y ",
+      "expected": {
+        "code": "x\t",
+        "state": "y"
+      }
+    },
+    {
+      "input": "https://x/?code=&code=z&state=s",
+      "expected": {
+        "code": "",
+        "state": "s"
+      }
+    },
+    {
+      "input": "https://x/?code=x&state=&state=s",
+      "expected": {
+        "code": "x",
+        "state": ""
+      }
+    },
+    {
+      "input": "file:///tmp?code=x",
+      "expected": {
+        "code": "x"
+      }
+    },
+    {
+      "input": "//host/path?code=x",
+      "expected": {}
+    },
+    {
+      "input": "https:\\example.test\\a?code=x",
+      "expected": {
+        "code": "x"
+      }
+    }
+  ],
+  "whitespace": [
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": "\tedge\t",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\t",
+      "expected": {}
+    },
+    {
+      "input": "\nedge\n",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\n",
+      "expected": {}
+    },
+    {
+      "input": "\u000bedge\u000b",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\u000b",
+      "expected": {}
+    },
+    {
+      "input": "\fedge\f",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\f",
+      "expected": {}
+    },
+    {
+      "input": "\redge\r",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "\r",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": " edge ",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": " ",
+      "expected": {}
+    },
+    {
+      "input": "　edge　",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "　",
+      "expected": {}
+    },
+    {
+      "input": "﻿edge﻿",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "﻿",
+      "expected": {}
+    },
+    {
+      "input": "edge",
+      "expected": {
+        "code": "edge"
+      }
+    },
+    {
+      "input": "",
+      "expected": {
+        "code": ""
+      }
+    },
+    {
+      "input": "᠎edge᠎",
+      "expected": {
+        "code": "᠎edge᠎"
+      }
+    },
+    {
+      "input": "᠎",
+      "expected": {
+        "code": "᠎"
+      }
+    },
+    {
+      "input": "​edge​",
+      "expected": {
+        "code": "​edge​"
+      }
+    },
+    {
+      "input": "​",
+      "expected": {
+        "code": "​"
+      }
+    },
+    {
+      "input": "⁠edge⁠",
+      "expected": {
+        "code": "⁠edge⁠"
+      }
+    },
+    {
+      "input": "⁠",
+      "expected": {
+        "code": "⁠"
+      }
+    }
+  ],
+  "query": [
+    {
+      "input": "code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "xcode=a&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "state=s&code=a",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=a&code=b&state=x&state=y",
+      "expected": {
+        "code": "a",
+        "state": "x"
+      }
+    },
+    {
+      "input": "code=&code=b&state=&state=y",
+      "expected": {
+        "code": "",
+        "state": ""
+      }
+    },
+    {
+      "input": "code=a+b&state=s%2Bz",
+      "expected": {
+        "code": "a b",
+        "state": "s+z"
+      }
+    },
+    {
+      "input": "code=%E2%9C%93&state=%F0%9F%98%80",
+      "expected": {
+        "code": "✓",
+        "state": "😀"
+      }
+    },
+    {
+      "input": "code=%ZZ&state=%FF",
+      "expected": {
+        "code": "%ZZ",
+        "state": "�"
+      }
+    },
+    {
+      "input": "code=a=b&state=s",
+      "expected": {
+        "code": "a=b",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=%00&state=s",
+      "expected": {
+        "code": "\u0000",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=a;state=s",
+      "expected": {
+        "code": "a;state=s"
+      }
+    },
+    {
+      "input": "data:text/plain,abc?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    },
+    {
+      "input": "code=0&state=0",
+      "expected": {
+        "code": "0",
+        "state": "0"
+      }
+    },
+    {
+      "input": "//x/cb?code=a&state=s",
+      "expected": {
+        "state": "s"
+      }
+    },
+    {
+      "input": "?state=x&code=c",
+      "expected": {
+        "code": "c",
+        "state": "x"
+      }
+    },
+    {
+      "input": "http:\\x\\?code=a&state=s",
+      "expected": {
+        "code": "a",
+        "state": "s"
+      }
+    }
+  ]
+}

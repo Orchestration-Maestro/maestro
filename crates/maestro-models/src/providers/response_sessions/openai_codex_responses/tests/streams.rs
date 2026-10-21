@@ -9,13 +9,7 @@ use serde_json::Value;
 #[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Whole event sequences and their normalized retained output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -73,13 +67,7 @@ fn maestro_response_sessions_normalize_terminal_status() {
     }
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Event selection result with a typed source failure.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -370,13 +358,7 @@ fn maestro_response_sessions_require_terminal_events() {
     });
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Framed bytes and their complete selected records or native protocol failure.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -1061,13 +1043,7 @@ fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
     }
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Selected full invocation and its observed internal outcome.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1406,11 +1382,15 @@ fn select_preparation_stage(
 #[test]
 fn maestro_response_sessions_fixtures_read_every_field() {
     super::requests::audit_fixture_inputs().unwrap();
+    #[cfg(not(target_arch = "wasm32"))]
     super::fixture_rows::<EventCase>(include_str!("fixtures/events.json"), &["events"]).unwrap();
     super::fixture_rows::<StatusCase>(include_str!("fixtures/statuses.json"), &["status"]).unwrap();
+    #[cfg(not(target_arch = "wasm32"))]
     super::fixture_rows::<ApiCase>(include_str!("fixtures/api-errors.json"), &["events"]).unwrap();
+    #[cfg(not(target_arch = "wasm32"))]
     super::fixture_rows::<LifecycleCase>(include_str!("fixtures/lifecycle.json"), &["scenario"])
         .unwrap();
+    #[cfg(not(target_arch = "wasm32"))]
     for text in [
         include_str!("fixtures/framing.json"),
         include_str!("fixtures/data.json"),

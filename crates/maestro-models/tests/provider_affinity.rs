@@ -62,8 +62,7 @@ fn base_options_share_hooks_without_calling_them() {
         response_calls.set(response_calls.get() + 1);
         Box::pin(async { Ok(()) })
     });
-    for row in corpus::load()
-        .registered
+    for row in corpus::hooks()
         .rows
         .into_iter()
         .filter(|row| row.input.get("payload").is_some())

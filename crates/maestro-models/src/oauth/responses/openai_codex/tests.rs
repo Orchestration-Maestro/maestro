@@ -15,17 +15,25 @@ use serde::Deserialize;
 #[cfg(not(target_arch = "wasm32"))]
 use std::{collections::BTreeMap, sync::Arc};
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
-/// Consumed protocol observations grouped by their owning behavior.
+/// Portable authorization observations.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Corpus {
+    /// Ordered authorization fields.
+    flow: Vec<FlowCase>,
+    /// Payload decoding cases.
+    decode: Vec<AccountCase>,
+    /// Account shape cases.
+    account: Vec<AccountCase>,
+    /// Unread account members.
+    unread_account: Vec<AccountCase>,
+}
+
+/// Native transport, callback and timing observations.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeCorpus {
     /// Required-field cases.
     fields: Vec<TokenCase>,
     /// Last-member selection cases.
@@ -38,17 +46,11 @@ struct Corpus {
     status: Vec<TokenCase>,
     /// Fragmented byte bodies.
     bytes: Vec<TokenCase>,
-    /// Ordered authorization fields.
-    flow: Vec<FlowCase>,
     /// Callback route decisions.
     routes: Vec<RouteCase>,
-    /// Payload decoding cases.
-    decode: Vec<AccountCase>,
-    /// Account shape cases.
-    account: Vec<AccountCase>,
-    /// Unread account members.
-    unread_account: Vec<AccountCase>,
 }
+
+#[cfg(not(target_arch = "wasm32"))]
 /// A selected token operation.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -56,6 +58,7 @@ enum Operation {
     Exchange,
     Refresh,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Transport effect applied after supplied chunks.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -64,13 +67,7 @@ enum Effect {
     BodyError,
     FetchError,
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Consumed response and expected result.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -88,6 +85,7 @@ struct TokenCase {
     /// Observable outcome.
     expected: Expected,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// A complete UTF-8 recording or deliberately fragmented byte recording.
 #[derive(PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
@@ -107,13 +105,7 @@ impl Body {
         }
     }
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Credential or error outcome without copied runtime error text.
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -122,13 +114,7 @@ enum Expected {
     Error(String),
     NativeError(bool),
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// All credential fields retained by the operation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -156,13 +142,7 @@ struct FlowCase {
     /// Full expected URL.
     url: String,
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Callback input and decision, without a duplicated page template.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -195,12 +175,34 @@ pub(crate) fn account_fixture_prefix() -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"https://api.openai.com/au"#)
 }
 
-/// Read only the committed, consumed fixture schema.
+/// Read only portable account payload observations.
 fn corpus() -> Corpus {
+    let prefix = account_fixture_prefix();
+    let fixture = include_str!("../../../../tests/fixtures/response_account_payloads.json")
+        .replace("<fake-account-prefix>", &prefix);
+    let corpus: Corpus = serde_json::from_str(&fixture).unwrap();
+    let mut tokens = std::collections::HashSet::new();
+    for case in corpus
+        .decode
+        .iter()
+        .chain(&corpus.account)
+        .chain(&corpus.unread_account)
+    {
+        assert!(
+            tokens.insert(case.token.as_str()),
+            "duplicate account payload"
+        );
+    }
+    corpus
+}
+
+/// Read only native token, callback and authorization observations.
+#[cfg(not(target_arch = "wasm32"))]
+fn native_corpus() -> NativeCorpus {
     let prefix = account_fixture_prefix();
     let fixture = include_str!("../../../../tests/fixtures/response_accounts.json")
         .replace("<fake-account-prefix>", &prefix);
-    let corpus: Corpus = serde_json::from_str(&fixture).unwrap();
+    let corpus: NativeCorpus = serde_json::from_str(&fixture).unwrap();
     let mut requests = std::collections::HashSet::new();
     for case in corpus
         .fields
@@ -220,18 +222,6 @@ fn corpus() -> Corpus {
                 case.effect
             )),
             "duplicate controlled token input"
-        );
-    }
-    let mut tokens = std::collections::HashSet::new();
-    for case in corpus
-        .decode
-        .iter()
-        .chain(&corpus.account)
-        .chain(&corpus.unread_account)
-    {
-        assert!(
-            tokens.insert(case.token.as_str()),
-            "duplicate account payload"
         );
     }
     corpus
@@ -343,7 +333,7 @@ async fn check_tokens(cases: Vec<TokenCase>) {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_fields_require_nonempty_strings_and_finite_expiry() {
-    run(check_tokens(corpus().fields));
+    run(check_tokens(native_corpus().fields));
 }
 
 /// Consume exact JWT identities, including native decoding failures.
@@ -363,31 +353,31 @@ fn check_accounts(cases: Vec<AccountCase>) {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_reads_select_surviving_fields() {
-    run(check_tokens(corpus().surviving));
+    run(check_tokens(native_corpus().surviving));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_messages_keep_compact_json_spelling() {
-    run(check_tokens(corpus().compact));
+    run(check_tokens(native_corpus().compact));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_refresh_wraps_fetch_and_json_failures_once() {
-    run(check_tokens(corpus().phases));
+    run(check_tokens(native_corpus().phases));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_error_body_beats_reason_phrase() {
-    run(check_tokens(corpus().status));
+    run(check_tokens(native_corpus().status));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn response_token_text_handles_fragmented_utf8() {
-    run(check_tokens(corpus().bytes));
+    run(check_tokens(native_corpus().bytes));
 }
 
 #[test]
@@ -433,7 +423,7 @@ fn response_callback_route_decisions_preserve_first_fields() {
         content_type,
         message,
         code,
-    } in corpus().routes
+    } in native_corpus().routes
     {
         let actual = callback::route(&target, &state);
         assert_eq!(

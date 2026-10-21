@@ -1,4 +1,5 @@
 //! Shared response output identity observations.
+#![cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
 use maestro_models::{AssistantMessageEvent, AssistantMessageEventStream, SharedAssistantMessage};
 use serde_json::Value;

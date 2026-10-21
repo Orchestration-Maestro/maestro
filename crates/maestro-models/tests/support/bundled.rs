@@ -1,21 +1,27 @@
 //! Controlled wire bodies, models and request capture for the bundled protocols.
 
 use crate::chat::{TestResult, context, model};
+#[cfg(not(target_arch = "wasm32"))]
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Context, Fetch, HttpBody,
-    HttpRequest, HttpResponse, Model, SharedAssistantMessage, StopReason,
+    AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Fetch, HttpBody, HttpRequest,
+    HttpResponse, SharedAssistantMessage, StopReason,
 };
-use serde_json::{Value, json};
+use maestro_models::{Context, Model};
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::Value;
+use serde_json::json;
+#[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Arc;
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// One bundled protocol with the model that routes to it.
 pub struct Protocol {
     /// Protocol identifier.
     pub api: &'static str,
-    /// Final URL path segment of its request.
-    pub path: &'static str,
     /// Model base URL.
     pub base_url: &'static str,
 }
@@ -24,116 +30,64 @@ pub struct Protocol {
 pub const PROTOCOLS: [Protocol; 6] = [
     Protocol {
         api: "anthropic-messages",
-        path: "/v1/messages",
+
         base_url: "https://controlled.invalid",
     },
     Protocol {
         api: "openai-completions",
-        path: "/v1/chat/completions",
+
         base_url: "https://controlled.invalid/v1",
     },
     Protocol {
         api: "mistral-conversations",
-        path: "/v1/chat/completions",
+
         base_url: "https://controlled.invalid",
     },
     Protocol {
         api: "openai-responses",
-        path: "/v1/responses",
+
         base_url: "https://controlled.invalid/v1",
     },
     Protocol {
         api: "azure-openai-responses",
-        path: "/v1/responses",
+
         base_url: "https://controlled.openai.azure.com/openai/v1",
     },
     Protocol {
         api: "openai-codex-responses",
-        path: "/codex/responses",
+
         base_url: "https://controlled.invalid",
     },
 ];
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The SSE fixture identifiers in fixture order.
 pub fn apis() -> Vec<&'static str> {
     PROTOCOLS.iter().map(|protocol| protocol.api).collect()
 }
 
-/// How one registered protocol treats the caller's cancellation signal and response hook.
-pub struct ProtocolPolicy {
-    /// Registered protocol identifier.
-    pub api: &'static str,
-    /// The request uses the signal carried by the payload the payload hook returns.
-    pub selected_signal: bool,
-    /// The response hook observes each HTTP response before its body is read.
-    pub response_hook: bool,
-}
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "bundled_policy.rs"]
+mod native_policy;
+#[cfg(not(target_arch = "wasm32"))]
+pub use native_policy::{ProtocolPolicy, policy};
 
-/// Every bundled protocol in registration order, with its test policy.
-pub const PROTOCOL_POLICIES: [ProtocolPolicy; 9] = [
-    ProtocolPolicy {
-        api: "anthropic-messages",
-        selected_signal: false,
-        response_hook: true,
-    },
-    ProtocolPolicy {
-        api: "openai-completions",
-        selected_signal: false,
-        response_hook: true,
-    },
-    ProtocolPolicy {
-        api: "mistral-conversations",
-        selected_signal: false,
-        response_hook: false,
-    },
-    ProtocolPolicy {
-        api: "openai-responses",
-        selected_signal: false,
-        response_hook: true,
-    },
-    ProtocolPolicy {
-        api: "azure-openai-responses",
-        selected_signal: false,
-        response_hook: true,
-    },
-    ProtocolPolicy {
-        api: "openai-codex-responses",
-        selected_signal: false,
-        response_hook: true,
-    },
-    ProtocolPolicy {
-        api: "google-generative-ai",
-        selected_signal: true,
-        response_hook: false,
-    },
-    ProtocolPolicy {
-        api: "google-vertex",
-        selected_signal: true,
-        response_hook: false,
-    },
-    ProtocolPolicy {
-        api: "bedrock-converse-stream",
-        selected_signal: false,
-        response_hook: true,
-    },
+/// Expected protocol identifiers in registration order.
+const REGISTERED_APIS: [&str; 9] = [
+    "anthropic-messages",
+    "openai-completions",
+    "mistral-conversations",
+    "openai-responses",
+    "azure-openai-responses",
+    "openai-codex-responses",
+    "google-generative-ai",
+    "google-vertex",
+    "bedrock-converse-stream",
 ];
 
 /// The complete bundled registry inventory, separate from the SSE fixture protocols.
 pub fn registered_apis() -> Vec<&'static str> {
-    PROTOCOL_POLICIES.iter().map(|policy| policy.api).collect()
-}
-
-/// The test policy of `api`, looked up before any request starts.
-///
-/// # Panics
-///
-/// Panics with the protocol's name when the inventory has no entry for it.
-#[cfg(test)]
-pub fn policy(api: &str) -> &'static ProtocolPolicy {
-    PROTOCOL_POLICIES
-        .iter()
-        .find(|policy| policy.api == api)
-        .unwrap_or_else(|| panic!("no protocol test policy for {api}"))
+    REGISTERED_APIS.to_vec()
 }
 
 /// Registered protocol identifiers in registry order.
@@ -167,6 +121,7 @@ pub fn conversation() -> TestResult<Context> {
     context(&json!({"messages": [{"role": "user", "content": "hi"}]}))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The SSE frames of a one-text answer in `api`'s wire format.
 pub fn text_body(api: &str, text: &str) -> Vec<u8> {
     let frames: Vec<String> = match api {
@@ -203,6 +158,7 @@ pub fn text_body(api: &str, text: &str) -> Vec<u8> {
     frames.concat().into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Data-only SSE frames, one per event.
 pub fn sse_frames(events: &[Value]) -> Vec<u8> {
     let mut frames = String::new();
@@ -212,6 +168,7 @@ pub fn sse_frames(events: &[Value]) -> Vec<u8> {
     frames.into_bytes()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A request the controlled transport received.
 #[derive(Clone)]
 pub struct Seen {
@@ -223,14 +180,17 @@ pub struct Seen {
     pub body: Value,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Requests received so far.
 pub type Requests = Arc<Mutex<Vec<Seen>>>;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A transport that records each request and answers with `body`.
 pub fn fetch(body: Vec<u8>) -> (Fetch, Requests) {
     fetch_chunks(vec![body])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A transport that records each request and answers with `chunks` as separate body reads.
 pub fn fetch_chunks(chunks: Vec<Vec<u8>>) -> (Fetch, Requests) {
     let requests = Requests::default();
@@ -258,6 +218,7 @@ pub fn fetch_chunks(chunks: Vec<Vec<u8>>) -> (Fetch, Requests) {
     (fetch, requests)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Requests recorded so far.
 pub fn recorded(requests: &Requests) -> Vec<Seen> {
     requests
@@ -266,6 +227,7 @@ pub fn recorded(requests: &Requests) -> Vec<Seen> {
         .clone()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Drain a stream, returning its events.
 pub async fn drain(stream: &AssistantMessageEventStream) -> Vec<AssistantMessageEvent> {
     let mut events = Vec::new();
@@ -275,6 +237,7 @@ pub async fn drain(stream: &AssistantMessageEventStream) -> Vec<AssistantMessage
     events
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The text blocks of a finished message joined together.
 pub fn text_of(message: &SharedAssistantMessage) -> String {
     let message = message.read().unwrap_or_else(PoisonError::into_inner);
@@ -288,6 +251,7 @@ pub fn text_of(message: &SharedAssistantMessage) -> String {
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Stop reason of a finished message.
 pub fn stop_of(message: &SharedAssistantMessage) -> StopReason {
     message
@@ -297,6 +261,7 @@ pub fn stop_of(message: &SharedAssistantMessage) -> StopReason {
         .clone()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Error text of a finished message.
 pub fn error_of(message: &SharedAssistantMessage) -> Option<String> {
     message
@@ -306,6 +271,7 @@ pub fn error_of(message: &SharedAssistantMessage) -> Option<String> {
         .clone()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A synthetic account token for response sessions, otherwise an opaque controlled key.
 pub fn api_key(api: &str) -> String {
     if api == "openai-codex-responses" {

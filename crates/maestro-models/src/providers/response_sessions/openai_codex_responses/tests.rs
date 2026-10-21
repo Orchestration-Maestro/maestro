@@ -80,6 +80,7 @@ fn controlled_model() -> crate::Model {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// One typed user message supplies the unchanged conversation input.
 fn controlled_context() -> crate::Context {
     serde_json::from_value(

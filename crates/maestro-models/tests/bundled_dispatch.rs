@@ -29,6 +29,18 @@ use serde_json::json;
 use std::sync::{Arc, Mutex, PoisonError};
 
 #[cfg(not(target_arch = "wasm32"))]
+/// Expected endpoint paths, owned by the native request observations.
+#[cfg(not(target_arch = "wasm32"))]
+const EXPECTED_PATHS: [(&str, &str); 6] = [
+    (PROTOCOLS[0].api, "/v1/messages"),
+    (PROTOCOLS[1].api, "/v1/chat/completions"),
+    (PROTOCOLS[2].api, "/v1/chat/completions"),
+    (PROTOCOLS[3].api, "/v1/responses"),
+    (PROTOCOLS[4].api, "/v1/responses"),
+    (PROTOCOLS[5].api, "/codex/responses"),
+];
+
+#[cfg(not(target_arch = "wasm32"))]
 /// How a public operation reaches the protocol.
 #[derive(Clone, Copy, Debug)]
 enum Route {
@@ -230,6 +242,11 @@ fn maestro_public_routes_reach_real_adapters() -> TestResult {
     maestro_models::reset_api_providers();
     crate::runtime::run(async {
         for protocol in &PROTOCOLS {
+            let path = EXPECTED_PATHS
+                .iter()
+                .find(|(api, _)| *api == protocol.api)
+                .ok_or("missing protocol path expectation")?
+                .1;
             for route in ROUTES {
                 let text = format!("{} via {route:?}", protocol.api);
                 let seen = invoke(protocol, route, &text).await?;
@@ -238,7 +255,7 @@ fn maestro_public_routes_reach_real_adapters() -> TestResult {
                 assert_eq!(bundled::stop_of(&seen.result), StopReason::Stop, "{label}");
                 assert_eq!(seen.requests.len(), 1, "{label}");
                 let url = seen.requests[0].url.split('?').next().unwrap_or_default();
-                assert!(url.ends_with(protocol.path), "{label}: {url}");
+                assert!(url.ends_with(path), "{label}: {url}");
                 assert_eq!(seen.hooks, expected_hooks(protocol), "{label}");
                 let usage = seen.result.read().map_err(|_| "poisoned")?.usage.clone();
                 assert_eq!(

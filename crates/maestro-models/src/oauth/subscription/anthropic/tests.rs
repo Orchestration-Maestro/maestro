@@ -12,18 +12,12 @@ use crate::{
 #[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
 use serde::Deserialize;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::{cell::Cell, future::Future, sync::Arc};
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
-/// Stored oracle corpus.
+/// Portable authorization observations.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Corpus {
@@ -33,6 +27,13 @@ struct Corpus {
     whitespace: Vec<InputCase>,
     /// Stored query.
     query: Vec<InputCase>,
+}
+
+/// Native transport, callback and timing observations.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeCorpus {
     /// Stored diagnostics.
     diagnostics: Vec<DiagnosticCase>,
     /// Stored routes.
@@ -55,13 +56,7 @@ struct InputCase {
     expected: AuthorizationCode,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle diagnosticcase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -72,13 +67,7 @@ struct DiagnosticCase {
     expected: String,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Supplied numeric marker or scalar code.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -90,13 +79,7 @@ enum CodeInput {
     /// Nonfinite or signed-zero marker.
     Marker(NumberMarker),
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle numbermarker.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -105,13 +88,7 @@ struct NumberMarker {
     number: String,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Structured error or literal text.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -121,13 +98,7 @@ enum ErrorInput {
     /// Literal diagnostic text.
     Text(String),
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle errorrecord.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -146,13 +117,7 @@ struct ErrorRecord {
     cause: Option<Box<ErrorInput>>,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle routecase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -171,6 +136,7 @@ struct RouteCase {
     body: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Token operation selected by the oracle.
 #[derive(Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -180,13 +146,7 @@ enum Mode {
     /// Refresh grant.
     Refresh,
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Oracle token outcome.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -198,13 +158,7 @@ enum ExpectedToken {
     /// HTTP failure status.
     Http(HttpStatus),
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Recorded non-success status.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -212,6 +166,7 @@ struct HttpStatus {
     /// Recorded response status.
     http_status: u16,
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Authored token failure category.
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -221,13 +176,7 @@ enum FailurePhase {
     /// Invalid JSON syntax.
     InvalidJson,
 }
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle success.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -236,13 +185,7 @@ struct Success {
     credentials: ExpectedCredentials,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle expectedcredentials.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -255,13 +198,7 @@ struct ExpectedCredentials {
     expires: f64,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle tokencase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -278,13 +215,7 @@ struct TokenCase {
     expected: ExpectedToken,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle requestcase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -299,13 +230,7 @@ struct RequestCase {
     result: ExpectedCredentials,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle expectedrequest.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -320,13 +245,7 @@ struct ExpectedRequest {
     body: String,
 }
 
-#[cfg_attr(
-    target_arch = "wasm32",
-    expect(
-        dead_code,
-        reason = "fields read only by native runtime tests; parsed strictly on every target"
-    )
-)]
+#[cfg(not(target_arch = "wasm32"))]
 /// Stored oracle textcase.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -339,6 +258,15 @@ struct TextCase {
 
 /// Deserialize only consumed fields, rejecting fixture growth without a consumer.
 fn corpus() -> Corpus {
+    serde_json::from_str(include_str!(
+        "../../../../tests/fixtures/oauth_subscription_input.json"
+    ))
+    .unwrap()
+}
+
+/// Read native policy observations with their complete schema.
+#[cfg(not(target_arch = "wasm32"))]
+fn native_corpus() -> NativeCorpus {
     serde_json::from_str(include_str!(
         "../../../../tests/fixtures/oauth_subscription.json"
     ))
@@ -411,7 +339,7 @@ fn token_cases(indices: &[usize]) {
                 clock: now,
                 expected,
             },
-        ) in corpus()
+        ) in native_corpus()
             .tokens
             .into_iter()
             .enumerate()
@@ -523,7 +451,7 @@ fn diagnostic(input: ErrorInput) -> OAuthError {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn oauth_errors_print_only_supplied_details() {
-    for DiagnosticCase { input, expected } in corpus().diagnostics {
+    for DiagnosticCase { input, expected } in native_corpus().diagnostics {
         assert_eq!(diagnostic(input).details(), expected);
     }
     run(async {
@@ -563,7 +491,7 @@ fn token_requests_keep_field_order() {
             input,
             request,
             result,
-        } in corpus().requests
+        } in native_corpus().requests
         {
             CLOCK.set(1_700_000_000_123.0);
             let fetch: Fetch = Arc::new(move |actual| {
@@ -581,7 +509,7 @@ fn token_requests_keep_field_order() {
 #[test]
 fn token_text_decodes_fragmented_utf8() {
     run(async {
-        for TextCase { bytes, expected } in corpus().response_text {
+        for TextCase { bytes, expected } in native_corpus().response_text {
             assert_eq!(
                 exchange::post_json(Vec::new(), response(200, bytes))
                     .await
@@ -1410,7 +1338,7 @@ mod oauth_callback {
             message,
             details,
             body,
-        } in corpus().routes
+        } in native_corpus().routes
         {
             let actual = route(&path, "good");
             assert_eq!(actual.status, status, "{path}");

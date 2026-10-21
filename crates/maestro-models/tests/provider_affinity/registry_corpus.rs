@@ -72,7 +72,12 @@ fn recorded_registry_corpus_keeps_all_fields() -> crate::TestResult {
         for local in [true, false] {
             clear_api_providers();
             let mut retained = None;
-            for row in super::corpus::load().registered.rows.into_iter().skip(10) {
+            for row in super::corpus::load()
+                .registered
+                .rows
+                .into_iter()
+                .filter(|row| !row.name.starts_with("registered_"))
+            {
                 let input: Input = serde_json::from_value(row.input)?;
                 let actual = observe(input, &mut retained, local).await?;
                 assert_eq!(actual, row.expected, "{} local={local}", row.name);

@@ -186,10 +186,6 @@ mod schema_checker_qualification;
 mod schema_diagnostics;
 mod scripted_model_invocation;
 mod simple_model_options;
-#[allow(
-    dead_code,
-    reason = "The library's unit tests also compile this module and use other parts of it."
-)]
 #[path = "support/socks.rs"]
 mod socks;
 mod streamed_arguments;

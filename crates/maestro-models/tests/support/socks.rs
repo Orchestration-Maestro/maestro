@@ -1,17 +1,12 @@
 //! Controlled SOCKS peer protocol, using the shared connection owner.
 
+#![cfg(not(target_arch = "wasm32"))]
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
-/// Recorded negotiation, before application traffic.
+/// Destination observed before application traffic.
 #[derive(Debug)]
 pub struct Negotiation {
-    /// Methods offered in order.
-    pub methods: Vec<u8>,
-    /// Username bytes, if authentication was selected.
-    pub user: Option<Vec<u8>>,
-    /// Password bytes, if authentication was selected.
-    pub password: Option<Vec<u8>>,
     /// Address type.
     pub kind: u8,
     /// Destination bytes.
@@ -29,26 +24,31 @@ fn counted(socket: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     Ok(bytes)
 }
 
+/// Ordinary successful bound-address reply.
+pub const DEFAULT_REPLY: &[u8] = &[5, 0, 0, 1, 127, 0, 0, 1, 0, 80];
+
 /// Negotiate a tunnel, leaving HTTP input unread.
 ///
 /// # Errors
 /// Returns protocol socket read or write failures.
 pub fn negotiate(socket: &mut TcpStream, authenticate: bool) -> std::io::Result<Negotiation> {
-    negotiate_reply(socket, authenticate, &[5, 0, 0, 1, 127, 0, 0, 1, 0, 80])
+    let (destination, ()) = negotiate_observing(socket, authenticate, DEFAULT_REPLY, |_, _, _| ())?;
+    Ok(destination)
 }
 
-/// Negotiate with a chosen bound-address frame.
+/// Negotiate with a chosen bound-address frame and capture caller-owned authentication observations.
 ///
 /// # Errors
 /// Returns protocol socket read or write failures.
 ///
 /// # Panics
 /// Panics when client bytes differ from the expected protocol input.
-pub fn negotiate_reply(
+pub fn negotiate_observing<T>(
     socket: &mut TcpStream,
     authenticate: bool,
     reply: &[u8],
-) -> std::io::Result<Negotiation> {
+    observe: impl FnOnce(Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>) -> T,
+) -> std::io::Result<(Negotiation, T)> {
     let mut version = [0];
     socket.read_exact(&mut version)?;
     if version == [4] {
@@ -84,70 +84,14 @@ pub fn negotiate_reply(
     let mut port = [0; 2];
     socket.read_exact(&mut port)?;
     socket.write_all(reply)?;
-    Ok(Negotiation {
-        methods,
-        user,
-        password,
-        kind: head[3],
-        host,
-        port: u16::from_be_bytes(port),
-    })
-}
-
-/// One exact protocol input and its reply.
-#[derive(Clone, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Frame {
-    /// Bytes expected from the client.
-    pub input: Vec<u8>,
-    /// Bytes written by the controlled peer.
-    pub output: Vec<u8>,
-}
-
-/// Exchange exact frames without reading beyond their boundaries.
-///
-/// # Errors
-/// Returns protocol socket read or write failures.
-///
-/// # Panics
-/// Panics when client bytes differ from the expected protocol input.
-pub fn frames(socket: &mut TcpStream, frames: &[Frame]) -> std::io::Result<()> {
-    for frame in frames {
-        let mut bytes = vec![0; frame.input.len()];
-        socket.read_exact(&mut bytes)?;
-        assert!(bytes == frame.input, "protocol frame bytes");
-        for byte in &frame.output {
-            socket.write_all(&[*byte])?;
-        }
-    }
-    Ok(())
-}
-
-/// Finish a rejected exchange through EOF or reset without discarding received bytes.
-///
-/// # Errors
-/// Returns socket failures other than peer reset or broken pipe.
-///
-/// # Panics
-/// Panics when client protocol bytes differ from the recorded exchange.
-pub fn failed_frames(socket: &mut TcpStream, expected: &[Frame]) -> std::io::Result<Vec<u8>> {
-    match frames(socket, expected) {
-        Err(error)
-            if matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) => {}
-        result => result?,
-    }
-    socket.shutdown(std::net::Shutdown::Write).ok();
-    let mut after = Vec::new();
-    match socket.read_to_end(&mut after) {
-        Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
-        result => {
-            result?;
-        }
-    }
-    Ok(after)
+    Ok((
+        Negotiation {
+            kind: head[3],
+            host,
+            port: u16::from_be_bytes(port),
+        },
+        observe(methods, user, password),
+    ))
 }
 
 /// Read a NUL-terminated protocol field without consuming the next one.
