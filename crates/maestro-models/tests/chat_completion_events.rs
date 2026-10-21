@@ -1225,14 +1225,14 @@ async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_observes_repeated_response_headers() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "maestro_chat_observes_repeated_response_headers",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "*")
+            .case("*")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -1269,14 +1269,14 @@ fn maestro_chat_observes_repeated_response_headers() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_transport_is_replaceable() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "maestro_chat_transport_is_replaceable",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "*")
+            .case("*")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -1380,7 +1380,7 @@ async fn deep_unread_fields_are_passed_over() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run_paused(deep_unread_fields_are_passed_over());
     }
     {
@@ -1389,7 +1389,7 @@ fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "nesting")
+        .case("nesting")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
@@ -1424,7 +1424,7 @@ async fn error_details_convert_to_the_json_limit() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run_paused(error_details_convert_to_the_json_limit());
     }
     {
@@ -1432,7 +1432,7 @@ fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
             maestro_test_process::TestProcess::current("maestro_chat_bounds_error_detail_nesting")?
                 .nocapture()
                 .env_clear()
-                .env("MAESTRO_CHILD_CASE", "nesting")
+                .case("nesting")
                 .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
@@ -1461,7 +1461,7 @@ async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run_paused(streamed_signatures_convert_to_the_json_limit());
     }
     {
@@ -1470,7 +1470,7 @@ fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "nesting")
+        .case("nesting")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())

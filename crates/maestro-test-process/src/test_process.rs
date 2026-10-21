@@ -98,6 +98,12 @@ pub struct TestProcess {
 }
 
 impl TestProcess {
+    /// Select one case identifier in the child, or `"*"` for all cases.
+    #[must_use]
+    pub fn case(self, case: impl AsRef<OsStr>) -> Self {
+        self.env(crate::environment::CASE, case)
+    }
+
     /// Select the running test: `test` is its full identity or its leaf at a `::` boundary.
     ///
     /// # Errors

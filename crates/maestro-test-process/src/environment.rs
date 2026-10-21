@@ -62,3 +62,73 @@ where
     }
     Ok(None)
 }
+
+/// The cases selected for this process; its wire format stays private to this crate.
+#[derive(Debug)]
+pub struct CaseSelection {
+    /// The process role selected by its launcher.
+    kind: SelectionKind,
+}
+
+/// The parent, an unrestricted child, a named case, or an environment group.
+#[derive(Debug)]
+enum SelectionKind {
+    /// The caller that launches children.
+    Parent,
+    /// A child that runs every case and group.
+    All,
+    /// One caller-supplied case identifier.
+    Case(String),
+    /// A group belonging to this full test identity.
+    Group(String),
+}
+
+impl CaseSelection {
+    /// Whether this process was launched to run a case or environment group.
+    #[must_use]
+    pub fn is_child(&self) -> bool {
+        !matches!(self.kind, SelectionKind::Parent)
+    }
+
+    /// Whether this process runs the supplied case identifier.
+    ///
+    /// Parents and wildcard children accept every case; grouped children accept none.
+    #[must_use]
+    pub fn runs_case(&self, case: &str) -> bool {
+        match &self.kind {
+            SelectionKind::Parent | SelectionKind::All => true,
+            SelectionKind::Case(selected) => selected == case,
+            SelectionKind::Group(_) => false,
+        }
+    }
+
+    /// Whether this process runs environment groups belonging to the supplied test.
+    ///
+    /// Parents and wildcard children accept every group; named-case children accept none.
+    #[must_use]
+    pub fn runs_group(&self, test: &str) -> bool {
+        match &self.kind {
+            SelectionKind::Parent | SelectionKind::All => true,
+            SelectionKind::Case(_) => false,
+            SelectionKind::Group(name) => crate::selection::matches_name(name, test),
+        }
+    }
+}
+
+/// Return this process's typed case or environment-group selection.
+#[must_use]
+pub fn selection() -> CaseSelection {
+    let kind = if std::env::var_os(GROUP).is_some() {
+        SelectionKind::Group(std::thread::current().name().unwrap_or_default().to_owned())
+    } else {
+        match std::env::var(CASE).ok().as_deref() {
+            Some("*") => SelectionKind::All,
+            Some(case) => SelectionKind::Case(case.to_owned()),
+            None => SelectionKind::Parent,
+        }
+    };
+    CaseSelection { kind }
+}
+
+/// Variable that carries a single case identifier into its child.
+pub(crate) const CASE: &str = "MAESTRO_CHILD_CASE";

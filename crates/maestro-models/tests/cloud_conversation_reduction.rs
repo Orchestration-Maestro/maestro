@@ -179,7 +179,7 @@ fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "thinking_tool_results_replay_through_generic_dispatch",
@@ -191,7 +191,7 @@ fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
                     .iter()
                     .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "replay")
+            .case("replay")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

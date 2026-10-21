@@ -105,7 +105,7 @@ fn converse() -> TestResult {
 
 /// Run each route in a child and check which loopback peer it reached.
 pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return converse();
     }
     for route in routes {
@@ -133,7 +133,7 @@ pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
                 .nocapture()
                 .env_clear()
                 .envs(vars.iter().copied())
-                .env("MAESTRO_CHILD_CASE", route.id)
+                .case(route.id)
                 .output()?;
             assert!(output.status.success(), "{output:?}");
         };
@@ -168,7 +168,7 @@ pub struct Refusal {
 /// Run each refusal in a child; the origin sees a request only when it redirects, and the
 /// second peer is never contacted.
 pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return converse();
     }
     for refusal in refusals {
@@ -194,7 +194,7 @@ pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
                 .nocapture()
                 .env_clear()
                 .envs(vars.iter().copied())
-                .env("MAESTRO_CHILD_CASE", refusal.id)
+                .case(refusal.id)
                 .output()?;
             assert!(output.status.success(), "{output:?}");
         };

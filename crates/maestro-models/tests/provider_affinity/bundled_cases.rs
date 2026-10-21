@@ -28,7 +28,7 @@ enum Entry {
 #[test]
 fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "bundled_registered_requests_keep_local_payload_hooks",
@@ -43,7 +43,7 @@ fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "registered-protocols")
+            .case("registered-protocols")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -270,7 +270,7 @@ fn protocol_test_policies_cover_the_registry() {
 #[test]
 fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "default_submission_preserves_protocol_runtime_policy",
@@ -285,7 +285,7 @@ fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "runtime-policy")
+            .case("runtime-policy")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

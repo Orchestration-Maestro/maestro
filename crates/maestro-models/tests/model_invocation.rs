@@ -127,13 +127,13 @@ mod tests {
         use maestro_models::records::api_registry::*;
         use maestro_models::{BedrockProviderModule, get_oauth_provider, reset_oauth_providers};
         let _serial = crate::bundled::registry();
-        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        if !maestro_test_process::selection().is_child() {
             let name = "maestro_platform_stores_keep_distinct_owners";
             return {
                 let output = maestro_test_process::TestProcess::current(name)?
                     .nocapture()
                     .env_clear()
-                    .env("MAESTRO_CHILD_CASE", "owners")
+                    .case("owners")
                     .output()?;
                 assert!(output.status.success(), "{output:?}");
                 Ok(())

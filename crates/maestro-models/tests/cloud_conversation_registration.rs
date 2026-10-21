@@ -28,7 +28,7 @@ const ENDPOINT: &str = "https://bedrock-runtime.us-east-1.amazonaws.com";
 fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "bedrock_generic_routes_reach_the_default_pair",
@@ -40,7 +40,7 @@ fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
                     .iter()
                     .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "routes")
+            .case("routes")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -190,7 +190,7 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
 fn bedrock_raw_options_reach_their_consumers() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         profile_options()?;
         return {
             let output = maestro_test_process::TestProcess::current(
@@ -207,13 +207,15 @@ fn bedrock_raw_options_reach_their_consumers() -> TestResult {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "raw-options")
+            .case("raw-options")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
         };
     }
-    if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("profile") {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case("profile")
+    {
         return crate::runtime::run(bedrock::corpus(include_str!(
             "fixtures/cloud_conversation/profile.json"
         )));
@@ -493,7 +495,7 @@ fn profile_options() -> TestResult {
         .nocapture()
         .env_clear()
         .envs(environment.iter().copied())
-        .env("MAESTRO_CHILD_CASE", "profile")
+        .case("profile")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())

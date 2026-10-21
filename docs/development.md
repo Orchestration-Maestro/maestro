@@ -415,7 +415,13 @@ passes; in a child it returns that group's cases in their original order, and th
 test checks them. Cases that share variables therefore share one child and one
 fixture parse, so don't spawn a child per case yourself. A case that needs a fresh
 process for other state, such as a process-wide counter or files created per
-case, keeps its own child.
+case, keeps its own child. Use `TestProcess::case(id)` to select that case.
+Read child roles through `maestro_test_process::selection()`, not environment
+variables. `selection.is_child()` distinguishes the parent from a child.
+`selection.runs_case(id)` accepts the parent, wildcard children and the child
+selected for that id. `selection.runs_group(test)` accepts the parent, wildcard
+children and environment-group children of that test. Case children do not run
+groups, and group children do not run individually selected cases.
 
 Credential tests acquire `SERIAL` before `PROCESS_CREATION` when both are needed.
 Configure the builder first, hold the creation guard only around checked `spawn`,

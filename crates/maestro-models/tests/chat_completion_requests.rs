@@ -54,14 +54,14 @@ fn assert_history_rows(test: &str) -> TestResult {
 fn maestro_chat_replays_thinking_as_text() -> TestResult {
     crate::runtime::run(async {
         assert_history_rows("maestro_chat_replays_thinking_as_text")?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        if !maestro_test_process::selection().is_child() {
             return {
                 let output = maestro_test_process::TestProcess::current(
                     "maestro_chat_replays_thinking_as_text",
                 )?
                 .nocapture()
                 .env_clear()
-                .env("MAESTRO_CHILD_CASE", "*")
+                .case("*")
                 .output()?;
                 assert!(output.status.success(), "{output:?}");
                 Ok(())
@@ -324,7 +324,7 @@ async fn non_finite_numbers_become_null() -> TestResult {
 fn maestro_chat_preserves_numeric_options() -> TestResult {
     crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_numeric_options").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        if !maestro_test_process::selection().is_child() {
             non_finite_numbers_become_null().await?;
         }
         Ok(())
@@ -800,7 +800,7 @@ fn replayed_with_signature(signature: &str) -> TestResult<Value> {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let deepest = cases::DEEPEST_NESTING;
         let accepted = cases::nested_json(deepest);
         assert_eq!(
@@ -823,7 +823,7 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "nesting")
+        .case("nesting")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())

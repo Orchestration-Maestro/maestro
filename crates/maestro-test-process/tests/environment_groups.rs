@@ -34,6 +34,7 @@ fn variables<'a>(marker: &'a str, value: Option<&'a str>) -> BTreeMap<&'a str, &
 
 #[test]
 fn equal_environments_share_one_cleared_child() {
+    assert_selection_owner();
     let test = "equal_environments_share_one_cleared_child";
     let path = marker(test);
     let marker = path.to_str().unwrap();
@@ -45,6 +46,7 @@ fn equal_environments_share_one_cleared_child() {
     ];
     let selected = run_per_environment(test, cases, |case| variables(marker, case.1)).unwrap();
     if let Some(group) = selected {
+        assert_group_selection(test, true);
         let mut file = std::fs::OpenOptions::new()
             .append(true)
             .open(&path)
@@ -56,6 +58,7 @@ fn equal_environments_share_one_cleared_child() {
         }
         return;
     }
+    assert_group_selection(test, false);
     let lines = std::fs::read_to_string(&path).unwrap();
     std::fs::remove_file(&path).unwrap();
     let rows: BTreeMap<&str, (&str, &str, &str)> = lines
@@ -105,10 +108,30 @@ fn a_failed_child_reports_its_group_and_streams() {
 #[test]
 fn an_unknown_group_is_refused() {
     let test = "an_unknown_group_is_refused";
+    if std::env::var_os("MTP_CASE_PROBE").is_some() {
+        let selection = maestro_test_process::selection();
+        let wildcard = std::env::var("MTP_CASE_PROBE").unwrap() == "wildcard";
+        assert!(selection.is_child());
+        assert!(selection.runs_case("selected"));
+        assert_eq!(selection.runs_case("different"), wildcard);
+        assert_eq!(selection.runs_group(test), wildcard);
+        assert_eq!(selection.runs_group("different_test"), wildcard);
+        return;
+    }
     if std::env::var_os("MTP_PROBE").is_some() {
         let error = run_per_environment(test, [1], |_| BTreeMap::<&str, &str>::new()).unwrap_err();
         assert!(error.to_string().contains("does not exist"), "{error}");
         return;
+    }
+    for (case, role) in [("selected", "specific"), ("*", "wildcard")] {
+        let output = TestProcess::current(test)
+            .unwrap()
+            .env_clear()
+            .env("MTP_CASE_PROBE", role)
+            .case(case)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
     }
     let output = TestProcess::current(test)
         .unwrap()
@@ -117,4 +140,41 @@ fn an_unknown_group_is_refused() {
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
+}
+
+/// Selection variables belong to the process owner, not its callers.
+fn assert_selection_owner() {
+    let crates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .to_owned();
+    let mut pending = vec![crates];
+    while let Some(path) = pending.pop() {
+        for entry in std::fs::read_dir(path).unwrap() {
+            let path = entry.unwrap().path();
+            if path.file_name().unwrap() == "maestro-test-process" {
+                continue;
+            }
+            if path.is_dir() {
+                pending.push(path);
+            } else if path.extension().is_some_and(|extension| extension == "rs") {
+                let source = std::fs::read_to_string(&path).unwrap();
+                assert!(
+                    !source.contains("MAESTRO_CHILD_CASE")
+                        && !source.contains("MAESTRO_TEST_GROUP"),
+                    "{} reads or writes the private child-selection protocol",
+                    path.display()
+                );
+            }
+        }
+    }
+}
+
+/// Parent and grouped-child roles dispatch groups without dispatching named cases.
+fn assert_group_selection(test: &str, child: bool) {
+    let selection = maestro_test_process::selection();
+    assert_eq!(selection.is_child(), child);
+    assert_eq!(selection.runs_case("any case"), !child);
+    assert!(selection.runs_group(test));
+    assert_eq!(selection.runs_group("different_test"), !child);
 }

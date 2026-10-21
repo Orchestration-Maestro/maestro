@@ -222,7 +222,7 @@ fn check_outside(test: &str, row: &Row) -> TestResult {
             .nocapture()
             .env_clear()
             .envs(variables.iter().copied())
-            .env("MAESTRO_CHILD_CASE", &row.id)
+            .case(&row.id)
             .output()?;
         assert!(output.status.success(), "{output:?}");
     };
@@ -295,10 +295,11 @@ pub fn check_rows(test: &str) -> TestResult {
     let all = parse_rows(FIXTURE)?;
     let owned: Vec<Row> = all.into_iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty(), "{test} owns no rows");
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         let row = owned
             .iter()
-            .find(|row| row.id == case)
+            .find(|row| case.runs_case(&row.id))
             .ok_or("unknown row")?;
         return crate::runtime::run(converse(row));
     }

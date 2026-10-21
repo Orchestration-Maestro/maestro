@@ -228,7 +228,7 @@ fn native_metadata_endpoint_chooses_ip_before_host() {
 
 #[test]
 fn metadata_detection_modes_choose_their_required_operations() {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         {
             let output = maestro_test_process::TestProcess::current(
                 "metadata_detection_modes_choose_their_required_operations",
@@ -236,7 +236,7 @@ fn metadata_detection_modes_choose_their_required_operations() {
             .unwrap()
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "probe")
+            .case("probe")
             .output()
             .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -291,7 +291,7 @@ fn metadata_detection_modes_choose_their_required_operations() {
 #[test]
 fn metadata_disable_wins_over_residency() {
     const TEST: &str = "metadata_disable_wins_over_residency";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let (fetch, urls) = super::recording(|_| Ok(super::google_response()));
         let effects = super::super::base_external_client::Effects {
             fetch,
@@ -317,7 +317,7 @@ fn metadata_disable_wins_over_residency() {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "disabled")
+            .case("disabled")
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
@@ -327,7 +327,7 @@ fn metadata_disable_wins_over_residency() {
 #[test]
 fn metadata_unknown_policy_admits_resident_without_probe() {
     const TEST: &str = "metadata_unknown_policy_admits_resident_without_probe";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let (fetch, urls) = super::recording(|_| panic!("resident host must not probe"));
         let effects = super::super::base_external_client::Effects {
             fetch,
@@ -350,7 +350,7 @@ fn metadata_unknown_policy_admits_resident_without_probe() {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "resident")
+            .case("resident")
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
@@ -360,9 +360,10 @@ fn metadata_unknown_policy_admits_resident_without_probe() {
 #[test]
 fn metadata_probe_result_is_kept_once_per_process() {
     const TEST: &str = "metadata_probe_result_is_kept_once_per_process";
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         super::run_paused(async {
-            let succeeds = case == "positive";
+            let succeeds = case.runs_case("positive");
             let (fetch, urls) = super::recording(move |_| {
                 succeeds
                     .then(super::google_response)
@@ -397,7 +398,7 @@ fn metadata_probe_result_is_kept_once_per_process() {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", case)
+                .case(case)
                 .output()
                 .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -407,7 +408,7 @@ fn metadata_probe_result_is_kept_once_per_process() {
 
 #[test]
 fn metadata_probe_requires_successful_google_flavor() {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         {
             let output = maestro_test_process::TestProcess::current(
                 "metadata_probe_requires_successful_google_flavor",
@@ -415,7 +416,7 @@ fn metadata_probe_requires_successful_google_flavor() {
             .unwrap()
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "probe")
+            .case("probe")
             .output()
             .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -454,7 +455,7 @@ fn wrong_flavor() -> HttpResponse {
 
 #[test]
 fn metadata_probe_uses_selected_deadline_and_retry_controls() {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         {
             let output = maestro_test_process::TestProcess::current(
                 "metadata_probe_uses_selected_deadline_and_retry_controls",
@@ -462,7 +463,7 @@ fn metadata_probe_uses_selected_deadline_and_retry_controls() {
             .unwrap()
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "probe")
+            .case("probe")
             .output()
             .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -488,7 +489,7 @@ fn metadata_probe_uses_selected_deadline_and_retry_controls() {
 
 #[test]
 fn metadata_default_candidates_accept_the_first_success() {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         {
             let output = maestro_test_process::TestProcess::current(
                 "metadata_default_candidates_accept_the_first_success",
@@ -496,7 +497,7 @@ fn metadata_default_candidates_accept_the_first_success() {
             .unwrap()
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "probe")
+            .case("probe")
             .output()
             .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -533,8 +534,12 @@ fn metadata_default_candidates_accept_the_first_success() {
 #[test]
 fn linux_residency_reads_serverless_dmi_and_network_prefix() {
     const TEST: &str = "linux_residency_reads_serverless_dmi_and_network_prefix";
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        assert_eq!(gcp_residency::detect_gcp_residency(), case != "none");
+    let case = maestro_test_process::selection();
+    if case.is_child() {
+        assert_eq!(
+            gcp_residency::detect_gcp_residency(),
+            !case.runs_case("none")
+        );
         return;
     }
     assert!(gcp_residency::is_google_compute_engine_linux(
@@ -564,7 +569,7 @@ fn linux_residency_reads_serverless_dmi_and_network_prefix() {
                     .nocapture()
                     .env_clear()
                     .envs([(name, value)].iter().copied())
-                    .env("MAESTRO_CHILD_CASE", "serverless")
+                    .case("serverless")
                     .output()
                     .unwrap();
                 assert!(output.status.success(), "{output:?}");

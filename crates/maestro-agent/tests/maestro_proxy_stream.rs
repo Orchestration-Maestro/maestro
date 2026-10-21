@@ -1466,12 +1466,12 @@ fn proxy_unknown_event_warns_and_continues() {
 /// Drive the scenario of `proxy_unknown_event_warns_and_continues` on the test runtime.
 async fn proxy_unknown_event_warns_and_continues_case() {
     const TEST: &str = "proxy_unknown_event_warns_and_continues";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "*")
+            .case("*")
             .output()
             .unwrap();
         let stderr = String::from_utf8_lossy(&output.stderr);

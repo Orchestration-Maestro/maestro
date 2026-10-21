@@ -13,7 +13,7 @@ pub(crate) fn current_name(test: &str) -> Result<String, TestProcessError> {
     let name = thread
         .name()
         .ok_or_else(|| TestProcessError::new(test, "the current thread is not a named test"))?;
-    if name != test && !name.ends_with(&format!("::{test}")) {
+    if !matches_name(name, test) {
         return Err(TestProcessError::new(
             test,
             format!("the selection does not match the running test {name}"),
@@ -78,6 +78,11 @@ fn lists(executable: &Path, test: &str, ignored: bool) -> Result<bool, TestProce
     Ok(String::from_utf8_lossy(&output.stdout)
         .lines()
         .any(|line| line == wanted))
+}
+
+/// Whether a full test identity matches a full name or its leaf at a module boundary.
+pub(crate) fn matches_name(name: &str, test: &str) -> bool {
+    name == test || name.ends_with(&format!("::{test}"))
 }
 
 #[cfg(test)]

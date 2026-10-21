@@ -302,7 +302,7 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
                 vars.iter()
                     .map(|(name, value)| (name.as_str(), value.as_str())),
             )
-            .env("MAESTRO_CHILD_CASE", &row.id)
+            .case(&row.id)
             .output()
     });
     origin.finish()?;
@@ -527,10 +527,11 @@ pub fn check(test: &str) -> TestResult {
         })
         .collect();
     assert!(!owned.is_empty(), "test owns no credential route rows");
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         let row = owned
             .into_iter()
-            .find(|row| row.id == case)
+            .find(|row| case.runs_case(&row.id))
             .ok_or("unknown route row")?;
         return crate::runtime::run(converse(row, supplied));
     }

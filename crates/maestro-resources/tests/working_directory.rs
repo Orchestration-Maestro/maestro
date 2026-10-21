@@ -13,7 +13,7 @@ use support::text;
 fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
     // Removing the process working directory would leave every other test in this
     // executable without one, so this test runs alone in a child process.
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         {
             let output = maestro_test_process::TestProcess::current(
                 "maestro_paths_resolve_absolute_paths_without_a_working_directory",
@@ -21,7 +21,7 @@ fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
             .unwrap()
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "removed-working-directory")
+            .case("removed-working-directory")
             .output()
             .unwrap();
             assert!(output.status.success(), "{output:?}");

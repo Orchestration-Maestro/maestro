@@ -510,7 +510,7 @@ async fn production_client_failures() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_reports_fetch_failures() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(production_client_failures());
     }
     crate::runtime::run_paused(scripted_failures())?;
@@ -519,7 +519,7 @@ fn maestro_http_reports_fetch_failures() -> TestResult {
             maestro_test_process::TestProcess::current("maestro_http_reports_fetch_failures")?
                 .nocapture()
                 .env_clear()
-                .env("MAESTRO_CHILD_CASE", "production")
+                .case("production")
                 .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
@@ -561,7 +561,7 @@ async fn default_fetch_exchange() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_default_fetch_sends_requests() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(default_fetch_exchange());
     }
     {
@@ -570,7 +570,7 @@ fn maestro_http_default_fetch_sends_requests() -> TestResult {
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "default")
+        .case("default")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
@@ -652,7 +652,7 @@ async fn wide_header_values_are_not_sent() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_preserves_header_octets() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(async {
             header_values_are_octets().await?;
             wide_header_values_are_not_sent().await
@@ -663,7 +663,7 @@ fn maestro_http_preserves_header_octets() -> TestResult {
             maestro_test_process::TestProcess::current("maestro_http_preserves_header_octets")?
                 .nocapture()
                 .env_clear()
-                .env("MAESTRO_CHILD_CASE", "default")
+                .case("default")
                 .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
@@ -744,7 +744,7 @@ async fn native_header_rejections_are_connection_failures() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_http_retries_native_header_rejections() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run_paused(native_header_rejections_are_connection_failures());
     }
     {
@@ -753,7 +753,7 @@ fn maestro_http_retries_native_header_rejections() -> TestResult {
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "native")
+        .case("native")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())

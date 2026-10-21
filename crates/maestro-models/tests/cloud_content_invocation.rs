@@ -231,14 +231,14 @@ fn cloud_owned_producer_keeps_lifetime_and_deadline_policy() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_local_and_threaded_registration_keep_hook_captures() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "cloud_local_and_threaded_registration_keep_hook_captures",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "cloud")
+            .case("cloud")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -256,14 +256,14 @@ fn cloud_raw_entry_uses_shared_response_reduction() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_call_counters_are_independent_between_entries() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "cloud_call_counters_are_independent_between_entries",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "counters")
+            .case("counters")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -319,14 +319,14 @@ mod routes;
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_root_and_registry_entries_dispatch() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "cloud_root_and_registry_entries_dispatch",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "roots")
+            .case("roots")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -338,14 +338,14 @@ fn cloud_root_and_registry_entries_dispatch() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_raw_options_preserve_declared_fields() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "cloud_raw_options_preserve_declared_fields",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "options")
+            .case("options")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
@@ -361,8 +361,9 @@ mod deadline;
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        return crate::runtime::run(deadline::delayed_refresh(case == "expired"));
+    let case = maestro_test_process::selection();
+    if case.is_child() {
+        return crate::runtime::run(deadline::delayed_refresh(case.runs_case("expired")));
     }
     for case in ["expired", "active"] {
         let files = crate::content_credentials::Files::new();
@@ -381,7 +382,7 @@ fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", case)
+            .case(case)
             .output()?;
             assert!(output.status.success(), "{output:?}");
         };

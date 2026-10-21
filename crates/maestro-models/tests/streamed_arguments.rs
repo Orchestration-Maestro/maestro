@@ -505,14 +505,14 @@ fn maestro_bounds_materialized_arguments() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_drops_extreme_argument_depth_safely() -> crate::chat::TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "maestro_drops_extreme_argument_depth_safely",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "depth")
+            .case("depth")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

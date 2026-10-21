@@ -59,7 +59,7 @@ fn native_metadata_acquires_and_refreshes_controlled_tokens() {
 #[test]
 fn adc_quota_override_reaches_generated_headers() {
     const TEST: &str = "adc_quota_override_reaches_generated_headers";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let expected = std::env::var("EXPECTED_QUOTA").unwrap();
         let client = super::super::super::ApiClient::new(
             "https://content.invalid".into(),
@@ -110,7 +110,7 @@ fn adc_quota_override_reaches_generated_headers() {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", "quota")
+                .case("quota")
                 .output()
                 .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -166,9 +166,10 @@ fn adc_errors_never_include_credential_material() {
 #[test]
 fn adc_without_files_falls_through_to_metadata() {
     const TEST: &str = "adc_without_files_falls_through_to_metadata";
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         let result = super::run(super::super::NodeAuth::default().headers());
-        if case == "metadata" {
+        if case.runs_case("metadata") {
             assert_eq!(result.unwrap()["authorization"], "Bearer metadata-access");
         } else {
             assert_eq!(result.err().unwrap().message, super::super::NO_CREDENTIALS);
@@ -209,7 +210,7 @@ fn adc_without_files_falls_through_to_metadata() {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", case)
+                .case(case)
                 .output()
                 .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -259,9 +260,10 @@ fn credentials_home(files: &super::Files, endpoint: &str) -> String {
 #[cfg_attr(not(unix), allow(unused_mut))]
 fn adc_file_order_prefers_nonempty_explicit_paths() {
     const TEST: &str = "adc_file_order_prefers_nonempty_explicit_paths";
-    if let Ok(expected) = std::env::var("MAESTRO_CHILD_CASE") {
+    let expected = maestro_test_process::selection();
+    if expected.is_child() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
-        assert_eq!(headers["x-goog-user-project"], expected);
+        assert!(expected.runs_case(&headers["x-goog-user-project"]));
         return;
     }
     let server = token_server();
@@ -305,17 +307,15 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
     ));
     for (expected, mut variables) in cases {
         variables.push(("HOME", home.as_str()));
-        {
-            let output = maestro_test_process::TestProcess::current(TEST)
-                .unwrap()
-                .nocapture()
-                .env_clear()
-                .envs(variables.iter().copied())
-                .env("MAESTRO_CHILD_CASE", expected)
-                .output()
-                .unwrap();
-            assert!(output.status.success(), "{output:?}");
-        };
+        let output = maestro_test_process::TestProcess::current(TEST)
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .envs(variables.iter().copied())
+            .case(expected)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
     }
     server.finish().unwrap();
 }
@@ -323,7 +323,7 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
 #[test]
 fn adc_selected_file_failures_do_not_fall_back() {
     const TEST: &str = "adc_selected_file_failures_do_not_fall_back";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let error = super::run(super::super::NodeAuth::default().headers())
             .err()
             .unwrap();
@@ -360,7 +360,7 @@ fn adc_selected_file_failures_do_not_fall_back() {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", index.to_string())
+                .case(index.to_string())
                 .output()
                 .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -532,9 +532,10 @@ fn assert_service_scope(authorization: &str) {
 #[test]
 fn adc_ordinary_and_external_sources_reach_native_builders() {
     const TEST: &str = "adc_ordinary_and_external_sources_reach_native_builders";
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
-        if case == "service" {
+        if case.runs_case("service") {
             assert_service_scope(&headers["authorization"]);
         } else {
             assert_eq!(headers["authorization"], "Bearer controlled-access");
@@ -561,7 +562,7 @@ fn adc_ordinary_and_external_sources_reach_native_builders() {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", name)
+                .case(name)
                 .output()
                 .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -576,7 +577,7 @@ fn adc_ordinary_and_external_sources_reach_native_builders() {
 #[test]
 fn native_sources_preserve_proxy_and_nested_transport_configuration() {
     const TEST: &str = "native_sources_preserve_proxy_and_nested_transport_configuration";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         assert_eq!(headers["authorization"], "Bearer controlled-access");
         return;
@@ -602,7 +603,7 @@ fn native_sources_preserve_proxy_and_nested_transport_configuration() {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", name)
+                .case(name)
                 .output()
                 .unwrap();
             assert!(output.status.success(), "{output:?}");
@@ -675,7 +676,7 @@ fn assert_impersonation_sources(token: &str, user: &serde_json::Value) {
 #[test]
 fn nested_impersonation_uses_the_retained_source_credentials() {
     const TEST: &str = "nested_impersonation_uses_the_retained_source_credentials";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let error = super::run(super::super::NodeAuth::default().headers())
             .err()
             .unwrap();
@@ -720,7 +721,7 @@ fn nested_impersonation_uses_the_retained_source_credentials() {
             .nocapture()
             .env_clear()
             .envs(variables.iter().copied())
-            .env("MAESTRO_CHILD_CASE", "source")
+            .case("source")
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
