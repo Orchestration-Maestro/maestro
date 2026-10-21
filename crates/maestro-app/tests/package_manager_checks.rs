@@ -5,8 +5,6 @@
 mod component_support;
 use crate::child as probe;
 use crate::package_fixtures as fixtures;
-#[path = "../../maestro-packages/tests/scratch/mod.rs"]
-mod scratch;
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, get_agent_dir};
 use maestro_app::output_guard::is_stdout_taken_over;
 use maestro_app::{
@@ -14,6 +12,7 @@ use maestro_app::{
     ResolvedPaths, ResolvedResource, SettingsManager,
 };
 use maestro_packages::{NativePackageOperations, PackageManagerOptions};
+use maestro_test_directory as scratch;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, fs, path::Path, rc::Rc};

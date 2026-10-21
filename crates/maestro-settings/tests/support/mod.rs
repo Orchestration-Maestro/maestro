@@ -1,7 +1,5 @@
 //! Shared helpers for the public-interface settings tests.
 
-#![allow(dead_code)]
-
 use maestro_test_process::{CheckedChild, CheckedStdout, TestProcess};
 use std::future::Future;
 use std::process::Output;
