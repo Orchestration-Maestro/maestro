@@ -88,6 +88,21 @@ fn pane_process_pty_bytes_skips_windows_powershell_prompt_cwd_when_disabled() {
     assert_eq!(result.reported_cwd, None);
 }
 
+/// Cells consumed by a prompt, including wide-character wrap spacers.
+fn prompt_cells(path: &std::path::Path) -> usize {
+    let text = format!("PS {}>", path.display());
+    let rows = u16::try_from(text.len().div_ceil(12) + 1).unwrap();
+    let mut terminal = Terminal::new(12, rows, 0).unwrap();
+    terminal.print_string(&text).unwrap();
+    let cursor = &terminal.screens.active().cursor;
+    usize::from(cursor.y) * 12 + usize::from(cursor.x) + usize::from(cursor.pending_wrap)
+}
+
+#[test]
+fn prompt_cells_includes_wide_character_wrap_spacer() {
+    assert_eq!(prompt_cells(std::path::Path::new("/tmp/abc界")), 15);
+}
+
 /// Native directories owned by one prompt test, without changing ambient cwd.
 struct PromptDirectories(std::path::PathBuf);
 
@@ -102,25 +117,24 @@ impl PromptDirectories {
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir(&root).unwrap();
-        assert!(root.to_str().unwrap().is_ascii());
         Self(root)
     }
 
     /// Keep twelve columns while accommodating unusually long temporary roots.
     fn rows(&self) -> u16 {
-        u16::try_from((self.0.to_str().unwrap().len() + 6).div_ceil(12).max(8)).unwrap()
+        u16::try_from((prompt_cells(&self.0) + 2).div_ceil(12).max(8)).unwrap()
     }
 
-    /// Create an ASCII directory whose default prompt occupies exactly these cells.
-    fn directory(&self, prompt_cells: usize) -> std::path::PathBuf {
+    /// Extend the native root with ASCII components to reach the requested prompt cells.
+    fn directory(&self, requested_cells: usize) -> std::path::PathBuf {
         let mut path = self.0.clone();
-        let target = prompt_cells - 4;
-        while path.to_str().unwrap().len() < target {
-            let remaining = target - path.to_str().unwrap().len();
+        while prompt_cells(&path) < requested_cells {
+            let remaining = requested_cells - prompt_cells(&path);
             let component = if remaining > 65 { 60 } else { remaining - 1 };
             path.push("x".repeat(component));
         }
         std::fs::create_dir_all(&path).unwrap();
+        assert_eq!(prompt_cells(&path), requested_cells);
         path
     }
 }
@@ -142,9 +156,23 @@ fn pane_process_pty_bytes_recovers_prompt_cwd_across_screen_capacity() {
         let pane = PaneTerminal::new(Terminal::new(12, rows, 100).unwrap());
         pane.set_windows_powershell_prompt_cwd_reporting(true);
         let result = pane.process_pty_bytes(PaneId::from_raw(1), 0, bytes.as_bytes(), || None);
-        if cells > capacity {
+        {
             let core = pane.core.lock().unwrap();
-            assert!(core.terminal.total_rows() > usize::from(rows));
+            if cells > capacity {
+                assert!(core.terminal.total_rows() > usize::from(rows));
+            }
+            assert_eq!(
+                core.terminal.total_rows(),
+                cells.div_ceil(12).max(usize::from(rows)),
+                "cells={cells}"
+            );
+            let cursor = &core.terminal.screens.active().cursor;
+            assert_eq!(
+                usize::from(cursor.x) + usize::from(cursor.pending_wrap),
+                (cells - 1) % 12 + 1,
+                "cells={cells}"
+            );
+            assert_eq!(cursor.pending_wrap, cells % 12 == 0, "cells={cells}");
         }
         assert_eq!(result.reported_cwd.as_ref(), Some(&cwd), "cells={cells}");
     }
