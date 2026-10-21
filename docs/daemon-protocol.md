@@ -83,6 +83,12 @@ four-byte little-endian payload length followed by standard bincode encoding.
 Readers enforce the caller-supplied maximum before allocation, reject trailing
 bytes and distinguish truncated streams from other I/O errors. The normal maximum
 is 2 MiB; explicitly selected graphics traffic has a separate 32 MiB constant.
+Decoder accounting is limited to eight times the received payload length rounded
+up to a power of two (at least one byte), saturating at the platform's addressable
+size. This allows compact integer encodings while rejecting excessive declared
+string lengths before allocation. The limit measures decoder accounting, not total
+heap usage. Serde caps each collection's speculative preallocation at 1 MiB;
+total storage for valid records can exceed the accounting.
 Version negotiation accepts 21 and rejects older/newer clients, including zero.
 
 `ClientKeybindings::Server` keeps server configuration. `Local` carries a typed
