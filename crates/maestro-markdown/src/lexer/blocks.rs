@@ -68,7 +68,6 @@ impl<E> Lexer<'_, E> {
         output: &mut BlockTokens,
         mut clipped: bool,
     ) {
-        let barriers = self.barriers.take();
         let mut cursor = 0;
         while cursor < source.text.len() && self.error.is_none() {
             let rest = source.view(cursor..source.text.len());
@@ -96,7 +95,6 @@ impl<E> Lexer<'_, E> {
             cursor += consumed;
         }
         self.top = true;
-        self.barriers = barriers;
     }
 
     /// Admit everything preceding paragraph and line-text fallback.

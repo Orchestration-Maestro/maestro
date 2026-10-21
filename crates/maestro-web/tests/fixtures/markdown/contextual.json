@@ -1105,19 +1105,33 @@
             "children": [
               {
                 "kind": "text",
-                "text": "before "
-              },
+                "text": "before `"
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "x"
+          },
+          {
+            "kind": "paragraph",
+            "children": [
               {
                 "kind": "code",
-                "text": "$$x$$"
-              },
+                "text": "after"
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "y"
+          },
+          {
+            "kind": "paragraph",
+            "children": [
               {
                 "kind": "text",
-                "text": " after\n"
-              },
-              {
-                "kind": "code",
-                "text": "\\[y\\]"
+                "text": "`"
               }
             ]
           }
@@ -1555,15 +1569,20 @@
         "children": [
           {
             "kind": "text",
-            "text": "before "
-          },
-          {
-            "kind": "code",
-            "text": "$$x$$"
-          },
+            "text": "before `"
+          }
+        ]
+      },
+      {
+        "kind": "math-block",
+        "text": "x"
+      },
+      {
+        "kind": "paragraph",
+        "children": [
           {
             "kind": "text",
-            "text": " after"
+            "text": "` after"
           }
         ]
       }
@@ -2083,15 +2102,27 @@
         "kind": "paragraph",
         "children": [
           {
+            "kind": "text",
+            "text": "<"
+          },
+          {
             "kind": "link",
             "children": [
               {
                 "kind": "text",
-                "text": "https://example.test/$$x$$"
+                "text": "https://example.test/"
               }
             ]
           }
         ]
+      },
+      {
+        "kind": "math-block",
+        "text": "x"
+      },
+      {
+        "kind": "quote",
+        "children": []
       }
     ]
   }

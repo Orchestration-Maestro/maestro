@@ -342,7 +342,7 @@ impl<'a> Tokenizer<'a> {
             .ok()
             .map(|text| {
                 let projected = if barrier {
-                    mask_source(text, self.options).0
+                    mask_source(text, self.options)
                 } else {
                     std::borrow::Cow::Borrowed(text)
                 };
@@ -402,97 +402,12 @@ fn mask_barrier(bytes: &mut [u8], range: Range<usize>) {
     }
 }
 
-/// Borrowed inline syntax that a block extension cannot split, scanned once from one start of
-/// a block source and reused at later starts whose own scan finds the same barriers.
-pub(crate) struct Barriers {
-    /// Block-source offset where the scan began.
-    start: usize,
-    /// Ordered, merged barriers in block-source coordinates.
-    ranges: Vec<Range<usize>>,
-    /// Ordered angle spans the escaped mask consumed whole, in block-source coordinates.
-    spans: Vec<Range<usize>>,
-}
-
-impl Barriers {
-    /// Scan the block source `text` from `start`.
-    pub(crate) fn scan(text: &str, start: usize, options: MarkedOptions) -> Self {
-        let text = &text[start..];
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.mask_bytes += text.len());
-        let (projected, spans) = mask_source(text, options);
-        let mut ranges = Vec::new();
-        if let Some(rule) = rules::inline_block_skip(options) {
-            ranges.extend(rule.find_iter(&projected).map(|matched| matched.range()));
-        }
-        let mut end = 0;
-        for (start, _) in projected.match_indices('[') {
-            if start >= end
-                && let Some(link) = Tokenizer::inline_link(&projected[start..], options)
-            {
-                end = start + link.consumed;
-                ranges.push(start..end);
-            }
-        }
-        ranges.sort_by_key(|range| range.start);
-        let mut merged: Vec<Range<usize>> = Vec::new();
-        for range in ranges {
-            if let Some(previous) = merged
-                .last_mut()
-                .filter(|previous| previous.end >= range.start)
-            {
-                previous.end = previous.end.max(range.end);
-            } else {
-                merged.push(range);
-            }
-        }
-        let shift = |range: Range<usize>| start + range.start..start + range.end;
-        Self {
-            start,
-            ranges: merged.into_iter().map(shift).collect(),
-            spans: spans.into_iter().map(shift).collect(),
-        }
-    }
-
-    /// Whether a scan from `start` would find exactly the barriers that begin there or later:
-    /// no barrier or mask span crosses it, and no backtick before it fails the code-span
-    /// lookbehind, the rules' only context before a match.
-    pub(crate) fn reusable_at(&self, text: &str, start: usize) -> bool {
-        start == self.start
-            || (start > self.start
-                && !crosses(&self.ranges, start)
-                && !crosses(&self.spans, start)
-                && text.as_bytes()[start - 1] != b'`')
-    }
-
-    /// The barrier containing the block-source offset `position`.
-    pub(crate) fn containing(&self, position: usize) -> Option<Range<usize>> {
-        let index = self.ranges.partition_point(|range| range.end <= position);
-        self.ranges
-            .get(index)
-            .filter(|range| range.contains(&position))
-            .cloned()
-    }
-}
-
-/// Whether one of the ordered, disjoint `ranges` starts before `position` and ends after it.
-fn crosses(ranges: &[Range<usize>], position: usize) -> bool {
-    let index = ranges.partition_point(|range| range.end <= position);
-    ranges
-        .get(index)
-        .is_some_and(|range| range.start < position)
-}
-
-/// Share the caller's literal-angle mask projection between delimiters and block hints, with
-/// the spans the mask consumed whole.
-fn mask_source(
-    text: &str,
-    options: MarkedOptions,
-) -> (std::borrow::Cow<'_, str>, Vec<Range<usize>>) {
+/// Project literal angles for inline delimiter masking.
+fn mask_source(text: &str, options: MarkedOptions) -> std::borrow::Cow<'_, str> {
     if options == (MarkedOptions::Browser { escape_html: true }) {
-        let (masked, spans) = super::html::literal_mask(text);
-        (std::borrow::Cow::Owned(masked), spans)
+        std::borrow::Cow::Owned(super::html::literal_mask(text))
     } else {
-        (std::borrow::Cow::Borrowed(text), Vec::new())
+        std::borrow::Cow::Borrowed(text)
     }
 }
 

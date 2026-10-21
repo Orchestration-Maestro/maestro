@@ -398,6 +398,71 @@ mod tests {
         }
     }
 
+    /// Ordered anchors and formula counts after block clipping.
+    const BLOCK_HINT_CASES: [(&str, &str, i32); 12] = [
+        (
+            "See [outer $$x$$ [inner](/in)](/out)",
+            r#"[["inner","/in"]]"#,
+            1,
+        ),
+        (
+            "See https://outer.example/[[a]$$x$$](/url)",
+            r#"[["https://outer.example/[[a]","https://outer.example/%5B%5Ba%5D"]]"#,
+            1,
+        ),
+        ("`[a` $$x$$ `z](/url)", "[]", 1),
+        (
+            "<https://a.test/[b> $$x$$ ](/url)",
+            r#"[["https://a.test/[b","https://a.test/%5Bb"]]"#,
+            1,
+        ),
+        (r#"p <i data-x="[a"> $$x$$ ](/url)"#, "[]", 1),
+        ("$[a$ $$x$$ z](/url)", "[]", 2),
+        ("p `$$x$$` tail", "[]", 1),
+        (
+            "See <https://a.test/$$x$$> tail",
+            r#"[["https://a.test/","https://a.test/"]]"#,
+            1,
+        ),
+        (r#"p <i data-x="$$x$$"> t"#, "[]", 1),
+        ("[a $$x$$](/ok)", "[]", 1),
+        (
+            "See [outer $$x$$ [inner][r]](/out)\n\n[r]: /in",
+            r#"[["inner","/in"]]"#,
+            1,
+        ),
+        (
+            "See [outer $$x$$ [r]](/out)\n\n[r]: /in",
+            r#"[["r","/in"]]"#,
+            1,
+        ),
+    ];
+
+    /// Block hints clip before later inline operands can accept their contents.
+    #[wasm_bindgen]
+    pub fn markdown_block_hints_precede_inline_acceptance() {
+        let mut surface = Surface::new();
+        for (source, links, formulas) in BLOCK_HINT_CASES {
+            for escape_html in [false, true] {
+                let mut block = MarkdownBlock::new(surface.host());
+                block.content = source.to_owned();
+                block.escape_html = escape_html;
+                surface.settle(&mut block);
+                assert_eq!(js("JSON.stringify(Array.from(maestro.root().querySelectorAll('a'), a => [a.textContent, a.getAttribute('href')]))").as_string().as_deref(), Some(links), "{source:?}, escape_html={escape_html}");
+                assert_eq!(
+                    js("maestro.root().querySelectorAll('.katex-display').length").as_f64(),
+                    Some(1.0),
+                    "{source:?}, escape_html={escape_html}"
+                );
+                assert_eq!(
+                    js("maestro.root().querySelectorAll('.katex').length").as_f64(),
+                    Some(f64::from(formulas)),
+                    "{source:?}, escape_html={escape_html}"
+                );
+            }
+        }
+    }
+
     /// Formula preparation retains document-wide reference destinations and titles.
     #[wasm_bindgen]
     pub fn markdown_math_preserves_document_references() {
@@ -414,23 +479,44 @@ mod tests {
         check("maestro.root().querySelector('.katex') !== null");
     }
 
-    /// Block-looking label punctuation stays literal beside a formula inside its anchor.
+    /// Inline label controls, including block-hint clipping targets.
+    const FORMULA_LABELS: [(&str, &str, &str); 10] = [
+        ("1. $x$", "#equation", "1. "),
+        ("# $x$", "u", "# "),
+        ("> $x$", "u", "> "),
+        ("# Results $x$", "/docs", "# Results "),
+        ("$a[b$ c]", "/docs", ""),
+        ("a $x$\nb", "/docs", "a "),
+        (r"\[ $x$ \]", "/docs", "[ "),
+        (r"\\[ $x$ ]", "/docs", "[ "),
+        (r"\\\[ $x$ \]", "/docs", r"\[ "),
+        (" $x$ ", "/docs", " "),
+    ];
+
+    /// Labels use inline grammar unless an earlier block hint clips their source.
     #[wasm_bindgen]
     pub fn markdown_formula_labels_use_inline_grammar() {
         let mut surface = Surface::new();
-        for (label, href, prefix) in [
-            ("1. $x$", "#equation", "1. "),
-            ("# $x$", "u", "# "),
-            ("> $x$", "u", "> "),
-            ("# Results $x$", "/docs", "# Results "),
-            ("$a[b$ c]", "/docs", ""),
-            ("a $x$\nb", "/docs", "a "),
-            (r"\[ $x$ \]", "/docs", "[ "),
-            (r"\\[ $x$ ]", "/docs", "[ "),
-            (r"\\\[ $x$ \]", "/docs", r"\[ "),
-            (" $x$ ", "/docs", " "),
-        ] {
+        for (label, href, prefix) in FORMULA_LABELS {
             let block = surface.markdown(&format!("[{label}]({href} \"tip\")"));
+            if label.contains("\\[") {
+                check("maestro.root().querySelectorAll('a').length === 0");
+                let display = u32::from(label.ends_with("\\]"));
+                assert_eq!(
+                    js("maestro.root().querySelectorAll('.maestro-math-block').length").as_f64(),
+                    Some(f64::from(display))
+                );
+                assert_eq!(
+                    js("maestro.root().querySelectorAll('.katex').length").as_f64(),
+                    Some(if display == 0 { 1.0 } else { 0.0 })
+                );
+                assert_eq!(
+                    js("maestro.root().querySelectorAll('.katex-error').length").as_f64(),
+                    Some(f64::from(display))
+                );
+                drop(block);
+                continue;
+            }
             publish("labelHref", &href.into());
             publish("labelPrefix", &prefix.into());
             assert_eq!(
