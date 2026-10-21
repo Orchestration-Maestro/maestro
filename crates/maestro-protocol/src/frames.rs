@@ -660,7 +660,10 @@ pub fn write_message<W: Write, M: Serialize>(writer: &mut W, msg: &M) -> Result<
 ///
 /// Reassembles partial reads correctly. Rejects frames whose declared
 /// length exceeds `max_frame_size` without panicking or allocating
-/// oversized buffers.
+/// oversized buffers. The string lengths a payload declares count together
+/// against the smallest frame cap that holds the payload (`MAX_FRAME_SIZE`,
+/// then `MAX_GRAPHICS_FRAME_SIZE`, then `u32::MAX` bytes); a string past that
+/// cap fails decoding before it is allocated.
 ///
 /// # Errors
 /// Returns an oversized, I/O, truncated-stream or binary decoding error.
@@ -684,8 +687,14 @@ pub fn read_message<R: Read, M: for<'de> Deserialize<'de>>(
     let mut payload = vec![0u8; claimed_len];
     read_exact_or_eof(reader, &mut payload)?;
 
-    let (msg, consumed) = bincode::serde::decode_from_slice(&payload, bincode::config::standard())
-        .map_err(|e| FramingError::Bincode(e.to_string()))?;
+    let decoded = if claimed_len <= MAX_FRAME_SIZE {
+        decode_payload::<M, MAX_FRAME_SIZE>(&payload)
+    } else if claimed_len <= MAX_GRAPHICS_FRAME_SIZE {
+        decode_payload::<M, MAX_GRAPHICS_FRAME_SIZE>(&payload)
+    } else {
+        decode_payload::<M, { u32::MAX as usize }>(&payload)
+    };
+    let (msg, consumed) = decoded.map_err(|e| FramingError::Bincode(e.to_string()))?;
 
     // Enforce that the decoder consumed the full payload.
     // Trailing bytes after the decoded message indicate a protocol violation
@@ -697,6 +706,14 @@ pub fn read_message<R: Read, M: for<'de> Deserialize<'de>>(
     }
 
     Ok(msg)
+}
+
+/// Decodes `payload`, failing once its declared string lengths total more
+/// than `LIMIT` bytes; bincode takes the limit only as a constant.
+fn decode_payload<M: for<'de> Deserialize<'de>, const LIMIT: usize>(
+    payload: &[u8],
+) -> Result<(M, usize), bincode::error::DecodeError> {
+    bincode::serde::decode_from_slice(payload, bincode::config::standard().with_limit::<LIMIT>())
 }
 
 /// Like `Read::read_exact`, but returns `FramingError::UnexpectedEof`
