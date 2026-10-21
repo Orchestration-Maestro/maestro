@@ -50,7 +50,7 @@ fuzz_target!(|data: &[u8]| {
     for options in GRAMMARS {
         black_box(parse_with_options(source.to_owned(), options));
     }
-    // The assistant reply's settings; no environment, so images render as text.
+    // The assistant reply's settings; no environment, so links render without terminal hyperlinks.
     let reply = Markdown::new(
         source.to_owned(),
         MarkdownOptions {

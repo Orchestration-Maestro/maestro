@@ -420,7 +420,8 @@ machine load. Each defect seed exceeds the timeout or the stack.
 
 ### Run one target locally
 
-You need Linux, a nightly Rust toolchain and cargo-fuzz:
+You need Linux or macOS on x86-64 or Aarch64, a C++ compiler with C++11
+support, a nightly Rust toolchain and cargo-fuzz:
 
 ```sh
 rustup toolchain install nightly
