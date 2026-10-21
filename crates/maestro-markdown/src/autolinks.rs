@@ -8,6 +8,13 @@ use crate::{
 use regress::Regex;
 use std::{collections::HashMap, ops::Range, sync::LazyLock};
 
+/// The email local-part class shared by the candidate, scan and membership rules.
+macro_rules! email_local_part {
+    () => {
+        "[A-Za-z0-9._+-]"
+    };
+}
+
 /// Web, earlier-grammar web and email candidate sources with their flags; earlier caller
 /// grammars fold the complete protocol and web prefix, and emails are scanned
 /// independently of rejected web spans.
@@ -17,14 +24,20 @@ const SOURCES: [(&str, &str); 3] = [
         "",
     ),
     (r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i"),
-    (r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+", ""),
+    (
+        concat!(
+            email_local_part!(),
+            r"+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+"
+        ),
+        "",
+    ),
 ];
 /// Candidate rules with a non-address alternative consuming failed email-local runs.
 static SCAN: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
     std::array::from_fn(|index| {
         let (source, flags) = SOURCES[index];
         let source = if index == 2 {
-            format!("({source})|{}+", source.split_inclusive(']').next()?)
+            format!("({source})|{}+", email_local_part!())
         } else {
             source.to_owned()
         };
@@ -35,9 +48,9 @@ static SCAN: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
 static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
     SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
 });
-/// Email local-part membership comes from the candidate's leading character class.
+/// Email local-part membership for one character.
 static EMAIL_LOCAL_PART: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(&format!("^{}$", SOURCES[2].0.split_inclusive(']').next()?)).ok());
+    LazyLock::new(|| Regex::new(concat!("^", email_local_part!(), "$")).ok());
 /// Accepted URL prefixes exclude trailing punctuation and unmatched opening parentheses.
 static BACKPEDAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::new(r#"(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+"#).ok()
