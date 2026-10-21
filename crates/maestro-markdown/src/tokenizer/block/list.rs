@@ -1,6 +1,10 @@
 //! List admission and item continuation framing.
 use crate::{
-    Kind, MarkedOptions, Node, inline::ScopeKey, lexer::Lexer, rules, source::Segmented,
+    Kind, MarkedOptions, Node,
+    inline::ScopeKey,
+    lexer::Lexer,
+    rules,
+    source::{ScopeSource, Segmented},
     tokenizer::capture,
 };
 use maestro_text::is_whitespace_scalar;
@@ -135,25 +139,47 @@ pub(crate) struct ListState {
     item_start: usize,
     /// Completed item admission states, preserving callback replay order.
     completed: Vec<ItemLines>,
-    /// Final promotion policy, applied when child nodes become observable.
-    loose: bool,
 }
 
 impl ListState {
+    /// Complete the trailing item and admit the next marker's first line; nested items
+    /// recurse through the list driver, so the replaced states stay out of its frame.
+    fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
+        let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
+        self.completed.push(previous);
+    }
+
     /// Transfer each child's single output into its final item without cloning it.
     pub(crate) fn finish(mut self, items: &mut [Node], scopes: &mut HashMap<ScopeKey, Segmented>) {
-        for (item, node) in self
+        let following = self.completed.len();
+        let mut outputs = Vec::with_capacity(following + 1);
+        let mut loose = false;
+        for (index, item) in self
             .completed
             .iter_mut()
             .chain(std::iter::once(&mut self.item))
-            .zip(items)
+            .enumerate()
         {
-            item.output.complete();
-            scopes.extend(std::mem::take(&mut item.output.scopes));
+            let output = item.child.finish(task(item.body()).1);
+            loose |= index < following && item.blank_end()
+                || output.nodes.iter().any(|node| {
+                    matches!(node.kind, Kind::Gap)
+                        && node
+                            .authored
+                            .chunks()
+                            .flat_map(str::bytes)
+                            .filter(|byte| *byte == b'\n')
+                            .count()
+                            > 1
+                });
+            outputs.push(output);
+        }
+        for (output, node) in outputs.into_iter().zip(items) {
+            scopes.extend(output.scopes);
             if let Kind::Item(children) = &mut node.kind {
-                *children = std::mem::take(&mut item.output.nodes);
+                *children = output.nodes;
             }
-            if self.loose {
+            if loose {
                 loosen(node);
             }
         }
@@ -180,7 +206,6 @@ impl<E> Lexer<'_, E> {
             item,
             item_start: 0,
             completed: Vec::new(),
-            loose: false,
         });
         self.list_tail(source, state, offset)
     }
@@ -204,11 +229,8 @@ impl<E> Lexer<'_, E> {
         mut offset: usize,
     ) -> Option<(usize, Node, Box<ListState>)> {
         let mut items = Vec::with_capacity(state.completed.len() + 1);
-        let mut loose = false;
         for item in &mut state.completed {
-            let (node, item_loose) = self.list_item(item, true)?;
-            loose |= item_loose;
-            items.push(node);
+            items.push(self.list_item(item, true)?);
         }
         let mut pending = crate::source::Cursor::default();
         pending.segmented(source.select(offset..source.len()));
@@ -221,18 +243,12 @@ impl<E> Lexer<'_, E> {
             let Some(next) = marker(&line.text).filter(|next| next.follows(&state.first)) else {
                 break;
             };
-            let (item, item_loose) = self.list_item(&mut state.item, true)?;
-            loose |= item_loose;
-            items.push(item);
+            items.push(self.list_item(&mut state.item, true)?);
             state.item_start = offset;
-            let previous =
-                std::mem::replace(&mut state.item, ItemLines::new(&line, &next, self.options));
-            state.completed.push(previous);
+            state.begin(&line, &next, self.options);
             offset += next.line;
         }
-        let (item, item_loose) = self.list_item(&mut state.item, false)?;
-        items.push(item);
-        state.loose = loose || item_loose;
+        items.push(self.list_item(&mut state.item, false)?);
         let end = state.item_start + state.item.raw_end();
         let raw = source.select(0..end);
         let node = Node {
@@ -243,45 +259,21 @@ impl<E> Lexer<'_, E> {
         Some((end, node, state))
     }
 
-    /// Replay child admission while retaining its output for final publication.
-    fn list_item(&mut self, item: &mut ItemLines, following: bool) -> Option<(Node, bool)> {
-        let (mut body, task) = task(item.body());
+    /// Admit the item's grown child operand and publish its provisional wrapper.
+    fn list_item(&mut self, item: &mut ItemLines, following: bool) -> Option<Node> {
+        let (mut body, _) = task(item.body());
+        let prefix = item.body().len() - body.len();
         if !following {
             let trimmed = item.body().len() - item.body_end();
             body.truncate(body.len().saturating_sub(trimmed));
         }
-        self.item_blocks(&body, &mut item.output);
-        if let Some(checked) = task {
-            let end = body.native(&(0..body.len())).map_or(0, |range| range.end);
-            item.output.nodes.insert(
-                0,
-                Node {
-                    authored: body.select(0..0).mapped(),
-                    range: end..end,
-                    kind: Kind::TaskListMarker(checked),
-                },
-            );
-        }
+        self.item_blocks(&body, prefix, &mut item.child);
         let raw = item.raw();
-        let loose = following && item.blank_end()
-            || item.output.nodes.iter().any(|node| {
-                matches!(node.kind, Kind::Gap)
-                    && node
-                        .authored
-                        .chunks()
-                        .flat_map(str::bytes)
-                        .filter(|byte| *byte == b'\n')
-                        .count()
-                        > 1
-            });
-        Some((
-            Node {
-                authored: raw.mapped(),
-                range: raw.native(&(0..raw.len()))?,
-                kind: Kind::Item(Vec::new()),
-            },
-            loose,
-        ))
+        Some(Node {
+            authored: raw.mapped(),
+            range: raw.native(&(0..raw.len()))?,
+            kind: Kind::Item(Vec::new()),
+        })
     }
 }
 

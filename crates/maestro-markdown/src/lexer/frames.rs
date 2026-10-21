@@ -1,9 +1,12 @@
 //! Quote chunk suspension and container-tail resumption.
 use super::{Lexer, blocks::BlockTokens, quote::quote_source};
 use crate::{
-    Kind, Node, rules,
+    Kind, Node,
+    inline::ScopeKey,
+    rules,
     source::{Cursor, ScopeSource, Segmented},
 };
+use std::collections::HashMap;
 
 /// Retained quote invocation state across nested block admission.
 struct QuoteFrame {
@@ -50,11 +53,13 @@ impl<E> Lexer<'_, E> {
         if crate::source::strip_quote(&first.text).len() == first.text.len() {
             return None;
         }
+        let segmented = source;
         let raw = source.materialize();
         let source = &raw.view(0..raw.text.len());
         #[cfg(test)]
         crate::tests::block_operand(source.text);
         let matched = rules::block_blockquote(self.options)?.find(source.text)?;
+        self.undecided |= !segmented.settled_after(matched.end());
         let limit = source.text[matched.range()].trim_end_matches('\n').len();
         let (raw, node, _) = self.quote_frame(source.select(std::iter::once(0..limit)).into())?;
         let consumed = source.local(&raw.native(&(0..raw.len()))?)?.end;
@@ -105,7 +110,7 @@ impl<E> Lexer<'_, E> {
         }
         let top = self.top;
         self.top = true;
-        self.block_tokens(&chunk.clone().into(), &mut frame.output, true);
+        self.block_tokens(&chunk.clone().into(), &mut frame.output, true, None);
         self.top = top;
         frame.text.append(&chunk.into());
         frame.finished = frame.pending.is_empty()
@@ -134,7 +139,7 @@ impl<E> Lexer<'_, E> {
         };
         joined.newline();
         joined.append(&std::mem::take(&mut frame.pending).seal());
-        self.forget(&old);
+        forget(&mut self.scopes, &old);
         frame.text.truncate(prefix);
         if matches!(old.kind, Kind::Quote(..)) {
             frame.finished = true;
@@ -179,27 +184,25 @@ impl<E> Lexer<'_, E> {
         frame.list_separator = true;
         Some(())
     }
+}
 
-    /// Release inline scopes of replaced containers before callback replay admission.
-    pub(super) fn forget(&mut self, node: &Node) {
-        match &node.kind {
-            Kind::Paragraph(_) | Kind::Inline(_) | Kind::Heading(..) => {
-                self.scopes
-                    .remove(&(node.range.start, node.range.end, false));
-            }
-            Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
-                for child in children {
-                    self.forget(child);
-                }
-            }
-            Kind::Table(table) => {
-                for cell in table.header.iter().chain(table.rows.iter().flatten()) {
-                    self.scopes
-                        .remove(&(cell.range.start, cell.range.end, false));
-                }
-            }
-            _ => {}
+/// Release the inline scopes of a replaced or re-admitted node and its descendants.
+pub(super) fn forget<T>(scopes: &mut HashMap<ScopeKey, T>, node: &Node) {
+    match &node.kind {
+        Kind::Paragraph(_) | Kind::Inline(_) | Kind::Heading(..) => {
+            scopes.remove(&(node.range.start, node.range.end, false));
         }
+        Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
+            for child in children {
+                forget(scopes, child);
+            }
+        }
+        Kind::Table(table) => {
+            for cell in table.header.iter().chain(table.rows.iter().flatten()) {
+                scopes.remove(&(cell.range.start, cell.range.end, false));
+            }
+        }
+        _ => {}
     }
 }
 

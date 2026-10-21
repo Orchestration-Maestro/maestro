@@ -735,9 +735,12 @@ are not a format. `to_owned_string() -> String` explicitly materializes them.
 implicit contiguous accessor, `Deref<str>` or per-node flattened cache.
 
 Reply-quote work and retained storage grow linearly in input bytes, admitted
-nodes and mapping records, excluding requested output bytes. List-item admission
-and open leaf state must survive quote resumption over the same shared source
-handles, without re-admitting completed prefixes. Caller block tokenizers
+nodes and mapping records, excluding requested output bytes. A list item keeps
+its admission state and block output across quote resumption over the same
+shared source handles. Only blocks whose grammar read the item's current end
+are admitted again; open indented code continues from its last line. A caller
+block tokenizer reads the whole remaining item, so when one is present every
+resumption admits the item again. Caller block tokenizers
 receive the same contiguous operands in the same order, including repeated
 admissions. Materializing those operands is caller-requested output work,
 charged separately from parser work; contiguous source operands are borrowed.

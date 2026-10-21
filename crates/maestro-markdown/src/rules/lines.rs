@@ -10,22 +10,7 @@ pub(crate) trait Input {
     fn chunks(&self, range: Range<usize>) -> impl Iterator<Item = &str>;
 
     /// Borrow contiguous grammar operands and join only a split window.
-    fn window(&self, range: Range<usize>) -> Cow<'_, str> {
-        let mut chunks = self.chunks(range.clone());
-        let first = chunks.next().unwrap_or("");
-        let Some(second) = chunks.next() else {
-            return Cow::Borrowed(first);
-        };
-        let mut text = String::with_capacity(range.len());
-        text.push_str(first);
-        text.push_str(second);
-        for chunk in chunks {
-            text.push_str(chunk);
-        }
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.joined_bytes += text.len());
-        Cow::Owned(text)
-    }
+    fn window(&self, range: Range<usize>) -> Cow<'_, str>;
 }
 
 impl Input for str {
@@ -35,6 +20,10 @@ impl Input for str {
 
     fn chunks(&self, range: Range<usize>) -> impl Iterator<Item = &str> {
         std::iter::once(&self[range])
+    }
+
+    fn window(&self, range: Range<usize>) -> Cow<'_, str> {
+        Cow::Borrowed(&self[range])
     }
 }
 
@@ -46,10 +35,22 @@ impl Input for crate::source::Segmented {
     fn chunks(&self, range: Range<usize>) -> impl Iterator<Item = &str> {
         self.chunks_in(range)
     }
+
+    fn window(&self, range: Range<usize>) -> Cow<'_, str> {
+        let mut chunks = self.chunks_in(range.clone());
+        let first = chunks.next().unwrap_or("");
+        if chunks.next().is_none() {
+            return Cow::Borrowed(first);
+        }
+        let text = self.mapped().select(range).to_owned_string();
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.joined_bytes += text.len());
+        Cow::Owned(text)
+    }
 }
 
 /// Offsets into an append-only operand, with no borrowed or copied source.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct Cursor {
     /// Bytes already searched for a newline.
     scanned: usize,

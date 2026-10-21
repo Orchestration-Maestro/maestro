@@ -63,8 +63,12 @@ fn container_definition_lookahead_keeps_later_title_lines() {
     }
     let prefix = "[a]: /x\n\"title\n";
     let full = "[a]: /x\n\"title\ncontinued\"\n\n[a]";
-    let partial = crate::rules::definition::recognize(prefix, MarkedOptions::Terminal).unwrap();
-    let complete = crate::rules::definition::recognize(full, MarkedOptions::Terminal).unwrap();
+    let partial = crate::rules::definition::recognize(prefix, MarkedOptions::Terminal)
+        .0
+        .unwrap();
+    let complete = crate::rules::definition::recognize(full, MarkedOptions::Terminal)
+        .0
+        .unwrap();
     assert!(partial.consumed < prefix.len());
     assert_ne!(partial.consumed, complete.consumed);
     for source in ["[a]: /x\nplain\n", "[a]: /x\nplain\ncontinued\n\n[a]"] {
@@ -589,14 +593,10 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
     }
 }
 
-/// Account for all capacities reachable in the reply document, not overlapping view lengths.
-fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
+/// Charge every allocation reachable from a parsed document once, not overlapping view lengths.
+fn retained_document(document: &crate::Document) -> super::Retained {
     use std::mem::size_of;
-    let document = crate::parse(reply_source(lines, cycle));
-    let nodes = observe_reply(&document, lines);
-    assert!(document.definitions.is_empty());
     let mut retained = super::Retained::default();
-    retained.nodes = nodes;
     retained.bytes += document.source.capacity()
         + document.scopes.capacity()
             * size_of::<(crate::inline::ScopeKey, crate::source::ScopeSource)>();
@@ -607,20 +607,39 @@ fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
     while let Some(nodes) = pending.pop() {
         retained.bytes += nodes.capacity() * size_of::<Node>();
         for node in nodes {
+            retained.nodes += 1;
             node.authored.retained(&mut retained);
             match &node.kind {
                 Kind::Quote(children, body) => {
                     body.retained(&mut retained);
                     pending.push(children);
                 }
-                Kind::Paragraph(children) => pending.push(children),
+                Kind::Paragraph(children)
+                | Kind::Inline(children)
+                | Kind::List(_, children)
+                | Kind::Item(children) => pending.push(children),
                 Kind::Text(text) => {
                     retained.bytes += text.authored.capacity() + text.decoded.capacity();
                 }
-                _ => panic!("unexpected reply payload"),
+                Kind::CodeBlock(body, language) => {
+                    retained.bytes +=
+                        body.capacity() + language.as_ref().map_or(0, String::capacity);
+                }
+                _ => {}
             }
         }
     }
+    retained
+}
+
+/// Account for the reply document within its affine storage bound.
+fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
+    use std::mem::size_of;
+    let document = crate::parse(reply_source(lines, cycle));
+    let nodes = observe_reply(&document, lines);
+    assert!(document.definitions.is_empty());
+    let retained = retained_document(&document);
+    assert_eq!(retained.nodes, nodes);
     // Source/semantic copies use eight input-byte slots. Geometric capacities
     // reserve four node/scope slots and four view/provenance slots per record.
     let bound = 8 * document.source.len()
@@ -647,6 +666,37 @@ fn reply_quote_retained_bytes_grow_linearly_symptom_witness() {
     for cycle in [3, 40] {
         let bytes = [120, 240, 480].map(|lines| retained_reply(lines, cycle).bytes);
         eprintln!("cycle={cycle} retained payload={bytes:?}");
+    }
+}
+
+#[test]
+fn resumed_list_retained_storage_grows_linearly() {
+    let samples = [32, 64, 128].map(|n| {
+        let document = crate::parse(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n)));
+        let Kind::Quote(children, _) = &document.nodes[0].kind else {
+            panic!("quote")
+        };
+        let Kind::List(_, items) = &children[0].kind else {
+            panic!("list")
+        };
+        let Kind::Item(blocks) = &items[0].kind else {
+            panic!("item")
+        };
+        let key = (blocks[0].range.start, blocks[0].range.end, false);
+        assert_eq!(document.scopes[&key].text.matches('p').count(), n);
+        let retained = retained_document(&document);
+        [
+            retained.source_bytes,
+            retained.mapping_records,
+            retained.nodes,
+            retained.bytes,
+        ]
+    });
+    eprintln!("unique source, mapping records, nodes, retained payload: {samples:?}");
+    for pair in samples.windows(2) {
+        for (previous, next) in pair[0].iter().zip(pair[1]) {
+            assert!(next <= 3 * previous, "{samples:?}");
+        }
     }
 }
 

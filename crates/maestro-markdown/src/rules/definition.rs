@@ -158,11 +158,12 @@ impl Recognizer {
     }
 }
 
-/// Recognize a complete caller operand through the same retained grammar.
+/// Recognize a complete caller operand through the same retained grammar, reporting
+/// whether the operand's final boundary decided the result.
 pub(crate) fn recognize(
     source: &(impl super::lines::Input + ?Sized),
     options: MarkedOptions,
-) -> Option<Definition> {
+) -> (Option<Definition>, bool) {
     let mut recognizer = Recognizer::new(options);
     let scalars = source.chunks(0..source.len()).flat_map(|chunk| {
         chunk
@@ -171,10 +172,10 @@ pub(crate) fn recognize(
     });
     for scalar in scalars {
         if let Verdict::Stable(result) = recognizer.extend(scalar) {
-            return result;
+            return (result, false);
         }
     }
-    recognizer.finish()
+    (recognizer.finish(), true)
 }
 
 impl Candidate {

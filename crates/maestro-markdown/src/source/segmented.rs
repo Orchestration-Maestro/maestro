@@ -102,6 +102,21 @@ impl Segmented {
         self.materialize()
     }
 
+    /// Whether the first non-whitespace scalar from `offset` lies on a terminated line, so
+    /// grammar that stopped before it never read this operand's apparent end.
+    pub(crate) fn settled_after(&self, offset: usize) -> bool {
+        let mut content = false;
+        for scalar in self.chunks_in(offset..self.len()).flat_map(str::chars) {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += scalar.len_utf8());
+            if scalar == '\n' && content {
+                return true;
+            }
+            content |= !maestro_text::is_whitespace_scalar(scalar);
+        }
+        false
+    }
+
     /// Select logical bytes while retaining their shared projection.
     pub(crate) fn select(&self, range: Range<usize>) -> Self {
         Self {

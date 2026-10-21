@@ -9,7 +9,7 @@ pub(crate) enum Verdict {
 }
 
 /// Monotone input framing with no retained authored copy.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct Recognizer {
     /// Shared monotone physical-line framing.
     lines: super::lines::Cursor,

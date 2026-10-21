@@ -105,6 +105,11 @@ impl MappedText {
         self.last_byte == Some(b'\n')
     }
 
+    /// Final byte, read without visiting chunks.
+    pub(crate) fn last_byte(&self) -> Option<u8> {
+        self.last_byte
+    }
+
     /// Extend authored spelling without copying the retained prefix.
     pub(crate) fn append(&mut self, other: &Self) {
         if !other.is_empty() {

@@ -67,8 +67,11 @@ names the original document source, not its container-local spelling.
 Documents, list items and quote chunks share one block accumulator. Quotes
 suspend and resume through retained source handles. Quote reentry retains the
 trailing container's own raw source and its ancestor's unconsumed remainder.
-List admission and open leaf state must survive quote resumption over shared
-source handles without re-admitting completed prefixes. Semantic text can change spelling or be empty
+A list item keeps its admission state and block output while its quote
+resumes. Only blocks whose grammar read the item's current end are admitted
+again, and open indented code continues from its last line. A caller block
+tokenizer reads the whole remaining item, so when one is present every
+resumption admits the item again. Semantic text can change spelling or be empty
 without erasing raw consumption. Code continuations reuse one indentation-removal
 operation; definitions continuing paragraph or item text stay literal instead
 of entering the reference index.

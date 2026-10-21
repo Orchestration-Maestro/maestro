@@ -2,7 +2,7 @@
 use super::{ItemRules, Marker};
 use crate::{
     MarkedOptions,
-    lexer::BlockTokens,
+    lexer::Child,
     source::{ScopeSource, Segmented},
 };
 use maestro_text::{is_whitespace_scalar, truncate_utf16};
@@ -46,8 +46,8 @@ enum Padding {
 
 /// One item's admission state, independent of its provisional block publication.
 pub(super) struct ItemLines {
-    /// Child output retained until the owning list's final publication.
-    pub(super) output: BlockTokens,
+    /// Child invocation retained until the owning list's final publication.
+    pub(super) child: Child,
     /// Admitted physical spelling, including trailing whitespace.
     raw: Segmented,
     /// Dedented spelling selected from the same shared source.
@@ -96,7 +96,7 @@ impl ItemLines {
             padding: Padding::Authored,
         };
         Self {
-            output: BlockTokens::default(),
+            child: Child::default(),
             raw: source.clone().into(),
             body: body.into(),
             raw_end: source.text.trim_end_matches(is_whitespace_scalar).len(),

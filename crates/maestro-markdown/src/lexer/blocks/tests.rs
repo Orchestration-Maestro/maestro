@@ -10,6 +10,7 @@ fn lexer() -> Lexer<'static, Infallible> {
         error: None,
         top: true,
         clipped: false,
+        undecided: false,
         context: tokenizer::inline::LinkContext::new(false),
         options: MarkedOptions::Terminal,
         definitions: HashMap::new(),
@@ -22,7 +23,7 @@ fn list_children_publish_scopes_at_their_invocation_boundary() {
     let source = ScopeSource::identity("- é\n- [X] β");
     let mut lexer = lexer();
     let mut output = BlockTokens::default();
-    lexer.block_tokens(&source.into(), &mut output, false);
+    lexer.block_tokens(&source.into(), &mut output, false, None);
     assert!(lexer.scopes.is_empty(), "provisional item scopes escaped");
     let nodes = lexer.finish_blocks(output);
     assert_eq!(lexer.scopes.len(), 2);
@@ -58,6 +59,7 @@ fn block_accumulator_retains_inline_operands_until_publication() {
                 &source.select(std::iter::once(line)).into(),
                 &mut output,
                 true,
+                None,
             );
         }
         let copied = crate::tests::WORK.with_borrow(|work| work.source_bytes + work.joined_bytes);
