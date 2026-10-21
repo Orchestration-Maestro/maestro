@@ -60,7 +60,7 @@ these permissions for normal, build, optional and foreign-target declarations.
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
 The binary composition root, conventions checker, terminal scenario harness,
-checked test-process owner, disposable test-directory owner, repository tooling and the feature unifier
+checked test-process owner, disposable test-directory owner, test tracing owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the native-only
@@ -95,7 +95,9 @@ owner is reachable only through those native development edges, has no outgoing
 domain edge and is never admitted by a `maestro-test-*` name pattern.
 The directory owner follows the same native-only declaration checks, with its
 own exact eight-caller list and no outgoing domain or utility edge; see the
-[directory contract](specs/maestro-port.md#test-directory-owner). The scenario harness
+[directory contract](specs/maestro-port.md#test-directory-owner). The tracing owner
+follows the same checks with its own two callers; see the
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
 is not a reusable test-support dependency. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
