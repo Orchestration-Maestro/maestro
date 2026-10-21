@@ -1,10 +1,10 @@
 //! Scoped tracing subscribers for tests.
 //!
-//! `tracing` decides once, for the whole process, whether a callsite is enabled,
-//! when a thread first reaches it. While only one subscriber is registered, it
-//! asks only the reaching thread's own subscriber. So when a test captures events
-//! through a scoped subscriber and a sibling test thread without one reaches the
-//! same callsite first, the callsite stays off and the capture misses its events.
+//! `tracing` caches callsite interest process-wide and rebuilds it when
+//! dispatchers register or the interest cache is explicitly rebuilt. While only
+//! one subscriber is registered, it asks only the registering thread's own
+//! subscriber. A sibling test thread without a subscriber can therefore cache
+//! disabled interest for a callsite and prevent scoped capture until a rebuild.
 //! [`with_default`] keeps a second subscriber registered, so every live
 //! subscriber is asked.
 

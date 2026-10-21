@@ -13,7 +13,7 @@ pub enum DiagnosticCode {
     Number(f64),
 }
 
-/// Error fields supplied by an adapter, without cause-chain traversal.
+/// Supplied error fields used both as the error value a fallible operation returns and as the snapshot a diagnostic records.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiagnosticErrorInfo {
