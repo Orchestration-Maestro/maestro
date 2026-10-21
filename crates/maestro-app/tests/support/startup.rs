@@ -342,15 +342,20 @@ pub fn run(name: &str) {
     assert_eq!(corpus.len(), 29);
     assert_eq!(corpus.values().map(Vec::len).sum::<usize>(), 125);
     // A privileged run ignores the cases' modes, so those cases have nothing to check.
-    let probe = maestro_test_directory::Scratch::new().unwrap();
-    let denials = maestro_test_directory::deny(probe.path(), 0o0)
-        .unwrap()
-        .is_some();
+    let denials = denials();
     for (index, case) in corpus.remove(name).unwrap().into_iter().enumerate() {
         if denials || (case.input.file_modes.is_empty() && case.input.root_mode.is_none()) {
             replay(name, index, &case);
         }
     }
+}
+
+/// Whether this process is refused access that a mode takes away; a privileged run is not.
+pub fn denials() -> bool {
+    let probe = maestro_test_directory::Scratch::new().unwrap();
+    maestro_test_directory::deny(probe.path(), 0o0)
+        .unwrap()
+        .is_some()
 }
 
 fn replay(name: &str, index: usize, case: &Case) {

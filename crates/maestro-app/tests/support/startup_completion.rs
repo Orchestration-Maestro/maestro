@@ -305,10 +305,7 @@ pub fn run(name: &str) {
         return;
     }
     // A privileged run ignores the cases' modes, so those cases have nothing to check.
-    let probe = maestro_test_directory::Scratch::new().unwrap();
-    let denials = maestro_test_directory::deny(probe.path(), 0o0)
-        .unwrap()
-        .is_some();
+    let denials = crate::startup_conversions::startup::denials();
     for case in cases::<Input, Expected>(name) {
         if denials || (case.input.permissions.is_empty() && case.input.unreadable.is_empty()) {
             replay(name, case);

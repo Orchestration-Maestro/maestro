@@ -180,10 +180,15 @@ fn denials_match_what_this_process_is_refused() {
         }),
     ];
     for (path, denied_mode, allowed) in checks {
+        let earlier = fs::metadata(path).unwrap().permissions();
+        fs::set_permissions(path, fs::Permissions::from_mode(denied_mode)).unwrap();
+        let allowed = allowed();
+        fs::set_permissions(path, earlier).unwrap();
+        let _ = fs::remove_dir(&created);
         let guard = maestro_test_directory::deny(path, denied_mode).unwrap();
         assert_eq!(
             guard.is_some(),
-            !allowed(),
+            !allowed,
             "{} {denied_mode:o}",
             path.display()
         );
@@ -191,7 +196,6 @@ fn denials_match_what_this_process_is_refused() {
             assert_eq!(mode(path), denied_mode);
         }
         drop(guard);
-        let _ = fs::remove_dir(&created);
     }
     assert_eq!((mode(&directory), mode(&file)), (directory_mode, file_mode));
 }

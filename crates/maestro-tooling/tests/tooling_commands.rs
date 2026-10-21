@@ -1395,7 +1395,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
                 "check-browser-smoke",
                 &[],
             )
-            .env("TMPDIR", &fixture.root)
+            .temp_dir(&fixture.root)
             .env("MAESTRO_CHILD_EXIT", exit)
             .env("MAESTRO_ARTIFACT", &artifact)
             .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
@@ -1761,7 +1761,7 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
             "check-browser-smoke",
             &[],
         )
-        .env("TMPDIR", &fixture.root)
+        .temp_dir(&fixture.root)
         .output()
         .unwrap();
     let log = fixture.root.join("maestro-browser-smoke-errors.log");
