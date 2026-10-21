@@ -106,8 +106,6 @@ pub trait PackageOperations {
 /// Its asynchronous commands must be driven by a Tokio runtime with process support.
 #[cfg(not(target_arch = "wasm32"))]
 pub struct NativePackageOperations {
-    /// Caller-owned shell selection.
-    pub(super) should_use_shell: fn(&str) -> bool,
     /// Weak handle to the caller-driven local runtime.
     local: std::rc::Weak<tokio::task::LocalSet>,
     /// Caller-owned query for whether output is routed to standard error.
@@ -115,16 +113,14 @@ pub struct NativePackageOperations {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl NativePackageOperations {
-    /// Stores the caller's shell and stdout-takeover queries without calling them.
+    /// Stores the caller's stdout-takeover query without calling it.
     #[must_use]
     pub fn new(
-        should_use_shell: fn(&str) -> bool,
         is_stdout_taken_over: std::rc::Rc<dyn Fn() -> bool>,
         local: &std::rc::Rc<tokio::task::LocalSet>,
     ) -> Self {
         Self {
             local: std::rc::Rc::downgrade(local),
-            should_use_shell,
             is_stdout_taken_over,
         }
     }
@@ -185,7 +181,7 @@ impl PackageOperations for NativePackageOperations {
             .map(|text| text.to_string_lossy().into_owned())
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
-        self.capture(command, args)
+        Self::capture(command, args)
     }
     fn create_dir_all(&self, path: &str) -> io::Result<()> {
         std::fs::create_dir_all(path)

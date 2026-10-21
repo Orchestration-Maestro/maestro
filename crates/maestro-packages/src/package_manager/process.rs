@@ -9,22 +9,18 @@ use std::{
 };
 
 impl NativePackageOperations {
-    /// Builds a child with the selected shell form and the recovered environment.
-    pub(super) fn command(&self, command: &str, args: &[String]) -> Command {
-        let mut child = if (self.should_use_shell)(command) {
-            let mut shell = Command::new(if cfg!(windows) { "cmd.exe" } else { "/bin/sh" });
-            if cfg!(windows) {
-                shell.args(["/d", "/s", "/c"]);
-            } else {
-                shell.arg("-c");
-            }
-            shell.arg(format!("{command} {}", args.join(" ")));
-            shell
-        } else {
-            let mut child = Command::new(command);
-            child.args(args);
-            child
-        };
+    /// Builds a child with literal arguments and the recovered environment; the native
+    /// launcher resolves Windows command shims such as `npm.cmd`.
+    ///
+    /// # Errors
+    /// Returns `NotFound` when a Windows command cannot be resolved.
+    pub(super) fn command(command: &str, args: &[String]) -> io::Result<Command> {
+        let mut child = maestro_process::Launch {
+            executable: command.into(),
+            args: args.into(),
+            verbatim: false,
+        }
+        .command()?;
         let inherited = std::env::vars_os()
             .map(|(key, value)| {
                 (
@@ -43,13 +39,12 @@ impl NativePackageOperations {
             || std::fs::read("/proc/self/environ"),
         );
         child.env_clear().envs(environment);
-        child
+        Ok(child)
     }
 
     /// Waits for a child with ignored stdin and decoded captured streams.
-    pub(super) fn capture(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
-        let output = self
-            .command(command, args)
+    pub(super) fn capture(command: &str, args: &[String]) -> io::Result<CommandOutput> {
+        let output = Self::command(command, args)?
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -70,7 +65,7 @@ impl NativePackageOperations {
         cwd: Option<&'a str>,
     ) -> PackageFuture<'a, Option<i32>> {
         Box::pin(async move {
-            let mut child = tokio::process::Command::from(self.command(command, args));
+            let mut child = tokio::process::Command::from(Self::command(command, args)?);
             if let Some(cwd) = cwd {
                 child.current_dir(cwd);
             }

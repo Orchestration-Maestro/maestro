@@ -252,7 +252,6 @@ impl PackageOperations for Controlled {
         self.0.writes.borrow_mut().push((path.into(), text.into()));
         if self.0.native_exists {
             return maestro_packages::NativePackageOperations::new(
-                |_| false,
                 Rc::new(|| false),
                 &Rc::new(tokio::task::LocalSet::new()),
             )
@@ -347,7 +346,6 @@ pub fn manager(
 /// Native filesystem adapter for the native observation mode.
 fn native_operations() -> maestro_packages::NativePackageOperations {
     maestro_packages::NativePackageOperations::new(
-        |_| false,
         Rc::new(|| false),
         &Rc::new(tokio::task::LocalSet::new()),
     )

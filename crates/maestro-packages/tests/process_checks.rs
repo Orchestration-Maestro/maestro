@@ -39,7 +39,6 @@ fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<Native
             settings_manager: Rc::new(RefCell::new(settings)),
         },
         NativePackageOperations::new(
-            |_| false,
             Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         ),
@@ -49,7 +48,6 @@ fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<Native
 /// Native operations that never use the shell and never take over stdout.
 fn direct() -> NativePackageOperations {
     NativePackageOperations::new(
-        |_| false,
         Rc::new(|| false),
         &std::rc::Rc::new(tokio::task::LocalSet::new()),
     )
@@ -127,7 +125,6 @@ fn stdio_launches(root: &Path) {
     let taken = Rc::new(Cell::new(false));
     let query = taken.clone();
     let operations: Box<dyn PackageOperations> = Box::new(NativePackageOperations::new(
-        |_| false,
         Rc::new(move || query.get()),
         &Rc::new(tokio::task::LocalSet::new()),
     ));
@@ -343,31 +340,4 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
         .unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert!(!error.to_string().contains("failed with code"));
-}
-
-#[test]
-fn supplied_shell_choice_is_observed_for_each_command() {
-    let runtime = runtime();
-    let operations: &dyn PackageOperations = &NativePackageOperations::new(
-        |command| command == "true",
-        Rc::new(|| false),
-        &std::rc::Rc::new(tokio::task::LocalSet::new()),
-    );
-    let args = ["a;", "exit", "7"].map(str::to_owned);
-    assert_eq!(
-        runtime
-            .block_on(operations.run_command("true", &args, None))
-            .unwrap(),
-        Some(7)
-    );
-    assert_eq!(
-        runtime
-            .block_on(operations.run_command("/usr/bin/true", &args, None))
-            .unwrap(),
-        Some(0)
-    );
-    assert_eq!(
-        operations.run_command_sync("true", &args).unwrap().status,
-        Some(7)
-    );
 }

@@ -79,7 +79,6 @@ fn native_empty_environment_recovery_reads_procfs() {
             Some("a=b")
         );
         let output = NativePackageOperations::new(
-            |_| false,
             std::rc::Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         )
@@ -128,7 +127,6 @@ fn native_manager(
             )),
         },
         super::NativePackageOperations::new(
-            |_| false,
             std::rc::Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         ),
