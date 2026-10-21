@@ -51,17 +51,14 @@ pub fn launch() {
         child(mode);
         return;
     }
-    let scratch = crate::live::Scratch::new();
-    scratch.write("helper-source", HELPER);
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::fs::write(scratch.path().join("helper-source"), HELPER).unwrap();
     for program in ["open", "explorer.exe", "xdg-open"] {
         assert!(
             Command::new("install")
-                .args([
-                    "-m",
-                    "0700",
-                    &scratch.path("helper-source"),
-                    &scratch.path(program)
-                ])
+                .args(["-m", "0700"])
+                .arg(scratch.path().join("helper-source"))
+                .arg(scratch.path().join(program))
                 .status()
                 .unwrap()
                 .success()
@@ -81,7 +78,9 @@ pub fn launch() {
         )
         .env(
             "PATH",
-            scratch.path(if program == "missing" { "custom" } else { "" }),
+            scratch
+                .path()
+                .join(if program == "missing" { "custom" } else { "" }),
         )
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

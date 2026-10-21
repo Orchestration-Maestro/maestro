@@ -1,4 +1,5 @@
 //! Theme files, environments and documents shared by the theme tests.
+pub mod environment;
 pub mod highlighting;
 
 use maestro_test_directory::Scratch;
