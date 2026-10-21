@@ -350,10 +350,6 @@ impl ScopeSource {
     }
 }
 impl Source<'_> {
-    /// The whole mapped source text and this window's start in it.
-    pub(crate) fn whole(&self) -> (&str, usize) {
-        (&self.owner.text, self.offset)
-    }
     /// Borrow the unconsumed suffix without copying its text or mapping.
     pub(crate) fn suffix(&self, start: usize) -> Source<'_> {
         Source {

@@ -70,6 +70,8 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
+    /// Suffix bytes supplied to direct-link admission, including rejected links.
+    pub(crate) link_bytes: usize,
     /// Raw suffix bytes supplied to the deletion recognizer.
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
@@ -315,7 +317,95 @@ fn hinted_blocks(source: &str, options: crate::MarkedOptions, mut block: Delimit
 }
 
 #[test]
-fn display_hint_barriers_are_scanned_once_per_block_source() {
+fn unmatched_escaped_block_hint_separates_link_operands() {
+    let source = "See HTTPS://outer.example/\\[HTTPS://target.example/?url=https://last.example";
+    for options in [
+        crate::MarkedOptions::Browser { escape_html: false },
+        crate::MarkedOptions::Browser { escape_html: true },
+        crate::MarkedOptions::Terminal,
+        crate::MarkedOptions::Export,
+    ] {
+        let browser = matches!(options, crate::MarkedOptions::Browser { .. });
+        let mut block = Delimited("\\[", "\\]");
+        let document = crate::parse_with_tokenizer(
+            source.to_owned(),
+            options,
+            if browser { Some(&mut block) } else { None },
+        )
+        .unwrap();
+        let Kind::Paragraph(children) = &document.nodes[0].kind else {
+            panic!("paragraph")
+        };
+        let links: Vec<_> = children
+            .iter()
+            .filter_map(|node| match &node.kind {
+                Kind::Link(_, label, href, _) => Some((label.as_str(), href.as_str())),
+                _ => None,
+            })
+            .collect();
+        let target = (
+            "HTTPS://target.example/?url=https://last.example",
+            "HTTPS://target.example/?url=https://last.example",
+        );
+        let expected = if browser {
+            vec![("HTTPS://outer.example/", "HTTPS://outer.example/"), target]
+        } else {
+            vec![target]
+        };
+        assert_eq!(links, expected);
+        assert_eq!(document.nodes[0].range, 0..source.len());
+        assert_eq!(document.source, source);
+    }
+}
+
+#[test]
+fn escaped_link_labels_clip_at_display_block_hints() {
+    for (source, blocks, escape_html) in [
+        (r#"[\[ $x$ \]](/docs "tip")"#, 1),
+        (r#"[\\[ $x$ ]](/docs "tip")"#, 0),
+        (r#"[\\\[ $x$ \]](/docs "tip")"#, 1),
+        (
+            r#"[\[ $x$ \]](/docs "tip")
+
+[$x$]: /in"#,
+            1,
+        ),
+    ]
+    .into_iter()
+    .flat_map(|(source, blocks)| {
+        [false, true].map(move |escape_html| (source, blocks, escape_html))
+    }) {
+        let document = crate::parse_with_tokenizer(
+            source.to_owned(),
+            crate::MarkedOptions::Browser { escape_html },
+            Some(&mut Delimited("\\[", "\\]")),
+        )
+        .unwrap();
+        assert_eq!(document.source, source);
+        assert_eq!(
+            document
+                .nodes
+                .iter()
+                .filter(|node| matches!(node.kind, Kind::CustomBlock(..)))
+                .count(),
+            blocks
+        );
+        assert!(
+            document.nodes.iter().all(|node| {
+                let Kind::Paragraph(children) = &node.kind else {
+                    return true;
+                };
+                !children
+                    .iter()
+                    .any(|child| matches!(child.kind, Kind::Link(..)))
+            }),
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn display_hint_mask_work_stays_bounded() {
     let counts = [32, 64].map(|count| {
         WORK.with_borrow_mut(|work| *work = Work::default());
         let source = "ordinary paragraph\n\n".repeat(count) + "$$x$$\n";
@@ -333,7 +423,7 @@ fn display_hint_barriers_are_scanned_once_per_block_source() {
 }
 
 #[test]
-fn later_paragraphs_see_the_barriers_of_their_own_suffix() {
+fn later_paragraphs_clip_at_their_own_block_hints() {
     let documentation = crate::MarkedOptions::Documentation;
     let escaped = crate::MarkedOptions::Browser { escape_html: true };
     for (source, options, block, expected) in [
@@ -349,14 +439,14 @@ fn later_paragraphs_see_the_barriers_of_their_own_suffix() {
             "p\n\n%%``%%` t\n",
             documentation,
             Delimited("%%", "`"),
-            &["p", "block %%`", "`%%` t"][..],
+            &["p", "block %%`", "`", "block %%`", " t"][..],
         ),
-        // An escaped opening tag pairs with an angle past the next paragraph start.
+        // An escaped opening tag does not suppress a later block hint.
         (
             "p <a\n\nq <$$x$$> r\n",
             escaped,
             Delimited("$$", "$$"),
-            &["p <a", "q <$$x$$> r"][..],
+            &["p <a", "q <", "block $$x$$"][..],
         ),
     ] {
         assert_eq!(
@@ -685,3 +775,5 @@ fn sibling_deletion_masks_visit_selected_operands() {
     let [small, large] = [32, 64].map(|count| sibling_mask_work("~a `q`~ ", count, true));
     assert!(large <= 2 * small + 2, "mask visits: {small} -> {large}");
 }
+
+mod block_hints;

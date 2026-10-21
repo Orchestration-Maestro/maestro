@@ -28,8 +28,6 @@ pub(crate) struct Lexer<'a, E> {
     top: bool,
     /// Whether the preceding paragraph was clipped at an extension hint.
     clipped: bool,
-    /// Extension-hint barriers of the current block source, reused across its paragraphs.
-    barriers: Option<tokenizer::inline::Barriers>,
     /// Link context retained across the document's queued inline bodies.
     context: tokenizer::inline::LinkContext,
     /// Immutable caller grammar.
@@ -53,7 +51,6 @@ impl<'a, E> Lexer<'a, E> {
             error: None,
             top: true,
             clipped: false,
-            barriers: None,
             context: tokenizer::inline::LinkContext::new(false),
             options,
             definitions: HashMap::new(),
@@ -104,38 +101,23 @@ impl<'a, E> Lexer<'a, E> {
     /// Keep paragraph text before the next possible caller-owned block; `source` runs to the
     /// end of its block source.
     fn extension_start(&mut self, source: &Source<'_>) -> usize {
-        let (whole, offset) = source.whole();
         let source = source.text;
-        if self.tokenizer.is_none() {
+        let begin = source.chars().next().map_or(0, char::len_utf8);
+        let Some(tokenizer) = self.tokenizer.as_mut() else {
             return source.len();
-        }
-        let mut begin = source.chars().next().map_or(0, char::len_utf8);
-        while begin <= source.len() {
-            let Some(tokenizer) = self.tokenizer.as_mut() else {
-                break;
-            };
-            let start = match tokenizer.start(&source[begin..]) {
-                Ok(Some(start)) => begin + start,
-                Ok(None) => break,
-                Err(error) => {
-                    self.error = Some(error);
-                    break;
-                }
-            };
-            let barriers = match self.barriers.take() {
-                Some(barriers) if barriers.reusable_at(whole, offset) => barriers,
-                _ => tokenizer::inline::Barriers::scan(whole, offset, self.options),
-            };
-            let barrier = barriers.containing(offset + start);
-            self.barriers = Some(barriers);
-            if let Some(range) = barrier {
-                begin = range.end - offset;
-            } else {
+        };
+        match tokenizer.start(&source[begin..]) {
+            Ok(Some(start)) => {
+                let start = begin + start;
                 self.clipped = start < source.len();
-                return start;
+                start
+            }
+            Ok(None) => source.len(),
+            Err(error) => {
+                self.error = Some(error);
+                source.len()
             }
         }
-        source.len()
     }
 
     /// Recognize quote/list containers before definitions and ordinary paragraphs.

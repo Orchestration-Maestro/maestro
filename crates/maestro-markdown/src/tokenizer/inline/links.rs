@@ -104,6 +104,8 @@ impl Tokenizer<'_> {
 
     /// Balance a direct destination and retain the selected title boundary.
     fn inline_link(&self, text: &str) -> Option<Link> {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.link_bytes += text.len());
         let matched = rules::inline_link(self.options)?.find(text)?;
         let mut href = capture(text, &matched, 2).trim_matches(maestro_text::is_whitespace_scalar);
         let mut consumed = matched.end();

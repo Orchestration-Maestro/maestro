@@ -2632,38 +2632,11 @@
     "content": "> before `$$x$$` after\n> `\\[y\\]`",
     "escape_html": true,
     "thinking": false,
-    "html": null,
-    "tree": [
-      {
-        "kind": "quote",
-        "children": [
-          {
-            "kind": "paragraph",
-            "children": [
-              {
-                "kind": "text",
-                "text": "before "
-              },
-              {
-                "kind": "code",
-                "text": "$$x$$"
-              },
-              {
-                "kind": "text",
-                "text": " after\n"
-              },
-              {
-                "kind": "code",
-                "text": "\\[y\\]"
-              }
-            ]
-          }
-        ]
-      }
-    ],
+    "html": "<blockquote>\n<p>before `</p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><p><code>after</code></p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></span></div><p>`</p>\n</blockquote>\n",
+    "tree": null,
     "original_reference": "<blockquote>\n<p>before <code>$x$</code> after\n`</p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></span></div><p>`</p>\n</blockquote>\n",
-    "ruling": "S3358/S3377/S3383",
-    "target_source": "unchanged public contextual fixture"
+    "ruling": "Block hints clip before inline operands; escaped code restoration preserves authored dollars.",
+    "target_source": "Unmodified raw-policy caller with authored code restored unchanged"
   },
   {
     "id": "context-quote-display-autolink-neighbor",
@@ -3125,29 +3098,11 @@
     "content": "before `$$x$$` after",
     "escape_html": true,
     "thinking": false,
-    "html": null,
-    "tree": [
-      {
-        "kind": "paragraph",
-        "children": [
-          {
-            "kind": "text",
-            "text": "before "
-          },
-          {
-            "kind": "code",
-            "text": "$$x$$"
-          },
-          {
-            "kind": "text",
-            "text": " after"
-          }
-        ]
-      }
-    ],
+    "html": "<p>before `</p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><p>` after</p>\n",
+    "tree": null,
     "original_reference": "<p>before <code>$x$</code> after</p>\n",
-    "ruling": "S3358/S3377/S3383",
-    "target_source": "unchanged public contextual fixture"
+    "ruling": "Block hints clip before inline operands; escaped code restoration preserves authored dollars.",
+    "target_source": "Unmodified raw-policy caller with authored code restored unchanged"
   },
   {
     "id": "context-embedded-display-autolink-neighbor",
@@ -3749,26 +3704,11 @@
     "content": "<https://example.test/$$x$$>",
     "escape_html": true,
     "thinking": false,
-    "html": null,
-    "tree": [
-      {
-        "kind": "paragraph",
-        "children": [
-          {
-            "kind": "link",
-            "children": [
-              {
-                "kind": "text",
-                "text": "https://example.test/$$x$$"
-              }
-            ]
-          }
-        ]
-      }
-    ],
+    "html": "<p>&lt;<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/\">https://example.test/</a></p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><blockquote>\n</blockquote>\n",
+    "tree": null,
     "original_reference": "<p>&lt;<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/\">https://example.test/</a></p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><p>&gt;</p>\n",
-    "ruling": "S3358/S3377/S3383",
-    "target_source": "unchanged public contextual fixture"
+    "ruling": "Terminal angle quote recognition is tracked separately in #2002, after #1906.",
+    "target_source": "Pinned block-hint admission with the existing terminal-angle quote result"
   },
   {
     "id": "export-link-javascript",
@@ -5513,33 +5453,33 @@
     "content": "[\\[ $x$ \\]](/docs \"tip\")",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/docs\" title=\"tip\">[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]</a></p>\n",
+    "html": "<p>[</p>\n<div class=\"my-4\"><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Can&#x27;t use function $ in Math mode at position 1: $̲x$\" style=\"color:#cc0000\">$x$</span></div><p>](/docs &quot;tip&quot;)</p>\n",
     "tree": null,
     "original_reference": "<p>[</p>\n<div class=\"my-4\"><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Can&#x27;t use function &#x27;$&#x27; in math mode at position 1: $̲x$\" style=\"color:#cc0000\">$x$</span></div><p>](/docs &quot;tip&quot;)</p>\n",
-    "ruling": "S3377",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Math parse error on a dollar retains the approved renderer message.",
+    "target_source": "Unmodified block clipping with the approved math renderer error message"
   },
   {
     "id": "direct-formula-label-7",
     "content": "[\\\\[ $x$ ]](/docs \"tip\")",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/docs\" title=\"tip\">[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]</a></p>\n",
+    "html": "<p>[<br>[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]](/docs &quot;tip&quot;)</p>\n",
     "tree": null,
     "original_reference": "<p>[<br>[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]](/docs &quot;tip&quot;)</p>\n",
-    "ruling": "A formula stays inside its authored link label; bracket unescaping precedes ordinary inline escapes.",
-    "target_source": "Independent ordinary link-label observation with independently recorded inline formula markup"
+    "ruling": null,
+    "target_source": "unmodified reference"
   },
   {
     "id": "direct-formula-label-8",
     "content": "[\\\\\\[ $x$ \\]](/docs \"tip\")",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/docs\" title=\"tip\">\\[ <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> ]</a></p>\n",
+    "html": "<p>[\\</p>\n<div class=\"my-4\"><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Can&#x27;t use function $ in Math mode at position 1: $̲x$\" style=\"color:#cc0000\">$x$</span></div><p>](/docs &quot;tip&quot;)</p>\n",
     "tree": null,
     "original_reference": "<p>[\\</p>\n<div class=\"my-4\"><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Can&#x27;t use function &#x27;$&#x27; in math mode at position 1: $̲x$\" style=\"color:#cc0000\">$x$</span></div><p>](/docs &quot;tip&quot;)</p>\n",
-    "ruling": "S3377",
-    "target_source": "earlier native metadata/render isolation at 35dfa146d83b9692fc565d601982f1ecf0a62a20, HTML admission disabled"
+    "ruling": "Math parse error on a dollar retains the approved renderer message.",
+    "target_source": "Unmodified block clipping with the approved math renderer error message"
   },
   {
     "id": "direct-formula-label-9",
