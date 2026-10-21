@@ -3,8 +3,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::agent_shell_support;
 use crate::process_support;
-use crate::read_support;
-use agent_shell_support::{Immediate, cases, result_value, runtime};
+use crate::runtime::{self, run_paused};
+use agent_shell_support::{Immediate, cases, result_value};
 use maestro_tools::{BashExecResult, BashToolInput, BashToolOptions, create_bash_tool_definition};
 use serde_json::json;
 use std::sync::{Arc, Mutex};
@@ -54,7 +54,7 @@ fn bash_progress_starts_synchronously_before_operations() {
     assert_eq!(*phases.lock().unwrap(), ["hook", "update"]);
     assert_eq!(*updates.lock().unwrap(), [json!({"content":[]})]);
     assert_eq!(
-        result_value(runtime().block_on(future).unwrap()),
+        result_value(run_paused(future).unwrap()),
         json!({"content":[{"type":"text","text":"(no output)"}]})
     );
     assert_eq!(*phases.lock().unwrap(), ["hook", "update", "exec"]);
@@ -100,7 +100,7 @@ fn bash_progress_emits_first_chunk_without_waiting() {
         })),
         None,
     );
-    runtime().block_on(future).unwrap();
+    run_paused(future).unwrap();
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn bash_progress_coalesces_until_selected_deadline() {
         "new_period_after_idle",
         "chatty_5000",
     ]);
-    read_support::run(async {
+    runtime::run(async {
         let release = Arc::new(tokio::sync::Notify::new());
         let definition = create_bash_tool_definition::<()>(
             "/work".into(),
@@ -257,7 +257,7 @@ impl maestro_tools::BashOperations for Held {
 
 #[test]
 fn bash_progress_settlement_releases_observers() {
-    runtime().block_on(async {
+    run_paused(async {
         for outcome in 0..6 {
             let release = Arc::new(tokio::sync::Notify::new());
             let definition = create_bash_tool_definition::<()>(

@@ -32,10 +32,11 @@ fn local_bash_preserves_command_directory_and_closed_input() {
 }
 
 use crate::read_support;
+use crate::runtime::run;
 use maestro_models::Cancellation;
 use maestro_tools::BashError;
 use maestro_tools::utils::shell::{ShellEnv, get_shell_config};
-use read_support::{TempDir, run};
+use read_support::TempDir;
 use std::{ffi::OsString, future::Future};
 
 #[test]

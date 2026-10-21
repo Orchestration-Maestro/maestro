@@ -6,6 +6,7 @@ use crate::display_support;
 use crate::edit_render_support;
 use crate::edit_support;
 use crate::read_support;
+use crate::runtime;
 
 use display_support::{Env, NoLanguages, Setup, context};
 use edit_render_support::{Details, ResultRecord, cases, palette, theme};
@@ -169,7 +170,7 @@ fn edit_renderers_retain_call_and_result_slots() {
 
 #[test]
 fn edit_preview_waits_for_complete_args_and_deduplicates() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         for invalid in [
             Value::Null,
@@ -215,7 +216,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
 
 #[test]
 fn edit_changed_inputs_replace_pending_request() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         row.dir.file("other", b"alpha\n");
         let original = args("beta");
@@ -257,7 +258,7 @@ fn edit_changed_inputs_replace_pending_request() {
 
 #[test]
 fn edit_incomplete_arguments_discard_pending_preview() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         let input = args("beta");
         let call = row.call(&input, None);
@@ -276,7 +277,7 @@ fn edit_incomplete_arguments_discard_pending_preview() {
 
 #[test]
 fn edit_completion_publishes_before_reentrant_invalidation() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Rc::new(Row::new());
         let input = args("beta");
         let weak = Rc::downgrade(&row);
@@ -298,7 +299,7 @@ fn edit_completion_publishes_before_reentrant_invalidation() {
 
 #[test]
 fn edit_settled_result_rejects_late_preview() {
-    read_support::run(async {
+    runtime::run(async {
         for (error, diff, partial) in [
             (false, Some("+1 SETTLED"), false),
             (true, None, false),
@@ -338,7 +339,7 @@ fn edit_settled_result_rejects_late_preview() {
 
 #[test]
 fn edit_returned_arguments_reject_obsolete_generation() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         let a = args("newest A");
         let call = row.call(&a, None);
@@ -501,25 +502,25 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
 
 #[test]
 fn edit_preview_reads_local_file_without_execution() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_preview_reads_local_file_without_execution").await;
     });
 }
 #[test]
 fn edit_preflight_error_replaces_preview_body() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_preflight_error_replaces_preview_body").await;
     });
 }
 #[test]
 fn edit_large_preview_settles_without_duplicate_content() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_large_preview_settles_without_duplicate_content").await;
     });
 }
 #[test]
 fn edit_replay_reconstructs_preview_without_reading() {
-    read_support::run(async {
+    runtime::run(async {
         native("edit_replay_reconstructs_preview_without_reading").await;
     });
 }
@@ -569,7 +570,7 @@ fn edit_result_without_call_renders_detached_output() {
 
 #[test]
 fn edit_settlement_preserves_existing_preview_priority() {
-    read_support::run(async {
+    runtime::run(async {
         let row = Row::new();
         let input = args("beta");
         let call = row.call(&input, None);
@@ -648,7 +649,7 @@ fn supplied_theme_routes() {
 
 #[test]
 fn edit_theme_replacement_updates_background_and_rebuilt_text() {
-    read_support::run(async {
+    runtime::run(async {
         supplied_theme_routes();
         let row = Row::new();
         let input = json!({"path":"file"});
@@ -687,7 +688,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
 
 #[test]
 fn edit_preview_teardown_releases_owned_callbacks() {
-    read_support::run(async {
+    runtime::run(async {
         let mut row = Row::new();
         let input = args("beta");
         let alias = row.call(&input, None);
@@ -772,7 +773,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
         assert_eq!(row.env.runtime.futures(), 1);
         drop(row.env.runtime.take_futures());
     }
-    read_support::run(async {
+    runtime::run(async {
         for missing in ["toolDiffAdded", "toolSuccessBg", "toolErrorBg"] {
             selected_preview_theme_error(missing).await;
         }

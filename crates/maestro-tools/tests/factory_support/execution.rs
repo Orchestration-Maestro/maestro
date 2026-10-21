@@ -1,6 +1,7 @@
 //! Selected execution against existing supplied-operation probes and native files.
 #![cfg(test)]
 use super::{factories, individual, select};
+use crate::runtime;
 use crate::{
     agent_shell_support, edit_support, find_support, grep_support, ls_support, read_support,
     write_support,
@@ -220,7 +221,7 @@ pub fn execute(
     args: Value,
     signal: Option<Cancellation>,
 ) -> Result<Value, DiagnosticErrorInfo> {
-    read_support::run((tool.execute)("call".into(), args, signal, None)).map(|result| {
+    runtime::run((tool.execute)("call".into(), args, signal, None)).map(|result| {
         assert!(result.terminate.is_none());
         serde_json::to_value(result).unwrap()
     })

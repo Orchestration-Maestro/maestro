@@ -1,6 +1,7 @@
 //! File finding through the public tool definition.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::runtime;
 use crate::{display_support, find_support, read_support};
 use maestro_tools::{FindToolOptions, ToolsManager, create_find_tool_definition};
 use std::sync::Arc;
@@ -492,7 +493,7 @@ fn find_native_abort_terminates_child_without_waiting_for_exit() {
         serde_json::json!(socket_path.to_str().unwrap())
     );
     find_support::executable(&root, "fd", &script);
-    read_support::run(async {
+    runtime::run(async {
         let listener = tokio::net::UnixListener::bind(socket_path).unwrap();
         let signal = maestro_models::Cancellation::new();
         let counter = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -567,7 +568,7 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
         );
         return;
     }
-    read_support::run(async {
+    runtime::run(async {
         if std::env::var("MAESTRO_READ_CHILD").unwrap() == "probe" {
             abort_discovery().await;
         } else {

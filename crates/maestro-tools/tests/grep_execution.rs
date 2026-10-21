@@ -1,6 +1,7 @@
 //! Content search through the public tool factories.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::runtime;
 use maestro_tools::{GrepToolOptions, ToolsManager, create_grep_tool_definition};
 use std::sync::Arc;
 
@@ -139,7 +140,7 @@ fn grep_failures_keep_acquisition_path_and_exit_precedence() {
         );
         let tool =
             maestro_tools::create_grep_tool(root.text(), GrepToolOptions::default(), manager);
-        let error = read_support::run((tool.execute)(
+        let error = runtime::run((tool.execute)(
             "call".into(),
             serde_json::json!({"pattern":"hit"}),
             None,
@@ -350,7 +351,7 @@ fn grep_cancellation_drops_pending_operations() {
             },
             manager,
         );
-        read_support::run(async {
+        runtime::run(async {
             let signal = Cancellation::new();
             let execution = (tool.execute)(
                 "call".into(),
@@ -382,7 +383,7 @@ fn grep_cancellation_stops_live_child() {
     use crate::{grep_support as g, read_support};
     use maestro_models::Cancellation;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    read_support::run(async {
+    runtime::run(async {
         for limited in [false, true] {
             let root = read_support::TempDir::new();
             root.file("file.txt", b"hit\n");
@@ -431,7 +432,7 @@ fn grep_cancellation_stops_live_child() {
 fn grep_limit_terminates_before_later_results() {
     use crate::{grep_support as g, read_support};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    read_support::run(async {
+    runtime::run(async {
         let root = read_support::TempDir::new();
         root.file("first", b"hit\nafter\n");
         let event=serde_json::json!({"type":"match","data":{"path":{"text":root.0.join("first").to_str().unwrap()},"line_number":1}}).to_string()+"\n";
@@ -474,7 +475,7 @@ fn grep_limit_terminates_before_later_results() {
 fn grep_stdout_framing_ignores_stderr() {
     use crate::{grep_support as g, read_support};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    read_support::run(async {
+    runtime::run(async {
         for code in [0, 2] {
             let root = read_support::TempDir::new();
             let event=serde_json::json!({"type":"match","data":{"path":{"text":root.0.join("file.txt").to_str().unwrap()},"line_number":1,"lines":{"text":"é\n"}}}).to_string();
@@ -551,7 +552,7 @@ fn cancel_pending_acquisition() {
     });
     let root = read_support::TempDir::new();
     let manager = Arc::new(ToolsManager::new(root.text(), Some(fetch)));
-    read_support::run(async {
+    runtime::run(async {
         let signal = Cancellation::new();
         let tool =
             maestro_tools::create_grep_tool(root.text(), GrepToolOptions::default(), manager);

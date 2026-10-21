@@ -1,7 +1,7 @@
 //! Local shell grace and completed observer lifetimes.
 #![cfg(unix)]
 #![cfg(test)]
-use crate::{agent_shell_support::runtime, process_support, read_support};
+use crate::{process_support, read_support, runtime::run_paused};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
@@ -33,7 +33,7 @@ impl Wake for Wakes {
 
 #[test]
 fn local_bash_unregisters_pid_and_releases_observers() {
-    runtime().block_on(async {
+    run_paused(async {
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
         let signal = Cancellation::new();
         let counter = Arc::new(Wakes::default());
@@ -87,7 +87,7 @@ enum GracePolicy {
 #[test]
 #[cfg(target_os = "linux")]
 fn local_bash_retains_streaming_during_exit_grace() {
-    runtime().block_on(async {
+    run_paused(async {
         grace_case(GracePolicy::Stream).await;
         grace_case(GracePolicy::Eof).await;
     });
@@ -96,7 +96,7 @@ fn local_bash_retains_streaming_during_exit_grace() {
 #[test]
 #[cfg(target_os = "linux")]
 fn local_bash_orders_abort_and_timeout_during_exit_grace() {
-    runtime().block_on(async {
+    run_paused(async {
         for policy in [
             GracePolicy::Abort,
             GracePolicy::Timeout,
@@ -268,12 +268,12 @@ enum Stop {
 
 #[test]
 fn local_bash_aborts_from_stream_callback() {
-    runtime().block_on(termination_case(Stop::Abort));
+    run_paused(termination_case(Stop::Abort));
 }
 
 #[test]
 fn local_bash_timeout_fires_at_twenty_five_not_twenty_four_milliseconds() {
-    runtime().block_on(termination_case(Stop::Timeout));
+    run_paused(termination_case(Stop::Timeout));
 }
 
 /// Observations retained while polling the same operation through cleanup.

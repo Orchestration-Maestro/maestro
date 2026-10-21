@@ -6,7 +6,8 @@ use crate::{
         RecordedTruncation, assert_rows, canon, check_reuse_as, check_theme_error_as,
         render_case_as, result_json, with_home,
     },
-    read_support::{TempDir, run},
+    read_support::TempDir,
+    runtime::run,
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;

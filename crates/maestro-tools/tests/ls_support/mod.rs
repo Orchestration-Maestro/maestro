@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::display_support::{Env, NoLanguages, Setup, bind, context, padded_to, palette_of};
-use crate::read_support::run;
+use crate::runtime::run;
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo, UserBlock};

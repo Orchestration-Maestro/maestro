@@ -3,8 +3,11 @@
 
 #[cfg(unix)]
 mod archive_security;
+#[path = "../../../tests/support/runtime.rs"]
+mod runtime;
 
 use super::*;
+use runtime::{run, run_paused};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -622,50 +625,46 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
 
 #[test]
 fn lookup_and_download_deadlines_cover_the_whole_body() {
-    unit_runtime()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(async {
-            for phase in 0..3 {
-                let scratch =
-                    Staging::create(std::env::temp_dir().to_str().unwrap(), "deadline").unwrap();
-                let bin = maestro_path::join(&[&scratch.path, "bin"]);
-                let fetch = stalled_fetch(phase);
-                let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
-                manager.host = Host {
-                    os: "linux",
-                    arch: "x86_64",
-                };
-                let mut output = Vec::new();
-                let started = tokio::time::Instant::now();
-                assert_eq!(
-                    manager
-                        .install_missing(
-                            SearchTool::Fd,
-                            Some(ToolsManagerOutput {
-                                stdout: &mut output,
-                                color: false
-                            })
-                        )
-                        .await,
-                    None
-                );
-                assert_eq!(
-                    started.elapsed().as_millis(),
-                    if phase == 2 { 120_000 } else { 10_000 }
-                );
-                assert_eq!(
-                    String::from_utf8(output).unwrap(),
-                    "fd not found. Downloading...\nFailed to download fd: Request timed out.\n"
-                );
-                if phase == 2 {
-                    assert_eq!(std::fs::read_dir(&bin).unwrap().count(), 0);
-                } else {
-                    assert!(!Path::new(&bin).exists());
-                }
+    run_paused(async {
+        for phase in 0..3 {
+            let scratch =
+                Staging::create(std::env::temp_dir().to_str().unwrap(), "deadline").unwrap();
+            let bin = maestro_path::join(&[&scratch.path, "bin"]);
+            let fetch = stalled_fetch(phase);
+            let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
+            manager.host = Host {
+                os: "linux",
+                arch: "x86_64",
+            };
+            let mut output = Vec::new();
+            let started = tokio::time::Instant::now();
+            assert_eq!(
+                manager
+                    .install_missing(
+                        SearchTool::Fd,
+                        Some(ToolsManagerOutput {
+                            stdout: &mut output,
+                            color: false
+                        })
+                    )
+                    .await,
+                None
+            );
+            assert_eq!(
+                started.elapsed().as_millis(),
+                if phase == 2 { 120_000 } else { 10_000 }
+            );
+            assert_eq!(
+                String::from_utf8(output).unwrap(),
+                "fd not found. Downloading...\nFailed to download fd: Request timed out.\n"
+            );
+            if phase == 2 {
+                assert_eq!(std::fs::read_dir(&bin).unwrap().count(), 0);
+            } else {
+                assert!(!Path::new(&bin).exists());
             }
-        });
+        }
+    });
 }
 
 #[test]
@@ -714,11 +713,6 @@ fn concurrent_installs_stage_in_separate_directories() {
         assert_ne!(messages[0], messages[1], "staging names must differ");
         assert_eq!(std::fs::read_dir(bin).unwrap().count(), 0);
     });
-}
-
-/// Complete unit-test work on an enabled current-thread runtime.
-pub(crate) fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    unit_runtime().build().unwrap().block_on(future)
 }
 
 /// Transport stalling headers or the body at the selected phase.
@@ -770,11 +764,4 @@ fn concurrent_fetch(stage_root: String) -> Fetch {
             Ok(response(200, archive("linux-missing.tar.gz")))
         })
     })
-}
-
-/// The enabled runtime builder shared by unit-test clock policies.
-fn unit_runtime() -> tokio::runtime::Builder {
-    let mut builder = tokio::runtime::Builder::new_current_thread();
-    builder.enable_all();
-    builder
 }

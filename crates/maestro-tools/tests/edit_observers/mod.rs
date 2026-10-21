@@ -1,5 +1,6 @@
 //! Observe normalized calls separately from execution arguments through the loop.
 #![cfg(test)]
+use crate::runtime;
 use crate::{loop_support, read_support};
 use maestro_agent::{AgentContext, AgentEvent, ToolExecutionMode, run_agent_loop};
 use maestro_tools::{EditToolOptions, create_edit_tool};
@@ -101,7 +102,7 @@ fn run(
         messages: Arc::new(RwLock::new(Vec::new())),
         tools: Some(Arc::new(RwLock::new(vec![Arc::new(RwLock::new(tool))]))),
     };
-    read_support::run(run_agent_loop(
+    runtime::run(run_agent_loop(
         vec![loop_support::user("go")],
         context,
         config,

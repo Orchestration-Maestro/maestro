@@ -4,9 +4,10 @@
 
 use crate::read_support;
 
+use crate::runtime::run;
 use maestro_models::Fetch;
 use maestro_tools::{SearchTool, ToolsManager, ToolsManagerOutput};
-use read_support::{TempDir, isolated_os, run};
+use read_support::{TempDir, isolated_os};
 use std::{
     path::Path,
     sync::{

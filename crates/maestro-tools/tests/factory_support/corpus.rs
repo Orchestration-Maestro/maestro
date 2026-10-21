@@ -1,6 +1,7 @@
 //! Consumption of the recorded factory corpus without source metadata.
 #![cfg(test)]
 use super::{execution, factories, select};
+use crate::runtime;
 use crate::{loop_support, read_support};
 use maestro_tools::*;
 use serde::Deserialize;
@@ -453,7 +454,7 @@ fn image_context(image: &[u8], resize: bool, prefix: &str) {
 fn assert_image(tool: &Tool, image: &[u8], resize: bool, model_input: &maestro_models::ModelInput) {
     use base64::Engine as _;
     use maestro_models::{ModelInput, UserBlock};
-    let result = read_support::run((tool.execute)(
+    let result = runtime::run((tool.execute)(
         "call".into(),
         json!({"path":"image.png"}),
         None,

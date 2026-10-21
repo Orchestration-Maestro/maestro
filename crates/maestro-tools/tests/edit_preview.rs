@@ -2,8 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::read_support;
+use crate::runtime::run;
 use maestro_tools::edit_diff::{Edit, EditDiffResult, compute_edit_diff, compute_edits_diff};
-use read_support::{TempDir, isolated, run};
+use read_support::{TempDir, isolated};
 use serde::Deserialize;
 use std::{
     collections::{BTreeMap, HashSet},

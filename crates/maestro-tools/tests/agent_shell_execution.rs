@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::runtime;
 use maestro_tools::{BashToolOptions, create_bash_tool_definition};
 use serde_json::json;
 
@@ -92,11 +93,23 @@ fn bash_stream_keeps_raw_bytes_and_decodes_fragmented_utf8() {
         "utf8_split_supplementary",
         "utf8_invalid",
     ]);
-    agent_shell_support::runtime().block_on(async {
-        let raw = [vec![0xff,0x80], vec![b'A';51201]].concat();
+    runtime::run_paused(async {
+        let raw = [vec![0xff, 0x80], vec![b'A'; 51201]].concat();
         let bytes = raw.clone();
-        let ops = agent_shell_support::Immediate(std::sync::Arc::new(move |_,_,options| { (options.on_data)(&bytes); Ok(maestro_tools::BashExecResult { exit_code:Some(0.0) }) }));
-        let tool = maestro_tools::create_bash_tool("/work".into(), "/bin".into(), BashToolOptions { operations:Some(std::sync::Arc::new(ops)), ..BashToolOptions::default() });
+        let ops = agent_shell_support::Immediate(std::sync::Arc::new(move |_, _, options| {
+            (options.on_data)(&bytes);
+            Ok(maestro_tools::BashExecResult {
+                exit_code: Some(0.0),
+            })
+        }));
+        let tool = maestro_tools::create_bash_tool(
+            "/work".into(),
+            "/bin".into(),
+            BashToolOptions {
+                operations: Some(std::sync::Arc::new(ops)),
+                ..BashToolOptions::default()
+            },
+        );
         let mut value = json!({"value":agent_shell_support::result_value((tool.execute)("call".into(), json!({"command":"literal"}), None, None).await.unwrap())});
         assert_eq!(agent_shell_support::normalize(&mut value, &mut []), [raw]);
     });

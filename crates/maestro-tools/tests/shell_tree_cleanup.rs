@@ -1,6 +1,7 @@
 //! Native tree cleanup observed through live descendant control channels.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::runtime::run;
 use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_tools::utils::shell::{
     kill_process_tree, kill_tracked_detached_children, track_detached_child_pid,
@@ -22,11 +23,15 @@ fn native_tree_kill_terminates_descendants() {
     if !crate::read_support::isolated("native_tree_kill_terminates_descendants", "drain", &[]) {
         return;
     }
-    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    run(async {
         let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
         let script = "import os,socket,sys\nchild=os.fork()\ns=socket.create_connection(('127.0.0.1',int(sys.argv[1])))\ns.sendall(b'READY')\ns.recv(1)\nif child: os.waitpid(child,0)";
         let mut command = tokio::process::Command::new("python3");
-        command.args(["-c", script, &listener.local_addr().unwrap().port().to_string()]);
+        command.args([
+            "-c",
+            script,
+            &listener.local_addr().unwrap().port().to_string(),
+        ]);
         let mut child = CapturedChild::spawn_detached(command).unwrap();
         let pid = child.id().unwrap();
         let guard = Cleanup(pid);
@@ -45,8 +50,7 @@ fn native_tree_kill_terminates_descendants() {
             socket.read_to_end(&mut bytes).await.unwrap();
             assert!(bytes.is_empty());
         }
-        let output = wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending(), None).await.unwrap();
-        assert!(!output.status.success());
+        assert_killed(&mut child).await;
         drop(guard);
 
         let mut direct = tokio::process::Command::new("python3");
@@ -61,8 +65,16 @@ fn native_tree_kill_terminates_descendants() {
         let mut bytes = Vec::new();
         socket.read_to_end(&mut bytes).await.unwrap();
         assert!(bytes.is_empty());
-        let output = wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending(), None).await.unwrap();
-        assert!(!output.status.success());
+        assert_killed(&mut child).await;
         drop(guard);
     });
+}
+
+/// Wait for `child` and check that it ended by a signal or a failing status.
+async fn assert_killed(child: &mut CapturedChild) {
+    let output =
+        wait_for_child_process(child, WaitOptions::default(), std::future::pending(), None)
+            .await
+            .unwrap();
+    assert!(!output.status.success());
 }
