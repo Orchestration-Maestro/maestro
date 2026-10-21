@@ -136,9 +136,9 @@ shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).
 
 The listing leaf `maestro-listing` is declared core below layer 0 with no workspace
 dependencies, including `maestro-path`. It owns directory listing: one directory's
-entries, sorted by file name on every platform. Only resources, theme, the toolkit
-and tools may depend on it, on native targets; they keep kind filtering, name
-decoding and any further ordering.
+entries, sorted by file name on every platform. Only resources, theme, the toolkit,
+tools and session may depend on it, on native targets; they keep kind filtering,
+name decoding and any further ordering.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
