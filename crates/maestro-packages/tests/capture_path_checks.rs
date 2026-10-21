@@ -35,8 +35,8 @@ fn capture_resolves_override_path_before_parent_decoys() {
         return;
     }
     let scratch = crate::scratch::Scratch::new().unwrap();
-    let parent = scratch.0.join("parent");
-    let chosen = scratch.0.join("chosen");
+    let parent = scratch.path().join("parent");
+    let chosen = scratch.path().join("chosen");
     std::fs::create_dir(&parent).unwrap();
     std::fs::create_dir(&chosen).unwrap();
     std::fs::write(parent.join("shared.CMD"), "@echo parent\r\n").unwrap();
@@ -47,7 +47,7 @@ fn capture_resolves_override_path_before_parent_decoys() {
         "capture_resolves_override_path_before_parent_decoys",
     )
     .unwrap()
-    .env(CHILD, &scratch.0)
+    .env(CHILD, scratch.path())
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")
     .output()
