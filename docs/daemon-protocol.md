@@ -87,7 +87,8 @@ Decoder accounting is limited to eight times the received payload length rounded
 up to a power of two (at least one byte), saturating at the platform's addressable
 size. This allows compact integer encodings while rejecting excessive declared
 string lengths before allocation. The limit measures decoder accounting, not total
-heap usage; collection storage can exceed its encoded size.
+heap usage. Serde caps each collection's speculative preallocation at 1 MiB;
+total storage for valid records can exceed the accounting.
 Version negotiation accepts 21 and rejects older/newer clients, including zero.
 
 `ClientKeybindings::Server` keeps server configuration. `Local` carries a typed

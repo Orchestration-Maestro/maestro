@@ -744,6 +744,23 @@ fn strings_past_the_frame_caps_round_trip_under_a_larger_cap() {
 }
 
 #[test]
+/// Huge vector counts in tiny frames fail without reserving the claimed length.
+fn huge_vector_counts_in_tiny_frames_are_rejected() {
+    for tag in [1, 3] {
+        let frame = [0x0a, 0, 0, 0, tag, 0xfd, 0, 0, 0, 1, 0, 0, 0, 0x26];
+        let error = if tag == 1 {
+            read_message::<_, ClientMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        } else {
+            read_message::<_, ServerMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        };
+        assert!(
+            matches!(error, FramingError::Bincode(ref message) if message.contains("UnexpectedEnd")),
+            "{error:?}"
+        );
+    }
+}
+
+#[test]
 /// Small frames cannot reserve strings sized for the protocol-wide cap.
 fn string_allocation_limit_tracks_the_received_payload() {
     for tag in [vec![5], vec![4, 1]] {
