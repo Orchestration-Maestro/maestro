@@ -144,15 +144,13 @@ impl ExtensionEditorComponent {
     }
     /// Replaces the buffer only after a successfully observed zero exit.
     fn edit_file(&self, command: &str, path: &Path) -> io::Result<()> {
-        let Ok(mut command) = native_command(
+        let command = native_command(
             command,
             path,
             #[cfg(windows)]
             self.runtime.as_ref(),
-        ) else {
-            return Ok(());
-        };
-        match maestro_app::spawn_sync(&mut command, maestro_app::SpawnSyncOptions::Inherit) {
+        );
+        match command.spawn_sync(maestro_app::SpawnSyncOptions::Inherit) {
             Ok(output) if output.status.success() => {
                 let bytes = fs::read(path)?;
                 let content = String::from_utf8_lossy(&bytes);
@@ -215,18 +213,17 @@ fn native_command(
     command: &str,
     path: &Path,
     #[cfg(windows)] runtime: &dyn TuiRuntime,
-) -> io::Result<tokio::process::Command> {
+) -> maestro_app::LaunchContext<'static, Vec<(&'static str, String)>> {
     #[cfg(not(windows))]
     {
         let mut tokens = command.split(' ');
-        let mut command = maestro_app::Launch {
+        maestro_app::Launch {
             executable: tokens.next().unwrap_or_default().into(),
             args: tokens.map(str::to_owned).collect(),
             verbatim: false,
         }
-        .command()?;
-        command.arg(path);
-        Ok(command.into())
+        .with_context(vec![], None)
+        .arg(path)
     }
     #[cfg(windows)]
     {
@@ -235,9 +232,7 @@ fn native_command(
             &path.to_string_lossy(),
             runtime.environment("comspec").as_deref(),
         );
-        let mut command = launch.command()?;
-        command.env(env.0, env.1);
-        Ok(command.into())
+        launch.with_context(vec![env], None)
     }
 }
 

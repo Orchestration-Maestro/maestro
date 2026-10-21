@@ -20,14 +20,16 @@ fn extensionless_commands_follow_directory_and_extension_order() {
         (".COM;.CMD;.EXE", "custom.CMD"),
     ] {
         assert_eq!(
-            resolve_windows_executable("custom", &directories, extensions, |p| files
-                .contains(&p.to_path_buf())),
+            resolve_windows_executable("custom", &directories, extensions, Path::new(""), |p| {
+                files.contains(&p.to_path_buf())
+            }),
             Some(Path::new("current").join(expected))
         );
     }
     assert_eq!(
-        resolve_windows_executable("missing", &directories, ".CMD;.EXE", |p| files
-            .contains(&p.to_path_buf())),
+        resolve_windows_executable("missing", &directories, ".CMD;.EXE", Path::new(""), |p| {
+            files.contains(&p.to_path_buf())
+        }),
         None
     );
 }
@@ -38,7 +40,7 @@ fn explicit_script_names_prefer_current_directory_over_path_decoys() {
     let current = Path::new("current").join("wrapper.cmd");
     let decoy = Path::new("bin").join("wrapper.cmd");
     assert_eq!(
-        resolve_windows_executable("wrapper.cmd", &directories, ".EXE", |p| {
+        resolve_windows_executable("wrapper.cmd", &directories, ".EXE", Path::new(""), |p| {
             p == current || p == decoy
         }),
         Some(current)
@@ -54,6 +56,7 @@ fn explicit_command_directories_do_not_search_other_directories() {
             command.to_str().unwrap(),
             &[PathBuf::from("other")],
             ".EXE;;.CMD",
+            Path::new(""),
             |p| p == script
         ),
         Some(script)
@@ -64,11 +67,12 @@ fn explicit_command_directories_do_not_search_other_directories() {
 #[cfg(windows)]
 fn verbatim_shell_commands_keep_environment_operands() {
     let output = super::windows_shell_launch("echo \"%MAESTRO_LITERAL_FILE%\"", None)
-        .command()
-        .unwrap()
-        .env(
-            "MAESTRO_LITERAL_FILE",
-            "directory with spaces & literal.txt",
+        .with_context(
+            [(
+                "MAESTRO_LITERAL_FILE",
+                "directory with spaces & literal.txt",
+            )],
+            None,
         )
         .output()
         .unwrap();
@@ -316,8 +320,7 @@ fn assert_launch_environment(directory: &Path) {
             args: vec![],
             verbatim: false,
         }
-        .command_with_env(environment)
-        .unwrap()
+        .with_context(environment, None)
         .output()
         .unwrap();
         assert!(output.status.success(), "{output:?}");
@@ -329,7 +332,8 @@ fn assert_launch_environment(directory: &Path) {
             args: vec![],
             verbatim: false,
         }
-        .command_with_env(environment)
+        .with_context(environment, None)
+        .output()
         .unwrap_err();
         assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     }
