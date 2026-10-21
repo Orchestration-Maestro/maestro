@@ -1810,3 +1810,76 @@ fn maestro_hook_missing_tool_announces_failed_step() {
         assert!(String::from_utf8_lossy(&output.stderr).contains("No such file or directory"));
     }
 }
+
+/// Run the test build's author preparation only while it is newer than its sources.
+#[cfg(unix)]
+#[test]
+fn author_setup_runs_the_built_example_only_while_fresh() {
+    use std::os::unix::fs::PermissionsExt;
+    use std::time::{Duration, SystemTime};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let root = std::env::temp_dir().join(format!(
+        "maestro-author-setup-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    let profile = root.join("target/debug");
+    fs::create_dir_all(profile.join("deps")).unwrap();
+    fs::create_dir_all(profile.join("examples")).unwrap();
+    let sources = [
+        "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+        "crates/maestro-extensions-wasm/src/tests/build.rs",
+        "crates/maestro-extensions-wasm/Cargo.toml",
+        "Cargo.lock",
+    ];
+    let earlier = SystemTime::now() - Duration::from_secs(3600);
+    for source in sources {
+        let path = root.join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::File::create(path)
+            .unwrap()
+            .set_modified(earlier)
+            .unwrap();
+    }
+    let example = profile.join("examples/prepare_author_component");
+    for (path, name) in [(&example, "example"), (&root.join("cargo"), "cargo")] {
+        fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
+        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let run = || run_author_setup(&root, &profile);
+    assert_eq!(run(), "example\n");
+    for source in sources {
+        let file = fs::File::options()
+            .write(true)
+            .open(root.join(source))
+            .unwrap();
+        file.set_modified(SystemTime::now() + Duration::from_secs(60))
+            .unwrap();
+        assert!(run().starts_with("cargo run "), "{source}");
+        file.set_modified(earlier).unwrap();
+    }
+    fs::remove_file(&example).unwrap();
+    assert!(run().starts_with("cargo run "));
+    fs::remove_dir_all(&root).unwrap();
+}
+
+/// Run the author setup script from `root` with `profile` as nextest's artifact directory.
+#[cfg(unix)]
+fn run_author_setup(root: &Path, profile: &Path) -> String {
+    let output = Command::new("sh")
+        .arg(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
+        )
+        .current_dir(root)
+        .env("NEXTEST_LD_LIBRARY_PATH", profile)
+        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
+        .env("CARGO", root.join("cargo"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    stdout(&output)
+}

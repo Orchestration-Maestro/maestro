@@ -375,10 +375,13 @@ optimised, because the conventions tests parse every workspace source; release
 builds are unchanged.
 
 Before guest-authoring tests, nextest's shell launcher locates the active
-artifact directory through its documented platform library search path and
-runs the `prepare_author_component` example through Cargo in that target
-directory and profile. Cargo builds the example on demand, including for `--lib`
-and filtered selections; release and coverage runs reuse their own host build.
+artifact directory through its documented platform library search path. It runs
+the `prepare_author_component` example that the test build put in that directory,
+as long as the example is newer than its source, the shared build module, the
+package manifest and `Cargo.lock`. Running it through Cargo instead would resolve
+features for that one package and recompile the engine. When the example is missing
+or older, as after a `--lib` or filtered selection, the launcher builds and runs it
+through Cargo in the same target directory and profile.
 The launcher fails if the directory cannot be resolved rather than building
 elsewhere. It uses `NEXTEST_LD_LIBRARY_PATH` on Linux,
 `NEXTEST_DYLD_FALLBACK_LIBRARY_PATH` on macOS and `PATH` through Git's shell
