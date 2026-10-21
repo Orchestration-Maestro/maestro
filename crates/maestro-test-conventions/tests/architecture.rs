@@ -2481,6 +2481,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
     "maestro-chat",
     "maestro-credentials",
+    "maestro-daemon",
     "maestro-extensions",
     "maestro-models",
     "maestro-packages",
