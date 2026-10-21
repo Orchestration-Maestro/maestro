@@ -2,6 +2,7 @@
 #![cfg(test)]
 use super::model_support::model;
 use super::*;
+use crate::runtime_support;
 use maestro_extensions::types::ExtensionErrorListener;
 use maestro_models::UserContent;
 use maestro_session::{
@@ -84,7 +85,7 @@ pub fn errors() {
     let future = api.set_model(model("selected")).unwrap();
     assert!(started.get());
     assert!(
-        executor()
+        runtime_support::runtime()
             .block_on(future)
             .unwrap_err()
             .downcast_ref::<Marker>()
@@ -92,11 +93,6 @@ pub fn errors() {
     );
 }
 
-pub(super) fn executor() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-}
 fn message(details: Value) -> CustomMessageInput {
     CustomMessageInput {
         custom_type: " raw\u{feff}\u{85} ".into(),
@@ -203,9 +199,9 @@ pub fn rebind() {
         .unwrap();
     assert!(released.get());
     send.send(()).unwrap();
-    assert!(executor().block_on(first).unwrap());
+    assert!(runtime_support::runtime().block_on(first).unwrap());
     assert!(
-        !executor()
+        !runtime_support::runtime()
             .block_on(api.set_model(model("selected")).unwrap())
             .unwrap()
     );
@@ -526,11 +522,17 @@ pub fn loading(api: &ExtensionAPI<Local>, runtime: &ExtensionRuntime<Local>) {
     let direct_model = (actions.set_model)(model("selected"));
     let facade_model = api.set_model(model("selected")).unwrap();
     assert_eq!(
-        executor().block_on(direct_model).unwrap_err().to_string(),
+        runtime_support::runtime()
+            .block_on(direct_model)
+            .unwrap_err()
+            .to_string(),
         "Extension runtime not initialized"
     );
     assert_eq!(
-        executor().block_on(facade_model).unwrap_err().to_string(),
+        runtime_support::runtime()
+            .block_on(facade_model)
+            .unwrap_err()
+            .to_string(),
         "Extension runtime not initialized"
     );
 }
@@ -686,7 +688,7 @@ pub fn local_future() {
         .unwrap();
     api.register_provider("local".into(), good("m")).unwrap();
     assert!(
-        executor()
+        runtime_support::runtime()
             .block_on(api.set_model(model("selected")).unwrap())
             .unwrap()
     );
@@ -957,7 +959,7 @@ fn bound_checker(
                 .as_deref(),
             Some("just bound")
         );
-        executor()
+        runtime_support::runtime()
             .block_on(runner.create_command_context().wait_for_idle())
             .unwrap();
         observed.set(observed.get() + 1);
@@ -1038,7 +1040,7 @@ fn model_forwarding() {
             )
             .unwrap();
         assert_eq!(
-            executor()
+            runtime_support::runtime()
                 .block_on(api.set_model(submitted).unwrap())
                 .unwrap(),
             result
@@ -1058,10 +1060,7 @@ pub fn exec_outputs(api: &ExtensionAPI<Local>) {
         "sh".into(),
         "literal ; $value with spaces".into(),
     ];
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let executor = runtime_support::io_runtime();
     let result = executor
         .block_on(
             api.exec(program, &args, None, maestro_tools::ExecOptions::default())

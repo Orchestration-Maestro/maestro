@@ -507,9 +507,7 @@ fn threaded_shortcut_reads_its_context_before_suspending() {
     let shortcuts = runner.get_shortcuts(&Vec::new());
     let handler = Arc::clone(&shortcuts["ctrl+t"].read().unwrap().handler);
     let pressed = send(handler(runner.create_context()));
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let executor = crate::runtime_support::runtime();
     executor.block_on(pressed).unwrap();
     assert_eq!(*seen.lock().unwrap(), ["/threaded"]);
 }

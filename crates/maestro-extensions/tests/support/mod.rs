@@ -116,14 +116,11 @@ pub fn case(id: &str) -> Value {
 }
 pub fn run<F: Future<Output = ()>>(test: impl Fn(Env) -> F) {
     for queued in [false, true] {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let env = Env::new(queued);
-                test(env.clone()).await;
-                env.settle().await;
-            });
+        crate::runtime_support::runtime().block_on(async {
+            let env = Env::new(queued);
+            test(env.clone()).await;
+            env.settle().await;
+        });
     }
 }
 

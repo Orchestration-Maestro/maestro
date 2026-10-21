@@ -339,10 +339,7 @@ fn exec_runs_in_the_extension_directory_unless_overridden() {
     let dir = std::env::temp_dir();
     let runtime = create_extension_runtime::<Local>();
     let (_owner, api) = local_api(runtime, &dir.display().to_string());
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let executor = crate::runtime_support::io_runtime();
     let args: Vec<String> = Vec::new();
     let out = executor
         .block_on(

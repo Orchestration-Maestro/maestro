@@ -27,9 +27,7 @@ pub type Trace = Rc<RefCell<Vec<String>>>;
 
 /// Runs a local test on one thread with a local task set.
 pub fn local<F: Future<Output = ()>>(test: F) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+    let runtime = crate::runtime_support::runtime();
     tokio::task::LocalSet::new().block_on(&runtime, test);
 }
 
