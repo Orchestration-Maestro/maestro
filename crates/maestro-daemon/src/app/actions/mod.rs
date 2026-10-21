@@ -9,6 +9,7 @@ mod ordering;
 mod removal;
 mod state_update;
 mod updates;
+mod zoom;
 pub use notifications::{
     active_tab_suppresses_notifications, is_completion_transition_parts,
     notification_sound_for_state_change, notification_toast_for_pane_state_update,

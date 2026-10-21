@@ -1594,3 +1594,36 @@ contains = ["controlled working"]
     assert!(state.toast.is_none());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn daemon_toggle_zoom_works() {
+    let mut state = app_with_workspaces(&["test"]);
+    let root = state.topology.workspaces[0].tabs[0].root_pane;
+    state
+        .topology
+        .split_pane_with_runtime(
+            0,
+            maestro_workspace::layout::SplitRequest {
+                target: root,
+                direction: maestro_protocol::schema::SplitDirection::Right,
+                ratio: None,
+                focus_new_pane: true,
+            },
+            |_, _| Ok(()),
+        )
+        .unwrap()
+        .unwrap();
+    assert!(!state.topology.workspaces[0].tabs[0].zoomed);
+    state.toggle_zoom();
+    assert!(state.topology.workspaces[0].tabs[0].zoomed);
+    state.toggle_zoom();
+    assert!(!state.topology.workspaces[0].tabs[0].zoomed);
+}
+
+#[test]
+fn daemon_toggle_zoom_single_pane_noop() {
+    let mut state = app_with_workspaces(&["test"]);
+    state.toggle_zoom();
+    assert!(!state.topology.workspaces[0].tabs[0].zoomed);
+    assert!(!state.session_dirty);
+}

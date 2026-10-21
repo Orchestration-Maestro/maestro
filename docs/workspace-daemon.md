@@ -567,3 +567,6 @@ Detection catalogue events retain update diagnostics and refresh source/version
 summaries from the same caller-supplied `ManifestCache` shared with pane runtimes.
 Successful updates show agent labels and versions when workspace toast delivery
 is enabled. Empty updates still refresh diagnostics and summaries without a toast.
+
+The daemon can toggle zoom on the active split tab without changing its layout.
+A single-pane tab is unchanged; a zoom change marks the session dirty.
