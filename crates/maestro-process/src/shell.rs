@@ -17,12 +17,26 @@ impl Launch {
     /// # Errors
     /// Returns `NotFound` when a Windows command cannot be resolved.
     pub fn command(self) -> std::io::Result<std::process::Command> {
+        self.command_with_env(std::iter::empty::<(&str, &str)>())
+    }
+
+    /// Builds a native command with the supplied child environment overrides.
+    ///
+    /// # Errors
+    /// Returns `NotFound` when a Windows command cannot be resolved.
+    pub fn command_with_env<I, K, V>(self, environment: I) -> std::io::Result<std::process::Command>
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: AsRef<std::ffi::OsStr>,
+        V: AsRef<std::ffi::OsStr>,
+    {
         #[cfg(windows)]
         let executable = native_windows_executable(&self.executable)
             .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))?;
         #[cfg(not(windows))]
         let executable = &self.executable;
         let mut command = std::process::Command::new(executable);
+        command.envs(environment);
         #[cfg(windows)]
         if self.verbatim {
             use std::os::windows::process::CommandExt;
