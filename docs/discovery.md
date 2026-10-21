@@ -21,10 +21,11 @@ It never creates the root. Both methods return an empty list rather than an
 error for any listing failure, and neither writes a session file.
 
 A candidate is any directory entry whose name ends in exactly `.jsonl`,
-symlinks included. Candidates are enumerated first, in the platform's native
-order; for `list_all` every directory is enumerated and counted before the first
-candidate is read. All candidate reads then run together in the calling task with
-no limit on how many are in flight.
+symlinks included. Candidates are enumerated first, in name order on every
+platform. For `list_all` the project directories come in name order too, and
+every directory is enumerated and counted before the first candidate is read.
+All candidate reads then run together in the calling task with no limit on how
+many are in flight.
 
 ## Per-session metadata
 
@@ -67,7 +68,7 @@ valid or not, in completion order, from the task awaiting the listing. A callbac
 error stops the listing at once and returns an empty list; reads already in flight
 are dropped, not drained, and the callback is never called after the listing
 returns. Results are collected in enumeration order and stably sorted by
-descending `modified`, so equal times keep native enumeration order.
+descending `modified`, so equal times keep name order.
 
 ```rust
 use maestro_session::SessionManager;

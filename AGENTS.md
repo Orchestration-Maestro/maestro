@@ -154,9 +154,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
 - `maestro-listing` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path utility. It lists one directory's entries sorted
-  by file name on every platform. Only resources, theme, the toolkit and tools may
-  depend on it, on native targets; callers keep kind filtering, name decoding and
-  further ordering.
+  by file name on every platform. Only resources, theme, the toolkit, tools and
+  session may depend on it, on native targets; callers keep kind filtering, name
+  decoding and further ordering.
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.

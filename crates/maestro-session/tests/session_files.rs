@@ -492,7 +492,7 @@ fn published_append_failure_keeps_accepted_memory() {
 }
 
 #[test]
-fn continuation_uses_mtime_stable_ties_and_existing_catches() {
+fn continuation_uses_millisecond_ties_and_existing_catches() {
     let directory = Directory::new();
     assert!(find_most_recent_session(directory.text()).is_none());
     assert!(find_most_recent_session(directory.path.join("missing").to_str().unwrap()).is_none());
@@ -500,26 +500,13 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     directory.file("invalid.jsonl", "bad");
     assert!(find_most_recent_session(directory.text()).is_none());
     let first = directory.file("first.jsonl", jsonl(&[header(&json!("a"))]));
-    directory.file("second.jsonl", jsonl(&[header(&json!("b"))]));
+    let second = directory.file("second.jsonl", jsonl(&[header(&json!("b"))]));
     let instant = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
-    let order: Vec<_> = fs::read_dir(directory.text())
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| {
-            path.file_name().unwrap() == "first.jsonl"
-                || path.file_name().unwrap() == "second.jsonl"
-        })
-        .collect();
-    for (position, path) in order.iter().enumerate() {
-        let nanos = if position == 0 { 100 } else { 900_000 };
-        set_modified(path, instant + std::time::Duration::from_nanos(nanos));
-    }
-    let winner = order[1].to_str().unwrap();
-    assert_eq!(
-        find_most_recent_session(directory.text()).unwrap(),
-        order[0].to_str().unwrap()
-    );
-    set_modified(winner, instant + std::time::Duration::from_millis(2));
+    set_modified(&first, instant + std::time::Duration::from_nanos(100));
+    set_modified(&second, instant + std::time::Duration::from_micros(900));
+    assert_eq!(find_most_recent_session(directory.text()).unwrap(), first);
+    set_modified(&second, instant + std::time::Duration::from_millis(2));
+    let winner = second.as_str();
     assert_eq!(
         find_most_recent_session(directory.text()).as_deref(),
         Some(winner)
@@ -548,6 +535,30 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     }
 }
 
+/// Equal modification times resume the first name in name order, whatever order
+/// the file system lists.
+#[test]
+fn continuation_ties_resume_the_first_name_in_name_order() {
+    let directory = Directory::new();
+    let instant = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+    // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
+    for name in ["b", "_x", "a", "C"] {
+        let record = json!({"type": "session", "version": 3, "id": name, "cwd": "stored"});
+        set_modified(
+            directory.file(&format!("{name}.jsonl"), jsonl(&[record])),
+            instant,
+        );
+    }
+    let resumed = SessionManager::continue_recent("caller", Some(directory.text()), "unused");
+    assert_eq!(resumed.unwrap().get_session_id(), "C");
+    let mut order = Vec::new();
+    while let Some(path) = find_most_recent_session(directory.text()) {
+        fs::remove_file(&path).unwrap();
+        order.push(PathBuf::from(path).file_stem().unwrap().to_owned());
+    }
+    assert_eq!(order, ["C", "_x", "a", "b"]);
+}
+
 #[test]
 #[cfg(unix)]
 fn continuation_probes_all_candidates_before_reading_metadata() {
@@ -561,10 +572,7 @@ fn continuation_probes_all_candidates_before_reading_metadata() {
                 .success()
         );
     }
-    let paths: Vec<_> = fs::read_dir(directory.text())
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .collect();
+    let paths = ["first.jsonl", "second.jsonl"].map(|name| directory.path.join(name));
     let producer = std::thread::spawn(move || {
         use std::io::Write;
         {
