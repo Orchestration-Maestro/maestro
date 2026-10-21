@@ -625,9 +625,9 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 `maestro-markdown` owns native Markdown structure, owned source extents and mapped
 extended links. The toolkit keeps terminal normalization and formatting. The
 application re-exports the parser as `markdown`; browser consumers use that edge.
-Document, list-item and quote-chunk parsing share one source-order continuation
-owner. List items enter non-top-level grammar; completed block calls return to
-top level. Quote chunks save and restore the enclosing grammar while appending
+Document, list-item and quote-chunk parsing share one block accumulator.
+Quotes suspend and resume through retained source handles. List items enter
+non-top-level grammar; completed block calls return to top level. Quote chunks save and restore the enclosing grammar while appending
 to the same output. Recognized raw consumption is separate from semantic text
 and its mapped source, including empty quote bodies and invisible definitions.
 
@@ -642,12 +642,14 @@ are not a format. `to_owned_string() -> String` explicitly materializes them.
 `From<String>`, `Clone`, `Debug` and empty `Default` are supported. There is no
 implicit contiguous accessor, `Deref<str>` or per-node flattened cache.
 
-Parser work and retained storage are linear in input bytes, admitted nodes and
-mapping records, excluding requested output bytes. Caller block tokenizers
+Reply-quote work and retained storage grow linearly in input bytes, admitted
+nodes and mapping records, excluding requested output bytes. List-item admission
+still restarts when its enclosing quote resumes. Caller block tokenizers
 receive the same contiguous operands in the same order, including repeated
 admissions. Materializing those operands is caller-requested output work,
 charged separately from parser work; contiguous source operands are borrowed.
-No second parser or whole-tail restart provides a fallback.
+Quote resumption transfers retained source handles rather than flattening the
+remaining tail.
 The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.

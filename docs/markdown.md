@@ -57,9 +57,9 @@ Container-local source removes quote/list continuation prefixes. Aligned list co
 tabs to four spaces; lazy continuations retain authored tabs. A node's range still
 names the original document source, not its container-local spelling.
 
-Documents, list items and quote chunks share one source-order continuation
-owner. Quote reentry retains the trailing container's own raw source and its
-ancestor's unconsumed remainder. Semantic text can change spelling or be empty
+Documents, list items and quote chunks share one block accumulator. Quotes
+suspend and resume through retained source handles. Quote reentry retains the
+trailing container's own raw source and its ancestor's unconsumed remainder. Semantic text can change spelling or be empty
 without erasing raw consumption. Code continuations reuse one indentation-removal
 operation; definitions continuing paragraph or item text stay literal instead
 of entering the reference index.
