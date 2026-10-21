@@ -223,3 +223,267 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
             assert_eq!(cwd, std::path::Path::new("/fixed"));
         });
 }
+
+/// Adds one viewport and its retained terminal metadata without starting a process.
+#[cfg(unix)]
+fn target_app() -> (
+    maestro_daemon::app::App<fn() -> u128>,
+    maestro_workspace::layout::PaneId,
+) {
+    let mut app = app(&Config::default());
+    let (pane, ()) = app
+        .state
+        .topology
+        .new_with_tab("/target".into(), None, |_, _| Ok(()))
+        .unwrap();
+    attach_terminal(&mut app, pane);
+    app.state.active = Some(0);
+    (app, pane)
+}
+
+/// Supplies the terminal metadata normally installed by a successful native spawn.
+#[cfg(unix)]
+fn attach_terminal(
+    app: &mut maestro_daemon::app::App<fn() -> u128>,
+    pane: maestro_workspace::layout::PaneId,
+) {
+    let id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    app.state.terminals.insert(
+        id.clone(),
+        maestro_daemon::terminal::state::TerminalState::new(id, "/target".into()),
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_terminal_and_agent_targets_treat_terminal_ids_differently() {
+    let (app, pane) = target_app();
+    let id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .to_string();
+    let resolved = app.resolve_terminal_target(&id).unwrap();
+    assert_eq!(resolved.pane_id, pane);
+    assert_eq!(resolved.terminal_id, id);
+    assert!(matches!(
+        app.resolve_agent_target(&id),
+        Err(maestro_daemon::app::terminal_targets::TerminalTargetError::NotFound { .. })
+    ));
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_agent_target_rejects_a_pane_that_only_has_a_launch_command() {
+    let (mut app, pane) = target_app();
+    app.state.terminals.values_mut().next().unwrap().launch_argv =
+        Some(vec!["just".into(), "dev".into()]);
+    let id = app.state.public_pane_id(0, pane).unwrap();
+    assert!(app.resolve_terminal_target(&id).is_ok());
+    assert!(matches!(
+        app.resolve_agent_target(&id),
+        Err(maestro_daemon::app::terminal_targets::TerminalTargetError::NotFound { .. })
+    ));
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_terminal_target_resolves_pane_id_for_an_agent() {
+    let (mut app, pane) = target_app();
+    detect_agent(&mut app, pane);
+    let id = app.state.public_pane_id(0, pane).unwrap();
+    let resolved = app.resolve_terminal_target(&id).unwrap();
+    assert_eq!(resolved.pane_id, pane);
+    assert_eq!(
+        resolved.terminal_id,
+        app.state.topology.workspaces[0]
+            .terminal_id(pane)
+            .unwrap()
+            .to_string()
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_terminal_target_resolves_unique_agent_name() {
+    let (mut app, pane) = target_app();
+    app.state
+        .terminals
+        .values_mut()
+        .next()
+        .unwrap()
+        .set_agent_name("reviewer".into());
+    let resolved = app.resolve_terminal_target("reviewer").unwrap();
+    assert_eq!(resolved.pane_id, pane);
+    assert_eq!(
+        resolved.terminal_id,
+        app.state.topology.workspaces[0]
+            .terminal_id(pane)
+            .unwrap()
+            .to_string()
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_agent_target_treats_legacy_pane_syntax_as_a_name() {
+    let (mut app, pane) = target_app();
+    detect_agent(&mut app, pane);
+    let terminal = app.state.terminals.values_mut().next().unwrap();
+    terminal.set_agent_name("p_1".into());
+    let resolved = app.resolve_agent_target("p_1").unwrap();
+    assert_eq!(resolved.pane_id, pane);
+    assert_eq!(
+        resolved.terminal_id,
+        app.state.topology.workspaces[0]
+            .terminal_id(pane)
+            .unwrap()
+            .to_string()
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_terminal_target_reports_missing_target() {
+    let (app, _) = target_app();
+    assert_eq!(
+        app.resolve_terminal_target("missing-agent").unwrap_err(),
+        maestro_daemon::app::terminal_targets::TerminalTargetError::NotFound {
+            target: "missing-agent".into()
+        }
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
+    use maestro_daemon::app::terminal_targets::TerminalTargetError;
+    let (mut app, first) = target_app();
+    let (second, ()) = app
+        .state
+        .topology
+        .split_pane_with_runtime(
+            0,
+            maestro_workspace::layout::SplitRequest {
+                target: first,
+                direction: maestro_protocol::schema::SplitDirection::Right,
+                ratio: None,
+                focus_new_pane: true,
+            },
+            |_, _| Ok(()),
+        )
+        .unwrap()
+        .unwrap();
+    attach_terminal(&mut app, second);
+    for terminal in app.state.terminals.values_mut() {
+        terminal.set_agent_name("worker".into());
+    }
+    let TerminalTargetError::Ambiguous { target, candidates } =
+        app.resolve_terminal_target("worker").unwrap_err()
+    else {
+        panic!("expected ambiguity")
+    };
+    assert_eq!(target, "worker");
+    assert_eq!(candidates.len(), 2);
+    assert!(
+        candidates
+            .iter()
+            .all(|candidate| candidate.terminal_id.starts_with("term_")
+                && candidate.pane_id.starts_with("w1:")
+                && candidate.workspace_id == "w1"
+                && candidate.cwd.is_some())
+    );
+}
+
+/// Admits the same process identity observation consumed by live panes.
+#[cfg(unix)]
+fn detect_agent(
+    app: &mut maestro_daemon::app::App<fn() -> u128>,
+    pane: maestro_workspace::layout::PaneId,
+) {
+    app.state
+        .handle_app_event(maestro_daemon::events::AppEvent::AgentProcessDetected {
+            pane_id: pane,
+            agent: maestro_detection::agents::Agent::Claude,
+            observed_at: std::time::Instant::now(),
+        });
+}
+
+#[test]
+#[cfg(unix)]
+fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_aliases() {
+    use maestro_daemon::app::terminal_targets::TerminalTargetError;
+    let (mut app, pane) = target_app();
+    detect_agent(&mut app, pane);
+    let id = app.state.public_pane_id(0, pane).unwrap();
+    assert_eq!(app.resolve_agent_target(&id).unwrap().pane_id, pane);
+    assert_eq!(app.resolve_terminal_target("claude").unwrap().pane_id, pane);
+    assert!(matches!(
+        app.resolve_agent_target("claude"),
+        Err(TerminalTargetError::NotFound { .. })
+    ));
+    for form in ["p_1", "p_w1_1", "w1-1", "w1:p0", "w1:pz", "missing"] {
+        assert!(
+            matches!(
+                app.resolve_terminal_target(form),
+                Err(TerminalTargetError::NotFound { .. })
+            ),
+            "{form}"
+        );
+    }
+    app.state
+        .public_pane_id_aliases
+        .insert("stale-alias".into(), pane);
+    assert!(matches!(
+        app.resolve_terminal_target("stale-alias"),
+        Err(TerminalTargetError::NotFound { .. })
+    ));
+}
+
+#[test]
+#[cfg(unix)]
+fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous() {
+    use maestro_daemon::app::terminal_targets::TerminalTargetError;
+    let (mut app, pane) = target_app();
+    let (other, ()) = app
+        .state
+        .topology
+        .create_tab_with_runtime(0, |_, _| Ok(()))
+        .unwrap()
+        .unwrap();
+    attach_terminal(&mut app, other);
+    let terminal_id = app.state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .to_string();
+    let other_id = app.state.topology.workspaces[0]
+        .terminal_id(other)
+        .unwrap()
+        .clone();
+    app.state
+        .terminals
+        .get_mut(&other_id)
+        .unwrap()
+        .set_agent_name(terminal_id.clone());
+    assert_eq!(
+        app.resolve_terminal_target(&terminal_id).unwrap().pane_id,
+        pane
+    );
+    assert_eq!(
+        app.resolve_agent_target(&terminal_id).unwrap().pane_id,
+        other
+    );
+    for terminal in app.state.terminals.values_mut() {
+        terminal.set_agent_name("duplicate".into());
+    }
+    let TerminalTargetError::Ambiguous { candidates, .. } =
+        app.resolve_agent_target("duplicate").unwrap_err()
+    else {
+        panic!("expected ambiguity")
+    };
+    assert_eq!(candidates.len(), 2);
+    assert_eq!(candidates[0].tab_id, "w1:t1");
+    assert_eq!(candidates[1].tab_id, "w1:t2");
+}

@@ -10,6 +10,9 @@ mod runtime;
 mod tab_bar_status;
 mod theme_sync;
 
+/// Stable terminal targeting and unambiguous agent-name resolution.
+pub mod terminal_targets;
+
 /// Shared launch inputs and daemon construction.
 pub mod construction;
 

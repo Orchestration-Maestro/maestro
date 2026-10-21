@@ -682,3 +682,9 @@ semantics.
 Tab observations expose the stable public number even after an earlier tab is
 closed. Display labels still follow the current position unless explicitly
 named; focus and agent attention are projected from the retained live state.
+
+Terminal targets resolve a terminal handle before a current public pane handle,
+then an agent name or detected label. Agent targets accept a current public pane
+handle only for an agent, or an explicit agent name; historical pane spellings
+remain names. Ambiguous names return all matching viewport identities, current
+directories and agent statuses rather than selecting the first match.
