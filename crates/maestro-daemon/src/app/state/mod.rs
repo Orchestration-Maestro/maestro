@@ -23,6 +23,8 @@ pub use notification::{
     AgentNotificationDelivery, CopyFeedback, PendingAgentNotification, ToastKind,
     ToastNotification, ToastTarget,
 };
+mod theme;
+pub use theme::ThemeRuntimeConfig;
 mod selection;
 pub use selection::{
     CopyModeSelection, CopyModeState, Mode, SelectionAutoscroll, SelectionAutoscrollDirection,
@@ -57,6 +59,16 @@ pub enum TabBarStatusSegment {
 
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
+    /// Accepted theme selection policy and renderer overrides.
+    pub theme_runtime: ThemeRuntimeConfig,
+    /// Active authored or sibling theme name, independent of palette rendering.
+    pub theme_name: String,
+    /// Last observed host appearance.
+    pub host_terminal_appearance: Option<crate::terminal_theme::HostAppearance>,
+    /// Whether a host report takes precedence over background inference.
+    pub host_terminal_appearance_explicit: maestro_protocol::shared::Flag,
+    /// Host default and palette colours propagated to live panes.
+    pub host_terminal_theme: crate::terminal_theme::TerminalTheme,
     /// Whether interactive creation waits for a supplied workspace name.
     pub prompt_new_workspace_name: maestro_protocol::shared::Flag,
     /// Directory retained while the input owner collects a new workspace name.
@@ -139,7 +151,13 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Creates empty daemon state using accepted settings and an identity clock.
     #[must_use]
     pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
+        let theme_runtime = ThemeRuntimeConfig::new(config, true);
         Self {
+            theme_name: theme_runtime.effective_name(None).into(),
+            theme_runtime,
+            host_terminal_appearance: None,
+            host_terminal_appearance_explicit: maestro_protocol::shared::Flag(false),
+            host_terminal_theme: crate::terminal_theme::TerminalTheme::default(),
             prompt_new_workspace_name: config.ui.prompt_new_workspace_name,
             pending_workspace_create_cwd: None,
             agent_panel_sort: config.ui.agent_panel_sort,

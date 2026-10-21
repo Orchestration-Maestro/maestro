@@ -97,6 +97,10 @@ impl<C: FnMut() -> u128> App<C> {
             event_hub,
             overlay_panes: HashMap::new(),
         };
+        app.state.host_terminal_theme = app.launch.theme;
+        if let Some(appearance) = app.launch.appearance {
+            app.set_host_terminal_appearance(appearance, true);
+        }
         app.configure_tab_bar_status(&config.ui.tab_bar_right, &config.ui.tab_bar_right_separator);
         app
     }

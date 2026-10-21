@@ -5,6 +5,7 @@ mod api;
 mod creation;
 mod runtime;
 mod tab_bar_status;
+mod theme_sync;
 
 /// Shared launch inputs and daemon construction.
 pub mod construction;

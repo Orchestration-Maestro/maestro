@@ -641,3 +641,16 @@ current or authored-path policy. Native creation binds real allocated identities
 to the shared launch inputs inside the topology's spawn transaction. A failed
 spawn publishes neither a workspace nor terminal ownership. Modal input remains
 with its input owner.
+
+### Host appearance and theme names
+
+The daemon retains manual, dark and light theme names separately. Automatic
+switching is opt-in; without it, host appearance leaves the manual name unchanged.
+When enabled, the selected theme's dark/light sibling supplies each omitted name.
+Custom colour overrides and the legacy accent are retained for the renderer, which
+owns palette construction.
+
+Explicit host appearance reports take precedence over inferred background
+luminance. Host colours still update independently, preserving each child's own
+colour overrides. The daemon propagates accepted observations to live panes and
+retains them for later pane launches.
