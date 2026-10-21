@@ -94,6 +94,30 @@ impl PaneStateUpdate {
 }
 
 impl<C: FnMut() -> u128> DaemonState<C> {
+    /// Publishes an agent's completion while its pane and terminal still exist.
+    pub fn publish_pane_process_exit_if_agent(&mut self, pane: PaneId) -> Option<PaneStateUpdate> {
+        let observed_at = Instant::now();
+        let update = self.update_terminal_state(pane, |terminal| {
+            let agent = terminal.effective_known_agent().or(terminal.detected_agent);
+            if agent.is_none() && !terminal.full_lifecycle_hook_authority_active() {
+                return None;
+            }
+            Some(terminal.set_detected_state_with_screen_signals_at(
+                crate::terminal::state::DetectedStateUpdate {
+                    agent,
+                    fallback_state: AgentState::Idle,
+                    visible: maestro_detection::agents::AgentVisibility {
+                        visible_idle: true,
+                        ..Default::default()
+                    },
+                    process_exited: true,
+                },
+                observed_at,
+            ))
+        })?;
+        matches!(update.release, AgentRelease::Released(_)).then_some(update)
+    }
+
     /// Applies one terminal mutation and retains its observable transition metadata.
     pub(super) fn update_terminal_state(
         &mut self,

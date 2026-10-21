@@ -84,6 +84,8 @@ pub struct DaemonState<C> {
     pub pending_agent_notifications: HashMap<PaneId, PendingAgentNotification>,
     /// Sequence shared by effective agent state changes.
     pub next_agent_state_change_seq: u64,
+    /// Whether implicit parent-group closes require confirmation.
+    pub confirm_close: maestro_protocol::shared::Flag,
     /// Current interaction context.
     pub mode: Mode,
     /// Keyboard copy pane retained across focus navigation.
@@ -130,6 +132,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             update_dismissed: false,
             pending_agent_notifications: HashMap::new(),
             next_agent_state_change_seq: 0,
+            confirm_close: config.ui.confirm_close,
             mode: Mode::Navigate,
             copy_mode: None,
             selection: None,

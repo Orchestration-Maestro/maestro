@@ -1,8 +1,88 @@
 //! Workspace removal preserves logical active selection.
 
-use crate::app::state::DaemonState;
+use crate::app::state::{DaemonState, Mode};
 
 impl<C: FnMut() -> u128> DaemonState<C> {
+    /// Closes the focused pane, returning whether confirmation deferred the close.
+    pub fn close_pane(&mut self) -> bool {
+        if let Some(index) = self.active
+            && self
+                .topology
+                .workspaces
+                .get(index)
+                .is_some_and(|workspace| {
+                    workspace.tabs.len() <= 1
+                        && workspace
+                            .active_tab()
+                            .is_none_or(|tab| tab.layout.pane_count() <= 1)
+                })
+            && self.confirm_implicit_worktree_group_close(index)
+        {
+            return true;
+        }
+        self.clear_selection();
+        self.session_dirty = true;
+        let Some(index) = self.active else {
+            return false;
+        };
+        let Some(workspace) = self.topology.workspaces.get_mut(index) else {
+            return false;
+        };
+        let Some(pane) = workspace.focused_pane_id() else {
+            return false;
+        };
+        let terminals = workspace.terminal_id(pane).cloned().into_iter().collect();
+        let close_workspace = workspace.close_pane(pane);
+        self.remove_plugin_pane_records(&std::collections::HashSet::from([pane]));
+        if close_workspace {
+            self.selected = index;
+            self.close_selected_workspace();
+        } else {
+            self.remove_unattached_terminal_ids(terminals);
+        }
+        false
+    }
+
+    /// Closes the active tab, returning whether confirmation deferred the close.
+    pub fn close_tab(&mut self) -> bool {
+        if let Some(index) = self.active
+            && self
+                .topology
+                .workspaces
+                .get(index)
+                .is_some_and(|workspace| workspace.tabs.len() <= 1)
+            && self.confirm_implicit_worktree_group_close(index)
+        {
+            return true;
+        }
+        self.clear_selection();
+        self.session_dirty = true;
+        let Some(index) = self.active else {
+            return false;
+        };
+        let Some(workspace) = self.topology.workspaces.get_mut(index) else {
+            return false;
+        };
+        if workspace.tabs.len() <= 1 {
+            self.selected = index;
+            self.close_selected_workspace();
+            return false;
+        }
+        let Some(tab) = workspace.active_tab() else {
+            return false;
+        };
+        let panes = tab.panes.keys().copied().collect();
+        let terminals = tab
+            .panes
+            .values()
+            .map(|pane| pane.attached_terminal_id.clone())
+            .collect();
+        workspace.close_tab(workspace.active_tab);
+        self.remove_plugin_pane_records(&panes);
+        self.remove_unattached_terminal_ids(terminals);
+        false
+    }
+
     /// Closes the selected workspace, retaining the active workspace if it survives.
     pub fn close_selected_workspace(&mut self) {
         if self.topology.workspaces.is_empty() {
@@ -14,7 +94,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             .map(|workspace| workspace.id.clone());
         self.clear_selection();
         self.session_dirty = true;
-        let indices = self.workspace_close_indices();
+        let indices = self.workspace_close_indices(self.selected);
         let panes = indices
             .iter()
             .flat_map(|index| &self.topology.workspaces[*index].tabs)
@@ -42,12 +122,23 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             .min(self.topology.workspaces.len().saturating_sub(1));
         self.active = (!self.topology.workspaces.is_empty()).then_some(self.selected);
     }
+    /// Retains a parent-group confirmation request without changing topology.
+    fn confirm_implicit_worktree_group_close(&mut self, index: usize) -> bool {
+        if self.confirm_close.0 && self.workspace_close_indices(index).len() >= 2 {
+            self.selected = index;
+            self.mode = Mode::ConfirmClose;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Selects the parent repository group, or only the selected linked workspace.
-    fn workspace_close_indices(&self) -> Vec<usize> {
+    fn workspace_close_indices(&self, index: usize) -> Vec<usize> {
         let group = self
             .topology
             .workspaces
-            .get(self.selected)
+            .get(index)
             .and_then(|workspace| workspace.worktree_space.as_ref())
             .filter(|space| !space.is_linked_worktree);
         if let Some(group) = group {
@@ -65,6 +156,6 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                 })
                 .collect();
         }
-        vec![self.selected]
+        vec![index]
     }
 }

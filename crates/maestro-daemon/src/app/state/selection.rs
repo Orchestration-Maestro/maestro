@@ -9,6 +9,8 @@ pub enum Mode {
     Navigate,
     /// Input directed to the active terminal.
     Terminal,
+    /// Confirmation before closing a parent repository workspace group.
+    ConfirmClose,
     /// Keyboard selection in the retained copy pane.
     Copy,
 }

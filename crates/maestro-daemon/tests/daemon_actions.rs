@@ -374,22 +374,9 @@ fn daemon_close_workspace_adjusts_indices() {
 
 #[test]
 fn daemon_close_parent_worktree_workspace_closes_group() {
-    use maestro_workspace::workspace::WorktreeSpaceMembership;
     let mut state = app_with_workspaces(&["main", "issue", "notes"]);
-    for (index, linked) in [(0, false), (1, true)] {
-        state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
-            key: "repo-key".into(),
-            label: "project".into(),
-            repo_root: "/repo/project".into(),
-            checkout_path: if linked {
-                "/repo/issue"
-            } else {
-                "/repo/project"
-            }
-            .into(),
-            is_linked_worktree: linked,
-        });
-    }
+    mark_worktree(&mut state, 0, false);
+    mark_worktree(&mut state, 1, true);
     state.close_selected_workspace();
     assert_eq!(state.topology.workspaces.len(), 1);
     assert_eq!(state.topology.workspaces[0].display_name(None), "notes");
@@ -1626,4 +1613,244 @@ fn daemon_toggle_zoom_single_pane_noop() {
     state.toggle_zoom();
     assert!(!state.topology.workspaces[0].tabs[0].zoomed);
     assert!(!state.session_dirty);
+}
+
+#[test]
+fn daemon_close_pane_removes_from_workspace() {
+    let mut state = app_with_workspaces(&["test"]);
+    let closed = split(&mut state, 0);
+    populate_terminals(&mut state);
+    assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 2);
+    state.plugin_panes.insert(
+        closed,
+        maestro_daemon::app::state::PluginPaneRecord {
+            plugin_id: "example.pane".into(),
+            entrypoint: "board".into(),
+        },
+    );
+    state.close_pane();
+    assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 1);
+    assert!(!state.plugin_panes.contains_key(&closed));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_pane_process_exit_publish_marks_agent_idle_before_pane_removal() {
+    use maestro_daemon::{
+        app::{actions::AgentRelease, state::ToastKind},
+        events::AppEvent,
+    };
+    use maestro_detection::agents::{Agent, AgentState};
+    let mut state = app_with_workspaces(&["active", "background"]);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    state.active = Some(1);
+    let pane_id = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal_id = state.topology.workspaces[0]
+        .terminal_id(pane_id)
+        .unwrap()
+        .clone();
+    state.handle_app_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(Agent::Pi),
+        state: AgentState::Working,
+        visible_blocker: false,
+        visible_working: true,
+        process_exited: false,
+        observed_at: std::time::Instant::now(),
+    });
+    assert_eq!(state.terminals[&terminal_id].state, AgentState::Working);
+    let update = state
+        .publish_pane_process_exit_if_agent(pane_id)
+        .expect("process exit update");
+    assert!(!state.pane_is_in_active_tab(update.ws_idx, pane_id));
+    assert_eq!(update.previous_state, AgentState::Working);
+    assert_eq!(update.state, AgentState::Idle);
+    assert_eq!(update.agent_label.as_deref(), Some("pi"));
+    assert_eq!(update.known_agent, Some(Agent::Pi));
+    assert_eq!(
+        update.release,
+        AgentRelease::Released(maestro_protocol::schema::AgentStatus::Done)
+    );
+    assert!(matches!(
+        state.toast.as_ref().map(|toast| toast.kind),
+        Some(ToastKind::Finished)
+    ));
+}
+
+#[test]
+fn daemon_close_pane_removes_unattached_terminal_state() {
+    let mut state = app_with_workspaces(&["test"]);
+    let pane = split(&mut state, 0);
+    populate_terminals(&mut state);
+    let terminal = state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.close_pane();
+    assert!(!state.terminals.contains_key(&terminal));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_close_tab_removes_unattached_terminal_states() {
+    let mut state = app_with_workspaces(&["test"]);
+    let (pane, ()) = state
+        .topology
+        .create_tab_with_runtime(0, |_, _| Ok(()))
+        .unwrap()
+        .unwrap();
+    populate_terminals(&mut state);
+    state.topology.workspaces[0].switch_tab(1);
+    let terminal = state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.plugin_panes.insert(
+        pane,
+        maestro_daemon::app::state::PluginPaneRecord {
+            plugin_id: "example.pane".into(),
+            entrypoint: "board".into(),
+        },
+    );
+    state.close_tab();
+    assert!(!state.terminals.contains_key(&terminal));
+    assert!(!state.plugin_panes.contains_key(&pane));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_close_tab_closes_active_workspace_not_selected_workspace() {
+    let mut state = app_with_workspaces(&["selected", "active"]);
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    let terminal = state.topology.workspaces[1]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.active = Some(1);
+    state.selected = 0;
+    state.close_tab();
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "selected");
+    assert!(!state.terminals.contains_key(&terminal));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_close_pane_last_pane_closes_active_workspace_not_selected_workspace() {
+    let mut state = app_with_workspaces(&["selected", "active"]);
+    let pane = state.topology.workspaces[1].tabs[0].root_pane;
+    let terminal = state.topology.workspaces[1]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.active = Some(1);
+    state.selected = 0;
+    state.close_pane();
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "selected");
+    assert!(!state.terminals.contains_key(&terminal));
+    assert_identity_invariants(&state);
+}
+
+/// Assigns supplied repository-group membership without invoking later discovery effects.
+fn mark_worktree(state: &mut DaemonState<fn() -> u128>, index: usize, linked: bool) {
+    state.topology.workspaces[index].worktree_space =
+        Some(maestro_workspace::workspace::WorktreeSpaceMembership {
+            key: "repo-key".into(),
+            label: "project".into(),
+            repo_root: "/repo/project".into(),
+            checkout_path: if linked {
+                "/repo/issue"
+            } else {
+                "/repo/project"
+            }
+            .into(),
+            is_linked_worktree: linked,
+        });
+}
+
+#[test]
+fn daemon_close_pane_last_pane_in_parent_worktree_group_prompts() {
+    use maestro_daemon::app::state::Mode;
+    let mut state = app_with_workspaces(&["parent", "child"]);
+    mark_worktree(&mut state, 0, false);
+    mark_worktree(&mut state, 1, true);
+    state.active = Some(0);
+    state.selected = 1;
+    let deferred = state.close_pane();
+    assert!(deferred);
+    assert_eq!(state.mode, Mode::ConfirmClose);
+    assert_eq!(state.selected, 0);
+    assert_eq!(state.topology.workspaces.len(), 2);
+}
+
+#[test]
+fn daemon_close_tab_in_linked_worktree_closes_workspace_only() {
+    let mut state = app_with_workspaces(&["selected", "active"]);
+    mark_worktree(&mut state, 1, true);
+    let checkout =
+        std::env::temp_dir().join(format!("maestro-close-linked-tab-{}", std::process::id()));
+    std::fs::create_dir(&checkout).unwrap();
+    state.topology.workspaces[1]
+        .worktree_space
+        .as_mut()
+        .unwrap()
+        .checkout_path = checkout.clone();
+    state.active = Some(1);
+    state.selected = 0;
+    state.close_tab();
+    assert!(checkout.is_dir());
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "selected");
+    std::fs::remove_dir(checkout).unwrap();
+}
+
+#[test]
+fn daemon_close_tab_last_tab_in_parent_worktree_group_prompts() {
+    use maestro_daemon::app::state::Mode;
+    let mut state = app_with_workspaces(&["parent", "child"]);
+    mark_worktree(&mut state, 0, false);
+    mark_worktree(&mut state, 1, true);
+    state.active = Some(0);
+    state.selected = 1;
+    let deferred = state.close_tab();
+    assert!(deferred);
+    assert_eq!(state.mode, Mode::ConfirmClose);
+    assert_eq!(state.selected, 0);
+    assert_eq!(state.topology.workspaces.len(), 2);
+}
+
+#[test]
+fn daemon_close_pane_last_pane_in_linked_worktree_closes_workspace_only() {
+    let mut state = app_with_workspaces(&["selected", "active"]);
+    mark_worktree(&mut state, 1, true);
+    let checkout =
+        std::env::temp_dir().join(format!("maestro-close-linked-pane-{}", std::process::id()));
+    std::fs::create_dir(&checkout).unwrap();
+    state.topology.workspaces[1]
+        .worktree_space
+        .as_mut()
+        .unwrap()
+        .checkout_path = checkout.clone();
+    state.active = Some(1);
+    state.selected = 0;
+    state.close_pane();
+    assert!(checkout.is_dir());
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "selected");
+    std::fs::remove_dir(checkout).unwrap();
+}
+
+#[test]
+fn daemon_close_pane_last_pane_in_parent_worktree_group_closes_when_confirmation_disabled() {
+    let mut state = app_with_workspaces(&["parent", "child", "notes"]);
+    mark_worktree(&mut state, 0, false);
+    mark_worktree(&mut state, 1, true);
+    state.confirm_close = maestro_protocol::shared::Flag(false);
+    state.active = Some(0);
+    state.selected = 0;
+    let deferred = state.close_pane();
+    assert!(!deferred);
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "notes");
 }

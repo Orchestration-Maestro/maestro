@@ -570,3 +570,10 @@ is enabled. Empty updates still refresh diagnostics and summaries without a toas
 
 The daemon can toggle zoom on the active split tab without changing its layout.
 A single-pane tab is unchanged; a zoom change marks the session dirty.
+
+Closing a pane or tab targets the active workspace, not the navigation selection.
+Detached terminal metadata and plugin records are removed through the same cleanup
+owner as workspace closes. Closing the last pane or tab of a parent repository
+group requests confirmation when enabled; closing a linked workspace leaves its
+checkout directory untouched. Agent completion can be published before removing
+the pane, while its identity and notification context are still available.
