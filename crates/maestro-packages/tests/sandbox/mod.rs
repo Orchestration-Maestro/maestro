@@ -1,4 +1,4 @@
-//! A disposable native directory with scripted child processes and injected failures.
+//! A disposable native directory with scripted child processes.
 #![cfg(test)]
 use maestro_packages::{
     CommandOutput, DefaultPackageManager, NativePackageOperations, PackageFuture,
@@ -24,26 +24,8 @@ pub struct Call {
     /// The requested working directory.
     pub cwd: Option<String>,
 }
-/// A filesystem effect that can be made to fail.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Op {
-    /// `create_dir_all`.
-    Create,
-    /// Exclusive staging creation.
-    Stage,
-    /// Prepared publication.
-    Rename,
-    /// `write_file`.
-    Write,
-    /// `directory_is_empty`.
-    Read,
-    /// `remove_path`.
-    Remove,
-}
 /// A one-shot action run when a child is admitted.
 pub type Hook = Box<dyn FnOnce(&Call)>;
-/// A one-shot filesystem action before the native effect.
-pub type Effect = Box<dyn FnOnce(&str) -> io::Result<()>>;
 /// Observations and instructions shared between a test and its adapter.
 #[derive(Default)]
 pub struct Script {
@@ -55,35 +37,17 @@ pub struct Script {
     pub hooks: RefCell<VecDeque<Hook>>,
     /// Keeps admitted children pending while set.
     pub held: Cell<bool>,
-    /// Filesystem effects that fail when the path ends with the suffix.
-    pub failures: RefCell<Vec<(Op, String)>>,
-    /// Runs before the selected filesystem effect, outside the instruction borrow.
-    pub before_effect: RefCell<Option<(Op, String, Effect)>>,
-    /// Overrides the temporary base for isolated native tests.
-    pub temp_root: RefCell<Option<String>>,
-    /// Runs once after a successful removal.
-    pub after_remove: RefCell<Option<AfterRemove>>,
-    /// Makes ambient directory reads fail.
-    pub ambient_fails: Cell<bool>,
-    /// Ambient directory reads in order.
-    pub reads: RefCell<Vec<&'static str>>,
-    /// Drive letters whose directory was asked for, as written.
-    pub drive_reads: RefCell<Vec<char>>,
     /// Captured-command launches in order.
     pub captures: RefCell<Vec<Call>>,
     /// Runs once at the first captured command.
     pub on_capture: RefCell<Option<Box<dyn FnOnce()>>>,
 }
-/// A one-shot action run after a path is removed.
-pub type AfterRemove = Box<dyn FnOnce(&str)>;
 /// Native files with scripted children.
 pub struct Sandbox {
     /// Shared instructions and observations.
     script: Rc<Script>,
-    /// Real filesystem effects.
+    /// Real spawning and captured commands.
     native: NativePackageOperations,
-    /// The home reported to callers.
-    home: String,
 }
 impl Script {
     /// Pends while children are held.
@@ -95,58 +59,7 @@ impl Script {
         Poll::Pending
     }
 }
-impl Sandbox {
-    /// Fails with the injected error when this effect is scripted to fail.
-    fn check(&self, op: Op, path: &str) -> io::Result<()> {
-        let effect = {
-            let mut pending = self.script.before_effect.borrow_mut();
-            if pending.as_ref().is_some_and(|(selected, suffix, _)| {
-                *selected == op && path.ends_with(suffix.as_str())
-            }) {
-                pending.take()
-            } else {
-                None
-            }
-        };
-        if let Some((_, _, effect)) = effect {
-            effect(path)?;
-        }
-        let failing = self
-            .script
-            .failures
-            .borrow()
-            .iter()
-            .any(|(failing, suffix)| *failing == op && path.ends_with(suffix.as_str()));
-        if failing {
-            Err(io::Error::other(format!("injected {op:?} failure")))
-        } else {
-            Ok(())
-        }
-    }
-    /// Reports an ambient read or its injected failure.
-    fn ambient(&self, name: &'static str, value: &str) -> io::Result<String> {
-        self.script.reads.borrow_mut().push(name);
-        if self.script.ambient_fails.get() {
-            Err(io::Error::other(format!("{name} unavailable")))
-        } else {
-            Ok(value.to_owned())
-        }
-    }
-}
 impl PackageOperations for Sandbox {
-    fn temp_dir(&self) -> String {
-        self.script
-            .temp_root
-            .borrow()
-            .clone()
-            .unwrap_or_else(|| std::env::temp_dir().to_string_lossy().into_owned())
-    }
-    fn read_file(&self, path: &str) -> std::io::Result<String> {
-        self.native.read_file(path)
-    }
-    fn offline_value(&self) -> Option<String> {
-        self.native.offline_value()
-    }
     fn spawn(
         &self,
         operation: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>,
@@ -162,20 +75,6 @@ impl PackageOperations for Sandbox {
         self.native.run_command_capture(command, args, options)
     }
 
-    fn exists(&self, path: &str) -> bool {
-        self.native.exists(path)
-    }
-    fn home_dir(&self) -> io::Result<String> {
-        self.ambient("home", &self.home)
-    }
-    fn current_dir(&self) -> io::Result<String> {
-        let ambient = std::env::current_dir()?;
-        self.ambient("cwd", &ambient.to_string_lossy())
-    }
-    fn drive_directory(&self, drive: char) -> Option<String> {
-        self.script.drive_reads.borrow_mut().push(drive);
-        None
-    }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {
         self.script.captures.borrow_mut().push(Call {
             command: command.into(),
@@ -191,35 +90,6 @@ impl PackageOperations for Sandbox {
             stdout: "/captured/root\n".into(),
             stderr: String::new(),
         })
-    }
-    fn create_temp_dir(&self, parent: &str) -> io::Result<String> {
-        self.check(Op::Stage, parent)?;
-        self.native.create_temp_dir(parent)
-    }
-    fn rename_path(&self, from: &str, to: &str) -> io::Result<()> {
-        self.check(Op::Rename, to)?;
-        self.native.rename_path(from, to)
-    }
-    fn create_dir_all(&self, path: &str) -> io::Result<()> {
-        self.check(Op::Create, path)?;
-        self.native.create_dir_all(path)
-    }
-    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> io::Result<()> {
-        self.check(Op::Write, path)?;
-        self.native.write_file(path, text, exclusive)
-    }
-    fn directory_is_empty(&self, path: &str) -> io::Result<bool> {
-        self.check(Op::Read, path)?;
-        self.native.directory_is_empty(path)
-    }
-    fn remove_path(&self, path: &str) -> io::Result<()> {
-        self.check(Op::Remove, path)?;
-        self.native.remove_path(path)?;
-        let after = self.script.after_remove.borrow_mut().take();
-        if let Some(after) = after {
-            after(path);
-        }
-        Ok(())
     }
     fn run_command<'a>(
         &'a self,
@@ -297,7 +167,6 @@ impl Fixture {
         let operations = Sandbox {
             script: script.clone(),
             native: NativePackageOperations::new(Rc::new(|| false), &local),
-            home: format!("{root}/home"),
         };
         let manager = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {

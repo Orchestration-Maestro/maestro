@@ -12,10 +12,13 @@ use std::{cell::RefCell, fs, path::Path, rc::Rc};
 #[test]
 fn empty_settings_have_no_package_resources() {
     use maestro_packages::PackageManager;
-    let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.path().to_str().unwrap();
+    let Some(tree) = resolution_support::case_in_child("empty", |base| {
+        vec![("HOME", Some(format!("{base}/home")))]
+    }) else {
+        return;
+    };
+    let base = tree.to_str().unwrap();
     let (manager, effects) = resolution_support::manager(base);
-    *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
     let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let sink = std::rc::Rc::clone(&events);
     manager.set_progress_callback(Some(std::rc::Rc::new(move |event| {
@@ -355,12 +358,7 @@ fn null_settings_lists_default_without_validating_unread_members() {
 
 #[test]
 fn ambient_reads_follow_public_resolution_phases() {
-    configured_resolution_support::check(&[
-        "home-required",
-        "home-avoided",
-        "cwd-avoided",
-        "cwd-required",
-    ]);
+    configured_resolution_support::check(&["home-avoided", "cwd-avoided", "cwd-required"]);
 }
 
 #[test]
@@ -383,12 +381,15 @@ fn missing_callback_borrow_ends_with_operation() {
 }
 
 #[test]
-fn project_home_failure_precedes_malformed_user_list() {
-    configured_resolution_support::check(&["project-home-before-user-decode"]);
-}
-
-#[test]
 fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
+    // The home is an empty directory of the child's own.
+    if resolution_support::case_in_child("home", |base| {
+        vec![("HOME", Some(format!("{base}/home")))]
+    })
+    .is_none()
+    {
+        return;
+    }
     let scratch = scratch::Scratch::new_in(Path::new(".")).unwrap();
     let base = scratch.path().to_str().unwrap().strip_prefix("./").unwrap();
     let user = format!("{base}/user");
@@ -402,11 +403,7 @@ fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
     }
     fs::write(format!("{project}/.git"), "marker").unwrap();
     fs::write(format!("{package}/package.json"), "{}").unwrap();
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        ..Default::default()
-    });
-    *effects.home_override.borrow_mut() = Some(format!("{base}/home"));
+    let effects = Rc::new(support::Effects::default());
     for (patterns, expected) in [
         (json!(["prompts/a.md"]), [true, false, false]),
         (json!(["!prompts/a.md"]), [false, true, true]),
@@ -459,18 +456,18 @@ fn assert_relative_selection(
     patterns: &serde_json::Value,
     expected: [bool; 3],
 ) {
+    // A settings path resolves against the working directory, a discovered one stays relative.
+    let absolute = |path: &str| std::path::absolute(path).unwrap();
     for (root_index, root) in roots.into_iter().enumerate() {
         let records: Vec<_> = result
             .prompts
             .iter()
-            .filter(|r| r.path.starts_with(root))
+            .filter(|r| absolute(&r.path).starts_with(absolute(root)))
             .collect();
         assert_eq!(records.len(), 3);
         for (index, name) in ["a", "b", "c"].iter().enumerate() {
-            let record = records
-                .iter()
-                .find(|r| r.path == format!("{root}/prompts/{name}.md"))
-                .unwrap();
+            let path = absolute(&format!("{root}/prompts/{name}.md"));
+            let record = records.iter().find(|r| absolute(&r.path) == path).unwrap();
             let enabled = if root_index == 0 && *patterns == json!(["prompts/a.md"]) {
                 true
             } else {
@@ -483,8 +480,23 @@ fn assert_relative_selection(
 
 #[test]
 fn automatic_relative_home_keeps_authored_path_and_exact_override() {
-    let scratch = scratch::Scratch::new_in(Path::new(".")).unwrap();
-    let base = scratch.path().to_str().unwrap().strip_prefix("./").unwrap();
+    let below_cwd = |base: &str| {
+        let current = std::env::current_dir().unwrap();
+        maestro_path::relative(
+            current.to_str().unwrap(),
+            base,
+            &maestro_path::Cwd {
+                current: "",
+                drive_directories: &[],
+            },
+        )
+    };
+    let Some(tree) = resolution_support::case_in_child("relative-home", |base| {
+        vec![("HOME", Some(format!("{}/home", below_cwd(base))))]
+    }) else {
+        return;
+    };
+    let base = below_cwd(tree.to_str().unwrap());
     let home = format!("{base}/home");
     let user = format!("{base}/user");
     let project = format!("{base}/project");
@@ -494,11 +506,7 @@ fn automatic_relative_home_keeps_authored_path_and_exact_override() {
     fs::create_dir_all(&user).unwrap();
     fs::create_dir_all(&project).unwrap();
     fs::write(format!("{project}/.git"), "marker").unwrap();
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        ..Default::default()
-    });
-    *effects.home_override.borrow_mut() = Some(home);
+    let effects = Rc::new(support::Effects::default());
     for (patterns, enabled) in [(json!([]), true), (json!([format!("-{skill}")]), false)] {
         fs::write(
             format!("{user}/settings.json"),

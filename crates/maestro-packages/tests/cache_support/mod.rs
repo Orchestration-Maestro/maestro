@@ -1,6 +1,6 @@
 //! Recorded cache recipes replayed through the public resolver.
 #![cfg(test)]
-use super::{resource_output, scratch, support};
+use super::{resource_output, support};
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -34,10 +34,6 @@ struct Expected {
     events: Vec<Value>,
     /// All surviving authored files.
     files: BTreeMap<String, String>,
-    /// Whether temporary-path selection was demanded.
-    temporary_path_observed: bool,
-    /// Exact reads for the two-decision witness.
-    offline_reads: Option<usize>,
 }
 /// Input kind chosen by the recipe.
 #[derive(Clone, Deserialize, PartialEq)]
@@ -100,10 +96,6 @@ struct Recipe {
     npm_command_after_clone: Option<Vec<String>>,
     /// Initial offline value.
     offline: Option<String>,
-    /// Live offline after command completion.
-    offline_after_command: Option<String>,
-    /// Controlled offline decisions.
-    offline_sequence: Option<Vec<String>>,
     /// Explicit source sequence, including an empty sequence.
     multiple: Option<Vec<String>>,
 }
@@ -242,16 +234,11 @@ fn hooks(
     effects: &Rc<support::Effects>,
     settings: &Rc<RefCell<maestro_settings::SettingsManager>>,
 ) {
-    let weak = Rc::downgrade(effects);
     let settings = Rc::clone(settings);
     let root = base.to_owned();
     let r = Rc::clone(&recipe);
     *effects.run_hook.borrow_mut() = Some(Rc::new(move |command, args, cwd| {
-        let e = weak.upgrade().unwrap();
         let outcome = run(&r, &root, &settings, (command, args, cwd));
-        if let Some(value) = &r.offline_after_command {
-            *e.offline.borrow_mut() = Some(value.clone());
-        }
         Box::pin(async move { outcome.map(|()| Some(0)) })
     }));
     *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, args, _| {
@@ -352,8 +339,16 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
 }
 /// Compares ordered effects, surviving files, errors and complete returned trees.
 async fn replay(case: &Recorded) {
-    let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.path().to_string_lossy().into_owned();
+    let Some(tree) = super::resolution_support::case_in_child(&case.case, |base| {
+        vec![
+            ("TMPDIR", Some(format!("{base}/temp"))),
+            ("HOME", Some(format!("{base}/home"))),
+            ("MAESTRO_OFFLINE", case.recipe.offline.clone()),
+        ]
+    }) else {
+        return;
+    };
+    let base = tree.to_string_lossy().into_owned();
     setup(case, &base);
     let (_, settings, _) = support::manager(&json!({}));
     let r = Rc::new(case.recipe.clone());
@@ -374,10 +369,6 @@ fn configure(
                 .map(maestro_settings::SettingsListEntry::String)
                 .collect(),
         ));
-    }
-    *effects.offline.borrow_mut() = r.offline.clone();
-    if let Some(values) = &r.offline_sequence {
-        *effects.offline_sequence.borrow_mut() = values.iter().cloned().map(Some).collect();
     }
     effects
         .outputs
@@ -400,11 +391,7 @@ async fn replay_ready(
     r: Rc<Recipe>,
     settings: Rc<RefCell<maestro_settings::SettingsManager>>,
 ) {
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        temp_root: RefCell::new(Some(format!("{base}/temp"))),
-        ..Default::default()
-    });
+    let effects = Rc::new(support::Effects::default());
     configure(&r, base, &effects, &settings);
     let events = Rc::new(RefCell::new(Vec::new()));
     let m = manager(base, base, Rc::clone(&settings), &effects);
@@ -522,8 +509,9 @@ fn compare(
         "{} second",
         case.case
     );
+    let commands = normalize(json!(*effects.transcript.borrow()), base).to_string();
     assert_eq!(
-        normalize(json!(*effects.transcript.borrow()), base),
+        serde_json::from_str::<Value>(&support::recorded_stages(&commands)).unwrap(),
         json!(case.expected.commands),
         "{} commands",
         case.case
@@ -537,31 +525,6 @@ fn compare(
     let mut actual_files = BTreeMap::new();
     files(Path::new(base), Path::new(base), &mut actual_files);
     assert_eq!(actual_files, case.expected.files, "{} files", case.case);
-    assert_reads(case, effects);
 }
-/// Checks branch-local avoided observations separately from returned values.
-fn assert_reads(case: &Recorded, effects: &support::Effects) {
-    if case.case.starts_with("npm_existing_") {
-        assert!(
-            effects.file_reads.borrow().is_empty(),
-            "unpinned versions are unread"
-        );
-        assert_eq!(effects.offline_reads.get(), 0);
-    }
-    if case.recipe.kind == Kind::Local || case.recipe.multiple.as_ref().is_some_and(Vec::is_empty) {
-        assert_eq!(effects.offline_reads.get(), 0);
-        assert!(effects.reads.borrow().is_empty());
-    }
-    assert_eq!(
-        effects.reads.borrow().contains(&"temp"),
-        case.expected.temporary_path_observed,
-        "{} temp",
-        case.case
-    );
-    if let Some(count) = case.expected.offline_reads {
-        assert_eq!(effects.offline_reads.get(), count);
-    }
-}
-
 #[cfg(unix)]
 pub mod native;

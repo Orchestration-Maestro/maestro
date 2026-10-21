@@ -46,6 +46,11 @@ fn cases(names: &[&str]) {
     }
     let runtime = crate::runtime::runtime();
     for name in names {
+        // Automatic discovery reads the home; give each case an empty one of its own.
+        let home = |base: &str| vec![("HOME", Some(format!("{base}/home")))];
+        if crate::resolution_support::case_in_child(name, home).is_none() {
+            continue;
+        }
         let case = all.iter().find(|c| c.id == *name).unwrap();
         let dir = scratch::Scratch::new().unwrap();
         let root = dir.path().to_str().unwrap();
@@ -56,9 +61,7 @@ fn cases(names: &[&str]) {
             user.to_str().unwrap(),
             ".maestro",
         )));
-        let (unused, _, mut effects) = support::manager(&serde_json::json!({}));
-        drop(unused);
-        Rc::get_mut(&mut effects).unwrap().native_exists = true;
+        let effects = Rc::new(support::Effects::default());
         let manager = DefaultPackageManager::new(
             PackageManagerOptions {
                 cwd: root.into(),

@@ -17,9 +17,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         project: &Settings,
         result: &mut Accumulator,
     ) -> io::Result<()> {
-        let home = join(&[&self.operations.home_dir()?, ".agents", "skills"]);
-        let resolved_home = self.resolve_operands(&[&home])?;
-        let mut current = self.resolve_operands(&[&self.options.cwd])?;
+        let home = join(&[&super::operations::home_dir()?, ".agents", "skills"]);
+        let resolved_home = super::paths::resolve_operands(&[&home])?;
+        let mut current = super::paths::resolve_operands(&[&self.options.cwd])?;
         let mut ancestors = Vec::new();
         loop {
             let root = join(&[&current, ".agents", "skills"]);

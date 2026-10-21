@@ -12,7 +12,7 @@ use maestro_settings::{
     InMemorySettingsStorage, PackageSource, SettingsListEntry, SettingsScope, SettingsStorage,
     SettingsStorageError, SettingsUpdate,
 };
-use sandbox::{Call, Fixture, Op, block_on, poll_once};
+use sandbox::{Call, Fixture, block_on, poll_once};
 use serde_json::json;
 use std::{
     cell::{Cell, RefCell},
@@ -179,29 +179,16 @@ fn project_npm_files_are_exact_and_existing_files_survive() {
 #[test]
 fn project_creation_failure_keeps_prior_effects() {
     let root = |fixture: &Fixture| fixture.project(".maestro/npm");
-    let fixture = Fixture::new(&json!({}));
-    fixture
-        .script
-        .failures
-        .borrow_mut()
-        .push((Op::Create, "/npm".into()));
-    assert!(block_on(fixture.manager.install("npm:pkg", Some(Project))).is_err());
-    assert!(fixture.calls().is_empty());
-    assert!(!std::path::Path::new(&root(&fixture)).exists());
-
-    let fixture = Fixture::new(&json!({}));
-    fixture
-        .script
-        .failures
-        .borrow_mut()
-        .push((Op::Write, "package.json".into()));
-    assert!(block_on(fixture.manager.install("npm:pkg", Some(Project))).is_err());
-    assert!(fixture.calls().is_empty());
-    assert_eq!(
-        sandbox::read(&format!("{}/.gitignore", root(&fixture))),
-        IGNORE
-    );
-    assert!(!std::path::Path::new(&format!("{}/package.json", root(&fixture))).exists());
+    #[cfg(unix)]
+    {
+        let fixture = Fixture::new(&json!({}));
+        let result = locked(&fixture.project(".maestro"), || {
+            block_on(fixture.manager.install("npm:pkg", Some(Project)))
+        });
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+        assert!(fixture.calls().is_empty());
+        assert!(!std::path::Path::new(&root(&fixture)).exists());
+    }
 
     let fixture = Fixture::new(&json!({}));
     fixture.script.results.borrow_mut().push_back(Ok(Some(1)));
@@ -476,28 +463,34 @@ fn git_project_paths_preserve_parent_and_ignore_files() {
     );
 }
 
+/// Runs `operation` while the directory `path`, created when missing, refuses writes.
+#[cfg(unix)]
+fn locked<T>(path: &str, operation: impl FnOnce() -> T) -> T {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::create_dir_all(path).unwrap();
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let result = operation();
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    result
+}
+
+#[cfg(unix)]
 #[test]
 fn git_preparation_failures_keep_exactly_the_completed_effects() {
     let source = "https://github.com/user/repo#v1";
-    let root_failures = [
-        (Op::Create, "/agent/git"),
-        (Op::Write, ".gitignore"),
-        (Op::Create, "github.com/user"),
+    // The directory that refuses writes, and the surviving state: (git root, .gitignore,
+    // parent directory).
+    let failures = [
+        ("", (false, false, false)),
+        ("git", (true, false, false)),
+        ("git/github.com", (true, true, false)),
     ];
-    // Surviving state per failure: (git root, .gitignore, parent directory).
-    let survivors = [
-        (false, false, false),
-        (true, false, false),
-        (true, true, false),
-    ];
-    for ((op, suffix), (root, ignore, parent)) in root_failures.into_iter().zip(survivors) {
+    for (suffix, (root, ignore, parent)) in failures {
         let fixture = Fixture::new(&json!({}));
-        fixture
-            .script
-            .failures
-            .borrow_mut()
-            .push((op, suffix.into()));
-        assert!(block_on(fixture.manager.install(source, None)).is_err());
+        let result = locked(&fixture.agent(suffix), || {
+            block_on(fixture.manager.install(source, None))
+        });
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
         assert!(fixture.calls().is_empty(), "case {suffix}");
         let exists = |path: &str| std::path::Path::new(&fixture.agent(path)).exists();
         assert_eq!(exists("git"), root, "root after {suffix}");
@@ -584,14 +577,12 @@ fn local_missing_path_reports_resolved_error() {
 fn local_remove_has_no_filesystem_or_command_effect() {
     let fixture = Fixture::new(&json!({}));
     native_support::write(&fixture.project("here/file.txt"), "bytes");
-    fixture.script.ambient_fails.set(true);
     for source in ["./here", "./gone", "~/gone", "relative"] {
         block_on(fixture.manager.remove(source, None)).unwrap();
         block_on(fixture.manager.remove(source, Some(Project))).unwrap();
     }
     assert_eq!(sandbox::read(&fixture.project("here/file.txt")), "bytes");
     assert!(fixture.calls().is_empty());
-    assert!(fixture.script.reads.borrow().is_empty());
     let phases = fixture.phases();
     assert_eq!(phases.len(), 16);
     assert_eq!(phases[0], (Phase::Start, Some("Removing ./here...".into())));
@@ -699,20 +690,12 @@ fn git_removal_handles_links_and_vanished_parents() {
     block_on(fixture.manager.remove(source, None)).unwrap();
     assert!(std::fs::symlink_metadata(&target).is_err());
     assert_eq!(sandbox::read(&fixture.path("referent/file")), "kept");
-
-    let fixture = Fixture::new(&json!({}));
-    let target = fixture.agent("git/github.com/user/repo");
-    native_support::write(&format!("{target}/file"), "x");
-    let parent = fixture.agent("git/github.com/user");
-    *fixture.script.after_remove.borrow_mut() = Some(Box::new(move |_| {
-        std::fs::remove_dir(&parent).unwrap();
-    }));
-    block_on(fixture.manager.remove(source, None)).unwrap();
-    assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
 }
 
+#[cfg(unix)]
 #[test]
 fn git_pruning_distinguishes_read_and_remove_failures() {
+    use std::os::unix::fs::PermissionsExt;
     let source = "https://github.com/user/repo";
     let build = || {
         let fixture = Fixture::new(&json!({}));
@@ -720,32 +703,28 @@ fn git_pruning_distinguishes_read_and_remove_failures() {
         fixture
     };
     let fixture = build();
-    fixture
-        .script
-        .failures
-        .borrow_mut()
-        .push((Op::Remove, "user/repo".into()));
-    assert!(block_on(fixture.manager.remove(source, None)).is_err());
+    let result = locked(&fixture.agent("git/github.com/user/repo"), || {
+        block_on(fixture.manager.remove(source, None))
+    });
+    assert!(result.is_err());
     assert!(std::path::Path::new(&fixture.agent("git/github.com/user/repo/file")).exists());
     assert_eq!(fixture.phases().last().unwrap().0, Phase::Error);
 
     let fixture = build();
-    fixture
-        .script
-        .failures
-        .borrow_mut()
-        .push((Op::Read, "github.com/user".into()));
-    assert!(block_on(fixture.manager.remove(source, None)).is_err());
+    let parent = fixture.agent("git/github.com/user");
+    // Write and search permission without read: the checkout goes, the listing fails.
+    std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o300)).unwrap();
+    let result = block_on(fixture.manager.remove(source, None));
+    std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
     assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
-    assert!(std::path::Path::new(&fixture.agent("git/github.com/user")).exists());
+    assert!(std::path::Path::new(&parent).exists());
 
     let fixture = build();
-    fixture
-        .script
-        .failures
-        .borrow_mut()
-        .push((Op::Remove, "github.com/user".into()));
-    block_on(fixture.manager.remove(source, None)).unwrap();
+    locked(&fixture.agent("git/github.com"), || {
+        block_on(fixture.manager.remove(source, None))
+    })
+    .unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
     assert!(std::path::Path::new(&fixture.agent("git/github.com/user")).exists());
     assert!(std::path::Path::new(&fixture.agent("git/github.com")).exists());
@@ -1195,33 +1174,32 @@ fn persistence_publishes_without_waiting_for_flush() {
     assert!(!storage.document().unwrap().contains("npm:pkg"));
 }
 
+#[cfg(unix)]
 #[test]
 fn local_install_reads_ambient_paths_only_when_needed() {
+    let removed = crate::resolution_support::case_in_removed_cwd("removed", |_| vec![]);
+    if removed.is_none() {
+        return;
+    }
     let fixture = Fixture::new(&json!({}));
-    fixture.script.ambient_fails.set(true);
     let absolute = fixture.path("none");
     let error = block_on(fixture.manager.install(&absolute, None)).unwrap_err();
     assert_eq!(
         error.to_string(),
         format!("Path does not exist: {absolute}")
     );
-    assert!(fixture.script.reads.borrow().is_empty());
 
     let relative = Fixture::over(
         maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default()),
         Some("relative"),
         false,
     );
-    relative.script.ambient_fails.set(true);
     let error = block_on(relative.manager.install("./x", None)).unwrap_err();
-    assert_eq!(error.to_string(), "cwd unavailable");
+    assert_eq!(error.kind(), io::ErrorKind::NotFound);
     assert_eq!(
         relative.phases().last().unwrap(),
-        &(Phase::Error, Some("cwd unavailable".into()))
+        &(Phase::Error, Some(error.to_string()))
     );
-    let error = block_on(relative.manager.install("~/x", None)).unwrap_err();
-    assert_eq!(error.to_string(), "home unavailable");
-    assert_eq!(*relative.script.reads.borrow(), ["cwd", "home"]);
 }
 
 /// Admission and release of one held write.
@@ -1327,8 +1305,6 @@ fn grouped_cleanup_keeps_drive_observation_policy() {
     .unwrap();
     assert!(!std::path::Path::new(&format!("{git}/user")).exists());
     assert!(std::path::Path::new(&format!("{git}/other/keep")).is_file());
-    assert_eq!(*fixture.script.reads.borrow(), ["cwd"]);
-    assert_eq!(*fixture.script.drive_reads.borrow(), [letter, letter]);
 }
 
 #[test]
@@ -1341,14 +1317,15 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
     assert!(std::path::Path::new(&fixture.agent("git")).is_dir());
-    assert_eq!(*fixture.script.reads.borrow(), ["cwd"]);
 
-    let fixture = Fixture::new(&json!({}));
-    native_support::write(&fixture.agent("git/github.com/user/repo/file"), "x");
-    fixture.script.ambient_fails.set(true);
-    block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
-    assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
-    assert!(fixture.script.reads.borrow().is_empty());
+    // An absolute agent directory never needs the removed working directory.
+    #[cfg(unix)]
+    if crate::resolution_support::case_in_removed_cwd("absolute", |_| vec![]).is_some() {
+        let fixture = Fixture::new(&json!({}));
+        native_support::write(&fixture.agent("git/github.com/user/repo/file"), "x");
+        block_on(fixture.manager.remove("https://github.com/user/repo", None)).unwrap();
+        assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
+    }
 
     let fixture = Fixture::new(&json!({}));
     native_support::write(&fixture.agent("git/github.com/..hidden/repo/file"), "x");

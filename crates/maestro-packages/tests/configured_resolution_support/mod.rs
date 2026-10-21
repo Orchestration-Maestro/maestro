@@ -50,9 +50,6 @@ struct Recipe {
     /// Failed acquisition.
     #[serde(rename = "failInstall")]
     fail_install: Option<bool>,
-    /// Failed home read.
-    #[serde(rename = "homeFailure")]
-    home_failure: Option<bool>,
     /// Failed ambient cwd read.
     #[serde(rename = "cwdFailure")]
     cwd_failure: Option<bool>,
@@ -72,8 +69,8 @@ struct Recipe {
 }
 /// One native tree with surviving caller aliases.
 struct Fixture {
-    /// Owns the tree until producers finish.
-    scratch: scratch::Scratch,
+    /// The tree the calling process owns.
+    base: std::path::PathBuf,
     /// Public operation owner.
     manager: DefaultPackageManager<support::Controlled>,
     /// Surviving settings alias.
@@ -97,14 +94,35 @@ pub fn check(names: &[&str]) {
         .collect();
     assert_eq!(cases.len(), names.len());
     for case in cases {
-        let fixture = setup(&case.recipe);
-        resolution_support::run(observe(&fixture, &case)).unwrap();
+        run_case(&case);
     }
 }
+/// Runs one recipe in a child process with the recipe's home and offline value.
+fn run_case(case: &Record) {
+    let Some(base) = resolution_support::case_in_child(&case.case, |base| {
+        let home = case
+            .recipe
+            .home
+            .as_deref()
+            .map_or_else(|| format!("{base}/home"), |s| s.replace("$BASE", base));
+        vec![
+            ("HOME", Some(home)),
+            ("MAESTRO_OFFLINE", case.recipe.offline.clone()),
+        ]
+    }) else {
+        return;
+    };
+    let fixture = setup(&case.recipe, base);
+    let _removed = case.recipe.cwd_failure.unwrap_or_default().then(|| {
+        let owner = scratch::Scratch::new_in(&fixture.base).unwrap();
+        owner.enter_removed("removed").unwrap();
+        owner
+    });
+    resolution_support::run(observe(&fixture, case)).unwrap();
+}
 /// Constructs the configured manager from real scoped settings files.
-fn setup(recipe: &Recipe) -> Fixture {
-    let scratch = scratch::Scratch::new().unwrap();
-    let base = scratch.path().to_str().unwrap();
+fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Fixture {
+    let base = root.to_str().unwrap();
     let cwd = recipe
         .cwd
         .as_deref()
@@ -118,7 +136,7 @@ fn setup(recipe: &Recipe) -> Fixture {
     if !recipe.no_git.unwrap_or_default() {
         fs::write(Path::new(&cwd).join(".git"), "gitdir: unused").unwrap();
     }
-    native_tree(scratch.path(), recipe);
+    native_tree(&root, recipe);
     let mut global = substitute(&recipe.global, base);
     global["npmCommand"] = json!(["npm"]);
     fs::write(Path::new(&user).join("settings.json"), global.to_string()).unwrap();
@@ -141,12 +159,8 @@ fn setup(recipe: &Recipe) -> Fixture {
         support::Controlled(Rc::clone(&effects)),
     );
     Fixture {
-        denied: recipe
-            .denied
-            .iter()
-            .map(|name| scratch.path().join(name))
-            .collect(),
-        scratch,
+        denied: recipe.denied.iter().map(|name| root.join(name)).collect(),
+        base: root,
         manager,
         settings,
         effects,
@@ -181,20 +195,7 @@ fn native_tree(root: &Path, recipe: &Recipe) {
 }
 /// Supplies controlled acquisition and ambient failures below their owning wrappers.
 fn effects(recipe: &Recipe, base: &str) -> Rc<support::Effects> {
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        ..Default::default()
-    });
-    *effects.home_override.borrow_mut() = (!recipe.home_failure.unwrap_or_default()).then(|| {
-        recipe
-            .home
-            .as_deref()
-            .map_or_else(|| format!("{base}/home"), |s| s.replace("$BASE", base))
-    });
-    effects
-        .fail_ambient
-        .set(recipe.home_failure.unwrap_or_default() || recipe.cwd_failure.unwrap_or_default());
-    *effects.offline.borrow_mut() = recipe.offline.clone();
+    let effects = Rc::new(support::Effects::default());
     effects.outputs.borrow_mut().push_back(Ok(support::output(
         &format!("{base}/global_node_modules"),
         "",
@@ -208,8 +209,7 @@ async fn observe(fixture: &Fixture, case: &Record) -> std::io::Result<()> {
     let manager = &fixture.manager;
     let settings = &fixture.settings;
     let effects = &fixture.effects;
-    let scratch = &fixture.scratch;
-    let base = scratch.path().to_str().unwrap();
+    let base = fixture.base.to_str().unwrap();
     let events = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
     let sink = Rc::clone(&events);
     manager.set_progress_callback(Some(Rc::new(move |event| {
@@ -283,7 +283,10 @@ async fn gated_resolution(
 }
 /// Preserves command order, repetitions and complete operands while changing only framing.
 fn command_output(call: &Value, base: &str) -> Value {
-    let mut call: Value = serde_json::from_str(&call.to_string().replace(base, "$BASE")).unwrap();
+    let mut call: Value = serde_json::from_str(&support::recorded_stages(
+        &call.to_string().replace(base, "$BASE"),
+    ))
+    .unwrap();
     let object = call.as_object_mut().unwrap();
     object.shift_remove("mode");
     if let Some(cwd) = object.shift_remove("cwd") {
@@ -412,10 +415,14 @@ fn gated_callback<'a>(
 }
 /// Demonstrates a non-static callback capture through a completed configured operation.
 pub fn borrowed_callback() {
-    let fixture = setup(&Recipe {
-        global: json!({"packages":["npm:missing"]}),
-        ..Recipe::default()
-    });
+    let tree = scratch::Scratch::new().unwrap();
+    let fixture = setup(
+        &Recipe {
+            global: json!({"packages":["npm:missing"]}),
+            ..Recipe::default()
+        },
+        tree.path().to_path_buf(),
+    );
     let manager = &fixture.manager;
     let settings = &fixture.settings;
     let effects = &fixture.effects;

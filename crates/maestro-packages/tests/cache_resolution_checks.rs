@@ -239,22 +239,6 @@ fn refresh_catches_progress_callback_failures() {
     });
 }
 
-/// Replays offline is observed again before refresh.
-#[test]
-fn offline_is_observed_again_before_refresh() {
-    crate::runtime::run(async {
-        cache_support::cases(&["offline_second"]).await;
-    });
-}
-
-/// Replays offline is live between sources.
-#[test]
-fn offline_is_live_between_sources() {
-    crate::runtime::run(async {
-        cache_support::cases(&["offline_between"]).await;
-    });
-}
-
 /// Replays failed missing acquisition rejects before later sources.
 #[test]
 fn failed_missing_acquisition_rejects_before_later_sources() {

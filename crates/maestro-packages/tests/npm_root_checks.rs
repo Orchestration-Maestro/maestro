@@ -5,18 +5,35 @@ use maestro_settings::SettingsListEntry;
 use serde_json::json;
 use support::{manager, output};
 
+/// Enters a fresh tree of this test's own child as the working directory. Returns the
+/// spelling of `path` below it (relative paths stay relative to it), or `None` in the caller
+/// once the child passed.
+fn in_tree(case: &str) -> Option<impl Fn(&str) -> String> {
+    let tree = crate::resolution_support::case_in_child(case, |_| Vec::new())?;
+    std::env::set_current_dir(&tree).unwrap();
+    Some(move |path: &str| support::below(&tree, path))
+}
+
+/// Creates the directory `path`, so an installed-path lookup finds it.
+fn present(path: &str) {
+    std::fs::create_dir_all(path).unwrap();
+}
+
 #[test]
 fn npm_command_selection_keeps_defaults_and_exact_bun() {
+    let Some(below) = in_tree("selection") else {
+        return;
+    };
     for (configured, executable, args, root) in command_cases() {
+        present(&below(root));
         let (manager, _, effects) = manager(&json!({"npmCommand":configured}));
-        effects.exists.set(true);
         effects
             .outputs
             .borrow_mut()
-            .push_back(Ok(output("/home/bun/bin", "", Some(0))));
+            .push_back(Ok(output(&below("/home/bun/bin"), "", Some(0))));
         assert_eq!(
             manager.get_installed_path("npm:pkg", User).unwrap(),
-            Some(root.into())
+            Some(below(root))
         );
         assert_eq!(
             *effects.calls.borrow(),
@@ -48,6 +65,9 @@ fn npm_command_selection_keeps_defaults_and_exact_bun() {
 }
 #[test]
 fn npm_root_cache_tracks_all_arguments_and_nonempty_results() {
+    let Some(below) = in_tree("sequences") else {
+        return;
+    };
     let sequences: Vec<RootSequence> =
         serde_json::from_str(include_str!("root_sequences.json")).unwrap();
     assert_eq!(sequences.len(), 4);
@@ -55,11 +75,14 @@ fn npm_root_cache_tracks_all_arguments_and_nonempty_results() {
     for row in sequences {
         assert!(unique.insert(row.commands.clone()));
         let (manager, settings, effects) = manager(&json!({}));
-        effects.exists.set(true);
-        effects
-            .outputs
-            .borrow_mut()
-            .extend(row.outputs.iter().map(|text| Ok(output(text, "", Some(0)))));
+        for path in &row.expected {
+            present(&below(path));
+        }
+        effects.outputs.borrow_mut().extend(
+            row.outputs
+                .iter()
+                .map(|text| Ok(output(&below(text), "", Some(0)))),
+        );
         let mut paths = Vec::new();
         for command in row.commands {
             settings.borrow_mut().set_npm_command(Some(
@@ -69,23 +92,30 @@ fn npm_root_cache_tracks_all_arguments_and_nonempty_results() {
         }
         assert_eq!(
             paths,
-            row.expected.into_iter().map(Some).collect::<Vec<_>>()
+            row.expected
+                .iter()
+                .map(|path| Some(below(path)))
+                .collect::<Vec<_>>()
         );
         assert_eq!(*effects.calls.borrow(), row.calls);
     }
 }
 #[test]
 fn root_lookup_failures_preserve_the_previous_cache_entry() {
+    let Some(below) = in_tree("failures") else {
+        return;
+    };
+    present(&below("/root/first/pkg"));
+    present(&below("/root/other/pkg"));
     let (manager, settings, effects) = manager(&json!({"npmCommand":["first"]}));
-    effects.exists.set(true);
     effects.outputs.borrow_mut().extend([
-        Ok(output("/root/first", "", Some(0))),
+        Ok(output(&below("/root/first"), "", Some(0))),
         Err(std::io::Error::other("controlled lookup failure")),
-        Ok(output("/root/other", "", Some(0))),
+        Ok(output(&below("/root/other"), "", Some(0))),
     ]);
     assert_eq!(
         manager.get_installed_path("npm:pkg", User).unwrap(),
-        Some("/root/first/pkg".into())
+        Some(below("/root/first/pkg"))
     );
     settings
         .borrow_mut()
@@ -102,14 +132,14 @@ fn root_lookup_failures_preserve_the_previous_cache_entry() {
         .set_npm_command(Some(vec![SettingsListEntry::String("first".into())]));
     assert_eq!(
         manager.get_installed_path("npm:pkg", User).unwrap(),
-        Some("/root/first/pkg".into())
+        Some(below("/root/first/pkg"))
     );
     settings
         .borrow_mut()
         .set_npm_command(Some(vec![SettingsListEntry::String("other".into())]));
     assert_eq!(
         manager.get_installed_path("npm:pkg", User).unwrap(),
-        Some("/root/other/pkg".into())
+        Some(below("/root/other/pkg"))
     );
     assert_eq!(
         effects
@@ -123,6 +153,9 @@ fn root_lookup_failures_preserve_the_previous_cache_entry() {
 }
 #[test]
 fn captured_commands_preserve_stream_choice_and_failure_wrapper() {
+    if in_tree("streams").is_none() {
+        return;
+    }
     for (stdout, stderr, expected) in [
         (" root \n", "error", "root"),
         ("", " fallback \n", "fallback"),
@@ -130,16 +163,16 @@ fn captured_commands_preserve_stream_choice_and_failure_wrapper() {
         ("\u{feff}root\u{feff}", "", "root"),
         ("\u{85}root\u{85}", "", "\u{85}root\u{85}"),
     ] {
+        let installed = maestro_path::join(&[expected, "pkg"]);
+        present(&installed);
         let (manager, _, effects) = manager(&json!({}));
-        effects.exists.set(true);
         effects
             .outputs
             .borrow_mut()
             .push_back(Ok(output(stdout, stderr, Some(0))));
-        let _ = manager.get_installed_path("npm:pkg", User).unwrap();
         assert_eq!(
-            *effects.paths.borrow(),
-            vec![maestro_path::join(&[expected, "pkg"])]
+            manager.get_installed_path("npm:pkg", User).unwrap(),
+            Some(installed)
         );
     }
     for (response, expected) in [
@@ -157,7 +190,6 @@ fn captured_commands_preserve_stream_choice_and_failure_wrapper() {
                 .to_string(),
             format!("Failed to run runner --flag two words root -g: {expected}")
         );
-        assert!(effects.paths.borrow().is_empty());
     }
 }
 #[cfg(unix)]

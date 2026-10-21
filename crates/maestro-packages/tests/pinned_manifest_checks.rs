@@ -28,6 +28,10 @@ fn matching_pin_selects_last_version_after_deep_duplicate() {
 
 /// Resolves installed resources and observes the completed command boundary.
 fn check_matching_pin(offline: bool, member: &str) {
+    let environment = |_: &str| vec![("MAESTRO_OFFLINE", Some("1".into()))];
+    if offline && crate::resolution_support::case_in_child(member, environment).is_none() {
+        return;
+    }
     let scratch = scratch::Scratch::new().unwrap();
     let cwd = scratch.path().to_str().unwrap();
     let target = scratch.path().join(".maestro/npm/node_modules/pkg");
@@ -39,9 +43,7 @@ fn check_matching_pin(offline: bool, member: &str) {
     )
     .unwrap();
     fs::write(target.join("entry.ts"), "installed resource").unwrap();
-    let (_, settings, mut effects) = support::manager(&serde_json::json!({}));
-    Rc::get_mut(&mut effects).unwrap().native_exists = true;
-    *effects.offline.borrow_mut() = offline.then(|| "1".into());
+    let (_, settings, effects) = support::manager(&serde_json::json!({}));
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: cwd.into(),

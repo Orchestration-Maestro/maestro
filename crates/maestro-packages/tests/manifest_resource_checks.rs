@@ -204,10 +204,7 @@ async fn run_case(row: Row) {
     let scratch = scratch::Scratch::new().unwrap();
     let root = scratch.path().to_string_lossy();
     let (_, settings, _) = support::manager(&serde_json::json!({}));
-    let effects = Rc::new(support::Effects {
-        native_exists: true,
-        ..Default::default()
-    });
+    let effects = Rc::new(support::Effects::default());
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: maestro_path::join(&[&root, "project"]),

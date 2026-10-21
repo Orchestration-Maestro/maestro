@@ -11,13 +11,11 @@ pub(super) fn run(user_jobs: usize, project_jobs: usize, git_jobs: usize) -> Gro
         .chain((0..git_jobs).map(|i| format!("git:github.com/acme/tool-{i}")))
         .collect();
     let project: Vec<_> = (0..project_jobs).map(|i| format!("npm:p{i}")).collect();
-    let (manager, _, effects) = manager(&json!(user), &json!(project));
-    effects.exists.set(true);
-    effects
-        .absent_under
-        .borrow_mut()
-        .push("/fixture/agent/node_modules".into());
-    *effects.manifest.borrow_mut() = None;
+    let (manager, _, effects, tree) = manager(&json!(user), &json!(project));
+    for i in 0..git_jobs {
+        let checkout = format!("/fixture/agent/git/github.com/acme/tool-{i}");
+        std::fs::create_dir_all(crate::support::below(tree.path(), &checkout)).unwrap();
+    }
     *effects.capture_hook.borrow_mut() = Some(Rc::new(|_, _, _| {
         Box::pin(async { Ok("origin/main".into()) })
     }));

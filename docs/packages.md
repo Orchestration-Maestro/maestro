@@ -106,8 +106,7 @@ Temporary npm shares `<temp>/maestro-extensions/npm/f35b2129`.
 Temporary Git uses `<temp>/maestro-extensions/git-<host>/<hash>/<path>`;
 `hash` is the first eight lowercase hexadecimal characters of SHA-256 over
 `git-<host>-<path>` before lexical joining, without the ref.
-The supplied `PackageOperations::temp_dir` selects the temporary base;
-`NativePackageOperations` uses Rust's OS temporary-directory selection.
+Rust's OS temporary-directory selection (`TMPDIR` on Unix) gives the temporary base.
 Temporary Git creates no managed-root ignore file. Cache files outlive the manager.
 
 Only existing, unpinned, online temporary Git sources refresh. The refresh rechecks

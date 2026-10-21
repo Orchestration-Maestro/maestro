@@ -3,7 +3,7 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations, ProgressAction,
     sources::{self, Source},
 };
-use std::io;
+use std::{io, path::Path};
 
 /// Whether acquisition changed an existing Git commit.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -40,8 +40,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Fails unless the local path, resolved against the input base, exists.
     fn require_local(&self, path: &str) -> io::Result<()> {
-        let resolved = self.resolve_local(path, &self.options.cwd)?;
-        if self.operations.exists(&resolved) {
+        let resolved = super::paths::resolve_local(path, &self.options.cwd)?;
+        if Path::new(&resolved).exists() {
             return Ok(());
         }
         Err(io::Error::new(
