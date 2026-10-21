@@ -116,3 +116,110 @@ fn tab_projection_keeps_focus_and_agent_attention_independent_of_identity() {
     assert!(app.tab_info(0, 1).is_none());
     assert!(app.tab_info(1, 0).is_none());
 }
+
+/// Resolves creation through the real pending-name route without starting a child.
+#[cfg(unix)]
+async fn pending_cwd(
+    policy: maestro_daemon::settings::model::NewTerminalCwdConfig,
+    source: Option<&str>,
+) -> std::path::PathBuf {
+    let mut config = Config::default();
+    config.ui.prompt_new_workspace_name.0 = true;
+    config.terminal.new_cwd = policy;
+    let mut app = app(&config);
+    if let Some(cwd) = source {
+        app.state
+            .topology
+            .new_with_tab(cwd.into(), None, |_, _| Ok(()))
+            .unwrap();
+        app.state.active = Some(0);
+    }
+    app.begin_workspace_create().await.unwrap();
+    assert!(app.state.topology.workspaces.len() <= 1);
+    app.state.pending_workspace_create_cwd.unwrap()
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            use maestro_daemon::app::state::Mode;
+            let mut config = Config::default();
+            config.ui.prompt_new_workspace_name.0 = true;
+            let mut app = app(&config);
+            for cwd in ["/first", "/second"] {
+                app.state
+                    .topology
+                    .new_with_tab(cwd.into(), None, |_, _| Ok(()))
+                    .unwrap();
+            }
+            app.state.active = Some(0);
+            app.state.selected = 1;
+            app.state.mode = Mode::Navigate;
+            app.begin_workspace_create().await.unwrap();
+            assert_eq!(
+                app.state.pending_workspace_create_cwd.as_ref(),
+                Some(&app.state.topology.workspaces[1].identity_cwd)
+            );
+            assert_eq!(
+                app.state.pending_workspace_create_cwd.as_deref(),
+                Some(std::path::Path::new("/second"))
+            );
+        });
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_new_terminal_cwd_follow_uses_source_cwd() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let cwd = pending_cwd(
+                maestro_daemon::settings::model::NewTerminalCwdConfig::Follow,
+                Some("/source"),
+            )
+            .await;
+            assert_eq!(cwd, std::path::Path::new("/source"));
+        });
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_new_terminal_cwd_follow_without_source_uses_home() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let home = std::env::var_os("HOME").unwrap();
+            let cwd = pending_cwd(
+                maestro_daemon::settings::model::NewTerminalCwdConfig::Follow,
+                None,
+            )
+            .await;
+            assert_eq!(cwd, std::path::PathBuf::from(home));
+        });
+}
+
+#[test]
+#[cfg(unix)]
+fn daemon_new_terminal_cwd_path_uses_configured_path() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let cwd = pending_cwd(
+                maestro_daemon::settings::model::NewTerminalCwdConfig::Path("/fixed".into()),
+                Some("/source"),
+            )
+            .await;
+            assert_eq!(cwd, std::path::Path::new("/fixed"));
+        });
+}
