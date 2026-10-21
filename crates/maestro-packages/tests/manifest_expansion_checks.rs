@@ -56,14 +56,7 @@ fn setup(scene: &std::path::Path, setup: &Setup) {
     for (path, target) in &setup.links {
         let path = scene.join(path);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        #[cfg(unix)]
         std::os::unix::fs::symlink(target, path).unwrap();
-        #[cfg(windows)]
-        if scene.join(target).is_dir() {
-            std::os::windows::fs::symlink_dir(target, path).unwrap();
-        } else {
-            std::os::windows::fs::symlink_file(target, path).unwrap();
-        }
     }
 }
 /// Drives each selected recipe through the public operation.
@@ -95,14 +88,11 @@ async fn run_recipe(row: Recipe) {
         &std::path::Path::new(&root).join("package.json"),
         &json!({"maestro":manifest}).to_string(),
     );
-    #[cfg(unix)]
     if row.denied {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o0)).unwrap();
         assert!(fs::read_dir(scene.0.join("denied")).is_err());
     }
-    #[cfg(not(unix))]
-    assert!(!row.denied, "native permission recipe is Unix-only");
     let (manager, _) =
         resolution_support::manager(&root, resolution_support::Filesystem::default());
     let sources: Vec<_> = row
@@ -117,7 +107,6 @@ async fn run_recipe(row: Recipe) {
     let actual = resolution_support::output(result, &base)
         .to_string()
         .replace("$BASE", "$SCENE");
-    #[cfg(unix)]
     if row.denied {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o755)).unwrap();
