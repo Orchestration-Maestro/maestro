@@ -9,7 +9,9 @@ use maestro_workspace::{
 use std::collections::HashMap;
 
 mod selection;
-pub use selection::{CopyModeSelection, CopyModeState, Mode};
+pub use selection::{
+    CopyModeSelection, CopyModeState, Mode, SelectionAutoscroll, SelectionAutoscrollDirection,
+};
 
 /// Logical pane focus that survives workspace reordering.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,12 +22,25 @@ pub struct PaneFocusTarget {
     pub pane_id: PaneId,
 }
 
+/// Extension provenance for a registered pane.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PluginPaneRecord {
+    /// Owning extension identity.
+    pub plugin_id: String,
+    /// Registered pane entrypoint.
+    pub entrypoint: String,
+}
+
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState<C> {
     /// Sole owner of workspace topology and public identity allocation.
     pub topology: WorkspaceTopology<C>,
     /// Retained terminal metadata keyed by the attached terminal identity.
     pub terminals: HashMap<TerminalId, TerminalState>,
+    /// Registered pane provenance removed with its owning pane.
+    pub plugin_panes: HashMap<PaneId, PluginPaneRecord>,
+    /// Detached metadata identities awaiting runtime shutdown by the loop.
+    pub terminal_runtime_shutdowns: Vec<TerminalId>,
     /// Active workspace display position, absent when no workspace is active.
     pub active: Option<usize>,
     /// Workspace selection position for navigation.
@@ -38,6 +53,8 @@ pub struct DaemonState<C> {
     pub copy_mode: Option<CopyModeState>,
     /// Current terminal text selection.
     pub selection: Option<crate::selection::Selection>,
+    /// Pending drag geometry cleared with its selection.
+    pub selection_autoscroll: Option<SelectionAutoscroll>,
     /// Previous logical focus for last-pane navigation.
     pub previous_pane_focus: Option<PaneFocusTarget>,
     /// Historical numeric spellings mapped to their retained pane identity.
@@ -57,6 +74,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         Self {
             topology: WorkspaceTopology::new(clock),
             terminals: HashMap::new(),
+            plugin_panes: HashMap::new(),
+            terminal_runtime_shutdowns: Vec::new(),
             active: None,
             selected: 0,
             session_dirty: false,
@@ -64,6 +83,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             mode: Mode::Navigate,
             copy_mode: None,
             selection: None,
+            selection_autoscroll: None,
             pane_id_aliases: HashMap::new(),
             public_pane_id_aliases: HashMap::new(),
             headless_size: config.headless_size(),

@@ -1,6 +1,9 @@
 //! Daemon geometry before the first attached view.
 #![cfg(test)]
 
+mod support;
+use support::{assert_identity_invariants, populate_terminals};
+
 use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 use maestro_workspace::layout::{Borders, PaneId, PaneInfo, Rect};
 
@@ -71,64 +74,4 @@ fn daemon_adversarial_identity_state_satisfies_app_invariants_after_mutation() {
     );
     populate_terminals(&mut state);
     assert_identity_invariants(&state);
-}
-
-/// Admit terminal metadata for each pane using its topology-owned identity.
-fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
-    for workspace in &state.topology.workspaces {
-        for pane in workspace.tabs.iter().flat_map(|tab| tab.panes.values()) {
-            state
-                .terminals
-                .entry(pane.attached_terminal_id.clone())
-                .or_insert_with(|| {
-                    maestro_daemon::terminal::state::TerminalState::new(
-                        pane.attached_terminal_id.clone(),
-                        workspace.identity_cwd.clone(),
-                    )
-                });
-        }
-    }
-}
-
-/// Check topology identity, focus and metadata membership after each mutation.
-fn assert_identity_invariants<C: FnMut() -> u128>(state: &DaemonState<C>) {
-    use std::collections::HashSet;
-    assert!(state.selected < state.topology.workspaces.len());
-    assert!(
-        state
-            .active
-            .is_some_and(|index| index < state.topology.workspaces.len())
-    );
-    let mut workspaces = HashSet::new();
-    let mut panes = HashSet::new();
-    let mut terminals = HashSet::new();
-    for workspace in &state.topology.workspaces {
-        assert!(workspaces.insert(&workspace.id));
-        assert!(workspace.active_tab < workspace.tabs.len());
-        let mut numbers = HashSet::new();
-        for tab in &workspace.tabs {
-            assert!(numbers.insert(tab.number));
-            assert!(tab.number < workspace.next_public_tab_number);
-            assert_tab_geometry(tab);
-            for (pane, viewport) in &tab.panes {
-                assert!(panes.insert(*pane));
-                assert!(terminals.insert(&viewport.attached_terminal_id));
-                let number = workspace.public_pane_number(*pane).unwrap();
-                assert!(number < workspace.next_public_pane_number);
-                let terminal = &state.terminals[&viewport.attached_terminal_id];
-                assert_eq!(terminal.id, viewport.attached_terminal_id);
-            }
-        }
-    }
-}
-
-/// Each split leaf has exactly one viewport, including the root and focus.
-fn assert_tab_geometry(tab: &maestro_workspace::tab::Tab) {
-    use std::collections::HashSet;
-    assert!(tab.panes.contains_key(&tab.root_pane));
-    assert!(tab.panes.contains_key(&tab.layout.focused()));
-    assert_eq!(
-        tab.layout.pane_ids().into_iter().collect::<HashSet<_>>(),
-        tab.panes.keys().copied().collect()
-    );
 }

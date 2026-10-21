@@ -110,6 +110,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Clears terminal text selection.
     pub fn clear_selection(&mut self) {
         self.selection = None;
+        self.selection_autoscroll = None;
     }
 
     /// Clears selection while retaining the copy pane for return navigation.

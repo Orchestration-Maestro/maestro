@@ -33,3 +33,25 @@ pub struct CopyModeState {
     /// Active selection shape, cleared when leaving the pane.
     pub selection: Option<CopyModeSelection>,
 }
+
+/// Direction retained for selection drag scrolling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SelectionAutoscrollDirection {
+    /// Extend toward earlier buffer rows.
+    Up,
+    /// Extend toward later buffer rows.
+    Down,
+}
+
+/// Selection drag geometry retained until the gesture or its pane ends.
+#[derive(Debug, Clone)]
+pub struct SelectionAutoscroll {
+    /// Direction requested by the current drag.
+    pub direction: SelectionAutoscrollDirection,
+    /// Last observed mouse column.
+    pub last_mouse_screen_col: u16,
+    /// Last observed mouse row.
+    pub last_mouse_screen_row: u16,
+    /// Pane content rectangle at the last drag observation.
+    pub inner_rect: maestro_workspace::layout::Rect,
+}

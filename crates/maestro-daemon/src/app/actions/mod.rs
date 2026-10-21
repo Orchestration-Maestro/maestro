@@ -1,7 +1,10 @@
 //! Daemon-owned workspace mutations.
 
+mod close;
+mod death;
 mod focus;
 mod ordering;
+mod removal;
 
 use maestro_workspace::{layout::PaneId, workspace::Workspace};
 

@@ -1,6 +1,9 @@
 //! Workspace reordering preserves logical navigation selection.
 #![cfg(test)]
 
+mod support;
+use support::{assert_identity_invariants, populate_terminals};
+
 use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 
 /// Creates pure workspace topology with an active first workspace.
@@ -12,6 +15,7 @@ fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
             .new_with_tab(format!("/{name}").into(), None, |_, _| Ok(()))
             .unwrap();
     }
+    populate_terminals(&mut state);
     state.active = (!names.is_empty()).then_some(0);
     state
 }
@@ -345,4 +349,187 @@ fn focus_navigation_retains_copy_pane_but_clears_cross_pane_selection() {
     state.last_pane();
     assert_eq!(state.mode, Mode::Copy);
     assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(root));
+}
+
+#[test]
+fn daemon_close_workspace_adjusts_indices() {
+    let mut state = app_with_workspaces(&["a", "b", "c"]);
+    state.selected = 1;
+    state.active = Some(1);
+    state.close_selected_workspace();
+    assert_eq!(state.topology.workspaces.len(), 2);
+    assert_eq!(state.selected, 1);
+    assert_eq!(state.active, Some(1));
+    assert_eq!(state.topology.workspaces[1].display_name(None), "c");
+}
+
+#[test]
+fn daemon_close_parent_worktree_workspace_closes_group() {
+    use maestro_workspace::workspace::WorktreeSpaceMembership;
+    let mut state = app_with_workspaces(&["main", "issue", "notes"]);
+    for (index, linked) in [(0, false), (1, true)] {
+        state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
+            key: "repo-key".into(),
+            label: "project".into(),
+            repo_root: "/repo/project".into(),
+            checkout_path: if linked {
+                "/repo/issue"
+            } else {
+                "/repo/project"
+            }
+            .into(),
+            is_linked_worktree: linked,
+        });
+    }
+    state.close_selected_workspace();
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "notes");
+    assert_eq!(state.active, Some(0));
+    assert_eq!(state.selected, 0);
+}
+
+#[test]
+fn daemon_close_last_workspace_clears_active() {
+    let mut state = app_with_workspaces(&["only"]);
+    state.close_selected_workspace();
+    assert!(state.topology.workspaces.is_empty());
+    assert_eq!(state.active, None);
+    assert_eq!(state.selected, 0);
+}
+
+#[test]
+fn daemon_close_workspace_at_end_adjusts_selected() {
+    let mut state = app_with_workspaces(&["a", "b"]);
+    state.selected = 1;
+    state.active = Some(1);
+    state.close_selected_workspace();
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.selected, 0);
+    assert_eq!(state.active, Some(0));
+}
+
+#[test]
+fn daemon_close_non_focused_workspace_keeps_focus() {
+    let mut state = app_with_workspaces(&["a", "b", "c"]);
+    state.selected = 1;
+    state.active = Some(0);
+    state.close_selected_workspace();
+    assert_eq!(state.topology.workspaces.len(), 2);
+    assert_eq!(names(&state), ["a", "c"]);
+    assert_eq!(state.selected, 0);
+    assert_eq!(state.active, Some(0));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_close_workspace_removes_unattached_terminal_states() {
+    use maestro_daemon::app::state::PluginPaneRecord;
+    let mut state = app_with_workspaces(&["one", "two"]);
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    let terminal = state.topology.workspaces[0]
+        .terminal_id(pane)
+        .unwrap()
+        .clone();
+    state.plugin_panes.insert(
+        pane,
+        PluginPaneRecord {
+            plugin_id: "example.pane".into(),
+            entrypoint: "board".into(),
+        },
+    );
+    state.close_selected_workspace();
+    assert!(!state.terminals.contains_key(&terminal));
+    assert!(!state.plugin_panes.contains_key(&pane));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_pane_died_last_pane_removes_workspace() {
+    let mut state = app_with_workspaces(&["a", "b"]);
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    state.handle_pane_died(pane);
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "b");
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_pane_died_last_workspace_enters_navigate() {
+    use maestro_daemon::app::state::Mode;
+    let mut state = app_with_workspaces(&["only"]);
+    state.mode = Mode::Terminal;
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    state.handle_pane_died(pane);
+    assert!(state.topology.workspaces.is_empty());
+    assert_eq!(state.mode, Mode::Navigate);
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_pane_died_multi_pane_keeps_workspace() {
+    let mut state = app_with_workspaces(&["test"]);
+    let second = split(&mut state, 0);
+    populate_terminals(&mut state);
+    state.handle_pane_died(second);
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 1);
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn daemon_pane_died_unknown_pane_is_noop() {
+    let mut state = app_with_workspaces(&["test"]);
+    state.handle_pane_died(maestro_workspace::layout::PaneId::from_raw(9999));
+    assert_eq!(state.topology.workspaces.len(), 1);
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn pane_death_keeps_logical_focus_after_earlier_workspace_removal() {
+    let names: Vec<_> = (0..20).map(|index| format!("ws{index:02}")).collect();
+    let names: Vec<_> = names.iter().map(String::as_str).collect();
+    let mut state = app_with_workspaces(&names);
+    state.selected = 1;
+    state.active = Some(1);
+    let pane = state.topology.workspaces[0].tabs[0].root_pane;
+    state.handle_pane_died(pane);
+    assert_eq!(state.topology.workspaces.len(), 19);
+    assert_eq!(state.topology.workspaces[0].display_name(None), "ws01");
+    assert_eq!(state.selected, 0);
+    assert_eq!(state.active, Some(0));
+    assert_identity_invariants(&state);
+}
+
+#[test]
+fn pane_death_clears_only_its_selection_and_retires_detached_metadata() {
+    use maestro_daemon::{
+        app::state::{SelectionAutoscroll, SelectionAutoscrollDirection},
+        selection::Selection,
+    };
+    let mut state = app_with_workspaces(&["active", "background"]);
+    let active = state.topology.workspaces[0].tabs[0].root_pane;
+    let background = state.topology.workspaces[1].tabs[0].root_pane;
+    state.selection = Some(Selection::anchor(active, 0, 0, None));
+    state.selection_autoscroll = Some(SelectionAutoscroll {
+        direction: SelectionAutoscrollDirection::Down,
+        last_mouse_screen_col: 0,
+        last_mouse_screen_row: 23,
+        inner_rect: maestro_workspace::layout::Rect::new(0, 0, 80, 24),
+    });
+    state.pane_id_aliases.insert(99, background);
+    state
+        .public_pane_id_aliases
+        .insert("old".into(), background);
+    state.handle_pane_died(background);
+    assert!(state.selection.is_some());
+    assert!(state.selection_autoscroll.is_some());
+    assert!(state.pane_id_aliases.is_empty());
+    assert!(state.public_pane_id_aliases.is_empty());
+    assert_eq!(state.terminal_runtime_shutdowns.len(), 1);
+    state.handle_pane_died(active);
+    assert!(state.selection.is_none());
+    assert!(state.selection_autoscroll.is_none());
+    assert!(state.terminals.is_empty());
+    assert_eq!(state.terminal_runtime_shutdowns.len(), 2);
+    assert_identity_invariants(&state);
 }

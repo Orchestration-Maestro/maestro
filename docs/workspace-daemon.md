@@ -120,6 +120,13 @@ dirty. Last-pane navigation toggles across workspaces and tabs; removed targets
 are discarded. Copy navigation retains its pane while focus is elsewhere, clears
 cross-pane selections, and returns to copy context when that pane is selected.
 
+Closing a selected parent checkout removes its repository group; closing a linked
+checkout removes only that workspace. Pane death removes only its own workspace
+when its last pane exits, retaining the logical active and selected workspaces.
+Removal clears pane aliases, extension provenance and affected copy/selection
+records. Detached terminal metadata is removed and its identity is queued for the
+loop to shut down the existing runtime; still-attached terminals are retained.
+
 `maestro_daemon::api::event_hub::EventHub` shares one sequence across clones and
 retains the latest 512 ordered event payloads. Replay returns only events strictly
 newer than the supplied sequence. Events use the shared type-tagged protocol
