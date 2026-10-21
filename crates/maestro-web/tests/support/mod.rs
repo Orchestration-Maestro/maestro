@@ -73,3 +73,41 @@ pub mod tool_output;
 
 /// Shared recorded tool operands.
 pub mod tool_input;
+
+/// Check a fixture record's strict fields without changing its operation payload.
+/// # Panics
+/// Panics if the valid record fails or a malformed record is accepted.
+pub fn strict_record<T: serde::de::DeserializeOwned>(valid: &serde_json::Value, required: &[&str]) {
+    use serde_json::{Value, json};
+    assert!(serde_json::from_value::<T>(valid.clone()).is_ok());
+    for value in [Value::Null, json!([])] {
+        let mut extra = valid.clone();
+        extra["unexpected"] = value;
+        assert!(serde_json::from_value::<T>(extra).is_err());
+    }
+    for &field in required {
+        let mut missing = valid.clone();
+        missing
+            .as_object_mut()
+            .unwrap()
+            .shift_remove(field)
+            .unwrap();
+        assert!(
+            serde_json::from_value::<T>(missing).is_err(),
+            "missing {field}"
+        );
+        let wrong = if valid[field].is_object() || valid[field].is_array() {
+            json!(false)
+        } else {
+            json!([])
+        };
+        for value in [Value::Null, wrong] {
+            let mut invalid = valid.clone();
+            invalid[field] = value;
+            assert!(
+                serde_json::from_value::<T>(invalid).is_err(),
+                "invalid {field}"
+            );
+        }
+    }
+}

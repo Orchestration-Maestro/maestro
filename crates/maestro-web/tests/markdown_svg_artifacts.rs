@@ -219,6 +219,24 @@ fn artifact_modes_survive_edits_and_stay_independent() {
 /// Selected, hover and focus treatment survive tessellation and the final clip.
 #[test]
 fn preview_toggle_paints_selected_hover_and_focus() {
+    let valid: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/control_texture_sampling_native.json"
+    ))
+    .unwrap();
+    assert_eq!(valid["preview"].as_array().unwrap().len(), 8);
+    crate::support::strict_record::<PreviewRow>(
+        &valid["preview"][0],
+        &["role", "tint", "size", "samples"],
+    );
+    crate::support::strict_record::<FilterSample>(
+        &valid["preview"][0]["samples"][0],
+        &["uv", "expected"],
+    );
+    for value in [serde_json::Value::Null, serde_json::json!([])] {
+        let mut sibling = valid.clone();
+        sibling["rows"] = value;
+        assert!(serde_json::from_value::<FilteringFixture>(sibling).is_err());
+    }
     for (case, frame) in branded_frames().into_iter().enumerate() {
         let mut toggle = PreviewCodeToggle::new();
         let mut paint = canvas_paint::Paint::default();
@@ -242,6 +260,35 @@ fn preview_toggle_paints_selected_hover_and_focus() {
     }
 }
 
+/// Native selected-role texture samples.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FilteringFixture {
+    /// Preview glyph observations.
+    preview: Vec<PreviewRow>,
+}
+/// Recorded `PreviewRow` observations.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PreviewRow {
+    /// Recorded role.
+    pub role: String,
+    /// Recorded tint.
+    pub tint: [u8; 4],
+    /// Recorded size.
+    pub size: [usize; 2],
+    /// Recorded samples.
+    pub samples: Vec<FilterSample>,
+}
+/// Recorded `FilterSample` observations.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FilterSample {
+    /// Recorded uv.
+    pub uv: [f32; 2],
+    /// Recorded expected.
+    pub expected: [f32; 4],
+}
 /// Compare every isolated native glyph sample and its unequal-role control.
 fn assert_native_toggle_glyphs(
     frame: &Frame,
@@ -256,7 +303,10 @@ fn assert_native_toggle_glyphs(
     let text = egui::Color32::from_hex(presentation.colors["text"])
         .unwrap()
         .to_array();
-    let recorded = canvas_paint::filtering_fixture();
+    let recorded: FilteringFixture = serde_json::from_str(include_str!(
+        "fixtures/control_texture_sampling_native.json"
+    ))
+    .unwrap();
     let glyphs: Vec<_> = output
         .shapes
         .iter()

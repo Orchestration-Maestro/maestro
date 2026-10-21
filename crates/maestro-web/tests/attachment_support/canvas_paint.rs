@@ -234,29 +234,20 @@ fn texture_pixel(image: &egui::ColorImage, uv: egui::Vec2) -> [f32; 4] {
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FilteringFixture {
+    /// Recorded rows.
     pub rows: Vec<FilterRow>,
-    pub preview: Vec<PreviewRow>,
 }
+/// Recorded `FilterRow` observations.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FilterRow {
+    /// Recorded size.
     pub size: [usize; 2],
+    /// Recorded pixels.
     pub pixels: Vec<[u8; 4]>,
+    /// Recorded uv.
     pub uv: [f32; 2],
-    pub expected: [f32; 4],
-}
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct PreviewRow {
-    pub role: String,
-    pub tint: [u8; 4],
-    pub size: [usize; 2],
-    pub samples: Vec<FilterSample>,
-}
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct FilterSample {
-    pub uv: [f32; 2],
+    /// Recorded expected.
     pub expected: [f32; 4],
 }
 /// Read native filtering expectations shared by glyph observers.
@@ -268,6 +259,17 @@ pub fn filtering_fixture() -> FilteringFixture {
 }
 #[test]
 fn linear_texture_samples_match_native_filtering() {
+    let valid: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/control_texture_sampling.json")).unwrap();
+    crate::support::strict_record::<FilterRow>(
+        &valid["rows"][0],
+        &["size", "pixels", "uv", "expected"],
+    );
+    for value in [serde_json::Value::Null, serde_json::json!([])] {
+        let mut sibling = valid.clone();
+        sibling["preview"] = value;
+        assert!(serde_json::from_value::<FilteringFixture>(sibling).is_err());
+    }
     let fixture = filtering_fixture();
     assert_eq!(fixture.rows.len(), 25);
     for (index, row) in fixture.rows.into_iter().enumerate() {

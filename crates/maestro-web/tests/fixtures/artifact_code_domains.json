@@ -1,436 +1,303 @@
 [
   {
     "input": {
-      "kind": "missing",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html"
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "missing",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html"
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "missing",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html"
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "null",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": null
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "null",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": null
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "null",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": null
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "string",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": "literal"
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "literal"
     }
   },
   {
     "input": {
-      "kind": "string",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": "literal"
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "literal"
     }
   },
   {
     "input": {
-      "kind": "string",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": "literal"
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "literal"
     }
   },
   {
     "input": {
-      "kind": "empty",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": ""
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "empty",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": ""
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "empty",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": ""
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "number",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": 1.25
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "1.25"
     }
   },
   {
     "input": {
-      "kind": "number",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": 1.25
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "1.25"
     }
   },
   {
     "input": {
-      "kind": "number",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": 1.25
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "1.25"
     }
   },
   {
     "input": {
-      "kind": "zero",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": 0
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "zero",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": 0
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "zero",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": 0
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "negative-zero",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": -0.0
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "negative-zero",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": -0.0
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "negative-zero",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": -0.0
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "false",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": false
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "false",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": false
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "false",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": false
       }
-    },
-    "expected": {
-      "branch": "omitted"
     }
   },
   {
     "input": {
-      "kind": "true",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": true
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "true"
     }
   },
   {
     "input": {
-      "kind": "true",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": true
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "true"
     }
   },
   {
     "input": {
-      "kind": "true",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": true
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "true"
     }
   },
   {
     "input": {
-      "kind": "empty-object",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": {}
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "{}"
     }
   },
   {
     "input": {
-      "kind": "empty-object",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": {}
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "{}"
     }
   },
   {
     "input": {
-      "kind": "empty-object",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": {}
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "{}"
     }
   },
   {
     "input": {
-      "kind": "object",
       "phase": "pending",
       "params": {
         "command": "create",
@@ -440,15 +307,10 @@
           "a": 2
         }
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "{\"z\":1,\"a\":2}"
     }
   },
   {
     "input": {
-      "kind": "object",
       "phase": "success",
       "params": {
         "command": "create",
@@ -458,15 +320,10 @@
           "a": 2
         }
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "{\"z\":1,\"a\":2}"
     }
   },
   {
     "input": {
-      "kind": "object",
       "phase": "error",
       "params": {
         "command": "create",
@@ -476,60 +333,40 @@
           "a": 2
         }
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "{\"z\":1,\"a\":2}"
     }
   },
   {
     "input": {
-      "kind": "empty-array",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": []
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "[]"
     }
   },
   {
     "input": {
-      "kind": "empty-array",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": []
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "[]"
     }
   },
   {
     "input": {
-      "kind": "empty-array",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": []
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "[]"
     }
   },
   {
     "input": {
-      "kind": "array",
       "phase": "pending",
       "params": {
         "command": "create",
@@ -540,15 +377,10 @@
           "b"
         ]
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "[\"b\",\"a\",\"b\"]"
     }
   },
   {
     "input": {
-      "kind": "array",
       "phase": "success",
       "params": {
         "command": "create",
@@ -559,15 +391,10 @@
           "b"
         ]
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "[\"b\",\"a\",\"b\"]"
     }
   },
   {
     "input": {
-      "kind": "array",
       "phase": "error",
       "params": {
         "command": "create",
@@ -578,55 +405,36 @@
           "b"
         ]
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": "[\"b\",\"a\",\"b\"]"
     }
   },
   {
     "input": {
-      "kind": "whitespace",
       "phase": "pending",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": " \t\n"
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": " \t\n"
     }
   },
   {
     "input": {
-      "kind": "whitespace",
       "phase": "success",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": " \t\n"
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": " \t\n"
     }
   },
   {
     "input": {
-      "kind": "whitespace",
       "phase": "error",
       "params": {
         "command": "create",
         "filename": "a.html",
         "content": " \t\n"
       }
-    },
-    "expected": {
-      "branch": "text",
-      "text": " \t\n"
     }
   }
 ]

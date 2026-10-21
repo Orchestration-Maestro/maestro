@@ -6,15 +6,11 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Corpus {
-    /// Application classifier cases.
-    pub classifier: Vec<NameCase>,
     /// Download media types.
     /// Expected Blob MIME type.
     pub mime: Vec<NameCase>,
     /// Original payload decoding.
     pub decode: Vec<DecodeCase>,
-    /// Byte control cases.
-    pub download: Vec<DownloadCase>,
 }
 /// Literal filename input.
 #[derive(Deserialize)]
@@ -63,47 +59,32 @@ pub struct DecodeCase {
     /// Recorded observable result.
     pub output: Decoded,
 }
-/// Selected byte input with optional slice boundaries.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct DownloadInput {
-    /// Recorded byte or slice admission.
-    pub kind: String,
-    /// Original byte values.
-    pub bytes: Vec<u8>,
-    /// Inclusive slice start when present.
-    pub start: Option<usize>,
-    /// Exclusive slice end when present.
-    pub end: Option<usize>,
-    /// Supplied MIME type.
-    pub mime_type: String,
-    /// Literal authored filename.
-    pub filename: String,
-}
-/// Selected download output.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DownloadOutput {
-    /// Original byte values.
-    pub bytes: Vec<u8>,
-    /// Expected Blob MIME type.
-    pub mime: String,
-}
-/// Byte-control case.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DownloadCase {
-    /// Recorded operation operands.
-    pub input: DownloadInput,
-    /// Recorded observable result.
-    pub output: DownloadOutput,
-}
 /// Parse the committed recording with strict fields.
 /// # Panics
 /// Panics if the committed recording is invalid.
 #[must_use]
 pub fn corpus() -> Corpus {
-    serde_json::from_str(include_str!("../fixtures/generic_artifacts.json")).unwrap()
+    use crate::support::strict_record;
+    let valid: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/generic_artifacts_portable.json")).unwrap();
+    strict_record::<NameCase>(&valid["mime"][0], &["input", "output"]);
+    strict_record::<NameInput>(&valid["mime"][0]["input"], &["filename"]);
+    strict_record::<DecodeCase>(&valid["decode"][0], &["input", "output"]);
+    strict_record::<DecodeInput>(&valid["decode"][0]["input"], &["content"]);
+    for row in valid["decode"].as_array().unwrap() {
+        let field = if row["output"].get("bytes").is_some() {
+            "bytes"
+        } else {
+            "error"
+        };
+        strict_record::<Decoded>(&row["output"], &[field]);
+    }
+    for value in [serde_json::Value::Null, serde_json::json!([])] {
+        let mut sibling = valid.clone();
+        sibling["download"] = value;
+        assert!(serde_json::from_value::<Corpus>(sibling).is_err());
+    }
+    serde_json::from_str(include_str!("../fixtures/generic_artifacts_portable.json")).unwrap()
 }
 /// Observer of submitted paint before texture updates are discarded.
 pub type PaintObserver = Box<dyn Fn(&egui::FullOutput)>;

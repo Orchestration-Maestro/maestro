@@ -97,12 +97,76 @@ impl AttachmentHost for Host {
         unreachable!()
     }
 }
+/// Native byte-control recording.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Corpus {
+    /// Selected byte-control cases.
+    download: Vec<DownloadCase>,
+}
+/// Selected byte input with optional slice boundaries.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct DownloadInput {
+    /// Recorded byte or slice admission.
+    pub kind: String,
+    /// Original byte values.
+    pub bytes: Vec<u8>,
+    /// Inclusive slice start when present.
+    pub start: Option<usize>,
+    /// Exclusive slice end when present.
+    pub end: Option<usize>,
+    /// Supplied MIME type.
+    pub mime_type: String,
+    /// Literal authored filename.
+    pub filename: String,
+}
+/// Selected download output.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DownloadOutput {
+    /// Original byte values.
+    pub bytes: Vec<u8>,
+    /// Expected Blob MIME type.
+    pub mime: String,
+}
+/// Byte-control case.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DownloadCase {
+    /// Recorded operation operands.
+    pub input: DownloadInput,
+    /// Recorded observable result.
+    pub output: DownloadOutput,
+}
 /// Mouse and keyboard activation preserve the selected slice and original media type.
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn download_control_preserves_original_bytes_and_slice_bounds() {
-    let corpus: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../tests/fixtures/generic_artifacts.json"
+    let valid: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/generic_artifacts_native.json"
+    ))
+    .unwrap();
+    for value in [serde_json::Value::Null, serde_json::json!([])] {
+        let mut sibling = valid.clone();
+        sibling["classifier"] = value.clone();
+        assert!(serde_json::from_value::<Corpus>(sibling).is_err());
+        let mut wrong = valid["download"][0]["input"].clone();
+        wrong["kind"] = value;
+        assert!(serde_json::from_value::<DownloadInput>(wrong).is_err());
+    }
+    assert!(serde_json::from_value::<DownloadInput>(serde_json::json!({})).is_err());
+    assert!(serde_json::from_value::<DownloadCase>(serde_json::json!({})).is_err());
+    assert!(
+        serde_json::from_value::<DownloadOutput>(serde_json::json!({"bytes":null,"mime":null}))
+            .is_err()
+    );
+    let corpus: Corpus = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/generic_artifacts_native.json"
     ))
     .unwrap();
     let pack = maestro_theme::load_brand_pack(
@@ -112,15 +176,12 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
     .unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let i18n = crate::I18n::new(Rc::new(Language)).unwrap();
-    for (index, case) in corpus["download"].as_array().unwrap().iter().enumerate() {
-        let input = &case["input"];
-        let bytes: Vec<u8> = serde_json::from_value(input["bytes"].clone()).unwrap();
-        let selected = match input["kind"].as_str().unwrap() {
-            "bytes" => &bytes[..],
-            "slice" => {
-                &bytes[input["start"].as_u64().unwrap().try_into().unwrap()
-                    ..input["end"].as_u64().unwrap().try_into().unwrap()]
-            }
+    assert_eq!(corpus.download.len(), 5);
+    for (index, case) in corpus.download.into_iter().enumerate() {
+        let input = &case.input;
+        let selected = match input.kind.as_str() {
+            "bytes" => &input.bytes[..],
+            "slice" => &input.bytes[input.start.unwrap()..input.end.unwrap()],
             _ => panic!("unknown recorded content"),
         };
         let host = Host::default();
@@ -141,14 +202,9 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
         for events in activation(index) {
             draw_frame(events);
         }
-        let expected: Vec<u8> = serde_json::from_value(case["output"]["bytes"].clone()).unwrap();
         assert_eq!(
             host.0.borrow().as_slice(),
-            &[(
-                input["filename"].as_str().unwrap().into(),
-                case["output"]["mime"].as_str().unwrap().into(),
-                expected
-            )]
+            &[(input.filename.clone(), case.output.mime, case.output.bytes)]
         );
     }
 }
@@ -183,7 +239,7 @@ fn frame(
     context: &egui::Context,
     events: Vec<egui::Event>,
     view: ArtifactView<'_>,
-    operands: (&Host, &serde_json::Value, &[u8]),
+    operands: (&Host, &DownloadInput, &[u8]),
 ) {
     let (host, input, selected) = operands;
     let mut glyphs = [egui::Rect::NOTHING; 2];
@@ -202,8 +258,8 @@ fn frame(
                 ui,
                 view,
                 host,
-                input["filename"].as_str().unwrap(),
-                (input["mimeType"].as_str().unwrap(), selected),
+                &input.filename,
+                (input.mime_type.as_str(), selected),
             )
             .unwrap();
             assert_eq!(ui.min_rect().right_bottom() - start, egui::vec2(36., 32.));
