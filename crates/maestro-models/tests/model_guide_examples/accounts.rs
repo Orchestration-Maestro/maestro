@@ -107,13 +107,13 @@ fn credentials(expires: f64) -> OAuthCredentials {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(
             "maestro_guide_refreshes_supplied_account_credentials",
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "account")
+        .case("account")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         return Ok(());
@@ -181,13 +181,13 @@ fn api_provider(text: &'static str) -> maestro_models::ApiProvider {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(
             "maestro_guide_registration_keeps_existing_handles",
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "registrations")
+        .case("registrations")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         return Ok(());

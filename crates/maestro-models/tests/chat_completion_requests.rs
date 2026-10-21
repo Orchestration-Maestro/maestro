@@ -22,6 +22,8 @@ use maestro_models::{Model, ProviderResponse, StopReason, StreamOptions, get_mod
 use maestro_models::{ModelCompat, OpenAICompletionsCompat};
 use serde_json::{Value, json};
 #[cfg(not(target_arch = "wasm32"))]
+use std::collections::BTreeMap;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
 const FIXTURE: &str = include_str!("fixtures/chat_completions/requests.json");
@@ -52,14 +54,14 @@ fn assert_history_rows(test: &str) -> TestResult {
 fn maestro_chat_replays_thinking_as_text() -> TestResult {
     crate::runtime::run(async {
         assert_history_rows("maestro_chat_replays_thinking_as_text")?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        if !maestro_test_process::selection().is_child() {
             return {
                 let output = maestro_test_process::TestProcess::current(
                     "maestro_chat_replays_thinking_as_text",
                 )?
                 .nocapture()
                 .env_clear()
-                .env("MAESTRO_CHILD_CASE", "*")
+                .case("*")
                 .output()?;
                 assert!(output.status.success(), "{output:?}");
                 Ok(())
@@ -232,44 +234,21 @@ async fn payload_matches(row: &Value) -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 /// Check payload rows in fresh processes so ambient environment cannot reach them.
 ///
-/// Rows without environment run together in one child; each row with environment
-/// runs alone in a child holding exactly those variables.
+/// Rows with the same environment run together in one child holding exactly those
+/// variables.
 async fn assert_payload_rows(test: &str) -> TestResult {
     let owned = rows(FIXTURE, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        for row in owned
-            .iter()
-            .filter(|row| case == "*" && row.get("env").is_none() || row["id"] == case.as_str())
-        {
-            payload_matches(row).await?;
-        }
-        return Ok(());
-    }
-    {
-        let output = maestro_test_process::TestProcess::current(test)?
-            .nocapture()
-            .env_clear()
-            .env("MAESTRO_CHILD_CASE", "*")
-            .output()?;
-        assert!(output.status.success(), "{output:?}");
-    };
-    for row in owned.iter().filter(|row| row.get("env").is_some()) {
-        let variables: Vec<(&str, &str)> = row["env"]
-            .as_object()
+    let group = maestro_test_process::run_per_environment(test, &owned, |row| {
+        row.get("env")
+            .and_then(Value::as_object)
             .into_iter()
             .flatten()
-            .filter_map(|(name, value)| Some((name.as_str(), value.as_str()?)))
-            .collect();
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .envs(variables.iter().copied())
-                .env("MAESTRO_CHILD_CASE", row["id"].as_str().ok_or("row id")?)
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
+            .filter_map(|(name, value)| Some((name.clone(), value.as_str()?.to_owned())))
+            .collect::<BTreeMap<_, _>>()
+    })?;
+    for row in group.into_iter().flatten() {
+        payload_matches(row).await?;
     }
     Ok(())
 }
@@ -345,7 +324,7 @@ async fn non_finite_numbers_become_null() -> TestResult {
 fn maestro_chat_preserves_numeric_options() -> TestResult {
     crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_numeric_options").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        if !maestro_test_process::selection().is_child() {
             non_finite_numbers_become_null().await?;
         }
         Ok(())
@@ -821,7 +800,7 @@ fn replayed_with_signature(signature: &str) -> TestResult<Value> {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         let deepest = cases::DEEPEST_NESTING;
         let accepted = cases::nested_json(deepest);
         assert_eq!(
@@ -844,7 +823,7 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
         )?
         .nocapture()
         .env_clear()
-        .env("MAESTRO_CHILD_CASE", "nesting")
+        .case("nesting")
         .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())

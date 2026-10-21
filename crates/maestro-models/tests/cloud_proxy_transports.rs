@@ -82,7 +82,7 @@ fn converse_peer(
 
 #[test]
 fn bedrock_socks_routes_reach_conversation_stream() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(async {
             let (labels, message) = conversation(StreamOptions::default()).await?;
             completed(&labels, &message)
@@ -141,7 +141,7 @@ fn routed_conversation(scheme: &str, identity: &str, simple: bool) -> TestResult
             .nocapture()
             .env_clear()
             .envs(vars.iter().copied())
-            .env("MAESTRO_CHILD_CASE", scheme)
+            .case(scheme)
             .output()
     });
     server.finish()?;
@@ -246,7 +246,7 @@ fn cancellation_peer(
 
 #[test]
 fn socks_cancel_closes_inflight_connection() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(cancel_conversation());
     }
     for (scheme, identity) in [
@@ -295,14 +295,11 @@ fn cancellation_case(scheme: &str, identity: Option<&str>, after_request: bool) 
                     .nocapture()
                     .env_clear()
                     .envs(vars.iter().copied())
-                    .env(
-                        "MAESTRO_CHILD_CASE",
-                        if after_request {
-                            "request"
-                        } else {
-                            "handshake"
-                        },
-                    )
+                    .case(if after_request {
+                        "request"
+                    } else {
+                        "handshake"
+                    })
                     .output()
             });
     server.finish()?;
@@ -359,8 +356,13 @@ async fn bypass_conversation(case: &str) -> TestResult {
 
 #[test]
 fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        return crate::runtime::run(bypass_conversation(&case));
+    let case = maestro_test_process::selection();
+    if case.is_child() {
+        let case = ["selected", "bypass", "replacement"]
+            .into_iter()
+            .find(|id| case.runs_case(id))
+            .ok_or("unknown child case")?;
+        return crate::runtime::run(bypass_conversation(case));
     }
     for scheme in ["socks5h", "socks4", "socks4a"] {
         for case in ["selected", "bypass", "replacement"] {
@@ -395,7 +397,7 @@ fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
                     .nocapture()
                     .env_clear()
                     .envs(vars.iter().copied())
-                    .env("MAESTRO_CHILD_CASE", case)
+                    .case(case)
                     .output()
             });
             origin.finish()?;

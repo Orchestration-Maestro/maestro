@@ -499,14 +499,14 @@ fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "registered_simple_missing_key_becomes_a_terminal_error",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "missing-key")
+            .case("missing-key")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

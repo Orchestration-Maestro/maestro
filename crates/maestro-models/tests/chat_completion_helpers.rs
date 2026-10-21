@@ -71,8 +71,11 @@ const TEST: &str = "maestro_cloudflare_resolves_account_urls";
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_cloudflare_resolves_account_urls() -> TestResult {
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        let index: usize = case.parse()?;
+    let case = maestro_test_process::selection();
+    if case.is_child() {
+        let index = (0..SUBSTITUTIONS.len())
+            .find(|index| case.runs_case(&index.to_string()))
+            .ok_or("unknown child case")?;
         let (url, _, expected) = SUBSTITUTIONS[index];
         let actual = resolve_cloudflare_base_url(&model_at(url)?).map_err(|error| error.message);
         assert_eq!(actual, expected.map(str::to_owned).map_err(str::to_owned));
@@ -106,7 +109,7 @@ fn maestro_cloudflare_resolves_account_urls() -> TestResult {
                 .nocapture()
                 .env_clear()
                 .envs(variables.iter().copied())
-                .env("MAESTRO_CHILD_CASE", index.to_string())
+                .case(index.to_string())
                 .output()?;
             assert!(output.status.success(), "{output:?}");
         };

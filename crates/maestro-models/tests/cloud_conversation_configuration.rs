@@ -103,13 +103,17 @@ fn bearer_and_skip_auth_use_the_selected_authentication() -> TestResult {
             )
         },
     ];
-    let is_case =
-        std::env::var("MAESTRO_CHILD_CASE").is_ok_and(|id| cases.iter().any(|case| case.id == id));
+    let is_case = maestro_test_process::selection().is_child()
+        && cases
+            .iter()
+            .any(|case| maestro_test_process::selection().runs_case(case.id));
     if is_case {
         return run_cases(TEST, &cases);
     }
-    check_rows(TEST)?;
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if maestro_test_process::selection().runs_group(TEST) {
+        check_rows(TEST)?;
+    }
+    if !maestro_test_process::selection().is_child() {
         run_cases(TEST, &cases)?;
     }
     Ok(())

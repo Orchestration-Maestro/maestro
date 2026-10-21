@@ -16,7 +16,7 @@ fn directory(name: &str, content: &str) -> PathBuf {
 #[test]
 fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     const CASE: &str = "footer-cwd-identity";
-    if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() != Some(CASE) {
+    if !maestro_test_process::selection().is_child() {
         let path = std::env::var("PATH").unwrap();
         {
             let output = maestro_test_process::TestProcess::current(
@@ -26,7 +26,7 @@ fn footer_native_effects_keep_admission_directory_after_cwd_change() {
             .nocapture()
             .env_clear()
             .envs([("PATH", &path)].iter().copied())
-            .env("MAESTRO_CHILD_CASE", CASE)
+            .case(CASE)
             .output()
             .unwrap();
             assert!(output.status.success(), "{output:?}");

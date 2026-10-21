@@ -864,9 +864,13 @@ fn setup_failure_ends_stream(profile: Option<&str>) -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn sdk_setup_failures_end_stream() -> TestResult {
-    match std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() {
-        Some("no credentials") => return setup_failure_ends_stream(None),
-        Some("unknown profile") => return setup_failure_ends_stream(Some("absent")),
+    match maestro_test_process::selection() {
+        selection if selection.is_child() && selection.runs_case("no credentials") => {
+            return setup_failure_ends_stream(None);
+        }
+        selection if selection.is_child() && selection.runs_case("unknown profile") => {
+            return setup_failure_ends_stream(Some("absent"));
+        }
         _ => {}
     }
     let isolated = [
@@ -880,7 +884,7 @@ fn sdk_setup_failures_end_stream() -> TestResult {
                     .nocapture()
                     .env_clear()
                     .envs(isolated.iter().copied())
-                    .env("MAESTRO_CHILD_CASE", case)
+                    .case(case)
                     .output()?;
             assert!(output.status.success(), "{output:?}");
         };

@@ -425,36 +425,19 @@ pub fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> = serde_json::from_str(include_str!(
         "../fixtures/content_generation_invocation.json"
     ))?;
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        let row = &rows[case.parse::<usize>()?];
-        assert_eq!(row.test, test);
-        return check(row);
-    }
-    let mut count = 0;
-    for (index, row) in rows.iter().enumerate().filter(|(_, row)| row.test == test) {
-        count += 1;
-        let mut env = Vec::new();
-        for (key, value) in [
+    let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
+    assert!(!owned.is_empty(), "no fixture rows");
+    let group = maestro_test_process::run_per_environment(test, owned, |row| {
+        [
             ("GEMINI_API_KEY", &row.input.env_key),
             ("GOOGLE_GEMINI_BASE_URL", &row.input.env_base),
             ("GOOGLE_VERTEX_BASE_URL", &row.input.env_vertex_base),
-        ] {
-            if let Some(value) = value {
-                env.push((key, value.as_str()));
-            }
-        }
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .envs(env.iter().copied())
-                .env("MAESTRO_CHILD_CASE", index.to_string())
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
-    }
-    assert!(count > 0, "no fixture rows");
-    Ok(())
+        ]
+        .into_iter()
+        .filter_map(|(key, value)| Some((key, value.clone()?)))
+        .collect::<std::collections::BTreeMap<_, _>>()
+    })?;
+    group.into_iter().flatten().try_for_each(check)
 }
 
 /// Consume terminal output without retaining emission-time snapshots of live aliases.

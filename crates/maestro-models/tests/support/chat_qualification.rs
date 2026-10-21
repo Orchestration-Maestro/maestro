@@ -261,7 +261,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Exercise one owner's closed fixture set in a fresh environment.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         let variables = if test.starts_with("maestro_gateway_") {
             vec![
                 ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
@@ -282,7 +282,7 @@ pub fn assert_rows(test: &str) -> TestResult {
                 .nocapture()
                 .env_clear()
                 .envs(variables.iter().copied())
-                .env("MAESTRO_CHILD_CASE", "qualification")
+                .case("qualification")
                 .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

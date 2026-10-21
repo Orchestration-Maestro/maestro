@@ -339,31 +339,14 @@ fn check(row: &Row, mut actual: Value) -> TestResult {
 pub fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> =
         serde_json::from_str(include_str!("../fixtures/cloud_content_invocation.json"))?;
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
-        let row = &rows[case.parse::<usize>()?];
-        assert_eq!(test, row.test);
-        let refreshes = Arc::new(AtomicUsize::new(0));
-        let count = Arc::clone(&refreshes);
-        let server = loopback::serve_routed(move |request| {
-            assert_eq!(request.request_line, "POST /refresh HTTP/1.1");
-            assert!(String::from_utf8_lossy(&request.body).contains("grant_type=refresh_token"));
-            count.fetch_add(1, Ordering::SeqCst);
-            loopback::Reply {
-                status: 200,
-                content_type: "application/json",
-                headers: &[],
-                body: br#"{"access_token":"fixture-access","expires_in":3600}"#.to_vec(),
-                close: false,
-            }
-        })?;
-        let credentials =
-            content_credentials::workforce(&format!("{}/refresh", server.url), "fixture-quota");
-        if row.input.adc_appears_inside_hook != Some(true) {
-            write_credentials(&credentials);
-        }
-        let result = crate::runtime::run(observe(&row.input, credentials, &refreshes));
-        server.finish()?;
-        return check(row, result?);
+    let case = maestro_test_process::selection();
+    if case.is_child() {
+        let (_, row) = rows
+            .iter()
+            .enumerate()
+            .find(|(index, _)| case.runs_case(&index.to_string()))
+            .ok_or("unknown child case")?;
+        return check_in_child(test, row);
     }
     let mut count = 0;
     for (index, row) in rows.iter().enumerate().filter(|(_, row)| row.test == test) {
@@ -389,13 +372,40 @@ pub fn assert_rows(test: &str) -> TestResult {
                 .nocapture()
                 .env_clear()
                 .envs(env.iter().copied())
-                .env("MAESTRO_CHILD_CASE", index.to_string())
+                .case(index.to_string())
                 .output()?;
             assert!(output.status.success(), "{output:?}");
         };
     }
     assert!(count > 0, "no recorded rows");
     Ok(())
+}
+
+/// Run the selected row with its own refresh server and credential files.
+fn check_in_child(test: &str, row: &Row) -> TestResult {
+    assert_eq!(test, row.test);
+    let refreshes = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&refreshes);
+    let server = loopback::serve_routed(move |request| {
+        assert_eq!(request.request_line, "POST /refresh HTTP/1.1");
+        assert!(String::from_utf8_lossy(&request.body).contains("grant_type=refresh_token"));
+        count.fetch_add(1, Ordering::SeqCst);
+        loopback::Reply {
+            status: 200,
+            content_type: "application/json",
+            headers: &[],
+            body: br#"{"access_token":"fixture-access","expires_in":3600}"#.to_vec(),
+            close: false,
+        }
+    })?;
+    let credentials =
+        content_credentials::workforce(&format!("{}/refresh", server.url), "fixture-quota");
+    if row.input.adc_appears_inside_hook != Some(true) {
+        write_credentials(&credentials);
+    }
+    let result = crate::runtime::run(observe(&row.input, credentials, &refreshes));
+    server.finish()?;
+    check(row, result?)
 }
 
 /// Keep explicit null distinct from an omitted fixture option.

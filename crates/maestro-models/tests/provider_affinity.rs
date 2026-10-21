@@ -560,7 +560,7 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn direct_cloud_local_submission_preserves_hook_phases() -> crate::TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "direct_cloud_local_submission_preserves_hook_phases",
@@ -575,7 +575,7 @@ fn direct_cloud_local_submission_preserves_hook_phases() -> crate::TestResult {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "local-cloud")
+            .case("local-cloud")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

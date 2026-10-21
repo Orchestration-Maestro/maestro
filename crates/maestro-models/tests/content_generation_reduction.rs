@@ -874,9 +874,12 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
     ] {
         selected.extend(rows(name)?);
     }
-    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
+    let case = maestro_test_process::selection();
+    if case.is_child() {
         return crate::runtime::run(async {
-            let index = case.parse::<usize>()?;
+            let index = (0..selected.len())
+                .find(|index| case.runs_case(&index.to_string()))
+                .ok_or("unknown child case")?;
             cloud_entry_row(&selected[index]).await?;
             if index == 0 {
                 crate::content_generation_invocation::native::live_alias("google-vertex").await?;
@@ -891,7 +894,7 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", index.to_string())
+            .case(index.to_string())
             .output()?;
             assert!(output.status.success(), "{output:?}");
         };

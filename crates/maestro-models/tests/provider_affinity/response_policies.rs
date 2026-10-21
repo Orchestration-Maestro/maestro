@@ -115,7 +115,7 @@ fn watched(case: &Case<'_>, reads: &Reads) -> crate::TestResult<crate::transport
 #[test]
 fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "bundled_response_policies_survive_local_submission",
@@ -130,7 +130,7 @@ fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
                 .iter()
                 .copied(),
             )
-            .env("MAESTRO_CHILD_CASE", "response-policy")
+            .case("response-policy")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

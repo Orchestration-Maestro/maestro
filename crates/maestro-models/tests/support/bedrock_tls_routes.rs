@@ -334,7 +334,7 @@ fn parent(row: &Row, test: &str) -> TestResult {
         .nocapture()
         .env_clear()
         .envs(variables.iter().copied())
-        .env("MAESTRO_CHILD_CASE", &row.input.id)
+        .case(&row.input.id)
         .output()?;
     let origin_done = origin.finish();
     let proxy_done = proxy.finish();
@@ -453,11 +453,12 @@ fn check_proxy(row: &Row, seen: &Observations, authority: &str) {
 /// Run exactly the recorded rows owned by this witness in fresh child environments.
 pub(crate) fn run_cases(test: &str) -> TestResult {
     let corpus = corpus()?;
-    if let Ok(id) = std::env::var("MAESTRO_CHILD_CASE") {
+    let id = maestro_test_process::selection();
+    if id.is_child() {
         let row = corpus
             .rows
             .iter()
-            .find(|row| row.input.id == id && row.input.test == test)
+            .find(|row| id.runs_case(&row.input.id) && row.input.test == test)
             .ok_or("unknown child case")?;
         return child(corpus.common, row);
     }

@@ -395,14 +395,14 @@ fn bedrock_socks_reuses_credential_route() -> TestResult {
 
 #[test]
 fn idle_routed_shutdown_joins_without_connection_errors() -> TestResult {
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(
                 "idle_routed_shutdown_joins_without_connection_errors",
             )?
             .nocapture()
             .env_clear()
-            .env("MAESTRO_CHILD_CASE", "idle")
+            .case("idle")
             .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())

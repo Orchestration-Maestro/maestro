@@ -122,10 +122,11 @@ impl Drop for AwsFiles {
 
 /// Run every case of `test` in its own child, or the case this process was started for.
 pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
-    if let Ok(id) = std::env::var("MAESTRO_CHILD_CASE") {
+    let id = maestro_test_process::selection();
+    if id.is_child() {
         let case = cases
             .iter()
-            .find(|case| case.id == id)
+            .find(|case| id.runs_case(case.id))
             .ok_or("unknown case")?;
         return crate::runtime::run_paused(check(case));
     }
@@ -138,7 +139,7 @@ pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
                 .nocapture()
                 .env_clear()
                 .envs(vars.iter().copied())
-                .env("MAESTRO_CHILD_CASE", case.id)
+                .case(case.id)
                 .output()?;
             assert!(output.status.success(), "{output:?}");
         };

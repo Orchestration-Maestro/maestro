@@ -200,7 +200,10 @@ async fn arguments_stream_in_partial_and_final_form() -> TestResult {
 fn messages_repair_event_and_argument_json() -> TestResult {
     crate::runtime::run(async {
         rows_of("messages_repair_event_and_argument_json").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection()
+                .runs_group("messages_repair_event_and_argument_json")
+        {
             arguments_stream_in_partial_and_final_form().await?;
         }
         Ok(())
@@ -260,7 +263,9 @@ async fn streamed_arguments_follow_the_shared_reader() -> TestResult {
 fn messages_keep_initial_tool_arguments() -> TestResult {
     crate::runtime::run(async {
         rows_of("messages_keep_initial_tool_arguments").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection().runs_group("messages_keep_initial_tool_arguments")
+        {
             streamed_arguments_follow_the_shared_reader().await?;
         }
         Ok(())
@@ -301,7 +306,9 @@ async fn stop_releases_the_body() -> TestResult {
 fn messages_complete_at_terminal() -> TestResult {
     crate::runtime::run_paused(async {
         rows_of("messages_complete_at_terminal").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection().runs_group("messages_complete_at_terminal")
+        {
             stop_releases_the_body().await?;
         }
         Ok(())
@@ -405,7 +412,9 @@ async fn special_bodies_survive_bytewise_delivery(rows: &[messages::Row]) -> Tes
 fn messages_decode_fragmented_sse() -> TestResult {
     crate::runtime::run(async {
         rows_of("messages_decode_fragmented_sse").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection().runs_group("messages_decode_fragmented_sse")
+        {
             let rows = messages::rows_of(FIXTURE, "messages_decode_fragmented_sse")?;
             framing_survives_every_cut(&rows).await?;
             special_bodies_survive_bytewise_delivery(&rows).await?;
@@ -474,7 +483,10 @@ async fn counts_are_doubles() -> TestResult {
 fn messages_keep_number_and_member_semantics() -> TestResult {
     crate::runtime::run(async {
         rows_of("messages_keep_number_and_member_semantics").await?;
-        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection()
+                .runs_group("messages_keep_number_and_member_semantics")
+        {
             counts_are_doubles().await?;
         }
         Ok(())
@@ -538,13 +550,13 @@ async fn opening_arguments_follow_the_conversion_bound() -> TestResult {
 #[test]
 fn messages_skip_unread_deep_values() -> TestResult {
     crate::runtime::run(async {
-        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        if !maestro_test_process::selection().is_child() {
             return {
                 let output =
                     maestro_test_process::TestProcess::current("messages_skip_unread_deep_values")?
                         .nocapture()
                         .env_clear()
-                        .env("MAESTRO_CHILD_CASE", "*")
+                        .case("*")
                         .output()?;
                 assert!(output.status.success(), "{output:?}");
                 Ok(())

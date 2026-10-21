@@ -582,38 +582,10 @@ pub async fn assert_rows(test: &str) -> TestResult {
     }
     let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty());
-    if let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") {
-        for row in owned.iter().filter(|row| {
-            (selected == "*" && row.input.env.is_empty()) || selected == row.id.to_string()
-        }) {
-            run(row).await?;
-        }
-    } else {
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .env("MAESTRO_CHILD_CASE", "*")
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
-        for row in owned.into_iter().filter(|row| !row.input.env.is_empty()) {
-            let env: Vec<_> = row
-                .input
-                .env
-                .iter()
-                .map(|(k, v)| (k.as_str(), v.as_str()))
-                .collect();
-            {
-                let output = maestro_test_process::TestProcess::current(test)?
-                    .nocapture()
-                    .env_clear()
-                    .envs(env.iter().copied())
-                    .env("MAESTRO_CHILD_CASE", row.id.to_string())
-                    .output()?;
-                assert!(output.status.success(), "{output:?}");
-            };
-        }
+    let group =
+        maestro_test_process::run_per_environment(test, owned, |row| row.input.env.clone())?;
+    for row in group.into_iter().flatten() {
+        run(row).await?;
     }
     Ok(())
 }

@@ -166,7 +166,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Run only this test's closed set in an environment-isolated process.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+    if !maestro_test_process::selection().is_child() {
         return {
             let output = maestro_test_process::TestProcess::current(test)?
                 .nocapture()
@@ -179,7 +179,7 @@ pub fn assert_rows(test: &str) -> TestResult {
                     .iter()
                     .copied(),
                 )
-                .env("MAESTRO_CHILD_CASE", "qualification")
+                .case("qualification")
                 .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
