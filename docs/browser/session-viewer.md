@@ -72,10 +72,11 @@ selectable native text. The three labelled controls remain on the canvas.
 
 Identity uses `unknown` for an absent header or falsy ID and rejects a truthy
 nonstring. Preparation consumes `global_stats` without recounting edited history.
-Prompt and tool operands are validated once on every target. Retained factory
-equality compares their selected normalized content, ignoring unknown fields.
-The browser builds disclosure nodes and expansion-hint text from those operands. Models retain supplied order, token
-counts use thousand/million tiers, and cost adds four components left-to-right
+Shared preparation validates prompt and tool operands once on every target.
+Retained factory equality compares their selected normalized content, ignoring
+unknown fields. The browser builds disclosure nodes and expansion-hint text from
+those operands. Models retain supplied order, token counts use thousand/million
+tiers, and cost adds four components left-to-right
 before three-place rounding. A falsy timestamp skips localization; otherwise the
 supplied date operation receives the unchanged value. The browser's
 `localize_header_date` uses native `Date` and zero-argument `toLocaleString`.
