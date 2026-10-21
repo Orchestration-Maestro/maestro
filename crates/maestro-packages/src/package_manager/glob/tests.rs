@@ -60,18 +60,10 @@ fn setup(root: &Path, setup: Setup) {
     for (name, target) in setup.links {
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        #[cfg(unix)]
         std::os::unix::fs::symlink(target, path).unwrap();
-        #[cfg(windows)]
-        if root.join(&target).is_dir() {
-            std::os::windows::fs::symlink_dir(target, path).unwrap();
-        } else {
-            std::os::windows::fs::symlink_file(target, path).unwrap();
-        }
     }
 }
 /// Every direct observation retains its ordered path identities.
-#[cfg(unix)]
 #[test]
 fn synchronous_walk_matches_native_filesystem_cases() {
     use std::os::unix::fs::PermissionsExt;
