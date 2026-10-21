@@ -18,6 +18,9 @@ tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-tracing.workspace = true
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"

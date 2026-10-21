@@ -10,6 +10,7 @@ interprocess = { version = "=2.4.2", default-features = false }
 maestro-dependencies = { path = "crates/maestro-dependencies" }
 maestro-test-process = { path = "crates/maestro-test-process" }
 maestro-test-directory = { path = "crates/maestro-test-directory" }
+maestro-test-tracing = { path = "crates/maestro-test-tracing" }
 futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
 num-bigint = "=0.4.8"
 num-traits = "=0.2.19"

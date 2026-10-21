@@ -408,3 +408,14 @@ fn assert_malformed_and_duplicate_fields() {
         assert!(load(&path).is_none());
     }
 }
+
+#[test]
+fn capture_keeps_events_whose_callsite_another_thread_reached_first() {
+    let input = json!({"version":999,"workspaces":false});
+    let other = input.clone();
+    let (_, events) = capture(|| {
+        std::thread::spawn(move || read(&other)).join().unwrap();
+        read(&input)
+    });
+    assert_eq!(events.len(), 1);
+}

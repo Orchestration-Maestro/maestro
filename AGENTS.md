@@ -105,7 +105,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never use dedicated
   (non-core) crates as normal or build dependencies; the declared native
-  test-process and test-directory development edges are permitted.
+  test-process, test-directory and test-tracing development edges are permitted.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer, subject to the
@@ -199,7 +199,7 @@ Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness, checked test-process owner,
-disposable test-directory owner,
+disposable test-directory owner, test tracing owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
@@ -229,6 +229,12 @@ packages, resources, conventions and tooling may declare it, as a non-optional
 native development dependency when used. `Scratch::new` canonicalizes its chosen
 root; `Scratch::new_in` keeps native supplied-parent spelling. Both graph cycle
 checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
+
+The dedicated `maestro-test-tracing` native leaf runs a test action under a
+scoped tracing subscriber that sees every callsite. Only daemon and workspace
+may declare it, under the directory owner's rules. Capture helpers call its
+`with_default` instead of `tracing::subscriber::with_default`. See the
+[tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
 its domain owner. Native extensions may specialize it with the alias in

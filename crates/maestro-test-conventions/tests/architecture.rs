@@ -2445,6 +2445,12 @@ maestro-lock = { path = "../maestro-lock" }"#,
 /// The disposable-directory owner.
 const DIRECTORY: &str = "maestro-test-directory";
 
+/// The scoped test tracing owner.
+const TRACING: &str = "maestro-test-tracing";
+
+/// Independently declared native tracing consumers.
+const TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-workspace"];
+
 /// Independently declared native directory consumers.
 const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
@@ -2524,27 +2530,36 @@ fn directory_support_owner_has_no_domain_dependencies() {
 
 #[test]
 fn directory_support_permissions_are_exact() {
-    let native = format!(
-        "[{NATIVE_DEV}]\nsupport = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\" }}"
-    );
+    support_permissions_are_exact(DIRECTORY, DIRECTORY_CALLERS);
+}
+
+#[test]
+fn tracing_support_permissions_are_exact() {
+    support_permissions_are_exact(TRACING, TRACING_CALLERS);
+}
+
+/// Only `owner`'s declared callers may declare it; no crate-name pattern grants access.
+fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
+    let native =
+        format!("[{NATIVE_DEV}]\nsupport = {{ package = {owner:?}, path = \"../{owner}\" }}");
     for &(caller, _) in support::policy::POLICY {
-        if DIRECTORY_CALLERS.contains(&caller) || caller == DIRECTORY {
+        if callers.contains(&caller) || caller == owner {
             continue;
         }
         let workspace = Workspace::new();
-        workspace.foundation(&[caller, DIRECTORY]);
+        workspace.foundation(&[caller, owner]);
         assert_eq!(
             caller_declares(&workspace, caller, &native),
             Err(format!(
-                "maestro-test-directory is reachable only as a native development dependency of its declared callers: {caller} -> maestro-test-directory"
+                "{owner} is reachable only as a native development dependency of its declared callers: {caller} -> {owner}"
             ))
         );
     }
     assert!(support::policy::test_support_callers("maestro-test-other").is_none());
     assert!(support::policy::test_support_callers("maestro-test-terminal").is_none());
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-app", DIRECTORY]);
-    assert_eq!(caller_declares(&workspace, "maestro-app", &native), Ok(()));
+    workspace.foundation(&[callers[0], owner]);
+    assert_eq!(caller_declares(&workspace, callers[0], &native), Ok(()));
     workspace.member("maestro-test-other", "maestro-test-other", &native);
     assert!(
         check_workspace(&workspace.root)
@@ -2590,9 +2605,6 @@ fn directory_support_edges_keep_cycle_checks() {
 
 #[test]
 fn directory_support_inventory_matches_contract() {
-    assert_eq!(support::class(DIRECTORY), "dedicated");
-    assert!(utility_excluded().contains(&DIRECTORY));
-    assert!(!support::policy::uses_utility(DIRECTORY));
     assert_eq!(DIRECTORY_CALLERS, support::policy::TEST_DIRECTORY_CALLERS);
     let documented = std::iter::once("maestro-app")
         .chain(specification_names(
@@ -2600,25 +2612,45 @@ fn directory_support_inventory_matches_contract() {
             "; a caller\ndeclares it only",
         ))
         .collect::<Vec<_>>();
-    assert_eq!(documented, DIRECTORY_CALLERS);
+    support_inventory_matches_contract(DIRECTORY, DIRECTORY_CALLERS, &documented);
+}
+
+#[test]
+fn tracing_support_inventory_matches_contract() {
+    assert_eq!(TRACING_CALLERS, support::policy::TEST_TRACING_CALLERS);
+    let documented = std::iter::once("maestro-daemon")
+        .chain(specification_names(
+            "from\n`maestro-daemon`",
+            "; a caller declares it only when it\nuses it",
+        ))
+        .collect::<Vec<_>>();
+    support_inventory_matches_contract(TRACING, TRACING_CALLERS, &documented);
+}
+
+/// `owner` is dedicated, outside the utility permission, listed, and documented with `callers`.
+fn support_inventory_matches_contract(owner: &str, callers: &[&str], documented: &[&str]) {
+    assert_eq!(support::class(owner), "dedicated");
+    assert!(utility_excluded().contains(&owner));
+    assert!(!support::policy::uses_utility(owner));
+    assert_eq!(documented, callers);
     assert!(documented_foundation_graph_matches_policy(
         FOUNDATION_SPECIFICATION
     ));
     let workspace = Workspace::new();
-    workspace.foundation(&[DIRECTORY]);
+    workspace.foundation(&[owner]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
-    workspace.list(&[(DIRECTORY, "core")]);
+    workspace.list(&[(owner, "core")]);
     assert_eq!(
         check_workspace(&workspace.root),
         Err(format!(
-            "invalid scoped layer for {DIRECTORY}: expected dedicated"
+            "invalid scoped layer for {owner}: expected dedicated"
         ))
     );
     workspace.list(&[]);
     assert_eq!(
         check_workspace(&workspace.root),
         Err(format!(
-            "workspace crate is not listed in workspace-crates.json: {DIRECTORY}"
+            "workspace crate is not listed in workspace-crates.json: {owner}"
         ))
     );
 }

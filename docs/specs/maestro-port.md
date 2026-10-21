@@ -315,6 +315,7 @@ from the optional foundation utility described below.
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
+| `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
@@ -486,7 +487,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
-(`maestro-test-directory`), cancellation leaf (`maestro-cancellation`), shared
+(`maestro-test-directory`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
@@ -585,6 +586,24 @@ owned by `Scratch`; drop attempts recursive removal without panicking, including
 when canonicalization fails after creation. The leaf owns no caller policy,
 process launcher, timer, retry limit or ownership-transfer API.
 
+### Test tracing owner
+
+`maestro-test-tracing` is a dedicated, unpublished, native leaf that runs a
+test action under a scoped tracing subscriber that sees every callsite. It has
+no workspace edges except the native feature unifier and is excluded from the
+foundation utility permission. Its only incoming edges are non-optional
+development dependencies under `cfg(not(target_arch = "wasm32"))` from
+`maestro-daemon` and `maestro-workspace`; a caller declares it only when it
+uses it. The directory owner's declaration, alias and cycle rules apply.
+
+`with_default(subscriber, action)` keeps one subscriber that records nothing
+registered for the life of the test process, then runs the action under
+`tracing::subscriber::with_default`. While only one subscriber is registered,
+`tracing` decides a callsite's process-wide interest from the registering
+thread's own subscriber. Without the kept subscriber, a sibling test thread
+with no subscriber that reaches a callsite first turns it off for the
+capturing thread too.
+
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
@@ -632,7 +651,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 **Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`

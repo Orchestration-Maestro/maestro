@@ -34,6 +34,7 @@
   "maestro-test-directory": "dedicated",
   "maestro-test-process": "dedicated",
   "maestro-test-terminal": "dedicated",
+  "maestro-test-tracing": "dedicated",
   "maestro-text": "core",
   "maestro-theme": "core",
   "maestro-tool": "core",

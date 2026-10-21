@@ -58,7 +58,7 @@ pub fn capture<T>(action: impl FnOnce() -> T) -> (T, String) {
         .with_max_level(tracing::Level::WARN)
         .with_writer(move || writer.clone())
         .finish();
-    let result = tracing::subscriber::with_default(subscriber, action);
+    let result = maestro_test_tracing::with_default(subscriber, action);
     let text = String::from_utf8(output.0.lock().unwrap().clone()).unwrap();
     (result, text)
 }

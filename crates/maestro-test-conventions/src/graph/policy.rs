@@ -90,6 +90,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-process", &[]),
     ("maestro-test-directory", &[]),
+    ("maestro-test-tracing", &[]),
     ("maestro-tooling", &[]),
     (
         "maestro-tui",
@@ -324,11 +325,18 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-tooling",
 ];
 
+/// Native owner of scoped tracing subscribers that see every callsite.
+pub(crate) const TEST_TRACING: &str = "maestro-test-tracing";
+
+/// Declared consumers of scoped test tracing.
+pub(crate) const TEST_TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-workspace"];
+
 /// Resolve one named support owner without granting a crate-name pattern.
 pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str]> {
     match owner {
         TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
         TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
+        TEST_TRACING => Some(TEST_TRACING_CALLERS),
         _ => None,
     }
 }
@@ -379,6 +387,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-test-process"
                 | "maestro-test-directory"
                 | "maestro-test-terminal"
+                | "maestro-test-tracing"
                 | "maestro-tooling"
         ) {
             "dedicated"

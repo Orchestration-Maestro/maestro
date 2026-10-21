@@ -81,7 +81,7 @@ impl tracing::field::Visit for Visitor {
 
 pub fn capture<T>(action: impl FnOnce() -> T) -> (T, Vec<Event>) {
     let collector = Collector(std::sync::Arc::default());
-    let result = tracing::subscriber::with_default(collector.clone(), action);
+    let result = maestro_test_tracing::with_default(collector.clone(), action);
     let events = std::mem::take(&mut *collector.0.lock().unwrap());
     (result, events)
 }
