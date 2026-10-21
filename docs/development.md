@@ -39,6 +39,42 @@ otherwise hide missing normal precision. The generated `maestro-dependencies`
 member is exempt from member JSON inheritance; the workspace `serde_json`
 precision requirement still applies.
 
+### Windows x86-64 MSVC builds with Unicode paths
+
+When building from source, `aws-lc-sys 0.45.0` can fail if the Cargo target
+directory contains non-ASCII characters. The installed NASM executable can lose
+those characters before opening its output object file. This is a dependency
+build limitation, not an application path conversion or a footer-test failure;
+it does not affect users running a prebuilt application.
+
+Use a dedicated build shell with NASM absent from that shell's `PATH`, keeping
+Rust, the Microsoft C++ tools and the pinned development tools available. In a
+PowerShell build shell, enable the dependency's shipped assembly objects:
+
+```powershell
+$env:AWS_LC_SYS_PREBUILT_NASM = '1'
+```
+
+Setting this variable alone is insufficient while NASM remains discoverable.
+Keep your Unicode `CARGO_TARGET_DIR` unchanged. This configuration uses the stock
+dependency's shipped assembly objects; it does not disable assembly, change the
+crypto provider or require a patched dependency. Make these environment changes
+only in the build shell, not in your persistent environment, and close the shell
+after use.
+
+[Native Windows qualification](https://github.com/Orchestration-Maestro/maestro/actions/runs/39564697731/job/119104068630)
+passed the 14 selected application tests with both ASCII and Unicode target
+directories, all 127 extension-author tests in the Unicode directory, and one
+release-mode author test. With the build environment above, run the same consumer
+commands from the checkout using the pinned toolchain and checked-in lock:
+
+```powershell
+$env:CARGO_BUILD_JOBS = '3'
+cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
+cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
+cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
+```
+
 ## Platform test qualification
 
 Compile every declared browser crate's test and example targets without running them:
