@@ -99,99 +99,7 @@ fn browser_clean_preserves_authored_inputs() {
 #[path = "fixtures/browser_support.rs"]
 mod browser_support;
 use browser_support::{Browser, success};
-use egui::{self, Color32};
 use std::fs;
-#[path = "fixtures/browser_author/src/editor.rs"]
-mod editor;
-
-#[test]
-fn browser_editor_focus_selection_caret_and_composition_use_identity() {
-    let browser = Browser::new();
-    for pack in ["assets/brand/brand.json", "assets/brand/packs/signal.json"] {
-        let data: serde_json::Value =
-            serde_json::from_slice(&fs::read(browser.path(pack)).unwrap()).unwrap();
-        for mode in ["dark", "light"] {
-            let colors = [
-                "text",
-                "background",
-                "panel",
-                "border",
-                "accent",
-                "on-accent",
-            ]
-            .map(|role| {
-                let key = data["modes"][mode]["colors"][role].as_str().unwrap();
-                Color32::from_hex(data["palette"][key].as_str().unwrap()).unwrap()
-            });
-            let visuals = editor::visuals(colors);
-            assert_eq!(visuals.selection.stroke.color, colors[5]);
-            let context = egui::Context::default();
-            let mut fonts = fixture_fonts(&browser);
-            fonts
-                .families
-                .insert(egui::FontFamily::Proportional, vec!["Barlow".into()]);
-            context.set_fonts(fonts);
-            context.set_visuals(visuals.clone());
-            let mut text = "selected author text".to_owned();
-            let mut output = context.run_ui(egui::RawInput::default(), |ui| {
-                let id = ui.make_persistent_id("author-input");
-                ui.memory_mut(|memory| memory.request_focus(id));
-                assert!(editor::show(ui, &mut text).has_focus());
-            });
-            output.textures_delta.clear();
-            assert!(output.shapes.iter().any(|shape| matches!(&shape.shape,
-                egui::Shape::Rect(rect) if rect.stroke.color == colors[4] && rect.stroke.width.to_bits() == 2.0_f32.to_bits()
-            )), "{pack} {mode}: focus frame must use accent, not selected-text foreground");
-            assert_eq!(visuals.text_cursor.stroke.color, colors[0]);
-            assert_eq!(
-                visuals.ime_composition.active_underline_stroke.color,
-                colors[0]
-            );
-            assert_eq!(
-                visuals.ime_composition.inactive_underline_stroke.color,
-                colors[0]
-            );
-        }
-    }
-}
-
-#[test]
-fn browser_editor_preserves_padding_and_paints_decoration_outside() {
-    let context = egui::Context::default();
-    let mut text = "author text".to_owned();
-    let mut field = egui::Rect::NOTHING;
-    let mut output = context.run_ui(egui::RawInput::default(), |ui| {
-        let id = ui.make_persistent_id("author-input");
-        ui.memory_mut(|memory| memory.request_focus(id));
-        field = editor::show(ui, &mut text).rect;
-    });
-    output.textures_delta.clear();
-    let text_position = output
-        .shapes
-        .iter()
-        .find_map(|shape| match &shape.shape {
-            egui::Shape::Text(text) => Some(text.pos),
-            _ => None,
-        })
-        .unwrap();
-    assert_eq!(
-        text_position,
-        field.min + egui::vec2(4.0, 2.0),
-        "text keeps the field's default padding"
-    );
-    let decoration = output
-        .shapes
-        .iter()
-        .find_map(|shape| match &shape.shape {
-            egui::Shape::Rect(rect) if rect.stroke.width.to_bits() == 2.0_f32.to_bits() => {
-                Some(rect)
-            }
-            _ => None,
-        })
-        .unwrap();
-    assert_eq!(decoration.rect, field);
-    assert_eq!(decoration.stroke_kind, egui::StrokeKind::Outside);
-}
 
 #[test]
 fn browser_build_emits_wasm_and_prepared_assets() {
@@ -326,10 +234,9 @@ fn browser_example_development_serves_rebuilt_external_assets() {
         .unwrap();
     let original = fs::read(&wasm).unwrap();
     let source = browser.fixture("src/main.rs");
-    let text = fs::read_to_string(&source).unwrap().replace(
-        "ui.label(&self.0)",
-        "ui.label(format!(\"edited echo: {}\", self.0))",
-    );
+    let text = fs::read_to_string(&source)
+        .unwrap()
+        .replace("\"missing mark\"", "\"edited mark\"");
     crate::recipe_support::record(format!("phase: authored edit {source:?}"));
     fs::write(source, text).unwrap();
     wait_for(&receive, "✅ success");
@@ -338,7 +245,7 @@ fn browser_example_development_serves_rebuilt_external_assets() {
     let css = browser.fixture("assets/app.css");
     let original = fs::read_to_string(&css).unwrap();
     crate::recipe_support::record(format!("phase: authored edit {css:?}"));
-    fs::write(css, format!("{original}\ncanvas{{outline-style:dotted}}\n")).unwrap();
+    fs::write(css, format!("{original}\ninput{{outline-style:dotted}}\n")).unwrap();
     wait_for(&receive, "✅ success");
     let (_, changed) = get(port, "app.css");
     assert!(
@@ -639,7 +546,7 @@ fn browser_build_rejects_missing_or_failing_inputs() {
     fs::write(dist.join("sentinel"), "earlier distribution").unwrap();
     for path in [
         browser.fixture("index.html"),
-        browser.path("assets/brand/fonts/Barlow-Regular.ttf"),
+        browser.fixture("assets/app.css"),
         browser.fixture("src/main.rs"),
     ] {
         let original = fs::read(&path).unwrap();
@@ -711,16 +618,10 @@ fn browser_wasm_closure_excludes_native_engines() {
         .unwrap();
     success(&tree);
     let tree = String::from_utf8(tree.stdout).unwrap();
-    for absent in [
-        "epaint_default_fonts",
-        "egui-winit",
-        "maestro-process",
-        "wasmtime",
-        "native-only",
-    ] {
+    for absent in ["maestro-process", "wasmtime", "native-only"] {
         assert!(!tree.contains(absent), "{absent}");
     }
-    assert!(tree.contains("eframe feature \"glow\""));
+    assert!(tree.contains("web-sys feature \"HtmlElement\""));
 }
 
 #[test]
@@ -805,42 +706,6 @@ fn assert_identity_wasm(browser: &Browser, route: &str, pack: &str, mode: &str, 
     assert!(text.contains("--maestro-font-mono:\"JetBrains Mono\""));
     assert!(text.contains("<svg"));
     assert!(!text.contains("{{wordmark}}") && !text.contains("var(--mark-star)"));
-}
-
-#[test]
-fn browser_font_fallback_renders_required_symbols() {
-    use egui::{FontFamily, FontId};
-    let browser = Browser::new();
-    let fonts = fixture_fonts(&browser);
-    let context = egui::Context::default();
-    context.set_fonts(fonts);
-    let mut frame = context.run_ui(egui::RawInput::default(), |ui| {
-        let star = layout_sign(ui, "✦", "alone");
-        let missing = layout_sign(ui, "◻", "alone");
-        assert_eq!(
-            star.rows[0].glyphs[0].uv_rect,
-            missing.rows[0].glyphs[0].uv_rect
-        );
-        for name in [
-            "Barlow",
-            "Condensed 600",
-            "Condensed 700",
-            "Mono",
-            "Space Grotesk",
-        ] {
-            check_signs(ui, name);
-            ui.label(
-                egui::RichText::new("✦✓✗┃↑↓")
-                    .font(FontId::new(16.0, FontFamily::Name(name.into()))),
-            );
-        }
-    });
-    assert!(
-        !context
-            .tessellate(std::mem::take(&mut frame.shapes), frame.pixels_per_point)
-            .is_empty()
-    );
-    frame.textures_delta.clear();
 }
 
 #[test]
@@ -1105,71 +970,6 @@ fn preview_tools(browser: &Browser) {
     std::os::unix::fs::symlink("/bin/sh", browser.path("bin/sh")).unwrap();
 }
 
-/// Register whole physical faces without enabling the toolkit default bundle.
-fn fixture_fonts(browser: &Browser) -> egui::FontDefinitions {
-    use egui::{FontData, FontDefinitions, FontFamily};
-    let mut fonts = FontDefinitions::empty();
-    for (name, file) in [
-        ("Barlow", "Barlow-Regular.ttf"),
-        ("Condensed 600", "BarlowCondensed-SemiBold.ttf"),
-        ("Condensed 700", "BarlowCondensed-Bold.ttf"),
-        ("Mono", "JetBrainsMono-official-Regular.ttf"),
-        ("Space Grotesk", "SpaceGrotesk.ttf"),
-        ("Symbols", "NotoSansSymbols2-Regular.ttf"),
-    ] {
-        fonts.font_data.insert(
-            name.into(),
-            FontData::from_owned(fs::read(browser.path("assets/brand/fonts").join(file)).unwrap())
-                .into(),
-        );
-    }
-    for name in [
-        "Barlow",
-        "Condensed 600",
-        "Condensed 700",
-        "Mono",
-        "Space Grotesk",
-    ] {
-        fonts.families.insert(
-            FontFamily::Name(name.into()),
-            vec![name.into(), "Mono".into(), "Symbols".into()],
-        );
-    }
-    fonts
-        .families
-        .insert(FontFamily::Name("alone".into()), vec!["Barlow".into()]);
-    fonts
-}
-
-/// Reject replacement boxes by observing actual glyph geometry and texture coordinates.
-fn check_signs(ui: &egui::Ui, name: &str) {
-    for sign in "✦✓✗┃↑↓".chars() {
-        let actual = layout_sign(ui, &sign.to_string(), name);
-        let glyph = &actual.rows[0].glyphs[0];
-        assert!(glyph.advance_width > 0.0);
-        for replacement in ["◻", "?"] {
-            let other = layout_sign(ui, replacement, name);
-            let other = &other.rows[0].glyphs[0];
-            assert!(
-                glyph.uv_rect != other.uv_rect
-                    || glyph.advance_width.to_bits() != other.advance_width.to_bits(),
-                "{name} {sign}"
-            );
-        }
-    }
-}
-
-/// Lay out one sign through the selected real font chain.
-fn layout_sign(ui: &egui::Ui, text: &str, family: &str) -> std::sync::Arc<egui::Galley> {
-    ui.fonts_mut(|fonts| {
-        fonts.layout_no_wrap(
-            text.into(),
-            egui::FontId::new(16.0, egui::FontFamily::Name(family.into())),
-            egui::Color32::WHITE,
-        )
-    })
-}
-
 /// Exercise each independent public command failure through its own child boundary.
 fn check_command_failures(workspace: &Workspace) {
     for (recipe, phase) in [
@@ -1423,7 +1223,7 @@ fn assert_authored_watch_routes(
         wait_for(&receive, "✅ success");
         let css = browser.fixture("assets/app.css");
         let text =
-            fs::read_to_string(&css).unwrap() + &format!("\ncanvas{{outline-{route}:dotted}}\n");
+            fs::read_to_string(&css).unwrap() + &format!("\ninput{{outline-{route}:dotted}}\n");
         crate::recipe_support::record(format!("phase: authored edit {css:?}"));
         fs::write(css, text).unwrap();
         wait_for(&receive, "accepted change in");

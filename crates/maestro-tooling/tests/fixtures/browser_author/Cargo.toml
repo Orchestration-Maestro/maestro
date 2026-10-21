@@ -4,10 +4,8 @@ version = "0.0.0"
 edition = "2024"
 [workspace]
 [dependencies]
-eframe = { version = "=0.36.2", default-features = false, features = ["glow", "web_screen_reader"] }
 wasm-bindgen = "=0.2.129"
-wasm-bindgen-futures = "=0.4.79"
-web-sys = { version = "=0.3.106", features = ["Window", "Document", "Element", "HtmlCanvasElement"] }
+web-sys = { version = "=0.3.106", features = ["Document", "Element", "HtmlElement", "Node", "Window"] }
 [profile.release]
 debug = "line-tables-only"
 

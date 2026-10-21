@@ -145,22 +145,17 @@ Noto Sans Symbols 2 comes from Google Fonts commit
 The five original family notices travel with prepared assets; see the
 [notice inventory](../THIRD-PARTY-NOTICES.md#browser-author-fonts-and-tools).
 
-Font roles come from the selected pack. Physical registration names identify
-files, not semantic roles. The selected body family precedes mono and symbol
-fallbacks in the toolkit; DOM stacks retain the pack's fallback order. Noto is a
-symbol fallback, not a fifth brand role. No subsetter, remote font service or
-default toolkit font bundle is required by the fixture's wasm graph.
+Font roles come from the selected pack. The fixture stylesheet registers each
+file under its family name, and the page's font stacks keep the pack's fallback
+order. Noto is a symbol fallback, not a fifth brand role. The fixture's wasm
+graph needs no subsetter or remote font service.
 
 The six fonts total **1,967,112 raw bytes**; qualification measured **881,586
-bytes** with deterministic gzip. Real glyph tests cover `✦✓✗┃↑↓` through five
-family/weight chains with an empty-font toolkit context and nonempty tessellation.
-The editable input uses `border` when unfocused and a two-pixel `accent` outline
-when focused, independent of `on-accent` selected text over `accent`. Caret and
-composition underlines use `text` over `panel`. The same native widget projection
-is exercised for both packs and modes, including the emitted focus outline.
-The field retains its normal four-pixel horizontal and two-pixel vertical text padding; the outline is painted outside
-the field rectangle.
-This is not arbitrary-script coverage or real-browser pixel certification.
+bytes** with deterministic gzip.
+
+The fixture mounts the mark and prepared page styling beside a native text
+input with browser-default paint. Native tests read files and bytes; they do
+not render glyphs or certify browser pixels.
 
 ## Validation boundary
 
@@ -169,19 +164,19 @@ builds, strict checking, independently edited Rust/CSS/shared identity inputs,
 native serving, external pack/mark rebuilds on serving and compile-only routes,
 formatting repair, prepared-only preview and child failures. Controlled command
 fixtures cover command selection and finite negative traces, not rendering.
-Native tests also inspect assets, glyph geometry, wasm magic, bindings and source
-locations. Browser interaction and startup performance are not inferred from
-native server readiness or binary inspection.
+Native tests also inspect assets, wasm magic, bindings and source locations.
+Browser interaction and startup performance are not inferred from native server
+readiness or binary inspection.
 
 Measured raw / deterministic gzip bytes from the qualified focused run:
 
 | Output | Raw bytes | Gzip bytes |
 | --- | ---: | ---: |
-| Optimized distribution | 7,015,341 | 2,908,185 |
-| Optimized wasm | 4,947,015 | 1,999,627 |
-| Debug distribution | 42,029,686 | 9,564,309 |
-| Debug wasm | 39,959,850 | 8,655,476 |
-| Shared font directory, including five notices | 1,989,143 | 894,937 |
+| Optimized distribution | 2,023,703 | 908,491 |
+| Optimized wasm | 22,855 | 9,829 |
+| Debug distribution | 4,026,669 | 1,265,151 |
+| Debug wasm | 2,025,821 | 366,490 |
+| Shared font directory, including five notices | 1,989,050 | 894,890 |
 
 These are observations, not size budgets or startup-speed claims. Build paths
 and tool output may change compressed sizes. Shared CI supplies workspace tests
