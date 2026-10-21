@@ -5,7 +5,7 @@ use super::{
     SessionSelectorHeaderOptions, StatusMessage,
 };
 use crate::{NameFilter, SortMode, components::dynamic_border::DynamicBorder};
-use maestro_app::{ResourceOperations, SessionInfo};
+use maestro_app::SessionInfo;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{
     Component, Container, FocusFlag, Focusable, KeybindingsManager, Spacer,
@@ -64,8 +64,6 @@ pub struct SessionSelectorOptions {
     pub now_ms: Rc<dyn Fn() -> f64>,
     /// Live home spelling.
     pub home: Rc<dyn Fn() -> String>,
-    /// Canonical path observation port.
-    pub paths: Rc<dyn ResourceOperations>,
     /// Live decoration policy.
     pub styles_enabled: Rc<dyn Fn() -> bool>,
 }
@@ -116,8 +114,6 @@ struct State {
     styles: Rc<dyn Fn() -> bool>,
     /// Retained deletion effects.
     file_operations: Option<Rc<dyn SessionFileOperations>>,
-    /// Existing existence and canonical identity owner.
-    paths: Rc<dyn ResourceOperations>,
 }
 /// Session discovery component with an editable inherited child array.
 pub struct SessionSelectorComponent {
@@ -216,7 +212,6 @@ impl State {
             theme: options.theme,
             styles: options.styles_enabled,
             file_operations: super::delete_session_file::operations(options.file_operations),
-            paths: options.paths,
         })
     }
 
@@ -519,7 +514,6 @@ fn create_list(
             theme: options.theme.clone(),
             now_ms: options.now_ms.clone(),
             home: options.home.clone(),
-            paths: options.paths.clone(),
             styles_enabled: options.styles_enabled.clone(),
         },
     );

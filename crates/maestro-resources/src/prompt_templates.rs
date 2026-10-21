@@ -2,9 +2,9 @@
 #![doc = include_str!("../../../docs/resources/prompt-templates.md")]
 
 use crate::{
-    FrontmatterValue, ResourceFileType, ResourceOperations, SourceInfo, SourceScope,
-    SyntheticSourceOptions, create_synthetic_source_info, frontmatter::text_whitespace,
-    parse_frontmatter, skills::ProcessContext,
+    FrontmatterValue, ResourceFileType, SourceInfo, SourceScope, SyntheticSourceOptions,
+    create_synthetic_source_info, frontmatter::text_whitespace, metadata, parse_frontmatter,
+    read_entries, read_text, skills::resolve,
 };
 use maestro_path::{basename, dirname, is_absolute, join};
 use std::{io, path::Path};
@@ -150,12 +150,8 @@ pub struct LoadPromptTemplatesOptions<'a> {
 }
 
 /// Read a file and project only the selected metadata fields.
-fn load_file(
-    path: &str,
-    source_info: SourceInfo,
-    operations: &dyn ResourceOperations,
-) -> Option<PromptTemplate> {
-    let raw = operations.read_file(Path::new(path)).ok()?;
+fn load_file(path: &str, source_info: SourceInfo) -> Option<PromptTemplate> {
+    let raw = read_text(Path::new(path)).ok()?;
     let parsed = parse_frontmatter(&raw).ok()?;
     let description = selected_string(&parsed.frontmatter, "description")
         .ok()?
@@ -206,38 +202,33 @@ fn preview(body: &str) -> String {
     description
 }
 
-/// Roots and lazy process context shared by one load.
-struct TemplateLoader<'a> {
+/// Roots shared by one load.
+struct TemplateLoader {
     /// User prompt directory in supplied spelling.
     user: String,
     /// Resolved project prompt directory.
     project: String,
-    /// Filesystem observation port.
-    operations: &'a dyn ResourceOperations,
-    /// Lazily observed process directories.
-    context: ProcessContext<'a>,
 }
-impl TemplateLoader<'_> {
-    /// Test authored spelling against a resolved root, with a separator boundary.
-    fn under(&self, path: &str, root: &str) -> io::Result<bool> {
-        let mut root = self.context.resolve(&[root])?;
-        if path == root {
-            return Ok(true);
-        }
-        if !root.ends_with(maestro_path::SEP) {
-            root.push(maestro_path::SEP);
-        }
-        Ok(path.starts_with(&root))
+/// Test authored spelling against a resolved root, with a separator boundary.
+fn under(path: &str, root: &str) -> io::Result<bool> {
+    let mut root = resolve(&[root])?;
+    if path == root {
+        return Ok(true);
     }
+    if !root.ends_with(maestro_path::SEP) {
+        root.push(maestro_path::SEP);
+    }
+    Ok(path.starts_with(&root))
+}
+impl TemplateLoader {
     /// Classify user before project, falling back to source metadata.
     fn source(&self, path: &str) -> io::Result<SourceInfo> {
-        let (scope, base) = if self.under(path, &self.user)? {
+        let (scope, base) = if under(path, &self.user)? {
             (Some(SourceScope::User), self.user.clone())
-        } else if self.under(path, &self.project)? {
+        } else if under(path, &self.project)? {
             (Some(SourceScope::Project), self.project.clone())
         } else {
-            let base = if self.operations.metadata(Path::new(path))? == ResourceFileType::Directory
-            {
+            let base = if metadata(Path::new(path))? == ResourceFileType::Directory {
                 path.into()
             } else {
                 dirname(path)
@@ -257,19 +248,18 @@ impl TemplateLoader<'_> {
 }
 
 /// Scan immediate markdown files, retaining partial results when source lookup fails.
-fn scan(dir: &str, loader: &TemplateLoader<'_>, templates: &mut Vec<PromptTemplate>) {
-    let operations = loader.operations;
-    if !operations.exists(Path::new(dir)) {
+fn scan(dir: &str, loader: &TemplateLoader, templates: &mut Vec<PromptTemplate>) {
+    if !Path::new(dir).exists() {
         return;
     }
-    let Ok(entries) = operations.read_dir(Path::new(dir)) else {
+    let Ok(entries) = read_entries(Path::new(dir)) else {
         return;
     };
     for entry in entries {
         let name = entry.name.to_string_lossy();
         let path = join(&[dir, &name]);
         let kind = if entry.file_type == ResourceFileType::Symlink {
-            let Ok(kind) = operations.metadata(Path::new(&path)) else {
+            let Ok(kind) = metadata(Path::new(&path)) else {
                 continue;
             };
             kind
@@ -280,7 +270,7 @@ fn scan(dir: &str, loader: &TemplateLoader<'_>, templates: &mut Vec<PromptTempla
             let Ok(info) = loader.source(&path) else {
                 return;
             };
-            if let Some(template) = load_file(&path, info, operations) {
+            if let Some(template) = load_file(&path, info) {
                 templates.push(template);
             }
         }
@@ -293,18 +283,14 @@ fn scan(dir: &str, loader: &TemplateLoader<'_>, templates: &mut Vec<PromptTempla
 /// Returns a working-directory error when project or explicit resolution requires it.
 pub fn load_prompt_templates(
     options: LoadPromptTemplatesOptions<'_>,
-    operations: &dyn ResourceOperations,
 ) -> io::Result<Vec<PromptTemplate>> {
-    let context = ProcessContext::new(operations);
     let loader = TemplateLoader {
         user: if options.agent_dir.is_empty() {
             String::new()
         } else {
             join(&[options.agent_dir, "prompts"])
         },
-        project: context.resolve(&[options.cwd, options.config_dir_name, "prompts"])?,
-        context,
-        operations,
+        project: resolve(&[options.cwd, options.config_dir_name, "prompts"])?,
     };
     let mut templates = Vec::new();
     if options.include_defaults {
@@ -312,15 +298,15 @@ pub fn load_prompt_templates(
         scan(&loader.project, &loader, &mut templates);
     }
     for path in options.prompt_paths {
-        let path = resolve_prompt_path(path, options, &loader.context)?;
-        if !operations.exists(Path::new(&path)) {
+        let path = resolve_prompt_path(path, options)?;
+        if !Path::new(&path).exists() {
             continue;
         }
-        match operations.metadata(Path::new(&path)) {
+        match metadata(Path::new(&path)) {
             Ok(ResourceFileType::Directory) => scan(&path, &loader, &mut templates),
             Ok(ResourceFileType::File) if path.strip_suffix(".md").is_some() => {
                 if let Ok(info) = loader.source(&path)
-                    && let Some(template) = load_file(&path, info, operations)
+                    && let Some(template) = load_file(&path, info)
                 {
                     templates.push(template);
                 }
@@ -332,11 +318,7 @@ pub fn load_prompt_templates(
 }
 
 /// Normalize tilde spelling before resolving an unanchored explicit path.
-fn resolve_prompt_path(
-    path: &str,
-    options: LoadPromptTemplatesOptions<'_>,
-    context: &ProcessContext<'_>,
-) -> io::Result<String> {
+fn resolve_prompt_path(path: &str, options: LoadPromptTemplatesOptions<'_>) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
     let normalized = if path == "~" {
         options.home.into()
@@ -348,6 +330,6 @@ fn resolve_prompt_path(
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
-        context.resolve(&[options.cwd, &normalized])
+        resolve(&[options.cwd, &normalized])
     }
 }

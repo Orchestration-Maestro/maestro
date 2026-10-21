@@ -33,10 +33,10 @@ argument. Selected arguments join with one space, preserving their own whitespac
 Unknown commands remain unchanged.
 
 `load_prompt_templates` accepts caller-selected roots, home spelling and ordered
-explicit paths through `LoadPromptTemplatesOptions` and `ResourceOperations`.
+explicit paths through `LoadPromptTemplatesOptions` and reads the native file system.
 With defaults enabled, it scans user then project directories before explicit
 paths. Disabling defaults leaves explicit paths active. Directory scans are
-shallow, preserve adapter order and accept exact `.md` suffixes, including hidden
+shallow, keep the listing's name order and accept exact `.md` suffixes, including hidden
 files and file symlinks. Repeated paths and names remain repeated. Paths use
 [the lexical path owner](../../crates/maestro-path/src/lib.rs); provenance uses authored spelling, not link targets.
 

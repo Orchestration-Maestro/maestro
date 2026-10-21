@@ -83,18 +83,6 @@ struct Fixture {
     /// Completed effect observations.
     effects: Rc<support::Effects>,
 }
-/// Restricts native resource path operands to one owned fixture tree.
-pub fn owned_filesystem(root: &Path) -> resolution_support::Filesystem {
-    resolution_support::Filesystem {
-        owned_root: Some(std::path::PathBuf::from(maestro_path::normalize(
-            &std::env::current_dir()
-                .unwrap()
-                .join(root)
-                .to_string_lossy(),
-        ))),
-        ..Default::default()
-    }
-}
 /// Runs complete selected recipes.
 pub fn check(names: &[&str]) {
     let cases: Vec<Record> =
@@ -193,10 +181,8 @@ fn native_tree(root: &Path, recipe: &Recipe) {
 }
 /// Supplies controlled acquisition and ambient failures below their owning wrappers.
 fn effects(recipe: &Recipe, base: &str) -> Rc<support::Effects> {
-    let resources = owned_filesystem(Path::new(base));
     let effects = Rc::new(support::Effects {
         native_exists: true,
-        resources: Some(Rc::new(resources)),
         ..Default::default()
     });
     *effects.home_override.borrow_mut() = (!recipe.home_failure.unwrap_or_default()).then(|| {

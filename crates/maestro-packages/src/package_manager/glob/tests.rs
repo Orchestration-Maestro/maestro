@@ -1,8 +1,6 @@
 //! Direct native expansion before collectors and canonical deduplication.
 #![cfg(target_os = "linux")]
-mod mixed_case;
 use super::glob_sync;
-use maestro_resources::NativeResourceOperations;
 use serde::Deserialize;
 use std::{
     collections::BTreeMap,
@@ -88,7 +86,6 @@ fn synchronous_walk_matches_native_filesystem_cases() {
         let actual = glob_sync(
             &row.pattern.replace("$SCENE", &base),
             &row.cwd.replace("$SCENE", &base),
-            &NativeResourceOperations,
         )
         .unwrap();
         if row.case == "denied_read" {
@@ -115,8 +112,7 @@ fn globstar_literals_keep_platform_case_policy() {
     let root = scene.0.to_str().unwrap();
     for platform in [Platform::Darwin, Platform::Windows, Platform::Posix] {
         let matcher = Minimatch::new("**/MAIN.ts", MinimatchOptions::Filesystem(platform)).unwrap();
-        let actual =
-            super::walker::walk(&matcher, root, platform, &NativeResourceOperations).unwrap();
+        let actual = super::walker::walk(&matcher, root, platform).unwrap();
         let expected = if platform == Platform::Posix {
             vec![]
         } else {

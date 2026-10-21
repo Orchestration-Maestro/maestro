@@ -4,7 +4,6 @@
     "files": {},
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [],
     "scope": "user",
     "expected": {
@@ -19,7 +18,6 @@
     "files": {},
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/missing"
     ],
@@ -38,7 +36,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/opaque.data"
     ],
@@ -68,7 +65,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       ""
     ],
@@ -98,7 +94,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "pkg"
     ],
@@ -128,7 +123,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "pkg"
     ],
@@ -158,7 +152,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "pkg"
     ],
@@ -189,7 +182,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "﻿$BASE/pkg/file.ts﻿",
       "$BASE/pkg/.ts"
@@ -236,7 +228,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -329,7 +320,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -359,7 +349,6 @@
       "pkg/extensions"
     ],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -378,7 +367,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -399,7 +387,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -430,7 +417,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -461,7 +447,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -492,11 +477,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {
-      "readFileSync": [
-        "/extensions/package.json"
-      ]
-    },
     "sources": [
       "$BASE/pkg"
     ],
@@ -517,7 +497,10 @@
       "skills": [],
       "prompts": [],
       "themes": []
-    }
+    },
+    "denied": [
+      "pkg/extensions/package.json"
+    ]
   },
   {
     "case": "child_entry_rules",
@@ -531,7 +514,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -585,7 +567,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -628,7 +609,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -670,7 +650,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -702,7 +681,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -734,7 +712,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -766,7 +743,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -798,7 +774,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -830,7 +805,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -862,7 +836,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -894,7 +867,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -926,7 +898,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -958,7 +929,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -990,7 +960,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1023,7 +992,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1046,7 +1014,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1092,7 +1059,6 @@
       "pkg/extensions/as-dir"
     ],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1154,7 +1120,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1186,7 +1151,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1229,7 +1193,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1270,7 +1233,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1320,7 +1282,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1367,7 +1328,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1410,7 +1370,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1443,7 +1402,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1486,7 +1444,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1519,7 +1476,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1550,11 +1506,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {
-      "readFileSync": [
-        "/prompts/.ignore"
-      ]
-    },
     "sources": [
       "$BASE/pkg"
     ],
@@ -1575,53 +1526,10 @@
         }
       ],
       "themes": []
-    }
-  },
-  {
-    "case": "read_dir_partial",
-    "files": {
-      "pkg/prompts/a.md": "fixture",
-      "pkg/prompts/bad/z.md": "fixture",
-      "pkg/prompts/z.md": "fixture"
     },
-    "dirs": [],
-    "links": {},
-    "fail": {
-      "readdirSync": [
-        "/prompts/bad"
-      ]
-    },
-    "sources": [
-      "$BASE/pkg"
-    ],
-    "scope": "user",
-    "expected": {
-      "extensions": [],
-      "skills": [],
-      "prompts": [
-        {
-          "path": "$BASE/pkg/prompts/a.md",
-          "enabled": true,
-          "metadata": {
-            "source": "$BASE/pkg",
-            "scope": "user",
-            "origin": "package",
-            "baseDir": "$BASE/pkg"
-          }
-        },
-        {
-          "path": "$BASE/pkg/prompts/z.md",
-          "enabled": true,
-          "metadata": {
-            "source": "$BASE/pkg",
-            "scope": "user",
-            "origin": "package",
-            "baseDir": "$BASE/pkg"
-          }
-        }
-      ],
-      "themes": []
-    }
+    "denied": [
+      "pkg/prompts/.ignore"
+    ]
   },
   {
     "case": "native_permission_partial",
@@ -1632,7 +1540,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1664,30 +1571,9 @@
       ],
       "themes": []
     },
-    "denied": "pkg/prompts/bad"
-  },
-  {
-    "case": "local_stat_failure",
-    "files": {
-      "pkg/extensions/a.ts": "fixture"
-    },
-    "dirs": [],
-    "links": {},
-    "fail": {
-      "statSync": [
-        "/pkg"
-      ]
-    },
-    "sources": [
-      "$BASE/pkg"
-    ],
-    "scope": "user",
-    "expected": {
-      "extensions": [],
-      "skills": [],
-      "prompts": [],
-      "themes": []
-    }
+    "denied": [
+      "pkg/prompts/bad"
+    ]
   },
   {
     "case": "link_files",
@@ -1703,7 +1589,6 @@
       "pkg/skills/SKILL.md": "target.md",
       "pkg/prompts/alias": "deep"
     },
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1757,7 +1642,6 @@
     "links": {
       "alias": "pkg"
     },
-    "fail": {},
     "sources": [
       "$BASE/alias",
       "$BASE/pkg",
@@ -1790,7 +1674,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/two",
       "$BASE/one",
@@ -1834,7 +1717,6 @@
     "links": {
       "pkg/prompts/self": "."
     },
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1866,7 +1748,6 @@
     "links": {
       "pkg/prompts/grow": "grow/tail"
     },
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1898,7 +1779,6 @@
     "links": {
       "pkg/repeat": "."
     },
-    "fail": {},
     "sources": [
       "$BASE/pkg/repeat/repeat"
     ],
@@ -1931,7 +1811,6 @@
     "links": {
       "pkg/prompts/self": "."
     },
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1964,7 +1843,6 @@
     "links": {
       "pkg/prompts/self": "."
     },
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -1994,7 +1872,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "npm:pkg"
     ],
@@ -2024,7 +1901,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "npm:pkg"
     ],
@@ -2054,7 +1930,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "git:https://github.com/team/repo.git"
     ],
@@ -2084,7 +1959,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "git:https://github.com/team/repo.git@main"
     ],
@@ -2114,7 +1988,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "npm:pkg"
     ],
@@ -2136,7 +2009,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/first.ts",
       "$BASE/pkg"
@@ -2169,7 +2041,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2202,7 +2073,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2241,7 +2111,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2303,7 +2172,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2335,7 +2203,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2378,7 +2245,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2410,7 +2276,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2441,7 +2306,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2461,7 +2325,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2494,7 +2357,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2527,7 +2389,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2559,7 +2420,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2593,7 +2453,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2628,7 +2487,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2683,7 +2541,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2728,7 +2585,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2772,7 +2628,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2816,7 +2671,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2861,7 +2715,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2906,7 +2759,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2953,7 +2805,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -2988,7 +2839,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3023,7 +2873,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3078,7 +2927,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3128,7 +2976,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3193,7 +3040,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3237,7 +3083,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3283,7 +3128,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3315,7 +3159,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3347,7 +3190,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3379,7 +3221,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3411,7 +3252,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3453,7 +3293,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3495,7 +3334,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3537,7 +3375,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3578,7 +3415,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],
@@ -3609,7 +3445,6 @@
     },
     "dirs": [],
     "links": {},
-    "fail": {},
     "sources": [
       "$BASE/pkg"
     ],

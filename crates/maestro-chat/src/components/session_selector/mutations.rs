@@ -40,7 +40,7 @@ impl State {
         let state = self.clone();
         let list = self.list.upgrade();
         Box::pin(async move {
-            let result = delete_session_file(path.clone(), operations, state.paths.clone()).await;
+            let result = delete_session_file(path.clone(), operations).await;
             if let Some(list) = list {
                 state.finish_delete(&path, &list, result).await?;
             }

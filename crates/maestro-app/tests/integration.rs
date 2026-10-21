@@ -30,8 +30,6 @@ mod configuration_paths;
 mod default_configuration;
 mod default_path_routes;
 mod diff_root_exports;
-#[path = "support/directories.rs"]
-mod directories;
 mod document_extraction;
 mod docx_body;
 mod docx_comments;

@@ -2,7 +2,7 @@
 use super::tree::{FlatSessionNode, build_session_tree};
 use crate::components::session_selector_search::filter_session_records;
 use crate::{NameFilter, SortMode};
-use maestro_app::{ResourceOperations, SessionInfo, canonicalize_path, is_whitespace_scalar};
+use maestro_app::{SessionInfo, canonicalize_path, is_whitespace_scalar};
 use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor, paint};
 use maestro_tui::tui::{FocusFlag, Focusable, InputHandler};
 use maestro_tui::{Component, Input, TruncateOptions, truncate_to_width, visible_width};
@@ -32,8 +32,6 @@ pub struct SessionListOptions {
     pub now_ms: Rc<dyn Fn() -> f64>,
     /// Live home spelling.
     pub home: Rc<dyn Fn() -> String>,
-    /// Canonical path observation port.
-    pub paths: Rc<dyn ResourceOperations>,
     /// Live bold decoration policy.
     pub styles_enabled: Rc<dyn Fn() -> bool>,
 }
@@ -82,7 +80,7 @@ impl SessionList {
             .current_session_file_path
             .as_deref()
             .filter(|p| !p.is_empty())
-            .map(|p| canonicalize_path(p, options.paths.as_ref()));
+            .map(canonicalize_path);
         let input = Rc::new(Input::new());
         let list = Rc::new(Self {
             visible: RefCell::default(),
@@ -186,7 +184,7 @@ impl SessionList {
                 .collect();
         let visible =
             if sort == SortMode::Threaded && query.trim_matches(is_whitespace_scalar).is_empty() {
-                build_session_tree(&sessions, &eligible, self.options.paths.as_ref())
+                build_session_tree(&sessions, &eligible)
             } else {
                 eligible
                     .into_iter()

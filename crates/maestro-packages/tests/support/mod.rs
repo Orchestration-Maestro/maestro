@@ -9,8 +9,6 @@ use std::{cell::RefCell, collections::VecDeque, io, rc::Rc};
 /// Controlled effects observed by the public caller.
 #[derive(Default)]
 pub struct Effects {
-    /// Optional resource adapter for discovery witnesses.
-    pub resources: Option<Rc<dyn maestro_resources::skills::ResourceOperations>>,
     /// Use actual existence observations at installed lookup.
     pub native_exists: bool,
     /// Complete command observations.
@@ -82,12 +80,6 @@ pub type CaptureHook = Rc<dyn Fn(&str, &[String], Option<&str>) -> PackageFuture
 #[derive(Clone)]
 pub struct Controlled(pub Rc<Effects>);
 impl PackageOperations for Controlled {
-    fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
-        self.0
-            .resources
-            .as_deref()
-            .unwrap_or(&maestro_resources::NativeResourceOperations)
-    }
     fn read_file(&self, path: &str) -> io::Result<String> {
         self.0.file_reads.borrow_mut().push(path.into());
         if self.0.native_exists {
@@ -184,9 +176,7 @@ impl PackageOperations for Controlled {
     fn exists(&self, path: &str) -> bool {
         self.0.paths.borrow_mut().push(path.into());
         if self.0.native_exists {
-            return self
-                .resource_operations()
-                .exists(std::path::Path::new(path));
+            return std::path::Path::new(path).exists();
         }
         self.0.exists.get()
             && !self

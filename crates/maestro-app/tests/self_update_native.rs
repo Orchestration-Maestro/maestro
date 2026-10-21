@@ -255,9 +255,6 @@ struct WindowsQuery {
 }
 #[cfg(windows)]
 impl SelfUpdateOperations for WindowsQuery {
-    fn resource_operations(&self) -> &dyn maestro_resources::ResourceOperations {
-        &maestro_resources::NativeResourceOperations
-    }
     fn is_windows(&self) -> bool {
         true
     }

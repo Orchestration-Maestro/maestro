@@ -280,9 +280,9 @@ Native callers use
 [`components::config_selector::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/config_selector/mod.rs).
 Pass `maestro_app::ResolvedPaths`, a shared mutable `SettingsManager`,
 `ConfigSelectorOptions` and `ConfigSelectorCallbacks`. Options supply project and
-agent directories, existing `ResourceOperations`, a prepared `Collator`, live
-theme and a live bold-style policy. `NativeResourceOperations` supplies real
-process-directory observations; these are separate from the selected project.
+agent directories, a prepared `Collator`, live theme and a live bold-style policy.
+Relative patterns resolve against the real process directories, which are separate
+from the selected project.
 The component does not acquire packages or reload resources.
 
 Render the component, but focus and dispatch input to `get_resource_list()`.

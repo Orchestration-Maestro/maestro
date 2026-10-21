@@ -1,22 +1,16 @@
-//! Disposable native filesystem fixtures and controlled observations.
-use maestro_resources::{
-    NativeResourceOperations, ResourceEntry, ResourceFileType, ResourceOperations,
-};
-use std::{
-    io,
-    path::{Path, PathBuf},
-    sync::Mutex,
-};
+//! Disposable native filesystem fixtures.
+use maestro_test_directory::Scratch;
+use std::path::{Path, PathBuf};
 
 /// Disposable native resource tree.
-pub struct Directory(pub maestro_test_directory::Scratch);
+pub struct Directory(pub Scratch);
 impl Directory {
     /// Create a unique tree owned by this test.
     ///
     /// # Panics
     /// Panics when the disposable directory cannot be created.
     pub fn new() -> Self {
-        Self(maestro_test_directory::Scratch::new().unwrap())
+        Self(Scratch::new().unwrap())
     }
     /// Write a supplied relative fixture.
     ///
@@ -36,128 +30,52 @@ impl Default for Directory {
     }
 }
 
-/// Canonicalization failure with otherwise native operations.
-pub struct Unresolvable;
-impl ResourceOperations for Unresolvable {
-    fn exists(&self, path: &Path) -> bool {
-        NativeResourceOperations.exists(path)
-    }
-    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        NativeResourceOperations.read_dir(path)
-    }
-    fn read_file(&self, path: &Path) -> io::Result<String> {
-        NativeResourceOperations.read_file(path)
-    }
-    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        NativeResourceOperations.metadata(path)
-    }
-    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        NativeResourceOperations.symlink_metadata(path)
-    }
-    fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
-        Err(io::Error::other("controlled canonical failure"))
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        NativeResourceOperations.current_directory()
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        NativeResourceOperations.drive_directories()
+/// Permission bits put back on drop, so the tree can be removed.
+#[cfg(unix)]
+pub struct Restore(PathBuf, u32);
+#[cfg(unix)]
+impl Drop for Restore {
+    fn drop(&mut self) {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&self.0, std::fs::Permissions::from_mode(self.1));
     }
 }
 
-/// Controlled directory order and failures layered over disposable native files.
-#[derive(Default)]
-pub struct Controlled {
-    /// Paths whose specified operation returns an injected error.
-    pub failures: Vec<(&'static str, PathBuf)>,
-    /// Explicit order for selected native directories.
-    pub order: Vec<(PathBuf, Vec<&'static str>)>,
-    /// Paths given to link-following metadata, in call order.
-    pub reads: Mutex<Vec<PathBuf>>,
-}
-impl Controlled {
-    /// Inject the selected failure without executing native I/O.
-    fn check(&self, operation: &str, path: &Path) -> io::Result<()> {
-        if self
-            .failures
-            .iter()
-            .any(|(op, p)| *op == operation && p == path)
-        {
-            Err(io::Error::other(format!("injected {operation}")))
-        } else {
-            Ok(())
-        }
-    }
-}
-impl ResourceOperations for Controlled {
-    fn exists(&self, path: &Path) -> bool {
-        NativeResourceOperations.exists(path)
-    }
-    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        self.check("read_dir", path)?;
-        let mut entries = NativeResourceOperations.read_dir(path)?;
-        if let Some((_, names)) = self.order.iter().find(|(p, _)| p == path) {
-            entries.sort_by_key(|e| {
-                names
-                    .iter()
-                    .position(|name| e.name == *name)
-                    .unwrap_or(usize::MAX)
-            });
-        }
-        Ok(entries)
-    }
-    fn read_file(&self, path: &Path) -> io::Result<String> {
-        self.check("read_file", path)?;
-        NativeResourceOperations.read_file(path)
-    }
-    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        self.reads.lock().unwrap().push(path.to_path_buf());
-        self.check("metadata", path)?;
-        NativeResourceOperations.metadata(path)
-    }
-    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        self.check("symlink_metadata", path)?;
-        NativeResourceOperations.symlink_metadata(path)
-    }
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        self.check("canonicalize", path)?;
-        NativeResourceOperations.canonicalize(path)
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        NativeResourceOperations.current_directory()
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        NativeResourceOperations.drive_directories()
-    }
+/// Take every permission away from `path`. Returns the guard that puts them back and the
+/// error reading `path` now gives, or `None` when the run still reads it (a privileged run).
+///
+/// # Panics
+/// Panics when the permissions cannot be read or changed.
+#[cfg(unix)]
+#[must_use]
+pub fn deny(path: &Path) -> Option<(Restore, String)> {
+    use std::os::unix::fs::PermissionsExt;
+    let mode = std::fs::metadata(path).unwrap().permissions().mode();
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o000)).unwrap();
+    let guard = Restore(path.to_path_buf(), mode);
+    let error = if path.is_dir() {
+        std::fs::read_dir(path).err()
+    } else {
+        std::fs::read(path).err()
+    };
+    error.map(|error| (guard, error.to_string()))
 }
 
-/// Resolve relative filesystem requests beneath a supplied fixture directory.
-pub struct Rooted(pub PathBuf);
-impl ResourceOperations for Rooted {
-    fn exists(&self, path: &Path) -> bool {
-        NativeResourceOperations.exists(&self.0.join(path))
-    }
-    fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        NativeResourceOperations.read_dir(&self.0.join(path))
-    }
-    fn read_file(&self, path: &Path) -> io::Result<String> {
-        NativeResourceOperations.read_file(&self.0.join(path))
-    }
-    fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        NativeResourceOperations.metadata(&self.0.join(path))
-    }
-    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
-        NativeResourceOperations.symlink_metadata(&self.0.join(path))
-    }
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        NativeResourceOperations.canonicalize(&self.0.join(path))
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        NativeResourceOperations.current_directory()
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        NativeResourceOperations.drive_directories()
-    }
+/// Create a link at `link` whose target lies in a directory without search permission: a
+/// listing shows the link and following it fails. `None` when a privileged run follows it.
+///
+/// # Panics
+/// Panics when the fixture cannot be created.
+#[cfg(unix)]
+#[must_use]
+pub fn denied_link(dir: &Directory, link: &Path) -> Option<Restore> {
+    let name = link.file_name().unwrap().to_str().unwrap();
+    let target = dir.file(
+        &format!("locked-{name}/target"),
+        "---\ndescription: Locked\n---",
+    );
+    std::os::unix::fs::symlink(&target, link).unwrap();
+    deny(target.parent().unwrap()).map(|(guard, _)| guard)
 }
 
 /// Borrow a UTF-8 authored fixture path.

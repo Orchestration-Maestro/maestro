@@ -1,5 +1,5 @@
 //! Literal trash execution with permanent unlink fallback.
-use maestro_app::{ResourceOperations, is_whitespace_scalar, truncate_utf16};
+use maestro_app::{is_whitespace_scalar, truncate_utf16};
 use maestro_tui::tui::LocalFuture;
 use std::{error::Error, path::Path, rc::Rc};
 /// Observed trash completion, preserving native failures alongside captured diagnostics.
@@ -53,7 +53,6 @@ impl std::fmt::Display for DeleteFailure {
 pub(super) async fn delete_session_file(
     path: String,
     operations: Rc<dyn SessionFileOperations>,
-    paths: Rc<dyn ResourceOperations>,
 ) -> Result<DeleteMethod, DeleteFailure> {
     let args = if path.starts_with('-') {
         vec!["--".into(), path.clone()]
@@ -61,9 +60,7 @@ pub(super) async fn delete_session_file(
         vec![path.clone()]
     };
     let trash = operations.trash(&args);
-    if matches!(&trash, TrashResult::Exited { success: true, .. })
-        || !paths.exists(Path::new(&path))
-    {
+    if matches!(&trash, TrashResult::Exited { success: true, .. }) || !Path::new(&path).exists() {
         return Ok(DeleteMethod::Trash);
     }
     operations

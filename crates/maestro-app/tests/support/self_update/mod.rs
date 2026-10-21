@@ -1,4 +1,4 @@
-//! Controlled observations for self-update selection.
+//! Self-update selection over real install trees built from recorded cases.
 #![cfg(test)]
 
 use maestro_app::configuration::config::{
@@ -6,14 +6,12 @@ use maestro_app::configuration::config::{
     installation::{Installation, PackageLayout},
 };
 use maestro_process::SpawnSyncError;
-use maestro_resources::{ResourceEntry, ResourceFileType, ResourceOperations};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
     collections::BTreeMap,
     io,
-    path::{Path, PathBuf},
     process::{ExitStatus, Output},
 };
 
@@ -42,9 +40,7 @@ pub struct Input {
     pub cwd: Option<String>,
     pub cwd_error: Option<bool>,
     pub existing: Option<Vec<String>>,
-    pub drive_directories: BTreeMap<String, String>,
     pub canonical: BTreeMap<String, String>,
-    pub canonical_errors: Vec<String>,
     pub access_errors: Vec<String>,
     pub probe: Probe,
 }
@@ -82,13 +78,6 @@ impl Input {
     }
     pub fn name(&self) -> &str {
         self.package_name.as_deref().unwrap_or("@old/agent")
-    }
-    fn dirname(&self, path: &str) -> String {
-        if self.windows {
-            maestro_path::win32::dirname(path)
-        } else {
-            maestro_path::posix::dirname(path)
-        }
     }
     pub fn installation(&self) -> Installation {
         let executable = self.executable.clone().unwrap_or_else(|| {
@@ -129,73 +118,7 @@ impl<'a> Operations<'a> {
         self.trace.borrow_mut().push(value);
     }
 }
-impl ResourceOperations for Operations<'_> {
-    fn exists(&self, path: &Path) -> bool {
-        let path = path.to_str().unwrap();
-        self.record(json!(["exists", path]));
-        if let Some(existing) = &self.input.existing {
-            return existing.iter().any(|p| p == path);
-        }
-        let parent = self.input.dirname(self.input.dir());
-        let root = if self.input.name().starts_with('@') {
-            self.input.dirname(&parent)
-        } else {
-            parent
-        };
-        path == self.input.dir() || path == root
-    }
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        let path = path.to_str().unwrap();
-        self.record(json!(["canonicalize", path]));
-        if self.input.canonical_errors.iter().any(|p| p == path) {
-            return Err(io::Error::other("canonicalize failed"));
-        }
-        Ok(self
-            .input
-            .canonical
-            .get(path)
-            .map_or(path, String::as_str)
-            .into())
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        if self.input.cwd_error.unwrap_or(false) {
-            return Err(io::Error::other("cwd unavailable"));
-        }
-        Ok(self
-            .input
-            .cwd
-            .as_deref()
-            .unwrap_or(if self.input.windows {
-                "C:\\work"
-            } else {
-                "/work"
-            })
-            .into())
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        self.input
-            .drive_directories
-            .iter()
-            .map(|(name, directory)| (name.chars().nth(1).unwrap(), directory.clone()))
-            .collect()
-    }
-    fn read_dir(&self, _: &Path) -> io::Result<Vec<ResourceEntry>> {
-        unreachable!()
-    }
-    fn read_file(&self, _: &Path) -> io::Result<String> {
-        unreachable!()
-    }
-    fn metadata(&self, _: &Path) -> io::Result<ResourceFileType> {
-        unreachable!()
-    }
-    fn symlink_metadata(&self, _: &Path) -> io::Result<ResourceFileType> {
-        unreachable!()
-    }
-}
 impl SelfUpdateOperations for Operations<'_> {
-    fn resource_operations(&self) -> &dyn ResourceOperations {
-        self
-    }
     fn is_windows(&self) -> bool {
         self.input.windows
     }
@@ -300,10 +223,106 @@ pub fn select(input: &Input, compose_root: bool) -> (io::Result<Value>, Vec<Valu
     };
     (result, operations.trace.into_inner())
 }
+/// Text with every absolute POSIX path in it moved below `root`. A path starts the text or
+/// follows whitespace (the byte order mark included), `=` or a quote.
+fn below(root: &str, text: &str) -> String {
+    let mut moved = String::with_capacity(text.len());
+    let mut previous = None;
+    for c in text.chars() {
+        if c == '/'
+            && previous.is_none_or(|p: char| {
+                p.is_whitespace() || matches!(p, '=' | '\'' | '"' | '\u{feff}')
+            })
+        {
+            moved.push_str(root);
+        }
+        moved.push(c);
+        previous = Some(c);
+    }
+    moved
+}
+
+/// Every string in `value`, object keys included, with its absolute POSIX paths moved below
+/// `root`.
+fn moved(root: &str, value: Value) -> Value {
+    match value {
+        Value::String(text) => Value::String(below(root, &text)),
+        Value::Array(items) => Value::Array(items.into_iter().map(|v| moved(root, v)).collect()),
+        Value::Object(fields) => Value::Object(
+            fields
+                .into_iter()
+                .map(|(key, v)| (below(root, &key), moved(root, v)))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// Build the recorded install tree below `tree`, enter the recorded working directory and
+/// return the case with its POSIX paths moved there. Existence and canonical paths now come
+/// from the file system, so the trace no longer records those reads. `None` for a case that
+/// needs links or a removed working directory where the platform has neither.
+fn prepare(mut case: Value, tree: &maestro_test_directory::Scratch) -> Option<Case> {
+    if case["input"]["windows"] != true {
+        let input = case["input"].as_object_mut().unwrap();
+        input
+            .entry("package_dir")
+            .or_insert_with(|| json!("/opt/tool/lib/node_modules/@old/agent"));
+        input.entry("home").or_insert_with(|| json!("/home/sample"));
+        input.entry("cwd").or_insert_with(|| json!("/work"));
+        case = moved(tree.path().to_str().unwrap(), case);
+    }
+    let mut case: Case = serde_json::from_value(case).unwrap();
+    case.trace
+        .retain(|step| !matches!(step[0].as_str(), Some("exists" | "canonicalize")));
+    let input = &case.input;
+    if cfg!(not(unix)) && (input.cwd_error == Some(true) || !input.canonical.is_empty()) {
+        return None;
+    }
+    std::env::set_current_dir(tree.path()).unwrap();
+    if let Some(cwd) = input.cwd.as_ref().filter(|_| input.cwd_error != Some(true)) {
+        std::fs::create_dir_all(cwd).unwrap();
+        std::env::set_current_dir(cwd).unwrap();
+    }
+    let present = input
+        .existing
+        .clone()
+        .unwrap_or_else(|| vec![input.dir().to_owned()]);
+    for path in present.iter().chain(input.canonical.values()) {
+        std::fs::create_dir_all(path).unwrap();
+    }
+    #[cfg(unix)]
+    for (link, target) in &input.canonical {
+        let link = std::path::Path::new(link);
+        if link.is_dir() {
+            std::fs::remove_dir(link).unwrap();
+        }
+        std::fs::create_dir_all(link.parent().unwrap()).unwrap();
+        std::os::unix::fs::symlink(target, link).unwrap();
+    }
+    #[cfg(unix)]
+    if input.cwd_error == Some(true) {
+        tree.enter_removed("removed").unwrap();
+        if case.expected == json!({"error": "cwd unavailable"}) {
+            case.expected = json!({"error": std::env::current_dir().unwrap_err().to_string()});
+        }
+    }
+    Some(case)
+}
+
+/// Replay each recorded case on its own real install tree.
 pub fn run(fixture: &str, compose_root: bool) {
-    let cases: Vec<Case> = serde_json::from_str(fixture).unwrap();
+    // Every case moves the working directory, which belongs to the whole process.
+    if maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap() {
+        return;
+    }
+    let cases: Vec<Value> = serde_json::from_str(fixture).unwrap();
     assert!(!cases.is_empty());
     for case in cases {
+        let tree = maestro_test_directory::Scratch::new().unwrap();
+        let Some(case) = prepare(case, &tree) else {
+            continue;
+        };
         let (result, trace) = select(&case.input, compose_root);
         let observed = match result {
             Ok(value) => json!({"value": value}),
@@ -316,14 +335,18 @@ pub fn run(fixture: &str, compose_root: bool) {
 
 /// Assert the owned record only after destroying every selection input.
 pub fn run_owned(fixture: &str) {
-    let mut cases: Vec<Case> = serde_json::from_str(fixture).expect("owned fixture parses");
+    if maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap() {
+        return;
+    }
+    let mut cases: Vec<Value> = serde_json::from_str(fixture).expect("owned fixture parses");
     assert_eq!(cases.len(), 1);
+    let tree = maestro_test_directory::Scratch::new().unwrap();
     let Case {
         id,
         input,
         expected,
         trace,
-    } = cases.remove(0);
+    } = prepare(cases.remove(0), &tree).expect("the owned case needs no link");
     assert!(matches!(input.op, Operation::Command));
     let command = {
         let installation = input.installation();

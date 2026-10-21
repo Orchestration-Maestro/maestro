@@ -54,7 +54,7 @@ impl ResourceList {
             } else {
                 self.options.agent_dir.clone()
             };
-            let pattern = self.relative_pattern(&base, &path)?;
+            let pattern = Self::relative_pattern(&base, &path)?;
             let entries = patterns(snapshot.0.get(&kind), &pattern, enabled);
             self.set_paths(metadata.scope, &kind, entries);
         } else {
@@ -84,7 +84,7 @@ impl ResourceList {
             return Ok(());
         };
         let base = metadata.base_dir.clone().unwrap_or_else(|| dirname(path));
-        let pattern = self.relative_pattern(&base, path)?;
+        let pattern = Self::relative_pattern(&base, path)?;
         let selected = &mut packages[index];
         if let Value::String(source) = selected {
             let mut object = Map::new();
@@ -112,14 +112,14 @@ impl ResourceList {
         Ok(())
     }
     /// Binds open authored operands to one live ambient observation per toggle.
-    fn relative_pattern(&self, from: &str, to: &str) -> io::Result<String> {
+    fn relative_pattern(from: &str, to: &str) -> io::Result<String> {
         if from == to {
             return Ok(String::new());
         }
         let paths = resolve_with(
             &[&[from], &[to]],
-            || self.options.path_operations.drive_directories(),
-            || self.options.path_operations.current_directory(),
+            maestro_app::drive_directories,
+            maestro_app::current_directory,
         )?;
         Ok(relative(
             &paths[0],

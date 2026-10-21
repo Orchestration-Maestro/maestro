@@ -1,9 +1,7 @@
 //! Qualification of the shipped development prompt metadata.
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_resources::{
-    LoadPromptTemplatesOptions, NativeResourceOperations, load_prompt_templates,
-};
+use maestro_resources::{LoadPromptTemplatesOptions, load_prompt_templates};
 use std::path::Path;
 
 /// Shipped names, descriptions, hints and authored argument lines.
@@ -38,17 +36,14 @@ fn maestro_development_prompts_keep_argument_fields() {
         .unwrap();
     let user_root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("development-guidance-user");
     std::fs::create_dir_all(&user_root).unwrap();
-    let mut templates = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: root.to_str().unwrap(),
-            home: user_root.to_str().unwrap(),
-            agent_dir: user_root.to_str().unwrap(),
-            config_dir_name: ".maestro",
-            prompt_paths: &[],
-            include_defaults: true,
-        },
-        &NativeResourceOperations,
-    )
+    let mut templates = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: root.to_str().unwrap(),
+        home: user_root.to_str().unwrap(),
+        agent_dir: user_root.to_str().unwrap(),
+        config_dir_name: ".maestro",
+        prompt_paths: &[],
+        include_defaults: true,
+    })
     .unwrap();
     templates.sort_by(|a, b| a.name.cmp(&b.name));
     assert_eq!(

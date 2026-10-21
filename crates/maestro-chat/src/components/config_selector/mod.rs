@@ -3,7 +3,7 @@ mod groups;
 mod render;
 mod resource_list;
 mod settings;
-use maestro_app::{PathMetadata, ResolvedPaths, ResourceOperations, SettingsManager};
+use maestro_app::{PathMetadata, ResolvedPaths, SettingsManager};
 use maestro_theme::{Collator, LiveTheme};
 use maestro_tui::{
     Component, Container, Spacer,
@@ -46,8 +46,6 @@ pub struct ConfigSelectorOptions {
     pub cwd: String,
     /// User resource directory.
     pub agent_dir: String,
-    /// Live directory observations, requested only for open path operands.
-    pub path_operations: Rc<dyn ResourceOperations>,
     /// Current published colors.
     pub theme: LiveTheme,
     /// Prepared locale comparator.

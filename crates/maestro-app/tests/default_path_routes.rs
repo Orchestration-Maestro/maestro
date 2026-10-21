@@ -2,17 +2,14 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::default_configuration as fixture;
-use crate::directories;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_app::{AuthStorage, ModelRegistry, SettingsManager};
-use maestro_resources::{
-    LoadPromptTemplatesOptions, NativeResourceOperations, load_prompt_templates,
-};
+use maestro_resources::{LoadPromptTemplatesOptions, load_prompt_templates};
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{cell::Cell, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 /// The environment override's selected source branch.
 #[derive(Deserialize)]
@@ -132,17 +129,14 @@ fn consumers(input: &RootInput, expected: RootExpected, agent: &str) {
     catalog(agent, expected.credential, &expected.model);
     let cwd = std::env::current_dir().unwrap();
     let home = std::env::var("HOME").unwrap();
-    let prompts = load_prompt_templates(
-        LoadPromptTemplatesOptions {
-            cwd: cwd.to_str().unwrap(),
-            home: &home,
-            agent_dir: agent,
-            config_dir_name: CONFIG_DIR_NAME,
-            prompt_paths: &[],
-            include_defaults: true,
-        },
-        &NativeResourceOperations,
-    )
+    let prompts = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: cwd.to_str().unwrap(),
+        home: &home,
+        agent_dir: agent,
+        config_dir_name: CONFIG_DIR_NAME,
+        prompt_paths: &[],
+        include_defaults: true,
+    })
     .unwrap();
     let prompt = prompts
         .into_iter()
@@ -229,15 +223,8 @@ fn package(input: &Value, expected: &Value, root: &str) {
     .unwrap();
     assert_eq!(native, expected.package_directory);
     assert_eq!(controlled, expected.package_directory);
-    let operations = directories::Directories {
-        cwd: Ok(root.to_owned()),
-        reads: Cell::new(0),
-    };
-    let readme = paths::get_readme_path(&native, &NativeResourceOperations).unwrap();
-    assert_eq!(
-        paths::get_readme_path(&controlled, &operations).unwrap(),
-        readme
-    );
+    let readme = paths::get_readme_path(&native).unwrap();
+    assert_eq!(paths::get_readme_path(&controlled).unwrap(), readme);
     assert_eq!(readme, expected.readme);
     fixture::write(&readme, &input.readme_content);
     assert_eq!(

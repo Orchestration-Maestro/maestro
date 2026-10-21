@@ -1,6 +1,8 @@
 //! Ordered directory traversal of instruction entry files.
-use super::operations::ProcessContext;
-use super::{LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations, load_file};
+use super::{
+    LoadSkillsResult, ResourceEntry, ResourceFileType, files, load_file, metadata, read_text,
+    resolve,
+};
 use maestro_path::{Cwd, SEP, join};
 use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
 use std::{io, path::Path};
@@ -11,12 +13,8 @@ struct Discovery<'a> {
     root: &'a str,
     /// Caller working directory, the first operand of every resolution.
     base: &'a str,
-    /// Process directories completing what `base` leaves open.
-    ctx: &'a ProcessContext<'a>,
     /// Source label for every discovery.
     source: &'a str,
-    /// Replaceable filesystem adapter.
-    operations: &'a dyn ResourceOperations,
     /// Rules on the active directory branch.
     rules: ScopedIgnoreRules,
 }
@@ -28,33 +26,25 @@ struct Discovery<'a> {
 /// when such a resolution leaves a part open. A directory whose entries cannot be
 /// located because that read fails ends with the skills gathered before the
 /// failure, and the scan never fails.
-pub(super) fn scan(
-    dir: &str,
-    base: &str,
-    ctx: &ProcessContext<'_>,
-    source: &str,
-    operations: &dyn ResourceOperations,
-) -> LoadSkillsResult {
+pub(super) fn scan(dir: &str, base: &str, source: &str) -> LoadSkillsResult {
     let mut scan = Discovery {
         root: dir,
         base,
-        ctx,
         source,
-        operations,
         rules: ScopedIgnoreRules::default(),
     };
     // The root's own relative path is empty without any resolution, so its rules cannot fail.
     scan.visit(dir, true).unwrap_or_default()
 }
 impl Discovery<'_> {
-    /// Traverse the directory `dir` in adapter order, stopping after an attempted root entry.
+    /// Traverse the directory `dir` in name order, stopping after an attempted root entry.
     ///
     /// # Errors
     /// Returns the failure to locate `dir` beneath the scan root, which the
     /// calling directory ends with.
     fn visit(&mut self, dir: &str, include_root_files: bool) -> io::Result<LoadSkillsResult> {
         let mut result = LoadSkillsResult::default();
-        if self.operations.exists(Path::new(dir)) {
+        if Path::new(dir).exists() {
             self.add_rules(dir)?;
             // A failure below ends this directory with what was gathered.
             let _ = self.read_entries(dir, include_root_files, &mut result);
@@ -69,10 +59,10 @@ impl Discovery<'_> {
         include_root_files: bool,
         result: &mut LoadSkillsResult,
     ) -> io::Result<()> {
-        let entries = self.operations.read_dir(Path::new(dir))?;
+        let entries = files::read_entries(Path::new(dir))?;
         for entry in entries.iter().filter(|e| e.name == "SKILL.md") {
             if let Some((path, ResourceFileType::File)) = self.candidate(dir, entry)? {
-                append(result, load_file(&path, self.source, self.operations));
+                append(result, load_file(&path, self.source));
                 return Ok(());
             }
         }
@@ -88,7 +78,7 @@ impl Discovery<'_> {
                 Some((path, ResourceFileType::File))
                     if include_root_files && name.ends_with(".md") =>
                 {
-                    append(result, load_file(&path, self.source, self.operations));
+                    append(result, load_file(&path, self.source));
                 }
                 _ => {}
             }
@@ -102,7 +92,7 @@ impl Discovery<'_> {
         entry: &ResourceEntry,
     ) -> io::Result<Option<(String, ResourceFileType)>> {
         let path = join(&[dir, &entry.name.to_string_lossy()]);
-        let Some(kind) = observed_type(entry, &path, self.operations) else {
+        let Some(kind) = observed_type(entry, &path) else {
             return Ok(None);
         };
         let ignored = self.ignored(&path, kind == ResourceFileType::Directory)?;
@@ -120,8 +110,8 @@ impl Discovery<'_> {
         if self.root == to {
             return Ok(String::new());
         }
-        let from = self.ctx.resolve(&[self.base, self.root])?;
-        let to = self.ctx.resolve(&[self.base, to])?;
+        let from = resolve(&[self.base, self.root])?;
+        let to = resolve(&[self.base, to])?;
         // Both ends continue from the same base, which cancels in their difference.
         let shared_base = Cwd {
             current: &from,
@@ -140,10 +130,10 @@ impl Discovery<'_> {
         let mut rules = Ignore::new();
         for filename in [".gitignore", ".ignore", ".fdignore"] {
             let path = join(&[dir, filename]);
-            if !self.operations.exists(Path::new(&path)) {
+            if !Path::new(&path).exists() {
                 continue;
             }
-            let Ok(text) = self.operations.read_file(Path::new(&path)) else {
+            let Ok(text) = read_text(Path::new(&path)) else {
                 continue;
             };
             for line in text
@@ -161,15 +151,12 @@ impl Discovery<'_> {
         Ok(())
     }
 }
-/// Returns a non-link's supplied kind without reading metadata; for a link, returns the supplied
-/// adapter's metadata result or `None` if that read fails.
-pub fn observed_type(
-    entry: &ResourceEntry,
-    path: &str,
-    operations: &dyn ResourceOperations,
-) -> Option<ResourceFileType> {
+/// Returns a non-link's listed kind without reading metadata; for a link, returns the kind of its
+/// target, or `None` if that read fails.
+#[must_use]
+pub fn observed_type(entry: &ResourceEntry, path: &str) -> Option<ResourceFileType> {
     if entry.file_type == ResourceFileType::Symlink {
-        operations.metadata(Path::new(path)).ok()
+        metadata(Path::new(path)).ok()
     } else {
         Some(entry.file_type)
     }

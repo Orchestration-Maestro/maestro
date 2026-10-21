@@ -17,12 +17,11 @@ pub use frontmatter::{
 };
 pub use maestro_request::slash_commands::{SlashCommandInfo, SlashCommandSource};
 pub use paths::{canonicalize_path, is_local_path};
-#[cfg(not(target_arch = "wasm32"))]
-pub use skills::NativeResourceOperations;
 pub use skills::{
     LoadSkillsFromDirOptions, LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType,
-    ResourceOperations, Skill, SkillFrontmatter, format_skills_for_prompt, load_skills,
-    load_skills_from_dir,
+    Skill, SkillFrontmatter, current_directory, drive_directories, format_skills_for_prompt,
+    load_skills, load_skills_from_dir, metadata, read_entries, read_text, real_path,
+    symlink_metadata,
 };
 pub use source_info::{
     PathMetadata, SourceInfo, SourceOrigin, SourceScope, SyntheticSourceOptions,
