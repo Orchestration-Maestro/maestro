@@ -694,25 +694,10 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
 ];
 
-/// Crates that may not declare the foundation utility.
-const UTILITY_EXCLUDED: &[&str] = &[
-    "maestro-watch",
-    "maestro-lock",
-    "maestro-process",
-    "maestro-pattern",
-    "maestro-markdown",
-    "maestro-cancellation",
-    "maestro-request",
-    "maestro-extensions-wasm",
-    "maestro-extensions-wasmtime",
-    "maestro-test-terminal",
-    "maestro-test-process",
-    "maestro-text",
-    "maestro-json",
-    "maestro-entry",
-    "maestro-tool",
-    "maestro-brand",
-];
+/// Crates the specification excludes from the foundation utility.
+fn utility_excluded() -> Vec<&'static str> {
+    specification_names("The guest authoring crate", "are excluded from this")
+}
 
 /// Direct dependencies a crate must declare.
 fn required_targets(name: &str) -> &'static [&'static str] {
@@ -744,17 +729,17 @@ fn dependencies_with_utility(required: &[&str], kind: &str, extra: &str) -> Stri
 #[test]
 fn path_utility_edges_preserve_native_layer_rules() {
     let rows = support::policy::POLICY;
+    let excluded = utility_excluded();
     let consumers: Vec<_> = rows
         .iter()
         .map(|row| row.0)
-        .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
+        .filter(|name| *name != "maestro-path" && !excluded.contains(name))
         .collect();
-    documented_utility_exclusions_match_policy();
     native_consumers_may_declare_the_utility(&consumers);
     for from in consumers {
         native_consumer_may_not_dev_declare_the_utility(from);
     }
-    for from in UTILITY_EXCLUDED {
+    for from in excluded {
         excluded_crate_may_not_declare_the_utility(from);
     }
     path_utility_has_no_outbound_edges();
@@ -1298,15 +1283,6 @@ fn specification_names(start: &str, end: &str) -> Vec<&'static str> {
         .collect()
 }
 
-/// The crates the specification excludes from the path utility are the policy's exclusions.
-fn documented_utility_exclusions_match_policy() {
-    let documented: std::collections::BTreeSet<_> =
-        specification_names("The guest authoring crate", "are excluded from this")
-            .into_iter()
-            .collect();
-    assert_eq!(documented, UTILITY_EXCLUDED.iter().copied().collect());
-}
-
 #[test]
 fn documented_foundation_graph_rejects_missing_and_extra_edges() {
     let row = FOUNDATION_SPECIFICATION
@@ -1570,9 +1546,10 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
         .find(|p| p["name"] == "maestro-cli")
         .unwrap()["dependencies"][0]
         .clone();
+    let excluded = utility_excluded();
     for &(from, targets) in support::policy::POLICY {
         for &(to, _) in support::policy::POLICY {
-            let utility_edge = to == "maestro-path" && !UTILITY_EXCLUDED.contains(&from);
+            let utility_edge = to == "maestro-path" && !excluded.contains(&from);
             let support_edge = to == "maestro-test-process";
             let approved = dev && support::policy::DEVELOPMENT.contains(&(from, to));
             if from == to
@@ -1904,11 +1881,12 @@ fn complete_permitted_graph_is_acyclic() {
     let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
     let workspace = Workspace::new();
     workspace.foundation(&names);
+    let excluded = utility_excluded();
     for (kind, extra) in DECLARATIONS {
         for &(from, targets) in support::policy::POLICY {
             let mut declarations = format!("[{kind}]\n");
-            let utility = (from != "maestro-path" && !UTILITY_EXCLUDED.contains(&from))
-                .then_some("maestro-path");
+            let utility =
+                (from != "maestro-path" && !excluded.contains(&from)).then_some("maestro-path");
             for (index, target) in targets
                 .iter()
                 .copied()
@@ -2082,29 +2060,15 @@ fn feature_unifier_preserves_required_domain_edges() {
 const OWNER: &str = "maestro-test-process";
 const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
-/// Callers allowed to declare the test-process owner as a native development dependency.
-const OWNER_CALLERS: [&str; 20] = [
-    "maestro-agent",
-    "maestro-app",
-    "maestro-catalog",
-    "maestro-chat",
-    "maestro-credentials",
-    "maestro-daemon",
-    "maestro-detection",
-    "maestro-extensions",
-    "maestro-ipc",
-    "maestro-models",
-    "maestro-packages",
-    "maestro-process",
-    "maestro-resources",
-    "maestro-session",
-    "maestro-settings",
-    "maestro-test-conventions",
-    "maestro-tooling",
-    "maestro-tools",
-    "maestro-tui",
-    "maestro-tui-crossterm",
-];
+/// Callers the specification lets declare the test-process owner, in its order.
+fn owner_callers() -> Vec<&'static str> {
+    std::iter::once("maestro-agent")
+        .chain(specification_names(
+            "from `maestro-agent`",
+            "; a\ncaller declares it only",
+        ))
+        .collect()
+}
 
 /// Install `caller` with its required dependencies followed by `declaration` and check the graph.
 fn caller_declares(workspace: &Workspace, caller: &str, declaration: &str) -> Result<(), String> {
@@ -2146,7 +2110,7 @@ fn test_process_edges_are_native_development_only() {
         ("build-dependencies", false),
         (NATIVE_DEV, true),
     ];
-    for caller in OWNER_CALLERS {
+    for caller in owner_callers() {
         let workspace = Workspace::new();
         workspace.foundation(&[caller, OWNER]);
         for (table, accepted) in forms {
@@ -2212,8 +2176,9 @@ fn test_process_owner_stays_dependency_free() {
 #[test]
 fn test_process_permission_is_not_a_name_pattern() {
     let native = format!("[{NATIVE_DEV}]\n{}", owner_entry(""));
+    let callers = owner_callers();
     for &(caller, _) in support::policy::POLICY {
-        if OWNER_CALLERS.contains(&caller) || caller == OWNER {
+        if callers.contains(&caller) || caller == OWNER {
             continue;
         }
         let workspace = Workspace::new();
@@ -2293,10 +2258,8 @@ fn test_process_policy_keeps_existing_domain_edges() {
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
     assert_eq!(support::class(OWNER), "dedicated");
-    assert!(UTILITY_EXCLUDED.contains(&OWNER));
-    let documented = specification_names("from `maestro-agent`", "; a\ncaller declares it only");
-    let declared: Vec<_> = std::iter::once("maestro-agent").chain(documented).collect();
-    assert_eq!(declared, support::policy::TEST_PROCESS_CALLERS);
+    assert!(utility_excluded().contains(&OWNER));
+    assert_eq!(owner_callers(), support::policy::TEST_PROCESS_CALLERS);
     let workspace = Workspace::new();
     workspace.foundation(&[OWNER]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
