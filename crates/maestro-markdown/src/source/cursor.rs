@@ -55,7 +55,7 @@ impl Cursor {
             .pop_front()
             .unwrap_or_else(|| ScopeSource::identity("").into());
         for piece in self.pieces {
-            output.append(piece);
+            output.append(&piece);
         }
         output
     }

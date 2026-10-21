@@ -161,7 +161,7 @@ impl<E> Lexer<'_, E> {
             }
         }
         if let Tail::Visible(Some(raw)) = &mut output.tail {
-            raw.append(source.select(std::iter::once(0..1)).into());
+            raw.append(&source.select(std::iter::once(0..1)).into());
         }
         Some(gap.end())
     }

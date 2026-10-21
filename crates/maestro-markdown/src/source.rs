@@ -76,10 +76,12 @@ impl ScopeSource {
     #[cfg(test)]
     pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
         retained.text(&self.text.bytes);
-        retained.arc(
+        if retained.arc(
             &self.units,
             self.units.capacity() * std::mem::size_of::<(Range<usize>, Range<usize>)>(),
-        );
+        ) {
+            retained.mapping_records += self.units.len();
+        }
     }
 
     /// Project a native operand through captured framing, not string-offset subtraction.

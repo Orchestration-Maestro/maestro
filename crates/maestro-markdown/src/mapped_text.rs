@@ -1,4 +1,5 @@
 //! Shared ownership of authored UTF-8 text.
+use crate::segments::Segments;
 use std::{ops::Range, sync::Arc};
 
 /// Owned authored text whose clones retain shared storage.
@@ -7,39 +8,32 @@ use std::{ops::Range, sync::Arc};
 /// Chunk boundaries are an implementation detail, not a serialization format.
 #[derive(Clone, Debug)]
 pub struct MappedText {
-    /// Shared bytes or concatenation, with no per-view flattened cache.
-    storage: Arc<Storage>,
-    /// Logical UTF-8 byte length.
-    length: usize,
+    /// Shared byte operands and their logical offset index.
+    storage: Segments<Bytes>,
     /// Final byte for constant-time semantic separator checks.
     last_byte: Option<u8>,
 }
 
-/// Persistent concatenation keeps extending a value independent of its prefix length.
-#[derive(Debug)]
-enum Storage {
-    /// Caller-owned contiguous bytes.
-    Bytes(Arc<String>, Range<usize>),
-    /// Shared earlier values in logical order.
-    Joined(MappedText, MappedText),
-}
+/// A UTF-8 window retaining its original byte allocation.
+#[derive(Clone, Debug)]
+struct Bytes(Arc<String>, Range<usize>);
 
 impl MappedText {
     /// Return the logical UTF-8 byte length without visiting chunks.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.length
+        self.storage.len()
     }
 
     /// Whether this value contains no bytes.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.length == 0
+        self.len() == 0
     }
 
     /// Visit exact logical UTF-8 bytes in order without flattening them.
     pub fn chunks(&self) -> impl Iterator<Item = &str> {
-        let mut pending = vec![self];
+        let mut pending = vec![(&self.storage, 0..self.len())];
         std::iter::from_fn(move || next_chunk(&mut pending))
     }
 
@@ -56,76 +50,49 @@ impl MappedText {
     /// Retain a UTF-8 window of an existing source allocation.
     pub(crate) fn shared(bytes: Arc<String>, range: Range<usize>) -> Self {
         Self {
-            length: range.len(),
             last_byte: bytes[range.clone()].as_bytes().last().copied(),
-            storage: Arc::new(Storage::Bytes(bytes, range)),
+            storage: Segments::new(Bytes(bytes, range.clone()), range.len(), range),
         }
+    }
+
+    /// Measure retained ownership depth without recursive diagnostics or destruction.
+    #[cfg(test)]
+    pub(crate) fn storage_depth(&self) -> usize {
+        self.storage.depth()
     }
 
     /// Count live shared bytes and concatenation metadata without flattening a view.
     #[cfg(test)]
     pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
-        let mut pending = vec![self];
-        while let Some(text) = pending.pop() {
-            if !retained.arc(&text.storage, 0) {
-                continue;
-            }
-            match text.storage.as_ref() {
-                Storage::Bytes(bytes, _) => {
-                    retained.text(bytes);
-                }
-                Storage::Joined(left, right) => {
-                    pending.extend([left, right]);
-                }
-            }
-        }
+        self.storage
+            .retained(retained, |bytes, retained| retained.text(&bytes.0));
     }
 
     /// Retain a logical UTF-8 selection without materializing its bytes.
     pub(crate) fn select(&self, range: Range<usize>) -> Self {
-        let mut output = Self::default();
-        let mut pending = vec![(self, range)];
-        while let Some((text, range)) = pending.pop() {
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
-            if range.is_empty() {
-                continue;
-            }
-            if range == (0..text.len()) {
-                output.append(text);
-                continue;
-            }
-            text.select_parts(range, &mut pending, &mut output);
+        if range.is_empty() {
+            return Self::default();
         }
-        output
-    }
-
-    /// Split a partial selection at its retained concatenation boundary.
-    fn select_parts<'a>(
-        &'a self,
-        range: Range<usize>,
-        pending: &mut Vec<(&'a Self, Range<usize>)>,
-        output: &mut Self,
-    ) {
-        match self.storage.as_ref() {
-            Storage::Bytes(bytes, selected) => {
-                output.append(&Self::shared(
-                    Arc::clone(bytes),
-                    selected.start + range.start..selected.start + range.end,
-                ));
+        let storage = self.storage.select(range.clone(), |bytes, range| {
+            Some(bytes.1.start + range.start..bytes.1.start + range.end)
+        });
+        let mut tail = &self.storage;
+        let mut selected = range.end - 1..range.end;
+        let last_byte = loop {
+            if let Some((bytes, window)) = tail.leaf() {
+                break bytes
+                    .0
+                    .as_bytes()
+                    .get(bytes.1.start + window.start + selected.start)
+                    .copied();
             }
-            Storage::Joined(left, right) => {
-                if range.end > left.len() {
-                    pending.push((
-                        right,
-                        range.start.saturating_sub(left.len())..range.end - left.len(),
-                    ));
-                }
-                if range.start < left.len() {
-                    pending.push((left, range.start..range.end.min(left.len())));
-                }
-            }
-        }
+            let Some((part, range, _)) = tail.parts(selected).next() else {
+                break None;
+            };
+            tail = part;
+            selected = range;
+        };
+        Self { storage, last_byte }
     }
 
     /// Whether the authored value already ends in a semantic line separator.
@@ -135,36 +102,31 @@ impl MappedText {
 
     /// Extend authored spelling without copying the retained prefix.
     pub(crate) fn append(&mut self, other: &Self) {
-        if other.is_empty() {
-            return;
+        if !other.is_empty() {
+            self.storage.append(&other.storage);
+            self.last_byte = other.last_byte;
         }
-        if self.is_empty() {
-            *self = other.clone();
-            return;
-        }
-        *self = Self {
-            length: self.len() + other.len(),
-            last_byte: other.last_byte,
-            storage: Arc::new(Storage::Joined(self.clone(), other.clone())),
-        };
     }
 }
 
-/// Advance a chunk cursor without recursive traversal of concatenations.
-fn next_chunk<'a>(pending: &mut Vec<&'a MappedText>) -> Option<&'a str> {
-    while let Some(text) = pending.pop() {
+/// Advance a byte cursor without recursive traversal of concatenations.
+fn next_chunk<'a>(pending: &mut Vec<(&'a Segments<Bytes>, Range<usize>)>) -> Option<&'a str> {
+    while let Some((source, range)) = pending.pop() {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
-        match text.storage.as_ref() {
-            Storage::Bytes(bytes, range) if !range.is_empty() => {
-                return Some(&bytes[range.clone()]);
-            }
-            Storage::Bytes(..) => {}
-            Storage::Joined(left, right) => {
-                pending.push(right);
-                pending.push(left);
-            }
+        if range.is_empty() {
+            continue;
         }
+        if let Some((bytes, window)) = source.leaf() {
+            let start = bytes.1.start + window.start;
+            return Some(&bytes.0[start + range.start..start + range.end]);
+        }
+        pending.extend(
+            source
+                .parts(range)
+                .rev()
+                .map(|(part, range, _)| (part, range)),
+        );
     }
     None
 }

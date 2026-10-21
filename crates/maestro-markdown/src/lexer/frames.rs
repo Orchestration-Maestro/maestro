@@ -105,7 +105,7 @@ impl<E> Lexer<'_, E> {
         self.top = true;
         self.block_tokens(&chunk, &mut frame.output, true);
         self.top = top;
-        frame.text.append(chunk.into());
+        frame.text.append(&chunk.into());
         frame.finished = frame.pending.is_empty()
             || frame
                 .output
@@ -131,7 +131,7 @@ impl<E> Lexer<'_, E> {
             _ => frame.text.local(&joined.native(&(0..joined.len()))?)?.start,
         };
         joined.newline();
-        joined.append(std::mem::take(&mut frame.pending).seal());
+        joined.append(&std::mem::take(&mut frame.pending).seal());
         self.forget(&old);
         frame.text.truncate(prefix);
         if matches!(old.kind, Kind::Quote(..)) {
@@ -165,9 +165,11 @@ impl<E> Lexer<'_, E> {
         });
         frame.consumed = frame.consumed.max(end);
         if let Kind::Quote(_, body) = &node.kind {
-            frame.text.append(Segmented::spelling(body.clone(), extent));
+            frame
+                .text
+                .append(&Segmented::spelling(body.clone(), extent));
         } else {
-            frame.text.append(used.clone());
+            frame.text.append(&used);
         }
         frame.output.push_segmented(used, node);
         frame.pending.segmented(rest);

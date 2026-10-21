@@ -458,15 +458,32 @@ fn reply_source(lines: usize, cycle: usize) -> String {
 fn measured_reply(lines: usize, cycle: usize) -> super::Work {
     super::WORK.with_borrow_mut(|work| *work = super::Work::default());
     let document = crate::parse(reply_source(lines, cycle));
-    observe_reply(&document, lines);
-    super::WORK.with_borrow(|work| *work)
+    let nodes = observe_reply(&document, lines);
+    let work = super::WORK.with_borrow(|work| *work);
+    let mut retained = super::Retained::default();
+    for scope in document.scopes.values() {
+        scope.retained(&mut retained);
+    }
+    // Twelve charged phases each visit at most two cycle-prefix triangles plus
+    // four framing passes; publication charges 32/node and 16/mapping record.
+    let bound = 12 * (2 * cycle * cycle + 4) * document.source.len()
+        + 32 * nodes
+        + 16 * retained.mapping_records
+        + 1024;
+    assert!(
+        container_work(&work) <= bound,
+        "work={work:?} affine bound={bound}"
+    );
+    work
 }
 
 /// Keep parsed message content observable beside cost and storage measurements.
-fn observe_reply(document: &crate::Document, lines: usize) {
+fn observe_reply(document: &crate::Document, lines: usize) -> usize {
     let mut pending: Vec<_> = document.nodes.iter().collect();
     let mut words = 0;
+    let mut nodes = 0;
     while let Some(node) = pending.pop() {
+        nodes += 1;
         match &node.kind {
             Kind::Quote(children, _) | Kind::Paragraph(children) => pending.extend(children),
             Kind::Text(text) => words += text.decoded.matches("message").count(),
@@ -474,6 +491,7 @@ fn observe_reply(document: &crate::Document, lines: usize) {
         }
     }
     assert_eq!(words, lines);
+    nodes
 }
 
 /// Charge recognizer operands, line framing, source copies and source projections.
@@ -502,36 +520,27 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
         source_work[1] <= 3 * source_work[0],
         "repeated raw tails: {source_work:?}"
     );
-    let mut failures = Vec::new();
     for (cycle, sizes) in [
         (3, [64, 128, 256]),
         (3, [120, 240, 480]),
         (3, [256, 512, 1024]),
         (40, [120, 240, 480]),
+        (40, [240, 480, 960]),
     ] {
         let samples = sizes.map(|lines| measured_reply(lines, cycle));
         let charged = samples.each_ref().map(container_work);
         eprintln!("cycle={cycle} sizes={sizes:?} charged={charged:?} samples={samples:?}");
-        for pair in charged.windows(2) {
-            if pair[1] > 3 * pair[0] {
-                failures.push((cycle, sizes, charged));
-                break;
-            }
-        }
     }
-    assert!(
-        failures.is_empty(),
-        "repeated container operands: {failures:?}"
-    );
 }
 
 /// Account for all capacities reachable in the reply document, not overlapping view lengths.
 fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
     use std::mem::size_of;
     let document = crate::parse(reply_source(lines, cycle));
-    observe_reply(&document, lines);
+    let nodes = observe_reply(&document, lines);
     assert!(document.definitions.is_empty());
     let mut retained = super::Retained::default();
+    retained.nodes = nodes;
     retained.bytes += document.source.capacity()
         + document.scopes.capacity()
             * size_of::<(crate::inline::ScopeKey, crate::source::ScopeSource)>();
@@ -556,6 +565,19 @@ fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
             }
         }
     }
+    // Source/semantic copies use eight input-byte slots. Geometric capacities
+    // reserve four node/scope slots and four view/provenance slots per record.
+    let bound = 8 * document.source.len()
+        + retained.nodes * (4 * size_of::<Node>() + 2 * size_of::<crate::source::ScopeSource>())
+        + retained.mapping_records
+            * (4 * size_of::<(std::ops::Range<usize>, std::ops::Range<usize>)>()
+                + 4 * size_of::<crate::MappedText>())
+        + 1024;
+    assert!(
+        retained.bytes <= bound,
+        "retained={} affine bound={bound}",
+        retained.bytes
+    );
     retained
 }
 
@@ -569,10 +591,6 @@ fn reply_quote_retained_bytes_grow_linearly_symptom_witness() {
     for cycle in [3, 40] {
         let bytes = [120, 240, 480].map(|lines| retained_reply(lines, cycle).bytes);
         eprintln!("cycle={cycle} retained payload={bytes:?}");
-        assert!(
-            bytes.windows(2).all(|pair| pair[1] <= 3 * pair[0]),
-            "{bytes:?}"
-        );
     }
 }
 
@@ -582,14 +600,6 @@ fn uniform_quote_control_grows_linearly() {
     let work = samples.each_ref().map(container_work);
     let bytes = [120, 240, 480].map(|lines| retained_reply(lines, 1).bytes);
     eprintln!("uniform work={work:?} retained payload={bytes:?} samples={samples:?}");
-    assert!(
-        work.windows(2).all(|pair| pair[1] <= 3 * pair[0]),
-        "{work:?}"
-    );
-    assert!(
-        bytes.windows(2).all(|pair| pair[1] <= 3 * pair[0]),
-        "{bytes:?}"
-    );
 }
 
 #[test]

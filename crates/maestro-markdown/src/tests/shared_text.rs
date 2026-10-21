@@ -11,6 +11,10 @@ pub(crate) struct Retained {
     pub(crate) bytes: usize,
     /// Unique backing string capacity, separate from view and native metadata.
     pub(crate) source_bytes: usize,
+    /// Unique retained provenance records.
+    pub(crate) mapping_records: usize,
+    /// Published native nodes visited by the reply witness.
+    pub(crate) nodes: usize,
 }
 
 impl Retained {
@@ -152,8 +156,8 @@ fn segmented_quote_body_keeps_one_atomic_list_projection() {
     use crate::source::{ScopeSource, Segmented};
     let raw = ScopeSource::identity("> - é\n>   🦀");
     let mut body = Segmented::from(raw.select(std::iter::once(2..6)));
-    body.append(Segmented::from(raw.select(std::iter::once(6..7))));
-    body.append(Segmented::from(raw.select(std::iter::once(11..15))));
+    body.append(&Segmented::from(raw.select(std::iter::once(6..7))));
+    body.append(&Segmented::from(raw.select(std::iter::once(11..15))));
     let spelling = Segmented::spelling(body.mapped(), 0..raw.text.len());
     assert_eq!(spelling.mapped().to_owned_string(), "- é\n🦀");
     assert_eq!(spelling.native(&(2..4)), Some(0..15));
@@ -164,4 +168,91 @@ fn segmented_quote_body_keeps_one_atomic_list_projection() {
     let identity = Segmented::from(raw);
     assert_eq!(identity.native(&(2..4)), Some(2..4));
     assert_eq!(identity.local(&(8..10)), Some(8..10));
+}
+
+#[test]
+fn flat_container_text_keeps_constant_storage_depth() {
+    // Public list parsing still performs per-line setext suffix recognition.
+    for lines in [2_000, 4_000] {
+        let source = "- a\n".to_owned() + &"  a\n".repeat(lines);
+        let document = parse(source.clone());
+        assert_eq!(document.nodes[0].authored.to_owned_string(), source);
+        assert_flat_document(&document);
+        drop(document);
+    }
+}
+
+#[test]
+fn flat_quote_parse_and_drop() {
+    for lines in [2_000, 4_000, 8_000, 16_000] {
+        let source = "> a\n".repeat(lines + 1);
+        let document = parse(source.clone());
+        assert_eq!(document.nodes[0].authored.to_owned_string(), source);
+        assert_flat_document(&document);
+        let crate::Kind::Quote(_, body) = &document.nodes[0].kind else {
+            panic!("quote");
+        };
+        assert_eq!(body.storage_depth(), 1);
+        assert_eq!(body.to_owned_string(), "a\n".repeat(lines) + "a");
+        drop(document);
+        eprintln!("flat quote lines={} parsed and dropped", lines + 1);
+    }
+}
+
+/// Inspect every retained authored value, including merged item text.
+fn assert_flat_document(document: &crate::Document) {
+    let mut pending: Vec<_> = document.nodes.iter().collect();
+    let mut depth = 0;
+    while let Some(node) = pending.pop() {
+        depth = depth.max(node.authored.storage_depth());
+        match &node.kind {
+            crate::Kind::List(_, children)
+            | crate::Kind::Item(children)
+            | crate::Kind::Inline(children)
+            | crate::Kind::Quote(children, _)
+            | crate::Kind::Paragraph(children) => pending.extend(children),
+            _ => {}
+        }
+    }
+    eprintln!("maximum authored storage depth={depth}");
+    assert!(
+        depth <= 3,
+        "flat input retains a per-line ownership chain: {depth}"
+    );
+}
+
+#[test]
+fn flat_mapped_text_append_drop_and_debug_handle_many_continuations() {
+    use std::fmt::Write;
+    let word = MappedText::from("a".to_owned());
+    let newline = MappedText::from("\n".to_owned());
+    let mut text = word.clone();
+    for _ in 0..100_000 {
+        text.append(&newline);
+        text.append(&word);
+    }
+    assert_eq!(text.len(), 200_001);
+    assert_eq!(text.to_owned_string(), "a\n".repeat(100_000) + "a");
+    assert_eq!(text.storage_depth(), 2);
+    let mut diagnostic = String::new();
+    write!(&mut diagnostic, "{text:?}").unwrap();
+    assert!(!diagnostic.is_empty());
+    drop(text);
+}
+
+#[test]
+fn mapped_text_selected_window_accounts_for_all_owned_segments() {
+    let mut text = MappedText::from("one".to_owned());
+    for word in ["two", "three", "four"] {
+        text.append(&MappedText::from(word.to_owned()));
+    }
+    let selected = text.select(3..11);
+    assert_eq!(selected.to_owned_string(), "twothree");
+    let mut full = Retained::default();
+    text.retained(&mut full);
+    let mut window = Retained::default();
+    selected.retained(&mut window);
+    assert_eq!(full.source_bytes, 15);
+    assert_eq!(window.source_bytes, full.source_bytes);
+    assert_eq!(window.bytes, full.bytes);
 }

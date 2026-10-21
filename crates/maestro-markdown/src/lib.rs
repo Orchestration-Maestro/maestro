@@ -6,6 +6,7 @@ mod lexer;
 mod mapped_text;
 mod parse;
 mod rules;
+mod segments;
 mod source;
 mod tokenizer;
 mod types;
