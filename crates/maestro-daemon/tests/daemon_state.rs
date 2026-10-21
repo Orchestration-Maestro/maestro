@@ -12,7 +12,7 @@ fn daemon_pane_size_estimate_uses_headless_size_before_first_view() {
     let mut config = Config::default();
     config.server.headless_cols = 132;
     config.server.headless_rows = 41;
-    let mut state = DaemonState::new(&config, || 0);
+    let mut state = DaemonState::new(&config, || 0, support::manifest_cache());
     assert_eq!(state.estimate_pane_size(), (41, 132));
     let rect = Rect::new(0, 0, 72, 19);
     state.pane_infos.push(PaneInfo {
@@ -28,7 +28,7 @@ fn daemon_pane_size_estimate_uses_headless_size_before_first_view() {
 
 #[test]
 fn daemon_adversarial_identity_state_satisfies_app_invariants_after_mutation() {
-    let mut state = DaemonState::new(&Config::default(), || 0);
+    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
     state
         .topology
         .new_with_tab("/workspace".into(), None, |_, _| Ok(()))

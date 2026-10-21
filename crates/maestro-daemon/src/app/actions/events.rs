@@ -20,6 +20,10 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                 self.record_update_ready(version, install_command);
                 None
             }
+            AppEvent::AgentDetectionManifestsUpdated { updated, status } => {
+                self.record_manifest_update(&updated, status);
+                None
+            }
             AppEvent::PaneDied { pane_id } => {
                 self.handle_pane_died(pane_id);
                 None

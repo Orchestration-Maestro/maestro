@@ -5,7 +5,13 @@ use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 
 #[test]
 fn public_target_forms_keep_alias_and_number_meaning() {
-    let mut state = DaemonState::new(&Config::default(), || 0);
+    let mut state = DaemonState::new(
+        &Config::default(),
+        || 0,
+        std::sync::Arc::new(std::sync::RwLock::new(
+            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        )),
+    );
     let (removed, ()) = state
         .topology
         .new_with_tab("/first".into(), None, |_, _| Ok(()))

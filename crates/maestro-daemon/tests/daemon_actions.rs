@@ -8,7 +8,11 @@ use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 
 /// Creates pure workspace topology with an active first workspace.
 fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
-    let mut state = DaemonState::new(&Config::default(), (|| 0) as fn() -> u128);
+    let mut state = DaemonState::new(
+        &Config::default(),
+        (|| 0) as fn() -> u128,
+        support::manifest_cache(),
+    );
     for name in names {
         state
             .topology
@@ -1496,4 +1500,97 @@ fn update_guidance_keeps_install_manager_and_delivery_policies_separate() {
         assert_eq!(state.update_install_command, "separate-installer");
         assert_eq!(state.toast, previous);
     }
+}
+
+#[test]
+fn daemon_agent_detection_manifest_update_event_updates_status_and_toast() {
+    use maestro_daemon::{app::state::ToastKind, events::AppEvent};
+    use maestro_detection::{
+        agents::Agent,
+        manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
+    };
+    let mut state = app_with_workspaces(&[]);
+    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    let updates = state.handle_app_event(AppEvent::AgentDetectionManifestsUpdated {
+        updated: vec![ManifestUpdateCommit {
+            agent: Agent::Codex,
+            version: ManifestVersion::parse("2026.06.10.1").unwrap(),
+        }],
+        status: ManifestUpdateStatus {
+            last_result: Some("checked".into()),
+            ..Default::default()
+        },
+    });
+    assert!(updates.is_empty());
+    assert_eq!(
+        state.agent_manifest_update_status.last_result.as_deref(),
+        Some("checked")
+    );
+    let toast = state.toast.as_ref().expect("manifest update toast");
+    assert_eq!(toast.kind, ToastKind::UpdateInstalled);
+    assert_eq!(toast.title, "Agent detection rules updated");
+    assert_eq!(toast.context, "codex 2026.06.10.1");
+}
+
+#[test]
+fn manifest_update_refreshes_the_shared_runtime_snapshot_without_a_toast() {
+    use maestro_daemon::{events::AppEvent, settings::model::ToastDelivery};
+    use maestro_detection::{
+        agents::Agent,
+        manifest::{ManifestCache, ManifestSource},
+        manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
+    };
+    use std::sync::{Arc, RwLock};
+    let root = std::env::temp_dir().join(format!("maestro-manifest-event-{}", std::process::id()));
+    std::fs::create_dir(&root).unwrap();
+    let cache = Arc::new(RwLock::new(
+        ManifestCache::new(Some(root.clone()), None).unwrap(),
+    ));
+    let mut state = DaemonState::new(&Config::default(), || 0, Arc::clone(&cache));
+    assert!(state.agent_manifest_summaries.is_empty());
+    state.handle_app_event(AppEvent::AgentDetectionManifestsUpdated {
+        updated: Vec::new(),
+        status: ManifestUpdateStatus::default(),
+    });
+    let codex = state
+        .agent_manifest_summaries
+        .iter()
+        .find(|item| item.agent == Agent::Codex)
+        .unwrap();
+    assert_eq!(codex.active_source, ManifestSource::Bundled);
+    std::fs::write(
+        root.join("codex.toml"),
+        r#"id = "codex"
+version = "2026.10.21.1"
+[[rules]]
+id = "working"
+state = "working"
+contains = ["controlled working"]
+"#,
+    )
+    .unwrap();
+    cache.write().unwrap().reload_manifests().unwrap();
+    state.toast_config.delivery = ToastDelivery::Off;
+    state.handle_app_event(AppEvent::AgentDetectionManifestsUpdated {
+        updated: vec![ManifestUpdateCommit {
+            agent: Agent::Codex,
+            version: ManifestVersion::parse("2026.10.21.1").unwrap(),
+        }],
+        status: ManifestUpdateStatus {
+            last_result: Some("updated".into()),
+            ..Default::default()
+        },
+    });
+    let codex = state
+        .agent_manifest_summaries
+        .iter()
+        .find(|item| item.agent == Agent::Codex)
+        .unwrap();
+    assert_eq!(
+        codex.active_source,
+        ManifestSource::Override(root.join("codex.toml"))
+    );
+    assert_eq!(codex.active_version.as_deref(), Some("2026.10.21.1"));
+    assert!(state.toast.is_none());
+    std::fs::remove_dir_all(root).unwrap();
 }

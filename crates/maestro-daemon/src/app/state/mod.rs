@@ -1,12 +1,19 @@
 //! Mutable daemon data with one topology allocator.
 
 use crate::{settings::model::Config, terminal::state::TerminalState};
+use maestro_detection::{
+    manifest::{AgentManifestSummary, ManifestCache},
+    manifest_update::ManifestUpdateStatus,
+};
 use maestro_workspace::terminal_id::TerminalId;
 use maestro_workspace::{
     layout::{PaneId, PaneInfo},
     workspace::WorkspaceTopology,
 };
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 mod notification;
 pub use notification::{
@@ -41,6 +48,12 @@ pub struct DaemonState<C> {
     pub topology: WorkspaceTopology<C>,
     /// Retained terminal metadata keyed by the attached terminal identity.
     pub terminals: HashMap<TerminalId, TerminalState>,
+    /// Compiled detection snapshot shared with pane runtimes.
+    pub manifests: Arc<RwLock<ManifestCache>>,
+    /// Active detection sources and versions from the shared snapshot.
+    pub agent_manifest_summaries: Vec<AgentManifestSummary>,
+    /// Diagnostics from the latest detection catalogue update.
+    pub agent_manifest_update_status: ManifestUpdateStatus,
     /// Registered pane provenance removed with its owning pane.
     pub plugin_panes: HashMap<PaneId, PluginPaneRecord>,
     /// Detached metadata identities awaiting runtime shutdown by the loop.
@@ -94,10 +107,13 @@ pub struct DaemonState<C> {
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Creates empty daemon state using accepted settings and an identity clock.
     #[must_use]
-    pub fn new(config: &Config, clock: C) -> Self {
+    pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
         Self {
             topology: WorkspaceTopology::new(clock),
             terminals: HashMap::new(),
+            manifests,
+            agent_manifest_summaries: Vec::new(),
+            agent_manifest_update_status: ManifestUpdateStatus::default(),
             plugin_panes: HashMap::new(),
             terminal_runtime_shutdowns: Vec::new(),
             active: None,

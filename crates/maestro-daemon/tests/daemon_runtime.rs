@@ -5,7 +5,13 @@ use maestro_daemon::{app::state::DaemonState, settings::model::Config};
 
 #[test]
 fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
-    let mut state = DaemonState::new(&Config::default(), || 0);
+    let mut state = DaemonState::new(
+        &Config::default(),
+        || 0,
+        std::sync::Arc::new(std::sync::RwLock::new(
+            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        )),
+    );
     state
         .topology
         .new_with_tab("/workspace".into(), None, |_, _| Ok(()))

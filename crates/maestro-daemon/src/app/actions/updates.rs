@@ -6,6 +6,40 @@ use crate::{
 };
 
 impl<C: FnMut() -> u128> DaemonState<C> {
+    /// Refreshes detection diagnostics and summaries from the runtime's shared snapshot.
+    pub(super) fn record_manifest_update(
+        &mut self,
+        updated: &[maestro_detection::manifest_update::ManifestUpdateCommit],
+        status: maestro_detection::manifest_update::ManifestUpdateStatus,
+    ) {
+        self.agent_manifest_update_status = status;
+        self.agent_manifest_summaries = self
+            .manifests
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .manifest_summaries();
+        if !updated.is_empty() && self.toast_config.delivery == ToastDelivery::Workspace {
+            let context = updated
+                .iter()
+                .map(|item| {
+                    format!(
+                        "{} {}",
+                        maestro_detection::agents::agent_label(item.agent),
+                        item.version
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            self.toast = Some(ToastNotification {
+                kind: ToastKind::UpdateInstalled,
+                title: "Agent detection rules updated".into(),
+                context,
+                position: None,
+                target: None,
+            });
+        }
+    }
+
     /// Records update availability independently of workspace notification delivery.
     pub(super) fn record_update_ready(&mut self, version: String, install_command: String) {
         if self.toast_config.delivery == ToastDelivery::Workspace {

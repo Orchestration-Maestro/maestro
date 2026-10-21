@@ -71,3 +71,11 @@ fn assert_tab_geometry(tab: &maestro_workspace::tab::Tab) {
         tab.panes.keys().copied().collect()
     );
 }
+
+/// Builds one isolated detection snapshot for state and any pane runtimes under test.
+pub fn manifest_cache()
+-> std::sync::Arc<std::sync::RwLock<maestro_detection::manifest::ManifestCache>> {
+    std::sync::Arc::new(std::sync::RwLock::new(
+        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+    ))
+}

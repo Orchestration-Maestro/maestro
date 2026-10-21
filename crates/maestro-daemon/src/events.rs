@@ -79,6 +79,13 @@ pub enum AppEvent {
         /// Installation command selected by the producer.
         install_command: String,
     },
+    /// Detection catalogue publication has completed against the shared cache.
+    AgentDetectionManifestsUpdated {
+        /// Successfully published agent versions.
+        updated: Vec<maestro_detection::manifest_update::ManifestUpdateCommit>,
+        /// Latest catalogue diagnostics, including checks with no updates.
+        status: maestro_detection::manifest_update::ManifestUpdateStatus,
+    },
     /// Fallback screen detection changed a pane's state.
     StateChanged {
         /// Pane whose state changed.

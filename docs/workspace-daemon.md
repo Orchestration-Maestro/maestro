@@ -562,3 +562,8 @@ Clear removes topology first. If that fails, history remains untouched and only
 the failure is logged. Once topology is removed, clear attempts history removal
 before reporting topology-clear success, even if history removal failed.
 Direct history clear tolerates absence and reports other native removal errors.
+
+Detection catalogue events retain update diagnostics and refresh source/version
+summaries from the same caller-supplied `ManifestCache` shared with pane runtimes.
+Successful updates show agent labels and versions when workspace toast delivery
+is enabled. Empty updates still refresh diagnostics and summaries without a toast.
