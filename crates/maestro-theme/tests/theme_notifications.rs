@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::live;
 
-use live::{Ops, Scratch, custom_json, state};
+use live::{Scratch, custom_json, state};
 use maestro_theme::{NativeThemeWatchOperations, ThemeState, ThemeWatchOperations};
 use std::fs;
 use std::rc::Rc;
@@ -20,9 +20,8 @@ async fn published(state: &ThemeState, changed: &Notify, name: &str) {
 
 #[test]
 fn theme_native_notification_reloads_selected_file() {
-    let scratch = Scratch::new("native");
-    let ops = Ops::new(&[]);
-    let state = state(&scratch, &ops);
+    let scratch = Scratch::new();
+    let state = state(&scratch);
     scratch.write("custom/a.json", &custom_json("a", "#112233").to_string());
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()

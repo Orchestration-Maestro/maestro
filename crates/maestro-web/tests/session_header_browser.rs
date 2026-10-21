@@ -10,7 +10,7 @@ use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, prelude::*};
 
 use crate::support;
-use support::brand::Pack;
+use support::brand::pack;
 /// Real native owner and canvas caller retained across repaints.
 struct Header {
     state: HeaderState,
@@ -35,7 +35,7 @@ impl Header {
             .unwrap();
         Self {
             state: HeaderState::new(Rc::new(BrowserAttachmentHost::new(canvas).unwrap())),
-            pack: maestro_theme::load_brand_pack("brand.json", &Pack).unwrap(),
+            pack: pack("brand.json").unwrap(),
             document: load_document(
                 &base64::engine::general_purpose::STANDARD
                     .encode(r#"{"entries":[],"header":{"id":"roomy"}}"#),
@@ -496,7 +496,7 @@ fn owned_factory_survives_document() {
         let host = Rc::new(session_header_support::Host::default());
         host.height.set(120.);
         let mut state = HeaderState::new(host.clone());
-        let pack = maestro_theme::load_brand_pack("brand.json", &Pack).unwrap();
+        let pack = pack("brand.json").unwrap();
         let presentation = pack.presentation(BrandMode::Dark).unwrap();
         let mut doc = session_header_support::document(&serde_json::json!("owned <雪>"));
         doc.global_stats.models.push("literal <model>".into());

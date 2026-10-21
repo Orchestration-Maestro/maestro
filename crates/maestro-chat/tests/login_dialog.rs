@@ -214,7 +214,6 @@ fn login_dialog_uses_current_brand_roles() {
                     env!("CARGO_MANIFEST_DIR")
                 ),
                 Some(maestro_theme::ColorMode::Truecolor),
-                &maestro_theme::NativeThemeOperations,
             )
             .unwrap(),
         );

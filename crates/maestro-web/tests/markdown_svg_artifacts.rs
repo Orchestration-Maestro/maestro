@@ -370,10 +370,10 @@ fn branded_frames() -> Vec<Frame> {
             ]
             .map(|mode| Frame {
                 mode,
-                pack: maestro_theme::load_brand_pack(
-                    &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
-                    &maestro_theme::theme::NativeThemeOperations,
-                )
+                pack: maestro_theme::load_brand_pack(&format!(
+                    "{}/../../assets/brand/{path}",
+                    env!("CARGO_MANIFEST_DIR")
+                ))
                 .unwrap(),
                 ..Frame::default()
             })

@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::{brand::Pack, effects_support::Host, support};
+use crate::{brand::pack, effects_support::Host, support};
 use maestro_web::{I18n, components::copy_button::CopyButton};
 use std::rc::Rc;
 
@@ -90,7 +90,7 @@ pub fn draw(
     render: impl FnOnce(&mut egui::Ui, &I18n, &maestro_theme::BrandPresentation<'_>) -> egui::Response,
 ) -> (egui::Response, egui::FullOutput) {
     let mut render = Some(render);
-    let pack = maestro_theme::load_brand_pack("brand.json", &Pack).unwrap();
+    let pack = pack("brand.json").unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
     let mut response = None;

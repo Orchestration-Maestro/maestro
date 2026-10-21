@@ -303,20 +303,18 @@ fn isolated(name: &str) -> bool {
     if std::env::var("MAESTRO_EDITOR_CHILD").as_deref() == Ok(name) {
         return false;
     }
-    let directory =
-        std::env::temp_dir().join(format!("maestro-dialog-{}-{name}", std::process::id()));
-    std::fs::create_dir(&directory).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let directory = scratch.path();
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .nocapture()
         .env("MAESTRO_EDITOR_CHILD", name)
-        .env("TMPDIR", &directory)
-        .env("TEMP", &directory)
-        .env("TMP", &directory)
-        .env("PATH", &directory)
+        .env("TMPDIR", directory)
+        .env("TEMP", directory)
+        .env("TMP", directory)
+        .env("PATH", directory)
         .output()
         .unwrap();
-    std::fs::remove_dir_all(directory).unwrap();
     assert!(
         output.status.success(),
         "isolated witness failed: {}",
@@ -804,12 +802,7 @@ fn editor_dialog_uses_published_theme_roles() {
             env!("CARGO_MANIFEST_DIR")
         );
         let theme = Rc::new(
-            maestro_theme::load_theme_from_path(
-                &path,
-                Some(ColorMode::Truecolor),
-                &maestro_theme::NativeThemeOperations,
-            )
-            .unwrap(),
+            maestro_theme::load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap(),
         );
         let host = dialog(&ordinary_input(), None, EditorOptions::default());
         host.theme.set_theme_instance(theme.clone()).unwrap();

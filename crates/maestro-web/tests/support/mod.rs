@@ -57,7 +57,6 @@ impl LanguageHost for Host {
 }
 
 /// Embedded brand input without filesystem operations.
-#[cfg(target_arch = "wasm32")]
 pub(crate) use crate::brand;
 
 /// Awaited screenshot observations for native reading witnesses.

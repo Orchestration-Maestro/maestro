@@ -305,6 +305,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-session",
     "maestro-settings",
     "maestro-test-conventions",
+    "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
     "maestro-tui",
@@ -324,6 +325,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-resources",
     "maestro-test-conventions",
+    "maestro-theme",
     "maestro-tooling",
 ];
 

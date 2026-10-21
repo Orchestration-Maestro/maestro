@@ -82,14 +82,8 @@ fn attachment_styles_follow_caller_brand_pack() {
         record.borrow_mut().preview = Some("unchanged-pixels".into());
         let mut tile = AttachmentTile::new(record.clone(), host.clone());
         let mut frame = Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}{path}", env!("CARGO_MANIFEST_DIR")),
-                #[cfg(not(target_arch = "wasm32"))]
-                &maestro_theme::theme::NativeThemeOperations,
-                #[cfg(target_arch = "wasm32")]
-                &crate::support::brand::Pack,
-            )
-            .unwrap(),
+            pack: crate::support::brand::pack(&format!("{}{path}", env!("CARGO_MANIFEST_DIR")))
+                .unwrap(),
             mode,
             ..Frame::default()
         };

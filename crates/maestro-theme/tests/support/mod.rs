@@ -1,67 +1,47 @@
-//! Controlled theme operations and documents shared by the theme tests.
+//! Theme files, environments and documents shared by the theme tests.
 pub mod highlighting;
 
-use maestro_theme::{
-    ColorMode, Theme, ThemeColor, ThemeError, ThemeInfo, ThemeOperations, load_theme_from_path,
-};
+use maestro_test_directory::Scratch;
+use maestro_theme::{ColorMode, Theme, ThemeColor, ThemeError, load_theme_from_path};
 use serde_json::Value;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::io;
 
 /// The shipped dark theme document.
 const DARK: &str = include_str!("../../assets/theme/dark.json");
+/// The shipped dark theme file, readable from children whose environment is cleared.
+pub const DARK_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme/dark.json");
 /// The published editor schema.
 const PUBLISHED_SCHEMA: &str = include_str!("../../assets/theme/theme-schema.json");
 
-/// Serves fixed theme text and environment while recording each effect in order.
-pub struct Controlled {
-    /// Theme text, or `None` for a missing file.
-    pub content: Option<String>,
-    /// Environment variables that are set.
-    env: HashMap<String, String>,
-    /// `read:<path>` and `env:<name>` entries in call order.
-    pub log: RefCell<Vec<String>>,
+/// A file named `fixture` in a fresh directory that is removed on drop.
+pub struct ThemeFile {
+    /// Owner of the directory holding the file.
+    pub directory: Scratch,
+    /// The file's native path.
+    pub path: String,
 }
 
-impl Controlled {
-    /// Serve `content` with the given environment.
+impl ThemeFile {
+    /// Write `content` to the file.
+    ///
+    /// # Panics
+    /// Panics if the directory or the file cannot be created.
     #[must_use]
-    pub fn new(content: &str, env: &[(&str, &str)]) -> Self {
+    pub fn new(content: impl AsRef<[u8]>) -> Self {
+        let directory = Scratch::new().unwrap();
+        let path = directory.path().join("fixture");
+        std::fs::write(&path, content).unwrap();
         Self {
-            content: Some(content.to_owned()),
-            env: env
-                .iter()
-                .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
-                .collect(),
-            log: RefCell::default(),
+            path: path.to_str().unwrap().to_owned(),
+            directory,
         }
     }
-}
 
-impl ThemeOperations for Controlled {
-    fn read_to_string(&self, path: &str) -> io::Result<String> {
-        self.log.borrow_mut().push(format!("read:{path}"));
-        self.content
-            .clone()
-            .ok_or_else(|| io::ErrorKind::NotFound.into())
-    }
-
-    fn environment(&self, name: &str) -> Option<String> {
-        self.log.borrow_mut().push(format!("env:{name}"));
-        self.env.get(name).cloned()
-    }
-
-    fn exists(&self, _path: &str) -> bool {
-        self.content.is_some()
-    }
-
-    fn read_dir(&self, _path: &str) -> io::Result<Vec<String>> {
-        Err(io::ErrorKind::Unsupported.into())
-    }
-
-    fn sort_by_name(&self, _themes: &mut [ThemeInfo]) -> io::Result<()> {
-        Ok(())
+    /// Load the file through the public loader.
+    ///
+    /// # Errors
+    /// Returns the theme loader failure.
+    pub fn load(&self, mode: Option<ColorMode>) -> Result<Theme, ThemeError> {
+        load_theme_from_path(&self.path, mode)
     }
 }
 
@@ -90,12 +70,12 @@ pub fn required_colors() -> Vec<String> {
         .collect()
 }
 
-/// Load theme text through the public loader with an empty environment.
+/// Load theme text written to a fresh file through the public loader.
 ///
 /// # Errors
 /// Returns the theme loader failure.
 pub fn load(text: &str, mode: Option<ColorMode>) -> Result<Theme, ThemeError> {
-    load_theme_from_path("fixture", mode, &Controlled::new(text, &[]))
+    ThemeFile::new(text).load(mode)
 }
 
 /// The foreground prefix stored under a literal key.

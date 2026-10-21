@@ -1,6 +1,6 @@
 //! Project shared presentation into embedded author-fixture data.
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_theme::{BrandMode, NativeThemeOperations, load_brand_pack};
+use maestro_theme::{BrandMode, load_brand_pack};
 #[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
 #[cfg(not(target_arch = "wasm32"))]
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         BrandMode::Dark
     };
-    let pack = load_brand_pack(path, &NativeThemeOperations)?;
+    let pack = load_brand_pack(path)?;
     let view = pack.presentation(mode)?;
     let out = PathBuf::from(output);
     fs::create_dir_all(&out)?;
@@ -33,10 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         view.mark.minimum_size, view.mark.clear_space
     )?;
     fs::write(out.join("brand.css"), format!(":root{{{declarations}}}"))?;
-    fs::write(
-        out.join("mark.svg"),
-        pack.mark_svg(mode, None, &NativeThemeOperations)?,
-    )?;
+    fs::write(out.join("mark.svg"), pack.mark_svg(mode, None)?)?;
     fs::write(out.join("wordmark.txt"), view.wordmark)?;
     let body = view.typography.get("body").ok_or("missing body type")?;
     fs::write(out.join("body-size.txt"), body.size.to_string())?;

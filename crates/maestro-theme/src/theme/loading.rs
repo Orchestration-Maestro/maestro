@@ -1,86 +1,38 @@
 //! Custom-file theme admission and alias resolution.
-use super::{
-    ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeInfo, ThemeOptions,
-};
+use super::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
 use maestro_json::canonical_entries;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::collections::HashSet;
 
-/// Replaceable file and environment effects for theme loading.
-pub trait ThemeOperations {
-    /// Read the supplied authored path.
-    ///
-    /// # Errors
-    /// Returns the adapter's I/O failure.
-    fn read_to_string(&self, path: &str) -> std::io::Result<String>;
-    /// Read one optional environment variable.
-    fn environment(&self, name: &str) -> Option<String>;
-    /// Report whether the supplied authored path exists.
-    fn exists(&self, path: &str) -> bool;
-    /// List the entry names of a directory, in the adapter's order and without file-kind filtering.
-    ///
-    /// # Errors
-    /// Returns the adapter's I/O failure, such as a path that is not a directory.
-    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>>;
-    /// Sort inventory entries by name with a stable locale comparison.
-    ///
-    /// # Errors
-    /// Returns the adapter's failure to prepare its comparison.
-    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()>;
-}
-/// Native file bytes decoded lossily as UTF-8, with native environment access.
-#[cfg(not(target_arch = "wasm32"))]
-pub struct NativeThemeOperations;
-#[cfg(not(target_arch = "wasm32"))]
-impl ThemeOperations for NativeThemeOperations {
-    fn read_to_string(&self, path: &str) -> std::io::Result<String> {
-        std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
-    }
-    fn environment(&self, name: &str) -> Option<String> {
-        std::env::var(name).ok()
-    }
-    fn exists(&self, path: &str) -> bool {
-        std::path::Path::new(path).exists()
-    }
-    fn read_dir(&self, path: &str) -> std::io::Result<Vec<String>> {
-        Ok(maestro_listing::read_dir(path)?
-            .iter()
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect())
-    }
-    fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()> {
-        let collator = super::Collator::new(&|name| self.environment(name))?;
-        themes.sort_by(|a, b| collator.compare(&a.name, &b.name));
-        Ok(())
-    }
+/// Read a file as UTF-8 text, replacing invalid sequences.
+///
+/// # Errors
+/// Returns the native I/O failure.
+pub(super) fn read_text(path: &str) -> std::io::Result<String> {
+    std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
 }
 /// Read, validate, resolve and construct an independent terminal theme.
 ///
 /// Explicit mode avoids environment lookup. The supplied path is retained verbatim.
 ///
 /// ```
-/// use maestro_theme::{ColorMode, NativeThemeOperations, ThemeColor, load_theme_from_path};
+/// use maestro_theme::{ColorMode, ThemeColor, load_theme_from_path};
 ///
 /// let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme/dark.json");
-/// let theme = load_theme_from_path(path, Some(ColorMode::Truecolor), &NativeThemeOperations)?;
+/// let theme = load_theme_from_path(path, Some(ColorMode::Truecolor))?;
 /// assert_eq!(theme.fg(&ThemeColor::Accent, "hi")?, "\x1b[38;2;217;160;102mhi\x1b[39m");
 /// # Ok::<(), maestro_theme::ThemeError>(())
 /// ```
 ///
 /// # Errors
 /// Returns native I/O failures, labeled JSON/schema errors, or color/alias errors.
-pub fn load_theme_from_path(
-    path: &str,
-    mode: Option<ColorMode>,
-    operations: &dyn ThemeOperations,
-) -> Result<Theme, ThemeError> {
-    let content = operations.read_to_string(path).map_err(ThemeError::io)?;
+pub fn load_theme_from_path(path: &str, mode: Option<ColorMode>) -> Result<Theme, ThemeError> {
+    let content = read_text(path).map_err(ThemeError::io)?;
     let json = parse_custom(path, &content)?;
     build_theme(
         &json,
         mode,
-        operations,
         ThemeOptions {
             source_path: Some(path.to_owned()),
             ..ThemeOptions::default()
@@ -101,10 +53,9 @@ pub(super) fn parse_custom(label: &str, content: &str) -> Result<Value, ThemeErr
 pub(super) fn build_theme(
     json: &Value,
     mode: Option<ColorMode>,
-    operations: &dyn ThemeOperations,
     mut options: ThemeOptions,
 ) -> Result<Theme, ThemeError> {
-    let mode = mode.unwrap_or_else(|| detect_mode(operations));
+    let mode = mode.unwrap_or_else(detect_mode);
     let mut fg = Vec::new();
     let mut bg = Vec::new();
     let colors = json["colors"]
@@ -134,24 +85,19 @@ fn is_background(key: &str) -> bool {
     )
 }
 /// Sample environment in terminal capability precedence order.
-fn detect_mode(operations: &dyn ThemeOperations) -> ColorMode {
-    if matches!(
-        operations.environment("COLORTERM").as_deref(),
-        Some("truecolor" | "24bit")
-    ) {
+fn detect_mode() -> ColorMode {
+    let env = |name| std::env::var(name).ok();
+    if matches!(env("COLORTERM").as_deref(), Some("truecolor" | "24bit")) {
         return ColorMode::Truecolor;
     }
-    if operations
-        .environment("WT_SESSION")
-        .is_some_and(|value| !value.is_empty())
-    {
+    if env("WT_SESSION").is_some_and(|value| !value.is_empty()) {
         return ColorMode::Truecolor;
     }
-    let term = operations.environment("TERM").unwrap_or_default();
+    let term = env("TERM").unwrap_or_default();
     if matches!(term.as_str(), "" | "dumb" | "linux") {
         return ColorMode::Color256;
     }
-    if operations.environment("TERM_PROGRAM").as_deref() == Some("Apple_Terminal")
+    if env("TERM_PROGRAM").as_deref() == Some("Apple_Terminal")
         || term == "screen"
         || term.starts_with("screen-")
         || term.starts_with("screen.")

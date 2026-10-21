@@ -1,6 +1,6 @@
 //! Source-derived inputs driven through canvas activation.
 #![cfg(test)]
-use crate::{brand::Pack, effects_support::Host};
+use crate::{brand::pack, effects_support::Host};
 use maestro_theme::BrandMode;
 use maestro_web::export_html::template::{CopyLinkState, CopyLinkView, render_copy_link_button};
 use std::rc::Rc;
@@ -115,7 +115,7 @@ impl Canvas {
         name: &str,
         mode: BrandMode,
     ) -> (Result<egui::Response, std::io::Error>, egui::FullOutput) {
-        let pack = maestro_theme::load_brand_pack(name, &Pack).unwrap();
+        let pack = pack(name).unwrap();
         let presentation = pack.presentation(mode).unwrap();
         self.styled_frame(events, &presentation)
     }

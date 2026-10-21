@@ -32,7 +32,7 @@ impl View {
         let host = Rc::new(BrowserAttachmentHost::new(canvas).unwrap());
         Self {
             element: create_artifact_element("a.md.zip", "AAEC//79", host).unwrap(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
+            pack: support::brand::pack("brand.json").unwrap(),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
             context: egui::Context::default(),
             labels: Vec::new(),

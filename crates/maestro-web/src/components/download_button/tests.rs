@@ -207,10 +207,10 @@ fn download_corpus() -> Corpus {
 #[cfg(not(target_arch = "wasm32"))]
 fn download_control_preserves_original_bytes_and_slice_bounds() {
     let corpus = download_corpus();
-    let pack = maestro_theme::load_brand_pack(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
-        &maestro_theme::theme::NativeThemeOperations,
-    )
+    let pack = maestro_theme::load_brand_pack(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/brand/brand.json"
+    ))
     .unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let i18n = crate::I18n::new(Rc::new(Language)).unwrap();

@@ -57,8 +57,7 @@ impl Slots {
             holes: vec![],
             density: 1.,
             mode: BrandMode::Dark,
-            pack: maestro_theme::load_brand_pack("brand.json", &crate::support::brand::Pack)
-                .unwrap(),
+            pack: crate::support::brand::pack("brand.json").unwrap(),
         }
     }
     /// Build the fixed native reading witness and retain only its node mirror.

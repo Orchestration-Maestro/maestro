@@ -81,7 +81,7 @@ impl ThemeState {
         name: Option<&str>,
         watcher: Option<Rc<dyn ThemeWatchOperations>>,
     ) -> Result<(), ThemeError> {
-        let name = name.map_or_else(|| Cow::Owned(self.default_theme()), Cow::Borrowed);
+        let name = name.map_or_else(|| Cow::Owned(default_theme()), Cow::Borrowed);
         self.select(&name);
         let loaded = self.load_named(&name).map(|theme| {
             self.publish(theme);
@@ -159,13 +159,13 @@ impl ThemeState {
         self.select("dark");
         self.load_named("dark").map(|theme| self.publish(theme))
     }
+}
 
-    /// Select `dark` or `light` from the second field of `COLORFGBG`.
-    pub(super) fn default_theme(&self) -> String {
-        let value = self.operations.environment("COLORFGBG").unwrap_or_default();
-        let dark = value.split(';').nth(1).is_none_or(background_is_dark);
-        (if dark { "dark" } else { "light" }).to_owned()
-    }
+/// Select `dark` or `light` from the second field of `COLORFGBG`.
+pub(super) fn default_theme() -> String {
+    let value = std::env::var("COLORFGBG").unwrap_or_default();
+    let dark = value.split(';').nth(1).is_none_or(background_is_dark);
+    (if dark { "dark" } else { "light" }).to_owned()
 }
 
 /// Parse the leading decimal integer of a field; no digits means dark.

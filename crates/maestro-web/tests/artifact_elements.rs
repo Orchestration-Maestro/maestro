@@ -184,13 +184,10 @@ fn generic_reading_failures_keep_published_identity() {
 fn generic_styles_follow_supplied_brand_roles() {
     for file in ["brand.json", "packs/signal.json"] {
         let mut frame = Frame {
-            pack: maestro_theme::load_brand_pack(
-                &format!("{}/../../assets/brand/{file}", env!("CARGO_MANIFEST_DIR")),
-                #[cfg(not(target_arch = "wasm32"))]
-                &maestro_theme::theme::NativeThemeOperations,
-                #[cfg(target_arch = "wasm32")]
-                &crate::support::brand::Pack,
-            )
+            pack: crate::support::brand::pack(&format!(
+                "{}/../../assets/brand/{file}",
+                env!("CARGO_MANIFEST_DIR")
+            ))
             .unwrap(),
             ..Frame::default()
         };

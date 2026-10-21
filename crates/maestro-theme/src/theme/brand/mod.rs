@@ -4,7 +4,8 @@
 mod mark;
 mod projection;
 
-use super::{ThemeError, ThemeOperations};
+use super::ThemeError;
+use super::loading::read_text;
 use maestro_brand::{BrandError, PackData};
 pub use maestro_brand::{
     BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPresentation, BrandType,
@@ -22,26 +23,35 @@ pub struct BrandPack {
 /// Mark paths become `path`'s directory joined with the authored relative paths.
 ///
 /// # Errors
-/// Returns the read failure, `Invalid brand pack <path>: <cause>` for malformed text or
-/// fields, or `Invalid brand measurement: <pointer>` for a type size, spacing or radius out of range.
-pub fn load_brand_pack(
-    path: &str,
-    operations: &dyn ThemeOperations,
-) -> Result<BrandPack, ThemeError> {
-    let text = operations.read_to_string(path).map_err(ThemeError::io)?;
-    let mut data = PackData::parse(&text).map_err(|error| match error {
-        BrandError::Decode(cause) => {
-            ThemeError::caused_by(format!("Invalid brand pack {path}: {cause}"), cause)
+/// Returns the read failure or the failures of [`BrandPack::parse`].
+pub fn load_brand_pack(path: &str) -> Result<BrandPack, ThemeError> {
+    let text = read_text(path).map_err(ThemeError::io)?;
+    BrandPack::parse(path, &text)
+}
+
+impl BrandPack {
+    /// Decode the pack text read from `path`, which only places the marks and labels errors.
+    ///
+    /// Mark paths become `path`'s directory joined with the authored relative paths.
+    ///
+    /// # Errors
+    /// Returns `Invalid brand pack <path>: <cause>` for malformed text or fields, or
+    /// `Invalid brand measurement: <pointer>` for a type size, spacing or radius out of range.
+    pub fn parse(path: &str, text: &str) -> Result<Self, ThemeError> {
+        let mut data = PackData::parse(text).map_err(|error| match error {
+            BrandError::Decode(cause) => {
+                ThemeError::caused_by(format!("Invalid brand pack {path}: {cause}"), cause)
+            }
+            error => ThemeError::from(error),
+        })?;
+        let directory = dirname(path);
+        let from_pack = |relative: &str| join(&[&directory, relative]);
+        data.mark.template = from_pack(&data.mark.template);
+        for variant in data.mark.variants.values_mut() {
+            *variant = from_pack(variant);
         }
-        error => ThemeError::from(error),
-    })?;
-    let directory = dirname(path);
-    let from_pack = |relative: &str| join(&[&directory, relative]);
-    data.mark.template = from_pack(&data.mark.template);
-    for variant in data.mark.variants.values_mut() {
-        *variant = from_pack(variant);
+        Ok(Self { data })
     }
-    Ok(BrandPack { data })
 }
 
 impl From<BrandError> for ThemeError {

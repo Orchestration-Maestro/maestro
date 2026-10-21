@@ -320,7 +320,7 @@ fn copy_link_control_preserves_geometry_tooltip_and_glyph() {
 
 /// Compare the measured idle glyph through the original native producer.
 fn assert_idle_link(canvas: &Canvas, output: &egui::FullOutput) {
-    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let pack = brand::pack("brand.json").unwrap();
     let p = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     assert_glyph(
         canvas,
@@ -497,7 +497,7 @@ fn copy_link_check_uses_selected_typography() {
         let output = canvas
             .pack_frame(vec![], name, maestro_theme::BrandMode::Dark)
             .1;
-        let pack = maestro_theme::load_brand_pack(name, &brand::Pack).unwrap();
+        let pack = brand::pack(name).unwrap();
         let p = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
         assert_glyph(
             &canvas,
@@ -519,7 +519,7 @@ fn copy_link_border_switches_on_first_transition_frame() {
             maestro_theme::BrandMode::Dark,
             maestro_theme::BrandMode::Light,
         ] {
-            let pack = maestro_theme::load_brand_pack(name, &brand::Pack).unwrap();
+            let pack = brand::pack(name).unwrap();
             let presentation = pack.presentation(mode).unwrap();
             let mut canvas = Canvas::new();
             canvas.pack_frame(vec![], name, mode).0.unwrap();
@@ -594,7 +594,7 @@ fn dispatch_frame(
     events: Vec<egui::Event>,
 ) {
     use maestro_web::export_html::template::{CopyLinkView, render_copy_link_button};
-    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let pack = brand::pack("brand.json").unwrap();
     let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     let ids = ["x\" data-extra=\"yes", "line\r\nend"];
     let mut output = context.run_ui(
@@ -639,7 +639,7 @@ fn dispatch_frame(
 
 /// Inspect each actually painted state in one selected pack and mode.
 fn check_pack(name: &str, mode: maestro_theme::BrandMode) {
-    let pack = maestro_theme::load_brand_pack(name, &brand::Pack).unwrap();
+    let pack = brand::pack(name).unwrap();
     let p = pack.presentation(mode).unwrap();
     let color = |role: &str| egui::Color32::from_hex(p.colors[role]).unwrap();
     let mut canvas = Canvas::new();
@@ -769,7 +769,7 @@ fn copy_link_preparation_failures_keep_io_errors() {
     assert!(error.get_ref().unwrap().is::<url::ParseError>());
     assert!(canvas.host.copies.borrow().is_empty());
     assert_eq!(canvas.host.admissions.get(), 0);
-    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let pack = brand::pack("brand.json").unwrap();
     let mut presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
     presentation.colors.insert("background", "not-a-color");
     let context = canvas.context.clone();

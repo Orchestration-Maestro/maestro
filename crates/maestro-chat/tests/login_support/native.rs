@@ -47,7 +47,7 @@ pub fn launch() {
         child(&mode);
         return;
     }
-    let scratch = crate::live::Scratch::new("browser");
+    let scratch = crate::live::Scratch::new();
     scratch.write("helper-source", HELPER);
     for program in ["open", "explorer.exe", "xdg-open"] {
         assert!(

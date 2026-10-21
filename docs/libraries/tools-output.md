@@ -43,9 +43,9 @@ runs only when `HOME` is absent; Windows always uses that platform lookup. A mis
 ## Directory listing
 
 The [`ls` tool](../tools-search.md) adds no package, feature or version. It orders names with
-`maestro-theme`'s [collator](../theme.md#replaceable-operations), which uses the theme crate's
-existing `icu_collator`/`icu_locale_core` pins, reads native names through
-`NativeThemeOperations`, spells numbers with `ryu-js` and runs blocking file effects on the
+`maestro-theme`'s [collator](../theme.md#files-environment-and-sorting), which uses the theme crate's
+existing `icu_collator`/`icu_locale_core` pins, reads native names through the shared
+directory listing (`maestro-listing`), spells numbers with `ryu-js` and runs blocking file effects on the
 existing `tokio` blocking pool. Its call and result renderers reuse the read renderers' shared
 display helpers rather than adding their own.
 

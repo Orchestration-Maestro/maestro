@@ -5,7 +5,7 @@ pub use tests::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::support::{self, brand::Pack};
+    use crate::support::{self, brand::pack};
     use maestro_theme::{BrandMode, BrandPack, SyntaxHighlighter, SyntectHighlighter};
     use maestro_web::{
         Attachment, I18n, TranslationFunction,
@@ -493,8 +493,8 @@ mod tests {
                     fail_measure: Cell::default(),
                     controls: RefCell::default(),
                 }),
-                pack: Rc::new(maestro_theme::load_brand_pack("brand.json", &Pack).unwrap()),
-                alternate: Rc::new(maestro_theme::load_brand_pack("signal.json", &Pack).unwrap()),
+                pack: Rc::new(pack("brand.json").unwrap()),
+                alternate: Rc::new(pack("signal.json").unwrap()),
                 highlighter: Rc::new(SyntectHighlighter::new().unwrap()),
                 i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
                 context: egui::Context::default(),

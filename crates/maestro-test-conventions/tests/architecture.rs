@@ -2486,6 +2486,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-packages",
     "maestro-resources",
     "maestro-test-conventions",
+    "maestro-theme",
     "maestro-tooling",
 ];
 
