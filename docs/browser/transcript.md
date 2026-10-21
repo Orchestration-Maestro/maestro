@@ -136,9 +136,14 @@ shown literally when escaping is on, including a tag start that never closes.
 Each code span, code block and autolink keeps its text while it remains native after
 escaping. A span that loses that status has its tags shown literally; later spans
 that remain native keep their text. Formulas written with `$…$`, `\(…\)`,
-`$$…$$` and `\[…\]` render through the math library as HTML with errors shown
-inline; display delimiters open a block in paragraphs, quotes and loose items,
-and a tight item only when it starts with one, while headings and table cells
+`$$…$$` and `\[…\]` render through the math library as HTML. Parse and builtin
+macro errors appear inline; malformed environment names instead show escaped
+source with its original delimiters. Bare radicals keep their radicand padding,
+and explicit size changes preserve inline or display clearance. Repeating the
+current explicit size keeps script spacing. With escaping off, an
+HTML tag inside an admitted formula remains formula input, not a document element.
+Display delimiters open a block in paragraphs, quotes and loose items, and a tight
+item only when it starts with one, while headings and table cells
 admit inline formulas. Code, images, plain URLs and angle autolinks remain opaque.
 Selected links retain literal destinations and titles while their labels may contain
 formulas. A formula that starts before authored link syntax consumes that syntax

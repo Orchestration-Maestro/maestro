@@ -51,7 +51,7 @@ pub struct InlineScope<'a> {
     pub operands: Vec<(Range<usize>, &'a Node)>,
     /// Link-context snapshots after each resolved operand, indexed by its end offset.
     contexts: Vec<(usize, LinkContext)>,
-    /// Code, image, HTML and autolink barriers, including those inside authored labels.
+    /// Code, image and autolink barriers, including those inside authored labels.
     pub opaque: Vec<Range<usize>>,
     /// Strong, strike and emphasis extents with their content extents, in authored order.
     pub spans: Vec<(Range<usize>, Range<usize>)>,
@@ -186,7 +186,8 @@ fn collect<'a>(nodes: &'a [Node], scope: &mut InlineScope<'a>, label: bool) {
                     collect(c, scope, true);
                 }
             }
-            Kind::Code(_) | Kind::Html(_) | Kind::Image(..) => {
+            Kind::Html(_) => operand(node, scope, label),
+            Kind::Code(_) | Kind::Image(..) => {
                 operand(node, scope, label);
                 scope.opaque.extend(scope.source.local(&node.range));
             }
@@ -224,7 +225,8 @@ impl<'a> InlineScope<'a> {
 
     /// Interpret a selected window with cursor-time caller admission.
     /// Caller tokens keep their contents visible to delimiter matching, unlike static atoms.
-    /// Code, image, HTML and autolink barriers cannot be consumed by caller tokens.
+    /// Code, image and autolink barriers cannot be consumed by caller tokens.
+    /// An earlier token may consume an HTML tag; retained tags are never entered.
     /// The range must name valid UTF-8 boundaries in `text()`.
     #[must_use]
     pub fn interpret_with_tokenizer(

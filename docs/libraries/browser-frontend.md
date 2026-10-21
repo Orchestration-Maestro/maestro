@@ -147,6 +147,13 @@ darling_core, darling_macro, ident_case, the phf family, rapidhash and strsim
 beside packages the workspace already locks. The matching KaTeX 0.18.5 stylesheet
 and its twenty `woff2` fonts are embedded and inserted once per document as data;
 their MIT notice is in [third-party notices](../../THIRD-PARTY-NOTICES.md#math-stylesheet-and-fonts).
+A private typed adapter supplies missing bare-radical padding, preserves display
+style when changing explicit size and script style when repeating it, and routes
+builtin macro errors to inline error spans.
+Malformed environment names retain the delimiter-spelled fallback. The registry
+package stays unchanged; there is no fork, formula preprocessing or HTML rewriting.
+Internal markup and error-tooltip wording may differ without changing the rendered
+formula or its error branch. The adapter-derived source shares the math MIT notice.
 Parsing is the shared [Markdown owner](../markdown.md), reached through the
 application edge; no browser binding feature is added.
 

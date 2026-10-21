@@ -72,6 +72,111 @@ mod tests {
         #[serde(default)]
         pub original_html: Option<String>,
     }
+    /// One independently measured formula and its owning browser test.
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct MathRow {
+        pub id: String,
+        pub expression: String,
+        pub display: bool,
+        pub branch: String,
+        #[serde(default)]
+        pub observed: Option<serde_json::Value>,
+        #[serde(default)]
+        pub fallbacks: Vec<MathFallback>,
+        pub test: String,
+    }
+
+    /// One delimiter-specific fallback from the mounted source recorder.
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct MathFallback {
+        pub delimiter: String,
+        pub html: String,
+    }
+
+    /// Select the recorded geometry or reached delimiter fallback.
+    fn math_expected(row: &MathRow, open: &str) -> serde_json::Value {
+        if row.branch != "throw" {
+            assert!(row.fallbacks.is_empty());
+            return row.observed.as_ref().unwrap().clone();
+        }
+        let delimiter = match open {
+            "$" => "dollar-inline",
+            "$$" => "dollar-display",
+            "\\(" => "backslash-inline",
+            "\\[" => "backslash-display",
+            _ => unreachable!(),
+        };
+        assert!(row.observed.is_none());
+        assert_eq!(row.fallbacks.len(), 2);
+        let fallback = row
+            .fallbacks
+            .iter()
+            .find(|f| f.delimiter == delimiter)
+            .unwrap();
+        serde_json::Value::String(fallback.html.clone())
+    }
+
+    /// Mount both delimiter spellings and compare the recorded formula observations.
+    ///
+    /// # Panics
+    /// Panics if a formula differs from its recorded browser observations.
+    pub async fn math_rows_match(test: &str) {
+        let all: Vec<MathRow> =
+            serde_json::from_str(include_str!("../fixtures/markdown/math.json")).unwrap();
+        assert_eq!(all.len(), 101);
+        let inputs: std::collections::BTreeSet<_> =
+            all.iter().map(|r| (&r.expression, r.display)).collect();
+        assert_eq!(inputs.len(), all.len());
+        let mut surface = Surface::new();
+        let mut count = 0;
+        for row in all.iter().filter(|row| row.test == test) {
+            count += 1;
+            for (open, close) in if row.display {
+                [("$$", "$$"), ("\\[", "\\]")]
+            } else {
+                [("$", "$"), ("\\(", "\\)")]
+            } {
+                let mut block = MarkdownBlock::new(surface.host());
+                block.content = format!("{open}{}{close}", row.expression);
+                block.escape_html = false;
+                surface.settle(&mut block);
+                let expected = math_expected(row, open);
+                publish("mathExpected", &expected.to_string().into());
+                publish("mathBranch", &row.branch.clone().into());
+                publish("mathSource", &block.content.clone().into());
+                let promise = js("maestro.measureMath()")
+                    .dyn_into::<js_sys::Promise>()
+                    .unwrap();
+                let result = wasm_bindgen_futures::JsFuture::from(promise)
+                    .await
+                    .unwrap()
+                    .as_string()
+                    .unwrap();
+                assert_eq!(
+                    result, "",
+                    "{} display={} delimiter={open}",
+                    row.id, row.display
+                );
+                drop(block);
+            }
+        }
+        let expected = match test {
+            "math_roots_pad_bare_symbols_without_changing_groups"
+            | "math_macro_failures_keep_inline_error_spans" => 22,
+            "math_scaled_roots_preserve_display_style" => 4,
+            "math_unchanged_size_preserves_superscript_spacing"
+            | "math_unchanged_size_preserves_subscript_spacing"
+            | "math_unchanged_size_preserves_nested_script_spacing" => 1,
+            "math_arrows_keep_measured_label_and_svg_alignment" => 20,
+            "math_error_paths_keep_fallback_and_escaped_text" => 14,
+            "math_macro_overrides_keep_valid_expansions" => 16,
+            _ => panic!("unknown formula group"),
+        };
+        assert_eq!(count, expected);
+    }
+
     /// One recorded standalone code render.
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]

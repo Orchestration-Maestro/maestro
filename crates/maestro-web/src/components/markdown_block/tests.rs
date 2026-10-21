@@ -732,9 +732,8 @@ fn formula_target(expected: &str) -> String {
             .throw_on_error(false)
             .error_color("var(--maestro-color-error)".to_owned())
             .build();
-        let html =
-            katex::render_to_string(&katex::KatexContext::default(), &selected.tex, &settings)
-                .unwrap();
+        let html = super::math::render_to_string(&super::math::context(), &selected.tex, &settings)
+            .unwrap();
         result.push_str(&html);
         rest = suffix;
     }

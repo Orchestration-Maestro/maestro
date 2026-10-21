@@ -309,8 +309,7 @@
     "content": "$\\begin{\\foo}x\\end{\\foo}$",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><span class=\"text-red-500 font-mono\">$\\begin{\\foo}x\\end{\\foo}$</span></p>\n",
-    "current_html": "<p><span class=\"katex-error\" style=\"color: #cc0000\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\">\\begin{\\foo}x\\end{\\foo}</span></p>\n"
+    "html": "<p><span class=\"text-red-500 font-mono\">$\\begin{\\foo}x\\end{\\foo}$</span></p>\n"
   },
   {
     "id": "dollar-display-simple",
@@ -374,8 +373,7 @@
     "content": "$$\\begin{\\foo}x\\end{\\foo}$$",
     "escape_html": true,
     "thinking": false,
-    "html": "<div class=\"my-4 text-red-500 font-mono\">$$\\begin{\\foo}x\\end{\\foo}$$</div>",
-    "current_html": "<div class=\"my-4\"><span class=\"katex-error\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\" style=\"color: #cc0000\">\\begin{\\foo}x\\end{\\foo}</span></div>"
+    "html": "<div class=\"my-4 text-red-500 font-mono\">$$\\begin{\\foo}x\\end{\\foo}$$</div>"
   },
   {
     "id": "slash-inline-simple",
@@ -439,8 +437,7 @@
     "content": "\\(\\begin{\\foo}x\\end{\\foo}\\)",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><span class=\"text-red-500 font-mono\">\\(\\begin{\\foo}x\\end{\\foo}\\)</span></p>\n",
-    "current_html": "<p><span class=\"katex-error\" style=\"color: #cc0000\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\">\\begin{\\foo}x\\end{\\foo}</span></p>\n"
+    "html": "<p><span class=\"text-red-500 font-mono\">\\(\\begin{\\foo}x\\end{\\foo}\\)</span></p>\n"
   },
   {
     "id": "slash-display-simple",
@@ -504,8 +501,7 @@
     "content": "\\[\\begin{\\foo}x\\end{\\foo}\\]",
     "escape_html": true,
     "thinking": false,
-    "html": "<div class=\"my-4 text-red-500 font-mono\">\\[\\begin{\\foo}x\\end{\\foo}\\]</div>",
-    "current_html": "<div class=\"my-4\"><span class=\"katex-error\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\" style=\"color: #cc0000\">\\begin{\\foo}x\\end{\\foo}</span></div>"
+    "html": "<div class=\"my-4 text-red-500 font-mono\">\\[\\begin{\\foo}x\\end{\\foo}\\]</div>"
   },
   {
     "id": "unclosed-dollar",
@@ -594,8 +590,7 @@
     "content": "$\\sqrt x$",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.04em;vertical-align:-0.2397em;\"></span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8003em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord mathnormal\" style=\"padding-left:0.833em;\">x</span></span><span style=\"top:-2.7603em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"1.08em\" viewBox=\"0 0 400000 1080\" preserveAspectRatio=\"xMinYMin slice\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2397em;\"><span></span></span></span></span></span></span></span></span></p>\n",
-    "current_html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:1.04em;vertical-align:-0.2397em;\"></span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8003em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord mathnormal\">x</span></span><span style=\"top:-2.7603em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 400000 1080\" height=\"1.08em\" preserveAspectRatio=\"xMinYMin slice\" width=\"400em\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2397em;\"><span></span></span></span></span></span></span></span></span></p>\n"
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.04em;vertical-align:-0.2397em;\"></span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8003em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord mathnormal\" style=\"padding-left:0.833em;\">x</span></span><span style=\"top:-2.7603em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"1.08em\" viewBox=\"0 0 400000 1080\" preserveAspectRatio=\"xMinYMin slice\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2397em;\"><span></span></span></span></span></span></span></span></span></p>\n"
   },
   {
     "id": "math-sqrt-braced",
@@ -628,8 +623,7 @@
     "content": "$\\char$",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Invalid base-10 digit EOF\" style=\"color:#cc0000\">\\char</span></p>\n",
-    "current_html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\char</span></span></span></span></span></p>\n"
+    "html": "<p><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Invalid base-10 digit EOF\" style=\"color:#cc0000\">\\char</span></p>\n"
   },
   {
     "id": "math-fraction-good",

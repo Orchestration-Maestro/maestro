@@ -27,7 +27,9 @@ prefix and a caller identity; invalid prefixes and hint boundaries are ignored.
 Unlike static caller spans, cursor tokens leave their contents visible to emphasis
 matching. Recursive spans and labels use their selected child windows. Generated
 nodes own their source, while returned runs retain original document operands,
-not the temporary tokenizer. Code, image, HTML and autolink ranges remain barriers.
+not the temporary tokenizer. Code, image and autolink ranges remain barriers.
+An earlier caller token may consume an authored HTML tag; otherwise the tag remains
+one retained operand, so tokens never start inside its attributes.
 
 Parsing emits bare URL, www and email links at reached inline cursors outside
 link labels and raw anchors in the terminal, browser and export grammars.
