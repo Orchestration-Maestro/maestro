@@ -548,7 +548,7 @@ non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
-`maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
+`maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
 non-native declaration, no other consumer and no other `maestro-test-*` crate is
 admitted by this rule, and the terminal scenario harness is not a reusable
@@ -572,7 +572,7 @@ edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
 `maestro-chat`, `maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
-`maestro-resources`, `maestro-test-conventions` and `maestro-tooling`; a caller
+`maestro-resources`, `maestro-test-conventions`, `maestro-theme` and `maestro-tooling`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.

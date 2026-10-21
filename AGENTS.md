@@ -214,7 +214,7 @@ the native-only `maestro-extensions` to `maestro-credentials`, for extension tes
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 and the native, non-optional dev-dependencies
-of the twenty declared callers on `maestro-test-process`, the dependency-free
+of the twenty-one declared callers on `maestro-test-process`, the dependency-free
 owner of checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
@@ -225,10 +225,10 @@ general dev-dependency target.
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
 foundation utility permission. Only app, chat, credentials, extensions, models,
-packages, resources, conventions and tooling may declare it, as a non-optional
-native development dependency when used. `Scratch::new` canonicalizes its chosen
-root; `Scratch::new_in` keeps native supplied-parent spelling. Both graph cycle
-checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
+packages, resources, conventions, theme and tooling may declare it, as a
+non-optional native development dependency when used. `Scratch::new`
+canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
+spelling. Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
 scoped tracing subscriber that sees every callsite. Only daemon and workspace

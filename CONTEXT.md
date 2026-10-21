@@ -280,7 +280,7 @@ From `docs/specs/tool-additions.md`.
 - **Test directory:** The dedicated, unpublished, native `maestro-test-directory`
   leaf that owns exclusive disposable-root allocation and cleanup. Automatically
   chosen roots are canonical; supplied parents retain native joining semantics.
-  Only its eight declared callers may use it through native development edges.
+  Only its ten declared callers may use it through native development edges.
   See the [contract](docs/specs/maestro-port.md#test-directory-owner).
 
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
