@@ -77,26 +77,27 @@ fn controlled_collation_drives_public_selection() {
     assert!(std::sync::Arc::ptr_eq(&result.model.unwrap(), &upper));
     selection::replay(&["case_169"]);
 }
-/// Child fixture index, absent in the parent runner.
-fn child_index() -> Option<usize> {
-    std::env::var("MAESTRO_LOCALE_CASE")
-        .ok()
-        .map(|s| s.parse().unwrap())
-}
 /// Run one recorded environment, removing absent sibling operands.
 fn run_locale_child(name: &str, index: usize, environment: &HashMap<String, String>) {
     let index = index.to_string();
-    let mut operands: Vec<_> = ["LC_ALL", "LC_MESSAGES", "LANG"]
+    let operands: Vec<_> = ["LC_ALL", "LC_MESSAGES", "LANG"]
         .into_iter()
         .map(|key| (key, environment.get(key).map(String::as_str)))
         .collect();
-    operands.push(("MAESTRO_LOCALE_CASE", Some(&index)));
-    subprocess::run_child(name, &operands);
+    subprocess::run_child(
+        maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .case(index),
+        &operands,
+    );
 }
 #[test]
 fn native_model_ordering_tracks_process_locale() {
     let cases = cases();
-    if let Some(index) = child_index() {
+    if maestro_test_process::selection().is_child() {
+        let index = (0..cases.len())
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
+            .expect("selected locale row");
         check_order(&cases[index], &|key| std::env::var(key).ok());
         return;
     }
@@ -111,7 +112,10 @@ fn native_model_ordering_tracks_process_locale() {
 #[test]
 fn supplied_locale_environment_overrides_process_environment() {
     let cases = cases();
-    if let Some(index) = child_index() {
+    if maestro_test_process::selection().is_child() {
+        let index = (0..cases.len())
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
+            .expect("selected locale row");
         check_order(&cases[index], &|key| {
             cases[index].environment.get(key).cloned()
         });
@@ -132,7 +136,8 @@ fn supplied_locale_environment_overrides_process_environment() {
 }
 #[test]
 fn native_model_ordering_recovers_from_invalid_locale() {
-    if child_index().is_some() {
+    if maestro_test_process::selection().is_child() {
+        assert!(maestro_test_process::selection().runs_case("0"));
         check_order(&cases()[0], &|key| std::env::var(key).ok());
         return;
     }

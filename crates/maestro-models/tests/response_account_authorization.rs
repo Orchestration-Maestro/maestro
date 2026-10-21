@@ -10,14 +10,14 @@ use std::{collections::BTreeMap, sync::Arc};
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_refresh_keeps_stderr_clean() {
-    if std::env::var_os("MAESTRO_RESPONSE_STDERR_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         crate::runtime::run(async {
             let output = maestro_test_process::TestProcess::current(
                 "maestro_response_refresh_keeps_stderr_clean",
             )
             .unwrap()
             .nocapture()
-            .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
+            .case("*")
             .output()
             .unwrap();
             assert!(

@@ -354,7 +354,7 @@ fn default_release_transport_reaches_the_controlled_server() {
 }
 async fn default_release_transport_reaches_the_controlled_server_run() {
     const NAME: &str = "default_release_transport_reaches_the_controlled_server";
-    if std::env::var("MAESTRO_SERVICE_PROBE").as_deref() != Ok(NAME) {
+    if !maestro_test_process::selection().is_child() {
         let mut removed = services::FLAGS.to_vec();
         removed.extend([
             "HTTP_PROXY",
@@ -366,7 +366,7 @@ async fn default_release_transport_reaches_the_controlled_server_run() {
             "NO_PROXY",
             "no_proxy",
         ]);
-        services::native_probe(NAME, &[("MAESTRO_SERVICE_PROBE", NAME)], &removed);
+        services::native_probe(NAME, &[], &removed);
         return;
     }
     let server = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();

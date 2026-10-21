@@ -55,7 +55,11 @@ fn repeated_conversion_is_inert_after_current_version() {
 #[cfg(not(windows))]
 #[test]
 fn converted_context_uses_existing_local_timestamp_policy() {
-    if let Ok(zone) = std::env::var("MAESTRO_CONVERSION_TIME_CHILD") {
+    if maestro_test_process::selection().is_child() {
+        let zone = ["UTC", "America/New_York"]
+            .into_iter()
+            .find(|zone| maestro_test_process::selection().runs_case(zone))
+            .expect("selected timezone");
         let local = if zone == "America/New_York" {
             1_735_711_200_000_i64
         } else {
@@ -74,7 +78,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         .unwrap()
         .nocapture()
         .env("TZ", zone)
-        .env("MAESTRO_CONVERSION_TIME_CHILD", zone)
+        .case(zone)
         .output()
         .unwrap();
         assert!(

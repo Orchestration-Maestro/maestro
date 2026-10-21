@@ -253,7 +253,7 @@ fn replay(name: &str, case: Case<Input, Expected>) {
         let lines = child::probe(
             maestro_test_process::TestProcess::current(name)
                 .unwrap()
-                .name(),
+                .case("*"),
             scratch.0.path(),
             &[
                 ("COMPLETION_OPERATION", "1"),

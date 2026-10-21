@@ -249,18 +249,25 @@ fn cases(name: &str) -> Vec<Case> {
 /// Replay all rows owned by a named witness.
 pub fn replay(name: &str) {
     let _admission = super::keybindings::bindings_guard();
+    let selection = maestro_test_process::selection();
+    let mut matched = false;
     for (index, case) in cases(name).into_iter().enumerate() {
         let mut query: Query = serde_json::from_value(case.input).unwrap();
-        if let Ok(selected) = std::env::var("MAESTRO_AUTH_CASE") {
-            if index != selected.parse::<usize>().unwrap() {
+        if selection.is_child() {
+            if !selection.runs_case(&index.to_string()) {
                 continue;
             }
         } else if !query.env.is_empty() || name == "provider_environment_configuration_is_visible" {
             child(name, index, &query.env);
             continue;
         }
+        matched = true;
         run(case.expected, &mut query, name);
     }
+    assert!(
+        !selection.is_child() || matched,
+        "selected auth row missing"
+    );
 }
 /// Drive one constructor and compare full output without exposing credentials in failures.
 fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
@@ -302,7 +309,7 @@ fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
         .env_remove("ANTHROPIC_API_KEY")
         .env_remove("ANTHROPIC_OAUTH_TOKEN")
         .envs(env)
-        .env("MAESTRO_AUTH_CASE", index.to_string())
+        .case(index.to_string())
         .output()
         .unwrap();
     assert!(

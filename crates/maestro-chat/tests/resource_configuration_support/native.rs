@@ -12,7 +12,7 @@ use serde_json::json;
 use std::{path::Path, rc::Rc};
 /// Run cwd mutations only inside the existing isolated child seam.
 pub fn paths() {
-    if std::env::var_os("MAESTRO_RESOURCE_DIRECTORY_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         child();
         println!("\nPROBE native directory outcomes matched");
         return;
@@ -25,9 +25,9 @@ pub fn paths() {
                 "resource_relative_paths_observe_live_directory_and_preserve_failures"
             )
             .unwrap()
-            .name(),
+            .case("*"),
             scratch.path(),
-            &[("MAESTRO_RESOURCE_DIRECTORY_CHILD", "1")],
+            &[],
             &[]
         ),
         ["native directory outcomes matched"]

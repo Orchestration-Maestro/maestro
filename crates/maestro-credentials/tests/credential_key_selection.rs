@@ -148,7 +148,12 @@ mod tests {
         if !is_child() {
             let root = TempDir::new("stored-key-values");
             return run_child(
-                "credential_key_selection::tests::stored_key_values_keep_resolution_semantics",
+                maestro_test_process::TestProcess::named(
+                    "credential_key_selection::tests::stored_key_values_keep_resolution_semantics",
+                )
+                .unwrap()
+                .env_clear()
+                .case("*"),
                 root.root(),
                 &[],
             );
@@ -347,7 +352,12 @@ mod tests {
             let mut envs = variables;
             envs.push(("MAESTRO_AUTH_SCENARIO", name));
             run_child(
-                "credential_key_selection::tests::environment_precedes_optional_fallback",
+                maestro_test_process::TestProcess::named(
+                    "credential_key_selection::tests::environment_precedes_optional_fallback",
+                )
+                .unwrap()
+                .env_clear()
+                .case("*"),
                 dir.root(),
                 &envs,
             );
@@ -400,7 +410,7 @@ mod tests {
         }
         let dir = TempDir::new("helper-failure");
         run_child(
-            "credential_key_selection::tests::stored_helper_failure_does_not_consult_ambient_sources",
+            maestro_test_process::TestProcess::named("credential_key_selection::tests::stored_helper_failure_does_not_consult_ambient_sources").unwrap().env_clear().case("*"),
             std::path::Path::new(&dir.path("")),
             &[("OPENAI_API_KEY", "ambient")],
         );
@@ -411,7 +421,7 @@ mod tests {
         if !is_child() {
             let dir = TempDir::new("fallback_keys_and_presence_keep_result_domains");
             return run_child(
-                "credential_key_selection::tests::fallback_keys_and_presence_keep_result_domains",
+                maestro_test_process::TestProcess::named("credential_key_selection::tests::fallback_keys_and_presence_keep_result_domains").unwrap().env_clear().case("*"),
                 dir.root(),
                 &[],
             );
@@ -431,7 +441,12 @@ mod tests {
                 ("environment-whitespace", " \t"),
             ] {
                 run_child(
-                    "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
+                    maestro_test_process::TestProcess::named(
+                        "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
+                    )
+                    .unwrap()
+                    .env_clear()
+                    .case("*"),
                     dir.root(),
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
@@ -448,7 +463,12 @@ mod tests {
         if !is_child() {
             let dir = TempDir::new("fallback_option_false_avoids_callback");
             return run_child(
-                "credential_key_selection::tests::fallback_option_false_avoids_callback",
+                maestro_test_process::TestProcess::named(
+                    "credential_key_selection::tests::fallback_option_false_avoids_callback",
+                )
+                .unwrap()
+                .env_clear()
+                .case("*"),
                 dir.root(),
                 &[],
             );

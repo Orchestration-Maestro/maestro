@@ -1301,8 +1301,19 @@ use super::super::native_child;
 /// re-running `test` (the caller's qualified test name) for each scenario.
 #[cfg(target_os = "linux")]
 pub fn native(test: &str) {
-    if let Ok(mode) = std::env::var("MAESTRO_NATIVE_MODE") {
-        native_run(&mode);
+    if maestro_test_process::selection().is_child() {
+        let mode = [
+            "unavailable",
+            "nonzero",
+            "zero",
+            "removed-nonzero",
+            "leading-dash",
+            "unlink-error",
+        ]
+        .into_iter()
+        .find(|mode| maestro_test_process::selection().runs_case(mode))
+        .expect("selected native mode");
+        native_run(mode);
     } else {
         native_launch(test);
     }
@@ -1388,10 +1399,12 @@ fn native_launch(test: &str) {
         let path = dir.join("bin");
         let log = dir.join("argv");
         let lines = native_child::probe(
-            test,
+            maestro_test_process::TestProcess::named(test)
+                .unwrap()
+                .case(mode),
             dir.0.path(),
             &[
-                ("MAESTRO_NATIVE_MODE", mode),
+                ("SESSION_TRASH_OUTCOME", mode),
                 ("PATH", &path),
                 ("MAESTRO_TRASH_LOG", &log),
             ],

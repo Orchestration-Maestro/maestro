@@ -29,7 +29,7 @@ fn query<E: Fn(&str) -> Option<String>>(
 #[test]
 fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
     use fixtures::completion_native::Tree;
-    if std::env::var_os("MAESTRO_COMPLETION_HOME_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let provider = CombinedAutocompleteProvider::new(
             vec![],
             "/missing".into(),
@@ -64,7 +64,7 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
         "native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
     )
     .unwrap()
-    .env("MAESTRO_COMPLETION_HOME_CHILD", "1")
+    .case("*")
     .env("HOME", &tree.0)
     .env("USERPROFILE", &tree.0)
     .output()

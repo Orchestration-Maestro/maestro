@@ -681,11 +681,11 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     use std::{error::Error, io::Write};
     const CASE: &str =
         "child_process::tests::capture_timeout_closes_inherited_stdout_after_direct_child_exit";
-    if std::env::var_os("MAESTRO_INHERITED_STDOUT_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(CASE)
             .unwrap()
             .nocapture()
-            .env("MAESTRO_INHERITED_STDOUT_CHILD", "1")
+            .case("*")
             .output()
             .unwrap();
         assert!(

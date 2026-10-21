@@ -195,21 +195,20 @@ fn extraction_keeps_unknown_records_and_unreached_fields() {
 #[test]
 fn extracted_context_reuses_local_timestamp_conversion() {
     let name = "extracted_context_reuses_local_timestamp_conversion";
-    let zone = std::env::var("MAESTRO_EXTRACTION_CHILD")
-        .ok()
-        .and_then(|child| {
-            child
-                .strip_prefix(name)?
-                .strip_prefix(':')
-                .map(str::to_owned)
-        });
+    let selection = maestro_test_process::selection();
+    let zone = selection.is_child().then(|| {
+        ["America/New_York", "UTC"]
+            .into_iter()
+            .find(|zone| selection.runs_case(zone))
+            .expect("selected timezone")
+    });
     let Some(zone) = zone else {
         for zone in ["America/New_York", "UTC"] {
             let output = maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .nocapture()
                 .env("TZ", zone)
-                .env("MAESTRO_EXTRACTION_CHILD", format!("{name}:{zone}"))
+                .case(zone)
                 .output()
                 .unwrap();
             assert!(

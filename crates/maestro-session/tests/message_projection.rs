@@ -86,14 +86,16 @@ fn cases(name: &str) -> Vec<Case> {
 
 /// Run date cases in a fresh process with the selected timezone.
 fn in_timezone(name: &str, timezone: &str) -> bool {
-    if std::env::var("MAESTRO_DATE_CHILD").as_deref() == Ok(name) {
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
+    {
         return true;
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .nocapture()
         .env("TZ", timezone)
-        .env("MAESTRO_DATE_CHILD", name)
+        .case(name)
         .output()
         .unwrap();
     assert!(output.status.success());
@@ -401,10 +403,14 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
     struct ParserExpected {
         millis: Option<i64>,
     }
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             crate::subprocess::run_child(
-                "parse_timestamp_millis_preserves_native_date_forms",
+                maestro_test_process::TestProcess::current(
+                    "parse_timestamp_millis_preserves_native_date_forms",
+                )
+                .unwrap()
+                .case("*"),
                 &[("TZ", Some(tz))],
             );
         }

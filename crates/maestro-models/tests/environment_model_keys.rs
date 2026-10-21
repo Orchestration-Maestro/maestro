@@ -65,7 +65,9 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
         "OPENAI_API_KEY",
     ] {
         run(
-            PRECEDENCE,
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
+                .env_clear()
+                .case("*"),
             &directory,
             &vars(
                 &[("OPENAI_API_KEY", "unrelated"), (provider, "unrelated")]
@@ -87,7 +89,9 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
         "second-independent-value",
     ] {
         run(
-            PRECEDENCE,
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
+                .env_clear()
+                .case("*"),
             &directory,
             &vars(&[("OPENAI_API_KEY", value)]),
             "openai",
@@ -126,14 +130,24 @@ fn assert_presence_combinations(
             .collect();
         let first = present.first().map(|key| format!("controlled-{key}"));
         run(
-            PRECEDENCE,
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
+                .env_clear()
+                .case("*"),
             directory,
             &variables,
             provider,
             ((!present.is_empty()).then_some(present), first.as_deref()),
         )?;
     }
-    run(PRECEDENCE, directory, &[], provider, (None, None))?;
+    run(
+        maestro_test_process::TestProcess::current(PRECEDENCE)?
+            .env_clear()
+            .case("*"),
+        directory,
+        &[],
+        provider,
+        (None, None),
+    )?;
     Ok(())
 }
 
@@ -177,7 +191,9 @@ fn vertex_run(
     expected: Option<&str>,
 ) -> TestResult {
     run(
-        VERTEX,
+        maestro_test_process::TestProcess::current(VERTEX)?
+            .env_clear()
+            .case("*"),
         directory,
         variables,
         "google-vertex",
@@ -213,7 +229,9 @@ fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> 
     ]));
     vertex_run(directory, &variables, Some("<authenticated>"))?;
     run(
-        VERTEX,
+        maestro_test_process::TestProcess::current(VERTEX)?
+            .env_clear()
+            .case("*"),
         directory,
         &vars(&[
             ("GOOGLE_CLOUD_API_KEY", "explicit"),
@@ -401,7 +419,11 @@ fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     assert_eq!(router.input, [ModelInput::Text, ModelInput::Image]);
     let directory = Directory::new()?;
     run(
-        "maestro_fireworks_catalog_and_keys_remain_complete",
+        maestro_test_process::TestProcess::current(
+            "maestro_fireworks_catalog_and_keys_remain_complete",
+        )?
+        .env_clear()
+        .case("*"),
         &directory,
         &vars(&[("FIREWORKS_API_KEY", "test-fireworks-key")]),
         "fireworks",
@@ -417,7 +439,11 @@ fn bedrock_run(
     expected: Option<&str>,
 ) -> TestResult {
     run(
-        "maestro_bedrock_configuration_signals_remain_distinct",
+        maestro_test_process::TestProcess::current(
+            "maestro_bedrock_configuration_signals_remain_distinct",
+        )?
+        .env_clear()
+        .case("*"),
         directory,
         variables,
         "amazon-bedrock",
@@ -432,7 +458,11 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
     const NAME: &str = "cleared_environment_child_keeps_native_values_and_profile_order";
     const PROFILE: &str = "inherited-%p-%m.profraw";
     const OVERRIDE: &str = "explicit-%p-%m.profraw";
-    if let Ok(stage) = std::env::var("MAESTRO_NATIVE_STAGE") {
+    if maestro_test_process::selection().is_child() {
+        let stage = ["outer", "inherited", "override"]
+            .into_iter()
+            .find(|stage| maestro_test_process::selection().runs_case(stage))
+            .expect("selected native stage");
         if stage != "outer" {
             return native_environment_observations(if stage == "inherited" {
                 PROFILE
@@ -444,10 +474,7 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
         let directory = Directory::new()?;
         let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
         for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
-            let mut variables = vars(&[
-                ("MAESTRO_NATIVE_STAGE", stage),
-                ("MAESTRO_NATIVE_EMPTY", ""),
-            ]);
+            let mut variables = vars(&[("MAESTRO_NATIVE_EMPTY", "")]);
             variables.extend(profile.map(|value| ("LLVM_PROFILE_FILE".into(), value.into())));
             #[cfg(unix)]
             {
@@ -458,7 +485,9 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
                 ));
             }
             run(
-                NAME,
+                maestro_test_process::TestProcess::current(NAME)?
+                    .env_clear()
+                    .case(stage),
                 &directory,
                 &variables,
                 "unknown-native-provider",
@@ -471,7 +500,7 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
     }
     let output = maestro_test_process::TestProcess::current(NAME)?
         .nocapture()
-        .env("MAESTRO_NATIVE_STAGE", "outer")
+        .case("outer")
         .env("LLVM_PROFILE_FILE", PROFILE)
         .env("MAESTRO_NATIVE_SENTINEL", "ambient")
         .output()?;

@@ -121,8 +121,11 @@ fn check_settings(expected: (&Value, &Value), root: &str, cwd: &str, agent: &str
 #[test]
 fn selected_configuration_roots_feed_package_resolution_and_persistence() {
     let cases = fixtures::cases::<RootInput, Roots>("root-");
-    if let Ok(id) = std::env::var("MAESTRO_PACKAGE_CASE") {
-        let case = cases.iter().find(|c| c.id == id).unwrap();
+    if maestro_test_process::selection().is_child() {
+        let case = cases
+            .iter()
+            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .unwrap();
         root_case(case);
         return;
     }
@@ -131,10 +134,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
         let dir = scratch::Scratch::new().unwrap();
         let root = dir.path().to_str().unwrap();
         fs::create_dir_all(dir.path().join("work")).unwrap();
-        let mut envs = vec![
-            ("MAESTRO_PACKAGE_CASE", case.id.as_str()),
-            ("MAESTRO_CASE_ROOT", root),
-        ];
+        let mut envs = vec![("MAESTRO_CASE_ROOT", root)];
         let selected = case
             .input
             .r#override
@@ -151,7 +151,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
                     "selected_configuration_roots_feed_package_resolution_and_persistence"
                 )
                 .unwrap()
-                .name(),
+                .case(&case.id),
                 &dir.path().join("work"),
                 &envs,
                 &["MAESTRO_CODING_AGENT_DIR", "MAESTRO_OFFLINE"]
@@ -239,8 +239,11 @@ struct Updated {
 #[test]
 fn selected_package_roots_keep_update_pins_and_progress() {
     let cases = fixtures::cases::<UpdateInput, Updated>("update-");
-    if let Ok(id) = std::env::var("MAESTRO_PACKAGE_CASE") {
-        let case = cases.iter().find(|c| c.id == id).unwrap();
+    if maestro_test_process::selection().is_child() {
+        let case = cases
+            .iter()
+            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .unwrap();
         update_case(case);
         return;
     }
@@ -274,10 +277,9 @@ fn selected_package_roots_keep_update_pins_and_progress() {
                     "selected_package_roots_keep_update_pins_and_progress"
                 )
                 .unwrap()
-                .name(),
+                .case(&case.id),
                 &dir.path().join("work"),
                 &[
-                    ("MAESTRO_PACKAGE_CASE", &case.id),
                     ("MAESTRO_CASE_ROOT", root),
                     ("MAESTRO_CODING_AGENT_DIR", &agent),
                     ("MAESTRO_COMMAND_LOG", &log),

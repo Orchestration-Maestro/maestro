@@ -116,7 +116,7 @@ impl Supplied<'_> {
 use crate::runtime::run;
 
 fn corpus(name: &str) {
-    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let dir = read_support::TempDir::new();
         let root = Some(dir.0.as_os_str());
         read_support::isolated_os(

@@ -465,7 +465,12 @@ mod tests {
             let mut envs = variables.to_vec();
             envs.push(("MAESTRO_AUTH_SCENARIO", name));
             run_child(
-                "accepted_credentials::tests::environment_status_names_first_populated_key",
+                maestro_test_process::TestProcess::named(
+                    "accepted_credentials::tests::environment_status_names_first_populated_key",
+                )
+                .unwrap()
+                .env_clear()
+                .case("*"),
                 dir.root(),
                 &envs,
             );
@@ -560,7 +565,12 @@ mod tests {
                 ("environment-whitespace", " \t"),
             ] {
                 run_child(
-                    "accepted_credentials::tests::fallback_status_keeps_result_domain",
+                    maestro_test_process::TestProcess::named(
+                        "accepted_credentials::tests::fallback_status_keeps_result_domain",
+                    )
+                    .unwrap()
+                    .env_clear()
+                    .case("*"),
                     dir.root(),
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
@@ -582,7 +592,7 @@ mod tests {
                 ("environment-whitespace", " \t"),
             ] {
                 run_child(
-                    "accepted_credentials::tests::fallback_status_short_circuits_earlier_sources",
+                    maestro_test_process::TestProcess::named("accepted_credentials::tests::fallback_status_short_circuits_earlier_sources").unwrap().env_clear().case("*"),
                     dir.root(),
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );

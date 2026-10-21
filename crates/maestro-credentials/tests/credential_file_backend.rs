@@ -14,6 +14,7 @@ mod tests {
         FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{BoxFuture, OAuthCredentials, OAuthError};
+    use maestro_test_process::{TestProcess, selection};
     use std::fs::{File, TryLockError};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -26,7 +27,11 @@ mod tests {
             "credential_file_backend::tests::cleared_child_preserves_profile_and_explicit_override";
         const PROFILE: &str = "inherited-%p-%m.profraw";
         const OVERRIDE: &str = "explicit-%p-%m.profraw";
-        if let Ok(stage) = std::env::var("MAESTRO_PROFILE_STAGE") {
+        if selection().is_child() {
+            let stage = ["outer", "inherited", "override"]
+                .into_iter()
+                .find(|stage| selection().runs_case(stage))
+                .expect("selected profile stage");
             let cwd = std::env::current_dir().unwrap();
             assert_eq!(
                 cwd,
@@ -53,12 +58,10 @@ mod tests {
             let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
             for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
                 let cwd_text = cwd.to_str().unwrap();
-                let mut envs = vec![
-                    ("MAESTRO_PROFILE_STAGE", stage),
-                    ("MAESTRO_PROFILE_CWD", cwd_text),
-                ];
+                let mut envs = vec![("MAESTRO_PROFILE_CWD", cwd_text)];
                 envs.extend(profile.map(|value| ("LLVM_PROFILE_FILE", value)));
-                run_child(NAME, &cwd, &envs);
+                let process = TestProcess::named(NAME).unwrap().env_clear().case(stage);
+                run_child(process, &cwd, &envs);
             }
             let unchanged =
                 std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
@@ -67,10 +70,9 @@ mod tests {
         }
         let dir = TempDir::new("profile-order");
         run_child(
-            NAME,
+            TestProcess::named(NAME).unwrap().env_clear().case("outer"),
             dir.root(),
             &[
-                ("MAESTRO_PROFILE_STAGE", "outer"),
                 ("MAESTRO_PROFILE_CWD", dir.root().to_str().unwrap()),
                 ("LLVM_PROFILE_FILE", PROFILE),
                 ("MAESTRO_PROFILE_SENTINEL", "ambient"),
@@ -175,7 +177,7 @@ mod tests {
         }
         let dir = TempDir::new("relative");
         run_child(
-            "credential_file_backend::tests::relative_credentials_path_follows_working_directory",
+            TestProcess::named("credential_file_backend::tests::relative_credentials_path_follows_working_directory").unwrap().env_clear().case("*"),
             dir.root(),
             &[],
         );

@@ -33,14 +33,14 @@ pub fn child() -> TestResult<bool> {
 }
 
 pub fn run(
-    test: &str,
+    process: maestro_test_process::TestProcess,
     directory: &Directory,
     variables: &[(OsString, OsString)],
     provider: &str,
     expected: (Option<Vec<&str>>, Option<&str>),
 ) -> TestResult {
-    let output = maestro_test_process::TestProcess::current(test)?
-        .env_clear()
+    let test = process.name().to_owned();
+    let output = process
         .current_dir(directory.path())
         .env("HOME", directory.path())
         .env("USERPROFILE", directory.path())

@@ -2,16 +2,16 @@
 use maestro_test_process::TestProcess;
 use std::path::Path;
 #[cfg(unix)]
-/// Run this test binary again for the single test `name`, with `envs`, and
+/// Run the configured test process with `envs` and
 /// return the `PROBE ` lines the child printed.
 /// Remove `removed` keys before applying `envs`; other keys remain inherited.
 pub fn probe(
-    name: &str,
+    process: TestProcess,
     current_dir: &Path,
     envs: &[(&str, &str)],
     removed: &[&str],
 ) -> Vec<String> {
-    let mut command = TestProcess::named(name).expect("complete test name");
+    let mut command = process;
     for key in removed {
         command = command.env_remove(key);
     }

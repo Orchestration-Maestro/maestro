@@ -86,7 +86,7 @@ fn find_custom_route_never_probes_native_programs() {
     let root = read_support::TempDir::new();
     let marker = root.0.join("probed");
     let test = "find_custom_route_never_probes_native_programs";
-    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let script = format!(
             "#!/usr/bin/python3\nfrom pathlib import Path\nPath({}).write_text('probed')\n",
             serde_json::json!(marker.to_str().unwrap())
@@ -535,7 +535,7 @@ fn find_native_abort_terminates_child_without_waiting_for_exit() {
 fn find_acquisition_is_silent_and_abort_prevents_launch() {
     let test = "find_acquisition_is_silent_and_abort_prevents_launch";
     let root = read_support::TempDir::new();
-    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         assert_silent_child(
             test,
             read_support::isolated_os_output(
@@ -570,7 +570,7 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
         return;
     }
     runtime::run(async {
-        if std::env::var("MAESTRO_READ_CHILD").unwrap() == "probe" {
+        if maestro_test_process::selection().runs_case("probe") {
             abort_discovery().await;
         } else {
             unavailable_and_pre_abort(&root).await;

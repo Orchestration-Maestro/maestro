@@ -454,7 +454,7 @@ use crate::child;
 #[cfg(unix)]
 #[test]
 fn native_agent_root_reads_disposable_environment() {
-    if std::env::var_os("MAESTRO_CONFIGURATION_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         let matches_expected = maestro_app::get_agent_dir().unwrap()
             == std::env::var("MAESTRO_CONFIGURATION_EXPECTED").unwrap();
         assert!(matches_expected);
@@ -474,10 +474,9 @@ fn native_agent_root_reads_disposable_environment() {
                 "native_agent_root_reads_disposable_environment",
             )
             .unwrap()
-            .name(),
+            .case("*"),
             scratch.0.path(),
             &[
-                ("MAESTRO_CONFIGURATION_CHILD", "1"),
                 ("MAESTRO_CONFIGURATION_EXPECTED", &expected),
                 ("HOME", &home),
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
@@ -496,7 +495,8 @@ fn native_probe_rejects_missing_selection() {
     assert!(
         std::panic::catch_unwind(|| {
             child::probe(
-                "configuration_paths::missing_probe",
+                maestro_test_process::TestProcess::named("configuration_paths::missing_probe")
+                    .unwrap(),
                 scratch.0.path(),
                 &[],
                 &[],
@@ -530,7 +530,11 @@ fn native_probe_preserves_cwd_and_environment_order() {
     let before = std::env::var_os(KEY);
     let scratch = child::Scratch::new();
     let records = child::probe(
-        "configuration_paths::native_probe_preserves_cwd_and_environment_order",
+        maestro_test_process::TestProcess::current(
+            "native_probe_preserves_cwd_and_environment_order",
+        )
+        .unwrap()
+        .case("*"),
         scratch.0.path(),
         &[
             ("MAESTRO_PROBE_CWD", scratch.0.path().to_str().unwrap()),

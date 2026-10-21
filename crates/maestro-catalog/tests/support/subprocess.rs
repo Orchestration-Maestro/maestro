@@ -3,11 +3,9 @@
 /// Complete the exact test with supplied environment presence and absence.
 /// # Panics
 /// Panics if the child cannot run or fails its assertions.
-pub fn run_child(name: &str, environment: &[(&str, Option<&str>)]) {
-    let mut command = maestro_test_process::TestProcess::current(name)
-        .unwrap()
-        .nocapture()
-        .env("MAESTRO_DYNAMIC_CHILD", "1");
+pub fn run_child(process: maestro_test_process::TestProcess, environment: &[(&str, Option<&str>)]) {
+    let name = process.name().to_owned();
+    let mut command = process.nocapture();
     for (key, value) in environment {
         if let Some(value) = value {
             command = command.env(key, value);

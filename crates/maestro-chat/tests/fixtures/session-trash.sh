@@ -1,5 +1,5 @@
 #!/bin/sh
-case "$MAESTRO_NATIVE_MODE" in
+case "$SESSION_TRASH_OUTCOME" in
   zero) exit 0 ;;
   leading-dash)
     printf '%s\n' "$@" > "$MAESTRO_TRASH_LOG"

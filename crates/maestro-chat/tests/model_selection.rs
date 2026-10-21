@@ -23,7 +23,7 @@ use std::{
 
 /// Execute each test group in a separate process, which owns global registry/binding state.
 fn isolate(name: &str) -> bool {
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+    if !maestro_test_process::selection().is_child() {
         let credentials = std::env::current_exe()
             .unwrap()
             .join("absent-credentials.json")
@@ -35,7 +35,12 @@ fn isolate(name: &str) -> bool {
             ("LC_ALL", Some("en_US.UTF-8")),
             ("GOOGLE_APPLICATION_CREDENTIALS", Some(&credentials)),
         ]);
-        subprocess::run_child(name, &environment);
+        subprocess::run_child(
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .case("*"),
+            &environment,
+        );
         return true;
     }
     false

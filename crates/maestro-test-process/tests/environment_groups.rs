@@ -142,6 +142,56 @@ fn an_unknown_group_is_refused() {
     assert!(output.status.success(), "{output:?}");
 }
 
+/// Selection transport names that callers must never read or write.
+const SELECTION_VARIABLES: &[&str] = &[
+    "MAESTRO_CHILD_CASE",
+    "MAESTRO_TEST_GROUP",
+    "MAESTRO_ARTIFACT_CHILD",
+    "MAESTRO_AUTH_CASE",
+    "MAESTRO_AUTH_CHILD",
+    "MAESTRO_BINDING_CHILD",
+    "MAESTRO_BROWSER_CHILD",
+    "MAESTRO_CACHE_CHILD",
+    "MAESTRO_CLIPBOARD_CHILD",
+    "MAESTRO_COMPLETION_HOME_CHILD",
+    "MAESTRO_CONFIGURATION_CHILD",
+    "MAESTRO_CONFIG_CHILD",
+    "MAESTRO_CONTEXT_DATE_CHILD",
+    "MAESTRO_CONVERSION_TIME_CHILD",
+    "MAESTRO_COUNT_ENTRY_CHILD",
+    "MAESTRO_DATE_CHILD",
+    "MAESTRO_DEFAULT_CASE",
+    "MAESTRO_DIRECTORY_CHILD",
+    "MAESTRO_DISPLAY_CHILD",
+    "MAESTRO_DYNAMIC_CHILD",
+    "MAESTRO_EDITOR_CHILD",
+    "MAESTRO_ENV_CHILD",
+    "MAESTRO_EXTRACTION_CHILD",
+    "MAESTRO_HISTORY_CWD_CHILD",
+    "MAESTRO_HISTORY_UTC_CHILD",
+    "MAESTRO_INHERITED_STDOUT_CHILD",
+    "MAESTRO_KEYS_CHILD",
+    "MAESTRO_LINK_COLLISION_CHILD",
+    "MAESTRO_LOCALE_CASE",
+    "MAESTRO_METADATA_CHILD",
+    "MAESTRO_OUTPUT_PROBE",
+    "MAESTRO_PACKAGE_CASE",
+    "MAESTRO_RAW_FAILURE_CHILD",
+    "MAESTRO_READ_CHILD",
+    "MAESTRO_REMOVED_CWD_CHILD",
+    "MAESTRO_REQUEST_CASE",
+    "MAESTRO_RESOURCE_DIRECTORY_CHILD",
+    "MAESTRO_RESPONSE_STDERR_CHILD",
+    "MAESTRO_SELECTOR_KEYS_CHILD",
+    "MAESTRO_SERVICE_CASE",
+    "MAESTRO_SERVICE_PROBE",
+    "MAESTRO_SHELL_SEQUENCE_CHILD",
+    "MAESTRO_CAPTURE_STAGE",
+    "MAESTRO_NATIVE_MODE",
+    "MAESTRO_PROFILE_STAGE",
+    "MAESTRO_NATIVE_STAGE",
+];
+
 /// Selection variables belong to the process owner, not its callers.
 fn assert_selection_owner() {
     let crates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -160,8 +210,9 @@ fn assert_selection_owner() {
             } else if path.extension().is_some_and(|extension| extension == "rs") {
                 let source = std::fs::read_to_string(&path).unwrap();
                 assert!(
-                    !source.contains("MAESTRO_CHILD_CASE")
-                        && !source.contains("MAESTRO_TEST_GROUP"),
+                    !SELECTION_VARIABLES
+                        .iter()
+                        .any(|marker| source.contains(marker)),
                     "{} reads or writes the private child-selection protocol",
                     path.display()
                 );

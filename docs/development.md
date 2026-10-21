@@ -467,6 +467,8 @@ variables. `selection.is_child()` distinguishes the parent from a child.
 selected for that id. `selection.runs_group(test)` accepts the parent, wildcard
 children and environment-group children of that test. Case children do not run
 groups, and group children do not run individually selected cases.
+Use case identifiers for suite roles and nested stages; keep fixture data separate
+from selection, and call `env_clear()` before `case(id)` when clearing is needed.
 
 Credential tests acquire `SERIAL` before `PROCESS_CREATION` when both are needed.
 Configure the builder first, hold the creation guard only around checked `spawn`,

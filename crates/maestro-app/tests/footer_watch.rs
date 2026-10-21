@@ -894,7 +894,7 @@ fn native_command_probe(root: &native::Scratch) {
             "footer_native_async_lookup_runs_selected_command",
         )
         .unwrap()
-        .name(),
+        .case("*"),
         root.0.path(),
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
@@ -917,7 +917,7 @@ fn native_command_probe(root: &native::Scratch) {
             "footer_native_async_lookup_runs_selected_command",
         )
         .unwrap()
-        .name(),
+        .case("*"),
         root.0.path(),
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
@@ -1146,7 +1146,7 @@ os._exit(0)
                 "footer_async_lookup_keeps_output_until_pipe_eof"
             )
             .unwrap()
-            .name(),
+            .case("*"),
             root.0.path(),
             &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
             &[]

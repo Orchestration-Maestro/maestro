@@ -65,7 +65,7 @@ fn home_lookup_uses_truthy_environment_before_platform_fallback() {
 #[test]
 fn native_empty_environment_recovery_reads_procfs() {
     use super::{NativePackageOperations, PackageOperations};
-    if std::env::var_os("MAESTRO_ENV_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         assert_eq!(
             std::env::var_os("LLVM_PROFILE_FILE"),
             std::env::var_os("MAESTRO_EXPECT_PROFILE")
@@ -103,7 +103,7 @@ fn native_empty_environment_recovery_reads_procfs() {
             .iter()
             .map(|value| ("MAESTRO_EXPECT_PROFILE", value)),
     )
-    .env("MAESTRO_ENV_CHILD", "1")
+    .case("*")
     .env("MAESTRO_ENV_SENTINEL", "a=b")
     .output()
     .unwrap();
