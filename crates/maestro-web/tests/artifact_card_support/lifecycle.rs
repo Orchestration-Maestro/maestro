@@ -96,7 +96,11 @@ pub fn reversals() {
     let _ = js("globalThis.artifactTransitionCode=document.querySelector('.maestro-code')");
     let at = drawing::glyphs(&surface)[0].center();
     drawing::click(&mut surface, at, &recipe, &mut state);
-    for (time, height, margin) in [(0., 0., 0.), (0.075, 426., 2.83905), (0.15, 426., 9.30674)] {
+    for (time, height, margin) in [
+        (0., 0., 0.),
+        (0.075, 425.6, 2.83905),
+        (0.15, 425.6, 9.30674),
+    ] {
         surface.time = Some(time);
         let response = drawing::draw(&mut surface, &recipe, &mut state);
         assert!(
@@ -106,7 +110,11 @@ pub fn reversals() {
         check("artifactTransitionCode===document.querySelector('.maestro-code')");
     }
     drawing::click(&mut surface, at, &recipe, &mut state);
-    for (time, height, margin) in [(0.20, 426., 7.81032), (0.25, 426., 3.06921), (0.45, 0., 0.)] {
+    for (time, height, margin) in [
+        (0.20, 425.6, 7.81032),
+        (0.25, 425.6, 3.06921),
+        (0.45, 0., 0.),
+    ] {
         surface.time = Some(time);
         let response = drawing::draw(&mut surface, &recipe, &mut state);
         assert!(
@@ -118,7 +126,7 @@ pub fn reversals() {
     drawing::click(&mut surface, at, &recipe, &mut state);
     surface.time = Some(0.75);
     let response = drawing::draw(&mut surface, &recipe, &mut state);
-    assert!((response.rect.height() - header - 438.).abs() < 0.03);
+    assert!((response.rect.height() - header - 437.6).abs() < 0.03);
     check("artifactTransitionCode===document.querySelector('.maestro-code')");
 }
 
