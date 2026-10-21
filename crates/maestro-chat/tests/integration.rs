@@ -7,12 +7,6 @@ mod extension_editor;
 mod filter_mode;
 #[path = "support/keybindings.rs"]
 mod keybindings;
-#[allow(
-    dead_code,
-    reason = "Shared theme fixture supplies controls used by other crates."
-)]
-#[path = "../../maestro-theme/tests/live/mod.rs"]
-mod live;
 mod login_dialog;
 mod message_rendering;
 mod model_selection;
@@ -44,6 +38,8 @@ mod session_picker;
 mod session_picker_scopes;
 #[path = "support/session_picker.rs"]
 mod session_picker_support;
+#[path = "../../maestro-theme/tests/live/document.rs"]
+mod theme_document;
 // The session picker's helpers are compiled once, here and in the library tests that include it.
 use registry::input_support;
 use session_picker_support::{bindings, manual_runtime, published, registry};

@@ -103,7 +103,6 @@ fn image_choices_render_and_report_both_boolean_values() {
     }
 }
 
-use crate::live;
 #[test]
 fn theme_inventory_marks_only_the_current_name() {
     let _bindings = bindings_guard();

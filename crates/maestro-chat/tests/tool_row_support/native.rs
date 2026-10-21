@@ -1,5 +1,4 @@
 //! Real native edit reads composed with the public retained row and differential writer.
-use crate::live;
 use crate::recording_terminal;
 use maestro_chat::{ToolExecutionComponent, ToolExecutionResult};
 use maestro_tui::{Component, TUI, Text};
@@ -97,7 +96,7 @@ pub fn run(name: &str) {
     assert_eq!(clears(&terminal), case.expected.clears_after);
     assert_eq!(requests.get(), case.expected.renders);
     assert_eq!(
-        std::fs::read_to_string(scratch.path(filename)).ok(),
+        std::fs::read_to_string(scratch.path().join(filename)).ok(),
         case.expected.file_after
     );
     assert_eq!(runtime.futures(), 0);
@@ -116,8 +115,8 @@ pub fn terminal() -> recording_terminal::RecordingTerminal {
 }
 
 /// Create source input independently from the expected post-operation file.
-fn setup(case: &Case) -> (live::Scratch, super::records::Input) {
-    let scratch = live::Scratch::new();
+fn setup(case: &Case) -> (maestro_test_directory::Scratch, super::records::Input) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let filename = case.input["path"].as_str().unwrap();
     let text = if case.kind == "preflight" {
         "line 0\nline 1\n".into()
@@ -131,16 +130,17 @@ fn setup(case: &Case) -> (live::Scratch, super::records::Input) {
     std::fs::OpenOptions::new()
         .create_new(true)
         .write(true)
-        .open(scratch.path(filename))
+        .open(scratch.path().join(filename))
         .unwrap()
         .write_all(text.as_bytes())
         .unwrap();
     if case.kind == "replay" {
-        std::fs::remove_file(scratch.path(filename)).unwrap();
+        std::fs::remove_file(scratch.path().join(filename)).unwrap();
     }
-    let input: super::records::Input =
-        serde_json::from_value(json!({"tool":"edit","args":case.input,"cwd":scratch.path("")}))
-            .unwrap();
+    let input: super::records::Input = serde_json::from_value(
+        json!({"tool":"edit","args":case.input,"cwd":scratch.path().to_string_lossy()}),
+    )
+    .unwrap();
     (scratch, input)
 }
 /// Await every admitted native preview future before observing its publication.

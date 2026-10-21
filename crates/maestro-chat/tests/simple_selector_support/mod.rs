@@ -186,23 +186,30 @@ pub struct Rows {
     /// Styled output.
     pub lines: Vec<String>,
 }
-/// A native registry over disposable files, using the existing theme fixture owner.
-pub fn registry(names: &[String]) -> (super::live::Scratch, Rc<maestro_theme::ThemeState>) {
-    let scratch = super::live::Scratch::new();
+/// A native registry over disposable files, using the directory owner.
+pub fn registry(
+    names: &[String],
+) -> (
+    maestro_test_directory::Scratch,
+    Rc<maestro_theme::ThemeState>,
+) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     for name in names
         .iter()
         .filter(|name| !matches!(name.as_str(), "dark" | "light"))
     {
-        scratch.write(
-            &format!("custom/{name}.json"),
-            &super::live::custom_json(name, "#123456").to_string(),
-        );
+        std::fs::create_dir_all(scratch.path().join("custom")).unwrap();
+        std::fs::write(
+            scratch.path().join(format!("custom/{name}.json")),
+            crate::theme_document::custom_json(name, "#123456").to_string(),
+        )
+        .unwrap();
     }
     let state = Rc::new(maestro_theme::ThemeState::new(
         maestro_theme::ThemeDirectories {
             themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/../maestro-theme/assets/theme")
                 .into(),
-            custom_themes_dir: scratch.path("custom"),
+            custom_themes_dir: scratch.path().join("custom").to_string_lossy().into_owned(),
         },
     ));
     state.set_theme_instance(colors(0)).unwrap();
