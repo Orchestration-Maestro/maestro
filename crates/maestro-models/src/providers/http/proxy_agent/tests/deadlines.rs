@@ -195,6 +195,7 @@ async fn deadline_exchange(connect: u64, headers: u64, phase: Phase) {
         http1_only: true,
         connect_timeout: Some(Duration::from_secs(connect)),
         read_timeout: Some(Duration::from_secs(headers)),
+        ..crate::providers::http::Route::default()
     });
     let destination = if phase == Phase::Tls {
         "https://destination.invalid/"

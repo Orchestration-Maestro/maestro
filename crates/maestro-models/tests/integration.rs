@@ -65,6 +65,7 @@ mod cloud_conversation_runtime;
 mod cloud_conversation_streams;
 mod cloud_conversation_unknown_unions;
 mod cloud_model_routes;
+mod cloud_pac_routing;
 mod cloud_profile_credentials;
 mod cloud_proxy_transports;
 mod compatibility_invocation;

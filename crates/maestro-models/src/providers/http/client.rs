@@ -37,7 +37,10 @@ async fn send(
 }
 
 /// Prepare one request for either native sender, including ordinary client defaults.
-fn prepare(client: &reqwest::Client, request: HttpRequest) -> Result<reqwest::Request, FetchError> {
+pub(super) fn prepare(
+    client: &reqwest::Client,
+    request: HttpRequest,
+) -> Result<reqwest::Request, FetchError> {
     let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
     let mut headers = request.headers;
     let mut url = url::Url::parse(&request.url).map_err(failed)?;
@@ -55,7 +58,7 @@ fn prepare(client: &reqwest::Client, request: HttpRequest) -> Result<reqwest::Re
 }
 
 /// Convert a response once, with streaming body reads outside header deadlines.
-fn finish(response: reqwest::Response) -> HttpResponse {
+pub(super) fn finish(response: reqwest::Response) -> HttpResponse {
     let status = response.status().as_u16();
     #[cfg(not(target_arch = "wasm32"))]
     let status_text = status_text(&response);
@@ -87,6 +90,8 @@ pub(crate) struct Route {
     /// Proxy chosen per destination, checked before each request is sent so that an unusable
     /// choice fails it; without one the client uses none, whatever the environment.
     pub(crate) proxy: Option<ProxySelector>,
+    /// Script globals survive connector timeout changes within this bridge.
+    pub(crate) pac: Arc<super::pac_proxy_agent::PacProxyAgent>,
     /// Whether the connection speaks HTTP/1 only.
     pub(crate) http1_only: bool,
     /// Deadline for establishing a connection, when supplied by the provider.
@@ -100,11 +105,12 @@ pub(crate) struct Route {
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
     let clients = configured_clients(&route);
-    let check = route.proxy;
+    let check = route.proxy.clone();
     let read_timeout = route.read_timeout;
     Arc::new(move |request| {
         let clients = clients.clone();
         let check = check.clone();
+        let route = route.clone();
         Box::pin(async move {
             let selected = if let Some(select) = check {
                 select(&url::Url::parse(&request.url).map_err(failed)?).map_err(connection)?
@@ -112,7 +118,7 @@ pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
                 None
             };
             let (client, socks) = clients?;
-            let response = send_selected(client, socks, selected, request);
+            let response = send_selected(client, socks, selected, request, &route);
             if let Some(timeout) = read_timeout {
                 tokio::time::timeout(timeout, response)
                     .await
@@ -131,7 +137,18 @@ async fn send_selected(
     socks: Option<super::proxy_agent::Sender>,
     selected: Option<url::Url>,
     request: HttpRequest,
+    route: &Route,
 ) -> Result<HttpResponse, FetchError> {
+    if let Some(source) = selected
+        .as_ref()
+        .filter(|proxy| proxy.scheme().starts_with("pac+"))
+    {
+        return route
+            .pac
+            .request(source, request, route, &client)
+            .await
+            .map_err(|error| classify(error.as_ref()));
+    }
     if selected.is_some_and(|proxy| {
         matches!(
             proxy.scheme(),
@@ -207,7 +224,7 @@ fn build() -> Result<reqwest::Client, FetchError> {
 }
 
 /// Join an error with its causes into one line.
-fn chain(error: &dyn Error) -> String {
+pub(super) fn chain(error: &dyn Error) -> String {
     let mut text = error.to_string();
     let mut cause = error.source();
     while let Some(next) = cause {

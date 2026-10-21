@@ -168,10 +168,40 @@ after local destination lookup and before destination TLS. Each SOCKS request ow
 connection through response-body consumption; cancellation or a header deadline closes
 pending connection work. Request preparation and response conversion use the
 [shared HTTP transport](chat-completions.md#transport).
-Proxy auto-configuration remains in [#901](https://github.com/Orchestration-Maestro/maestro/issues/901).
 A selected proxy that is not a URL or has an unsupported scheme ends the stream with an error
 before the destination is contacted; a destination the exclusion list leaves out never reads
 its proxy. The default sender returns redirects without following them.
+
+### Proxy scripts
+
+A selected `pac+data:`, `pac+file:`, `pac+http:` or `pac+https:` URL loads a
+proxy script instead of opening a direct destination connection. Both opaque
+`pac+data:,script` and hierarchical `pac+data://,script` spellings are accepted.
+The script receives the complete destination URL and its canonical host, including
+a nondefault port in the URL, before choosing ordered DIRECT, HTTP, HTTPS or SOCKS
+candidates. Unknown directives advance; malformed recognized proxy URLs fail.
+Fallback happens only before application bytes are sent. A connected proxy's
+CONNECT refusal is returned with its status, headers and body, without replay.
+
+Scripts have the standard host, DNS, network, local-address, time, weekday and
+calendar helpers. Local-address discovery first probes `8.8.8.8:53`, closes that
+socket, and falls back to native interfaces on failure. It selects the first
+non-loopback IPv4 on the first eligible interface, preserving interface and
+per-interface address order. An authored `alert` emits its exact message through
+tracing rather than printing.
+
+Each bridge retains separate script globals for each destination protocol and
+source URL, independently of its connection timeout settings. Compilation resolves
+and retains `FindProxyForURL`, including lexical declarations; later reassignment
+does not replace that callable. Missing or non-callable exports fail compilation.
+Unchanged source keeps that context; successfully compiled replacement code
+creates a new one. Failed compilation cannot publish source metadata or
+revive an old script through a later unchanged response. File sources compare the
+opened file's millisecond modification time; HTTP and HTTPS sources use cache
+headers, validators and up to five redirects. Source requests do not recursively
+apply the script they are loading. Destination exclusions and a supplied sender
+skip script loading entirely. FTP sources are tracked separately in
+[#1908](https://github.com/Orchestration-Maestro/maestro/issues/1908).
 
 ## Hooks and results
 

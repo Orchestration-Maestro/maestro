@@ -1,11 +1,11 @@
-//! Request-owned SOCKS connections with shared destination TLS setup.
+//! Request-owned proxy connections with shared destination TLS setup.
 
 use std::error::Error;
-use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use futures_util::FutureExt;
 use hyper::body::Body;
 use hyper_util::rt::TokioIo;
 use tower_service::Service;
@@ -13,12 +13,11 @@ use tower_service::Service;
 use super::client::ProxySelector;
 use super::socks_proxy_agent::SocksProxyAgent;
 
+pub(super) mod socket;
+use socket::{Driver, Socket, driving};
+
 /// Native connection errors retain causes through the HTTP boundary.
 pub(super) type Failure = Box<dyn Error + Send + Sync>;
-/// Destination TLS over the connected SOCKS socket.
-type Socket = hyper_rustls::MaybeHttpsStream<TokioIo<tokio::net::TcpStream>>;
-/// HTTP connection driven by its request or response body, never a detached task.
-type Connection = hyper::client::conn::http1::Connection<Socket, reqwest::Body>;
 
 /// Immutable routing for a request-owned connection.
 #[derive(Clone)]
@@ -63,7 +62,7 @@ impl Sender {
     /// Send once and transfer connection ownership into the response body.
     pub(super) async fn request(
         mut self,
-        mut request: hyper::Request<reqwest::Body>,
+        request: hyper::Request<reqwest::Body>,
     ) -> Result<hyper::Response<reqwest::Body>, Failure> {
         let connection = self.connector.call(request.uri().clone());
         let socket = if let Some(timeout) = self.timeout {
@@ -73,47 +72,51 @@ impl Sender {
         } else {
             connection.await?
         };
-        let host = request
-            .uri()
-            .authority()
-            .ok_or_else(|| std::io::Error::other("Missing request authority"))?
-            .as_str()
-            .parse::<hyper::header::HeaderValue>()?;
-        request
-            .headers_mut()
-            .entry(hyper::header::HOST)
-            .or_insert(host);
+        exchange(Socket::new(socket), request, false).await
+    }
+}
+
+/// Send exactly once after route establishment, sharing conversion and driver ownership.
+pub(super) async fn exchange(
+    socket: Socket,
+    mut request: hyper::Request<reqwest::Body>,
+    absolute: bool,
+) -> Result<hyper::Response<reqwest::Body>, Failure> {
+    let host = request
+        .uri()
+        .authority()
+        .ok_or_else(|| std::io::Error::other("Missing request authority"))?
+        .as_str()
+        .parse::<hyper::header::HeaderValue>()?;
+    request
+        .headers_mut()
+        .entry(hyper::header::HOST)
+        .or_insert(host);
+    if !absolute {
         *request.uri_mut() = request
             .uri()
             .path_and_query()
             .map_or("/", |path| path.as_str())
             .parse()?;
-        let (mut sender, connection) = hyper::client::conn::http1::handshake(socket).await?;
-        let mut connection = Box::pin(connection);
-        let mut response = Box::pin(sender.send_request(request));
-        let response = std::future::poll_fn(|context| {
-            if let Poll::Ready(Err(error)) = connection.as_mut().poll(context) {
-                return Poll::Ready(Err(error));
-            }
-            response.as_mut().poll(context)
-        })
-        .await?;
-        Ok(response.map(|body| response_body(body, connection)))
     }
+    let (mut sender, connection) = hyper::client::conn::http1::handshake(socket).await?;
+    let mut connection: Driver = Box::pin(connection.fuse());
+    let response = driving(&mut connection, sender.send_request(request)).await?;
+    Ok(response.map(|body| response_body(body, connection)))
 }
 
 /// Drive the same connection while consuming its body, so dropping either phase closes it.
-fn response_body(
-    mut body: hyper::body::Incoming,
-    connection: Pin<Box<Connection>>,
-) -> reqwest::Body {
-    let mut connection = Some(connection);
+pub(super) fn response_body(mut body: hyper::body::Incoming, connection: Driver) -> reqwest::Body {
+    let connection = std::sync::Mutex::new(Some(connection));
     let stream = futures_util::stream::poll_fn(move |context| {
+        let mut connection = connection
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if connection
             .as_mut()
             .is_some_and(|connection| connection.as_mut().poll(context).is_ready())
         {
-            connection = None;
+            *connection = None;
         }
         Pin::new(&mut body).poll_frame(context)
     });
@@ -161,5 +164,23 @@ impl std::fmt::Display for ConnectTimeout {
 }
 impl Error for ConnectTimeout {}
 
+/// Decode one URI component strictly, without form-style plus replacement.
+pub(super) fn decode(value: &str) -> std::io::Result<String> {
+    let bytes = value.as_bytes();
+    for (index, byte) in bytes.iter().enumerate() {
+        if *byte == b'%'
+            && !bytes
+                .get(index + 1..index + 3)
+                .is_some_and(|digits| digits.iter().all(u8::is_ascii_hexdigit))
+        {
+            return Err(std::io::Error::other("Invalid proxy credential escape"));
+        }
+    }
+    percent_encoding::percent_decode_str(value)
+        .decode_utf8()
+        .map(std::borrow::Cow::into_owned)
+        .map_err(std::io::Error::other)
+}
+
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

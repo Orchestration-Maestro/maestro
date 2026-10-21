@@ -220,6 +220,21 @@ fn environment(row: &Row, work: &Workdir, input: &Input, urls: [&str; 3]) -> Vec
     vars.push(("AWS_MAX_ATTEMPTS".to_owned(), "1".to_owned()));
     match row.input.mode.as_str() {
         "off" => {}
+        "pac" => {
+            let endpoint = proxy.trim_start_matches("http://");
+            let expected = row
+                .expected
+                .seen
+                .iter()
+                .filter(|seen| seen.route == "proxy")
+                .count();
+            let script = format!(
+                "var calls=0;function FindProxyForURL(url){{++calls;if(url.includes('/converse-stream')&&calls!=={expected})throw Error('lost credential resolver or proxied metadata');return 'PROXY {endpoint}'}}"
+            );
+            let encoded =
+                percent_encoding::utf8_percent_encode(&script, percent_encoding::NON_ALPHANUMERIC);
+            vars.push(("HTTP_PROXY".to_owned(), format!("pac+data:,{encoded}")));
+        }
         "lowercase" => vars.push(("http_proxy".to_owned(), proxy.to_owned())),
         "https" => {
             vars.push(("HTTPS_PROXY".to_owned(), proxy.to_owned()));
@@ -506,7 +521,21 @@ fn rows() -> TestResult<Vec<Row>> {
 /// Run the corpus subset owned by this test, or seven existing rows through a supplied sender.
 pub fn check(test: &str) -> TestResult {
     let supplied = test == "credential_services_reuse_the_supplied_sender";
-    let all = rows()?;
+    let mut all = rows()?;
+    if test == "pac_credential_services_reuse_the_existing_bridge" {
+        all.retain(|row| {
+            row.input.mode == "proxy"
+                && !row.input.denied
+                && matches!(
+                    row.input.source.as_str(),
+                    "login" | "role" | "web" | "sso" | "oidc" | "container" | "instance"
+                )
+        });
+        for row in &mut all {
+            test.clone_into(&mut row.test);
+            "pac".clone_into(&mut row.input.mode);
+        }
+    }
     let owned: Vec<_> = all
         .iter()
         .filter(|row| {

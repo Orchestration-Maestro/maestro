@@ -70,6 +70,7 @@ syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["full"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
+arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
@@ -79,32 +80,47 @@ form_urlencoded = { version = "1.2.2" }
 futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
-futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
+futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
+icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
+phf = { version = "0.14.0", features = ["macros"] }
+regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
+rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
+time = { version = "0.3.55", features = ["formatting", "large-dates", "local-offset", "macros", "parsing", "serde"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+winnow = { version = "1.0.4" }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+phf = { version = "0.14.0", features = ["macros"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
+winnow = { version = "1.0.4" }
 
 [target.aarch64-unknown-linux-gnu.dependencies]
+arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
@@ -114,32 +130,47 @@ form_urlencoded = { version = "1.2.2" }
 futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
-futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
+futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
+icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
+phf = { version = "0.14.0", features = ["macros"] }
+regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
+rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
+time = { version = "0.3.55", features = ["formatting", "large-dates", "local-offset", "macros", "parsing", "serde"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+winnow = { version = "1.0.4" }
 
 [target.aarch64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+phf = { version = "0.14.0", features = ["macros"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
+winnow = { version = "1.0.4" }
 
 [target.x86_64-apple-darwin.dependencies]
+arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
@@ -150,31 +181,46 @@ form_urlencoded = { version = "1.2.2" }
 futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
-futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
+futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
+icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
+phf = { version = "0.14.0", features = ["macros"] }
+regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
+rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
+time = { version = "0.3.55", features = ["formatting", "large-dates", "local-offset", "macros", "parsing", "serde"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+winnow = { version = "1.0.4" }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+phf = { version = "0.14.0", features = ["macros"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
+winnow = { version = "1.0.4" }
 
 [target.aarch64-apple-darwin.dependencies]
+arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
@@ -185,31 +231,46 @@ form_urlencoded = { version = "1.2.2" }
 futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
-futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
+futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
+icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
+phf = { version = "0.14.0", features = ["macros"] }
+regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
+rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
+time = { version = "0.3.55", features = ["formatting", "large-dates", "local-offset", "macros", "parsing", "serde"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "net", "process", "rt-multi-thread", "signal"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+winnow = { version = "1.0.4" }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+phf = { version = "0.14.0", features = ["macros"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
+winnow = { version = "1.0.4" }
 
 [target.x86_64-pc-windows-msvc.dependencies]
+arrayvec = { version = "0.7.8" }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
@@ -219,21 +280,34 @@ futures-core = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await", "sink", "std"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
+phf = { version = "0.14.0", features = ["macros"] }
+regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
+rustc-hash = { version = "2.1.3" }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
+time = { version = "0.3.55", features = ["formatting", "large-dates", "local-offset", "macros", "parsing", "serde"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "net", "process", "rt-multi-thread"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
-windows-sys = { version = "0.61.2", features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Wdk_System_IO", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
+windows-sys = { version = "0.61.2", features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Wdk_System_IO", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
+winnow = { version = "1.0.4" }
 
 [target.x86_64-pc-windows-msvc.build-dependencies]
 fastrand = { version = "2.5.0" }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+phf = { version = "0.14.0", features = ["macros"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
+time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+toml_datetime = { version = "1.1.1", features = ["serde"] }
+toml_parser = { version = "1.1.3" }
+winnow = { version = "1.0.4" }
 
 ### END HAKARI SECTION

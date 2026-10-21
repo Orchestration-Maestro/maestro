@@ -2,7 +2,7 @@
 
 use crate::tests::loopback;
 
-mod socks;
+pub(in crate::providers::http) mod socks;
 
 use crate::providers::http::{HttpRequest, Route, configured_fetch};
 use crate::tests::runtime::run;

@@ -11,7 +11,7 @@ use maestro_models::{SimpleStreamOptions, StreamOptions};
 use std::sync::Arc;
 
 /// Drive either public caller in its isolated child environment.
-async fn conversation(
+pub(super) async fn conversation(
     common: StreamOptions,
 ) -> TestResult<(Vec<String>, maestro_models::AssistantMessage)> {
     let model = bedrock::model(&std::env::var("MAESTRO_ORIGIN")?)?;
@@ -39,7 +39,10 @@ async fn conversation(
 }
 
 /// Require the complete conversation rather than an isolated route decision.
-fn completed(labels: &[String], message: &maestro_models::AssistantMessage) -> TestResult {
+pub(super) fn completed(
+    labels: &[String],
+    message: &maestro_models::AssistantMessage,
+) -> TestResult {
     assert_eq!(labels.last().map(String::as_str), Some("done"));
     assert!(message.error_message.is_none());
     assert_eq!(serde_json::to_value(&message.content)?[0]["text"], "answer");
@@ -338,7 +341,7 @@ fn cancellation_gate(gate: std::sync::mpsc::Receiver<()>) -> TestResult<loopback
 }
 
 /// Observe failure, bypass or replacement through the public conversation caller.
-async fn bypass_conversation(case: &str) -> TestResult {
+pub(super) async fn bypass_conversation(case: &str) -> TestResult {
     let scripted = bedrock::serve(bedrock::answer("answer")?);
     let common = StreamOptions {
         fetch: (case == "replacement").then(|| Arc::clone(&scripted.fetch)),

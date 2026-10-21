@@ -2,6 +2,8 @@
 
 use std::io;
 
+use super::proxy_agent::decode;
+
 /// Protocol selected by the proxy URL.
 #[derive(Clone, Copy)]
 enum SocksVersion {
@@ -10,7 +12,6 @@ enum SocksVersion {
     /// SOCKS5 with negotiated authentication.
     V5,
 }
-
 /// Parsed connection policy for one selected SOCKS URL.
 #[derive(Clone)]
 pub(super) struct SocksProxyAgent {
@@ -144,24 +145,6 @@ fn socket_host(host: &str) -> &str {
     host.strip_prefix('[')
         .and_then(|host| host.strip_suffix(']'))
         .unwrap_or(host)
-}
-
-/// Decode one URI component strictly, without form-style plus replacement.
-fn decode(value: &str) -> io::Result<String> {
-    let bytes = value.as_bytes();
-    for (index, byte) in bytes.iter().enumerate() {
-        if *byte == b'%'
-            && !bytes
-                .get(index + 1..index + 3)
-                .is_some_and(|digits| digits.iter().all(u8::is_ascii_hexdigit))
-        {
-            return Err(io::Error::other("Invalid proxy credential escape"));
-        }
-    }
-    percent_encoding::percent_decode_str(value)
-        .decode_utf8()
-        .map(std::borrow::Cow::into_owned)
-        .map_err(io::Error::other)
 }
 
 #[cfg(test)]
