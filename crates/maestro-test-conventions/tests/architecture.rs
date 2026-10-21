@@ -2486,9 +2486,11 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-models",
     "maestro-packages",
     "maestro-resources",
+    "maestro-session",
     "maestro-test-conventions",
     "maestro-theme",
     "maestro-tooling",
+    "maestro-tools",
 ];
 
 #[test]

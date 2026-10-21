@@ -94,7 +94,7 @@ permits no normal/build credentials dependency. The test-process
 owner is reachable only through those native development edges, has no outgoing
 domain edge and is never admitted by a `maestro-test-*` name pattern.
 The directory owner follows the same native-only declaration checks, with its
-own exact eleven-caller list and no outgoing domain or utility edge; see the
+own exact thirteen-caller list and no outgoing domain or utility edge; see the
 [directory contract](specs/maestro-port.md#test-directory-owner). The tracing owner
 follows the same checks with its own two callers; see the
 [tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
