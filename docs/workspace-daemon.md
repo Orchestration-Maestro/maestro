@@ -252,7 +252,10 @@ use `/bin/sh` on Unix or `powershell.exe` on Windows. Automatic mode uses a logi
 shell only on macOS. Login mode resolves an executable path before launch and
 sets `SHELL`; on Unix, argument zero is `-` followed by the shell basename.
 Windows direct PowerShell launches wrap the profile prompt to report filesystem
-cwd without changing the status observed by the original prompt.
+cwd without changing the status observed by the original prompt. When prompt
+reporting is enabled, a wrapped prompt may start above the visible screen: directory
+recovery follows its retained soft-wrap rows, but rejects an incomplete prompt whose
+prefix has been discarded.
 
 `maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
 (`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
