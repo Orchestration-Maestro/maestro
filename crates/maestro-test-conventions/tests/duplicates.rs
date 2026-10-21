@@ -358,6 +358,28 @@ fn normalized_sources_keep_duplicate_locations() {
 }
 
 #[test]
+fn shebang_sources_keep_duplicate_coordinates_and_shared_owner_control() {
+    for prefix in ["#!/usr/bin/env rustx\n", "#![allow(dead_code)]\n"] {
+        let body = "let _ = 1;".repeat(6);
+        let source = format!("{prefix}{}", copied(&body));
+        let error = check(&[member("maestro-settings", &[("src/lib.rs", source)])])
+            .expect_err("prefixed production duplicates must be rejected");
+        assert_eq!(
+            error,
+            "exact duplicate body (30 tokens): crates/maestro-settings/src/lib.rs:2, crates/maestro-settings/src/lib.rs:3"
+                .replace('/', std::path::MAIN_SEPARATOR_STR)
+        );
+        let source = format!(
+            "{prefix}fn owner() {{{body}}} fn first() {{owner();}} fn second() {{owner();}}"
+        );
+        assert_eq!(
+            check(&[member("maestro-settings", &[("src/lib.rs", source)])]),
+            Ok(())
+        );
+    }
+}
+
+#[test]
 fn earlier_convention_errors_keep_precedence() {
     let workspace = support::Workspace::new();
     workspace.foundation(&["maestro-settings"]);
