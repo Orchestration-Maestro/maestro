@@ -660,10 +660,10 @@ pub fn write_message<W: Write, M: Serialize>(writer: &mut W, msg: &M) -> Result<
 ///
 /// Reassembles partial reads correctly. Rejects frames whose declared
 /// length exceeds `max_frame_size` without panicking or allocating
-/// oversized buffers. The string lengths a payload declares count together
-/// against the smallest frame cap that holds the payload (`MAX_FRAME_SIZE`,
-/// then `MAX_GRAPHICS_FRAME_SIZE`, then `u32::MAX` bytes); a string past that
-/// cap fails decoding before it is allocated.
+/// oversized buffers. For the protocol records, decoder accounting is bounded
+/// by eight times the payload length rounded up to a power of two (at least
+/// one byte), saturating at `usize::MAX`. This permits compact integer fields
+/// while rejecting excessive declared string lengths before allocation.
 ///
 /// # Errors
 /// Returns an oversized, I/O, truncated-stream or binary decoding error.
@@ -687,14 +687,8 @@ pub fn read_message<R: Read, M: for<'de> Deserialize<'de>>(
     let mut payload = vec![0u8; claimed_len];
     read_exact_or_eof(reader, &mut payload)?;
 
-    let decoded = if claimed_len <= MAX_FRAME_SIZE {
-        decode_payload::<M, MAX_FRAME_SIZE>(&payload)
-    } else if claimed_len <= MAX_GRAPHICS_FRAME_SIZE {
-        decode_payload::<M, MAX_GRAPHICS_FRAME_SIZE>(&payload)
-    } else {
-        decode_payload::<M, { u32::MAX as usize }>(&payload)
-    };
-    let (msg, consumed) = decoded.map_err(|e| FramingError::Bincode(e.to_string()))?;
+    let (msg, consumed) =
+        decode_payload(&payload).map_err(|e| FramingError::Bincode(e.to_string()))?;
 
     // Enforce that the decoder consumed the full payload.
     // Trailing bytes after the decoded message indicate a protocol violation
@@ -708,12 +702,32 @@ pub fn read_message<R: Read, M: for<'de> Deserialize<'de>>(
     Ok(msg)
 }
 
-/// Decodes `payload`, failing once its declared string lengths total more
-/// than `LIMIT` bytes; bincode takes the limit only as a constant.
-fn decode_payload<M: for<'de> Deserialize<'de>, const LIMIT: usize>(
+/// Allows eight accounting bytes per wire byte, with power-of-two buckets.
+/// Protocol integers and collection lengths charge at most eight bytes per
+/// encoded byte; bincode requires its accounting limit as a constant.
+fn decode_payload<M: for<'de> Deserialize<'de>>(
     payload: &[u8],
 ) -> Result<(M, usize), bincode::error::DecodeError> {
-    bincode::serde::decode_from_slice(payload, bincode::config::standard().with_limit::<LIMIT>())
+    /// Selects a constant limit covering the received payload's bucket.
+    macro_rules! decode_bucket {
+        ($($power:literal),*) => {
+            match payload.len().saturating_sub(1).checked_ilog2().map(|power| power + 1) {
+                $(Some($power) => bincode::serde::decode_from_slice(
+                    payload,
+                    bincode::config::standard().with_limit::<{
+                        8usize.saturating_mul(2usize.saturating_pow($power))
+                    }>(),
+                ),)*
+                _ => bincode::serde::decode_from_slice(
+                    payload, bincode::config::standard().with_limit::<8>(),
+                ),
+            }
+        };
+    }
+    decode_bucket!(
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32
+    )
 }
 
 /// Like `Read::read_exact`, but returns `FramingError::UnexpectedEof`

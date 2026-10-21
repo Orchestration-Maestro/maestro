@@ -744,6 +744,111 @@ fn strings_past_the_frame_caps_round_trip_under_a_larger_cap() {
 }
 
 #[test]
+/// Small frames cannot reserve strings sized for the protocol-wide cap.
+fn string_allocation_limit_tracks_the_received_payload() {
+    for tag in [vec![5], vec![4, 1]] {
+        let mut payload = tag;
+        payload.extend_from_slice(&[251, 0, 16]);
+        let mut frame = u32::try_from(payload.len()).unwrap().to_le_bytes().to_vec();
+        frame.extend_from_slice(&payload);
+        let error = if payload[0] == 5 {
+            read_message::<_, ClientMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        } else {
+            read_message::<_, ServerMessage>(&mut frame.as_slice(), MAX_FRAME_SIZE).unwrap_err()
+        };
+        assert!(
+            matches!(error, FramingError::Bincode(ref message) if message.contains("LimitExceeded")),
+            "{error:?}"
+        );
+    }
+}
+
+#[test]
+/// Admitted clipboard strings retain their cap-edge round trips.
+fn cap_edge_clipboard_round_trips() {
+    for cap in [MAX_FRAME_SIZE, MAX_GRAPHICS_FRAME_SIZE] {
+        assert_cap_round_trip(
+            &ServerMessage::Clipboard {
+                data: "A".repeat(cap - 8),
+            },
+            cap,
+            cap - 2,
+        );
+    }
+}
+
+#[test]
+/// Admitted client byte vectors retain their cap-edge round trips.
+fn cap_edge_client_bytes_round_trip() {
+    for cap in [MAX_FRAME_SIZE, MAX_GRAPHICS_FRAME_SIZE] {
+        assert_cap_round_trip(
+            &ClientMessage::Input {
+                data: vec![0; cap - 6],
+            },
+            cap,
+            cap,
+        );
+    }
+}
+
+#[test]
+/// Admitted graphics bytes retain their cap-edge round trips.
+fn cap_edge_graphics_round_trip() {
+    for cap in [MAX_FRAME_SIZE, MAX_GRAPHICS_FRAME_SIZE] {
+        assert_cap_round_trip(
+            &ServerMessage::Graphics {
+                bytes: vec![0; cap - 6],
+            },
+            cap,
+            cap,
+        );
+    }
+}
+
+/// Checks both wire size and decoding through the public frame reader.
+fn assert_cap_round_trip<M>(message: &M, cap: usize, payload_len: usize)
+where
+    M: serde::Serialize + for<'de> serde::Deserialize<'de> + PartialEq + std::fmt::Debug,
+{
+    let mut buf = Vec::new();
+    write_message(&mut buf, message).unwrap();
+    assert_eq!(buf.len() - 4, payload_len);
+    assert_eq!(
+        &read_message::<_, M>(&mut buf.as_slice(), cap).unwrap(),
+        message
+    );
+}
+
+#[test]
+/// Compact cell collections decode even when accounting exceeds their wire size.
+fn dense_cells_at_the_frame_cap_round_trip() {
+    let cell = CellData {
+        symbol: String::new(),
+        fg: 0,
+        bg: 0,
+        modifier: 0,
+        skip: false,
+        hyperlink: None,
+    };
+    let count = (MAX_FRAME_SIZE - 11) / 6;
+    let msg = ServerMessage::Frame(FrameData {
+        cells: vec![cell; count],
+        width: 1,
+        height: 1,
+        cursor: None,
+        hyperlinks: Vec::new(),
+        graphics: vec![0; 3],
+    });
+    let mut buf = Vec::new();
+    write_message(&mut buf, &msg).unwrap();
+    assert_eq!(buf.len() - 4, MAX_FRAME_SIZE);
+    assert_eq!(
+        read_message::<_, ServerMessage>(&mut buf.as_slice(), MAX_FRAME_SIZE).unwrap(),
+        msg
+    );
+}
+
+#[test]
 /// The detach frame prefix records the payload length.
 fn detach_frame_prefix_matches_its_payload_length() {
     // Detach is a one-byte bincode payload.

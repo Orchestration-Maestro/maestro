@@ -83,9 +83,11 @@ four-byte little-endian payload length followed by standard bincode encoding.
 Readers enforce the caller-supplied maximum before allocation, reject trailing
 bytes and distinguish truncated streams from other I/O errors. The normal maximum
 is 2 MiB; explicitly selected graphics traffic has a separate 32 MiB constant.
-The string lengths a payload declares count together against the smallest of
-these caps that holds the payload, or against the four-byte length maximum for
-larger payloads. Decoding fails before it allocates a string past that cap.
+Decoder accounting is limited to eight times the received payload length rounded
+up to a power of two (at least one byte), saturating at the platform's addressable
+size. This allows compact integer encodings while rejecting excessive declared
+string lengths before allocation. The limit measures decoder accounting, not total
+heap usage; collection storage can exceed its encoded size.
 Version negotiation accepts 21 and rejects older/newer clients, including zero.
 
 `ClientKeybindings::Server` keeps server configuration. `Local` carries a typed
