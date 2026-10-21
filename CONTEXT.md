@@ -275,3 +275,9 @@ From `docs/specs/packages.md`.
 From `docs/specs/tool-additions.md`.
 
 - **Output backlog:** Bytes the native terminal has queued and not yet written.
+
+- **Test directory:** The dedicated, unpublished, native `maestro-test-directory`
+  leaf that owns exclusive disposable-root allocation and cleanup. Automatically
+  chosen roots are canonical; supplied parents retain native joining semantics.
+  Only its eight declared callers may use it through native development edges.
+  See the [contract](docs/specs/maestro-port.md#test-directory-owner).

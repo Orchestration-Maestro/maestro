@@ -10,7 +10,7 @@ pub(crate) mod metadata;
 mod policy;
 use metadata::{canonical, check_kind, members};
 pub(crate) use policy::UNIFIER;
-use policy::{TEST_PROCESS, TEST_PROCESS_CALLERS, UTILITY, rule, uses_utility};
+use policy::{UTILITY, rule, test_support_callers, uses_utility};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -194,9 +194,11 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
-    if member == Some(TEST_PROCESS) && !native_declared(dependency, kind, &Kind::Development) {
+    if let Some(member) = member.filter(|name| test_support_callers(name).is_some())
+        && !native_declared(dependency, kind, &Kind::Development)
+    {
         return Err(format!(
-            "{owner}: {TEST_PROCESS} must be a native, non-optional development dependency"
+            "{owner}: {member} must be a native, non-optional development dependency"
         ));
     }
     if owner == "maestro-detection"
@@ -263,15 +265,13 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
     if edge.to == UNIFIER {
         return Ok(());
     }
-    if edge.to == TEST_PROCESS {
-        return if edge.kind == Kind::Development
-            && TEST_PROCESS_CALLERS.contains(&edge.from.as_str())
-        {
+    if let Some(callers) = test_support_callers(&edge.to) {
+        return if edge.kind == Kind::Development && callers.contains(&edge.from.as_str()) {
             Ok(())
         } else {
             Err(format!(
-                "{TEST_PROCESS} is reachable only as a native development dependency of its declared callers: {} -> {}",
-                edge.from, edge.to
+                "{} is reachable only as a native development dependency of its declared callers: {} -> {}",
+                edge.to, edge.from, edge.to
             ))
         };
     }

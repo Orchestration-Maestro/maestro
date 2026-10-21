@@ -30,6 +30,7 @@
   "maestro-settings": "core",
   "maestro-terminal": "core",
   "maestro-test-conventions": "dedicated",
+  "maestro-test-directory": "dedicated",
   "maestro-test-process": "dedicated",
   "maestro-test-terminal": "dedicated",
   "maestro-text": "core",

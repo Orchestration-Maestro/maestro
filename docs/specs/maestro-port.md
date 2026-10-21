@@ -311,6 +311,7 @@ from the optional foundation utility described below.
 | `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern`, `maestro-text` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
+| `maestro-test-directory` | own disposable native test directories | — | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown` | 0 |
@@ -472,7 +473,8 @@ direct-dependency sets; every other dependency rule, including cycle and interna
 dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
-(`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), cancellation leaf (`maestro-cancellation`), shared
+(`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
+(`maestro-test-directory`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`), process leaf (`maestro-process`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
@@ -549,6 +551,28 @@ one-test prologue through their own transport, followed by product readiness and
 completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue.
 
+### Test directory owner
+
+`maestro-test-directory` is a dedicated, unpublished, native, std-only leaf for
+exclusive disposable-directory allocation and cleanup. It has no workspace
+edges except the native feature unifier and is excluded from the foundation
+utility permission. Its only incoming edges are non-optional development
+dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
+`maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
+`maestro-resources`, `maestro-test-conventions` and `maestro-tooling`; a caller
+declares it only when it uses it. Aliases follow the same rules. Normal, build,
+optional, unqualified, browser and foreign-target declarations are rejected.
+Both dependency graphs remain acyclic; no crate-name pattern grants access.
+
+`Scratch::new()` chooses the native temporary parent and retains the created
+root's canonical path. `Scratch::new_in(parent)` preserves native path-join
+spelling, including relative and non-Unicode parents. Both return `io::Result`,
+use PID/atomic-sequence candidates and exclusive `create_dir`, retry only
+`AlreadyExists`, and never delete a colliding entry. The borrowed `path()` stays
+owned by `Scratch`; drop attempts recursive removal without panicking, including
+when canonicalization fails after creation. The leaf owns no caller policy,
+process launcher, timer, retry limit or ownership-transfer API.
+
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
@@ -596,7 +620,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 **Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
