@@ -381,7 +381,7 @@ async fn observe(input: &Input) -> TestResult<Value> {
 }
 
 /// Compare expected fields after normalizing native diagnostics and JSON numeric representation.
-fn check(row: &Row) -> TestResult {
+fn check((index, row): (usize, &Row)) -> TestResult {
     let mut actual = crate::runtime::run_paused(observe(&row.input))?;
     if let Some(expected) = row.expected["output"]["errorMessage"]
         .as_str()
@@ -412,7 +412,7 @@ fn check(row: &Row) -> TestResult {
     let expected: Value = serde_json::from_str(&maestro_models::compact_json(&row.expected)?)?;
     assert!(
         actual == expected,
-        "case output differs: test={} events={} output={}",
+        "case output differs: test={} row={index} events={} output={}",
         row.test,
         actual["events"],
         actual["output"]
@@ -420,14 +420,18 @@ fn check(row: &Row) -> TestResult {
     Ok(())
 }
 
-/// Evaluate named rows in isolated processes with their specified environment.
+/// Evaluate named rows in one cleared child per distinct environment.
 pub fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> = serde_json::from_str(include_str!(
         "../fixtures/content_generation_invocation.json"
     ))?;
-    let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
+    let owned: Vec<_> = rows
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| row.test == test)
+        .collect();
     assert!(!owned.is_empty(), "no fixture rows");
-    let group = maestro_test_process::run_per_environment(test, owned, |row| {
+    let group = maestro_test_process::run_per_environment(test, owned, |(_, row)| {
         [
             ("GEMINI_API_KEY", &row.input.env_key),
             ("GOOGLE_GEMINI_BASE_URL", &row.input.env_base),

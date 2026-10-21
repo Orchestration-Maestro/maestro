@@ -298,8 +298,8 @@ pub fn assert_observed(row: &Value, observed: &Observed) {
 
 /// Run every fixture row a test owns in child processes with controlled environments.
 ///
-/// Rows without an `env` object run together in one child with an empty environment;
-/// each row with one runs alone in a child holding exactly those variables.
+/// Rows with equal environments share one child holding exactly those variables.
+/// Rows without an `env` object join the empty-environment group.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
