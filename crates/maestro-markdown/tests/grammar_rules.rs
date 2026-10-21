@@ -1428,7 +1428,7 @@ fn cursor_admission_consumes_later_html_without_entering_opaque_operands() {
         panic!("caller atom");
     };
     assert!(matches!(run.atoms[index], InlineAtom::Opaque(0)));
-    assert_eq!(children[0].authored, source);
+    assert_eq!(children[0].authored.to_owned_string(), source);
     for source in [
         "$x `y$`",
         "$x ![y$](u)",
