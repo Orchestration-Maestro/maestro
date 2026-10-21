@@ -161,7 +161,7 @@ async function serve(root) {
       // Preserve fixture-relative helper imports without exposing the source tree.
       if (path.basename(file) === 'helper.js') file = path.join(root, 'helper.js');
       file = fs.realpathSync(file);
-      assert(file.startsWith(root + path.sep));
+      if (!file.startsWith(root + path.sep)) throw new Error('path outside packaged root');
       const bytes = fs.readFileSync(file);
       response.setHeader('Content-Type', {'.html': 'text/html', '.js': 'application/javascript', '.wasm': 'application/wasm'}[path.extname(file)] || 'application/octet-stream');
       response.end(bytes);
