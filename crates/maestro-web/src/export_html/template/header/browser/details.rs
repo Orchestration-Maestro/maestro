@@ -17,18 +17,18 @@ pub(super) fn mount(
     prepared: &Prepared,
 ) -> Result<Option<Box<dyn std::any::Any>>, AttachmentHostError> {
     let mut state = Vec::new();
-    if let Some(prompt) = &prepared.prompt {
+    if let Some(prompt) = &prepared.admitted.prompt {
         let node = prompt_node(document, prompt, &mut state)?;
         append(root, &node)?;
     }
-    if !prepared.tools.is_empty() {
+    if !prepared.admitted.tools.is_empty() {
         let tools = element(document, "div", "tools-list", "")?;
         append(
             &tools,
             &element(document, "div", "tools-header", "Available Tools")?,
         )?;
         let content = element(document, "div", "tools-content", "")?;
-        for tool in &prepared.tools {
+        for tool in &prepared.admitted.tools {
             append(&content, &tool_node(document, tool, &mut state)?)?;
         }
         append(&tools, &content)?;
@@ -52,7 +52,7 @@ fn prompt_node(
         Prompt::Preview {
             full,
             preview,
-            hint,
+            remaining,
         } => {
             node.set_attribute("class", "system-prompt expandable")
                 .map_err(|e| host_error(&e))?;
@@ -62,7 +62,12 @@ fn prompt_node(
             )?;
             append(
                 &node,
-                &element(document, "div", "system-prompt-expand-hint", hint)?,
+                &element(
+                    document,
+                    "div",
+                    "system-prompt-expand-hint",
+                    &format!("... ({remaining} more lines, click to expand)"),
+                )?,
             )?;
             state.push(Disclosure {
                 element: node.clone(),

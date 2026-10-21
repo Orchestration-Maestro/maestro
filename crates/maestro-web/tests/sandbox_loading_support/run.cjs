@@ -5,6 +5,8 @@ const path = require('node:path');
 const os = require('node:os');
 const {spawnSync} = require('node:child_process');
 const assert = require('node:assert/strict');
+const deviceScaleFactor = 1.25;
+const launchArgs = ['--no-sandbox', `--force-device-scale-factor=${deviceScaleFactor}`];
 
 function validateInventory(value) {
   assert(value && typeof value === 'object', 'missing inventory');
@@ -222,7 +224,7 @@ async function run({root, chromium, executablePath, inventory, log = console.log
   // The rejection can precede an awaiting operation during page teardown.
   disconnect.catch(() => {});
   try {
-    browser = await chromium.launch({executablePath, args: ['--no-sandbox']});
+    browser = await chromium.launch({executablePath, args: launchArgs});
     browser.on('disconnected', () => {
       disconnected = true;
       if (!closing) rejectDisconnect(new Error('unexpected browser disconnection'));
@@ -254,7 +256,7 @@ async function run({root, chromium, executablePath, inventory, log = console.log
     log(`COMPLETE ${counts.execution + counts.loading}/45`);
 
     async function withPage(name, action) {
-      const page = await Promise.race([browser.newPage(), disconnect]);
+      const page = await Promise.race([browser.newPage({deviceScaleFactor}), disconnect]);
       const errors = [];
       const phase = message => log(`PHASE ${name} ${message}`);
       let pageFailure, rejectPage;
@@ -316,5 +318,5 @@ async function main() {
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
 }
 
-module.exports = {validateInventory, tools, packageBrowser, materialize, serve, run};
+module.exports = {deviceScaleFactor, launchArgs, validateInventory, tools, packageBrowser, materialize, serve, run};
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });

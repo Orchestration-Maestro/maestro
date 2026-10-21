@@ -1,10 +1,27 @@
-//! Owned literal system prompt and tool disclosures.
+//! Validated semantic operands shared by cache equality and browser presentation.
 use super::super::document::invalid;
 use maestro_app::{is_truthy, normalize_to_lf};
 use serde_json::Value;
 use std::{borrow::Cow, io};
 
-/// Complete text, with an optional independent collapsed preview.
+/// Selected normalized operands used by retained header equality.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct Admitted {
+    /// Normalized system prompt and its original line boundary.
+    pub(super) prompt: Option<Prompt>,
+    /// Selected normalized tool operands in supplied order.
+    pub(super) tools: Vec<Tool>,
+}
+impl Admitted {
+    /// Validate prompt and tools once, retaining only selected semantic content.
+    pub(super) fn new(data: &serde_json::Map<String, Value>) -> io::Result<Self> {
+        Ok(Self {
+            prompt: prompt(data.get("systemPrompt").unwrap_or(&Value::Null))?,
+            tools: tools(data.get("tools").unwrap_or(&Value::Null))?,
+        })
+    }
+}
+/// Complete normalized prompt content with its preview boundary.
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum Prompt {
     /// A short prompt with no disclosure handler.
@@ -15,16 +32,16 @@ pub(super) enum Prompt {
         full: String,
         /// First ten authored LF-separated lines.
         preview: String,
-        /// Expansion instruction including remaining line count.
-        hint: String,
+        /// Original lines remaining after the preview.
+        remaining: usize,
     },
 }
 /// Project literal text as parsed native text nodes.
-pub(super) fn literal(text: &str) -> String {
+fn literal(text: &str) -> String {
     normalize_to_lf(text).replace('\0', "")
 }
 /// Prepare the reached prompt operand before tool operations.
-pub(super) fn prompt(value: &Value) -> io::Result<Option<Prompt>> {
+fn prompt(value: &Value) -> io::Result<Option<Prompt>> {
     if !is_truthy(value) {
         return Ok(None);
     }
@@ -37,7 +54,7 @@ pub(super) fn prompt(value: &Value) -> io::Result<Option<Prompt>> {
         Prompt::Preview {
             full,
             preview: literal(&lines[..10].join("\n")),
-            hint: format!("... ({} more lines, click to expand)", lines.len() - 10),
+            remaining: lines.len() - 10,
         }
     } else {
         Prompt::Full(full)
@@ -65,7 +82,7 @@ fn display(value: &Value) -> io::Result<String> {
         .ok_or_else(|| invalid("nonstring display operand"))
 }
 /// Visit tools in supplied order, rejecting only reached mapping operations.
-pub(super) fn tools(value: &Value) -> io::Result<Vec<Tool>> {
+fn tools(value: &Value) -> io::Result<Vec<Tool>> {
     match value {
         Value::Array(tools) => tools
             .iter()

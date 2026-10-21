@@ -118,6 +118,8 @@ set its public properties. Markdown starts empty, not thinking and with escaping
 on; code starts with empty code and language. Both render through
 `CodeBlockView`, which borrows one frame's localization, brand presentation,
 syntax engine and containing-modal identity and is never retained.
+Portable Markdown controls retain code listings; the browser owns the document
+HTML and generated listing-slot attribute.
 
 Markdown parsing and scoped inline interpretation use the shared
 [Markdown owner](../markdown.md), reached through `maestro_app::markdown`.

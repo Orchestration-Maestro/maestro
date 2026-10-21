@@ -1,0 +1,213 @@
+[
+  {
+    "name": "prompt-number",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": 7
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-true",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": true
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": {}
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": []
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tools-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": "tools"
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tools-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          null
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "null-schema-property",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "bad",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "numeric-required",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "bad-required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              },
+              "required": 7
+            }
+          }
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-error-wins-over-tools-error",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": 7,
+        "tools": [
+          null
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "required-error-wins-over-null-property",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": null
+              },
+              "required": 7
+            }
+          }
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tool-name-validated-after-parameters",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": 7,
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tools-positive-length-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": {
+          "length": 1
+        }
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "required-true",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              },
+              "required": true
+            }
+          }
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "required-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              },
+              "required": {}
+            }
+          }
+        ]
+      }
+    },
+    "errorKind": "invalid_data"
+  }
+]

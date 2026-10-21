@@ -21,19 +21,10 @@ pub(crate) use render::export::prepare_export;
 #[cfg(test)]
 mod tests;
 
-/// Complete native content: document HTML and its code listings in slot order.
+/// Code listings shared by native controls and the browser document.
 pub(crate) struct Document {
-    /// Document markup with one empty slot per listing.
-    #[cfg_attr(
-        not(target_arch = "wasm32"),
-        expect(dead_code, reason = "read only by the browser mount")
-    )]
-    pub(crate) html: String,
     /// Listings in slot order.
     pub(crate) code: Vec<Code>,
-    /// Generated-only listing attribute, absent from authored markup.
-    #[cfg(target_arch = "wasm32")]
-    pub(crate) slot_attribute: String,
 }
 
 /// The last successfully published document.
@@ -46,6 +37,8 @@ struct Published {
     buttons: Vec<CopyButton>,
     /// Native content, shared with the mount.
     document: Rc<Document>,
+    /// Browser-owned markup accompanying the portable listings.
+    markup: browser::Markup,
     /// Mounted owner of this published factory, never a speculative replacement.
     mounted: Rc<RefCell<Weak<browser::Mounted>>>,
     /// Successfully published reasoning presentation.
@@ -115,9 +108,8 @@ impl MarkdownBlock {
     }
     /// Prepare the current source, replacing the published document only on success.
     fn prepare<F: ?Sized>(&self, view: CodeBlockView<'_, F>) -> Result<Published, ReadingUiError> {
-        let prepared = render::prepare(&self.content, self.escape_html);
-        let code = prepared
-            .code
+        let mut prepared = render::prepare(&self.content, self.escape_html);
+        let code = std::mem::take(&mut prepared.code)
             .into_iter()
             .map(|c| Code::new(view.highlighter, c.code, c.language))
             .collect::<Result<Vec<_>, _>>()?;
@@ -125,18 +117,14 @@ impl MarkdownBlock {
             .iter()
             .map(|_| CopyButton::new(Rc::clone(&self.host), view.i18n))
             .collect::<Result<Vec<_>, _>>()?;
-        let document = Rc::new(Document {
-            html: prepared.html,
-            #[cfg(target_arch = "wasm32")]
-            slot_attribute: prepared.slot_attribute,
-            code,
-        });
+        let document = Rc::new(Document { code });
+        let markup = browser::prepare(prepared, &document);
         let ids = buttons.iter().map(|b| b.id).collect();
         let mounted = Rc::default();
         Ok(Published {
             key: (self.content.clone(), self.escape_html),
             content: browser::content(
-                &document,
+                &markup,
                 ids,
                 (
                     self.is_thinking,
@@ -149,6 +137,7 @@ impl MarkdownBlock {
             thinking: self.is_thinking,
             buttons,
             document,
+            markup,
         })
     }
     /// Draw the document and its code controls for this frame.
@@ -180,7 +169,7 @@ impl MarkdownBlock {
         let mounted = Rc::default();
         let style = (target.thinking != self.is_thinking).then(|| {
             browser::content(
-                &target.document,
+                &target.markup,
                 target.buttons.iter().map(|button| button.id).collect(),
                 (
                     self.is_thinking,
