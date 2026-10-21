@@ -15,8 +15,10 @@ fn is_google_cloud_serverless() -> bool {
 }
 
 /// Read the Linux DMI and network observations; other platforms report none.
-#[cfg(target_os = "linux")]
 fn is_google_compute_engine() -> bool {
+    if !cfg!(target_os = "linux") {
+        return false;
+    }
     let date = std::fs::metadata("/sys/class/dmi/id/bios_date").is_ok();
     let vendor = std::fs::read_to_string("/sys/class/dmi/id/bios_vendor").ok();
     if is_google_compute_engine_linux(date, vendor.as_deref()) {
@@ -28,12 +30,6 @@ fn is_google_compute_engine() -> bool {
             .filter_map(|entry| std::fs::read_to_string(entry.path().join("address")).ok())
             .any(|address| is_google_compute_engine_mac_address(&address))
     })
-}
-
-/// Other platforms report no compute-engine observation.
-#[cfg(not(target_os = "linux"))]
-fn is_google_compute_engine() -> bool {
-    false
 }
 
 /// DMI requires both the date observation and case-sensitive vendor marker.
