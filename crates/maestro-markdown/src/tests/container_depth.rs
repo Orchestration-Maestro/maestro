@@ -132,22 +132,22 @@ fn recorded(document: &Document) -> String {
     lines.join("\n")
 }
 
-#[test]
-fn deep_quote_markers_parse_on_a_small_stack() {
+/// Assert one marker shape's container depth and node count for every grammar.
+fn depth_rows(source: fn() -> String, expected: (usize, usize)) {
     for options in OPTIONS {
-        let measured =
-            on_small_stack(move || shape(&parse_with_options(">".repeat(1_000), options)));
-        assert_eq!(measured, (1_000, 1_000), "{options:?}");
+        let measured = on_small_stack(move || shape(&parse_with_options(source(), options)));
+        assert_eq!(measured, expected, "{options:?}");
     }
 }
 
 #[test]
+fn deep_quote_markers_parse_on_a_small_stack() {
+    depth_rows(|| ">".repeat(3_000), (3_000, 3_000));
+}
+
+#[test]
 fn deep_quote_list_markers_parse_on_a_small_stack() {
-    for options in OPTIONS {
-        let measured =
-            on_small_stack(move || shape(&parse_with_options("> - ".repeat(256), options)));
-        assert_eq!(measured, (768, 768), "{options:?}");
-    }
+    depth_rows(|| "> - ".repeat(500), (1_500, 1_500));
 }
 
 #[test]
