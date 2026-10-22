@@ -2,11 +2,6 @@
 
 use super::super::listing::{Format, entry, format};
 
-/// One listing line per format a server may answer in.
-fn detected(line: &str) -> Option<Format> {
-    format(line)
-}
-
 #[test]
 fn ftp_listing_format_follows_the_last_line() {
     for (line, expected) in [
@@ -24,11 +19,11 @@ fn ftp_listing_format_follows_the_last_line() {
         ),
         (" script.pac", Format::Mlsd),
     ] {
-        assert_eq!(detected(line), Some(expected), "{line}");
+        assert_eq!(format(line), Some(expected), "{line}");
     }
-    assert_eq!(detected(""), None);
-    assert_eq!(detected("total 4"), None);
-    assert_eq!(detected("readable nonsense"), None);
+    assert_eq!(format(""), None);
+    assert_eq!(format("total 4"), None);
+    assert_eq!(format("readable nonsense"), None);
 }
 
 #[test]

@@ -204,13 +204,14 @@ Source requests do not recursively apply the script they are loading. Destinatio
 exclusions and a supplied sender skip script loading entirely.
 
 An FTP source logs in with the URL's decoded credentials, or anonymously when it
-has none, at the URL's port or 21. It asks the modification-time command first: a
-refused file is not found, while an unsupported command falls back to listing the
-containing directory. Only a machine listing carries a comparable instant, so an
-entry from a Unix or DOS listing is not found; a listing in no accepted format
-reports the listing format as its own error. A transfer the server refuses is not found rather than an
-empty script, and a transfer that breaks off is an error rather than a shortened
-one. The control and data connections close on success, failure and cancellation.
+has none, at the URL's port, or 21 when it names none. It asks the modification-time
+command first: a refused file is not found, while an unsupported command falls back
+to listing the containing directory. Only a machine listing carries a comparable
+instant, so an entry from a Unix or DOS listing is not found; a listing in no
+accepted format reports the listing format as its own error. A transfer the server
+refuses is not found rather than an empty script, and a transfer that breaks off is
+an error rather than a shortened one. The control and data connections close on
+success, failure and cancellation.
 
 ## Hooks and results
 

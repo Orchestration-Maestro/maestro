@@ -319,12 +319,20 @@ fn transferred(
 
 /// Send `body`, then wait for the client to close the data connection before completing.
 fn send_body(mut stream: TcpStream, body: &[u8], observed: &Observed) -> std::io::Result<()> {
+    let outcome = transfer_body(&mut stream, body);
+    // A client that closed the connection first ends the dialogue just as surely as one that
+    // read every byte, so the observation covers both shapes.
+    observed.data_closed.store(true, Ordering::SeqCst);
+    outcome
+}
+
+/// Write the body, then read until the client closes the data connection.
+fn transfer_body(stream: &mut TcpStream, body: &[u8]) -> std::io::Result<()> {
     stream.write_all(body)?;
     stream.shutdown(std::net::Shutdown::Write)?;
     // The client closes the data connection before it reads the completion reply.
     let mut exhausted = Vec::new();
     stream.read_to_end(&mut exhausted)?;
-    observed.data_closed.store(true, Ordering::SeqCst);
     Ok(())
 }
 

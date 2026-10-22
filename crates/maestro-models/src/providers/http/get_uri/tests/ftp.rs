@@ -487,7 +487,8 @@ fn ftp_cancelled_load_releases_the_connection() {
         task.abort();
         let _ = task.await;
         let closed = peer.finish().unwrap();
-        assert!(closed.control);
+        assert!(closed.control, "the control connection closed");
+        assert!(closed.data, "the pending data connection closed");
     });
 }
 
