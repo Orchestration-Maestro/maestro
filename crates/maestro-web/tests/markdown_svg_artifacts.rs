@@ -233,11 +233,7 @@ fn preview_toggle_paints_selected_hover_and_focus() {
         &valid["preview"][0]["samples"][0],
         &["uv", "expected"],
     );
-    for value in [serde_json::Value::Null, serde_json::json!([])] {
-        let mut sibling = valid.clone();
-        sibling["rows"] = value;
-        assert!(serde_json::from_value::<FilteringFixture>(sibling).is_err());
-    }
+    crate::support::reject_sections::<FilteringFixture>(&valid, &["rows"]);
     for (case, frame) in branded_frames().into_iter().enumerate() {
         let mut toggle = PreviewCodeToggle::new();
         let mut paint = canvas_paint::Paint::default();

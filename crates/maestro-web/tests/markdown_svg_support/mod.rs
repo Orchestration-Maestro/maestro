@@ -32,11 +32,7 @@ pub fn corpus() -> Corpus {
             &valid["content"][0],
             &["kind", "filename", "content", "mime", "bytes"],
         );
-        for value in [serde_json::Value::Null, serde_json::json!([])] {
-            let mut sibling = valid.clone();
-            sibling["lifecycle"] = value;
-            assert!(serde_json::from_value::<Corpus>(sibling).is_err());
-        }
+        crate::support::reject_sections::<Corpus>(&valid, &["lifecycle"]);
     }
     #[cfg(target_arch = "wasm32")]
     {
@@ -55,11 +51,7 @@ pub fn corpus() -> Corpus {
         );
         strict_record::<Lifecycle>(&valid["lifecycle"], &["contents", "independent", "events"]);
         strict_record::<UrlEvent>(&valid["lifecycle"]["events"][0], &["op", "id"]);
-        for value in [serde_json::Value::Null, serde_json::json!([])] {
-            let mut sibling = valid.clone();
-            sibling["headers"] = value;
-            assert!(serde_json::from_value::<Corpus>(sibling).is_err());
-        }
+        crate::support::reject_sections::<Corpus>(&valid, &["headers"]);
     }
     serde_json::from_str(source).unwrap()
 }

@@ -110,3 +110,21 @@ pub fn strict_record<T: serde::de::DeserializeOwned>(valid: &serde_json::Value, 
         }
     }
 }
+/// Check that a fixture recording rejects sections owned by another reader group.
+/// # Panics
+/// Panics if the recording admits one of the foreign sections.
+pub fn reject_sections<T: serde::de::DeserializeOwned>(
+    valid: &serde_json::Value,
+    sections: &[&str],
+) {
+    for value in [serde_json::Value::Null, serde_json::json!([])] {
+        for &section in sections {
+            let mut foreign = valid.clone();
+            foreign[section] = value.clone();
+            assert!(
+                serde_json::from_value::<T>(foreign).is_err(),
+                "accepted {section}"
+            );
+        }
+    }
+}

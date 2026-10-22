@@ -266,11 +266,7 @@ fn linear_texture_samples_match_native_filtering() {
         &valid["rows"][0],
         &["size", "pixels", "uv", "expected"],
     );
-    for value in [serde_json::Value::Null, serde_json::json!([])] {
-        let mut sibling = valid.clone();
-        sibling["preview"] = value;
-        assert!(serde_json::from_value::<FilteringFixture>(sibling).is_err());
-    }
+    crate::support::reject_sections::<FilteringFixture>(&valid, &["preview"]);
     let fixture = filtering_fixture();
     assert_eq!(fixture.rows.len(), 25);
     for (index, row) in fixture.rows.into_iter().enumerate() {
