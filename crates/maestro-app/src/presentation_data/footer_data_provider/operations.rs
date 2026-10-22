@@ -1,6 +1,6 @@
-//! The watch registration, polling and Git process effects footer metadata needs;
-//! repository discovery, the `HEAD` read and the presence checks read the file system
-//! directly.
+//! The watch registration, timer scheduling, polling and Git process effects footer
+//! metadata needs; repository discovery, the `HEAD` read and the presence checks read the
+//! file system directly.
 
 use std::{io, rc::Rc, time::Duration};
 
@@ -16,9 +16,9 @@ pub struct FooterFileStats {
     /// File size in bytes.
     pub size: f64,
 }
-/// Replaceable watch registration, polling and Git process effects; repository
-/// discovery, the `HEAD` read and the presence checks read the file system directly, and
-/// branch selection and trimming stay with the provider.
+/// Replaceable watch registration, timer scheduling, polling and Git process effects;
+/// repository discovery, the `HEAD` read and the presence checks read the file system
+/// directly, and branch selection and trimming stay with the provider.
 pub trait FooterOperations: WatchOperations {
     /// Complete once with untrimmed stdout, absence on unsuccessful exit, or an I/O error.
     fn symbolic_ref_async(

@@ -2,10 +2,10 @@
 //! supplied available-provider count.
 //!
 //! [`FooterDataProvider`] owns the metadata. Frontends read it through
-//! [`ReadonlyFooterDataProvider`]. Watch registration, polling and Git process effects go
-//! through [`FooterOperations`]; repository discovery, the `HEAD` read and the presence
-//! checks read the file system directly, and paths stay authored strings whose lexical
-//! rules belong to `maestro_path`.
+//! [`ReadonlyFooterDataProvider`]. Watch registration, timer scheduling, polling and Git
+//! process effects go through [`FooterOperations`]; repository discovery, the `HEAD` read
+//! and the presence checks read the file system directly, and paths stay authored strings
+//! whose lexical rules belong to `maestro_path`.
 
 mod git;
 #[cfg(unix)]
