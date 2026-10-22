@@ -44,6 +44,7 @@ mod docx_parts;
 mod docx_properties;
 mod docx_section_properties;
 mod docx_support;
+mod docx_tables;
 mod docx_values;
 mod docx_xml;
 mod extension_context_exports;
