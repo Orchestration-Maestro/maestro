@@ -45,7 +45,12 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
 /// Returns the error of `home`.
 pub fn expand_tilde(path: &str, home: impl FnOnce() -> io::Result<String>) -> io::Result<String> {
     match path.strip_prefix('~') {
-        Some(rest) => Ok(maestro_path::join(&[&home()?, rest])),
+        // A bare `~` names the home directory itself, empty spelling included.
+        Some("") => home(),
+        Some(rest) => Ok(maestro_path::join(&[
+            &home()?,
+            rest.trim_start_matches('/'),
+        ])),
         None => Ok(path.to_owned()),
     }
 }

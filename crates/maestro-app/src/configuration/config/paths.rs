@@ -13,10 +13,13 @@ pub fn expand_tilde_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    if !matches!(path.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/')) {
-        return Ok(path.to_owned());
+    if path == "~" {
+        return home();
     }
-    maestro_resources::paths::expand_tilde(path, home)
+    if let Some(rest) = path.strip_prefix("~/") {
+        return Ok(home()? + "/" + rest);
+    }
+    Ok(path.to_owned())
 }
 
 /// Select an override, standalone directory, or nearest package marker, observing the

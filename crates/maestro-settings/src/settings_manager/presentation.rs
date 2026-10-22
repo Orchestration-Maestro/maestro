@@ -31,9 +31,7 @@ fn expand_session_dir(configured: &str) -> String {
     if !supported {
         return configured.to_owned();
     }
-    // A lone `~/` names the home directory itself, without a trailing separator.
-    let path = if configured == "~/" { "~" } else { configured };
-    expand_tilde(path, || {
+    expand_tilde(configured, || {
         home_dir()
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     })

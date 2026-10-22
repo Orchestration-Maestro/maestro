@@ -9,6 +9,7 @@ repository.workspace = true
 [dependencies]
 maestro-json = { path = "../maestro-json" }
 maestro-path = { path = "../maestro-path" }
+maestro-resources = { path = "../maestro-resources" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
@@ -19,7 +20,6 @@ wasm-bindgen-futures = "=0.4.79"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-lock = { path = "../maestro-lock" }
-maestro-resources = { path = "../maestro-resources" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true

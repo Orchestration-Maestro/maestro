@@ -12,6 +12,7 @@ maestro-markdown = { path = "../maestro-markdown" }
 maestro-text = { path = "../maestro-text" }
 maestro-path = { path = "../maestro-path" }
 maestro-cancellation = { path = "../maestro-cancellation" }
+maestro-resources = { path = "../maestro-resources" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 rand = "=0.10.3"
 unicode-segmentation = { version = "=1.13.3", default-features = false }
@@ -30,7 +31,6 @@ getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
-maestro-resources = { path = "../maestro-resources" }
 maestro-text = { path = "../maestro-text", features = ["collation"] }
 tokio = { version = "=1.53.2", default-features = false, features = ["process", "rt"] }
 maestro-process = { path = "../maestro-process" }

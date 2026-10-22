@@ -43,13 +43,16 @@ pub fn normalize_unicode_spaces(text: &str) -> String {
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
 fn expand_written_path(file_path: &str) -> io::Result<String> {
     let file_path = file_path.strip_prefix('@').unwrap_or(file_path);
-    if !matches!(
-        file_path.strip_prefix('~'),
-        Some(rest) if rest.is_empty() || rest.starts_with('/')
-    ) {
-        return Ok(file_path.to_owned());
+    let rest = match file_path.strip_prefix('~') {
+        Some(rest) if rest.is_empty() || rest.starts_with('/') => rest,
+        _ => return Ok(file_path.to_owned()),
+    };
+    let home = home_directory()?;
+    if home.is_empty() {
+        // An empty home spelling keeps the authored rest, its separator included.
+        return Ok(rest.to_owned());
     }
-    expand_tilde(file_path, home_directory)
+    expand_tilde(file_path, || Ok(home))
 }
 
 /// Read the home directory, refusing one that text cannot hold.

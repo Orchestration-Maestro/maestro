@@ -186,11 +186,12 @@ fn load_skills_in(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult
     };
     for path in options.skill_paths {
         let path = path.trim_matches(crate::frontmatter::text_whitespace);
-        let expanded = expand_tilde(path, || Ok(options.home.to_owned()))?;
-        let path = if is_absolute(&expanded) {
-            expanded
+        let path = if path.starts_with('~') {
+            expand_tilde(path, || Ok(options.home.to_owned()))?
+        } else if is_absolute(path) {
+            path.to_owned()
         } else {
-            resolve(&[options.cwd, &expanded])?
+            resolve(&[options.cwd, path])?
         };
         let loaded = explicit_path(&path, options.cwd, &source_of);
         add_skills(&mut result, &mut collisions, &mut paths, loaded);
