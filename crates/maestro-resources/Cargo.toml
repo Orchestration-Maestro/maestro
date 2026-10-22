@@ -8,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 maestro-text = { path = "../maestro-text" }
+maestro-json = { path = "../maestro-json" }
 maestro-request = { path = "../maestro-request" }
 maestro-path = { path = "../maestro-path" }
 num-bigint.workspace = true
@@ -15,10 +16,10 @@ num-traits.workspace = true
 maestro-pattern = { path = "../maestro-pattern" }
 percent-encoding.workspace = true
 ryu-js.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 
 [dev-dependencies]
 serde.workspace = true
-serde_json.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

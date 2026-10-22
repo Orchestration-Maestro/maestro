@@ -53,7 +53,7 @@ drive. The loader reads the working directory and the drive directories at each
 resolution whose operands leave a part open: a relative path or, on Windows, a
 path rooted without a drive or relative to a drive. A call whose paths are all
 anchored never reads them, and a change of working directory between two
-resolutions shows in the second. When the working directory cannot be read, `load_skills` fails with that error's kind if resolving the
+resolutions shows in the second. When the working directory cannot be read, `load_skills` fails with that error if resolving the
 project configuration directory or an explicit path needs it, for example beneath
 a relative `cwd`; an absolute `cwd` on POSIX loads as usual.
 `load_skills_from_dir` never fails for it: a scan makes each entry's path
@@ -142,7 +142,7 @@ relocates an authored path it reads. The process directories
 complete only what those operands leave open, and alone resolve native real
 paths and the user and project roots that classify explicit paths. A working
 directory that cannot be read is never replaced by an empty one: a resolution
-that needs it fails with that error's kind, which a scan turns into the end of the
+that needs it fails with the working-directory error, which a scan turns into the end of the
 affected directory, and one that the operands or a drive directory anchor does
 not need it.
 Each entered directory contributes `.gitignore`, `.ignore`, `.fdignore` in that

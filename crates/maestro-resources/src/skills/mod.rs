@@ -10,9 +10,8 @@ pub use real_path::real_path;
 mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
-    parse_frontmatter,
+    parse_frontmatter, paths::resolve,
 };
-pub(crate) use files::resolve;
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
     read_text, symlink_metadata,
@@ -151,7 +150,7 @@ pub struct LoadSkillsOptions<'a> {
 /// unreadable process working directory, that path gets a warning instead.
 ///
 /// # Errors
-/// Returns the working-directory error kind when resolving the project
+/// Returns the working-directory error when resolving the project
 /// configuration directory, or a relative explicit path, against `cwd` leaves
 /// the path unanchored and the process working directory cannot be read.
 pub fn load_skills(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult> {

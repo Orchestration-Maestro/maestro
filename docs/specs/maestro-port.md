@@ -321,7 +321,7 @@ from the optional foundation utility described below.
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand` | 0 |
-| `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern`, `maestro-text`, `maestro-listing` | 0 |
+| `maestro-resources` | discover resources | `maestro-request`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-listing` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
@@ -400,6 +400,14 @@ optional-field helper; `Presence<T>` stays single-source here. Existing models a
 invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general
 shared-types container.
+
+`maestro-resources` owns the package manifest reader (the `maestro` member of `package.json`),
+extension entry resolution and the project configuration directory name `.maestro`. A
+directory's extension entries are the existing paths its manifest's `extensions` list
+names, in list order. Otherwise they are the first of `index.ts`, `index.js` and
+`index.wasm` that exists. Extension files end in `.ts`, `.js` or `.wasm`, matched
+case-sensitively. Package discovery and extension path discovery call this one owner.
+It uses `maestro-json` for JSON truthiness.
 
 The read-only footer contract `ReadonlyFooterDataProvider`, its live
 `ExtensionStatuses` view and the one generic insertion-ordered live map behind it

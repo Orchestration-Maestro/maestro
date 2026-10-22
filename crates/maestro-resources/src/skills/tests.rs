@@ -1,12 +1,12 @@
 //! Path resolution against the live process directories.
 
-use super::files::resolve;
 #[cfg(unix)]
 use super::files::{metadata, symlink_metadata};
 use super::real_path::real_path;
 #[cfg(unix)]
 use super::{LoadSkillsFromDirOptions, ResourceFileType, load_skills_from_dir};
 use super::{LoadSkillsOptions, LoadSkillsResult, load_skills};
+use crate::paths::resolve;
 use maestro_test_directory::Scratch;
 use std::{
     fs, io,
@@ -210,7 +210,7 @@ fn scope_classification_needing_the_unreadable_process_directory_warns_for_that_
             .iter()
             .map(|d| (d.path.clone(), d.message.clone()))
             .collect();
-        let denied = io::Error::from(io::ErrorKind::PermissionDenied).to_string();
+        let denied = std::env::current_dir().unwrap_err().to_string();
         assert_eq!(
             found,
             [

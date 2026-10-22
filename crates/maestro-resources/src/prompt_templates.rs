@@ -4,7 +4,7 @@
 use crate::{
     FrontmatterValue, ResourceFileType, SourceInfo, SourceScope, SyntheticSourceOptions,
     create_synthetic_source_info, frontmatter::text_whitespace, metadata, parse_frontmatter,
-    read_entries, read_text, skills::resolve,
+    paths::resolve, read_entries, read_text,
 };
 use maestro_path::{basename, dirname, is_absolute, join};
 use std::{io, path::Path};

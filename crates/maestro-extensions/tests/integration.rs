@@ -7,6 +7,7 @@ mod command_contexts;
 mod extension_actions;
 mod extension_contexts;
 mod extension_events;
+mod extension_path_loading;
 mod hook_boundaries;
 mod hook_dispatch;
 mod hook_exports;
@@ -50,6 +51,10 @@ mod tool_support;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/limited_host.rs"]
 mod limited_host;
+
+#[cfg(unix)]
+#[path = "support/module_loader.rs"]
+mod module_loader;
 
 #[cfg(not(target_arch = "wasm32"))]
 use display_support::manual_runtime;

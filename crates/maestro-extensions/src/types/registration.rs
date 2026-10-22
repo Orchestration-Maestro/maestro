@@ -210,6 +210,30 @@ pub type ExtensionHandler<V, R, E = Threaded> =
 /// Controlled factory callback with synchronous-ready or suspended initialization.
 pub type ExtensionFactory<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::Factory>;
+/// Turns a resolved extension path into its factory, or none when the module exports none.
+#[cfg(not(target_arch = "wasm32"))]
+pub type ModuleLoader<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::ModuleLoader>;
+
+/// One path that failed to load.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExtensionLoadError {
+    /// The path as supplied.
+    pub path: String,
+    /// The complete failure message.
+    pub error: String,
+}
+/// Extensions loaded in path order, the paths that failed, and the runtime they share.
+#[cfg(not(target_arch = "wasm32"))]
+pub struct LoadExtensionsResult<E: ExtensionExecution = Threaded> {
+    /// Loaded extensions in path order.
+    pub extensions: Vec<ExtensionHandle<E>>,
+    /// Failed paths in path order.
+    pub errors: Vec<ExtensionLoadError>,
+    /// The shared runtime; its actions fail until a runner binds it.
+    pub runtime: E::Shared<super::ExtensionRuntime<E>>,
+}
 
 /// Existing renderer-binding choice retained without changing execution or registration ownership.
 type RendererProjection<P, D, S, E> =

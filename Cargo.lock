@@ -4060,6 +4060,7 @@ name = "maestro-resources"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-json",
  "maestro-listing",
  "maestro-path",
  "maestro-pattern",

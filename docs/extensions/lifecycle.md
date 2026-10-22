@@ -65,6 +65,8 @@ and [lifecycle integration tests](https://github.com/Orchestration-Maestro/maest
 Domain callback tests do not qualify overlapping application replacements or
 which session an application continuation selects after an await.
 
+[Path loading and discovery](loading.md) take the module loader from the caller,
+so the domain never evaluates a module itself.
 Component execution, faults, resource disposal and pending stream work belong to
 the [component runtime](https://github.com/Orchestration-Maestro/maestro/issues/206)
 and its [retention tests](https://github.com/Orchestration-Maestro/maestro/issues/209).

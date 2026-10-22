@@ -20,8 +20,7 @@ pub const PACKAGE_NAME: &str = "maestro";
 pub const APP_NAME: &str = "maestro";
 /// The application display title.
 pub const APP_TITLE: &str = "Maestro";
-/// The default user configuration directory name.
-pub const CONFIG_DIR_NAME: &str = ".maestro";
+pub use maestro_resources::paths::CONFIG_DIR_NAME;
 /// The compiled application package version.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// The service origin, empty until configured.

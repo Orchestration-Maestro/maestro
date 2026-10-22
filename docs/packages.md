@@ -124,7 +124,9 @@ that fallback even when discovery is empty.
 Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
 paths before `index.ts`, `index.js` or `index.wasm`, in that order. Other extension
 discovery admits top-level `.ts`, `.js` and `.wasm` files and entry-bearing children.
-Suffix matching is case-sensitive; a child's helper files are not implicit entries. Skills stop at an admitted `SKILL.md`;
+Suffix matching is case-sensitive; a child's helper files are not implicit entries.
+These entry rules belong to `maestro_resources::package_manifest`, which
+[extension path discovery](extensions/loading.md) shares. Skills stop at an admitted `SKILL.md`;
 loose Markdown is root-only. Prompts and themes recurse by their suffix.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using

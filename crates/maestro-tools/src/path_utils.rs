@@ -17,6 +17,22 @@ fn utf8(path: PathBuf, what: &str) -> io::Result<String> {
         .map_err(|_| io::Error::new(ErrorKind::InvalidData, format!("{what} is not valid UTF-8")))
 }
 
+/// Replace U+00A0, U+2000 to U+200A, U+202F, U+205F and U+3000 with U+0020.
+///
+/// Other whitespace, such as tab, U+1680, U+2028 or U+FEFF, is kept.
+#[must_use]
+pub fn normalize_unicode_spaces(text: &str) -> String {
+    text.replace(
+        |c: char| {
+            matches!(
+                c,
+                '\u{A0}' | '\u{2000}'..='\u{200A}' | '\u{202F}' | '\u{205F}' | '\u{3000}'
+            )
+        },
+        " ",
+    )
+}
+
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
 ///
 /// The home directory is read only for those two forms: on Unix `HOME` as set, even
@@ -25,20 +41,7 @@ fn utf8(path: PathBuf, what: &str) -> io::Result<String> {
 /// # Errors
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
 pub fn expand_path(file_path: &str) -> io::Result<String> {
-    let stripped = file_path.strip_prefix('@').unwrap_or(file_path);
-    let normalized: String = stripped
-        .chars()
-        .map(|c| {
-            if matches!(
-                c,
-                '\u{A0}' | '\u{2000}'..='\u{200A}' | '\u{202F}' | '\u{205F}' | '\u{3000}'
-            ) {
-                ' '
-            } else {
-                c
-            }
-        })
-        .collect();
+    let normalized = normalize_unicode_spaces(file_path.strip_prefix('@').unwrap_or(file_path));
     let rest = match normalized.strip_prefix('~') {
         Some("") => "",
         Some(rest) if rest.starts_with('/') => rest,

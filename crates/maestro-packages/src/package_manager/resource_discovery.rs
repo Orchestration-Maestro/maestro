@@ -1,6 +1,7 @@
 //! Conventional resource collection over replaceable filesystem observations.
 use maestro_path::join;
 use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
+use maestro_resources::package_manifest::{is_extension_file, resolve_extension_entries};
 use maestro_resources::skills::{ResourceEntry, ResourceFileType, observed_type};
 use std::{io, path::Path};
 /// The conventional resource directories.
@@ -101,9 +102,7 @@ impl ResourceType {
     /// The source suffix admitted by this collector.
     fn accepts(self, name: &str) -> bool {
         match self {
-            Self::Extensions => name
-                .rsplit_once('.')
-                .is_some_and(|(_, extension)| matches!(extension, "ts" | "js" | "wasm")),
+            Self::Extensions => is_extension_file(name),
             Self::Skills | Self::Prompts => name
                 .rsplit_once('.')
                 .is_some_and(|(_, extension)| extension == "md"),
@@ -112,35 +111,6 @@ impl ResourceType {
                 .is_some_and(|(_, extension)| extension == "json"),
         }
     }
-}
-
-/// Selects a manifest entry list or the first existing index.
-fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
-    let manifest_path = join(&[dir, "package.json"]);
-    if Path::new(&manifest_path).exists()
-        && let Some(manifest) = super::manifest::read_maestro_manifest_file(&manifest_path)
-        && let Some(entries) = manifest
-            .field("extensions")
-            .filter(|raw| raw.get().starts_with('['))
-    {
-        let mut found = Vec::new();
-        let entries: Vec<String> = serde_json::from_str(entries.get())
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        for entry in entries {
-            let path = resolve_entry_path(dir, &entry)?;
-            if Path::new(&path).exists() {
-                found.push(path);
-            }
-        }
-        if !found.is_empty() {
-            return Ok(Some(found));
-        }
-    }
-    Ok(["index.ts", "index.js", "index.wasm"]
-        .into_iter()
-        .map(|name| join(&[dir, name]))
-        .find(|path| Path::new(path).exists())
-        .map(|path| vec![path]))
 }
 
 /// Converts the native lexical relative path to rule separators.
@@ -203,16 +173,6 @@ fn admitted_skill(
             && !rules.ignored(&relative_path(root, &path), false)
     })
 }
-/// Resolves literal manifest operands, consulting ambient directories only on demand.
-pub(super) fn resolve_entry_path(dir: &str, entry: &str) -> io::Result<String> {
-    maestro_path::resolve_with(
-        &[&[dir, entry]],
-        maestro_resources::drive_directories,
-        maestro_resources::current_directory,
-    )
-    .map(|paths| paths.into_iter().collect::<String>())
-}
-
 /// Collects files and resource directories from already-resolved literal paths.
 pub(super) fn collect_files_from_paths(paths: Vec<String>, kind: ResourceType) -> Vec<String> {
     let mut files = Vec::new();
