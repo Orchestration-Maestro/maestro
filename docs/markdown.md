@@ -79,10 +79,10 @@ stay literal instead of entering the reference index.
 
 Quote and list nesting runs on retained frames, not on native recursion: one frame
 stack drives quote chunks, list items and their block admission, so every deeper
-level holds heap frames instead of stack. A nested document parses to the structure
-a shallower one already produces, with no container depth limit and no nesting
-error. Inline spans are the exception: nested emphasis, links and labels still
-interpret on the native stack.
+level holds heap frames instead of stack. Each nesting level is built from the same
+block structures a shallow document uses, with no container depth limit and no
+nesting error. Inline spans are the exception: nested emphasis, links and labels
+still interpret recursively on the native stack.
 
 Finished containers publish their items, and replaced subtrees and dropped documents
 release their children. The walks that follow a document - inline-scope indexing,
