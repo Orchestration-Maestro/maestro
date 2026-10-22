@@ -116,3 +116,29 @@ fn concrete_providers_keep_native_browser_handles() {
     );
     let _ = router.unregister_sandbox("concrete");
 }
+
+#[test]
+fn artifact_storage_provider_serves_local_panels() {
+    use maestro_app::browser::components::sandbox::artifacts_runtime_provider::AgentLike;
+    use maestro_app::browser::tools::artifacts::{
+        ArtifactsPanelState, LocalArtifactPresentation, LocalArtifactsPanel,
+    };
+    use maestro_web::ArtifactsRuntimeProvider;
+    /// Read-write storage over the browser's local panel and conversation.
+    fn serve(
+        panel: &LocalArtifactsPanel,
+        agent: Option<SharedHandle<dyn AgentLike>>,
+    ) -> SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>> {
+        SharedHandle::new(ArtifactsRuntimeProvider::<LocalArtifactPresentation>::new(
+            panel, agent, true,
+        ))
+    }
+    /// Read-only HTML providers from the live panel state.
+    fn html(
+        state: &ArtifactsPanelState,
+    ) -> Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> {
+        state.get_html_artifact_runtime_providers()
+    }
+    let _: fn(_, _) -> _ = serve;
+    let _: fn(_) -> _ = html;
+}

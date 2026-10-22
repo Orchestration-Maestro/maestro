@@ -1,5 +1,6 @@
 //! Retained runtime provider interface.
 use super::super::sandboxed_iframe::SandboxValue;
+use super::artifacts_runtime_provider::{ArtifactOperation, ArtifactResponse};
 use maestro_agent::agent::Native;
 use maestro_models::SharedHandle;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
@@ -96,6 +97,24 @@ pub trait RuntimeProviderValue: SandboxValue + Clone {
     fn attachment_array(
         attachments: &[crate::browser::utils::attachment_utils::Attachment],
     ) -> Result<Self, DiagnosticErrorInfo>;
+    /// Read an artifact operation's action, filename and content strings.
+    ///
+    /// # Errors
+    /// Returns a native property-access failure.
+    fn project_artifact_operation(&self) -> Result<ArtifactOperation, DiagnosticErrorInfo>;
+    /// Snapshot artifact contents as one object keyed by filename; a browser object
+    /// orders integer-like keys first.
+    ///
+    /// # Errors
+    /// Returns a native object-construction failure.
+    fn artifact_snapshot(
+        artifacts: indexmap::IndexMap<String, String>,
+    ) -> Result<Self, DiagnosticErrorInfo>;
+    /// Create one artifact operation reply.
+    ///
+    /// # Errors
+    /// Returns a native object-construction failure.
+    fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo>;
 }
 impl RuntimeProviderValue for serde_json::Value {
     fn message_type(&self) -> Result<Option<String>, DiagnosticErrorInfo> {
@@ -160,5 +179,42 @@ impl RuntimeProviderValue for serde_json::Value {
                 })
                 .collect(),
         ))
+    }
+    fn project_artifact_operation(&self) -> Result<ArtifactOperation, DiagnosticErrorInfo> {
+        let text = |name| {
+            self.get(name)
+                .and_then(Self::as_str)
+                .unwrap_or_default()
+                .to_owned()
+        };
+        Ok(ArtifactOperation {
+            action: text("action"),
+            filename: text("filename"),
+            content: text("content"),
+        })
+    }
+    fn artifact_snapshot(
+        artifacts: indexmap::IndexMap<String, String>,
+    ) -> Result<Self, DiagnosticErrorInfo> {
+        Ok(Self::Object(
+            artifacts
+                .into_iter()
+                .map(|(filename, content)| (filename, Self::String(content)))
+                .collect(),
+        ))
+    }
+    fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo> {
+        match response {
+            ArtifactResponse::Done => Self::success_response(),
+            ArtifactResponse::Listed(names) => {
+                Ok(serde_json::json!({"success": true, "result": names}))
+            }
+            ArtifactResponse::Read(content) => {
+                Ok(serde_json::json!({"success": true, "result": content}))
+            }
+            ArtifactResponse::Failed(error) => {
+                Ok(serde_json::json!({"success": false, "error": error}))
+            }
+        }
     }
 }

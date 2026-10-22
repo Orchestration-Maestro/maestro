@@ -297,11 +297,18 @@ impl ArtifactPresentation for Host {
         *clock += 1;
         date
     }
-    fn get_or_create_artifact_element(&self, filename: &str, content: &str, artifacts: Artifacts) {
-        self.events
-            .lock()
-            .unwrap()
-            .push(json!(["upsert", filename, content, records(&artifacts)]));
+    fn get_or_create_artifact_element(
+        &self,
+        filename: &str,
+        content: &str,
+        panel: ArtifactsPanelState,
+    ) {
+        self.events.lock().unwrap().push(json!([
+            "upsert",
+            filename,
+            content,
+            records(&panel.artifacts())
+        ]));
         let mut views = self.views.lock().unwrap();
         let view = views.entry(filename.into()).or_insert_with(|| View {
             html: filename
@@ -327,7 +334,7 @@ impl ArtifactPresentation for Host {
             .as_ref()
             .and_then(std::sync::Weak::upgrade);
         if let Some(panel) = panel {
-            assert!(panel.state.try_write().is_ok());
+            assert!(panel.state.0.try_write().is_ok());
             assert!(panel.artifacts().try_write().is_ok());
             self.events
                 .lock()
@@ -343,7 +350,8 @@ impl ArtifactPresentation for Host {
                 .push(json!(["remove", filename]));
         }
     }
-    fn reload_all_html_artifacts(&self, artifacts: Artifacts) {
+    fn reload_all_html_artifacts(&self, panel: ArtifactsPanelState) {
+        let artifacts = panel.artifacts();
         let views = self.views.lock().unwrap();
         for (filename, view) in views.iter().filter(|(_, v)| v.html && v.mounted) {
             self.events.lock().unwrap().extend([
@@ -395,7 +403,7 @@ impl ArtifactPresentation for Host {
             .as_ref()
             .and_then(std::sync::Weak::upgrade);
         if let Some(panel) = panel {
-            assert!(panel.state.try_write().is_ok());
+            assert!(panel.state.0.try_write().is_ok());
             self.events
                 .lock()
                 .unwrap()
@@ -414,7 +422,7 @@ impl ArtifactPresentation for Host {
         if let Some((panel, filename)) = delete {
             self.notification_removed
                 .store(true, std::sync::atomic::Ordering::SeqCst);
-            panel.upgrade().unwrap().delete(&filename);
+            panel.upgrade().unwrap().delete(&filename).unwrap();
         }
     }
     fn on_open(&self) {
@@ -425,7 +433,7 @@ impl ArtifactPresentation for Host {
 fn state(panel: &ArtifactsPanel) -> State {
     State {
         artifacts: records(&panel.artifacts()),
-        active: panel.state.read().unwrap().active.clone(),
+        active: panel.state.0.read().unwrap().active.clone(),
     }
 }
 /// Execute through the retained public tool boundary.
@@ -512,13 +520,14 @@ async fn step_output(
             return json!(
                 panel
                     .execute(
-                        params,
+                        &params,
                         Options {
                             silent: options.silent,
                             skip_wait: options.skip_wait
                         }
                     )
                     .await
+                    .unwrap_or_else(|error| error)
             );
         }
     }
@@ -967,7 +976,7 @@ async fn timer_witness(recreate_before_completion: bool) -> (bool, Value, State,
     advance(&clock, 1499);
     let pending = future.as_mut().poll(&mut context).is_pending();
     *captured.lock().unwrap() = "[log] late log".into();
-    panel.delete("p.html");
+    panel.delete("p.html").unwrap();
     let mut output = None;
     if !recreate_before_completion {
         advance(&clock, 1);
@@ -979,13 +988,14 @@ async fn timer_witness(recreate_before_completion: bool) -> (bool, Value, State,
     .unwrap();
     panel
         .execute(
-            params,
+            &params,
             Options {
                 silent: false,
                 skip_wait: true,
             },
         )
-        .await;
+        .await
+        .unwrap();
     *host.views.lock().unwrap()["p.html"].logs.lock().unwrap() = "[log] wrong new log".into();
     if recreate_before_completion {
         assert!(future.as_mut().poll(&mut context).is_pending());
