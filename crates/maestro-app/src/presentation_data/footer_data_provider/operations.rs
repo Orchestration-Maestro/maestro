@@ -29,8 +29,6 @@ pub trait FooterOperations: WatchOperations {
         interval: Duration,
         listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
     ) -> Box<dyn FsWatcher>;
-    /// Whether `path` exists; an error while checking counts as absent.
-    fn exists(&self, path: &str) -> bool;
     /// Run `git --no-optional-locks symbolic-ref --quiet --short HEAD` in
     /// `repo_dir` and return its untrimmed standard output.
     ///

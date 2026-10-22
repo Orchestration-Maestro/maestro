@@ -97,10 +97,6 @@ impl FooterOperations for MetadataEffects {
     ) -> Box<dyn maestro_watch::fs_watch::FsWatcher> {
         unreachable!("controlled metadata adapter rejects watch registration")
     }
-    fn exists(&self, path: &str) -> bool {
-        std::fs::exists(path).unwrap_or(false)
-    }
-
     fn symbolic_ref_sync(&self, repo_dir: &str) -> io::Result<Option<String>> {
         self.git_dirs.borrow_mut().push(repo_dir.to_owned());
         match &*self.git.borrow() {
