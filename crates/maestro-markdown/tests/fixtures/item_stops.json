@@ -1009,7 +1009,7 @@
                   [
                     [
                       "text",
-                      "a\n<div>x</div>"
+                      "a\n <div>x</div>"
                     ]
                   ]
                 ]
@@ -1065,6 +1065,264 @@
                     [
                       "text",
                       "a\n<div>x</div>"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "continuation-indent:plain-one-space",
+    "group": "continuation-indent",
+    "input": "- a\n b\n",
+    "targets": [
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a\n b"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a\n b"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "continuation-indent:plain-two-spaces",
+    "group": "continuation-indent",
+    "input": "- a\n  b\n",
+    "targets": [
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a\nb"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a\nb"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "continuation-indent:hard-break-tag",
+    "group": "continuation-indent",
+    "input": "- a  \n <div>x</div>\n",
+    "targets": [
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ],
+        [
+          "gap"
+        ],
+        [
+          "html-block",
+          " <div>x</div>\n"
+        ]
+      ],
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ],
+                    [
+                      "break"
+                    ],
+                    [
+                      "text",
+                      " <div>x</div>"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "nested-items:child",
+    "group": "nested-items",
+    "input": "- a\n  - b\n",
+    "targets": [
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ],
+                [
+                  "list",
+                  null,
+                  [
+                    [
+                      "item",
+                      [
+                        [
+                          "inline",
+                          [
+                            [
+                              "text",
+                              "b"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "list",
+          null,
+          [
+            [
+              "item",
+              [
+                [
+                  "inline",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ],
+                [
+                  "list",
+                  null,
+                  [
+                    [
+                      "item",
+                      [
+                        [
+                          "inline",
+                          [
+                            [
+                              "text",
+                              "b"
+                            ]
+                          ]
+                        ]
+                      ]
                     ]
                   ]
                 ]

@@ -258,4 +258,6 @@ fn list_item_continuation_follows_the_reference_verdicts() {
     let fixture = include_str!("fixtures/item_stops.json");
     observations::check_with_options("stop-kind", 16, fixture, &options);
     observations::check_with_options("marker-indent", 7, fixture, &options);
+    observations::check_with_options("continuation-indent", 3, fixture, &options);
+    observations::check_with_options("nested-items", 1, fixture, &options);
 }

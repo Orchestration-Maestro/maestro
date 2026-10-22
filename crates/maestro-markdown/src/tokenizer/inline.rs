@@ -137,20 +137,7 @@ impl<'a> Tokenizer<'a> {
         plain_tail: &mut Option<usize>,
     ) {
         let text = &self.source.text[range.clone()];
-        let trim = text.rfind('\n').map_or(0, |newline| {
-            let indent = self.continuation_indent(&self.source.text[range.start + newline + 1..]);
-            if newline + 1 + indent == text.len() {
-                indent
-            } else {
-                0
-            }
-        });
         entities::decode_units(text, |unit, decoded| {
-            let decoded = if unit.end == text.len() {
-                &decoded[..decoded.len() - trim]
-            } else {
-                decoded
-            };
             let range = range.start + unit.start..range.start + unit.end;
             append_text(
                 output,
@@ -220,24 +207,10 @@ impl<'a> Tokenizer<'a> {
         Some((matched.end(), Kind::Code(body)))
     }
 
-    /// Literal markup continuations retain the browser's visible left edge.
-    fn continuation_indent(&self, text: &str) -> usize {
-        if self.options == (MarkedOptions::Browser { escape_html: true })
-            && super::html::displayed_tag(text.trim_start_matches([' ', '\t']))
-        {
-            text.bytes()
-                .take_while(|byte| matches!(byte, b' ' | b'\t'))
-                .count()
-        } else {
-            0
-        }
-    }
-
     /// Breaks come from authored source, never from a decoded entity newline.
     fn line_break(&self, text: &str) -> Option<(usize, Kind)> {
         let matched = rules::inline_br(self.options)?.find(text)?;
-        let end = matched.end() + self.continuation_indent(&text[matched.end()..]);
-        Some((end, Kind::Break))
+        Some((matched.end(), Kind::Break))
     }
 
     /// Caller-selected deletion uses the same recursive inline grammar.
