@@ -1,5 +1,5 @@
 //! Deletion opener cost at the shared owner and through both public entries.
-use super::{NoBlockHint, WORK, Work};
+use super::{NoBlockHint, SELECTIONS, WORK, Work};
 use crate::{Kind, MarkedOptions, Node, tokenizer::inline::delimiters::Delimiters};
 use serde::Deserialize;
 
@@ -24,17 +24,6 @@ fn workloads() -> [(&'static str, MarkedOptions); 3] {
 /// Selections that admit the strict grammar, whose escape unit refuses line terminators.
 fn strict_selections() -> [MarkedOptions; 2] {
     [MarkedOptions::Terminal, MarkedOptions::Export]
-}
-
-/// Every caller selection of the configured parser.
-fn selections() -> [MarkedOptions; 5] {
-    [
-        MarkedOptions::Terminal,
-        MarkedOptions::Export,
-        MarkedOptions::Browser { escape_html: false },
-        MarkedOptions::Browser { escape_html: true },
-        MarkedOptions::Documentation,
-    ]
 }
 
 /// Whether work at N, 2N and 4N units grows by at most the same amount per unit.
@@ -143,7 +132,7 @@ fn assert_linear_through_parse(piece: &str, options: MarkedOptions, extension: b
 #[test]
 fn unclosed_deletion_work_is_linear_through_parse() {
     for piece in LITERAL_EVERYWHERE {
-        for options in selections() {
+        for options in SELECTIONS {
             assert_linear_through_parse(piece, options, false);
             assert_linear_through_parse(piece, options, true);
         }

@@ -1,5 +1,5 @@
 //! Work and source-identity regressions at the shared inline boundary.
-use crate::{InlineAtom, InlineContext, Kind, Node, parse};
+use crate::{InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse};
 use std::cell::RefCell;
 
 mod code_progress;
@@ -39,6 +39,15 @@ pub(crate) fn on_stack<T: Send + 'static>(
         .join()
         .expect("worker panicked")
 }
+
+/// Every caller selection of the configured parser.
+pub(crate) const SELECTIONS: [MarkedOptions; 5] = [
+    MarkedOptions::Terminal,
+    MarkedOptions::Documentation,
+    MarkedOptions::Browser { escape_html: false },
+    MarkedOptions::Browser { escape_html: true },
+    MarkedOptions::Export,
+];
 
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]

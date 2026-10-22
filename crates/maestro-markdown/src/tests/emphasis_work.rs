@@ -1,15 +1,6 @@
 //! Work bounds through the public inline parser.
-use super::{WORK, Work};
+use super::{SELECTIONS, WORK, Work};
 use crate::{MarkedOptions, parse_with_options};
-
-/// Caller grammars sharing the inline tokenizer.
-const OPTIONS: [MarkedOptions; 5] = [
-    MarkedOptions::Terminal,
-    MarkedOptions::Browser { escape_html: false },
-    MarkedOptions::Browser { escape_html: true },
-    MarkedOptions::Export,
-    MarkedOptions::Documentation,
-];
 
 /// Observe real parser work after resetting this thread's counters.
 fn measured(source: String, options: MarkedOptions) -> Work {
@@ -28,7 +19,7 @@ fn within_bounds(actual: [usize; 3], bounds: [usize; 3]) {
 
 #[test]
 fn emphasis_opening_run_work_is_linear() {
-    for options in OPTIONS {
+    for options in SELECTIONS {
         for delimiter in ['*', '_'] {
             let work = [32, 64, 128].map(|n| {
                 measured(
@@ -58,7 +49,7 @@ fn paired_delimiter_metadata_work_is_linear() {
 
 #[test]
 fn emphasis_right_suffix_work_matches_reference_growth() {
-    for options in OPTIONS {
+    for options in SELECTIONS {
         for delimiter in ['*', '_'] {
             let work = [32, 64, 128].map(|n| {
                 measured(
