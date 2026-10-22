@@ -252,7 +252,11 @@ directory the file system holds under the written spelling keeps that spelling a
 the rest of the path takes plain spaces, unless a directory of the space-replaced
 path reaches deeper; then the whole path takes plain spaces. So unless the
 space-replaced path reaches deeper, a new file lands inside the directory named with
-one of those spaces, not in a space-replaced twin.
+one of those spaces, not in a space-replaced twin. A relative path keeps the
+spelling of the directory it was resolved against, even when the file system no
+longer holds that directory (as after the working directory is removed), and that
+directory bounds the search. An absolute path was resolved against no directory,
+so it takes the space-replaced spelling throughout.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a

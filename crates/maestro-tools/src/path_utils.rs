@@ -136,17 +136,25 @@ fn narrow_space_before_meridiem(path: &str) -> String {
 ///
 /// The written spelling is returned when the file system holds that path, and the
 /// space-replaced spelling when it holds that one instead. Otherwise, when a directory
-/// the file system holds carries the written spelling at least as deep as the deepest
-/// existing directory of the space-replaced path, that directory keeps its spelling and
-/// the rest of the path takes the space-replaced one. Every other case is the
-/// space-replaced path unchanged.
+/// carries the written spelling at least as deep as the deepest existing directory of
+/// the space-replaced path, that directory keeps its spelling and the rest of the path
+/// takes the space-replaced one. Every other case is the space-replaced path
+/// unchanged.
+///
+/// The directory that supplies that spelling is the deepest existing ancestor of the
+/// written path, or else the directory the path was resolved against, which the caller
+/// wrote: its spelling survives when the file system no longer holds it, as after the
+/// working directory is removed, and the directory bounds that search. An authored
+/// absolute path was resolved against no directory, so none supplies a spelling.
 ///
 /// `resolve` turns one authored spelling into a resolved path and must keep the
 /// spelling it is given; the home and working directories are read exactly as it
-/// reads them.
+/// reads them, and its spelling of the empty path is read for a relative written path
+/// only.
 ///
 /// # Errors
-/// Returns the error of `resolve` for the spelling it was finally called with.
+/// Returns the error of `resolve` for the spelling it was finally called with, and for
+/// its spelling of the empty path when that read is needed.
 pub fn resolve_existing_spelling<F>(file_path: &str, resolve: F) -> io::Result<String>
 where
     F: Fn(&str) -> io::Result<String>,
@@ -160,14 +168,35 @@ where
     if Path::new(&normalized).exists() {
         return Ok(normalized);
     }
-    // Only a directory the file system holds supplies a spelling; every other
-    // component takes the normalized one.
-    Ok(match deepest_existing_directory(&as_written) {
+    let base = if is_absolute(file_path) {
+        None
+    } else {
+        Some(resolve("")?)
+    };
+    Ok(match written_directory(&as_written, base.as_deref()) {
         Some(directory) if at_least_as_deep(directory, &normalized) => {
             directory.to_owned() + &normalize_unicode_spaces(&as_written[directory.len()..])
         }
         _ => normalized,
     })
+}
+
+/// The directory whose written spelling is kept: the deepest existing ancestor of
+/// `path`, or `base` when the file system holds no such ancestor inside it.
+///
+/// `base` is the directory `path` was resolved against. The caller wrote that spelling,
+/// so it survives even when the file system no longer holds the directory, as after the
+/// working directory is removed, and no ancestor above it supplies a spelling.
+fn written_directory<'a>(path: &'a str, base: Option<&'a str>) -> Option<&'a str> {
+    let held = deepest_existing_directory(path);
+    let Some(base) = base.filter(|base| !base.is_empty() && Path::new(path).starts_with(base))
+    else {
+        return held;
+    };
+    match held.filter(|directory| Path::new(directory).starts_with(base)) {
+        Some(directory) => Some(directory),
+        None => Some(base),
+    }
 }
 
 /// The deepest ancestor of `path` that is an existing directory.
@@ -239,7 +268,7 @@ fn existing_variant(resolved: &str) -> Option<String> {
 /// Returns the home-directory, working-directory or invalid-UTF-8 error of the
 /// spelling the path was resolved with.
 pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
-    let spelling = resolve_existing_spelling(file_path, |path| resolve_written_path(path, cwd))?;
+    let spelling = resolve_existing_path(file_path, cwd)?;
     let written = resolve_written_path(file_path, cwd)?;
     let reference = resolve_to_cwd(file_path, cwd)?;
     for candidate in [&spelling, &written, &reference] {

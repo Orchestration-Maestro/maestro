@@ -20,7 +20,8 @@ use serde_json::json;
 use {
     maestro_tools::{
         FindToolOptions, GrepToolOptions, LsToolOptions, create_find_tool, create_grep_tool,
-        create_ls_tool, path_utils::resolve_existing_spelling,
+        create_ls_tool,
+        path_utils::{resolve_existing_spelling, resolve_read_path},
     },
     std::sync::{Arc, atomic::AtomicUsize},
 };
@@ -65,9 +66,9 @@ fn edit_and_preview_reach_a_file_named_with_a_unicode_space() {
     assert_eq!(std::fs::read(&written).unwrap(), b"gamma\nbeta\n");
 }
 
-/// Write `content` to `path` through the write tool rooted at `dir`.
-fn write_through_tool(dir: &Scratch, path: &str, content: &str) {
-    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
+/// Write `content` to `path` through the write tool rooted at the working directory `cwd`.
+fn write_through_tool(cwd: &str, path: &str, content: &str) {
+    let tool = create_write_tool_definition::<()>(cwd.to_owned(), WriteToolOptions::default());
     let arguments = WriteToolInput {
         path: path.into(),
         content: content.into(),
@@ -80,7 +81,7 @@ fn write_through_tool(dir: &Scratch, path: &str, content: &str) {
 fn write_rewrites_a_file_named_with_a_unicode_space() {
     let dir = Scratch::new().unwrap();
     let written = dir.file("x\u{a0}y.txt", b"before");
-    write_through_tool(&dir, "x\u{a0}y.txt", "after");
+    write_through_tool(&dir.text(), "x\u{a0}y.txt", "after");
     assert_eq!(std::fs::read(&written).unwrap(), b"after");
     assert!(!dir.path().join("x y.txt").exists());
 }
@@ -132,7 +133,7 @@ fn grep_reaches_a_directory_named_with_a_unicode_space() {
 fn write_creates_a_new_file_inside_a_directory_named_with_a_unicode_space() {
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
-    write_through_tool(&dir, "s\u{a0}dir/new.txt", "body");
+    write_through_tool(&dir.text(), "s\u{a0}dir/new.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("s\u{a0}dir/new.txt")).unwrap(),
         b"body"
@@ -146,7 +147,7 @@ fn write_leaves_the_plain_neighbour_directory_untouched() {
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
     std::fs::create_dir(dir.path().join("s dir")).unwrap();
-    write_through_tool(&dir, "s\u{a0}dir/new.txt", "body");
+    write_through_tool(&dir.text(), "s\u{a0}dir/new.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("s\u{a0}dir/new.txt")).unwrap(),
         b"body"
@@ -206,7 +207,7 @@ fn write_follows_the_deeper_directory_the_file_system_holds() {
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("a\u{a0}b")).unwrap();
     std::fs::create_dir_all(dir.path().join("a b/c d")).unwrap();
-    write_through_tool(&dir, "a\u{a0}b/c\u{a0}d/new.txt", "body");
+    write_through_tool(&dir.text(), "a\u{a0}b/c\u{a0}d/new.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("a b/c d/new.txt")).unwrap(),
         b"body"
@@ -267,7 +268,7 @@ fn every_route_reaches_the_file_the_write_route_created() {
 /// Write `ask`, then read and edit the file it must create at `path`.
 #[cfg(unix)]
 fn write_then_rewrite(dir: &Scratch, ask: &str, path: &str) {
-    write_through_tool(dir, ask, "body");
+    write_through_tool(&dir.text(), ask, "body");
     assert_eq!(std::fs::read(path).unwrap(), b"body", "{ask:?}");
     let read = create_read_tool_definition::<()>(dir.text(), ReadToolOptions::default());
     let opened = call(&read, input(ask, None, None), None, None).unwrap();
@@ -374,7 +375,7 @@ fn path_resolution_normalizes_only_the_part_without_a_counterpart() {
 #[test]
 fn write_creates_the_space_replaced_name() {
     let dir = Scratch::new().unwrap();
-    write_through_tool(&dir, "new\u{a0}file.txt", "body");
+    write_through_tool(&dir.text(), "new\u{a0}file.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("new file.txt")).unwrap(),
         b"body"
@@ -461,7 +462,7 @@ fn tilde_routes_follow_the_link_their_parent_segment_names() {
         // The child inherits the farm the parent prepared as its home directory.
         let home = std::env::var("HOME").unwrap();
         let written = format!("{home}/elsewhere/f/new.txt");
-        write_through_tool(&farm, "~/link/../f/new.txt", "body");
+        write_through_tool(&farm_text, "~/link/../f/new.txt", "body");
         assert_eq!(std::fs::read(&written).unwrap(), b"body");
         let read = create_read_tool_definition::<()>(home.clone(), ReadToolOptions::default());
         let opened = call(&read, input("~/link/../f/new.txt", None, None), None, None).unwrap();
@@ -471,5 +472,65 @@ fn tilde_routes_follow_the_link_their_parent_segment_names() {
         run((edit.execute)("call".into(), arguments, None, None, None)).unwrap();
         assert_eq!(std::fs::read(&written).unwrap(), b"edited");
         assert!(!std::path::Path::new(&home).join("f/new.txt").exists());
+    }
+}
+
+/// A removed working directory keeps the spelling its author typed.
+#[cfg(unix)]
+#[test]
+fn removed_working_directory_keeps_its_written_spelling() {
+    let test = "removed_working_directory_keeps_its_written_spelling";
+    if isolated(test, "removed-cwd", &[]) {
+        let parent = Scratch::new().unwrap();
+        let removed = parent.enter_removed("a\u{a0}b").unwrap();
+        let cwd = removed.to_str().unwrap().to_owned();
+        let spelled = format!("{cwd}/up down/new.txt");
+        for ask in ["up\u{a0}down/new.txt", "./up\u{a0}down/new.txt"] {
+            assert_eq!(
+                resolve_existing_path(ask, &cwd).unwrap(),
+                spelled,
+                "{ask:?}"
+            );
+            assert_eq!(resolve_read_path(ask, &cwd).unwrap(), spelled, "{ask:?}");
+        }
+        for ask in ["up down/new.txt", "notes.txt"] {
+            assert_eq!(
+                resolve_existing_path(ask, &cwd).unwrap(),
+                format!("{cwd}/{ask}"),
+                "{ask:?}"
+            );
+            assert_eq!(
+                resolve_read_path(ask, &cwd).unwrap(),
+                format!("{cwd}/{ask}"),
+                "{ask:?}"
+            );
+        }
+        let parent_text = parent.text();
+        assert_eq!(
+            resolve_existing_path("../x\u{a0}y.txt", &cwd).unwrap(),
+            format!("{parent_text}/x y.txt")
+        );
+        assert_eq!(
+            resolve_existing_path(&format!("{cwd}/x\u{a0}y.txt"), &cwd).unwrap(),
+            format!("{parent_text}/a b/x y.txt")
+        );
+    }
+}
+
+/// A write rooted at a removed working directory recreates it under its written spelling.
+#[cfg(unix)]
+#[test]
+fn write_recreates_a_removed_working_directory_under_its_written_spelling() {
+    let test = "write_recreates_a_removed_working_directory_under_its_written_spelling";
+    if isolated(test, "removed-cwd", &[]) {
+        let parent = Scratch::new().unwrap();
+        let removed = parent.enter_removed("a\u{a0}b").unwrap();
+        let cwd = removed.to_str().unwrap().to_owned();
+        write_through_tool(&cwd, "up\u{a0}down/new.txt", "body");
+        assert_eq!(
+            std::fs::read(parent.path().join("a\u{a0}b/up down/new.txt")).unwrap(),
+            b"body"
+        );
+        assert!(!parent.path().join("a b").exists());
     }
 }
