@@ -421,6 +421,7 @@ fn cwd_failure_does_not_block_supplied_drive() {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
+            .case("*")
             .env("=D:", r"D:\skills")
             .output()
             .unwrap();
@@ -460,6 +461,7 @@ fn with_drive_directory(name: &str, directory: &str, body: impl FnOnce()) {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
+            .case("*")
             .env("=D:", directory)
             .output()
             .unwrap();
@@ -491,6 +493,7 @@ fn explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root() {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
+            .case("*")
             .env_remove("=D:")
             .current_dir(format!(r"{system}\"))
             .output()
@@ -550,6 +553,7 @@ fn real_path_continues_from_the_drive_directory() {
         let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
+            .case("*")
             .env(format!("={letter}:"), &plain)
             .env("MAESTRO_DRIVE_TEST_DIRECTORY", &plain)
             .output()
