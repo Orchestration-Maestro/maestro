@@ -26,9 +26,10 @@ Each path is resolved before its module loads:
    joined to it lexically. A `~` anywhere else is literal.
 2. An absolute result is kept as written. A relative result is resolved
    lexically against `cwd`.
-3. When that path names nothing on disk, the supplied path is resolved again
+3. When that path names no existing file, the supplied path is resolved again
    with its Unicode spaces replaced by plain spaces, through
-   [`normalize_unicode_spaces`](../../crates/maestro-tools/src/path_utils.rs).
+   [`normalize_unicode_spaces`](../../crates/maestro-tools/src/path_utils.rs). A
+   broken link counts as missing, because the check follows links.
 
 So a file whose real name holds a no-break space loads under that name, and a
 typed name whose Unicode spaces stand for plain spaces still finds its file.
@@ -68,8 +69,9 @@ Two calls with two fresh buses share nothing.
    when it does not exist, and then fails in the loader.
 
 Discovery compares paths by their lexically resolved form. The first spelling
-wins and discovery drops later duplicates. Paths found on disk exist, so they
-load under their real spelling.
+wins and discovery drops later duplicates. A found path that names an existing
+file loads under its real spelling; a broken link is treated as missing and
+resolved again with plain spaces.
 
 A scan reads one directory level in name order, hidden names included. It adds
 the extension files and links, and the declared entries of other directories and

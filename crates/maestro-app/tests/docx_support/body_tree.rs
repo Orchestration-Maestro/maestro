@@ -173,7 +173,7 @@ pub(super) fn formatting(data: &Data, out: &mut Value) {
             rotation,
         } => {
             out["src"] = json!(src);
-            styles(Some(css_style), out);
+            styles("cssStyle", Some(css_style), out);
             member(out, "srcRect", *src_rect, |v| json!(v.map(number)));
             member(out, "rotation", *rotation, number);
         }
@@ -193,10 +193,10 @@ pub(super) fn formatting(data: &Data, out: &mut Value) {
             v
         }),
         Data::VmlElement(v) => vml(v, out),
-        Data::Drawing { css_style } => styles(Some(css_style), out),
+        Data::Drawing { css_style } => styles("cssStyle", Some(css_style), out),
         Data::Table(_) | Data::Row(_) | Data::Cell(_) => table_part(data, out),
         Data::Run { properties: p, .. } => {
-            styles(p.css_style.as_ref(), out);
+            styles("cssStyle", p.css_style.as_ref(), out);
             member(out, "styleName", p.style_name.as_ref(), |v| json!(v));
             member(out, "verticalAlign", p.vertical_align.as_ref(), |v| {
                 json!(v.as_ref().map(|v| match v {
@@ -209,10 +209,8 @@ pub(super) fn formatting(data: &Data, out: &mut Value) {
     }
 }
 /// Style insertion order is part of the observation, not JSON map equality.
-fn styles(style: Option<&indexmap::IndexMap<String, Option<String>>>, out: &mut Value) {
-    member(out, "cssStyle", style, |v| {
-        json!(v.iter().collect::<Vec<_>>())
-    });
+fn styles(key: &str, style: Option<&indexmap::IndexMap<String, Option<String>>>, out: &mut Value) {
+    member(out, key, style, |v| json!(v.iter().collect::<Vec<_>>()));
 }
 
 /// Observe table, row and cell styles with their encountered metadata.
@@ -228,24 +226,22 @@ fn table_part(data: &Data, out: &mut Value) {
                         .collect::<Vec<_>>()
                 )
             });
-            styles(t.css_style.as_ref(), out);
-            member(out, "cellStyle", t.cell_style.as_ref(), |v| {
-                json!(v.iter().collect::<Vec<_>>())
-            });
+            styles("cssStyle", t.css_style.as_ref(), out);
+            styles("cellStyle", t.cell_style.as_ref(), out);
             member(out, "styleName", t.style_name.as_ref(), |v| json!(v));
             member(out, "className", t.class_name.as_ref(), |v| json!(v));
             member(out, "colBandSize", t.col_band_size, nullable);
             member(out, "rowBandSize", t.row_band_size, nullable);
         }
         Data::Row(r) => {
-            styles(r.css_style.as_ref(), out);
+            styles("cssStyle", r.css_style.as_ref(), out);
             member(out, "className", r.class_name.as_ref(), |v| json!(v));
             member(out, "isHeader", r.is_header, |v| json!(v));
             member(out, "gridBefore", r.grid_before, nullable);
             member(out, "gridAfter", r.grid_after, nullable);
         }
         Data::Cell(c) => {
-            styles(c.css_style.as_ref(), out);
+            styles("cssStyle", c.css_style.as_ref(), out);
             member(out, "className", c.class_name.as_ref(), |v| json!(v));
             member(out, "span", c.span, nullable);
             member(out, "verticalMerge", c.vertical_merge.as_ref(), |v| {
@@ -263,7 +259,7 @@ pub(super) fn paragraph_properties(
 ) {
     common(&p.common, out);
     member(out, "sectionProps", p.section_props.as_ref(), section);
-    styles(p.css_style.as_ref(), out);
+    styles("cssStyle", p.css_style.as_ref(), out);
     member(out, "tabs", p.tabs.as_ref(), |tabs| {
         json!(
             tabs.iter()
@@ -306,7 +302,7 @@ pub(super) fn paragraph_properties(
 /// Observe ordered SVG attributes including unavailable coordinates.
 fn vml(v: &maestro_app::browser::docx_preview::VmlElement, out: &mut Value) {
     use maestro_app::browser::docx_preview::VmlAttributeValue;
-    styles(Some(&v.css_style), out);
+    styles("cssStyle", Some(&v.css_style), out);
     out["tagName"] = json!(v.tag_name.as_str());
     out["attrs"] = json!(
         v.attrs

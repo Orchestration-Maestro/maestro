@@ -209,7 +209,8 @@ impl<'input> DocumentParser<'_, 'input> {
         });
         self.inline_wrapper(element, parent, data)
     }
-    /// Link a hyperlink or smart tag to its paragraph and its immediate runs to it.
+    /// Link a hyperlink or smart tag to its paragraph or simple field and its immediate runs
+    /// to it.
     fn inline_wrapper(
         &mut self,
         element: XmlElement<'_, 'input>,
