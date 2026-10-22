@@ -440,13 +440,80 @@ XOR-decoding at most the first 32 bytes with the reversed hexadecimal key and
 leaving the tail unchanged. The archive is not rewritten. These operations do
 not create browser URLs, load fonts into a browser or render a preview.
 
-## Word preview rendering
+## Word page rendering
 
-The parsers above expose owned records and produce no rendered output. Rendering
-remains separate work: [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
-covers pages, sections, headers, footers, notes and tables, and
-[drawings, shapes, math, theme and fonts](https://github.com/Orchestration-Maestro/maestro/issues/784)
-covers the rest.
+`maestro_web::docx_preview::WordPreview::load` opens a Word package with the
+readers above and prepares its body, styles, notes, headers and footers. A
+malformed part fails the load with `DocxError`, so rendering itself cannot fail.
+`render_sections` lays the body out as pages and returns one `HtmlElement` per
+page; `to_html` writes a page as HTML text for a browser to mount.
+`docx_preview::Options` defaults to the `docx` class namespace, page-break
+detection, ignored last-rendered page breaks, kept page sizes, and rendered
+headers, footers and note lists.
+
+A paragraph's section properties end a section after that paragraph, and the
+body's own section properties apply to the sections after the last such
+paragraph. A page break inside a paragraph splits the paragraph, and the run
+holding the break, across two pages; a break that ends the paragraph only ends the
+page.
+A paragraph style with page-break-before ends the current section before the
+paragraph, and the ended section uses the properties of the group after it. While
+last-rendered page breaks are ignored, each section starts a new page; otherwise
+pages break at page breaks, last-rendered page breaks and changes of orientation
+or page size.
+
+Each page carries the margins, width and minimum height of its first section,
+unless widths or heights are ignored, and the document background. Each
+section's content carries its column count, gap and rule. The first page of a
+section with a title page uses the first-page header and footer, even pages use
+the even ones, and other pages the default ones. Their offsets from the page
+margins are written as `calc()` expressions, and a reference to a missing part
+renders nothing. Footnotes are numbered per page and listed at the end of their
+page; endnotes are numbered through the document and listed at the end of the
+last page. A reference keeps its number when its note is missing, and repeated
+note identifiers use the last note. Tables keep their column widths, cell spans
+and placeholder cells for grid offsets. In a vertical merge the first cell spans
+the merged rows and the others are hidden. Body and header tables hand their cell
+borders and margins to cells that declare none.
+
+Insertions flatten into ordered children; deleted content, field runs and
+non-wrapping breaks are omitted. Tabs use an em space, and nonbreaking hyphens
+remain visible without introducing a break. Symbols decode numeric references
+without reading authored suffixes as markup. Paragraph and run classes keep the
+caller's namespace; a local numbering group, even an empty one, suppresses the
+style's numbering class.
+
+A link's target is the first relationship of the document part, in retained
+order, whose identifier equals the link's nonempty identifier and whose target
+mode is exactly `External`; the relationship type is not checked. A matched
+relationship without a target gives an empty target and ends the search, and an
+absent, empty or unmatched identifier gives an empty target too. A nonempty
+anchor appends `#` and the anchor, so the target becomes `target#anchor`, or
+`#anchor` alone. The value keeps its authored spelling, with no percent-encoding
+or trimming. It then passes the same `executable` check the worksheet tables
+use: a `javascript:` or `vbscript:` URL, or a `data:` URL whose media type is
+HTML, XML, SVG, JavaScript or ECMAScript, is refused. A refused link keeps its
+element and text but has no `href`, so following it does nothing. Ordinary
+`http:`, `https:`, `mailto:`, relative and `#` targets keep their spelling, as do
+plain-text and image `data:` URLs and targets that do not parse as URLs.
+
+Style lookup selects the last occurrence of an exact nonempty identifier.
+Inheritance fills only missing declarations and metadata, keeping child values,
+including explicit nulls, false flags and empty tab arrays. Missing property
+groups inherit owned values. Each chain reads unchanged definitions and stops on
+its first repeated occurrence, retaining the formatting gathered before that
+revisit. This corrects overwritten child metadata, missing inherited groups,
+forward-chain formatting loss and cyclic formatting loss.
+
+Text and attribute values are escaped exactly once. Each style value stays inside
+its own declaration: a value whose strings or brackets do not close, or that
+holds a separator, block, comment, priority or escape outside a string, is
+dropped, as an invalid style property is, so a document cannot add declarations.
+The default stylesheet, document and numbering styles, the page wrapper, images,
+drawings, math, themes, fonts, alternate chunks and the preview entry points
+remain with [Word drawings, math, theme and fonts](https://github.com/Orchestration-Maestro/maestro/issues/784),
+and the attachment mount remains with
+[the attachment DOM switch](https://github.com/Orchestration-Maestro/maestro/issues/1761).
 
 ## Worksheet tables
 

@@ -422,6 +422,9 @@ mod formatting;
 mod table_style;
 pub use table_style::{TableStyle, parse_table_style};
 
+mod document_file;
+pub use document_file::{WordBody, parse_document_file};
+
 mod properties;
 pub(super) mod styles;
 

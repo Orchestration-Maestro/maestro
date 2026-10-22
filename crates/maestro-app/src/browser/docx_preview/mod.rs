@@ -70,9 +70,9 @@ pub use document::dom::{
     WmlHyperlink, WmlSmartTag, WmlTable, WmlTableCell, WmlTableColumn, WmlTableRow,
 };
 pub use document_parser::{
-    DefaultPropertiesOptions, TableStyle, parse_background, parse_body_elements,
-    parse_border_properties, parse_default_properties, parse_paragraph, parse_run,
-    parse_table_style,
+    DefaultPropertiesOptions, TableStyle, WordBody, parse_background, parse_body_elements,
+    parse_border_properties, parse_default_properties, parse_document_file, parse_paragraph,
+    parse_run, parse_table_style,
 };
 
 pub use document::border::{Border, Borders};

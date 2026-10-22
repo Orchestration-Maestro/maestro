@@ -26,6 +26,7 @@ mod diff_factory;
 mod document_card_support;
 mod document_tool_cards;
 mod document_tool_cards_browser;
+mod docx_preview_browser;
 mod excel_views;
 mod excel_views_browser;
 mod expandable_output_browser;
