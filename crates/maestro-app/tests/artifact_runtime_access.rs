@@ -255,11 +255,10 @@ fn unowned_rows(group: &str, owned: &[(&str, &[&str])]) -> Vec<Value> {
 }
 /// Recorded rows of one group owned by the named test.
 fn owned_rows(group: &str, owned: &[(&str, &[&str])], test: &str) -> Vec<Value> {
-    let ids = owned
-        .iter()
-        .find(|(name, _)| *name == test)
-        .map(|(_, ids)| *ids)
-        .unwrap_or_default();
+    let ids = owned.iter().find(|(name, _)| *name == test).map_or_else(
+        || panic!("no recorded rows owned by {test}"),
+        |(_, ids)| *ids,
+    );
     named_rows(group, ids)
 }
 /// Recorded rows of one group named by `ids`.
@@ -521,6 +520,7 @@ fn dropping_the_panel_and_agent_frees_both() {
     let (agent, slot) = conversation(Vec::new());
     let state = agent.state().clone();
     let freed = Arc::downgrade(&state);
+    let store = Arc::downgrade(&panel.artifacts());
     panel.set_agent(Some(&slot));
     let tool = panel.tool();
     state
@@ -534,5 +534,9 @@ fn dropping_the_panel_and_agent_frees_both() {
     assert!(
         freed.upgrade().is_none(),
         "the retained panel and tool keep the conversation alive"
+    );
+    assert!(
+        store.upgrade().is_none(),
+        "the retained tool keeps the panel artifacts alive"
     );
 }

@@ -431,7 +431,6 @@ fn unrelated_provider_messages_have_no_effect() {
 }
 
 /// Inert presentation; only the provider's injected source is examined.
-#[derive(Clone)]
 struct SourceOnly;
 impl ArtifactPresentation for SourceOnly {
     fn now(&self) -> chrono::DateTime<chrono::Utc> {

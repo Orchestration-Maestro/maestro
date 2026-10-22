@@ -1,5 +1,5 @@
 (_sandboxId) => {
-            // Auto-parse/stringify for .json files
+            // JSON artifacts are parsed on read
             const isJsonFile = (filename) => filename.endsWith(".json");
             window.listArtifacts = async () => {
                 // Online: ask extension

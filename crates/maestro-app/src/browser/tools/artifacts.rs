@@ -259,9 +259,7 @@ where
     }
     /// Retain the conversation whose attachments HTML artifacts can read without owning it.
     pub fn set_agent(&self, agent: Option<&SharedHandle<dyn AgentLike>>) {
-        let retained = agent.map(Threaded::downgrade);
-        let previous = std::mem::replace(&mut write(&self.state.0).agent, retained);
-        drop(previous);
+        write(&self.state.0).agent = agent.map(Threaded::downgrade);
     }
     /// Select an existing file and request that the host open the panel.
     pub fn open_artifact(&self, filename: &str) {

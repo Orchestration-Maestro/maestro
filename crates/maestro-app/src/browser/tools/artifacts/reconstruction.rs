@@ -18,10 +18,11 @@ where
 {
     /// Replace every artifact with the files the conversation's artifact history leaves.
     ///
-    /// History entries apply as recorded, and an entry whose content is empty leaves the
-    /// file out; artifact tool results apply only when the live command would have
+    /// History entries apply as recorded, and an entry whose content is empty is
+    /// skipped; artifact tool results apply only when the live command would have
     /// accepted them. Views are removed and recreated without HTML waits or per-file
-    /// notifications; the first file is then selected and the host is notified once.
+    /// notifications, and every HTML view reloads after each file. The first file is
+    /// then selected and the host is notified once.
     pub async fn reconstruct_from_messages<C: CustomMessage>(
         &self,
         messages: &[AgentMessage<CustomAgentMessages<C>>],
