@@ -1,5 +1,5 @@
 //! Setext lookahead over item text admitted one line at a time.
-use super::{Grammar, Heading, UNDERLINE, matches, selected};
+use super::{Grammar, Heading, blank, carriage, matches, selected, underline};
 use crate::{
     MarkedOptions,
     rules::lines::{Cursor, Input},
@@ -96,13 +96,31 @@ impl ItemText {
             }
         };
         let index = self.lines.partition_point(|line| line.range.start < start);
-        let Some(line) = self.lines.get(index) else {
-            return (None, true);
+        let partial = self.partial(source, start, index);
+        let origin = if partial.is_some() {
+            start
+        } else {
+            match self.lines.get(index) {
+                Some(line) => line.range.start,
+                None => return (None, true),
+            }
         };
-        let origin = line.range.start;
-        let setext = self.closing(index, ItemLine::setext, |next| next.setext);
-        let paragraph = self.closing(index, ItemLine::paragraph, |next| next.paragraph);
-        match self.underline(origin).filter(|found| *found <= setext) {
+        let setext = self.closing(
+            index,
+            ItemLine::setext,
+            |next| next.setext,
+            partial.as_ref(),
+        );
+        let paragraph = self.closing(
+            index,
+            ItemLine::paragraph,
+            |next| next.paragraph,
+            partial.as_ref(),
+        );
+        match self
+            .first_underline(origin)
+            .filter(|found| *found <= setext)
+        {
             Some(found) => (
                 Some(self.heading(found, origin)),
                 !self.settled_by_boundary(found),
@@ -111,8 +129,19 @@ impl ItemText {
         }
     }
 
+    /// Classify the rest of a line that a caller's token stopped inside.
+    fn partial(&self, source: &Segmented, start: usize, index: usize) -> Option<ItemLine> {
+        let line = self.lines.get(index.checked_sub(1)?)?;
+        let rest = line.range.end.checked_sub(start).filter(|rest| *rest > 0)?;
+        let end = self
+            .lines
+            .get(index)
+            .map_or(rest, |next| next.range.end - start);
+        Some(self.line(source, 0..rest, end))
+    }
+
     /// First underline this attempt can admit, which excludes its own first line.
-    fn underline(&self, origin: usize) -> Option<usize> {
+    fn first_underline(&self, origin: usize) -> Option<usize> {
         let rest = self
             .underlines
             .partition_point(|found| self.lines[*found].range.start <= origin + 1);
@@ -120,16 +149,33 @@ impl ItemText {
     }
 
     /// First line closing one search, honouring an attempt's exempt first line.
-    fn closing(&self, index: usize, kind: fn(&ItemLine) -> Stop, next: fn(Next) -> usize) -> usize {
-        let Some(entry) = self.next.get(index) else {
-            return usize::MAX;
+    ///
+    /// A partly consumed first line closes the search at itself, so it answers
+    /// below every line an underline can occupy.
+    fn closing(
+        &self,
+        index: usize,
+        kind: fn(&ItemLine) -> Stop,
+        next: fn(Next) -> usize,
+        partial: Option<&ItemLine>,
+    ) -> usize {
+        let Some(first) = partial else {
+            let found = self.stop(index, next);
+            if found != index || kind(&self.lines[index]) != Stop::Later {
+                return found;
+            }
+            return self.stop(index + 1, next);
         };
-        let found = next(*entry);
-        if found != index || kind(&self.lines[index]) != Stop::Later {
-            return found;
+        if kind(first) == Stop::Closed {
+            return index.saturating_sub(1);
         }
+        self.stop(index, next)
+    }
+
+    /// First line at or after `index` that closes one search.
+    fn stop(&self, index: usize, next: fn(Next) -> usize) -> usize {
         self.next
-            .get(index + 1)
+            .get(index)
             .map_or(usize::MAX, |entry| next(*entry))
     }
 
@@ -194,26 +240,20 @@ impl ItemText {
         self.index();
     }
 
-    /// Classify one physical line with the recognizer's own predicates.
+    /// Classify one physical line with the shared per-line predicates.
     fn line(&self, source: &Segmented, range: Range<usize>, end: usize) -> ItemLine {
         let window = source.window(range.start..end);
         let text = source.window(range.clone());
         let text = text.as_ref();
-        let underline = UNDERLINE
-            .as_ref()
-            .and_then(|rule| rule.find(text))
-            .filter(|_| range.start > 1);
-        let blank = text.ends_with('\n') && text.chars().all(maestro_text::is_whitespace_scalar);
+        let found = underline(text).filter(|_| range.start > 1);
         let grammar = matches(self.grammar.setext.as_ref(), &window);
-        let carriage = text.contains(['\r', '\u{2028}', '\u{2029}']);
-        let empty = text.strip_suffix('\n').unwrap_or(text).is_empty();
+        let separator = carriage(text);
         let interrupted = matches(self.grammar.paragraph.as_ref(), &window);
+        let empty = text.strip_suffix('\n').unwrap_or(text).is_empty();
         ItemLine {
-            underline: underline.as_ref().map(|found| {
-                usize::from(text[found.group(1).unwrap_or_default()].starts_with('-')) + 1
-            }),
-            consumed: underline.as_ref().map_or(0, regress::Match::end),
-            setext: match (grammar || carriage, blank) {
+            underline: found.map(|(level, _)| level),
+            consumed: found.map_or(0, |(_, end)| end),
+            setext: match (grammar || separator, blank(text)) {
                 (true, _) => Stop::Closed,
                 (false, true) => Stop::Later,
                 (false, false) => Stop::Open,

@@ -230,30 +230,43 @@ impl Recognizer {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.paragraph_bytes += text.len());
         if line.start > 1
-            && let Some(underline) = UNDERLINE.as_ref().and_then(|rule| rule.find(text))
+            && let Some((level, end)) = underline(text)
         {
             self.result.heading = Some(Heading {
                 content: 0..line.start - 1,
-                level: usize::from(text[underline.group(1).unwrap_or_default()].starts_with('-'))
-                    + 1,
-                consumed: line.start + underline.end(),
+                level,
+                consumed: line.start + end,
             });
             return;
         }
-        let blank = line.start != 0
-            && text.ends_with('\n')
-            && text.chars().all(|scalar| {
-                #[cfg(test)]
-                crate::tests::WORK
-                    .with_borrow_mut(|work| work.paragraph_bytes += scalar.len_utf8());
-                maestro_text::is_whitespace_scalar(scalar)
-            });
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.paragraph_bytes += text.len());
-        self.setext_open = !blank
-            && !matches(self.grammar.setext.as_ref(), window)
-            && !text.contains(['\r', '\u{2028}', '\u{2029}']);
+        let empty_line = line.start != 0 && blank(text);
+        self.setext_open =
+            !(empty_line || matches(self.grammar.setext.as_ref(), window) || carriage(text));
     }
+}
+
+/// Captured underline level of one physical line and the end of its match.
+fn underline(text: &str) -> Option<(usize, usize)> {
+    let found = UNDERLINE.as_ref()?.find(text)?;
+    let level = usize::from(text[found.group(1).unwrap_or_default()].starts_with('-')) + 1;
+    Some((level, found.end()))
+}
+
+/// Whether a line ending in a terminator holds only whitespace.
+fn blank(text: &str) -> bool {
+    text.ends_with('\n')
+        && text.chars().all(|scalar| {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.paragraph_bytes += scalar.len_utf8());
+            maestro_text::is_whitespace_scalar(scalar)
+        })
+}
+
+/// Whether a line carries a carriage return, line separator or paragraph separator.
+fn carriage(text: &str) -> bool {
+    text.contains(['\r', '\u{2028}', '\u{2029}'])
 }
 
 /// Observe a bounded grammar operand and charge it at its owning boundary.

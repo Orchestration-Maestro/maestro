@@ -135,13 +135,20 @@ fn line_offsets(operand: &str) -> Vec<usize> {
     offsets
 }
 
-/// Compare one retained lookahead with a fresh recognizer at every line offset.
-fn compare_retained(options: MarkedOptions, operand: &str) {
+/// Every character boundary of one operand, in the order the item path reads them.
+fn boundaries(operand: &str) -> Vec<usize> {
+    (0..=operand.len())
+        .filter(|start| operand.is_char_boundary(*start))
+        .collect()
+}
+
+/// Compare one retained lookahead with a fresh recognizer at each given offset.
+fn compare_retained(options: MarkedOptions, operand: &str, offsets: &[usize]) {
     let mut text = crate::rules::paragraph::ItemText::new(options);
-    for start in line_offsets(operand) {
-        let suffix = Segmented::from(ScopeSource::identity(&operand[start..]));
+    for start in offsets {
+        let suffix = Segmented::from(ScopeSource::identity(&operand[*start..]));
         let observed = text.attempt(&suffix);
-        let expected = fresh(options, &operand[start..]);
+        let expected = fresh(options, &operand[*start..]);
         assert_eq!(observed, expected, "{options:?} at {start} of {operand:?}");
     }
 }
@@ -149,8 +156,9 @@ fn compare_retained(options: MarkedOptions, operand: &str) {
 #[test]
 fn retained_item_text_answers_match_a_fresh_recognizer() {
     let operand = "first\nsecond\n===\n\nthird\n- x\n|a|b|\n|---|---|\n> q\nunder\n";
+    let offsets = line_offsets(operand);
     for options in GRAMMARS {
-        compare_retained(options, operand);
+        compare_retained(options, operand, &offsets);
     }
 }
 
@@ -184,10 +192,85 @@ fn retained_item_text_answers_match_on_generated_operands() {
                 .wrapping_add(1);
             operand.push_str(parts[(state >> 33) as usize % parts.len()]);
         }
+        let offsets = boundaries(&operand);
         for options in GRAMMARS {
-            compare_retained(options, &operand);
+            compare_retained(options, &operand, &offsets);
         }
     }
+}
+
+#[test]
+fn retained_item_text_answers_match_a_fresh_recognizer_inside_lines() {
+    let operands = [
+        "label\n===\n",
+        "a\nlabel\n===\n",
+        "a\n\nlabel\n===\n",
+        "$$x$$label\n===\n",
+        "\\[x\\]label\n===\n",
+        "a\n \t\nlabel\n===\n",
+        "a\nx\r\n===\n",
+        "\u{2028}x\nlabel\n===\n",
+        "a\n# h\nlabel\n===",
+    ];
+    for operand in operands {
+        let offsets = boundaries(operand);
+        for options in GRAMMARS {
+            compare_retained(options, operand, &offsets);
+        }
+    }
+}
+
+#[test]
+fn partial_prefix_block_tokens_keep_the_following_heading() {
+    for (open, close) in [("$$", "$$"), ("\\[", "\\]")] {
+        let source = format!("- a\n\n  {open}x{close}label\n  ===\n  after\n");
+        let mut block = super::Delimited(open, close);
+        let document = crate::parse_with_tokenizer(
+            source.clone(),
+            MarkedOptions::Browser { escape_html: false },
+            Some(&mut block),
+        )
+        .expect("prefix tokens");
+        let formula = format!("{open}x{close}");
+        let expected = [
+            "list None".to_owned(),
+            "item".to_owned(),
+            "paragraph \"a\"".to_owned(),
+            "gap".to_owned(),
+            format!("custom block {formula:?}"),
+            "heading 1 \"label\" confined \"label\\n===\"".to_owned(),
+            "paragraph \"after\"".to_owned(),
+        ];
+        assert_eq!(shape(&document.nodes), expected, "{source:?}");
+    }
+}
+
+/// Block shape of one document, naming each node's kind and confined text.
+fn shape(nodes: &[crate::Node]) -> Vec<String> {
+    let mut found = Vec::new();
+    for node in nodes {
+        let text = node.authored.to_owned_string();
+        let text = text.trim_end();
+        match &node.kind {
+            crate::Kind::List(start, items) => {
+                found.push(format!("list {start:?}"));
+                found.extend(shape(items));
+            }
+            crate::Kind::Item(children) => {
+                found.push("item".to_owned());
+                found.extend(shape(children));
+            }
+            crate::Kind::Heading(level, _, label) => {
+                found.push(format!("heading {level} {label:?} confined {text:?}"));
+            }
+            crate::Kind::CustomBlock(kind, _) => found.push(format!("custom {kind} {text:?}")),
+            crate::Kind::Paragraph(_) => found.push(format!("paragraph {text:?}")),
+            crate::Kind::Gap => found.push("gap".to_owned()),
+            crate::Kind::Inline(_) => found.push(format!("inline {text:?}")),
+            _ => found.push(format!("other {text:?}")),
+        }
+    }
+    found
 }
 
 #[test]
@@ -208,9 +291,12 @@ fn item_text_stops_follow_every_recognizer_predicate() {
         let reopened = format!("a\n{predicate}b\n===\n");
         let after = 2 + predicate.len();
         let mut closers = 0;
+        let closed_offsets = line_offsets(&closed);
+        let reopened_offsets = line_offsets(&reopened);
+        let flanking = line_offsets("a\n===\n");
         for options in GRAMMARS {
-            compare_retained(options, &closed);
-            compare_retained(options, &reopened);
+            compare_retained(options, &closed, &closed_offsets);
+            compare_retained(options, &reopened, &reopened_offsets);
             if fresh(options, &closed).0.is_none() {
                 closers += 1;
             }
@@ -219,7 +305,7 @@ fn item_text_stops_follow_every_recognizer_predicate() {
         }
         assert!(closers > 0, "no caller grammar closes on {predicate:?}");
         for options in GRAMMARS {
-            compare_retained(options, "a\n===\n");
+            compare_retained(options, "a\n===\n", &flanking);
         }
     }
 }
