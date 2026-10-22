@@ -20,28 +20,35 @@ fn examples_folder_matches_the_shipped_files() {
     let folder = config::get_examples_path().unwrap();
     let root = Path::new(&folder);
     assert!(root.is_dir(), "{folder}");
-    assert_eq!(directory_names(root), ["README.md", "extensions", "sdk"]);
-    assert_index_lists(root, &directory_names(root));
+    let entries = directory_names(root);
+    assert_eq!(entries, ["README.md", "extensions", "sdk"]);
+    assert_index_lists(root, &entries);
     for directory in ["extensions", "sdk"] {
         let path = root.join(directory);
         assert_index_lists(&path, &recursive_names(&path, &path));
     }
 }
 
-/// Assert an index page names every entry of its folder and only entries that exist.
+/// Assert an index page lists every entry of its folder and names only paths that exist.
 fn assert_index_lists(folder: &Path, entries: &[String]) {
     let index = fs::read_to_string(folder.join("README.md")).unwrap();
+    let listed = index_entries(&index);
     for name in entries.iter().filter(|name| *name != "README.md") {
+        let target = if folder.join(name).is_dir() {
+            format!("{name}/")
+        } else {
+            name.clone()
+        };
         assert!(
-            index.contains(name.as_str()),
-            "{} index omits {name}",
+            listed.contains(&target),
+            "{} index omits {target}",
             folder.display()
         );
     }
-    for named in index_entries(&index) {
+    for target in listed {
         assert!(
-            folder.join(&named).exists(),
-            "{} index names {named}",
+            folder.join(&target).exists(),
+            "{} index names {target}",
             folder.display()
         );
     }

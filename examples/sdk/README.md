@@ -6,15 +6,13 @@ the conversation.
 
 ## Examples
 
-No SDK example ships yet.
-[The embedding ticket](https://github.com/Orchestration-Maestro/maestro/issues/227)
-delivers them, each registered as a Cargo example target of its owning crate and
-listed in
-[the examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074).
+No SDK example ships yet; the
+[examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
+lists each one with its owner.
 
 ## Running
 
-An example is built and run through its owning crate:
+Build and run an example through its owning crate:
 
 ```sh
 cargo run -p <crate> --example <name>

@@ -409,12 +409,9 @@ fn create_prepared_assets(workspace: &Workspace) {
         ("docs/guide.md", "guide"),
         ("examples/example.txt", "example"),
     ] {
+        write_input(&root, name, &format!("crate-{value}"));
         write_input(&workspace.path(), name, value);
     }
-    assert!(
-        !root.join("README.md").exists(),
-        "package inputs belong to the package directory, not the crate"
-    );
     fs::create_dir_all(workspace.path().join("target/maestro-viewer")).unwrap();
     fs::write(
         workspace.path().join("target/maestro-viewer/index.html"),

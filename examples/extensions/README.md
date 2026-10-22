@@ -1,14 +1,14 @@
 # Extension Examples
 
-Example extensions for Maestro. None ship yet; this page gains a row for each one
-when it lands.
+Example extensions for Maestro. None ship yet; the
+[examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
+lists each one with its owner.
 
 ## Usage
 
 An extension crate is a `cdylib` whose root names its factory. The
-[extension guide](../../docs/extensions/guest.md) describes the interface it
-registers, and `just extension-author-component` builds the author component
-example in `crates/maestro-extensions-wasm/examples/author_component.rs`.
+[extension guide](../../docs/extensions/guest.md) describes the interface the
+factory registers.
 
 Maestro discovers extensions in two directories, in this order:
 
@@ -20,5 +20,4 @@ steps.
 
 ## Examples
 
-No example ships yet; one arrives with a row here and an entry in
-[the examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074).
+Each extension gains a row here when it ships.
