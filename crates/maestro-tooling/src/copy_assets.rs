@@ -21,8 +21,9 @@ pub enum Layout<'a> {
 /// Copy assets in group order, preserving completed groups on error.
 ///
 /// # Errors
-/// Returns filesystem failures; a failed input copy names the input path, and
-/// groups copied before the failure remain on disk.
+/// Returns filesystem failures. A failure reading an input names that input's
+/// path; a destination failure keeps its native error, and groups copied before
+/// the failure remain on disk.
 pub fn copy(source: &Path, destination: &Path, layout: Layout<'_>) -> io::Result<()> {
     match layout {
         Layout::Library => copy_library(source, destination),
@@ -84,7 +85,12 @@ fn copy_standalone(
         &destination.join("assets"),
         "png",
     )?;
-    if !viewer.is_dir() || fs::read_dir(viewer)?.next().is_none() {
+    let populated = viewer.is_dir()
+        && fs::read_dir(viewer)
+            .map_err(|error| input_error(viewer, &error))?
+            .next()
+            .is_some();
+    if !populated {
         return Err(io::Error::other(format!(
             "viewer parameter must name a nonempty directory: {}",
             viewer.display()
@@ -128,26 +134,23 @@ fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<(
     Ok(())
 }
 
-/// Copy an input tree, naming its root when the copy fails.
+/// Copy an input tree while preserving symbolic links, naming the entry that failed.
 fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
-    copy_tree_into(source, destination).map_err(|error| input_error(source, &error))
-}
-
-/// Copy a directory tree while preserving symbolic links.
-fn copy_tree_into(source: &Path, destination: &Path) -> io::Result<()> {
-    let metadata = fs::symlink_metadata(source)?;
+    let metadata = fs::symlink_metadata(source).map_err(|error| input_error(source, &error))?;
     if metadata.is_symlink() {
         return copy_link(source, destination);
     }
     if !metadata.is_dir() {
-        fs::copy(source, destination)?;
-        return Ok(());
+        return copy_file(source, destination);
     }
     fs::create_dir_all(destination)?;
-    let mut entries = fs::read_dir(source)?.collect::<io::Result<Vec<_>>>()?;
+    let mut entries = fs::read_dir(source)
+        .map_err(|error| input_error(source, &error))?
+        .map(|entry| entry.map_err(|error| input_error(source, &error)))
+        .collect::<io::Result<Vec<_>>>()?;
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
-        copy_tree_into(&entry.path(), &destination.join(entry.file_name()))?;
+        copy_tree(&entry.path(), &destination.join(entry.file_name()))?;
     }
     Ok(())
 }
@@ -160,9 +163,12 @@ fn input_error(source: &Path, error: &io::Error) -> io::Error {
     )
 }
 
-/// Copy one input file, naming its source when the copy fails.
+/// Copy one input file, naming its source when it cannot be opened.
+///
+/// Opening first separates the two sides: `fs::copy` reports one error for either.
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
-    fs::copy(source, destination).map_err(|error| input_error(source, &error))?;
+    fs::File::open(source).map_err(|error| input_error(source, &error))?;
+    fs::copy(source, destination)?;
     Ok(())
 }
 
@@ -177,7 +183,7 @@ fn copy_link(source: &Path, destination: &Path) -> io::Result<()> {
         }
         fs::remove_file(destination)?;
     }
-    let target = fs::read_link(source)?;
+    let target = fs::read_link(source).map_err(|error| input_error(source, &error))?;
     #[cfg(unix)]
     {
         std::os::unix::fs::symlink(target, destination)
