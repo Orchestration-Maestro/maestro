@@ -150,7 +150,9 @@ where
     if Path::new(&normalized).exists() {
         return Ok(normalized);
     }
-    Ok(match existing_written_directory(&as_written) {
+    // Only a directory the file system holds supplies a spelling; every other
+    // component takes the normalized one.
+    Ok(match deepest_existing_directory(&as_written) {
         Some(directory) if at_least_as_deep(directory, &normalized) => {
             directory.to_owned() + &normalize_unicode_spaces(&as_written[directory.len()..])
         }
@@ -158,12 +160,9 @@ where
     })
 }
 
-/// The deepest ancestor of `written` that is an existing directory, spelled as given.
-///
-/// Only a directory the file system has may supply a spelling; every other component
-/// takes the normalized one.
-fn existing_written_directory(written: &str) -> Option<&str> {
-    Path::new(written)
+/// The deepest ancestor of `path` that is an existing directory.
+fn deepest_existing_directory(path: &str) -> Option<&str> {
+    Path::new(path)
         .ancestors()
         .skip(1)
         .find(|ancestor| ancestor.is_dir())
@@ -176,7 +175,7 @@ fn existing_written_directory(written: &str) -> Option<&str> {
 /// A written directory shallower than the normalized tree would create a new directory
 /// beside one the file system already holds.
 fn at_least_as_deep(directory: &str, normalized: &str) -> bool {
-    let reached = existing_written_directory(normalized)
+    let reached = deepest_existing_directory(normalized)
         .map_or(0, |deepest| Path::new(deepest).components().count());
     Path::new(directory).components().count() >= reached
 }
@@ -212,20 +211,31 @@ fn existing_variant(resolved: &str) -> Option<String> {
     .find(|candidate| Path::new(candidate).exists())
 }
 
-/// Resolve a path under the written spelling or one of its variants, then under
-/// [`resolve_existing_spelling`] in the same order.
+/// Resolve a path under the first of these candidates that the file system holds, in
+/// order:
 ///
-/// The written spelling and the spelling that resolver answers with each get the
-/// variants above, so a file created under a spelled directory reads back.
+/// 1. the spelling [`resolve_existing_spelling`] answers with;
+/// 2. that answer's macOS variants: the narrow-space AM/PM form, NFD, curly
+///    apostrophes, and NFD with curly apostrophes;
+/// 3. the spelling the path was written with, and those same four variants of it;
+/// 4. the space-replaced path [`resolve_to_cwd`] answers with, and those same four
+///    variants of it.
+///
+/// The list holds every candidate the reference tries, so a file the reference reads
+/// still opens, and it checks the rule's answer, so a file created under a spelled
+/// directory reads back. Nothing on disk returns the first candidate.
 ///
 /// # Errors
 /// Returns the home-directory, working-directory or invalid-UTF-8 error of the
 /// spelling the path was resolved with.
 pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
-    let written = resolve_written_path(file_path, cwd)?;
-    if let Some(found) = existing_variant(&written) {
-        return Ok(found);
-    }
     let spelling = resolve_existing_spelling(file_path, |path| resolve_written_path(path, cwd))?;
-    Ok(existing_variant(&spelling).unwrap_or(spelling))
+    let written = resolve_written_path(file_path, cwd)?;
+    let reference = resolve_to_cwd(file_path, cwd)?;
+    for candidate in [&spelling, &written, &reference] {
+        if let Some(found) = existing_variant(candidate) {
+            return Ok(found);
+        }
+    }
+    Ok(spelling)
 }

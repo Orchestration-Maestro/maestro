@@ -108,18 +108,7 @@ fn spaced_directories() -> (Scratch, String) {
 #[test]
 fn ls_reaches_a_directory_named_with_a_unicode_space() {
     let (dir, _) = spaced_directories();
-    let ls = create_ls_tool(dir.text(), LsToolOptions::default());
-    let listed = run((ls.execute)(
-        "call".into(),
-        json!({"path": "s\u{a0}dir"}),
-        None,
-        None,
-    ))
-    .unwrap();
-    assert_eq!(
-        ls_support::result_json(&listed.content, listed.details)["content"][0]["text"],
-        json!("written.txt")
-    );
+    assert_eq!(listing_shows(&dir, "s\u{a0}dir"), "written.txt");
 }
 
 /// Searching with `find` reaches a directory named with a no-break space, not its neighbour.
@@ -127,21 +116,7 @@ fn ls_reaches_a_directory_named_with_a_unicode_space() {
 #[test]
 fn find_reaches_a_directory_named_with_a_unicode_space() {
     let (dir, written) = spaced_directories();
-    let bin = Scratch::new().unwrap();
-    let operands = find_support::recorder(&bin);
-    let manager = find_support::manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
-    let tool = create_find_tool(dir.text(), FindToolOptions::default(), manager);
-    run((tool.execute)(
-        "call".into(),
-        json!({"pattern": "*", "path": "s\u{a0}dir"}),
-        None,
-        None,
-    ))
-    .unwrap();
-    assert_eq!(
-        recorded(&operands).last().map(String::as_str),
-        Some(written.as_str())
-    );
+    assert_eq!(find_reaches(&dir, "s\u{a0}dir"), written);
 }
 
 /// Searching with `grep` reaches a directory named with a no-break space, not its neighbour.
@@ -149,23 +124,7 @@ fn find_reaches_a_directory_named_with_a_unicode_space() {
 #[test]
 fn grep_reaches_a_directory_named_with_a_unicode_space() {
     let (dir, written) = spaced_directories();
-    let bin = Scratch::new().unwrap();
-    grep_support::producer(&bin, &grep_support::Input::default());
-    let manager = find_support::manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
-    let tool = create_grep_tool(dir.text(), GrepToolOptions::default(), manager);
-    run((tool.execute)(
-        "call".into(),
-        json!({"pattern": "hit", "path": "s\u{a0}dir"}),
-        None,
-        None,
-    ))
-    .unwrap();
-    assert_eq!(
-        recorded(&bin.path().join("args.json"))
-            .last()
-            .map(String::as_str),
-        Some(written.as_str())
-    );
+    assert_eq!(grep_reaches(&dir, "s\u{a0}dir"), written);
 }
 
 /// A new file lands inside the directory the file system holds under its written spelling.
@@ -438,6 +397,25 @@ fn existing_plain_space_file_is_reached_beside_a_written_directory() {
     run((edit.execute)("call".into(), arguments, None, None, None)).unwrap();
     assert_eq!(std::fs::read(&plain).unwrap(), b"alpha\ngamma\n");
     assert!(!dir.path().join("s\u{a0}dir/x.txt").exists());
+}
+
+/// A screenshot name only the plain-space twin holds opens under the written directory.
+#[cfg(unix)]
+#[test]
+fn read_reaches_a_screenshot_in_the_plain_twin() {
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
+    std::fs::create_dir(dir.path().join("s dir")).unwrap();
+    dir.file("s dir/Shot 10.00\u{202F}AM.txt", b"captured");
+    let read = create_read_tool_definition::<()>(dir.text(), ReadToolOptions::default());
+    let opened = call(
+        &read,
+        input("s\u{a0}dir/Shot 10.00 AM.txt", None, None),
+        None,
+        None,
+    )
+    .unwrap();
+    assert_eq!(only_text(&opened), "captured");
 }
 
 /// A path nothing on disk holds resolves exactly as the space-replaced whole path does.
