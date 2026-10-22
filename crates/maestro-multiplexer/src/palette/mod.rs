@@ -6,11 +6,9 @@
 mod tests;
 mod themes;
 
-use maestro_app::daemon::{
-    app::state::ThemeRuntimeConfig,
-    settings::theme::{CustomThemeColors, canonical_theme_name},
-    terminal_theme::HostAppearance,
-};
+use maestro_app::daemon::settings::theme::{CustomThemeColors, canonical_theme_name};
+#[cfg(target_os = "linux")]
+use maestro_app::daemon::{app::state::ThemeRuntimeConfig, terminal_theme::HostAppearance};
 use ratatui::style::Color;
 
 /// Every colour the multiplexer chrome uses.
@@ -199,6 +197,7 @@ fn named_color(name: &str) -> Option<Color> {
 /// The palette for a theme name; an unknown name is logged and falls back to
 /// `fallback_name`, then to Catppuccin. Authored overrides apply next, then
 /// the legacy interface accent.
+#[cfg(target_os = "linux")]
 #[must_use]
 pub fn resolve_palette_for_theme_name(
     name: &str,
@@ -224,6 +223,7 @@ pub fn resolve_palette_for_theme_name(
 
 /// The active palette and theme name for a host appearance; automatic
 /// switching treats an unreported appearance as dark.
+#[cfg(target_os = "linux")]
 #[must_use]
 pub fn resolve_effective_theme(
     runtime: &ThemeRuntimeConfig,

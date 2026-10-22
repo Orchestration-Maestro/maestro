@@ -1,5 +1,7 @@
 use super::*;
-use maestro_app::daemon::settings::{model::Config, theme::THEME_NAMES};
+#[cfg(target_os = "linux")]
+use maestro_app::daemon::settings::model::Config;
+use maestro_app::daemon::settings::theme::THEME_NAMES;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -169,6 +171,7 @@ fn palette_parse_color_keeps_non_ascii_hex_as_an_unknown_name() {
     assert_eq!(parse_color("#é1"), Color::Cyan);
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn palette_unknown_theme_falls_back_to_its_default() {
     let runtime = ThemeRuntimeConfig::new(&Config::default(), true);
@@ -182,6 +185,7 @@ fn palette_unknown_theme_falls_back_to_its_default() {
     );
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn palette_resolution_applies_overrides_then_legacy_accent() {
     let mut config = Config::default();

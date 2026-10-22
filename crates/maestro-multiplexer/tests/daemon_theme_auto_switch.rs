@@ -1,4 +1,5 @@
 //! The chrome palette follows the daemon's theme selection and host appearance.
+#![cfg(target_os = "linux")]
 
 use maestro_app::daemon::{
     app::state::ThemeRuntimeConfig,
