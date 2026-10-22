@@ -1,7 +1,7 @@
 //! Read policy over the engine's retained rows and text formatters.
 
 use super::{PaneCore, PaneTerminal, TerminalCursorState, retained::terminal_cell_text};
-use crate::{selection::Selection, terminal_theme::TerminalTheme};
+use crate::{render_prof, selection::Selection, terminal_theme::TerminalTheme};
 use maestro_terminal::{
     Terminal,
     color::{Palette, Rgb},
@@ -37,6 +37,8 @@ pub struct PaneRenderView<'a> {
     pub kitty_graphics_enabled: bool,
     /// Cursor presented at the supplied instant.
     pub cursor: Option<TerminalCursorState>,
+    /// Profile start taken once the pane lock is held, when profiling is on.
+    pub prof_started: Option<Instant>,
 }
 
 impl PaneTerminal {
@@ -48,6 +50,7 @@ impl PaneTerminal {
         read: impl FnOnce(PaneRenderView<'_>) -> T,
     ) -> Option<T> {
         let mut core = self.core.lock().ok()?;
+        let prof_started = render_prof::timer();
         core.refresh_render_state();
         let cursor = core.reported_cursor_state(core.rendered_cursor_state(), now);
         let core = &mut *core;
@@ -58,6 +61,7 @@ impl PaneTerminal {
             initial_default_background: core.initial_default_background,
             kitty_graphics_enabled: core.kitty_graphics_enabled,
             cursor,
+            prof_started,
             render_state: &mut core.render_state,
         }))
     }
