@@ -237,21 +237,21 @@ relative result (elsewhere: only for a relative `cwd`), and the home directory
 only for `~`. A cancellation observed after the bytes are read, including while
 converting them, still settles the read as cancelled, for results and failures.
 `resolve_read_path` tries the written path, then its macOS variants: the
-narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly apostrophes. It
-then tries the same five spellings of its Unicode-space normalization, which
-replaces U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 with a space. The
-normalization is used only when nothing matches the written spelling, so a file
-whose real name holds one of those spaces opens under that name while a typed name
-whose Unicode spaces stand for plain spaces still finds its file.
+narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly apostrophes.
+It then resolves the path through the shared rule below and tries those four
+variants of the answer, so a file whose real name holds one of those spaces opens
+under that name while a typed name whose Unicode spaces stand for plain spaces
+still finds its file.
 
-`resolve_existing_path`, which the write, edit and search routes use, applies the
-same preference to directories: a directory the file system holds keeps the
-spelling it was written with even when the file below it is new, and only a part of
-the path with no such directory takes the space-replaced spelling. The whole path
-takes that spelling whenever it exists, so a file the file system holds only under its
-plain name is still found beside a directory of the written one. A new file is created
-inside the directory named with one of those spaces, not in a space-replaced twin
-beside it.
+Space replacement turns U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 into a
+space. `resolve_existing_path`, which the write, edit and search routes use, keeps the
+spelling the path was written with when the file system holds that path, and takes
+the space-replaced path when it holds that one instead. Otherwise the deepest
+directory the file system holds under the written spelling keeps that spelling and
+the rest of the path takes plain spaces, unless a directory of the space-replaced
+path reaches deeper; then the whole path takes plain spaces. So a new file is
+created inside the directory named with one of those spaces, not in a space-replaced
+twin beside it.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a

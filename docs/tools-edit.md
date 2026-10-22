@@ -27,13 +27,10 @@ Path resolution is the first step of execution and follows
 [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs); the working
 directory is read only when the path and the tool's `cwd` cannot anchor the result.
 A path naming an existing file resolves to that file, so a rewrite changes the file
-that carries the written spelling. A path naming a new file keeps the spelling of
-every directory the file system holds, and only a part with no such directory takes
-the space-replaced spelling, which the whole path also takes when that spelling
-exists. So a new file in a directory named with a no-break space is created inside
-that directory. The path is resolved when the tool is
-called, before its future is first polled, so a later change of the process working
-directory does not move the write.
+that carries the written spelling; a path naming a new file follows
+[the shared spelling rule](tools-read.md#read-tool). The path is resolved when the
+tool is called, before its future is first polled, so a later change of the process
+working directory does not move the write.
 
 A successful call creates the missing parent directories and replaces the file,
 including with empty content. It returns one text block, `Successfully wrote N bytes
@@ -129,10 +126,8 @@ Preparation runs before the
 no file operations. Direct execution takes already prepared arguments.
 
 Empty lists fail before path resolution or queue admission. Other calls resolve
-through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), which
-keeps the spelling of a file that exists and of every directory that exists, and
-falls back to the space-replaced spelling only where nothing on disk has the
-written name; successful resolution enters the
+through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs); successful
+resolution enters the
 [file mutation queue](#file-mutation-queue) before polling.
 Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
 [matching owner](#original-snapshot-matching) against one original snapshot.

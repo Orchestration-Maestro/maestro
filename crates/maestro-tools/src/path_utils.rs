@@ -125,9 +125,11 @@ fn narrow_space_before_meridiem(path: &str) -> String {
 /// Resolve a path under the spelling it was written with.
 ///
 /// The written spelling is returned when the file system holds that path, and the
-/// space-replaced spelling when it holds that one instead. Otherwise every directory
-/// the file system holds keeps its written spelling and the remaining components take
-/// the space-replaced spelling, or the whole path does when no such directory exists.
+/// space-replaced spelling when it holds that one instead. Otherwise, when a directory
+/// the file system holds carries the written spelling at least as deep as the deepest
+/// existing directory of the space-replaced path, that directory keeps its spelling and
+/// the rest of the path takes the space-replaced one. Every other case is the
+/// space-replaced path unchanged.
 ///
 /// `resolve` turns one authored spelling into a resolved path and must keep the
 /// spelling it is given; the home and working directories are read exactly as it
@@ -149,10 +151,10 @@ where
         return Ok(normalized);
     }
     Ok(match existing_written_directory(&as_written) {
-        Some(directory) => {
+        Some(directory) if at_least_as_deep(directory, &normalized) => {
             directory.to_owned() + &normalize_unicode_spaces(&as_written[directory.len()..])
         }
-        None => normalized,
+        _ => normalized,
     })
 }
 
@@ -168,11 +170,20 @@ fn existing_written_directory(written: &str) -> Option<&str> {
         .and_then(Path::to_str)
 }
 
+/// Whether `directory` reaches at least as deep as the deepest existing directory of
+/// `normalized`.
+///
+/// A written directory shallower than the normalized tree would create a new directory
+/// beside one the file system already holds.
+fn at_least_as_deep(directory: &str, normalized: &str) -> bool {
+    let reached = existing_written_directory(normalized)
+        .map_or(0, |deepest| Path::new(deepest).components().count());
+    Path::new(directory).components().count() >= reached
+}
+
 /// Resolve an authored path against `cwd` under the spelling it was written with.
 ///
-/// An existing file or directory keeps the spelling it was written with. Below that,
-/// only a directory the file system holds keeps its spelling, and a part with no such
-/// directory takes the space-replaced spelling.
+/// The order is [`resolve_existing_spelling`]'s.
 ///
 /// # Errors
 /// Returns the home-directory or working-directory error of the spelling the path was
@@ -201,10 +212,11 @@ fn existing_variant(resolved: &str) -> Option<String> {
     .find(|candidate| Path::new(candidate).exists())
 }
 
-/// Resolve a path under the written spelling or one of its variants, then under its
-/// Unicode-space normalization in the same order.
+/// Resolve a path under the written spelling or one of its variants, then under
+/// [`resolve_existing_spelling`] in the same order.
 ///
-/// When nothing exists the spelling that was resolved last is returned.
+/// The written spelling and the spelling that resolver answers with each get the
+/// variants above, so a file created under a spelled directory reads back.
 ///
 /// # Errors
 /// Returns the home-directory, working-directory or invalid-UTF-8 error of the
@@ -214,10 +226,6 @@ pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
     if let Some(found) = existing_variant(&written) {
         return Ok(found);
     }
-    let normalized = normalize_unicode_spaces(file_path);
-    if normalized == file_path {
-        return Ok(written);
-    }
-    let resolved = resolve_written_path(&normalized, cwd)?;
-    Ok(existing_variant(&resolved).unwrap_or(resolved))
+    let spelling = resolve_existing_spelling(file_path, |path| resolve_written_path(path, cwd))?;
+    Ok(existing_variant(&spelling).unwrap_or(spelling))
 }
