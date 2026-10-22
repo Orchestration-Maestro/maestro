@@ -104,30 +104,26 @@ fn prompt_cells_includes_wide_character_wrap_spacer() {
 }
 
 /// Native directories owned by one prompt test, without changing ambient cwd.
-struct PromptDirectories(std::path::PathBuf);
+struct PromptDirectories(maestro_test_directory::Scratch);
 
 impl PromptDirectories {
     /// Exclusively create a root distinct from parallel prompt tests.
     fn new() -> Self {
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "maestro-prompt-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&root).unwrap();
-        Self(root)
+        Self(maestro_test_directory::Scratch::new().unwrap())
+    }
+    /// The root this test owns.
+    fn root(&self) -> &std::path::Path {
+        self.0.path()
     }
 
     /// Keep twelve columns while accommodating unusually long temporary roots.
     fn rows(&self) -> u16 {
-        u16::try_from((prompt_cells(&self.0) + 2).div_ceil(12).max(8)).unwrap()
+        u16::try_from((prompt_cells(self.root()) + 2).div_ceil(12).max(8)).unwrap()
     }
 
     /// Extend the native root with ASCII components to reach the requested prompt cells.
     fn directory(&self, requested_cells: usize) -> std::path::PathBuf {
-        let mut path = self.0.clone();
+        let mut path = self.root().to_path_buf();
         while prompt_cells(&path) < requested_cells {
             let remaining = requested_cells - prompt_cells(&path);
             let component = if remaining > 65 { 60 } else { remaining - 1 };
@@ -136,12 +132,6 @@ impl PromptDirectories {
         std::fs::create_dir_all(&path).unwrap();
         assert_eq!(prompt_cells(&path), requested_cells);
         path
-    }
-}
-
-impl Drop for PromptDirectories {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
     }
 }
 
@@ -202,7 +192,7 @@ fn pane_process_pty_bytes_preserves_prompt_guards_after_scrolling() {
 #[test]
 fn pane_windows_powershell_prompt_cwd_preserves_directory_grammar() {
     let directories = PromptDirectories::new();
-    let cwd = &directories.0;
+    let cwd = directories.root().to_path_buf();
     let file = cwd.join("ordinary-file");
     std::fs::File::create_new(&file).unwrap();
     for (case, text) in [
@@ -233,7 +223,7 @@ fn pane_windows_powershell_prompt_cwd_preserves_directory_grammar() {
     ] {
         assert_eq!(
             windows_powershell_prompt_cwd(&text).as_ref(),
-            Some(cwd),
+            Some(&cwd),
             "{case}"
         );
     }

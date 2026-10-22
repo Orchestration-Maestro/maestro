@@ -40,12 +40,12 @@ fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
     use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
     for scenario in ["unspaced", "empty", "unreadable-common", "directory-head"] {
         let dir = Directory::new();
-        let root = dir.0.join("repo");
+        let root = dir.path().join("repo");
         std::fs::create_dir(&root).unwrap();
         let marker = root.join(".git");
         if scenario == "unspaced" || scenario == "empty" {
-            std::fs::create_dir(dir.0.join("store")).unwrap();
-            std::fs::write(dir.0.join("store/HEAD"), "ref: refs/heads/work").unwrap();
+            std::fs::create_dir(dir.path().join("store")).unwrap();
+            std::fs::write(dir.path().join("store/HEAD"), "ref: refs/heads/work").unwrap();
             std::fs::write(root.join("HEAD"), "ref: refs/heads/empty").unwrap();
             let target = if scenario == "unspaced" {
                 "../store"
@@ -66,7 +66,7 @@ fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
         let footer = discover_git_paths_with(&root, DiscoveryPolicy::Footer);
         match scenario {
             "unspaced" => {
-                assert_eq!(workspace.unwrap().git_dir, dir.0.join("store"));
+                assert_eq!(workspace.unwrap().git_dir, dir.path().join("store"));
                 assert!(footer.is_none());
             }
             "empty" => {
@@ -92,8 +92,8 @@ fn native_worktree_unreadable_common_metadata_keeps_workspace_identity() {
     use super::support::snapshot::Directory;
     use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
     let dir = Directory::new();
-    let root = dir.0.join("repo");
-    let metadata = dir.0.join("store");
+    let root = dir.path().join("repo");
+    let metadata = dir.path().join("store");
     std::fs::create_dir(&root).unwrap();
     std::fs::create_dir(&metadata).unwrap();
     std::fs::write(root.join(".git"), "gitdir: ../store").unwrap();

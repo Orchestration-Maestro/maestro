@@ -348,14 +348,10 @@ impl LogCase {
 }
 
 /// A fresh empty directory for one scenario, made by the parent only.
-fn scratch(name: &str, case: usize) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "maestro-terminal-{name}-{case}-{}",
-        std::process::id()
-    ));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).unwrap();
-    dir
+fn scratch() -> (maestro_test_directory::Scratch, PathBuf) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let dir = scratch.path().to_path_buf();
+    (scratch, dir)
 }
 
 /// Writes around other output and checks that everything reached standard output, and that a
@@ -389,19 +385,20 @@ fn write_around_other_output() {
 fn native_write_logging_appends_only_explicit_writes() {
     for (case, kind) in LogCase::ALL.into_iter().enumerate() {
         let prepared = (!is_child()).then(|| {
-            let dir = scratch("logging", case);
+            let (root, dir) = scratch();
             let target = kind.prepare(&dir);
-            (dir, target)
+            (root, dir, target)
         });
-        let target = prepared.as_ref().and_then(|(_, target)| target.as_deref());
+        let target = prepared
+            .as_ref()
+            .and_then(|(_, _, target)| target.as_deref());
         let environment: Vec<(&str, &str)> = target
             .map(|path| ("MAESTRO_TUI_WRITE_LOG", path))
             .into_iter()
             .collect();
         isolated!(case, &environment, write_around_other_output);
-        if let Some((dir, _)) = prepared {
+        if let Some((_, dir, _)) = prepared {
             kind.verify(&dir);
-            fs::remove_dir_all(&dir).unwrap();
         }
     }
 }
@@ -409,10 +406,10 @@ fn native_write_logging_appends_only_explicit_writes() {
 #[test]
 fn native_log_names_use_local_calendar_fields_and_process_id() {
     for (case, offset_hours) in [0_i64, 14].into_iter().enumerate() {
-        let prepared = (!is_child()).then(|| scratch("log-names", case));
+        let prepared = (!is_child()).then(scratch);
         let dir = prepared
             .as_ref()
-            .and_then(|dir| dir.to_str())
+            .and_then(|(_, dir)| dir.to_str())
             .unwrap_or_default();
         let zone = format!("XXX{:+}", -offset_hours);
         let environment = [("MAESTRO_TUI_WRITE_LOG", dir), ("TZ", zone.as_str())];
@@ -445,9 +442,7 @@ fn native_log_names_use_local_calendar_fields_and_process_id() {
             let content = fs::read_to_string(Path::new(&directory).join(&names[0])).unwrap();
             assert_eq!(content, "firstsecond");
         });
-        if let Some(dir) = prepared {
-            fs::remove_dir_all(dir).unwrap();
-        }
+        drop(prepared);
     }
 }
 
@@ -831,8 +826,8 @@ fn native_output_empty_and_multibyte_counts_are_bytes() {
 
 #[test]
 fn native_output_log_records_accepted_explicit_writes() {
-    let prepared = (!is_child()).then(|| scratch("queued-log", 0));
-    let path = prepared.as_ref().map(|dir| dir.join("write.log"));
+    let prepared = (!is_child()).then(scratch);
+    let path = prepared.as_ref().map(|(_, dir)| dir.join("write.log"));
     let configured = path
         .as_ref()
         .map(|path| path.to_string_lossy().into_owned());
@@ -860,6 +855,6 @@ fn native_output_log_records_accepted_explicit_writes() {
         });
     });
     if let Some(dir) = prepared {
-        fs::remove_dir_all(dir).unwrap();
+        drop(dir);
     }
 }

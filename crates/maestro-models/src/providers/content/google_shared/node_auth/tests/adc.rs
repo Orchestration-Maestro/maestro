@@ -246,14 +246,14 @@ fn quota_file(files: &super::Files, name: &str, endpoint: &str, quota: &str) -> 
 
 /// Write the default credential file under a disposable home.
 fn credentials_home(files: &super::Files, endpoint: &str) -> String {
-    let well_known = files.0.join("home").join(".config").join("gcloud");
+    let well_known = files.0.path().join("home").join(".config").join("gcloud");
     std::fs::create_dir_all(&well_known).unwrap();
     std::fs::write(
         well_known.join("application_default_credentials.json"),
         serde_json::to_vec(&super::workforce(endpoint, "well-known")).unwrap(),
     )
     .unwrap();
-    files.0.join("home").to_str().unwrap().to_owned()
+    files.0.path().join("home").to_str().unwrap().to_owned()
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
     let home = credentials_home(&files, &server.url);
     #[cfg(unix)]
     let link = {
-        let link = files.0.join("link.json");
+        let link = files.0.path().join("link.json");
         std::os::unix::fs::symlink(&upper, &link).unwrap();
         link.to_str().unwrap().to_owned()
     };
@@ -334,7 +334,7 @@ fn adc_selected_file_failures_do_not_fall_back() {
     let server = token_server();
     let files = super::Files::new();
     let valid = quota_file(&files, "valid.json", &server.url, "valid");
-    let directory = files.0.to_str().unwrap().to_owned();
+    let directory = files.0.path().to_str().unwrap().to_owned();
     let malformed = files.write("malformed.json", b"{not json");
     let unsupported = files.write("unsupported.json", br#"{"type":"controlled-unknown"}"#);
     let invalid = files.write("invalid.json", br#"{"type":"authorized_user"}"#);
@@ -424,9 +424,9 @@ fn newest_form(log: &Log) -> std::collections::HashMap<String, String> {
 /// The executable-sourced script, created through a child process so it is never written and run in-process.
 #[cfg(unix)]
 fn executable_source(files: &super::Files) -> String {
-    let script = files.0.join("script.tmp");
+    let script = files.0.path().join("script.tmp");
     std::fs::write(&script, "#!/bin/sh\nprintf '{\"version\":1,\"success\":true,\"token_type\":\"urn:ietf:params:oauth:token-type:jwt\",\"id_token\":\"subject-exec\",\"expiration_time\":4102444800}'\n").unwrap();
-    let program = files.0.join("script.sh");
+    let program = files.0.path().join("script.sh");
     let status = std::process::Command::new("install")
         .args(["-m", "0700"])
         .arg(&script)

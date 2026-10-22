@@ -1,61 +1,46 @@
 //! Isolated filesystem support for manifest and catalog tests.
 use crate::{agents::Agent, manifest::ManifestCache, manifest_update::remote_manifest_path};
-use std::{
-    path::PathBuf,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::path::PathBuf;
 
 pub(crate) struct Fixture {
-    pub(crate) root: PathBuf,
-    pub(crate) overrides: PathBuf,
-    pub(crate) catalog: PathBuf,
+    /// The disposable root that removes the tree.
+    root: maestro_test_directory::Scratch,
     pub(crate) cache: ManifestCache,
 }
 
 impl Fixture {
     pub(crate) fn new() -> Self {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "maestro-detection-{}-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&root).unwrap();
-        let overrides = root.join("overrides");
-        let catalog = root.join("catalog");
-        let cache = ManifestCache::new(Some(overrides.clone()), Some(catalog.clone())).unwrap();
-        Self {
-            root,
-            overrides,
-            catalog,
-            cache,
-        }
+        let root = maestro_test_directory::Scratch::new().unwrap();
+        let cache = ManifestCache::new(
+            Some(root.path().join("overrides")),
+            Some(root.path().join("catalog")),
+        )
+        .unwrap();
+        Self { root, cache }
+    }
+    /// The manifest override directory inside this fixture.
+    pub(crate) fn overrides(&self) -> PathBuf {
+        self.root.path().join("overrides")
+    }
+    /// The remote catalog directory inside this fixture.
+    pub(crate) fn catalog(&self) -> PathBuf {
+        self.root.path().join("catalog")
     }
     pub(crate) fn write_remote(&mut self, content: &str) {
         self.write_remote_without_reload(content);
         self.cache.reload_manifests().unwrap();
     }
     pub(crate) fn write_remote_without_reload(&self, content: &str) {
-        let path = remote_manifest_path(&self.catalog, Agent::Codex);
+        let path = remote_manifest_path(&self.catalog(), Agent::Codex);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, content).unwrap();
     }
     pub(crate) fn write_local(&mut self, content: &str) {
-        std::fs::create_dir_all(&self.overrides).unwrap();
-        std::fs::write(self.overrides.join("codex.toml"), content).unwrap();
+        std::fs::create_dir_all(self.overrides()).unwrap();
+        std::fs::write(self.overrides().join("codex.toml"), content).unwrap();
         self.cache.reload_manifests().unwrap();
     }
 }
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.root).unwrap();
-    }
-}
-
 #[test]
 fn screen_dispatch_exposes_live_working_metadata() {
     let fixture = Fixture::new();

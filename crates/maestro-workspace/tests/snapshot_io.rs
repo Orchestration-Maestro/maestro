@@ -7,8 +7,8 @@ use std::{fs, path::Path};
 #[test]
 fn pane_history_is_kept_in_its_own_file() {
     let dir = Directory::new();
-    let session = dir.0.join("session.json");
-    let history_path = dir.0.join("history.json");
+    let session = dir.path().join("session.json");
+    let history_path = dir.path().join("history.json");
     let snapshot = empty();
     let history = history();
     save_to_paths(&session, &history_path, &snapshot, Some(&history)).unwrap();
@@ -35,8 +35,8 @@ fn pane_history_is_kept_in_its_own_file() {
 #[test]
 fn disabling_history_removes_previous_file() {
     let dir = Directory::new();
-    let session = dir.0.join("session.json");
-    let history_path = dir.0.join("history.json");
+    let session = dir.path().join("session.json");
+    let history_path = dir.path().join("history.json");
     save_to_paths(&session, &history_path, &empty(), Some(&history())).unwrap();
     assert!(load_history(&history_path).is_some());
     save_to_paths(&session, &history_path, &empty(), None).unwrap();
@@ -47,8 +47,8 @@ fn disabling_history_removes_previous_file() {
 #[test]
 fn clear_removes_saved_snapshot() {
     let dir = Directory::new();
-    let path = dir.0.join("snapshot");
-    save_to_paths(&path, &dir.0.join("history"), &empty(), None).unwrap();
+    let path = dir.path().join("snapshot");
+    save_to_paths(&path, &dir.path().join("history"), &empty(), None).unwrap();
     assert!(load(&path).is_some());
     clear_path(&path).unwrap();
     assert!(!path.exists());
@@ -57,10 +57,10 @@ fn clear_removes_saved_snapshot() {
 #[test]
 fn clear_missing_snapshot_succeeds() {
     let dir = Directory::new();
-    let path = dir.0.join("missing");
+    let path = dir.path().join("missing");
     clear_path(&path).unwrap();
     clear_path(&path).unwrap();
-    assert_eq!(fs::read_dir(&dir.0).unwrap().count(), 0);
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
 }
 
 #[cfg(unix)]
@@ -81,8 +81,8 @@ fn assert_link_save(link: &Path, target: &Path) {
 #[test]
 fn saving_keeps_existing_symlink() {
     let dir = Directory::new();
-    let target = dir.0.join("real.json");
-    let link = dir.0.join("link.json");
+    let target = dir.path().join("real.json");
+    let link = dir.path().join("link.json");
     fs::write(&target, b"old").unwrap();
     std::os::unix::fs::symlink(&target, &link).unwrap();
     assert_link_save(&link, &target);
@@ -92,8 +92,8 @@ fn saving_keeps_existing_symlink() {
 #[test]
 fn saving_follows_dangling_symlink() {
     let dir = Directory::new();
-    let target = dir.0.join("new-parent/real.json");
-    let link = dir.0.join("link.json");
+    let target = dir.path().join("new-parent/real.json");
+    let link = dir.path().join("link.json");
     std::os::unix::fs::symlink(&target, &link).unwrap();
     assert_link_save(&link, &target);
 }
@@ -102,8 +102,8 @@ fn saving_follows_dangling_symlink() {
 #[test]
 fn saving_follows_relative_symlink() {
     let dir = Directory::new();
-    let target = dir.0.join("real.json");
-    let link = dir.0.join("link.json");
+    let target = dir.path().join("real.json");
+    let link = dir.path().join("link.json");
     std::os::unix::fs::symlink("real.json", &link).unwrap();
     assert_link_save(&link, &target);
 }
@@ -125,7 +125,7 @@ fn loads_report_each_read_parse_and_version_failure() {
             }
         };
         assert_missing_and_unreadable(&dir, &attempt, noun);
-        let path = dir.0.join("invalid");
+        let path = dir.path().join("invalid");
         fs::write(&path, "{").unwrap();
         let (loaded, events) = capture(|| attempt(&path));
         assert!(!loaded);
@@ -155,8 +155,8 @@ fn loads_report_each_read_parse_and_version_failure() {
 #[test]
 fn paired_save_keeps_topology_if_history_fails() {
     let dir = Directory::new();
-    let session = dir.0.join("session");
-    let blocker = dir.0.join("blocker");
+    let session = dir.path().join("session");
+    let blocker = dir.path().join("blocker");
     fs::write(&blocker, b"not a directory").unwrap();
     let path = blocker.join("history");
     let mut snapshot = empty();
@@ -166,7 +166,7 @@ fn paired_save_keeps_topology_if_history_fails() {
     snapshot.selected = 8;
     assert!(save_to_paths(&session, &path, &snapshot, None).is_err());
     assert_eq!(load(&session).unwrap().selected, 8);
-    let history_path = dir.0.join("kept-history");
+    let history_path = dir.path().join("kept-history");
     fs::write(&history_path, b"old history").unwrap();
     assert!(
         save_to_paths(
@@ -183,27 +183,27 @@ fn paired_save_keeps_topology_if_history_fails() {
 #[test]
 fn clear_preserves_link_target_and_reports_other_errors() {
     let dir = Directory::new();
-    let target = dir.0.join("target");
+    let target = dir.path().join("target");
     fs::write(&target, b"kept").unwrap();
     #[cfg(unix)]
     {
-        let link = dir.0.join("link");
+        let link = dir.path().join("link");
         std::os::unix::fs::symlink("target", &link).unwrap();
         clear_path(&link).unwrap();
         assert!(fs::symlink_metadata(&link).is_err());
         assert_eq!(fs::read(&target).unwrap(), b"kept");
     }
-    let error = clear_path(&dir.0).unwrap_err();
+    let error = clear_path(dir.path()).unwrap_err();
     assert_ne!(error.kind(), std::io::ErrorKind::NotFound);
     assert_eq!(fs::read(target).unwrap(), b"kept");
 }
 
 /// Checks absence separately from a reached native read failure.
 fn assert_missing_and_unreadable(dir: &Directory, attempt: &impl Fn(&Path) -> bool, noun: &str) {
-    let (loaded, events) = capture(|| attempt(&dir.0.join("missing")));
+    let (loaded, events) = capture(|| attempt(&dir.path().join("missing")));
     assert!(!loaded);
     assert!(events.is_empty());
-    let (loaded, events) = capture(|| attempt(&dir.0));
+    let (loaded, events) = capture(|| attempt(dir.path()));
     assert!(!loaded);
     assert_eq!(events.len(), 1);
     assert_eq!(events[0]["message"], format!("failed to read {noun}"));

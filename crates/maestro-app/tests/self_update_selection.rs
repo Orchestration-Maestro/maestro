@@ -195,8 +195,8 @@ fn literal_query() {
             .skip("argument with spaces")
             .skip("literal & | ; $HOME %PATH% ^ < >")
     };
-    let directory = std::env::temp_dir().join(format!("maestro query {}", std::process::id()));
-    std::fs::create_dir(&directory).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let directory = scratch.path().to_path_buf();
     let executable = directory.join(format!("npm{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
     // Omitting the Windows suffix exercises the package-manager command spelling.
@@ -230,7 +230,6 @@ fn literal_query() {
             package.stdout
         );
     }
-    std::fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]

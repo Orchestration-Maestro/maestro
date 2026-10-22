@@ -1226,26 +1226,24 @@ fn focus(
 /// Disposable native path aliases used only by native corpus witnesses.
 struct Filesystem {
     root: String,
+    /// The disposable root that removes the padded tree.
+    scratch: maestro_test_directory::Scratch,
     saved_records: std::cell::RefCell<Option<Vec<maestro_app::SessionInfo>>>,
 }
 impl Filesystem {
-    /// Uses exclusive directory creation; the fixed width retains oracle padding.
+    /// Creates the fixture below the disposable root; the fixed width retains oracle padding.
     fn new() -> Self {
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let mut root = std::env::temp_dir()
-            .join(format!(
-                "maestro-session-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ))
-            .to_string_lossy()
-            .into_owned();
-        root.push_str(&"x".repeat(100 - root.len()));
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let parent = scratch.path().to_string_lossy().into_owned();
+        let root = format!(
+            "{parent}/{}",
+            "x".repeat(100_usize.saturating_sub(parent.len() + 1))
+        );
         assert_eq!(root.len(), 100);
         std::fs::create_dir(&root).unwrap();
         let fs = Self {
             root,
+            scratch,
             saved_records: std::cell::RefCell::new(Some(Vec::new())),
         };
         for directory in ["real", "real-b"] {
@@ -1326,7 +1324,11 @@ impl Filesystem {
 }
 impl Drop for Filesystem {
     fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.root).unwrap();
+        // The padded tree lies inside the disposable root, which removes it on drop.
+        assert!(
+            self.root
+                .starts_with(self.scratch.path().to_string_lossy().as_ref())
+        );
     }
 }
 /// Normalizes only the disposable native root, retaining every byte otherwise.

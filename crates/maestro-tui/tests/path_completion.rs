@@ -141,8 +141,8 @@ fn native_completion_preserves_literal_backslash_identity() {
     tree.file("a\\b").expect("literal backslash file created");
     tree.directory("a").expect("decoy directory created");
     tree.file("a/b").expect("nested decoy created");
-    std::fs::write(tree.0.join("a\\b"), b"literal").expect("literal contents written");
-    std::fs::write(tree.0.join("a/b"), b"nested").expect("decoy contents written");
+    std::fs::write(tree.path().join("a\\b"), b"literal").expect("literal contents written");
+    std::fs::write(tree.path().join("a/b"), b"nested").expect("decoy contents written");
     let provider = CombinedAutocompleteProvider::new(
         vec![],
         tree.authored(),
@@ -170,7 +170,7 @@ fn native_completion_preserves_literal_backslash_identity() {
     assert_eq!(applied.lines, ["./a\\b"]);
     assert_eq!((applied.cursor_line, applied.cursor_col), (0, 5));
     assert_eq!(
-        std::fs::read(tree.0.join(&applied.lines[0])).expect("inserted path exists"),
+        std::fs::read(tree.path().join(&applied.lines[0])).expect("inserted path exists"),
         b"literal"
     );
 }

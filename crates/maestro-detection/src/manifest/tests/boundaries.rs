@@ -290,8 +290,8 @@ fn sources_preserve_equal_versions_aliases_and_invalid_neighbors() {
             .unwrap()
             .contains("manifest id gemini does not match codex")
     );
-    std::fs::remove_file(fixture.overrides.join("codex.toml")).unwrap();
-    std::fs::create_dir(fixture.overrides.join("codex.toml")).unwrap();
+    std::fs::remove_file(fixture.overrides().join("codex.toml")).unwrap();
+    std::fs::create_dir(fixture.overrides().join("codex.toml")).unwrap();
     fixture.cache.reload_manifests().unwrap();
     assert!(
         fixture
@@ -322,7 +322,7 @@ fn equal_priority_keeps_first_rule_and_independent_visibility() {
     assert_eq!(result.source.as_ref().unwrap().kind(), "local override");
     assert_eq!(
         result.source.as_ref().unwrap().label(),
-        fixture.overrides.join("codex.toml").display().to_string()
+        fixture.overrides().join("codex.toml").display().to_string()
     );
     assert_eq!(ManifestSource::Bundled.kind(), "bundled");
     let remote = ManifestSource::Remote {

@@ -5,31 +5,18 @@
 /// Disposable exclusively created files owned by one test transaction.
 pub(crate) struct Files(
     /// Directory owned by this transaction.
-    pub(crate) std::path::PathBuf,
+    pub(crate) maestro_test_directory::Scratch,
 );
 
 impl Files {
     /// Create a unique directory without overwriting an existing path.
     pub(crate) fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-cloud-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
 
     /// Resolve a fixture path without creating it.
     pub(crate) fn path(&self, name: &str) -> String {
-        self.0.join(name).to_str().unwrap().to_owned()
-    }
-}
-
-impl Drop for Files {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
+        self.0.path().join(name).to_str().unwrap().to_owned()
     }
 }
 
