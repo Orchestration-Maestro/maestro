@@ -396,7 +396,7 @@ pub fn export_document(
     scratch: &Scratch,
     view: &View,
     state: Option<ExportState<'_>>,
-    options: &ExportOptions<'_>,
+    renderer: Option<&dyn ToolHtmlRenderer>,
     operations: &dyn ExportOperations,
 ) -> Result<String, ExportError> {
     let path = output_path(scratch);
@@ -405,8 +405,8 @@ pub fn export_document(
         state,
         Some(ExportOptions {
             output_path: Some(&path),
-            theme_name: options.theme_name,
-            tool_renderer: options.tool_renderer,
+            tool_renderer: renderer,
+            ..ExportOptions::default()
         }),
         operations,
     )?;
@@ -715,7 +715,7 @@ pub fn brand_swap() {
     }
     assert_ne!(outputs[0], outputs[1]);
 }
-/// Swap native/memory/failing outputs and bundles through the same public operation.
+/// Swap the native and supplied bundles through the same public operation.
 pub fn adapter_swap() {
     let scratch = Scratch::new().unwrap();
     let mut view = call_view("rendered");

@@ -13,6 +13,8 @@ pub use types::*;
 
 /// Export retained session entries and optional metadata to a supplied bundle.
 ///
+/// The input presence check and the document write need a native file system.
+///
 /// # Errors
 /// Rejects in-memory/unpublished sessions before rendering; propagates reached
 /// renderer, asset, theme, encoding and write failures.

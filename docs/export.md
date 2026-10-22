@@ -13,7 +13,8 @@ optional `ExportState`, optional `ExportOptions` and an `ExportOperations` adapt
 It uses retained entries, including inactive branches, and the selected leaf.
 `ExportState` borrows a prompt and tool descriptors; omitted fields stay omitted,
 and empty strings/arrays stay present. Tool metadata contains name, description
-and parameters.
+and parameters. Its input presence check and document write need a native file
+system, so a browser build cannot write a document.
 
 Native `export_from_file` opens through
 [`SessionManager`](sessions/session_manager.md), omitting state and custom
@@ -35,7 +36,7 @@ Native `NativeExportOperations` reads, in order:
 `template.html`, `template.css`, `template.js`, `vendor/marked.min.js` and
 `vendor/highlight.min.js`, from its supplied directory. Native decoding replaces
 invalid UTF-8. The export checks the input's presence and writes the completed
-document directly through the file system, overwriting an existing output
+document directly through the native file system, overwriting an existing output
 without creating parents.
 
 The serializer resolves colors and explicit backgrounds for CSS properties,
