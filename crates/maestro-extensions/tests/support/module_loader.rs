@@ -3,7 +3,7 @@
 #![cfg(unix)]
 use crate::local_support::{LocalBus, local};
 use maestro_extensions::{
-    EventError, ExtensionAPI, ExtensionFactory, LoadExtensionsResult, ModuleLoader,
+    EventError, EventListener, ExtensionAPI, ExtensionFactory, LoadExtensionsResult, ModuleLoader,
     discover_and_load_extensions, load_extensions,
     types::{
         ExtensionFlagOptions, ExtensionShortcutOptions, FlagType, FlagValue,
@@ -192,7 +192,11 @@ async fn run_calls(root: &str, case: &Case) -> Value {
     for call in &case.calls {
         let bus = LocalBus::new();
         if call.bus == Bus::Supplied {
-            observe(&bus, call.observe.as_deref().unwrap(), &trace);
+            let channel = call.observe.as_deref().unwrap();
+            drop(
+                bus.controller
+                    .on(channel, recorder("test".into(), channel, &trace)),
+            );
         }
         let loader = module_loader(&trace);
         let cwd = fill(root, &call.cwd);
@@ -221,17 +225,14 @@ async fn run_calls(root: &str, case: &Case) -> Value {
     serde_json::from_str(&text.replace(root, "$ROOT")).unwrap()
 }
 
-/// Subscribes the test listener to `channel`.
-fn observe(bus: &LocalBus, channel: &str, trace: &Trace) {
-    let (trace, name) = (trace.clone(), channel.to_owned());
-    drop(bus.controller.on(
-        channel,
-        Rc::new(move |data, _| {
-            let entry = json!({"listener": "test", "channel": name, "data": *data});
-            trace.borrow_mut().push(entry);
-            Ok(None)
-        }),
-    ));
+/// A listener that records each delivery on `channel` under the name `listener`.
+fn recorder(listener: String, channel: &str, trace: &Trace) -> EventListener<Local> {
+    let (trace, channel) = (trace.clone(), channel.to_owned());
+    Rc::new(move |data, _| {
+        let entry = json!({"listener": listener, "channel": channel, "data": *data});
+        trace.borrow_mut().push(entry);
+        Ok(None)
+    })
 }
 
 /// The loaded records, failures and shared flag values.
@@ -311,7 +312,10 @@ async fn apply(
 ) -> Result<(), EventError> {
     for (kind, argument) in directives {
         match kind.as_str() {
-            "listen" => listen(&api, &argument, &resolved, &trace),
+            "listen" => drop(
+                api.events
+                    .on(&argument, recorder(resolved.clone(), &argument, &trace)),
+            ),
             "relay" => relay(&api, &argument, &trace),
             "emit" => api.events.emit(&argument, json!({"from": resolved})).await,
             "fail-init" => return Err(argument.into()),
@@ -355,19 +359,6 @@ fn register(api: &ExtensionAPI<Local>, kind: &str, argument: String) -> Result<(
         ),
         other => Err(format!("unknown directive: {other}").into()),
     }
-}
-
-/// Records each delivery on `channel` with the listening extension's path.
-fn listen(api: &ExtensionAPI<Local>, channel: &str, resolved: &str, trace: &Trace) {
-    let (trace, resolved, name) = (trace.clone(), resolved.to_owned(), channel.to_owned());
-    drop(api.events.on(
-        channel,
-        Rc::new(move |data, _| {
-            let entry = json!({"listener": resolved, "channel": name, "data": *data});
-            trace.borrow_mut().push(entry);
-            Ok(None)
-        }),
-    ));
 }
 
 /// On `from>to`, emits `to` from inside the `from` callback, then records its return.
