@@ -366,36 +366,21 @@ fn deep_reply_list_parses_on_a_small_stack() {
     depth_rows(REDUCED_STACK, || indented(300, "> "), (601, 1_201));
 }
 
-/// Depth rows' parser work, measured over one fresh run.
-fn work_of(source: String, options: MarkedOptions) -> (usize, usize) {
+/// Line visits of one fresh parser run whose container depth is `depth * levels`.
+fn work_of(source: String, depth: usize, levels: usize) -> usize {
     super::WORK.with_borrow_mut(|work| *work = super::Work::default());
-    let document = parse_with_options(source, options);
-    let depth = shape(&document).0;
-    let work = super::WORK.with_borrow(|work| (work.quote_lines, work.list_lines));
-    (depth, work.0 + work.1)
+    let document = parse_with_options(source, MarkedOptions::Terminal);
+    assert_eq!(shape(&document).0, depth * levels);
+    super::WORK.with_borrow(|work| work.quote_lines + work.list_lines)
 }
 
 #[test]
-fn deep_quote_work_grows_linearly_with_depth() {
-    let samples = [250, 500, 1_000].map(|depth| {
-        let (measured, lines) = work_of(">".repeat(depth), MarkedOptions::Terminal);
-        assert_eq!(measured, depth);
-        lines
-    });
-    eprintln!("quote depth line visits={samples:?}");
-    assert!(super::grows_linearly(samples), "{samples:?}");
-}
-
-#[test]
-fn deep_list_work_grows_linearly_with_depth() {
-    let samples = [500, 1_000, 2_000].map(|depth| {
-        let (measured, lines) =
-            work_of(format!("{}x", "- ".repeat(depth)), MarkedOptions::Terminal);
-        assert_eq!(measured, 2 * depth);
-        lines
-    });
-    eprintln!("list depth line visits={samples:?}");
-    assert!(super::grows_linearly(samples), "{samples:?}");
+fn deep_container_work_grows_linearly_with_depth() {
+    let quotes = [250, 500, 1_000].map(|depth| work_of(">".repeat(depth), depth, 1));
+    assert!(super::grows_linearly(quotes), "quotes {quotes:?}");
+    let items =
+        [500, 1_000, 2_000].map(|depth| work_of(format!("{}x", "- ".repeat(depth)), depth, 2));
+    assert!(super::grows_linearly(items), "items {items:?}");
 }
 
 #[test]
