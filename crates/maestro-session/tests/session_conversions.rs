@@ -103,7 +103,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
 }
 
 /// Compare converted timestamps against the platform's local-time expectation.
-#[cfg(all(not(windows), not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 fn check_converted_timestamps(local: i64) {
     for case in
         support::session_files::cases("converted_context_uses_existing_local_timestamp_policy")
