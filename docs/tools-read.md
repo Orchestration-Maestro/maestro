@@ -228,17 +228,21 @@ filesystem; a supplied implementation sees the same absolute path in the same
 
 The authored path is resolved when the tool is called, before the returned future
 is polled; see [`path_utils`](../crates/maestro-tools/src/path_utils.rs). A leading
-`@` is dropped, U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 become a space,
-and a bare `~` or `~/` becomes the home directory. Relative paths resolve
+`@` is dropped, a bare `~` or `~/` becomes the home directory, and the rest keeps
+the spelling it was written with. Relative paths resolve
 lexically through `maestro-path`, with no canonicalization. On Windows the
 per-drive directories (`=X:` variables) are resolution operands. The process
 working directory is read only when `cwd` and those directories cannot anchor a
 relative result (elsewhere: only for a relative `cwd`), and the home directory
 only for `~`. A cancellation observed after the bytes are read, including while
 converting them, still settles the read as cancelled, for results and failures.
-`resolve_read_path` then keeps the first existing spelling among the resolved
-path, the narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly
-apostrophes.
+`resolve_read_path` tries the written path, then its macOS variants: the
+narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly apostrophes. It
+then tries the same five spellings of its Unicode-space normalization, which
+replaces U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 with a space. The
+normalization is used only when nothing matches the written spelling, so a file
+whose real name holds one of those spaces opens under that name while a typed name
+whose Unicode spaces stand for plain spaces still finds its file.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a

@@ -27,9 +27,9 @@ Each path is resolved before its module loads:
 2. An absolute result is kept as written. A relative result is resolved
    lexically against `cwd`.
 3. When that path names no existing file, the supplied path is resolved again
-   with its Unicode spaces replaced by plain spaces, through
-   [`normalize_unicode_spaces`](../../crates/maestro-tools/src/path_utils.rs). A
-   broken link counts as missing, because the check follows links.
+   with its Unicode spaces replaced by plain spaces. Both candidates come from
+   [`resolve_existing_spelling`](../../crates/maestro-tools/src/path_utils.rs).
+   A broken link counts as missing, because the check follows links.
 
 So a file whose real name holds a no-break space loads under that name, and a
 typed name whose Unicode spaces stand for plain spaces still finds its file.

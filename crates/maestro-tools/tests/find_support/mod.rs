@@ -334,6 +334,13 @@ pub fn executable(root: &Scratch, name: &str, body: &str) {
             .success()
     );
 }
+/// Install an `fd` program that records its operands and return the file it writes.
+#[cfg(unix)]
+pub fn recorder(root: &Scratch) -> std::path::PathBuf {
+    let args = root.path().join("args.json");
+    executable(root, "fd", &native_script(&Native::default(), &args));
+    args
+}
 /// Encode a producer's bytes and exit policy independently of the tool's operands.
 #[cfg(unix)]
 fn native_script(input: &Native, args: &std::path::Path) -> String {

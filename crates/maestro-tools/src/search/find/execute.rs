@@ -2,7 +2,7 @@
 use super::{FindGlobOptions, FindOperations, FindToolDetails, FindToolInput};
 use crate::{
     output::render_parts::{float, num},
-    path_utils::{resolve_path, resolve_to_cwd},
+    path_utils::{resolve_existing_path, resolve_path},
     search::{listing::select_listing, tools_manager::ToolsManager},
     utils::diagnostics::{aborted, diagnostic, failure, guarded},
 };
@@ -43,7 +43,7 @@ impl Finder {
         if signal.is_some_and(Cancellation::is_aborted) {
             return Err(aborted());
         }
-        let root = resolve_to_cwd(
+        let root = resolve_existing_path(
             input
                 .path
                 .as_deref()
