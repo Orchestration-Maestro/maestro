@@ -70,7 +70,7 @@ pub enum AgentSessionEvent {
         /// The attempt about to run.
         attempt: u32,
         /// The configured attempt limit.
-        max_attempts: u32,
+        max_attempts: f64,
         /// The wait before the attempt.
         delay_ms: f64,
         /// The failure being retried.

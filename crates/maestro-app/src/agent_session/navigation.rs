@@ -114,6 +114,17 @@ impl<E: ExtensionExecution> AgentSession<E> {
         target_id: &str,
         options: NavigateTreeOptions,
     ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
+        let outcome = self.navigate(target_id, options).await;
+        self.state.borrow_mut().branch_summary_signal = None;
+        outcome
+    }
+
+    /// The navigation a caller requested, before its summary signal is cleared.
+    async fn navigate(
+        &self,
+        target_id: &str,
+        options: NavigateTreeOptions,
+    ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
         let Some((tree_move, mut event)) = self.prepare_navigation(target_id, &options)? else {
             return Ok(NavigateTreeResult::default());
         };
@@ -155,6 +166,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .await
     }
 
+    /// Starts a branch summary and records its signal for the caller to abort.
+    fn open_branch_summary(&self) -> Cancellation {
+        let signal = Cancellation::new();
+        self.state.borrow_mut().branch_summary_signal = Some(signal.clone());
+        signal
+    }
+
     /// The move to `target_id` and the before-tree event describing the branch left;
     /// `None` when the target is already the leaf.
     fn prepare_navigation<'a>(
@@ -185,7 +203,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 replace_instructions: presence(options.replace_instructions),
                 label: presence(options.label.clone()),
             },
-            signal: Cancellation::new(),
+            signal: self.open_branch_summary(),
         };
         let tree_move = TreeMove {
             target_id,
@@ -366,7 +384,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// The key and headers a summary request for `model` uses.
-    async fn get_required_request_auth(
+    pub(super) async fn get_required_request_auth(
         &self,
         model: &Arc<RwLock<Model>>,
     ) -> Result<(String, Option<IndexMap<String, String>>), DiagnosticErrorInfo> {

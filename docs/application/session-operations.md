@@ -98,6 +98,14 @@ credential failure is returned verbatim.
 `get_user_messages_for_forking` lists the user messages that have text, in entry
 order.
 
+## Compaction and retries
+
+`compact` shrinks the context on demand and `check_compaction` does it when the
+context passes the reserve; `handle_retryable_error` repeats a failed response
+after a doubling delay. Both announce their start and end events, can be aborted,
+and are described with the preferences they read in
+[compaction and retries](recovery.md).
+
 ## Statistics
 
 `get_session_stats` counts messages by role and tool calls, and sums tokens and

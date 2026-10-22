@@ -2,27 +2,20 @@
 //! leaf, appended entries, rebuilt history, summary prompts and extension events.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, Names, build_tree, case, harness, on_task_set,
+    Auth, HarnessOptions, Names, answer, build_tree, case, harness, history_view, load_history,
+    on_task_set, script_responses,
 };
 use maestro_app::agent_session::NavigateTreeResult;
 use maestro_extensions::{
-    ExtensionFactory, NativeAgentMessage, SessionBeforeTreeEvent, SessionBeforeTreeResult,
-    SessionTreeEvent,
+    ExtensionFactory, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
 };
-use maestro_models::{
-    AssistantMessage, DiagnosticErrorInfo, FauxAssistantMessageOptions, FauxResponseInput,
-    FauxResponseStep, Local, StopReason, Threaded, faux_assistant_message,
-};
+use maestro_models::{AssistantMessage, DiagnosticErrorInfo, Local, StopReason};
 use maestro_session::{
     Presence, SessionManager,
     session_manager::{NavigateTreeOptions, ReadonlySessionManager},
 };
 use serde_json::{Value, json};
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::{cell::RefCell, rc::Rc};
 
 /// What a before-tree handler does with the event, and what it returns.
 type Handler = Rc<dyn Fn(&mut SessionBeforeTreeEvent) -> Option<Value>>;
@@ -53,79 +46,6 @@ struct Scenario {
 /// A handler returning the result written as JSON.
 fn returns(result: Value) -> Handler {
     Rc::new(move |_| Some(result.clone()))
-}
-
-/// A summary answer with optional stop reason and error text.
-fn answer(text: &str, stop: Option<StopReason>, error: Option<&str>) -> AssistantMessage {
-    faux_assistant_message(
-        text,
-        FauxAssistantMessageOptions {
-            stop_reason: stop,
-            error_message: error.map(str::to_owned),
-            ..FauxAssistantMessageOptions::default()
-        },
-    )
-}
-
-/// A scripted answer that records the request's message texts.
-struct RecordPrompt {
-    /// Prompts in request order.
-    prompts: Arc<Mutex<Vec<String>>>,
-    /// The answer.
-    response: AssistantMessage,
-}
-
-impl RecordPrompt {
-    /// Records the request and answers.
-    fn respond<E: maestro_models::ProviderExecution>(
-        &self,
-        input: &FauxResponseInput<E>,
-    ) -> std::future::Ready<Result<AssistantMessage, DiagnosticErrorInfo>> {
-        let texts: Vec<String> = input
-            .context
-            .messages
-            .iter()
-            .map(|message| message_text(&serde_json::to_value(message).unwrap()))
-            .map(|text| text.as_str().unwrap_or_default().to_owned())
-            .collect();
-        self.prompts.lock().unwrap().push(texts.join("\n---\n"));
-        std::future::ready(Ok(self.response.clone()))
-    }
-}
-
-impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for RecordPrompt {
-    type Return = <Local as maestro_models::Execution>::Future<
-        'static,
-        Result<AssistantMessage, DiagnosticErrorInfo>,
-    >;
-    fn invoke(&self, input: FauxResponseInput<Local>) -> Self::Return {
-        Box::pin(self.respond(&input))
-    }
-}
-
-impl maestro_models::Invoke<Threaded, FauxResponseInput<Threaded>> for RecordPrompt {
-    type Return = <Threaded as maestro_models::Execution>::Future<
-        'static,
-        Result<AssistantMessage, DiagnosticErrorInfo>,
-    >;
-    fn invoke(&self, input: FauxResponseInput<Threaded>) -> Self::Return {
-        Box::pin(self.respond(&input))
-    }
-}
-
-/// The text of a message record: plain content, joined text blocks, or its summary.
-fn message_text(record: &Value) -> Value {
-    match &record["content"] {
-        Value::String(text) => json!(text),
-        Value::Array(blocks) => json!(
-            blocks
-                .iter()
-                .filter(|block| block["type"] == "text")
-                .filter_map(|block| block["text"].as_str())
-                .collect::<String>()
-        ),
-        _ => record.get("summary").cloned().unwrap_or(Value::Null),
-    }
 }
 
 /// The recorded name of an entry identity: a tree name, else `e<position>`.
@@ -259,48 +179,6 @@ fn result_view(
     }
 }
 
-/// Gives the agent the history the session context builds.
-fn load_history(h: &Harness) {
-    let records = h
-        .session
-        .session_manager()
-        .borrow()
-        .build_session_context()
-        .unwrap()
-        .messages;
-    let history: Vec<NativeAgentMessage> = serde_json::from_value(json!(records)).unwrap();
-    h.session
-        .agent()
-        .state()
-        .write()
-        .unwrap()
-        .set_messages(history);
-}
-
-/// Queues the summary answers; the returned list collects each request's prompt.
-fn script(h: &Harness, responses: Vec<AssistantMessage>) -> Arc<Mutex<Vec<String>>> {
-    let prompts = Arc::new(Mutex::new(Vec::new()));
-    let steps = responses.into_iter().map(|response| {
-        let prompts = Arc::clone(&prompts);
-        FauxResponseStep::Factory(Arc::new(RecordPrompt { prompts, response }))
-    });
-    h.faux.set_responses(steps.collect());
-    prompts
-}
-
-/// The agent history as roles and texts.
-fn history_view(h: &Harness) -> Vec<Value> {
-    let messages = h.session.messages();
-    let messages = messages.read().unwrap();
-    messages
-        .iter()
-        .map(|message| {
-            let record = serde_json::to_value(message).unwrap();
-            json!({"role": record["role"], "text": message_text(&record)})
-        })
-        .collect()
-}
-
 /// Runs a scenario against its recorded case and returns the observations.
 fn navigate(name: &str, scenario: Scenario) -> Value {
     let expected = case("navigation", name);
@@ -337,7 +215,7 @@ fn navigate(name: &str, scenario: Scenario) -> Value {
         }
         *state.borrow_mut() = Some((Rc::clone(&manager), names.clone()));
         load_history(&h);
-        let prompts = script(&h, scenario.responses);
+        let prompts = script_responses(&h, scenario.responses);
         let before = manager.borrow().get_entries().len();
         let target = expected["target"].as_str().unwrap();
         let target = names.get(target).map_or(target, String::as_str).to_owned();

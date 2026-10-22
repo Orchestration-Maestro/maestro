@@ -1,7 +1,9 @@
 //! The session that frontends share: agent state, model and thinking selection, tool
 //! selection, history navigation, statistics and exports.
+mod compaction;
 mod export;
 mod navigation;
+mod retry;
 mod selection;
 mod skill_block;
 mod state;
@@ -200,5 +202,39 @@ impl<E: ExtensionExecution> AgentSession<E> {
     #[must_use]
     pub fn prompt_templates(&self) -> Rc<LoadPromptsResult> {
         self.resource_loader.get_prompts()
+    }
+
+    /// Stops a retry, stops the running turn and waits for the agent to settle.
+    pub async fn abort(&self) {
+        self.abort_retry();
+        self.agent.abort();
+        self.agent.wait_for_idle().await;
+    }
+
+    /// Runs one continuation after `delay` on the agent's own task facility.
+    pub(super) fn schedule_continuation(&self, delay: std::time::Duration) {
+        let Some(spawn) = read(&self.agent.spawn).clone() else {
+            return;
+        };
+        let due = tokio::time::Instant::now() + delay;
+        let agent = Rc::clone(&self.agent);
+        spawn(Box::pin(async move {
+            // The wait is anchored now, so a late first poll does not delay the continuation.
+            let remaining = due.saturating_duration_since(tokio::time::Instant::now());
+            let _ = maestro_tools::process::sleep::sleep(remaining, None).await;
+            drop(agent.r#continue().await);
+        }));
+    }
+
+    /// Removes the failed response a retry or recovery replaces, keeping the stored history.
+    pub(super) fn drop_trailing_assistant(&self) {
+        let messages = self.messages();
+        let mut messages = crate::utils::lock::write(&messages);
+        if matches!(
+            messages.last(),
+            Some(maestro_extensions::NativeAgentMessage::Assistant(_))
+        ) {
+            messages.pop();
+        }
     }
 }

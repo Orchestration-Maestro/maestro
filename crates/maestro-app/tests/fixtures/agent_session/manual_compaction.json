@@ -1,0 +1,560 @@
+[
+  {
+    "name": "manual_compaction_uses_extension_summary",
+    "result": {
+      "summary": "auto compacted",
+      "firstKeptEntryId": "e1",
+      "tokensBefore": 11,
+      "details": {}
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": false,
+        "willRetry": false,
+        "result": {
+          "summary": "auto compacted",
+          "firstKeptEntryId": "e1",
+          "tokensBefore": 11,
+          "details": {}
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "compactionSummary",
+        "text": "auto compacted"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "compaction",
+        "summary": "auto compacted",
+        "firstKeptEntryId": "e1",
+        "tokensBefore": 11,
+        "details": {},
+        "fromHook": true,
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "manual_compaction_generates_summary",
+    "result": {
+      "summary": "generated summary",
+      "tokensBefore": 11,
+      "details": {
+        "readFiles": [],
+        "modifiedFiles": []
+      }
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": false,
+        "willRetry": false,
+        "result": {
+          "summary": "generated summary",
+          "firstKeptEntryId": "e2",
+          "tokensBefore": 11,
+          "details": {
+            "readFiles": [],
+            "modifiedFiles": []
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "compactionSummary",
+        "text": "generated summary"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "compaction",
+        "summary": "generated summary",
+        "firstKeptEntryId": "e2",
+        "tokensBefore": 11,
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        },
+        "fromHook": false,
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "manual_compaction_twice_reports_already_compacted",
+    "second": {
+      "error": "Already compacted"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": false,
+        "willRetry": false,
+        "errorMessage": "Compaction failed: Already compacted",
+        "result": null
+      }
+    ],
+    "messages": [
+      {
+        "role": "compactionSummary",
+        "text": "auto compacted"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "compaction",
+        "summary": "auto compacted",
+        "firstKeptEntryId": "e3",
+        "tokensBefore": 11,
+        "details": {},
+        "fromHook": true,
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "manual_compaction_over_empty_history_reports_nothing",
+    "refused": {
+      "error": "Nothing to compact (session too small)"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": false,
+        "willRetry": false,
+        "errorMessage": "Compaction failed: Nothing to compact (session too small)",
+        "result": null
+      }
+    ],
+    "messages": [],
+    "entries": [],
+    "scheduled": []
+  },
+  {
+    "name": "manual_start_event_precedes_the_abort_controller",
+    "refused": {
+      "error": "Compaction cancelled"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": true,
+        "willRetry": false,
+        "result": null
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "one"
+      },
+      {
+        "role": "assistant",
+        "text": "",
+        "stopReason": "stop"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "manual_compaction_without_auth_reports_key_message",
+    "refused": {
+      "error": "No API key found for faux.\n\nUse /login to log into a provider via OAuth or API key. See:\n  $DOCS/providers.md\n  $DOCS/models.md"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": false,
+        "willRetry": false,
+        "errorMessage": "Compaction failed: No API key found for faux.\n\nUse /login to log into a provider via OAuth or API key. See:\n  $DOCS/providers.md\n  $DOCS/models.md",
+        "result": null
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "one"
+      },
+      {
+        "role": "assistant",
+        "text": "",
+        "stopReason": "stop"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "manual_compaction_vetoed_by_extension",
+    "refused": {
+      "error": "Compaction cancelled"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": true,
+        "willRetry": false,
+        "result": null
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "one"
+      },
+      {
+        "role": "assistant",
+        "text": "",
+        "stopReason": "stop"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "abort_compaction_cancels_manual_compaction",
+    "outcome": {
+      "error": "Compaction cancelled"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": true,
+        "willRetry": false,
+        "result": null
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "one"
+      },
+      {
+        "role": "assistant",
+        "text": "",
+        "stopReason": "stop"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  },
+  {
+    "name": "manual_compaction_failure_reports_prefixed_error",
+    "refused": {
+      "error": "Summarization failed: summarizer down"
+    },
+    "events": [
+      {
+        "type": "compaction_start",
+        "reason": "manual"
+      },
+      {
+        "type": "compaction_end",
+        "reason": "manual",
+        "aborted": false,
+        "willRetry": false,
+        "errorMessage": "Compaction failed: Summarization failed: summarizer down",
+        "result": null
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "text": "one"
+      },
+      {
+        "role": "assistant",
+        "text": "",
+        "stopReason": "stop"
+      },
+      {
+        "role": "user",
+        "text": "two"
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "one"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "text": "",
+          "stopReason": "stop"
+        },
+        "timestamp": "$ISO"
+      },
+      {
+        "type": "message",
+        "message": {
+          "role": "user",
+          "text": "two"
+        },
+        "timestamp": "$ISO"
+      }
+    ],
+    "scheduled": []
+  }
+]
