@@ -4,7 +4,7 @@ use crate::output::render_utils::{ToolRenderResultLike, render_args};
 use crate::{
     keybinding_hints::{EXPAND, key_text},
     output::{
-        render_parts::{expand_hint, float, into_text, paint},
+        render_parts::{expand_hint, float, into_text, paint, themed},
         render_utils::{
             PREVIEW_LINES, TruncationView, flag, format_read_line_range, get_text_output, num,
             number, number_text, path_display, replace_tabs, selected_path, str,
@@ -18,7 +18,7 @@ use crate::{
 };
 use maestro_models::{DiagnosticErrorInfo, system_prompt::CONTEXT_FILE_NAMES};
 use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
-use maestro_theme::{Theme, ThemeColor, get_language_from_path, highlight_code};
+use maestro_theme::{LiveTheme, Theme, ThemeColor, get_language_from_path, highlight_code};
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
 
@@ -161,9 +161,11 @@ fn format_compact_call(
 /// Returns a theme, home or path failure; the previous component is left unchanged.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let args = render_args(args);
     let classification = if context.expanded {
         None
@@ -260,9 +262,11 @@ fn format_read_result(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let hidden = !options.expanded
         && !context.is_error
         && classify(render_args(context.args), context)?.is_some();

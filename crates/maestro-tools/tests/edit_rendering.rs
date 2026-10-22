@@ -75,7 +75,7 @@ impl Row {
     fn call(&self, args: &Value, last: Option<ComponentHandle>) -> ComponentHandle {
         (self.tool.render_call.as_ref().unwrap())(
             Some(args),
-            &self.env.theme,
+            &self.env.live,
             &self.context(args, last),
         )
         .unwrap()
@@ -97,7 +97,7 @@ impl Row {
                 expanded: false,
                 is_partial: false,
             },
-            &self.env.theme,
+            &self.env.live,
             &ctx,
         )
         .unwrap()
@@ -183,7 +183,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
         let input = args("beta");
         let mut ctx = row.context(&input, None);
         ctx.phase.args_complete = false;
-        (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
+        (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
         assert_eq!(row.env.runtime.futures(), 0);
         let call = row.call(&input, None);
         for flag in 0..3 {
@@ -193,7 +193,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
                 1 => ctx.expanded = true,
                 _ => ctx.phase.is_partial = true,
             }
-            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
+            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
             assert_eq!(row.env.runtime.futures(), 1);
         }
         let mut alias = input.clone();
@@ -291,7 +291,7 @@ fn edit_completion_publishes_before_reentrant_invalidation() {
             assert_eq!(row.env.runtime.futures(), 0);
         });
         let _call =
-            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
+            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
         row.finish().await;
         assert!(observed.get());
     });
@@ -321,7 +321,7 @@ fn edit_settled_result_rejects_late_preview() {
                         expanded: false,
                         is_partial: partial,
                     },
-                    &row.env.theme,
+                    &row.env.live,
                     &ctx,
                 )
                 .unwrap();
@@ -417,7 +417,7 @@ async fn native(name: &str) {
     let mut ctx = row.context(&case.input, None);
     ctx.phase.args_complete = case.expected.file_exists.is_none();
     let call =
-        (row.tool.render_call.as_ref().unwrap())(Some(&case.input), &row.env.theme, &ctx).unwrap();
+        (row.tool.render_call.as_ref().unwrap())(Some(&case.input), &row.env.live, &ctx).unwrap();
     if let Some(exists) = case.expected.file_exists {
         replay_native(&row, &case, exists);
     } else {
@@ -545,7 +545,7 @@ fn edit_result_without_call_renders_detached_output() {
                 &case.input["result"],
             )),
             options,
-            &row.env.theme,
+            &row.env.live,
             &ctx,
         )
         .unwrap();
@@ -618,7 +618,10 @@ fn supplied_theme_routes() {
     {
         let row = Row::new();
         assert_eq!(case.op, "theme_routes");
-        let supplied = theme(&case.input["titleColors"], &json!({}));
+        let supplied = maestro_theme::LiveTheme::from_theme(Rc::new(theme(
+            &case.input["titleColors"],
+            &json!({}),
+        )));
         let mut ctx = row.context(&case.input["args"], None);
         ctx.phase.args_complete = false;
         let call = (row.tool.render_call.as_ref().unwrap())(ctx.args, &supplied, &ctx).unwrap();
@@ -663,7 +666,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
         assert_ne!(before, live);
         assert!(live[1].contains("38;5;1m"));
         let ctx = row.context(&input, None);
-        let supplied = palette(20);
+        let supplied = maestro_theme::LiveTheme::from_theme(Rc::new(palette(20)));
         (row.tool.render_call.as_ref().unwrap())(Some(&input), &supplied, &ctx).unwrap();
         assert!(call.render(80)[1].contains("38;5;21m"));
         let failed = Row::new();
@@ -679,7 +682,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
             .set_theme_instance(Rc::new(palette(20)))
             .unwrap();
         assert!(call.render(80)[0].contains("48;5;33m"));
-        let selected = palette(20);
+        let selected = maestro_theme::LiveTheme::from_theme(Rc::new(palette(20)));
         let ctx = failed.context(&input, None);
         (failed.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx).unwrap();
         assert!(call.render(80).join("\n").contains("38;5;24m"));
@@ -713,7 +716,7 @@ fn edit_preview_teardown_releases_owned_callbacks() {
             let _ = &capture;
         });
         let call =
-            (queued.tool.render_call.as_ref().unwrap())(Some(&input), &queued.env.theme, &ctx)
+            (queued.tool.render_call.as_ref().unwrap())(Some(&input), &queued.env.live, &ctx)
                 .unwrap();
         drop(ctx);
         drop(call);
@@ -737,7 +740,7 @@ async fn selected_preview_theme_error(missing: &str) {
         .set_theme_instance(Rc::clone(&selected))
         .unwrap();
     let ctx = row.context(&input, None);
-    let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx)
+    let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx)
         .err()
         .unwrap();
     let kind = if missing.ends_with("Bg") {
@@ -761,7 +764,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
             .set_theme_instance(Rc::clone(&selected))
             .unwrap();
         let ctx = row.context(&input, None);
-        let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx)
+        let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx)
             .err()
             .unwrap();
         let kind = if missing.starts_with("toolPending") {
@@ -786,7 +789,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
         .set_theme_instance(Rc::clone(&selected))
         .unwrap();
     let ctx = row.context(&input, None);
-    let call = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx).unwrap();
+    let call = (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.live, &ctx).unwrap();
     assert!(call.render(80)[1].contains("38;5;1m"));
     row.env
         .state

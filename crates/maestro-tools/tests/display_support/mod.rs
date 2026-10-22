@@ -615,7 +615,7 @@ pub fn render_case(case: &Case) -> Vec<String> {
     let args = &case.input["args"];
     let ctx = context(args, &setup, &env, None);
     let row = if case.op == "call" {
-        (tool.render_call.as_ref().unwrap())(Some(args), &env.theme, &ctx)
+        (tool.render_call.as_ref().unwrap())(Some(args), &env.live, &ctx)
     } else {
         let result = read_result(&case.input["result"]);
         let options = options(&case.input["options"]);
@@ -623,7 +623,7 @@ pub fn render_case(case: &Case) -> Vec<String> {
             tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result),
             options,
-            &env.theme,
+            &env.live,
             &ctx,
         )
     };
@@ -692,7 +692,7 @@ pub fn native<D: serde::Serialize, S, E: maestro_tools::ToolExecution>(
     callback: &maestro_tools::ToolRenderResult<D, S, E>,
     result: &maestro_tools::output::render_utils::ToolRenderResultLike<'_, D>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, S>,
 ) -> Result<ComponentHandle, maestro_models::DiagnosticErrorInfo> {
     callback.invoke_native((result, options), theme, context, |details| {

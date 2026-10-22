@@ -4,7 +4,7 @@ use crate::{
     ansi_to_html::segments,
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
-use maestro_theme::Theme;
+use maestro_theme::LiveTheme;
 use maestro_tools::{
     PreparedToolRenderResult, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
     ToolRenderResultOptions, ToolRendererBinding, ToolRendererState,
@@ -19,8 +19,9 @@ use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 pub struct ToolHtmlRendererDeps<'a, F> {
     /// Live tool-definition lookup.
     pub get_tool_definition: F,
-    /// Theme supplied to callbacks.
-    pub theme: &'a Theme,
+    /// Published theme read on each renderer call; an unpublished handle fails only
+    /// the renderers that read it.
+    pub theme: LiveTheme,
     /// Session working directory.
     pub cwd: &'a str,
     /// Viewport width; absence selects 100.
@@ -151,7 +152,7 @@ impl<F> StandardRenderer<'_, F> {
                     expanded,
                     is_partial: false,
                 },
-                self.deps.theme,
+                &self.deps.theme,
                 &row,
             )
             .ok()?;
@@ -199,7 +200,7 @@ where
             let owner = self.state(id);
             let inner = owner.borrow().clone();
             let context = self.context(id, retained.as_deref(), (&owner, &inner), (None, false));
-            let component = callback(args, self.deps.theme, &context).ok()?;
+            let component = callback(args, &self.deps.theme, &context).ok()?;
             self.render(id, &component, false).ok()
         })();
         Ok(output)

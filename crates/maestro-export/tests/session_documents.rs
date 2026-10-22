@@ -696,7 +696,7 @@ fn standard_renderer_integrates_with_document_export() {
             vec!["custom result".into()]
         }
     }
-    let theme = component_support::theme();
+    let theme = Rc::new(component_support::theme());
     let mut tool = component_support::definition::<(), Value, Value, Value>();
     tool.render_result = Some(
         maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
@@ -709,7 +709,7 @@ fn standard_renderer_integrates_with_document_export() {
             get_tool_definition: |_: &str| {
                 Ok(available.then(|| maestro_tools::ToolRendererBinding::from_definition(&tool)))
             },
-            theme: &theme,
+            theme: maestro_theme::LiveTheme::from_theme(Rc::clone(&theme)),
             cwd: "/work",
             width: None,
             environment: component_support::environment(),
@@ -746,7 +746,7 @@ fn mixed_bindings_populate_document_custom_html() {
     let bindings = registry();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
         get_tool_definition: |name: &str| Ok(bindings.get(name).cloned()),
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(theme),
         cwd: "/work",
         width: Some(80),
         environment,

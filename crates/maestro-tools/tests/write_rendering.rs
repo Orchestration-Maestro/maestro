@@ -59,7 +59,7 @@ fn draw_call(
     last: Option<ComponentHandle>,
 ) -> ComponentHandle {
     let ctx = context(args, setup, env, last);
-    (tool().render_call.unwrap())(Some(args), &env.theme, &ctx).unwrap()
+    (tool().render_call.unwrap())(Some(args), &env.live, &ctx).unwrap()
 }
 
 /// Draw a result, reusing `last`.
@@ -78,7 +78,7 @@ fn draw_result(
         &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
         options,
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap()
@@ -414,7 +414,7 @@ fn write_preview_callbacks_never_mutate_files() {
             &env,
             None,
         );
-        (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+        (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &ctx).unwrap();
     }
     let mut failing = settled(setup(false));
     failing.is_error = true;
@@ -429,7 +429,7 @@ fn write_preview_callbacks_never_mutate_files() {
             text_block("denied"),
         ])),
         options,
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap();

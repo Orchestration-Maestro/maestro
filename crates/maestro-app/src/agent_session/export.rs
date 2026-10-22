@@ -18,8 +18,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Writes the session as an HTML document with the agent's prompt and tools, the saved
     /// theme and custom tool rendering; returns the written path.
     ///
-    /// Custom tool rendering needs the published theme; without one, tools keep their
-    /// standard rendering.
+    /// Renderers receive the live theme handle: one that reads it without a published theme
+    /// keeps the standard rendering, and one that never reads it still draws.
     ///
     /// # Errors
     /// Returns the export failure, such as for a session only in memory.
@@ -32,19 +32,16 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let theme_name = self.settings_manager.borrow().get_theme();
         let (system_prompt, tools) = self.export_state()?;
         let manager = self.session_manager.borrow();
-        let theme = environment.live_theme.get().ok();
-        let renderer = theme.as_deref().map(|theme| {
-            create_tool_html_renderer(ToolHtmlRendererDeps {
-                get_tool_definition: |name: &str| {
-                    self.get_tool_definition(name)
-                        .map(|tool| tool.renderer_binding())
-                        .transpose()
-                },
-                theme,
-                cwd: manager.get_cwd(),
-                width: None,
-                environment,
-            })
+        let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+            get_tool_definition: |name: &str| {
+                self.get_tool_definition(name)
+                    .map(|tool| tool.renderer_binding())
+                    .transpose()
+            },
+            theme: environment.live_theme.clone(),
+            cwd: manager.get_cwd(),
+            width: None,
+            environment,
         });
         export_session_to_html(
             &*manager,
@@ -55,12 +52,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             Some(ExportOptions {
                 output_path,
                 theme_name: theme_name.as_deref(),
-                // A closure cannot coerce the renderer's lifetime-capturing opaque type to a
-                // trait object, so the coercion happens in this match.
-                tool_renderer: match &renderer {
-                    Some(renderer) => Some(renderer),
-                    None => None,
-                },
+                tool_renderer: Some(&renderer),
             }),
             operations,
         )

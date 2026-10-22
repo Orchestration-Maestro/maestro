@@ -12,7 +12,7 @@ use crate::{
     utils::diagnostics::diagnostic,
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
-use maestro_theme::{Theme, ThemeBg, ThemeColor};
+use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor};
 use maestro_tui::{Box as TuiBox, Component, Container, Spacer, Text, tui::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
@@ -275,9 +275,11 @@ fn publish(
 /// Render the call after admitting complete input on the supplied runtime.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let args = render_args(args);
     let component = call_component(context);
     admit_preview(&component, preview_input(args), context)?;
@@ -364,9 +366,11 @@ fn settle(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     _options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let call = context.state.borrow().call_component.clone();
     if let Some(call) = &call
         && settle(call, result, context)

@@ -27,11 +27,11 @@ fn compare<P, D: serde::Serialize, S>(
     let _bindings = display_support::bind(&setup.bindings);
     let draw = |tool: &ToolDefinition<(), P, D, S>| {
         let context = display_support::context::<S>(&args, &setup, &env, None);
-        let call = (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &context).unwrap();
+        let call = (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &context).unwrap();
         let rows = call.render(80);
         let mut reused = display_support::context::<S>(&args, &setup, &env, Some(call.clone()));
         reused.state = context.state.clone();
-        let next = (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &reused).unwrap();
+        let next = (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &reused).unwrap();
         assert!(std::rc::Rc::ptr_eq(&call, &next));
         assert_eq!(next.render(80), rows);
         let result = maestro_agent::AgentToolResult::<D> {
@@ -46,7 +46,7 @@ fn compare<P, D: serde::Serialize, S>(
                 expanded: true,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &context,
         )
         .unwrap();

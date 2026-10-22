@@ -236,7 +236,7 @@ fn render_callbacks_keep_result_first_arguments_and_shared_state() {
     );
     let mut row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
     row.tool_call_id = "call".into();
-    let call = binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row).unwrap();
+    let call = binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row).unwrap();
     assert_eq!(call.render(30), [format!("{:<30}", "call")]);
     row.last_component = Some(call.clone());
     let details = json!({"result":5});
@@ -256,7 +256,7 @@ fn render_callbacks_keep_result_first_arguments_and_shared_state() {
                 expanded: true,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             &row,
         )
         .unwrap();
@@ -555,7 +555,7 @@ fn render_raw_result(
                 expanded: false,
                 is_partial: false,
             },
-            &env.theme,
+            &env.live,
             row,
         )
         .unwrap()
@@ -733,7 +733,7 @@ fn check_heterogeneous_rendering(
     let binding = registrations[1].definition.renderer_binding().unwrap();
     for count in 1..=2 {
         assert_eq!(
-            binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row)
+            binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row)
                 .unwrap()
                 .render(7),
             [format!("typed:{count}")]
@@ -1011,7 +1011,7 @@ fn registered_callbacks_reenter_and_retire_without_registry_guards() {
             display_support::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
         let row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
         assert_eq!(
-            binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row)
+            binding.render_call.as_ref().unwrap()(Some(&args), &env.live, &row)
                 .unwrap()
                 .render(12),
             ["old renderer"]

@@ -320,7 +320,6 @@ impl Row {
     }
     /// Selects each callback independently and keeps only successful previous handles.
     fn components(&self, append: impl Fn(ComponentHandle)) -> Result<(), DiagnosticErrorInfo> {
-        let theme = self.theme()?;
         let custom = self.params.tool_definition.as_ref();
         let native = self.params.built_in_tool_definition.as_ref();
         let call = custom
@@ -331,7 +330,7 @@ impl Row {
         let rendered = call.and_then(|f| {
             f(
                 args.as_deref(),
-                &theme,
+                &self.params.environment.live_theme,
                 &self.context(args.as_deref(), last),
             )
             .ok()
@@ -354,11 +353,10 @@ impl Row {
                 expanded: context.expanded,
                 is_partial: context.phase.is_partial,
             };
-            let theme = self.theme()?;
             let rendered = callback.and_then(|f| {
                 f.prepare(result.borrowed())
                     .ok()?
-                    .render(options, &theme, &context)
+                    .render(options, &self.params.environment.live_theme, &context)
                     .ok()
             });
             let old = self.output.replace(rendered.clone());

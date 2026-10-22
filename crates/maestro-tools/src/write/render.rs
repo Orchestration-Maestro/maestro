@@ -4,7 +4,7 @@ use crate::output::render_utils::{ToolRenderResultLike, render_args};
 use super::highlight::{HighlightCache, language_of, rebuild, rows, update};
 use crate::{
     output::{
-        render_parts::{downcast, expand_hint, into_text, paint},
+        render_parts::{downcast, expand_hint, into_text, paint, themed},
         render_utils::{
             PREVIEW_LINES, normalize_display_text, path_display, replace_tabs, selected_path, str,
             without_trailing_empty,
@@ -13,7 +13,7 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
-use maestro_theme::{Theme, ThemeColor};
+use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
 use serde_json::Value;
 use std::{borrow::Cow, cell::RefCell, rc::Rc};
@@ -143,9 +143,11 @@ fn format_call(
 /// Returns a theme or home failure; the highlighting stays updated.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let args = render_args(args);
     let component = call_component(context.last_component.as_ref());
     let raw_path = str(selected_path(args)).unwrap_or_default();
@@ -168,9 +170,11 @@ pub(super) fn render_call(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     _options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let output = UserBlock::text_output(result.content);
     if context.is_error && !output.is_empty() {
         let error = paint(theme, &ThemeColor::Error, &output)?;

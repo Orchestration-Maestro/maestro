@@ -81,7 +81,9 @@ not brand roles.
 
 `create_tool_html_renderer` implements the existing `ToolHtmlRenderer` contract
 through [tools-owned renderer bindings](tools.md#renderer-projections). Supply live lookup,
-theme, cwd and host environment. Each call ID owns a `ToolRendererState`;
+the live theme handle, cwd and host environment. A renderer resolves that handle when it
+reads a color, so one that never reads it still renders without a published theme, while
+one that reads it keeps the standard rendering. Each call ID owns a `ToolRendererState`;
 custom state uses `Default`, and JSON state starts as an empty object. Width defaults
 to 100 only when omitted. The adapter retains arguments, shared mutable state and
 independent call/result component slots per call ID. Missing arguments stay missing.

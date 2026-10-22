@@ -59,7 +59,7 @@ fn typed_definitions_keep_custom_state_and_details() {
     let tool = maestro_tools::ToolRendererBinding::from_definition(&tool);
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
         get_tool_definition: |_: &str| Ok(Some(tool.clone())),
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(Rc::new(theme)),
         cwd: "/work",
         width: None,
         environment: component_support::environment(),
@@ -197,7 +197,7 @@ fn assert_nested_failure(padded: bool, failing_phase: usize) {
                 &tool,
             )))
         },
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(Rc::new(theme)),
         cwd: "/work",
         width: None,
         environment: component_support::environment(),
@@ -286,7 +286,7 @@ fn export_typed_details_decode_once_and_share_both_phases() {
                 &tool,
             )))
         },
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(Rc::new(theme)),
         cwd: "/work",
         width: None,
         environment: component_support::environment(),
@@ -339,7 +339,7 @@ fn export_raw_details_do_not_decode_typed_records() {
                 &tool,
             )))
         },
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(theme),
         cwd: "/work",
         width: Some(100),
         environment,
@@ -383,7 +383,7 @@ fn export_wrapped_native_edit_keeps_shared_row_state() {
                 &tool,
             )))
         },
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(theme),
         cwd: "/work",
         width: Some(80),
         environment: Rc::clone(&environment),
@@ -463,7 +463,7 @@ fn wrapped_edit(
                 .and_then(|d| d.get("firstChangedLine"))
                 .and_then(serde_json::Value::as_f64)
                 == Some(1.75);
-            let alternate = native_palette(3);
+            let alternate = maestro_theme::LiveTheme::from_theme(native_palette(3));
             let theme = if fractional_change { &alternate } else { theme };
             let output = native_result(result, options, theme, &row.with_state(state))?;
             if fractional_change {
@@ -537,7 +537,7 @@ fn export_mixed_bindings_require_only_selected_decoder() {
     let bindings = registry();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
         get_tool_definition: |name: &str| Ok(bindings.get(name).cloned()),
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(theme),
         cwd: "/work",
         width: Some(80),
         environment,
@@ -655,7 +655,7 @@ fn export_raw_bindings_borrow_details_in_both_phases() {
             let theme = component_support::theme();
             let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
                 get_tool_definition: |_: &str| Ok(Some(binding.clone())),
-                theme: &theme,
+                theme: maestro_theme::LiveTheme::from_theme(Rc::new(theme)),
                 cwd: "/work",
                 width: None,
                 environment: component_support::environment(),
@@ -768,7 +768,7 @@ fn export_binding_changes_keep_native_state_per_call() {
                 native_binding.clone()
             }))
         },
-        theme: &theme,
+        theme: maestro_theme::LiveTheme::from_theme(theme),
         cwd: "/work",
         width: Some(80),
         environment,
@@ -829,7 +829,7 @@ fn reentrant_renderer(
     use maestro_tools::{ToolRenderResult, ToolRendererBinding};
     use serde_json::json;
     // Static callbacks retain a weak renderer whose dependencies must outlive them.
-    let theme = Box::leak(Box::new(component_support::theme()));
+    let theme = maestro_theme::LiveTheme::from_theme(Rc::new(component_support::theme()));
     let events = Rc::new(RefCell::new(Vec::new()));
     let slot = RendererSlot::default();
     let version = Rc::new(std::cell::Cell::new(false));
@@ -988,4 +988,224 @@ fn check_edit_replacement(
         json!({"call":call,"result":result_value(result),"settled":settled,"other":other,"same_state":Rc::ptr_eq(&states[0], &states[1])}),
         case.expected
     );
+}
+/// A tool whose call and result renderers never read the theme they are given.
+fn theme_free_definition()
+-> maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32> {
+    use maestro_tools::ToolRenderResult;
+    let mut tool = component_support::definition::<(), (), serde_json::Value, u32>();
+    tool.render_call = Some(Rc::new(|_, _, _| {
+        Ok(Rc::new(component_support::Line("plain call".into())) as ComponentHandle)
+    }));
+    tool.render_result = Some(ToolRenderResult::<
+        serde_json::Value,
+        u32,
+        maestro_models::Local,
+    >::Raw(Rc::new(|_, _, _, _| {
+        Ok(Rc::new(component_support::Line("plain result".into())) as ComponentHandle)
+    })));
+    tool
+}
+
+/// A tool whose call and result renderers colour their row from the theme.
+fn theme_reading_definition()
+-> maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32> {
+    use maestro_tools::ToolRenderResult;
+    let styled = |theme: &maestro_theme::LiveTheme| {
+        let theme = theme.get().map_err(|error| diagnostic(&error))?;
+        let text = theme
+            .fg(&maestro_theme::ThemeColor::ToolOutput, "styled")
+            .map_err(|error| diagnostic(&error))?;
+        Ok(Rc::new(component_support::Line(text)) as ComponentHandle)
+    };
+    let mut tool = component_support::definition::<(), (), serde_json::Value, u32>();
+    tool.render_call = Some(Rc::new(move |_, theme, _| styled(theme)));
+    tool.render_result = Some(ToolRenderResult::<
+        serde_json::Value,
+        u32,
+        maestro_models::Local,
+    >::Raw(Rc::new(move |_, _, theme, _| styled(theme))));
+    tool
+}
+
+/// The diagnostic a theme failure becomes at a renderer boundary.
+fn diagnostic(error: &maestro_theme::ThemeError) -> maestro_models::DiagnosticErrorInfo {
+    maestro_models::DiagnosticErrorInfo::error(error.to_string())
+}
+
+/// A theme whose `toolOutput` colour is palette `index`.
+fn themed_palette(index: u8) -> maestro_theme::Theme {
+    maestro_theme::Theme::new(
+        [(
+            maestro_theme::ThemeColor::ToolOutput,
+            maestro_theme::ColorValue::Index(index),
+        )],
+        [],
+        maestro_theme::ColorMode::Color256,
+        maestro_theme::ThemeOptions::default(),
+    )
+    .unwrap()
+}
+
+/// Render `tool` through an HTML renderer over `theme`.
+fn themed_renderer(
+    tool: &maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32>,
+    theme: maestro_theme::LiveTheme,
+) -> impl maestro_export::ToolHtmlRenderer {
+    use maestro_export::{ToolHtmlRendererDeps, create_tool_html_renderer};
+    let binding = maestro_tools::ToolRendererBinding::from_definition(tool);
+    create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: move |_: &str| Ok(Some(binding.clone())),
+        theme,
+        cwd: "/work",
+        width: None,
+        environment: component_support::environment(),
+    })
+}
+
+#[test]
+fn theme_free_renderers_render_when_they_ignore_the_theme() {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};
+    use serde_json::json;
+    let tool = theme_free_definition();
+    let renderer = themed_renderer(&tool, maestro_theme::LiveTheme::default());
+    let call = renderer
+        .render_call("id", "custom", Some(&json!({})))
+        .unwrap()
+        .unwrap();
+    assert_eq!(call, "<div class=\"ansi-line\">plain call</div>");
+    let result = renderer
+        .render_result(
+            "id",
+            "custom",
+            ToolHtmlResultInput {
+                content: None,
+                details: Some(&json!({})),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert_eq!(result.collapsed, None);
+    assert_eq!(
+        result.expanded.unwrap(),
+        "<div class=\"ansi-line\">plain result</div>"
+    );
+}
+
+#[test]
+fn theme_readers_fall_back_without_a_published_theme() {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};
+    use serde_json::json;
+    let tool = theme_reading_definition();
+    let renderer = themed_renderer(&tool, maestro_theme::LiveTheme::default());
+    assert_eq!(
+        renderer
+            .render_call("id", "custom", Some(&json!({})))
+            .unwrap(),
+        None
+    );
+    assert!(
+        renderer
+            .render_result(
+                "id",
+                "custom",
+                ToolHtmlResultInput {
+                    content: None,
+                    details: Some(&json!({})),
+                    is_error: false,
+                },
+            )
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[test]
+fn native_renderers_fall_back_without_a_published_theme() {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput};
+    use serde_json::json;
+    let read = maestro_tools::create_read_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::ReadToolOptions::default(),
+    );
+    let edit = maestro_tools::create_edit_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::EditToolOptions::default(),
+    );
+    let bindings: Vec<(&str, maestro_tools::ToolRendererBinding)> = vec![
+        (
+            "read",
+            maestro_tools::ToolRendererBinding::from_definition(&read),
+        ),
+        (
+            "edit",
+            maestro_tools::ToolRendererBinding::from_raw(&edit).unwrap(),
+        ),
+    ];
+    let renderer = maestro_export::create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: move |name: &str| {
+            Ok(bindings
+                .iter()
+                .find(|(tool, _)| *tool == name)
+                .map(|(_, binding)| binding.clone()))
+        },
+        theme: maestro_theme::LiveTheme::default(),
+        cwd: "/work",
+        width: None,
+        environment: component_support::environment(),
+    });
+    for name in ["read", "edit"] {
+        assert_eq!(
+            renderer
+                .render_call("id", name, Some(&json!({"path": "notes.txt"})))
+                .unwrap(),
+            None,
+            "{name} call"
+        );
+        assert!(
+            renderer
+                .render_result(
+                    "id",
+                    name,
+                    ToolHtmlResultInput {
+                        content: None,
+                        details: None,
+                        is_error: false,
+                    },
+                )
+                .unwrap()
+                .is_none(),
+            "{name} result"
+        );
+    }
+}
+
+#[test]
+fn published_theme_reaches_callbacks_and_is_reread_when_republished() {
+    use maestro_export::ToolHtmlRenderer;
+    use serde_json::json;
+    let state = maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
+        themes_dir: String::new(),
+        custom_themes_dir: String::new(),
+    });
+    let live = state.theme();
+    state
+        .set_theme_instance(Rc::new(themed_palette(2)))
+        .unwrap();
+    let tool = theme_reading_definition();
+    let renderer = themed_renderer(&tool, live);
+    let first = renderer
+        .render_call("id", "custom", Some(&json!({})))
+        .unwrap()
+        .unwrap();
+    assert!(first.contains(&maestro_theme::ansi256_to_hex(2)));
+    state
+        .set_theme_instance(Rc::new(themed_palette(5)))
+        .unwrap();
+    let second = renderer
+        .render_call("id", "custom", Some(&json!({})))
+        .unwrap()
+        .unwrap();
+    assert!(second.contains(&maestro_theme::ansi256_to_hex(5)));
 }

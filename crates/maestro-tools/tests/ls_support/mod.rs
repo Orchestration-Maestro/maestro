@@ -749,7 +749,7 @@ pub fn render_case_as<D: serde::Serialize>(
         let _bindings = bind(&setup.bindings);
         let args = with_home(&input.args);
         let ctx = context(&args, &setup, &env, None);
-        let row = (tool.render_call.unwrap())(Some(&args), &env.theme, &ctx).unwrap();
+        let row = (tool.render_call.unwrap())(Some(&args), &env.live, &ctx).unwrap();
         return (row.render(CALL_WIDTH), CALL_WIDTH);
     }
     let input: RenderInput = serde_json::from_value(case.input.clone()).unwrap();
@@ -765,7 +765,7 @@ pub fn render_case_as<D: serde::Serialize>(
         &(tool.render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result(&input.result)),
         options,
-        &env.theme,
+        &env.live,
         &ctx,
     )
     .unwrap();
@@ -818,7 +818,7 @@ pub fn render_slot_as<D: serde::Serialize>(
         &Value,
     ),
     slot: &str,
-    theme: &maestro_theme::Theme,
+    theme: &maestro_theme::LiveTheme,
     env: &Env,
     previous: &ComponentHandle,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
@@ -857,7 +857,7 @@ pub fn check_reuse_as<D: serde::Serialize>(
     let row = render_slot_as(
         (tool, result, args),
         &input.slot,
-        &env.theme,
+        &env.live,
         &env,
         &previous,
     )
@@ -895,7 +895,7 @@ pub fn check_theme_error_as<D: serde::Serialize>(
     let Err(error) = render_slot_as(
         (tool, result, args),
         &input.slot,
-        &env.theme,
+        &env.live,
         &env,
         &previous,
     ) else {
