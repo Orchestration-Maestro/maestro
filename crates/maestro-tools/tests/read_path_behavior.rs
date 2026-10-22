@@ -138,7 +138,7 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
 /// A path naming an existing file resolves to that file under the spelling it was written with.
 #[test]
 fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("x\u{a0}y.txt", b"written");
     dir.file("p\u{a0}q.txt", b"written pair");
     dir.file("p q.txt", b"plain pair");
@@ -156,7 +156,7 @@ fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
         resolve_read_path("p\u{a0}q.txt", &cwd).unwrap(),
         format!("{cwd}/p\u{a0}q.txt")
     );
-    let home = TempDir::new();
+    let home = Scratch::new().unwrap();
     home.file("h\u{a0}o.txt", b"home written");
     let home_text = home.text();
     let envs = [
@@ -179,7 +179,7 @@ fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
 /// A typed path whose Unicode spaces stand for plain spaces still finds its file.
 #[test]
 fn read_paths_fall_back_to_the_normalized_spelling_when_nothing_has_the_written_one() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("sp ace.txt", b"plain");
     let cwd = dir.text();
     for ask in ["sp\u{a0}ace.txt", "@sp\u{a0}ace.txt"] {

@@ -336,8 +336,8 @@ pub fn executable(root: &Scratch, name: &str, body: &str) {
 }
 /// Install an `fd` program that records its operands and return the file it writes.
 #[cfg(unix)]
-pub fn recorder(root: &TempDir) -> std::path::PathBuf {
-    let args = root.0.join("args.json");
+pub fn recorder(root: &Scratch) -> std::path::PathBuf {
+    let args = root.path().join("args.json");
     executable(root, "fd", &native_script(&Native::default(), &args));
     args
 }
