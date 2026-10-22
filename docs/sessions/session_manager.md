@@ -62,7 +62,8 @@ model conversion remain separate operations. Reached null entry or message
 receivers return native errors identifying the field, not an eager schema error.
 
 `get_latest_compaction_entry` scans supplied order backwards without ancestry
-selection and borrows the matching original element. It stops at its first match;
+selection and borrows the matching original element. It accepts owned entries or
+borrowed ones, such as a branch. It stops at its first match;
 a null entry encountered before that match is an error.
 
 ## In-memory history

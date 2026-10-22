@@ -168,6 +168,35 @@ impl<T, C: maestro_agent::CustomAgentMessages> maestro_agent::CustomAgentMessage
     }
 }
 
+impl<T: serde::Serialize> serde::Serialize for CustomAgentMessages<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::BashExecution(message) => message.serialize(serializer),
+            Self::Custom(message) => message.serialize(serializer),
+            Self::BranchSummary(message) => message.serialize(serializer),
+            Self::CompactionSummary(message) => message.serialize(serializer),
+            Self::Other(never) => match *never {},
+        }
+    }
+}
+/// Reads a stored record by its `role`; an unknown role is an error.
+impl<'de, T: serde::de::DeserializeOwned> serde::Deserialize<'de> for CustomAgentMessages<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::Error as _;
+        let value = serde_json::Value::deserialize(deserializer)?;
+        let message = match value.get("role").and_then(serde_json::Value::as_str) {
+            Some("bashExecution") => serde_json::from_value(value).map(Self::BashExecution),
+            Some("custom") => serde_json::from_value(value).map(Self::Custom),
+            Some("branchSummary") => serde_json::from_value(value).map(Self::BranchSummary),
+            Some("compactionSummary") => serde_json::from_value(value).map(Self::CompactionSummary),
+            role => {
+                let role = role.unwrap_or_default();
+                return Err(D::Error::custom(format!("unknown message role `{role}`")));
+            }
+        };
+        message.map_err(D::Error::custom)
+    }
+}
 /// Project application entries into an owned, ordered model transcript.
 #[must_use]
 pub fn convert_to_llm<T, C: maestro_agent::CustomAgentMessages>(

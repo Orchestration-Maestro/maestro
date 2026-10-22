@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod application_message_records;
 mod branch_summary;
 mod compaction_preparation;
 mod context_projection;

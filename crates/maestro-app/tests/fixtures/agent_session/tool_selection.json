@@ -1,0 +1,291 @@
+[
+  {
+    "name": "supplied order filters unknown names",
+    "registry": [
+      {
+        "name": "alpha",
+        "description": "alpha tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:alpha>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "beta",
+        "description": "beta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:beta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "gamma",
+        "description": "gamma tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:gamma>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "delta",
+        "description": "delta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:delta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    ],
+    "definitions": {
+      "alpha": "alpha",
+      "missing": null
+    },
+    "steps": [
+      {
+        "call": null,
+        "activeToolNames": [
+          "alpha",
+          "beta",
+          "gamma",
+          "delta"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "alpha",
+            "beta",
+            "gamma",
+            "delta"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly",
+            "gamma": "xy"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "call": [
+          "delta",
+          "missing",
+          "alpha"
+        ],
+        "activeToolNames": [
+          "delta",
+          "alpha"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "delta",
+            "alpha"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "call": [
+          "gamma",
+          "alpha",
+          "gamma"
+        ],
+        "activeToolNames": [
+          "gamma",
+          "alpha",
+          "gamma"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "gamma",
+            "alpha",
+            "gamma"
+          ],
+          "toolSnippets": {
+            "gamma": "xy",
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Use gamma",
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "call": [],
+        "activeToolNames": [],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [],
+          "toolSnippets": {},
+          "promptGuidelines": []
+        },
+        "systemPromptIsBase": true
+      }
+    ]
+  },
+  {
+    "name": "loader prompt and appended sections join",
+    "registry": [
+      {
+        "name": "alpha",
+        "description": "alpha tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:alpha>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "beta",
+        "description": "beta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:beta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "gamma",
+        "description": "gamma tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:gamma>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "delta",
+        "description": "delta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:delta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    ],
+    "definitions": {
+      "alpha": "alpha",
+      "missing": null
+    },
+    "steps": [
+      {
+        "call": null,
+        "activeToolNames": [
+          "alpha",
+          "beta",
+          "gamma",
+          "delta"
+        ],
+        "options": {
+          "customPrompt": "Custom base",
+          "appendSystemPrompt": "one\n\ntwo",
+          "selectedTools": [
+            "alpha",
+            "beta",
+            "gamma",
+            "delta"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly",
+            "gamma": "xy"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "call": [
+          "beta",
+          "alpha"
+        ],
+        "activeToolNames": [
+          "beta",
+          "alpha"
+        ],
+        "options": {
+          "customPrompt": "Custom base",
+          "appendSystemPrompt": "one\n\ntwo",
+          "selectedTools": [
+            "beta",
+            "alpha"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short"
+          ]
+        },
+        "systemPromptIsBase": true
+      }
+    ]
+  }
+]

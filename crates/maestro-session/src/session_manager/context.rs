@@ -227,10 +227,11 @@ pub(super) use maestro_text::is_whitespace_scalar as ecma_whitespace;
 ///
 /// # Errors
 /// Returns a native JSON error if reverse scanning reaches a null entry.
-pub fn get_latest_compaction_entry(
-    entries: &[SessionEntry],
+pub fn get_latest_compaction_entry<T: std::borrow::Borrow<SessionEntry>>(
+    entries: &[T],
 ) -> Result<Option<&SessionEntry>, serde_json::Error> {
     for entry in entries.iter().rev() {
+        let entry = entry.borrow();
         if property(Some(entry), "type")?.and_then(Value::as_str) == Some("compaction") {
             return Ok(Some(entry));
         }

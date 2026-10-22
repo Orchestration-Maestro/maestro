@@ -29,7 +29,9 @@ message constructors retain their NaN fallback.
 
 The open `CustomAgentMessages<T, C>` enum bridges these four application variants
 to the agent's custom-role trait. `Other(C)` retains caller-defined roles without
-projecting them. Install a closure invoking the converter in
+projecting them. Without caller-defined roles, the enum reads and writes stored
+message records by their `role`; an unknown role is an error. Install a closure
+invoking the converter in
 `maestro_agent::AgentOptions::convert_to_llm` to apply this projection at the
 model-request boundary.
 

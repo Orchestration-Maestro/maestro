@@ -8,6 +8,8 @@ pub mod presentation_data;
 pub mod utils;
 
 #[cfg(not(target_arch = "wasm32"))]
+pub mod agent_session;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod output_guard;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod resources;

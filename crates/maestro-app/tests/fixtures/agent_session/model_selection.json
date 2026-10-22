@@ -1,0 +1,1295 @@
+[
+  {
+    "name": "switch from a non-reasoning model uses medium",
+    "settings": {},
+    "results": [
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/think",
+      "thinkingLevel": "medium"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "think",
+      "defaultThinkingLevel": "medium"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "set"
+      }
+    ]
+  },
+  {
+    "name": "switch from a non-reasoning model uses the saved default",
+    "settings": {
+      "defaultThinkingLevel": "low"
+    },
+    "results": [
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/think",
+      "thinkingLevel": "low"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "low"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "think",
+      "defaultThinkingLevel": "low"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "low"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "low",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "set"
+      }
+    ]
+  },
+  {
+    "name": "reselecting the same model records it without a select event",
+    "settings": {},
+    "results": [
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setModel think again",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/think",
+      "thinkingLevel": "medium"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "think",
+      "defaultThinkingLevel": "medium"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "set"
+      }
+    ]
+  },
+  {
+    "name": "thinking writes persist only effective changes",
+    "settings": {},
+    "results": [
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setThinkingLevel high",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setThinkingLevel high again",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "levels",
+        "result": {
+          "ok": [
+            "off",
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/think",
+      "thinkingLevel": "high"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "think",
+      "defaultThinkingLevel": "high"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "high"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "set"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "high",
+        "previousLevel": "medium"
+      }
+    ]
+  },
+  {
+    "name": "unsupported levels clamp to the next supported one",
+    "settings": {},
+    "results": [
+      {
+        "label": "setModel mapped",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "levels",
+        "result": {
+          "ok": [
+            "off",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ]
+        }
+      },
+      {
+        "label": "setThinkingLevel minimal",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setThinkingLevel xhigh",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/think",
+      "thinkingLevel": "high"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "mapped"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "low"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "xhigh"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "think",
+      "defaultThinkingLevel": "high"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "low"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "xhigh"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "high"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/mapped",
+        "previousModel": "faux/plain",
+        "source": "set"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "low",
+        "previousLevel": "medium"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "xhigh",
+        "previousLevel": "low"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "high",
+        "previousLevel": "xhigh"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/mapped",
+        "source": "set"
+      }
+    ]
+  },
+  {
+    "name": "a non-reasoning model records off without saving it",
+    "settings": {
+      "defaultThinkingLevel": "high"
+    },
+    "results": [
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setModel plain",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "supportsThinking",
+        "result": {
+          "ok": false
+        }
+      },
+      {
+        "label": "levels",
+        "result": {
+          "ok": [
+            "off"
+          ]
+        }
+      },
+      {
+        "label": "cycleThinkingLevel",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setThinkingLevel medium",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/plain",
+      "thinkingLevel": "off"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "plain"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "off"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "plain",
+      "defaultThinkingLevel": "high"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "high"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "off"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "high",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "set"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "off",
+        "previousLevel": "high"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/plain",
+        "previousModel": "faux/think",
+        "source": "set"
+      }
+    ]
+  },
+  {
+    "name": "an unrecognized saved level selects the first supported level",
+    "settings": {
+      "defaultThinkingLevel": "turbo"
+    },
+    "results": [
+      {
+        "label": "setModel offless",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/offless",
+      "thinkingLevel": "minimal"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "offless"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "minimal"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "offless",
+      "defaultThinkingLevel": "minimal"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "minimal"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "minimal",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/offless",
+        "previousModel": "faux/plain",
+        "source": "set"
+      }
+    ]
+  },
+  {
+    "name": "thinking cycles through supported levels with wraparound",
+    "settings": {},
+    "results": [
+      {
+        "label": "setModel think",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "cycle 1",
+        "result": {
+          "ok": "high"
+        }
+      },
+      {
+        "label": "cycle 2",
+        "result": {
+          "ok": "off"
+        }
+      },
+      {
+        "label": "setModel mapped",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setThinkingLevel xhigh",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "cycle wrap",
+        "result": {
+          "ok": "off"
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/mapped",
+      "thinkingLevel": "off"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "off"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "mapped"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "xhigh"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "off"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "mapped",
+      "defaultThinkingLevel": "off"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "high"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "off"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "xhigh"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "off"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "set"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "high",
+        "previousLevel": "medium"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "off",
+        "previousLevel": "high"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/mapped",
+        "previousModel": "faux/think",
+        "source": "set"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "xhigh",
+        "previousLevel": "off"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "off",
+        "previousLevel": "xhigh"
+      }
+    ]
+  },
+  {
+    "name": "a model without credentials is refused",
+    "settings": {},
+    "results": [
+      {
+        "label": "setModel elsewhere",
+        "result": {
+          "error": "No API key for elsewhere/x"
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/plain",
+      "thinkingLevel": "off"
+    },
+    "entries": [],
+    "settingsAfter": {
+      "defaultProvider": null,
+      "defaultModel": null,
+      "defaultThinkingLevel": null
+    },
+    "sessionEvents": [],
+    "extensionEvents": []
+  },
+  {
+    "name": "steering and follow-up modes are saved",
+    "settings": {},
+    "results": [
+      {
+        "label": "setSteeringMode all",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "setFollowUpMode all",
+        "result": {
+          "ok": {
+            "undefined": true
+          }
+        }
+      },
+      {
+        "label": "modes",
+        "result": {
+          "ok": {
+            "steering": "all",
+            "followUp": "all",
+            "settings": {
+              "steering": "all",
+              "followUp": "all"
+            }
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/plain",
+      "thinkingLevel": "off"
+    },
+    "entries": [],
+    "settingsAfter": {
+      "defaultProvider": null,
+      "defaultModel": null,
+      "defaultThinkingLevel": null
+    },
+    "sessionEvents": [],
+    "extensionEvents": []
+  },
+  {
+    "name": "scoped cycling skips unauthenticated models and wraps",
+    "settings": {},
+    "results": [
+      {
+        "label": "forward from the listed current model",
+        "result": {
+          "ok": {
+            "model": "faux/extra",
+            "thinkingLevel": "high",
+            "isScoped": true
+          }
+        }
+      },
+      {
+        "label": "forward",
+        "result": {
+          "ok": {
+            "model": "faux/think",
+            "thinkingLevel": "low",
+            "isScoped": true
+          }
+        }
+      },
+      {
+        "label": "forward wraps",
+        "result": {
+          "ok": {
+            "model": "faux/plain",
+            "thinkingLevel": "off",
+            "isScoped": true
+          }
+        }
+      },
+      {
+        "label": "backward wraps",
+        "result": {
+          "ok": {
+            "model": "faux/think",
+            "thinkingLevel": "low",
+            "isScoped": true
+          }
+        }
+      },
+      {
+        "label": "scoped",
+        "result": {
+          "ok": [
+            {
+              "model": "faux/think",
+              "thinkingLevel": "low"
+            },
+            {
+              "model": "faux/plain",
+              "thinkingLevel": null
+            },
+            {
+              "model": "elsewhere/x",
+              "thinkingLevel": null
+            },
+            {
+              "model": "faux/extra",
+              "thinkingLevel": "high"
+            }
+          ]
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/think",
+      "thinkingLevel": "low"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "extra"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "low"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "plain"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "off"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "low"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "think",
+      "defaultThinkingLevel": "low"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "high"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "low"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "off"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "low"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "high",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/extra",
+        "previousModel": "faux/plain",
+        "source": "cycle"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "low",
+        "previousLevel": "high"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/extra",
+        "source": "cycle"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "off",
+        "previousLevel": "low"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/plain",
+        "previousModel": "faux/think",
+        "source": "cycle"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "low",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "cycle"
+      }
+    ]
+  },
+  {
+    "name": "scoped cycling needs two authenticated models",
+    "settings": {},
+    "results": [
+      {
+        "label": "forward",
+        "result": {
+          "ok": null
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/plain",
+      "thinkingLevel": "off"
+    },
+    "entries": [],
+    "settingsAfter": {
+      "defaultProvider": null,
+      "defaultModel": null,
+      "defaultThinkingLevel": null
+    },
+    "sessionEvents": [],
+    "extensionEvents": []
+  },
+  {
+    "name": "available cycling follows catalog order",
+    "settings": {},
+    "results": [
+      {
+        "label": "forward",
+        "result": {
+          "ok": {
+            "model": "faux/think",
+            "thinkingLevel": "medium",
+            "isScoped": false
+          }
+        }
+      },
+      {
+        "label": "forward",
+        "result": {
+          "ok": {
+            "model": "faux/extra",
+            "thinkingLevel": "medium",
+            "isScoped": false
+          }
+        }
+      },
+      {
+        "label": "forward wraps",
+        "result": {
+          "ok": {
+            "model": "faux/plain",
+            "thinkingLevel": "off",
+            "isScoped": false
+          }
+        }
+      },
+      {
+        "label": "backward",
+        "result": {
+          "ok": {
+            "model": "faux/extra",
+            "thinkingLevel": "medium",
+            "isScoped": false
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/extra",
+      "thinkingLevel": "medium"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "think"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "extra"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "plain"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "off"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "extra"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "extra",
+      "defaultThinkingLevel": "medium"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "off"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/think",
+        "previousModel": "faux/plain",
+        "source": "cycle"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/extra",
+        "previousModel": "faux/think",
+        "source": "cycle"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "off",
+        "previousLevel": "medium"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/plain",
+        "previousModel": "faux/extra",
+        "source": "cycle"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/extra",
+        "previousModel": "faux/plain",
+        "source": "cycle"
+      }
+    ]
+  },
+  {
+    "name": "an unlisted current model starts from the first scoped index",
+    "settings": {},
+    "results": [
+      {
+        "label": "forward",
+        "result": {
+          "ok": {
+            "model": "faux/extra",
+            "thinkingLevel": "medium",
+            "isScoped": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/extra",
+      "thinkingLevel": "medium"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "extra"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "extra",
+      "defaultThinkingLevel": "medium"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/extra",
+        "previousModel": "faux/plain",
+        "source": "cycle"
+      }
+    ]
+  },
+  {
+    "name": "an unlisted current model cycles backward from the first scoped index",
+    "settings": {},
+    "results": [
+      {
+        "label": "backward",
+        "result": {
+          "ok": {
+            "model": "faux/plain",
+            "thinkingLevel": "off",
+            "isScoped": true
+          }
+        }
+      }
+    ],
+    "state": {
+      "model": "faux/plain",
+      "thinkingLevel": "off"
+    },
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "unlisted"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "medium"
+      },
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "plain"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "off"
+      }
+    ],
+    "settingsAfter": {
+      "defaultProvider": "faux",
+      "defaultModel": "plain",
+      "defaultThinkingLevel": "medium"
+    },
+    "sessionEvents": [
+      {
+        "type": "thinking_level_changed",
+        "level": "medium"
+      },
+      {
+        "type": "thinking_level_changed",
+        "level": "off"
+      }
+    ],
+    "extensionEvents": [
+      {
+        "type": "thinking_level_select",
+        "level": "medium",
+        "previousLevel": "off"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/unlisted",
+        "previousModel": "faux/plain",
+        "source": "set"
+      },
+      {
+        "type": "thinking_level_select",
+        "level": "off",
+        "previousLevel": "medium"
+      },
+      {
+        "type": "model_select",
+        "model": "faux/plain",
+        "previousModel": "faux/unlisted",
+        "source": "cycle"
+      }
+    ]
+  },
+  {
+    "name": "available cycling needs two models",
+    "results": [
+      {
+        "label": "forward",
+        "result": {
+          "ok": null
+        }
+      }
+    ]
+  }
+]

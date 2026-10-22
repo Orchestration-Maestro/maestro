@@ -479,7 +479,9 @@ not undo registration; the loading runtime's refresh is inert.
 `get_tool_definition::<P, D, S>` instead searches stored registration keys and
 returns the original typed handle. A type mismatch on the first owner is absent;
 it does not select a later owner. Different parameter, details and renderer-state
-types coexist in one owner.
+types coexist in one owner. `RegisteredTool::metadata` and
+`RegisteredTool::renderer_binding` read a retained definition's current metadata
+and bound renderers for callers that know only the execution family.
 
 The tools-owned wrapper snapshots declaration/preparation/mode metadata when
 created. Each execution selects the current retained execute callback before
