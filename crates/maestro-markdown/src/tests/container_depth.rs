@@ -1,5 +1,5 @@
 //! Deep container nesting, its recorded documents and record teardown.
-use crate::{Document, Kind, MappedText, MarkedOptions, Node, parse_with_options};
+use crate::{Document, InlineContext, Kind, MappedText, MarkedOptions, Node, parse_with_options};
 
 /// Caller grammars every depth row covers.
 const OPTIONS: [MarkedOptions; 5] = [
@@ -203,24 +203,62 @@ fn nesting_keeps_recorded_documents_below_the_previous_limit() {
 #[test]
 fn deep_container_documents_drop_on_a_small_stack() {
     on_small_stack(|| {
-        let mut node = Node {
-            kind: Kind::Gap,
+        drop(nest(
+            Node {
+                kind: Kind::Gap,
+                authored: MappedText::default(),
+                range: 0..0,
+            },
+            100_000,
+        ));
+    });
+}
+
+/// Nest `leaf` under `levels` container nodes, cycling through every container kind.
+fn nest(mut node: Node, levels: usize) -> Node {
+    for level in 0..levels {
+        let kind = match level % 3 {
+            0 => Kind::Quote(vec![node], MappedText::default()),
+            1 => Kind::Item(vec![node]),
+            _ => Kind::List(None, vec![node]),
+        };
+        node = Node {
+            kind,
             authored: MappedText::default(),
             range: 0..0,
         };
-        for level in 0..100_000 {
-            let kind = match level % 3 {
-                0 => Kind::Quote(vec![node], MappedText::default()),
-                1 => Kind::Item(vec![node]),
-                _ => Kind::List(None, vec![node]),
-            };
-            node = Node {
-                kind,
+    }
+    node
+}
+
+#[test]
+fn deep_containers_index_for_inline_scope_on_a_small_stack() {
+    on_small_stack(|| {
+        let Document {
+            options,
+            definitions,
+            scopes,
+            source,
+            nodes,
+        } = parse_with_options("deep *text*\n".to_owned(), MarkedOptions::Terminal);
+        let range = nodes[0].range.clone();
+        let leaf = nest(
+            Node {
+                kind: Kind::Paragraph(nodes),
                 authored: MappedText::default(),
-                range: 0..0,
-            };
-        }
-        drop(node);
+                range: range.clone(),
+            },
+            100_000,
+        );
+        let document = Document {
+            options,
+            definitions,
+            scopes,
+            source,
+            nodes: vec![leaf],
+        };
+        let context = InlineContext::new(&document);
+        assert!(context.scope(&range, false).is_some());
     });
 }
 
@@ -259,4 +297,30 @@ enum Policy {
     Browser,
     /// Browser grammar escaping authored tags.
     EscapeHtml,
+}
+
+/// An indented list source at `levels` nesting levels.
+fn indented(levels: usize, prefix: &str) -> String {
+    let mut source = format!("{prefix}- a\n");
+    for level in 1..levels {
+        source.push_str(prefix);
+        source.push_str(&"  ".repeat(level));
+        source.push_str("- a\n");
+    }
+    source
+}
+
+#[test]
+fn deep_list_items_parse_on_a_small_stack() {
+    depth_rows(|| format!("{}x", "- ".repeat(1_000)), (2_000, 2_002));
+}
+
+#[test]
+fn deep_indented_list_parses_on_a_small_stack() {
+    depth_rows(|| indented(300, ""), (600, 1_200));
+}
+
+#[test]
+fn deep_reply_list_parses_on_a_small_stack() {
+    depth_rows(|| indented(300, "> "), (601, 1_201));
 }

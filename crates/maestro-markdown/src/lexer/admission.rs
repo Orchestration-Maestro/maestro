@@ -34,7 +34,6 @@ impl Child {
         if self.code.take().is_some() {
             output.code(&operand.select(self.open..operand.len()));
         }
-        output.complete();
         if let Some(checked) = task {
             let end = operand
                 .native(&(0..operand.len()))

@@ -1,4 +1,5 @@
 //! Retained output and suspended block admission.
+mod publish;
 mod run;
 use super::Lexer;
 use crate::{
@@ -69,18 +70,6 @@ impl Mark {
 }
 
 impl BlockTokens {
-    /// Publish the trailing list's children only when its invocation completes.
-    pub(crate) fn complete(&mut self) {
-        if let Some(list) = self.list.take()
-            && let Some(Node {
-                kind: Kind::List(_, items),
-                ..
-            }) = self.nodes.last_mut()
-        {
-            list.finish(items, &mut self.scopes);
-        }
-    }
-
     /// Current visible tail only when no invisible definition intervenes.
     pub(super) fn last(&self) -> Option<&Node> {
         match self.tail {

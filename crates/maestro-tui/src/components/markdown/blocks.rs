@@ -5,34 +5,128 @@ use super::{
     nodes::{Kind, Node},
 };
 
+/// One pending step of a block walk, innermost last.
+enum Step<'a> {
+    /// Format the remaining nodes of one sibling run.
+    Nodes {
+        /// Siblings still to format.
+        nodes: &'a [Node],
+        /// Available width at this quote depth.
+        width: usize,
+        /// Whether the run is inside a quote.
+        quoted: bool,
+    },
+    /// Style and border the rows a quote's children produced.
+    Quote {
+        /// First row belonging to the quote's children.
+        start: usize,
+        /// Width requested by the enclosing block.
+        width: usize,
+    },
+    /// Emit the blank row separating two blocks.
+    Separation,
+}
+
+/// One sibling run's formatting inputs.
+#[derive(Clone, Copy)]
+struct Block<'a, 's> {
+    /// Siblings still to format.
+    nodes: &'a [Node],
+    /// Available width at this quote depth.
+    width: usize,
+    /// Whether the run is inside a quote.
+    quoted: bool,
+    /// Caller's parent style for ordinary blocks.
+    style: Style<'s>,
+    /// Retained quote prefix restoring parent decoration.
+    prefix: &'s str,
+}
+
 impl Renderer<'_> {
     /// Formats blocks with sibling-sensitive spacing.
     pub(super) fn blocks(&self, nodes: &[Node], width: usize, style: Style<'_>) -> Vec<String> {
+        let prefix = self.extract_prefix(Style::Quote(""));
         let mut rows = Vec::new();
-        for (index, node) in nodes.iter().enumerate() {
-            match &node.kind {
-                Kind::Paragraph(children) => rows.push(self.inline(children, style)),
-                Kind::Heading(level, children, _) => rows.push(self.heading(*level, children)),
-                Kind::CodeBlock(text, info) => rows.extend(self.code_block(text, info.as_deref())),
-                Kind::HtmlBlock(text) => rows.push(self.style(
-                    &self.clean(text.trim_matches(crate::text::utils::is_whitespace_scalar)),
-                    style,
-                )),
-                Kind::Quote(children, _) => rows.extend(self.quote(children, width)),
-                Kind::Rule => rows.push((self.theme.hr)(&"─".repeat(width.min(80)))),
-                Kind::List(start, items) => rows.extend(self.list(*start, items, 0, style)),
-                Kind::Table(table) => rows.extend(self.table(table, width, style)),
-                Kind::Gap => rows.push(String::new()),
-                _ => {}
-            }
-            if nodes
-                .get(index + 1)
-                .is_some_and(|next| separates(&node.kind, &next.kind))
-            {
-                rows.push(String::new());
+        let mut pending = vec![Step::Nodes {
+            nodes,
+            width,
+            quoted: matches!(style, Style::Quote(_)),
+        }];
+        while let Some(step) = pending.pop() {
+            match step {
+                Step::Separation => rows.push(String::new()),
+                Step::Quote { start, width } => self.quote(&mut rows, start, width, &prefix),
+                Step::Nodes {
+                    nodes,
+                    width,
+                    quoted,
+                } => {
+                    let block = Block {
+                        nodes,
+                        width,
+                        quoted,
+                        style,
+                        prefix: &prefix,
+                    };
+                    self.next_block(block, &mut rows, &mut pending);
+                }
             }
         }
         rows
+    }
+    /// Emit one block and queue the steps that follow it.
+    fn next_block<'a>(
+        &self,
+        block: Block<'a, '_>,
+        rows: &mut Vec<String>,
+        pending: &mut Vec<Step<'a>>,
+    ) {
+        let Some((node, rest)) = block.nodes.split_first() else {
+            return;
+        };
+        if !rest.is_empty() {
+            pending.push(Step::Nodes {
+                nodes: rest,
+                width: block.width,
+                quoted: block.quoted,
+            });
+        }
+        if rest
+            .first()
+            .is_some_and(|next| separates(&node.kind, &next.kind))
+        {
+            pending.push(Step::Separation);
+        }
+        let style = if block.quoted {
+            Style::Quote(block.prefix)
+        } else {
+            block.style
+        };
+        match &node.kind {
+            Kind::Paragraph(children) => rows.push(self.inline(children, style)),
+            Kind::Heading(level, children, _) => rows.push(self.heading(*level, children)),
+            Kind::CodeBlock(text, info) => rows.extend(self.code_block(text, info.as_deref())),
+            Kind::HtmlBlock(text) => rows.push(self.style(
+                &self.clean(text.trim_matches(crate::text::utils::is_whitespace_scalar)),
+                style,
+            )),
+            Kind::Quote(children, _) => {
+                pending.push(Step::Quote {
+                    start: rows.len(),
+                    width: block.width,
+                });
+                pending.push(Step::Nodes {
+                    nodes: children,
+                    width: quote_width(block.width),
+                    quoted: true,
+                });
+            }
+            Kind::Rule => rows.push((self.theme.hr)(&"─".repeat(block.width.min(80)))),
+            Kind::List(start, items) => rows.extend(self.list(*start, items, 0, style)),
+            Kind::Table(table) => rows.extend(self.table(table, block.width, style)),
+            Kind::Gap => rows.push(String::new()),
+            _ => {}
+        }
     }
     /// Formats code through the supplied highlighter or plain code callback.
     pub(super) fn code_block(&self, text: &str, info: Option<&str>) -> Vec<String> {
@@ -57,28 +151,29 @@ impl Renderer<'_> {
         rows
     }
     /// Styles quote children, reserving a two-cell border only when one content cell fits.
-    fn quote(&self, nodes: &[Node], width: usize) -> Vec<String> {
+    fn quote(&self, rows: &mut Vec<String>, start: usize, width: usize, prefix: &str) {
         let bordered = width >= 3;
-        let width = if bordered { width - 2 } else { width.max(1) };
-        let prefix = self.extract_prefix(Style::Quote(""));
-        let mut rows = self.blocks(nodes, width, Style::Quote(&prefix));
-        while rows.last().is_some_and(String::is_empty) {
-            rows.pop();
+        let width = quote_width(width);
+        let mut owned = rows.split_off(start);
+        while owned.last().is_some_and(String::is_empty) {
+            owned.pop();
         }
-        rows.into_iter()
-            .flat_map(|row| {
-                let row = row.replace("\x1b[0m", &format!("\x1b[0m{prefix}"));
-                let row = (self.theme.quote)(&(self.theme.italic)(&row));
-                crate::wrap_text_with_ansi(&row, width)
-            })
-            .map(|row| {
-                if bordered {
-                    format!("{}{row}", (self.theme.quote_border)("│ "))
-                } else {
-                    row
-                }
-            })
-            .collect()
+        rows.extend(
+            owned
+                .into_iter()
+                .flat_map(|row| {
+                    let row = row.replace("\x1b[0m", &format!("\x1b[0m{prefix}"));
+                    let row = (self.theme.quote)(&(self.theme.italic)(&row));
+                    crate::wrap_text_with_ansi(&row, width)
+                })
+                .map(|row| {
+                    if bordered {
+                        format!("{}{row}", (self.theme.quote_border)("│ "))
+                    } else {
+                        row
+                    }
+                }),
+        );
     }
     /// Formats a heading with hashes only for levels three and higher.
     fn heading(&self, level: usize, children: &[Node]) -> String {
@@ -91,6 +186,11 @@ impl Renderer<'_> {
         };
         format!("{prefix}{content}")
     }
+}
+
+/// Width available to a quote's children at one level.
+fn quote_width(width: usize) -> usize {
+    if width >= 3 { width - 2 } else { width.max(1) }
 }
 
 /// Chooses spacing from the current and next block kinds.

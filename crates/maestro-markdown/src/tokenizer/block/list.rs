@@ -1,14 +1,12 @@
 //! List admission and item continuation framing.
 use crate::{
     Kind, MarkedOptions, Node,
-    inline::ScopeKey,
     lexer::{Done, Frame, Level, Lexer, Step},
     rules,
     source::{Cursor, ScopeSource, Segmented},
     tokenizer::capture,
 };
 use maestro_text::is_whitespace_scalar;
-use std::collections::HashMap;
 mod state;
 use state::ItemLines;
 
@@ -150,7 +148,7 @@ impl ListState {
     }
 
     /// Transfer each child's single output into its final item without cloning it.
-    pub(crate) fn finish(mut self, items: &mut [Node], scopes: &mut HashMap<ScopeKey, Segmented>) {
+    pub(crate) fn outputs(mut self) -> (Vec<crate::lexer::BlockTokens>, bool) {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| {
             let mut retained = crate::tests::Retained::default();
@@ -182,15 +180,7 @@ impl ListState {
                 });
             outputs.push(output);
         }
-        for (output, node) in outputs.into_iter().zip(items) {
-            scopes.extend(output.scopes);
-            if let Kind::Item(children) = &mut node.kind {
-                *children = output.nodes;
-            }
-            if loose {
-                loosen(node);
-            }
-        }
+        (outputs, loose)
     }
 }
 
@@ -539,7 +529,7 @@ fn task(source: &Segmented) -> (Segmented, Option<bool>) {
 }
 
 /// Loose items promote line text without changing genuine paragraphs.
-fn loosen(item: &mut Node) {
+pub(crate) fn loosen(item: &mut Node) {
     let Kind::Item(children) = &mut item.kind else {
         return;
     };

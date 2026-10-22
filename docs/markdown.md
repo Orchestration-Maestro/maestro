@@ -81,10 +81,12 @@ Container nesting runs on retained frames, not on native recursion: one frame
 stack drives quote chunks, list items and their block admission, so every deeper
 level holds heap frames instead of stack. Parsing accepts any nesting depth and
 returns the structure a shallower depth already produces, with no depth limit and
-no nesting error. Replaced subtrees, finished containers and dropped documents
-release their children iteratively, so teardown stays bounded too. Depth still
-costs work proportional to the operand each level reads again, which makes deep
-inputs slow rather than unbounded.
+no nesting error. Finished containers publish their items, replaced subtrees and
+dropped documents release their children, and the walks that follow a document -
+inline-scope indexing, terminal render rows, browser markup and the documentation
+checks - all use explicit worklists, so teardown and rendering stay bounded too.
+Depth still costs work proportional to the operand each level reads again, which
+makes deep inputs slow rather than unbounded.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and

@@ -877,3 +877,54 @@ fn markdown_continuation_keeps_authored_indentation() {
 fn container_frames_follow_configured_grammar() {
     markdown::cases("container_frames_follow_configured_grammar");
 }
+
+/// Worker stack well below the main thread's, so nesting cannot lean on it.
+const WORKER_STACK: usize = 2 * 1024 * 1024;
+
+/// Render Markdown at `width` on a worker thread of the witness stack size.
+fn render_on_small_stack(text: String, width: usize) -> Vec<String> {
+    let Ok(worker) = std::thread::Builder::new()
+        .stack_size(WORKER_STACK)
+        .spawn(move || {
+            Markdown::new(
+                text,
+                MarkdownOptions {
+                    clean_content: false,
+                    padding_x: 0,
+                    padding_y: 0,
+                    default_text_style: None,
+                },
+                Rc::new(markdown::plain()),
+                TerminalImage::new(|_| None, || 1),
+            )
+            .render(width)
+        })
+    else {
+        return Vec::new();
+    };
+    worker.join().unwrap_or_default()
+}
+
+#[test]
+fn deep_quote_rows_format_on_a_small_stack() {
+    let rows = render_on_small_stack(format!("{}deepest text", ">".repeat(3_000)), 40);
+    assert!(!rows.is_empty());
+    assert!(
+        rows.iter().all(|row| row.trim_end().starts_with("│ ")),
+        "every row keeps its border"
+    );
+    let deepest: String = rows
+        .iter()
+        .map(|row| row.trim_end().trim_start_matches("│ "))
+        .collect();
+    assert_eq!(deepest, "deepesttext");
+}
+
+#[test]
+fn deep_nested_list_rows_format_on_a_small_stack() {
+    let rows = render_on_small_stack(format!("{}x", "- ".repeat(1_000)), 2_100);
+    let last = rows.last().expect("rows").trim_end();
+    assert_eq!(last, format!("{}- x", "  ".repeat(999)));
+    let bullets: usize = rows.iter().map(|row| row.matches("- ").count()).sum();
+    assert_eq!(bullets, 1);
+}

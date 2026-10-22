@@ -124,72 +124,112 @@ impl<'a> InlineContext<'a> {
             self.scopes.insert((range.start, range.end, label), scope);
         }
     }
-    /// Index each table cell in its own inline context.
-    fn cells(&mut self, table: &'a crate::Table, document: &'a Document) {
-        for cell in table.header.iter().chain(table.rows.iter().flatten()) {
-            self.insert(&cell.range, false, &cell.children, document);
-            self.visit(&cell.children, document);
-        }
-    }
     /// Traverse native containers once, including table cells and link labels.
     fn visit(&mut self, nodes: &'a [Node], document: &'a Document) {
-        for node in nodes {
-            #[cfg(test)]
-            crate::tests::WORK.with_borrow_mut(|work| work.visits += 1);
-            match &node.kind {
-                Kind::Paragraph(c) | Kind::Inline(c) | Kind::Heading(_, c, _) => {
-                    self.insert(&node.range, false, c, document);
-                    self.visit(c, document);
-                }
-                Kind::Link(c, ..) => {
-                    self.insert(&node.range, true, c, document);
-                    self.visit(c, document);
-                }
-                Kind::Item(c)
-                | Kind::List(_, c)
-                | Kind::Quote(c, _)
-                | Kind::Strong(c)
-                | Kind::Strike(c)
-                | Kind::Emphasis(c) => self.visit(c, document),
-                Kind::Table(table) => self.cells(table, document),
-                _ => {}
+        let mut pending = vec![Step::Nodes(nodes.iter())];
+        while let Some(step) = pending.pop() {
+            self.traverse(step, document, &mut pending);
+        }
+    }
+    /// Admit one pending traversal step.
+    fn traverse(&mut self, step: Step<'a>, document: &'a Document, pending: &mut Vec<Step<'a>>) {
+        match step {
+            Step::Cell(cell) => {
+                self.insert(&cell.range, false, &cell.children, document);
+                pending.push(Step::Nodes(cell.children.iter()));
+            }
+            Step::Nodes(mut nodes) => {
+                let Some(node) = nodes.next() else {
+                    return;
+                };
+                pending.push(Step::Nodes(nodes));
+                self.admit(node, document, pending);
             }
         }
     }
-}
-/// Index resolved operands and nested opaque barriers in the same mapped source.
-fn collect<'a>(nodes: &'a [Node], scope: &mut InlineScope<'a>, label: bool) {
-    for node in nodes {
+    /// Admit one visited node's own scope and queue the children behind its siblings.
+    fn admit(&mut self, node: &'a Node, document: &'a Document, pending: &mut Vec<Step<'a>>) {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.visits += 1);
         match &node.kind {
-            Kind::Strong(c) | Kind::Strike(c) | Kind::Emphasis(c) => {
-                let content = c.first().zip(c.last());
-                let content = content.map(|(first, last)| first.range.start..last.range.end);
-                if let Some((span, content)) = scope
-                    .source
-                    .local(&node.range)
-                    .zip(content.and_then(|content| scope.source.local(&content)))
-                {
-                    scope.spans.push((span, content));
-                }
-                collect(c, scope, label);
+            Kind::Paragraph(c) | Kind::Inline(c) | Kind::Heading(_, c, _) => {
+                self.insert(&node.range, false, c, document);
+                pending.push(Step::Nodes(c.iter()));
             }
-            Kind::Link(c, _, _, meta) => {
-                operand(node, scope, label);
-                if meta.link_type == crate::LinkType::Autolink {
-                    scope.opaque.extend(scope.source.local(&node.range));
-                } else {
-                    collect(c, scope, true);
-                }
+            Kind::Link(c, ..) => {
+                self.insert(&node.range, true, c, document);
+                pending.push(Step::Nodes(c.iter()));
             }
-            Kind::Html(_) => operand(node, scope, label),
-            Kind::Code(_) | Kind::Image(..) => {
-                operand(node, scope, label);
-                scope.opaque.extend(scope.source.local(&node.range));
-            }
+            Kind::Item(c)
+            | Kind::List(_, c)
+            | Kind::Quote(c, _)
+            | Kind::Strong(c)
+            | Kind::Strike(c)
+            | Kind::Emphasis(c) => pending.push(Step::Nodes(c.iter())),
+            Kind::Table(table) => pending.extend(
+                table
+                    .header
+                    .iter()
+                    .chain(table.rows.iter().flatten())
+                    .rev()
+                    .map(Step::Cell),
+            ),
             _ => {}
         }
+    }
+}
+/// One pending step of a container traversal.
+enum Step<'a> {
+    /// Siblings still to visit, in authored order.
+    Nodes(std::slice::Iter<'a, Node>),
+    /// A table cell whose children follow its own scope.
+    Cell(&'a crate::Cell),
+}
+/// Index resolved operands and nested opaque barriers in the same mapped source.
+fn collect<'a>(nodes: &'a [Node], scope: &mut InlineScope<'a>, label: bool) {
+    let mut pending = vec![(nodes.iter(), label)];
+    while let Some((mut nodes, label)) = pending.pop() {
+        let Some(node) = nodes.next() else { continue };
+        pending.push((nodes, label));
+        collect_node(node, label, scope, &mut pending);
+    }
+}
+/// Retain one visited node's operands and queue the children behind its siblings.
+fn collect_node<'a>(
+    node: &'a Node,
+    label: bool,
+    scope: &mut InlineScope<'a>,
+    pending: &mut Vec<(std::slice::Iter<'a, Node>, bool)>,
+) {
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.visits += 1);
+    match &node.kind {
+        Kind::Strong(c) | Kind::Strike(c) | Kind::Emphasis(c) => {
+            let content = c.first().zip(c.last());
+            let content = content.map(|(first, last)| first.range.start..last.range.end);
+            if let Some((span, content)) = scope
+                .source
+                .local(&node.range)
+                .zip(content.and_then(|content| scope.source.local(&content)))
+            {
+                scope.spans.push((span, content));
+            }
+            pending.push((c.iter(), label));
+        }
+        Kind::Link(c, _, _, meta) => {
+            operand(node, scope, label);
+            if meta.link_type == crate::LinkType::Autolink {
+                scope.opaque.extend(scope.source.local(&node.range));
+            } else {
+                pending.push((c.iter(), true));
+            }
+        }
+        Kind::Html(_) => operand(node, scope, label),
+        Kind::Code(_) | Kind::Image(..) => {
+            operand(node, scope, label);
+            scope.opaque.extend(scope.source.local(&node.range));
+        }
+        _ => {}
     }
 }
 /// Retain an immediate resolved operand, not a duplicate of an enclosing anchor's child.

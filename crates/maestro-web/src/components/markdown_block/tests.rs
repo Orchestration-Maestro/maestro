@@ -959,3 +959,16 @@ fn transcript_formula_containers_keep_display_boundaries() {
         );
     }
 }
+
+#[test]
+fn deep_quote_blocks_export_on_a_small_stack() {
+    let html = std::thread::Builder::new()
+        .stack_size(2 * 1024 * 1024)
+        .spawn(|| prepare(&format!("{}deepest", ">".repeat(3_000)), false).html)
+        .expect("worker thread")
+        .join()
+        .expect("worker panicked");
+    assert_eq!(html.matches("<blockquote>").count(), 3_000);
+    assert_eq!(html.matches("</blockquote>").count(), 3_000);
+    assert!(html.contains("deepest"));
+}
