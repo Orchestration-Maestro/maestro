@@ -272,7 +272,7 @@ fn palette_theme_names_match_reference_cases() {
 }
 
 #[test]
-fn palette_built_in_accents_match_reference() {
+fn palette_built_in_tokens_match_reference() {
     let palettes = corpus().palettes;
     let names: Vec<&str> = palettes
         .iter()

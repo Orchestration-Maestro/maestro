@@ -411,8 +411,7 @@ pub const UNDERLINE_STYLE_MASK: u16 = 0xF000;
 /// Read the underline style stored in a cell modifier.
 #[must_use]
 pub fn underline_style_from_modifier(modifier: u16) -> u8 {
-    // The style occupies the top four bits of the high byte.
-    modifier.to_be_bytes()[0] >> 4
+    u8::try_from((modifier & UNDERLINE_STYLE_MASK) >> UNDERLINE_STYLE_SHIFT).unwrap_or_default()
 }
 
 /// Add an underline style to a cell modifier, keeping its other bits.

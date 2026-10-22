@@ -64,7 +64,7 @@ cell. A forced repaint or a size change writes every cell without clearing.
 - Hyperlinks use OSC 8 with control characters removed. An empty target means
   no link.
 - After the cells, the encoder moves the hidden cursor, sets a changed shape
-  and then shows the cursor.
+  and then applies its visibility.
 - Outside Windows, the final cursor position and visibility repeat after
   synchronized output ends, so input methods place candidate windows at the
   input position.
@@ -92,6 +92,10 @@ configuration:
    `catppuccin`.
 3. Authored colour overrides replace their tokens.
 4. The legacy interface accent replaces the accent last.
+
+Theme resolution exists only in Linux builds, because the daemon's theme
+configuration does; the built-in palettes, overrides and `parse_color` work on
+every platform.
 
 `parse_color` accepts `reset`, `default`, `none` and `transparent`, `#rrggbb`,
 `#rgb`, `rgb(r, g, b)` and the 16 terminal colour names with the `purple`,

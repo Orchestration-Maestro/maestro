@@ -6,6 +6,7 @@ use serde::Deserialize;
 const WIDE_GRAPHEME: &str = "💡";
 const HALFWIDTH_VOICED_KANA: &str = "ｶ\u{ff9e}";
 const SYNC_START_AND_HIDE: &str = "\x1b[?2026h\x1b[?25l";
+const PROLOGUE: &str = "\x1b[?2026h\x1b[?25l\x1b]8;;\x1b\\";
 
 fn make_cell(symbol: &str, fg: u32, bg: u32, modifier: u16) -> CellData {
     CellData {
@@ -93,6 +94,10 @@ fn after_sync_end(output: &str) -> &str {
     &output[end + SYNC_OUTPUT_END.len()..]
 }
 
+fn before_sync_end(output: &str) -> &str {
+    &output[..output.find(SYNC_OUTPUT_END).unwrap()]
+}
+
 #[test]
 fn encoder_named_foreground_colors_map_to_ansi() {
     assert_eq!(color_to_sgr(0x00_00_00_00, Layer::Foreground), "39");
@@ -176,13 +181,10 @@ fn encoder_underline_styles_use_colon_parameters() {
 
 #[test]
 fn encoder_style_sequence_wraps_reset_and_colors() {
-    let sgr = build_sgr(0x00_00_00_02, 0x00_00_00_01, 1);
-    assert!(sgr.starts_with("\x1b["));
-    assert!(sgr.ends_with('m'));
-    assert!(sgr.contains('0'));
-    assert!(sgr.contains('1'));
-    assert!(sgr.contains("31"));
-    assert!(sgr.contains("40"));
+    assert_eq!(
+        build_sgr(0x00_00_00_02, 0x00_00_00_01, 1),
+        "\x1b[0;1;31;40m"
+    );
 }
 
 #[test]
@@ -335,10 +337,13 @@ fn encoder_repeats_hidden_cursor_anchor_after_sync() {
 fn encoder_emits_osc8_link_for_linked_cells() {
     let mut frame = make_frame(3, 1, vec![linked("L", 0), linked("i", 0), plain("!")]);
     frame.hyperlinks.push("https://example.com".to_owned());
-    let output = blit(&frame, None);
-    assert!(output.contains("\x1b]8;;https://example.com\x1b\\L"));
-    assert!(output.contains('i'));
-    assert!(output.contains("\x1b]8;;\x1b\\"));
+    assert_eq!(
+        before_sync_end(&blit(&frame, None)),
+        format!(
+            "{PROLOGUE}\x1b[2J\x1b[1;1H\x1b[0;39;49m\x1b]8;;https://example.com\x1b\\Li\
+             \x1b]8;;\x1b\\!\x1b[0m\x1b[1;3H\x1b[?25l"
+        )
+    );
 }
 
 #[test]
@@ -352,18 +357,20 @@ fn encoder_strips_control_bytes_from_links() {
 
 #[test]
 fn encoder_first_frame_writes_cells() {
-    let output = blit(&hi_frame(), None);
-    assert!(output.contains("\x1b[2J"));
-    assert!(output.contains('H') || output.contains('i'));
+    assert_eq!(
+        before_sync_end(&blit(&hi_frame(), None)),
+        format!("{PROLOGUE}\x1b[2J\x1b[1;1H\x1b[0;39;49mHi\x1b[2;1H! \x1b[0m\x1b[2;2H\x1b[?25l")
+    );
 }
 
 #[test]
 fn encoder_diff_writes_only_changed_cells() {
     let mut current = hi_frame();
     current.cells[0] = plain("X");
-    let output = blit(&current, Some(&hi_frame()));
-    assert!(!output.contains("\x1b[2J"));
-    assert!(output.contains('X'));
+    assert_eq!(
+        before_sync_end(&blit(&current, Some(&hi_frame()))),
+        format!("{PROLOGUE}\x1b[1;1H\x1b[0;39;49mX\x1b[0m\x1b[2;2H\x1b[?25l")
+    );
 }
 
 #[test]
@@ -455,29 +462,29 @@ fn encoder_commit_tracks_the_shown_frame_and_cursor() {
 #[test]
 fn encoder_positions_cursor() {
     let frame = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, true, 0);
-    assert!(blit(&frame, None).contains("\x1b[1;1H"));
+    assert!(before_sync_end(&blit(&frame, None)).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25h"));
 }
 
 #[test]
 fn encoder_hides_invisible_cursor() {
     let frame = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, false, 0);
-    assert!(blit(&frame, None).contains("\x1b[?25l"));
+    assert!(before_sync_end(&blit(&frame, None)).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l"));
 }
 
 #[test]
 fn encoder_hides_cursor_without_cursor_record() {
-    assert!(blit(&make_frame(1, 1, vec![plain("A")]), None).contains("\x1b[?25l"));
+    let output = blit(&make_frame(1, 1, vec![plain("A")]), None);
+    assert!(before_sync_end(&output).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l"));
 }
 
 #[test]
 fn encoder_restores_cursor_visibility() {
     let previous = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, false, 0);
-    assert!(blit(&previous, None).contains("\x1b[?25l"));
+    assert!(before_sync_end(&blit(&previous, None)).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l"));
 
     let current = with_cursor(make_frame(1, 1, vec![plain("B")]), 0, 0, true, 0);
     let output = blit(&current, Some(&previous));
-    assert!(output.contains("\x1b[?25h"));
-    assert!(output.contains("\x1b[1;1H"));
+    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[1;1H\x1b[?25h"));
 }
 
 #[test]
@@ -486,7 +493,7 @@ fn encoder_positions_cursor_before_showing_it() {
     let mut current = with_cursor(previous.clone(), 2, 2, true, 0);
     current.cells[0] = plain("B");
     let output = blit(&current, Some(&previous));
-    assert!(output.rfind("\x1b[3;3H").unwrap() < output.rfind("\x1b[?25h").unwrap());
+    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[3;3H\x1b[?25h"));
 }
 
 #[test]
@@ -496,20 +503,21 @@ fn encoder_parks_hidden_cursor_at_last_visible_position() {
     let mut memory = CursorMemory::default();
     blit_with(&visible, None, &mut memory, policy(!cfg!(windows)));
     let output = blit_with(&hidden, Some(&visible), &mut memory, policy(!cfg!(windows)));
-    assert!(output.rfind("\x1b[2;2H").unwrap() < output.rfind("\x1b[?25l").unwrap());
+    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[2;2H\x1b[?25l"));
 }
 
 #[test]
 fn encoder_parks_hidden_cursor_at_bottom_right_without_history() {
     let frame = make_frame(3, 2, vec![plain("A"); 6]);
-    assert!(blit(&frame, None).contains("\x1b[2;3H\x1b[?25l"));
+    assert!(before_sync_end(&blit(&frame, None)).ends_with("A\x1b[0m\x1b[2;3H\x1b[?25l"));
 }
 
 #[test]
 fn encoder_hides_previous_visible_cursor_when_next_frame_has_none() {
     let previous = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, true, 0);
     let current = make_frame(1, 1, vec![plain("B")]);
-    assert!(blit(&current, Some(&previous)).contains("\x1b[?25l"));
+    let output = blit(&current, Some(&previous));
+    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[1;1H\x1b[?25l"));
 }
 
 #[test]
@@ -518,7 +526,7 @@ fn encoder_full_redraw_skips_wide_grapheme_tails() {
     let output = blit(&frame, None);
     assert!(output.contains("\x1b[1;1H"));
     assert!(!output.contains("\x1b[1;2H"));
-    assert!(output.contains("\x1b[1;3H"));
+    assert!(output.contains("\x1b[1;3HZ"));
 }
 
 #[test]
@@ -531,7 +539,7 @@ fn encoder_full_redraw_skips_voiced_kana_tails() {
     let output = blit(&frame, None);
     assert!(output.contains("\x1b[1;1H"));
     assert!(!output.contains("\x1b[1;2H"));
-    assert!(output.contains("\x1b[1;3H"));
+    assert!(output.contains("\x1b[1;3HZ"));
 }
 
 #[test]
@@ -595,69 +603,12 @@ fn encoder_profile_counts_changed_cells_and_runs() {
 #[serde(deny_unknown_fields)]
 struct EncoderCase {
     case: String,
-    frame: FixtureFrame,
-    previous: Option<FixtureFrame>,
+    frame: FrameData,
+    previous: Option<FrameData>,
     repeat_ime_anchor: bool,
     clear_before_full_redraw: bool,
     suppress_visible_cursor: bool,
     bytes: String,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct FixtureFrame {
-    cells: Vec<FixtureCell>,
-    width: u16,
-    height: u16,
-    cursor: Option<FixtureCursor>,
-    hyperlinks: Vec<String>,
-    graphics: Vec<u8>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct FixtureCell {
-    symbol: String,
-    fg: u32,
-    bg: u32,
-    modifier: u16,
-    skip: bool,
-    hyperlink: Option<u32>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct FixtureCursor {
-    x: u16,
-    y: u16,
-    visible: bool,
-    shape: u8,
-}
-
-impl From<FixtureFrame> for FrameData {
-    fn from(frame: FixtureFrame) -> Self {
-        let cells = frame.cells.into_iter().map(|cell| CellData {
-            symbol: cell.symbol,
-            fg: cell.fg,
-            bg: cell.bg,
-            modifier: cell.modifier,
-            skip: cell.skip,
-            hyperlink: cell.hyperlink,
-        });
-        Self {
-            cells: cells.collect(),
-            width: frame.width,
-            height: frame.height,
-            cursor: frame.cursor.map(|cursor| CursorState {
-                x: cursor.x,
-                y: cursor.y,
-                visible: cursor.visible,
-                shape: cursor.shape,
-            }),
-            hyperlinks: frame.hyperlinks,
-            graphics: frame.graphics,
-        }
-    }
 }
 
 #[test]
@@ -666,16 +617,14 @@ fn encoder_matches_reference_bytes_for_recorded_cases() {
         serde_json::from_str(include_str!("../../../tests/fixtures/encoder-corpus.json")).unwrap();
     assert_eq!(cases.len(), 19);
     for case in cases {
-        let frame = FrameData::from(case.frame);
-        let previous = case.previous.map(FrameData::from);
         let policy = BlitPolicy {
             repeat_ime_anchor: case.repeat_ime_anchor,
             clear_before_full_redraw: case.clear_before_full_redraw,
             suppress_visible_cursor: case.suppress_visible_cursor,
         };
         let bytes = blit_frame(
-            &frame,
-            previous.as_ref(),
+            &case.frame,
+            case.previous.as_ref(),
             &mut CursorMemory::default(),
             policy,
         );

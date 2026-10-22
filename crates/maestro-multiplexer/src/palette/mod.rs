@@ -199,7 +199,7 @@ fn named_color(name: &str) -> Option<Color> {
 /// the legacy interface accent.
 #[cfg(target_os = "linux")]
 #[must_use]
-pub fn resolve_palette_for_theme_name(
+fn resolve_palette_for_theme_name(
     name: &str,
     fallback_name: &str,
     runtime: &ThemeRuntimeConfig,

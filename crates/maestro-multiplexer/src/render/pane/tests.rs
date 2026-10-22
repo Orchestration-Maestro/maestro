@@ -3,11 +3,7 @@ use super::*;
 use crate::render::frame::frame_from_buffer;
 use maestro_app::daemon::terminal_theme::{RgbColor, TerminalTheme};
 use maestro_app::terminal::{
-    Terminal,
-    color::{DEFAULT, Rgb},
-    page::cell::Wide,
-    render::RenderState,
-    style::Color as CellColor,
+    Terminal, color::Rgb, page::cell::Wide, render::RenderState, style::Color as CellColor,
 };
 use maestro_protocol::frames::{CellData, underline_style_from_modifier};
 use ratatui::backend::TestBackend;
@@ -409,16 +405,13 @@ fn pane_render_resets_cells_beyond_the_pane() {
 }
 
 #[test]
-fn pane_render_starts_from_the_initial_engine_colours() {
-    let pane = pane(4, 1, "");
-    let defaults = pane
-        .with_render_view(std::time::Instant::now(), |view| {
-            (
-                view.initial_default_foreground,
-                view.initial_default_background,
-                view.default_palette == DEFAULT,
-            )
-        })
-        .unwrap();
-    assert_eq!(defaults, (rgb(255, 255, 255), rgb(0, 0, 0), true));
+fn pane_render_keeps_explicit_default_background_with_unknown_host() {
+    // The engine adopts child defaults once both are set.
+    let bytes = "\x1b]10;rgb:aa/bb/cc\x1b\\\x1b]11;rgb:44/55/66\x1b\\hi";
+    let buffer = draw(&pane(20, 5, bytes), 20, 5);
+    let expected = Some(Color::Rgb(0x44, 0x55, 0x66));
+    assert_eq!(buffer[(0, 0)].symbol(), "h");
+    assert_eq!(buffer[(0, 0)].style().bg, expected);
+    assert_eq!(buffer[(2, 0)].symbol(), " ");
+    assert_eq!(buffer[(2, 0)].style().bg, expected);
 }

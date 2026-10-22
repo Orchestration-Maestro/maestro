@@ -38,8 +38,8 @@ pub fn collect_dirty_patch(
     area_width: u16,
     area_height: u16,
 ) -> TerminalDirtyPatchOutcome {
+    let started = render_prof::timer();
     pane.with_render_view(Instant::now(), |mut view| {
-        let started = render_prof::timer();
         let outcome = patch(&mut view, area_width, area_height).unwrap_or_else(|reason| {
             render_prof::event(reason);
             TerminalDirtyPatchOutcome::Fallback

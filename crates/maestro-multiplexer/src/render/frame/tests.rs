@@ -37,12 +37,8 @@ fn modifier_from_u16(value: u16) -> Modifier {
     Modifier::from_bits_truncate(value & !UNDERLINE_STYLE_MASK)
 }
 
-/// Rebuild a buffer, or nothing when the cell count disagrees with the size.
-fn buffer_from_frame(frame: &FrameData) -> Option<Buffer> {
-    let expected = usize::from(frame.width) * usize::from(frame.height);
-    if frame.cells.len() != expected {
-        return None;
-    }
+/// Rebuild a buffer from a frame record.
+fn buffer_from_frame(frame: &FrameData) -> Buffer {
     let area = Rect::new(0, 0, frame.width, frame.height);
     let mut buffer = Buffer::filled(area, Cell::new(" "));
     for (cell, data) in buffer.content.iter_mut().zip(&frame.cells) {
@@ -54,7 +50,7 @@ fn buffer_from_frame(frame: &FrameData) -> Option<Buffer> {
             cell.set_diff_option(CellDiffOption::Skip);
         }
     }
-    Some(buffer)
+    buffer
 }
 
 /// A 5 by 3 buffer whose first three cells carry styled text.
@@ -113,7 +109,7 @@ fn frame_record_round_trips_through_a_frame_buffer() {
         ]
     );
 
-    let restored = buffer_from_frame(&frame).unwrap();
+    let restored = buffer_from_frame(&frame);
     assert_eq!(restored.area, buffer.area);
     let restored: Vec<_> = restored.content[..3]
         .iter()
@@ -142,27 +138,6 @@ fn frame_record_links_follow_their_drawn_symbol_and_share_targets() {
     let links: Vec<_> = frame.cells[..3].iter().map(|cell| cell.hyperlink).collect();
     assert_eq!(links, [Some(0), Some(0), None]);
     assert_eq!(frame.hyperlinks, ["https://example.com"]);
-}
-
-#[test]
-fn frame_record_rejects_mismatched_cell_count() {
-    let cell = CellData {
-        symbol: "X".into(),
-        fg: 0,
-        bg: 0,
-        modifier: 0,
-        skip: false,
-        hyperlink: None,
-    };
-    let frame = FrameData {
-        cells: vec![cell; 5],
-        width: 3,
-        height: 2,
-        cursor: None,
-        hyperlinks: Vec::new(),
-        graphics: Vec::new(),
-    };
-    assert!(buffer_from_frame(&frame).is_none());
 }
 
 #[test]
