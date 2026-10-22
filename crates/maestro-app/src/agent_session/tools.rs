@@ -56,7 +56,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ///
     /// # Errors
     /// Returns the documentation-path failure of the default prompt.
-    pub fn set_tool_definitions(
+    pub fn refresh_tool_registry(
         &self,
         definitions: IndexMap<String, RegisteredTool<E>>,
         extension_tool_names: &[String],

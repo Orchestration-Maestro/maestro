@@ -55,12 +55,12 @@ moves to the next supported level, wrapping. `set_steering_mode` and
 
 ## Tools and the system prompt
 
-`set_tool_definitions` refreshes the tool registry. It takes the definitions in
-order and, for each one, keeps the prompt snippet with whitespace runs collapsed to
-one space (dropping blank snippets) and the prompt guidelines trimmed, without
-blanks or repeats, and wraps one executable tool. It then activates tools and
-rebuilds the system prompt. Requested names replace the active tools; without them,
-the active tools stay active. When the options include every extension tool, the
+`refresh_tool_registry` takes the definitions in order. For each one it keeps the
+prompt snippet with whitespace runs collapsed to one space (dropping blank
+snippets) and the prompt guidelines trimmed, without blanks or repeats, and wraps
+one executable tool. It then activates tools and rebuilds the system prompt.
+Requested names replace the active tools; without them, the active tools stay
+active. When the options include every extension tool, the
 listed extension tools are added; otherwise, when no names are requested, each
 tool new to the registry is added. Repeated names are dropped.
 
@@ -112,7 +112,8 @@ blocks of the newest answer, skipping an aborted empty one, and trims the result
 system prompt and tools, the saved theme name and custom tool rendering. The
 caller supplies the export assets and the rendering environment whose published
 theme the renderers use. Without a published theme, tools keep their standard
-rendering. It refuses a session that is only in memory before anything else.
+rendering. It refuses a session that is only in memory before it renders or
+writes anything.
 
 `export_to_jsonl` writes a fresh session header followed by the current branch,
 each entry's `parentId` replaced by the previous entry's identity. Without a path

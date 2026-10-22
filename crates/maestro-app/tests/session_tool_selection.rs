@@ -57,7 +57,7 @@ fn refresh(h: &Harness, refresh: &Value) {
         include_all_extension_tools: refresh["includeAllExtensionTools"].as_bool().unwrap(),
     };
     h.session
-        .set_tool_definitions(definitions, &names, options)
+        .refresh_tool_registry(definitions, &names, options)
         .unwrap();
 }
 
@@ -67,13 +67,14 @@ fn check_case(h: &Harness, name: &str) {
     let session = &h.session;
     let expected = case("tool_selection", name);
     for step in expected["steps"].as_array().unwrap() {
-        match &step["call"] {
-            Value::Null => refresh(h, &step["refresh"]),
-            call => session
+        match (step.get("select"), step.get("refresh")) {
+            (Some(names), None) => session
                 .set_active_tools_by_name(
-                    &serde_json::from_value::<Vec<String>>(call.clone()).unwrap(),
+                    &serde_json::from_value::<Vec<String>>(names.clone()).unwrap(),
                 )
                 .unwrap(),
+            (None, Some(registry)) => refresh(h, registry),
+            _ => panic!("a step is either a selection or a refresh: {step}"),
         }
         assert_eq!(
             json!(session.get_active_tool_names()),

@@ -55,6 +55,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             Some(ExportOptions {
                 output_path,
                 theme_name: theme_name.as_deref(),
+                // A closure cannot coerce the renderer's lifetime-capturing opaque type to a
+                // trait object, so the coercion happens in this match.
                 tool_renderer: match &renderer {
                     Some(renderer) => Some(renderer),
                     None => None,

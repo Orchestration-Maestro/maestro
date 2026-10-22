@@ -12,7 +12,8 @@ use maestro_export::{ExportAsset, ExportOperations, NativeExportOperations};
 use maestro_models::Local;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_theme::{
-    ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, ThemeOptions, ThemeState,
+    ColorMode, LiveTheme, Theme, ThemeDirectories, ThemeError, ThemeExportColors, ThemeOptions,
+    ThemeState,
 };
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::{TerminalImage, components::Text, tui::ComponentHandle};
@@ -161,7 +162,7 @@ async fn painted_harness(root: &str) -> Harness {
         Ok(Rc::new(Text::new("Painted call".into(), 0, 0, None)) as ComponentHandle)
     }));
     h.session
-        .set_tool_definitions(
+        .refresh_tool_registry(
             [("painted".to_owned(), sdk_registered(painted))]
                 .into_iter()
                 .collect(),
@@ -207,7 +208,7 @@ fn activate_sdk_tools(session: &AgentSession<Local>) {
         include_all_extension_tools: true,
     };
     session
-        .set_tool_definitions(tools, &names, options)
+        .refresh_tool_registry(tools, &names, options)
         .unwrap();
 }
 
@@ -318,7 +319,7 @@ fn html_export_carries_prompt_tools_and_theme() {
 }
 
 /// The payload `session` exports through the native assets adapter over a bundle whose
-/// template is the payload alone and the shipped themes.
+/// template is the payload alone, the shipped themes and a scratch custom theme directory.
 fn native_payload(session: &AgentSession<Local>, root: &str) -> Value {
     let bundle = format!("{root}/bundle");
     std::fs::create_dir_all(format!("{bundle}/vendor")).unwrap();
@@ -331,7 +332,10 @@ fn native_payload(session: &AgentSession<Local>, root: &str) -> Value {
         std::fs::write(format!("{bundle}/{asset}"), "").unwrap();
     }
     std::fs::write(format!("{bundle}/template.html"), "{{SESSION_DATA}}").unwrap();
-    let theme = ThemeState::new(get_theme_directories().unwrap());
+    let theme = ThemeState::new(ThemeDirectories {
+        custom_themes_dir: format!("{root}/themes"),
+        ..get_theme_directories().unwrap()
+    });
     let native = NativeExportOperations {
         app_name: "maestro",
         template_dir: &bundle,
@@ -360,7 +364,10 @@ fn html_export_resolves_tool_descriptions_outside_locks() {
         let state = Rc::clone(h.session.state());
         let history = Rc::clone(h.session.session_manager());
         let tool = Rc::clone(&state.read().unwrap().tools().read().unwrap()[0]);
+        // The state owns this description, so it holds the state weakly.
+        let state = Rc::downgrade(&state);
         tool.write().unwrap().description = Some(Rc::new(move || {
+            let state = state.upgrade().unwrap();
             let free = state.try_write().is_ok() && history.try_borrow_mut().is_ok();
             Ok(if free { "free" } else { "held" }.to_owned())
         }));

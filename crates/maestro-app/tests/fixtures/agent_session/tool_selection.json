@@ -65,7 +65,6 @@
     },
     "steps": [
       {
-        "call": null,
         "refresh": {
           "tools": [
             {
@@ -128,12 +127,11 @@
         "systemPromptIsBase": true
       },
       {
-        "call": [
+        "select": [
           "delta",
           "missing",
           "alpha"
         ],
-        "refresh": null,
         "activeToolNames": [
           "delta",
           "alpha"
@@ -156,12 +154,11 @@
         "systemPromptIsBase": true
       },
       {
-        "call": [
+        "select": [
           "gamma",
           "alpha",
           "gamma"
         ],
-        "refresh": null,
         "activeToolNames": [
           "gamma",
           "alpha",
@@ -189,8 +186,7 @@
         "systemPromptIsBase": true
       },
       {
-        "call": [],
-        "refresh": null,
+        "select": [],
         "activeToolNames": [],
         "options": {
           "customPrompt": null,
@@ -269,7 +265,6 @@
     },
     "steps": [
       {
-        "call": null,
         "refresh": {
           "tools": [
             {
@@ -332,11 +327,10 @@
         "systemPromptIsBase": true
       },
       {
-        "call": [
+        "select": [
           "beta",
           "alpha"
         ],
-        "refresh": null,
         "activeToolNames": [
           "beta",
           "alpha"
@@ -398,7 +392,6 @@
     },
     "steps": [
       {
-        "call": null,
         "refresh": {
           "tools": [
             {
@@ -461,11 +454,10 @@
         "systemPromptIsBase": true
       },
       {
-        "call": [
+        "select": [
           "gamma",
           "alpha"
         ],
-        "refresh": null,
         "activeToolNames": [
           "gamma",
           "alpha"
@@ -490,7 +482,6 @@
         "systemPromptIsBase": true
       },
       {
-        "call": null,
         "refresh": {
           "tools": [
             {
@@ -535,7 +526,6 @@
         "systemPromptIsBase": true
       },
       {
-        "call": null,
         "refresh": {
           "tools": [
             {
@@ -579,7 +569,6 @@
         "systemPromptIsBase": true
       },
       {
-        "call": null,
         "refresh": {
           "tools": [
             {
