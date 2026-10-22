@@ -8,7 +8,7 @@ pub(crate) mod paragraph;
 pub(crate) mod table;
 use crate::MarkedOptions;
 use regress::Regex;
-use std::sync::LazyLock;
+use std::sync::{LazyLock, OnceLock};
 
 /// Reference thematic break: the `hr` rule and the break that interrupts paragraphs, quotes and tables.
 const HR: &str = r" {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)";
@@ -103,6 +103,87 @@ pub(crate) static LIST_ITEM: LazyLock<Option<Regex>> = LazyLock::new(|| {
 /// Detect a retained blank-line suffix between items of the same list.
 pub(crate) static LIST_BLANK_END: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"\n[ \t]*\n[ \t]*$", "").ok());
+
+/// Item stop sources tested before a continuation line is dedented.
+const ITEM_STOP_ALTERNATIVES: [&str; 4] = [
+    "(?:```|~~~)",
+    "#",
+    r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))",
+    r"((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)",
+];
+
+/// Item lookahead rules shared by every item of one indentation and caller grammar.
+pub(crate) struct ItemStops {
+    /// Fences, headings, neighbor markers, rules and HTML openers.
+    interrupts: Option<Regex>,
+    /// The stops that also exclude another lazy continuation line.
+    lazy: Option<Regex>,
+}
+
+impl ItemStops {
+    /// A current line can end framing before it is dedented.
+    pub(crate) fn interrupts(&self, line: &str) -> bool {
+        rule_matches(self.interrupts.as_ref(), line)
+    }
+
+    /// A previous code line or block opener cannot admit another lazy line.
+    pub(crate) fn ends_lazy(&self, line: &str) -> bool {
+        let code = line
+            .find(|scalar| !matches!(scalar, ' ' | '\t'))
+            .is_some_and(|end| {
+                line[..end]
+                    .chars()
+                    .map(|scalar| if scalar == '\t' { 4 } else { 1 })
+                    .sum::<usize>()
+                    >= 4
+            });
+        code || rule_matches(self.lazy.as_ref(), line)
+    }
+}
+
+/// Test one composed item stop rule against a line.
+fn rule_matches(rule: Option<&Regex>, line: &str) -> bool {
+    #[cfg(test)]
+    crate::tests::block_operand(line);
+    rule.is_some_and(|rule| rule.find(line).is_some())
+}
+
+/// Compile the stops shared by every item at one indentation prefix.
+fn compile_item_stops(prefix: usize, literal_html: bool) -> ItemStops {
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.list_rules += 2);
+    let html = if literal_html {
+        LITERAL_HTML_OPENERS
+    } else {
+        r"<(?:[a-z].*>|!--)"
+    };
+    let compile = |sources: &[&str]| {
+        let alternation = sources.join("|");
+        Regex::with_flags(&format!("^ {{0,{prefix}}}(?:{alternation})"), "i").ok()
+    };
+    let mut interrupts = ITEM_STOP_ALTERNATIVES.to_vec();
+    interrupts.push(html);
+    let lazy = [
+        ITEM_STOP_ALTERNATIVES[0],
+        ITEM_STOP_ALTERNATIVES[1],
+        ITEM_STOP_ALTERNATIVES[3],
+    ];
+    ItemStops {
+        interrupts: compile(&interrupts),
+        lazy: compile(&lazy),
+    }
+}
+
+/// Item stops by indentation prefix and caller HTML grammar.
+static ITEM_STOPS: [OnceLock<ItemStops>; 8] = [const { OnceLock::new() }; 8];
+
+/// Select the stops shared by every item at this indentation and caller grammar.
+pub(crate) fn item_stops(indent: usize, options: MarkedOptions) -> &'static ItemStops {
+    let prefix = indent.saturating_sub(1).min(3);
+    let literal_html = options == (MarkedOptions::Browser { escape_html: true });
+    ITEM_STOPS[prefix * 2 + usize::from(literal_html)]
+        .get_or_init(|| compile_item_stops(prefix, literal_html))
+}
 
 /// Recognize inline escape syntax without a mutable match cursor.
 pub(crate) static INLINE_ESCAPE: LazyLock<Option<Regex>> = LazyLock::new(|| {

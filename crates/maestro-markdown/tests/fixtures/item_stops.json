@@ -1,0 +1,284 @@
+[
+  {
+    "id": "stop:fence:1",
+    "group": "stop-kind",
+    "input": "- a\n ```\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "code",
+        "text": ""
+      }
+    ]
+  },
+  {
+    "id": "stop:fence:2",
+    "group": "stop-kind",
+    "input": "- a\n  ```\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:tilde-fence:1",
+    "group": "stop-kind",
+    "input": "- a\n ~~~\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "code",
+        "text": ""
+      }
+    ]
+  },
+  {
+    "id": "stop:tilde-fence:2",
+    "group": "stop-kind",
+    "input": "- a\n  ~~~\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:heading:1",
+    "group": "stop-kind",
+    "input": "- a\n # h\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "heading",
+        "depth": 1,
+        "text": "h"
+      }
+    ]
+  },
+  {
+    "id": "stop:heading:2",
+    "group": "stop-kind",
+    "input": "- a\n  # h\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:marker:1",
+    "group": "stop-kind",
+    "input": "- a\n - b\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:marker:2",
+    "group": "stop-kind",
+    "input": "- a\n  - b\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:ordered-marker:1",
+    "group": "stop-kind",
+    "input": "- a\n 2. b\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:ordered-marker:2",
+    "group": "stop-kind",
+    "input": "- a\n  2. b\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:rule:1",
+    "group": "stop-kind",
+    "input": "- a\n ---\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "hr"
+      }
+    ]
+  },
+  {
+    "id": "stop:rule:2",
+    "group": "stop-kind",
+    "input": "- a\n  ---\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:html-comment:1",
+    "group": "stop-kind",
+    "input": "- a\n <!-- c -->\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "html",
+        "text": " <!-- c -->\n"
+      }
+    ]
+  },
+  {
+    "id": "stop:html-comment:2",
+    "group": "stop-kind",
+    "input": "- a\n  <!-- c -->\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "stop:html-tag:1",
+    "group": "stop-kind",
+    "input": "- a\n <div>x</div>\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "html",
+        "text": " <div>x</div>\n"
+      }
+    ]
+  },
+  {
+    "id": "stop:html-tag:2",
+    "group": "stop-kind",
+    "input": "- a\n  <div>x</div>\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:bullet",
+    "group": "marker-indent",
+    "input": "- a\n   # b\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:one-space",
+    "group": "marker-indent",
+    "input": " - a\n  # b\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "heading",
+        "depth": 1,
+        "text": "b"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:two-spaces",
+    "group": "marker-indent",
+    "input": "  - a\n   # b\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "heading",
+        "depth": 1,
+        "text": "b"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:bullet-two-space-line",
+    "group": "marker-indent",
+    "input": "- a\n  # b\n",
+    "targets": [
+      {
+        "kind": "list"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:empty",
+    "group": "marker-indent",
+    "input": "-\n # b\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "heading",
+        "depth": 1,
+        "text": "b"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:spaced-marker",
+    "group": "marker-indent",
+    "input": "-   a\n# b\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "heading",
+        "depth": 1,
+        "text": "b"
+      }
+    ]
+  },
+  {
+    "id": "marker-indent:spaced-marker-continuation",
+    "group": "marker-indent",
+    "input": "-   a\n # b\n",
+    "targets": [
+      {
+        "kind": "list"
+      },
+      {
+        "kind": "heading",
+        "depth": 1,
+        "text": "b"
+      }
+    ]
+  }
+]

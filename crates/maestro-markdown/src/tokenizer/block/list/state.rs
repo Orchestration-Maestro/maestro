@@ -1,8 +1,9 @@
 //! Item-local source selections and monotone continuation history.
-use super::{ItemRules, Marker};
+use super::Marker;
 use crate::{
     MarkedOptions,
     lexer::Child,
+    rules::ItemStops,
     source::{ScopeSource, Segmented},
 };
 use maestro_text::{is_whitespace_scalar, truncate_utf16};
@@ -62,8 +63,8 @@ pub(super) struct ItemLines {
     phase: Phase,
     /// Continuation indentation selected by the marker.
     indent: usize,
-    /// Item-local predicates, prepared only at item creation.
-    rules: ItemRules,
+    /// Item-local predicates, shared with every item at this depth and grammar.
+    rules: &'static ItemStops,
     /// History restored when trimmed raw is resumed.
     trimmed: History,
     /// The two most recent lines suffice for the blank-suffix predicate.
@@ -85,7 +86,7 @@ impl ItemLines {
             marker.indent - marker.prefix
         };
         let body = first.select(std::iter::once(start..first.text.len()));
-        let rules = ItemRules::new(marker.indent, options);
+        let rules = crate::rules::item_stops(marker.indent, options);
         let previous_stops = rules.ends_lazy(&first.text);
         let trimmed = History {
             body_end: body.text.trim_end_matches(is_whitespace_scalar).len(),
