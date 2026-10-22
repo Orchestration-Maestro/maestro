@@ -86,8 +86,16 @@ fn word_simple_field_results_extract() {
     suite(&WORD, "word_simple_field_results_extract");
 }
 #[test]
+fn word_field_markers_and_bookmarks_add_no_text() {
+    suite(&WORD, "word_field_markers_and_bookmarks_add_no_text");
+}
+#[test]
 fn word_math_text_extracts() {
     suite(&WORD, "word_math_text_extracts");
+}
+#[test]
+fn word_text_box_content_adds_no_text() {
+    suite(&WORD, "word_text_box_content_adds_no_text");
 }
 #[test]
 fn word_content_controls_extract_through_their_content() {

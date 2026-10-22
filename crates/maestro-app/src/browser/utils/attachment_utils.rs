@@ -223,8 +223,7 @@ const PPTX_MIME: &str = "application/vnd.openxmlformats-officedocument.presentat
 fn process_pptx(bytes: &[u8], file_name: &str) -> Result<String, DocxError> {
     let package = OpenXmlPackage::open(bytes, Options::default())?;
     let mut output = String::new();
-    let mut append =
-        |text: &str| append_extracted_text(&mut output, text).map_err(DocxError::Output);
+    let mut append = |text: &str| append_document_text(&mut output, text);
     append(&format!("<pptx filename=\"{file_name}\">"))?;
     for (position, (name, _)) in pptx_parts(&package, "ppt/slides/slide").iter().enumerate() {
         let source = package.text_exact(name)?.unwrap_or_default();
@@ -304,7 +303,11 @@ fn attachment_text(
     mime: String,
 ) -> Result<(String, Option<String>), AttachmentError> {
     let lower_name = name.to_lowercase();
-    if [".docx"].iter().any(|suffix| lower_name.ends_with(suffix)) || mime == DOCX_MIME {
+    if mime == DOCX_MIME
+        || name
+            .rsplit_once('.')
+            .is_some_and(|(_, extension)| extension.eq_ignore_ascii_case("docx"))
+    {
         return Ok((
             DOCX_MIME.into(),
             Some(docx::process_docx(bytes, name).map_err(AttachmentError::Docx)?),
@@ -381,6 +384,11 @@ fn process_excel(bytes: &[u8], name: &str) -> Result<String, WorkbookError> {
     }
     append("\n</excel>")?;
     Ok(output)
+}
+
+/// Append one extracted document piece under the shared output bound.
+fn append_document_text(output: &mut String, text: &str) -> Result<(), DocxError> {
+    append_extracted_text(output, text).map_err(DocxError::Output)
 }
 
 /// Append extracted output only while it fits the document text bound.

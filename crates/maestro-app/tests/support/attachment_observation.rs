@@ -1,5 +1,7 @@
 //! Complete attachment observations through the public boundary.
 #![cfg(test)]
+use maestro_app::browser::docx_preview::DocxError;
+use maestro_app::browser::ssf::WorkbookError;
 use maestro_app::browser::utils::attachment_utils::{Attachment, AttachmentError};
 use serde_json::{Value, json};
 /// Compare full results, replacing only a checked nondeterministic identifier.
@@ -24,23 +26,14 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
             json!({"error_kind":"Pdf", "prefix":"Failed to process PDF: "})
         }
         Err(error @ AttachmentError::Pptx(_)) => {
-            package_failure(&error, "Pptx", "Failed to process PPTX: ")
+            package_failure::<DocxError>(&error, "Pptx", "Failed to process PPTX: ")
         }
         Err(error @ AttachmentError::Docx(_)) => {
-            package_failure(&error, "Docx", "Failed to process DOCX: ")
+            package_failure::<DocxError>(&error, "Docx", "Failed to process DOCX: ")
         }
         Err(AttachmentError::Excel(error)) => {
             let wrapped = AttachmentError::Excel(error);
-            let source = std::error::Error::source(&wrapped).unwrap();
-            assert!(
-                source
-                    .downcast_ref::<maestro_app::browser::ssf::WorkbookError>()
-                    .is_some()
-            );
-            assert!(!source.to_string().is_empty());
-            let prefix = "Failed to process Excel: ";
-            assert!(wrapped.to_string().starts_with(prefix));
-            json!({"error_kind":"Excel", "prefix":prefix})
+            package_failure::<WorkbookError>(&wrapped, "Excel", "Failed to process Excel: ")
         }
         Err(AttachmentError::Unsupported(mime)) => {
             json!({"error":format!("Unsupported file type: {mime}")})
@@ -50,13 +43,13 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
     }
 }
 /// Project a package-processing failure with its prefix and retained source.
-fn package_failure(wrapped: &AttachmentError, kind: &str, prefix: &str) -> Value {
+fn package_failure<Source: std::error::Error + 'static>(
+    wrapped: &AttachmentError,
+    kind: &str,
+    prefix: &str,
+) -> Value {
     let source = std::error::Error::source(wrapped).unwrap();
-    assert!(
-        source
-            .downcast_ref::<maestro_app::browser::docx_preview::DocxError>()
-            .is_some()
-    );
+    assert!(source.downcast_ref::<Source>().is_some());
     assert!(!source.to_string().is_empty());
     assert!(wrapped.to_string().starts_with(prefix));
     json!({"error_kind":kind, "prefix":prefix})

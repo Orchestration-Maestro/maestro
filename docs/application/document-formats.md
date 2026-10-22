@@ -243,8 +243,9 @@ archive metadata or lossy UTF-8 expansion.
 
 `WordDocument::document_body` reparses the retained main-part XML and returns the
 [owned body tree](#owned-word-element-tree), or `None` when the package has no
-main part or the main part has no `w:body` element. An extraction therefore reads
-the body once through this reader.
+main part or the main part has no `w:body` element. Loading parses the main part
+once while it admits the package parts, and an extraction parses it again to
+build the tree rather than rereading the archive.
 
 `parse_xml_string` provides borrowed element/attribute queries and descendant
 text. Element selection uses immediate children and local names; attribute

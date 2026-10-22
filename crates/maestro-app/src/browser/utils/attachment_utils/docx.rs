@@ -1,61 +1,88 @@
 //! Word package text extraction.
-use super::append_extracted_text;
+use super::append_document_text;
 use crate::browser::docx_preview::{
     DocxError, DomType, OpenXmlElementData, OpenXmlElementTree, Options, WordDocument,
 };
+use std::borrow::Cow;
 
 /// Extract the ordered body text inside the literal page wrapper.
 pub(super) fn process_docx(bytes: &[u8], file_name: &str) -> Result<String, DocxError> {
     let body = WordDocument::load(bytes, Options::default())?.document_body()?;
     let mut output = String::new();
+    let mut append = |text: &str| append_document_text(&mut output, text);
+    append(&format!(
+        "<docx filename=\"{file_name}\">\n<page number=\"1\">\n"
+    ))?;
     append(
-        &mut output,
-        &format!("<docx filename=\"{file_name}\">\n<page number=\"1\">\n"),
+        &body
+            .as_ref()
+            .map_or_else(String::new, |tree| joined_text(tree, &tree.roots, "\n")),
     )?;
-    let text = body
-        .as_ref()
-        .map_or_else(String::new, |tree| joined_text(tree, &tree.roots, "\n"));
-    append(&mut output, &text)?;
-    append(&mut output, "\n</page>\n</docx>")?;
+    append("\n</page>\n</docx>")?;
     Ok(output)
 }
 
-/// Append one extracted piece while it fits the document text bound.
-fn append(output: &mut String, text: &str) -> Result<(), DocxError> {
-    append_extracted_text(output, text).map_err(DocxError::Output)
-}
-
 /// Trimmed text of one element.
-fn extract_text(tree: &OpenXmlElementTree, index: usize) -> String {
-    raw_text(tree, index)
-        .trim_matches(maestro_text::is_whitespace_scalar)
-        .to_owned()
+fn extract_text(tree: &OpenXmlElementTree, index: usize) -> Cow<'_, str> {
+    match raw_text(tree, index) {
+        Cow::Borrowed(text) => Cow::Borrowed(text.trim_matches(maestro_text::is_whitespace_scalar)),
+        Cow::Owned(text) => Cow::Owned(
+            text.trim_matches(maestro_text::is_whitespace_scalar)
+                .to_owned(),
+        ),
+    }
 }
 
-/// Untrimmed text of one element, following its own child rule.
-fn raw_text(tree: &OpenXmlElementTree, index: usize) -> String {
+/// Untrimmed text of one element under its own child rule.
+///
+/// Inline containers keep their children's text without a separator, embedded
+/// containers join it with one space, and every other element, drawings and
+/// drawn text boxes included, contributes none.
+fn raw_text(tree: &OpenXmlElementTree, index: usize) -> Cow<'_, str> {
     let element = &tree.nodes[index];
     match &element.data {
-        OpenXmlElementData::Text { text } => text.clone(),
-        OpenXmlElementData::Table(_) => table_text(tree, &element.base.children),
+        OpenXmlElementData::Text { text } => Cow::Borrowed(text),
+        OpenXmlElementData::Table(_) => Cow::Owned(table_text(tree, &element.base.children)),
         OpenXmlElementData::Paragraph { .. }
         | OpenXmlElementData::Run { .. }
         | OpenXmlElementData::Hyperlink(_)
         | OpenXmlElementData::SmartTag(_)
         | OpenXmlElementData::Inserted
-        | OpenXmlElementData::Deleted
         | OpenXmlElementData::SimpleField { .. }
-        | OpenXmlElementData::ComplexField { .. }
         | OpenXmlElementData::Math {
             r#type: DomType::MmlMath | DomType::MmlMathParagraph,
             ..
-        } => element
-            .base
-            .children
-            .iter()
-            .map(|&child| raw_text(tree, child))
-            .collect(),
-        _ => joined_text(tree, &element.base.children, " "),
+        } => Cow::Owned(
+            element
+                .base
+                .children
+                .iter()
+                .map(|&child| raw_text(tree, child))
+                .collect(),
+        ),
+        OpenXmlElementData::Math { .. }
+        | OpenXmlElementData::Row(_)
+        | OpenXmlElementData::Cell(_) => Cow::Owned(joined_text(tree, &element.base.children, " ")),
+        OpenXmlElementData::DeletedText { .. }
+        | OpenXmlElementData::Instruction { .. }
+        | OpenXmlElementData::Break { .. }
+        | OpenXmlElementData::NoBreakHyphen
+        | OpenXmlElementData::Tab
+        | OpenXmlElementData::Symbol { .. }
+        | OpenXmlElementData::FootnoteReference { .. }
+        | OpenXmlElementData::EndnoteReference { .. }
+        | OpenXmlElementData::ComplexField { .. }
+        | OpenXmlElementData::Deleted
+        | OpenXmlElementData::AltChunk { .. }
+        | OpenXmlElementData::Drawing { .. }
+        | OpenXmlElementData::Image { .. }
+        | OpenXmlElementData::VmlPicture
+        | OpenXmlElementData::VmlElement(_)
+        | OpenXmlElementData::BookmarkStart { .. }
+        | OpenXmlElementData::BookmarkEnd { .. }
+        | OpenXmlElementData::CommentReference(_)
+        | OpenXmlElementData::CommentRangeStart(_)
+        | OpenXmlElementData::CommentRangeEnd(_) => Cow::Borrowed(""),
     }
 }
 
@@ -83,14 +110,10 @@ fn table_text(tree: &OpenXmlElementTree, rows: &[usize]) -> String {
 
 /// One row's nonempty cells joined by a bar.
 fn row_text(tree: &OpenXmlElementTree, index: usize) -> Option<String> {
-    if !matches!(tree.nodes[index].data, OpenXmlElementData::Row(_)) {
-        return None;
-    }
     let cells: Vec<String> = tree.nodes[index]
         .base
         .children
         .iter()
-        .filter(|&&cell| matches!(tree.nodes[cell].data, OpenXmlElementData::Cell(_)))
         .map(|&cell| joined_text(tree, &tree.nodes[cell].base.children, " "))
         .filter(|text| !text.is_empty())
         .collect();

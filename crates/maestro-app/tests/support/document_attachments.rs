@@ -10,15 +10,15 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 
 /// Presentation packages with their recorded observations.
-pub const PRESENTATION: Corpus = Corpus::new(
-    include_str!("../fixtures/pptx/pptx.json"),
-    "tests/fixtures/pptx",
-);
+pub const PRESENTATION: Corpus = Corpus {
+    json: include_str!("../fixtures/pptx/pptx.json"),
+    directory: "tests/fixtures/pptx",
+};
 /// Word packages with their recorded observations.
-pub const WORD: Corpus = Corpus::new(
-    include_str!("../fixtures/docx/attachments.json"),
-    "tests/fixtures/docx",
-);
+pub const WORD: Corpus = Corpus {
+    json: include_str!("../fixtures/docx/attachments.json"),
+    directory: "tests/fixtures/docx",
+};
 
 /// One recorded attachment corpus and the directory holding its packages.
 pub struct Corpus {
@@ -26,12 +26,6 @@ pub struct Corpus {
     json: &'static str,
     /// Package directory below the crate root.
     directory: &'static str,
-}
-impl Corpus {
-    /// Record the observations of the packages in one directory.
-    pub const fn new(json: &'static str, directory: &'static str) -> Self {
-        Self { json, directory }
-    }
 }
 /// Recorded observations of one corpus document.
 #[derive(Deserialize)]

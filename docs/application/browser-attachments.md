@@ -73,11 +73,12 @@ order and are joined by LF, dropping empty results. A paragraph contributes its
 inline text concatenated without added separators; hyperlinks, smart tags,
 tracked insertions, simple fields, content controls and equations contribute
 through the same rule, while tracked deletions and the bookmarks, comment
-markers, drawings, breaks, tabs and instructions around them add no text. A
-table contributes `\n[Table]\n`, one line per row, `\n[/Table]\n`; cells are
-joined by ` | ` and a cell's own element texts by one space, dropping empty cells
-and rows. Every element result is trimmed with the shared whitespace policy,
-which treats U+00A0 and U+FEFF as whitespace while U+0085 stays in the text. The
+markers, drawings, drawn text boxes, field markers, breaks, tabs and
+instructions around them add no text. A table contributes `\n[Table]\n`, one
+line per row, `\n[/Table]\n`; cells are joined by ` | ` and a cell's own element
+texts by one space, dropping empty cells and rows. Every element result is
+trimmed with the shared whitespace policy, which treats U+00A0 and U+FEFF as
+whitespace while U+0085 stays in the text. The
 literal `<docx filename="<name>">`, `\n<page number="1">\n` wrapper, body and
 `\n</page>\n</docx>` closing keep the filename unescaped. A package without a
 main part, or a main part without a body, yields an empty page. Extracted output
