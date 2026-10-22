@@ -42,6 +42,42 @@ pub fn get_agent_dir() -> std::io::Result<String> {
     paths::get_agent_dir(value.as_deref(), || maestro_tools::expand_path("~"))
 }
 
+/// Read the native package-directory override `MAESTRO_PACKAGE_DIR`, else select the
+/// installation's package directory.
+///
+/// # Errors
+/// Returns the native home lookup error when the override needs home.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_package_dir(installation: &installation::Installation) -> std::io::Result<String> {
+    let value = std::env::var(format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase())).ok();
+    paths::get_package_dir(
+        installation,
+        value.as_deref(),
+        || maestro_tools::expand_path("~"),
+        |path| std::path::Path::new(path).exists(),
+    )
+}
+
+/// Select the shipped theme directory of this installation and the custom theme
+/// directory of the environment-selected agent directory.
+///
+/// # Errors
+/// Returns package-directory or agent-directory failures.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_theme_directories(
+    installation: &installation::Installation,
+) -> std::io::Result<maestro_theme::ThemeDirectories> {
+    let exists = |path: &str| std::path::Path::new(path).exists();
+    Ok(maestro_theme::ThemeDirectories {
+        themes_dir: paths::get_themes_dir(
+            &get_package_dir(installation)?,
+            installation.layout,
+            exists,
+        ),
+        custom_themes_dir: paths::get_custom_themes_dir(&get_agent_dir()?),
+    })
+}
+
 /// Join an enabled hosted-service origin with its literal path.
 pub(super) fn service_endpoint(service_origin: &str, path: &str) -> Option<String> {
     (!service_origin.is_empty()).then(|| format!("{service_origin}{path}"))

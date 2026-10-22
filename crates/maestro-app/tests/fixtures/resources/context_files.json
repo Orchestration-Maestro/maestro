@@ -1,0 +1,125 @@
+{
+  "cases": [
+    {
+      "name": "global_then_root_to_cwd",
+      "tree": [
+        {
+          "path": "agent/AGENTS.md",
+          "text": "global"
+        },
+        {
+          "path": "AGENTS.md",
+          "text": "root"
+        },
+        {
+          "path": "project/CLAUDE.md",
+          "text": "project"
+        },
+        {
+          "path": "project/a/AGENTS.MD",
+          "text": "upper"
+        },
+        {
+          "path": "project/a/b/CLAUDE.MD",
+          "text": "deep"
+        }
+      ],
+      "cwd": "project/a/b",
+      "expected": [
+        {
+          "path": "$ROOT/agent/AGENTS.md",
+          "content": "global"
+        },
+        {
+          "path": "$ROOT/AGENTS.md",
+          "content": "root"
+        },
+        {
+          "path": "$ROOT/project/CLAUDE.md",
+          "content": "project"
+        },
+        {
+          "path": "$ROOT/project/a/AGENTS.MD",
+          "content": "upper"
+        },
+        {
+          "path": "$ROOT/project/a/b/CLAUDE.MD",
+          "content": "deep"
+        }
+      ],
+      "stderr": []
+    },
+    {
+      "name": "first_candidate_wins_per_directory",
+      "tree": [
+        {
+          "path": "project/AGENTS.md",
+          "text": "agents"
+        },
+        {
+          "path": "project/AGENTS.MD",
+          "text": "agents upper"
+        },
+        {
+          "path": "project/CLAUDE.md",
+          "text": "claude"
+        }
+      ],
+      "cwd": "project",
+      "expected": [
+        {
+          "path": "$ROOT/project/AGENTS.md",
+          "content": "agents"
+        }
+      ],
+      "stderr": []
+    },
+    {
+      "name": "unreadable_candidate_falls_through",
+      "tree": [
+        {
+          "path": "project/AGENTS.md",
+          "dir": true
+        },
+        {
+          "path": "project/CLAUDE.md",
+          "text": "claude fallback"
+        }
+      ],
+      "cwd": "project",
+      "expected": [
+        {
+          "path": "$ROOT/project/CLAUDE.md",
+          "content": "claude fallback"
+        }
+      ],
+      "stderr": [
+        "Warning: Could not read $ROOT/project/AGENTS.md: Error: EISDIR: illegal operation on a directory, read"
+      ]
+    },
+    {
+      "name": "global_file_seen_once_when_cwd_is_agent_dir",
+      "tree": [
+        {
+          "path": "agent/AGENTS.md",
+          "text": "global"
+        }
+      ],
+      "cwd": "agent",
+      "expected": [
+        {
+          "path": "$ROOT/agent/AGENTS.md",
+          "content": "global"
+        }
+      ],
+      "stderr": []
+    },
+    {
+      "name": "no_context_files_anywhere",
+      "tree": [],
+      "cwd": "project",
+      "expected": [],
+      "stderr": []
+    }
+  ]
+}

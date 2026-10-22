@@ -9,6 +9,10 @@ pub mod utils;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod output_guard;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod resources;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod runtime;
 
 /// Private declarations grouped by their existing domain owners.
 mod exports;

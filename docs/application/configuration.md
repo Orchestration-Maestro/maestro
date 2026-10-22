@@ -31,6 +31,11 @@ uses the executable directory; package layout walks ancestors from the module
 directory, checking `package.json` before `Cargo.toml` at each non-root directory.
 No marker returns the original module directory; the filesystem root is not probed.
 
+The native `config::get_package_dir` reads the `MAESTRO_PACKAGE_DIR` override.
+`config::get_theme_directories` pairs the shipped theme directory of that package
+directory with the custom theme directory of the native agent directory; see
+[application resources](resources.md#theme-directories).
+
 Standalone assets use adjacent `theme`, `export-html` and `assets` directories.
 Package assets use `src` when that child exists, otherwise `dist`. Missing assets
 still produce paths. README, documentation, examples and changelog queries use

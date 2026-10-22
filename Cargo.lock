@@ -3567,6 +3567,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
+ "maestro-theme",
  "maestro-tools",
  "maestro-tui",
  "maestro-watch",

@@ -26,6 +26,7 @@ mod clipboard_platform;
 #[path = "support/clipboard_status.rs"]
 mod clipboard_status;
 mod configuration_paths;
+mod context_discovery;
 #[cfg(unix)]
 #[path = "support/default_configuration.rs"]
 mod default_configuration;
@@ -83,6 +84,11 @@ mod pdf_attachments;
 mod pdf_pages;
 mod pptx_attachments;
 mod prompt_templates_checks;
+mod resource_extension_loading;
+#[cfg(unix)]
+#[path = "support/resource_fixtures.rs"]
+mod resource_fixtures;
+mod resource_loading;
 mod runtime_agent;
 mod sandbox_runtime_providers;
 mod self_update_native;
@@ -92,10 +98,12 @@ mod self_update_selection;
 mod service_observations;
 mod service_releases;
 mod session_facade;
+mod session_services;
 mod settings_manager_bug_checks;
 mod settings_manager_checks;
 mod share_links;
 mod shell_root_exports;
+mod skill_precedence;
 mod spreadsheet_attachments;
 mod spreadsheet_html;
 mod spreadsheet_support;
@@ -107,6 +115,7 @@ mod ssf_writers;
 mod startup_completion;
 mod startup_conversions;
 mod startup_timings;
+mod system_prompt_assembly;
 /// Strict recorded observations shared by several test modules.
 mod support {
     mod runtime;
@@ -124,6 +133,10 @@ mod support {
     mod shared_operands;
     pub mod spreadsheet;
 }
+mod theme_selection;
 mod tree_interface;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/watching.rs"]
+mod watching;
 mod workbook_fixture;
 mod workbooks;

@@ -137,6 +137,8 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Package:** An npm, Git or local source containing extension components or resources; consumer installation does not compile Rust code.
 - **File pattern:** A glob or ignore rule matched against relative file paths.
 - **Resource:** Discovered instruction material, such as skills, prompt templates or context files, and the extension entry points a package manifest or index file declares, with source/provenance data and entry-point-specific ordering.
+- **Context file:** An `AGENTS.md` or `CLAUDE.md` file from the agent directory or a directory from the filesystem root down to the working directory, included in the system prompt. See [application resources](docs/application/resources.md#context-files).
+- **Session services:** Credentials, settings, the model catalog and reloaded resources bound to one session working directory, created before and separately from the session. See [application resources](docs/application/resources.md#session-services).
 - **Module loader:** The caller-supplied operation that turns a resolved extension path into a factory; the component runtime supplies it and the executable wires it.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
