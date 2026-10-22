@@ -68,23 +68,23 @@ const SHIFTED: [(&str, &str); 7] = [
     ),
     (
         "<pre>x</pre>\n    <img src=x onerror=alert(1)>",
-        "<p>&lt;pre&gt;x&lt;/pre&gt;\n&lt;img src=x onerror=alert(1)&gt;</p>\n",
+        "<p>&lt;pre&gt;x&lt;/pre&gt;\n    &lt;img src=x onerror=alert(1)&gt;</p>\n",
     ),
     (
         "<script>x</script>\n    <img src=x onerror=alert(1)>",
-        "<p>&lt;script&gt;x&lt;/script&gt;\n&lt;img src=x onerror=alert(1)&gt;</p>\n",
+        "<p>&lt;script&gt;x&lt;/script&gt;\n    &lt;img src=x onerror=alert(1)&gt;</p>\n",
     ),
     (
         "<style>x</style>\n    <img src=x onerror=alert(1)>",
-        "<p>&lt;style&gt;x&lt;/style&gt;\n&lt;img src=x onerror=alert(1)&gt;</p>\n",
+        "<p>&lt;style&gt;x&lt;/style&gt;\n    &lt;img src=x onerror=alert(1)&gt;</p>\n",
     ),
     (
         "<textarea>x</textarea>\n    <img src=x onerror=alert(1)>",
-        "<p>&lt;textarea&gt;x&lt;/textarea&gt;\n&lt;img src=x onerror=alert(1)&gt;</p>\n",
+        "<p>&lt;textarea&gt;x&lt;/textarea&gt;\n    &lt;img src=x onerror=alert(1)&gt;</p>\n",
     ),
     (
         "`<i>`\n\n<pre>x</pre>\n    <img src=x onerror=alert(1)>",
-        "<p><code>&lt;i&gt;</code></p>\n<p>&lt;pre&gt;x&lt;/pre&gt;\n&lt;img src=x onerror=alert(1)&gt;</p>\n",
+        "<p><code>&lt;i&gt;</code></p>\n<p>&lt;pre&gt;x&lt;/pre&gt;\n    &lt;img src=x onerror=alert(1)&gt;</p>\n",
     ),
 ];
 
@@ -286,7 +286,8 @@ fn escaped_markup_keeps_native_suffix_after_lost_span() {
         .filter_map(|(suffix, html, payload)| {
             let source = format!("<pre>x</pre>\n    <img src=x>\n\n{suffix}");
             let rendered = prepare(&source, true);
-            let expected = format!("<p>&lt;pre&gt;x&lt;/pre&gt;\n&lt;img src=x&gt;</p>\n{html}");
+            let expected =
+                format!("<p>&lt;pre&gt;x&lt;/pre&gt;\n    &lt;img src=x&gt;</p>\n{html}");
             let copied: Vec<_> = rendered
                 .code
                 .iter()
