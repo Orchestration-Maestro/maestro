@@ -122,7 +122,7 @@ fn state_projection_preserves_optional_metadata() {
             &scratch,
             &published(&scratch, View::default()),
             state,
-            &ExportOptions::default(),
+            None,
             &operations,
         )
         .unwrap();
@@ -144,20 +144,21 @@ fn default_names_and_option_routes_preserve_authored_paths() {
     let previous = std::env::current_dir().unwrap();
     std::env::set_current_dir(scratch.path()).unwrap();
     std::fs::create_dir(scratch.at("sub")).unwrap();
+    std::fs::create_dir(scratch.at("sessions")).unwrap();
     for row in corpus().names {
         let operations = Operations {
             app: row.app_name.unwrap_or_else(|| "maestro".into()),
             ..Operations::default()
         };
         let view = View {
-            file: Some(scratch.session(&row.input, &[])),
+            file: Some(scratch.session(&format!("sessions/{}", row.input), &[])),
             ..View::default()
         };
         assert_eq!(
             export_session_to_html(&view, None, None, &operations).unwrap(),
             row.expected
         );
-        assert!(std::path::Path::new(&row.expected).exists());
+        std::fs::remove_file(&row.expected).unwrap();
     }
     let path = scratch.session("tree.jsonl", &[]);
     for row in corpus().options {
@@ -184,7 +185,7 @@ fn default_names_and_option_routes_preserve_authored_paths() {
             export_from_file(&path, options, &operations)
         };
         assert_eq!(result.unwrap(), row.expected);
-        assert!(std::path::Path::new(&row.expected).exists());
+        std::fs::remove_file(&row.expected).unwrap();
     }
     std::env::set_current_dir(previous).unwrap();
 }
@@ -325,7 +326,7 @@ fn theme_observations_are_not_cached() {
         &scratch,
         &published(&scratch, View::default()),
         None,
-        &ExportOptions::default(),
+        None,
         &operations,
     )
     .unwrap();
@@ -377,7 +378,7 @@ fn derived_colors_cover_parser_and_luminance_boundaries() {
             &scratch,
             &published(&scratch, View::default()),
             None,
-            &ExportOptions::default(),
+            None,
             &operations,
         )
         .unwrap();
@@ -435,14 +436,7 @@ fn document_slots_keep_literal_assets_and_payload() {
             ..View::default()
         },
     );
-    let document = export_document(
-        &scratch,
-        &view,
-        None,
-        &ExportOptions::default(),
-        &operations,
-    )
-    .unwrap();
+    let document = export_document(&scratch, &view, None, None, &operations).unwrap();
     assert_eq!(document, row.expected);
     let decoded: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(decoded["header"], view.data["header"]);
@@ -461,7 +455,7 @@ fn document_slots_keep_literal_assets_and_payload() {
             &scratch,
             &published(&scratch, View::default()),
             None,
-            &ExportOptions::default(),
+            None,
             &operations,
         )
         .unwrap();
@@ -549,17 +543,7 @@ fn repeated_results_restore_declared_field_order() {
         ],
     });
     let operations = Operations::default();
-    let document = export_document(
-        &scratch,
-        &view,
-        None,
-        &ExportOptions {
-            tool_renderer: Some(&renderer),
-            ..ExportOptions::default()
-        },
-        &operations,
-    )
-    .unwrap();
+    let document = export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap();
     let data: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(
         serde_json::to_string(&data["renderedTools"]).unwrap(),
@@ -594,17 +578,7 @@ fn late_invalid_record_keeps_prior_renderer_effects() {
         result: Vec::new(),
     });
     let operations = Operations::default();
-    let error = export_document(
-        &scratch,
-        &view,
-        None,
-        &ExportOptions {
-            tool_renderer: Some(&renderer),
-            ..ExportOptions::default()
-        },
-        &operations,
-    )
-    .unwrap_err();
+    let error = export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap_err();
     assert!(matches!(error, ExportError::Renderer(_)));
     assert_eq!(renderer.calls.borrow().len(), 1);
     assert!(operations.events.borrow().is_empty());
@@ -626,17 +600,7 @@ fn empty_renderer_map_is_omitted_without_filtering_entries() {
     let renderer = Renderer::from(Returns::default());
     for supplied in [None, Some(&renderer as &dyn ToolHtmlRenderer)] {
         let operations = Operations::default();
-        let document = export_document(
-            &scratch,
-            &view,
-            None,
-            &ExportOptions {
-                tool_renderer: supplied,
-                ..ExportOptions::default()
-            },
-            &operations,
-        )
-        .unwrap();
+        let document = export_document(&scratch, &view, None, supplied, &operations).unwrap();
         let data: Value = serde_json::from_str(&payload(&document)).unwrap();
         assert!(data.get("renderedTools").is_none());
         assert_eq!(data["entries"], view.data["entries"]);
@@ -653,17 +617,8 @@ fn empty_renderer_map_is_omitted_without_filtering_entries() {
         },
     );
     let operations = Operations::default();
-    let document = export_document(
-        &scratch,
-        &result_view,
-        None,
-        &ExportOptions {
-            tool_renderer: Some(&empty),
-            ..ExportOptions::default()
-        },
-        &operations,
-    )
-    .unwrap();
+    let document =
+        export_document(&scratch, &result_view, None, Some(&empty), &operations).unwrap();
     let data: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(data["renderedTools"], json!({"empty":{}}));
 }
@@ -693,7 +648,7 @@ fn public_options_forward_theme_and_renderer() {
             .unwrap(),
             chosen.as_str()
         );
-        assert!(std::path::Path::new(&chosen).exists());
+        std::fs::remove_file(&chosen).unwrap();
         assert_eq!(renderer.calls.borrow().len(), 1);
         assert_eq!(
             *operations.themes.borrow(),
@@ -715,7 +670,7 @@ fn public_options_forward_theme_and_renderer() {
             export_from_file(&path, Some(options), &operations).unwrap(),
             file_output.as_str()
         );
-        assert!(std::path::Path::new(&file_output).exists());
+        std::fs::remove_file(&file_output).unwrap();
         assert_eq!(renderer.calls.borrow().len(), 1);
         assert_eq!(
             *operations.themes.borrow(),
@@ -768,17 +723,8 @@ fn standard_renderer_integrates_with_document_export() {
             },
         );
         let operations = Operations::default();
-        let document = export_document(
-            &scratch,
-            &view,
-            None,
-            &ExportOptions {
-                tool_renderer: Some(&renderer),
-                ..ExportOptions::default()
-            },
-            &operations,
-        )
-        .unwrap();
+        let document =
+            export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap();
         let decoded: Value = serde_json::from_str(&payload(&document)).unwrap();
         if available {
             assert_eq!(
@@ -814,17 +760,7 @@ fn mixed_bindings_populate_document_custom_html() {
         },
     );
     let operations = Operations::default();
-    let document = export_document(
-        &scratch,
-        &view,
-        None,
-        &ExportOptions {
-            tool_renderer: Some(&renderer),
-            ..ExportOptions::default()
-        },
-        &operations,
-    )
-    .unwrap();
+    let document = export_document(&scratch, &view, None, Some(&renderer), &operations).unwrap();
     let decoded: Value = serde_json::from_str(&payload(&document)).unwrap();
     assert_eq!(decoded["renderedTools"], case.expected);
     assert_eq!(decoded["entries"], view.data["entries"]);
