@@ -5,7 +5,9 @@ mod tests {
     use std::cell::RefCell;
     use std::sync::Mutex;
 
-    use crate::support::{CASE_ENV, SERIAL, TempDir, is_child, run_child, run_isolated};
+    use crate::support::{CASE_ENV, SERIAL, is_child, run_isolated};
+    #[cfg(unix)]
+    use crate::support::{TempDir, run_child};
     /// Controlled outputs and executed commands.
     #[derive(Default)]
     struct Operations {
