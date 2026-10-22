@@ -322,8 +322,9 @@ The workspace daemon is core design: the root always wires the daemon,
 multiplexer. Required direct edges are root → application and multiplexer,
 and multiplexer → application. The required root
 edges must be non-optional normal dependencies active on native builds. Like the
-CLI and chat, the multiplexer may use only application, toolkit, terminal adapter and
-theme, plus the foundation utility and native feature-unifier exceptions.
+CLI and chat, the multiplexer may use application, toolkit, terminal adapter and
+theme; it may also use the protocol crate for frame records. The foundation utility
+and native feature-unifier exceptions apply too.
 Declared-but-absent core owners require no placeholder crates.
 
 Browser geometry uses installed `js-sys` host calls rather than a handwritten

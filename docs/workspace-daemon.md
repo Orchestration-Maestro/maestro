@@ -223,12 +223,17 @@ fallbacks retain the caller's keyboard protocol. Keyboard handoff replays the
 retained flag stack without the independent modified-key mode. Grouped key repeats
 expand at the destination; releases encode once.
 
-Visible, recent and detection reads share the engine's retained rows and text
-formatters. Recent snapshots report whether the physical-row budget omitted older
-rows; unwrapped variants join soft wraps without changing that budget. Retained
+Visible, recent and detection reads use the engine's retained rows. Plain physical
+reads join each row's cells, reading a blank cell or a whole image-placeholder
+grapheme as one space; unwrapped and styled reads use the engine's text formatters.
+Recent snapshots report whether the physical-row budget omitted older rows;
+unwrapped variants join soft wraps without changing that budget. Retained
 literal search handles Unicode case folding and complete graphemes. Word and WORD
-motions use the same retained buffer. `with_render_state` refreshes and borrows the
-single render snapshot under the pane lock; frame rendering stays with its caller.
+motions use the same retained buffer. `with_render_view` refreshes the single
+render snapshot and lends it under the pane lock, with the engine's default
+palette, the host colours, the pane's initial default colours, the image setting
+and the cursor presented at the supplied instant. Frame rendering stays with the
+[multiplexer](multiplexer.md#rendering).
 
 `maestro_daemon::selection::Selection` anchors and drags in absolute retained rows,
 orders inclusive endpoints and clamps screen coordinates to the pane. A click

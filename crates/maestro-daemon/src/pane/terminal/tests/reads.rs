@@ -2,6 +2,7 @@
 use super::super::*;
 use maestro_terminal::{Mode, Terminal};
 use maestro_workspace::layout::{PaneId, Rect};
+use std::time::Instant;
 fn write_numbered_lines(terminal: &mut Terminal, count: usize) {
     for i in 0..count {
         terminal.write(format!("{i:06}\r\n").as_bytes());
@@ -388,7 +389,10 @@ fn invalid_resize_keeps_geometry_and_pending_replies() {
     pane.seed_history_ansi("seed\x1b[5n");
     assert!(pane.resize(0, 10, 8, 16).is_empty());
     assert_eq!(
-        pane.with_render_state(|state| (state.cols, state.rows)),
+        pane.with_render_view(Instant::now(), |view| (
+            view.render_state.cols,
+            view.render_state.rows
+        )),
         Some((10, 3))
     );
     assert_eq!(pane.resize(3, 10, 8, 16).concat(), b"\x1b[0n");
@@ -402,4 +406,14 @@ fn physical_text_reads_blank_image_placeholders() {
     let pane = PaneTerminal::new(terminal);
     assert_eq!(pane.visible_text(), "a b\n");
     assert_eq!(pane.recent_text_snapshot(3).text, "a b\n");
+}
+
+#[test]
+fn physical_text_reads_a_whole_placeholder_grapheme_as_one_space() {
+    let mut terminal = Terminal::new(20, 3, 100).unwrap();
+    terminal.write("a\u{10eeee}\u{305}\u{30d}b".as_bytes());
+    let pane = PaneTerminal::new(terminal);
+    assert_eq!(pane.visible_text(), "a b\n");
+    assert_eq!(pane.recent_text_snapshot(3).text, "a b\n");
+    assert_eq!(pane.detection_text(), "a b\n");
 }

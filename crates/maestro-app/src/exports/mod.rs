@@ -10,6 +10,10 @@ mod clipboard;
 mod configuration;
 /// Existing credentials re-exports.
 mod credentials;
+/// Workspace daemon re-export, named separately from the exported module.
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "daemon.rs"]
+mod daemon_exports;
 /// Existing extensions re-exports.
 mod extensions;
 /// Existing json re-exports.
@@ -31,6 +35,10 @@ mod resources;
 mod session;
 /// Existing settings re-exports.
 mod settings;
+/// Terminal emulator re-export, named separately from the exported module.
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "terminal.rs"]
+mod terminal_exports;
 /// Existing text re-exports.
 mod text;
 /// Existing tools re-exports.
@@ -42,6 +50,8 @@ pub use browser_tools::*;
 pub use clipboard::*;
 pub use configuration::*;
 pub use credentials::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use daemon_exports::*;
 pub use extensions::*;
 pub use json::*;
 pub use markdown_exports::*;
@@ -54,5 +64,7 @@ pub use process::*;
 pub use resources::*;
 pub use session::*;
 pub use settings::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use terminal_exports::*;
 pub use text::*;
 pub use tools::*;

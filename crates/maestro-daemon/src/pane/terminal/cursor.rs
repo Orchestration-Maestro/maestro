@@ -7,6 +7,11 @@ impl PaneCore {
     /// Refresh the retained viewport once and read its current cursor.
     pub(super) fn current_cursor_state(&mut self) -> Option<TerminalCursorState> {
         self.refresh_render_state();
+        self.rendered_cursor_state()
+    }
+
+    /// Read the cursor of the already refreshed viewport.
+    pub(super) fn rendered_cursor_state(&self) -> Option<TerminalCursorState> {
         let cursor = &self.render_state.cursor;
         let position = cursor.viewport?;
         Some(TerminalCursorState {
@@ -20,20 +25,29 @@ impl PaneCore {
             },
         })
     }
+
+    /// Present a cursor at a supplied monotonic instant.
+    /// Position settling is enabled on Windows; visibility and shape remain live.
+    pub(super) fn reported_cursor_state(
+        &self,
+        current: Option<TerminalCursorState>,
+        now: Instant,
+    ) -> Option<TerminalCursorState> {
+        if cfg!(windows) {
+            self.cursor_settle_state.reported_cursor(current, now)
+        } else {
+            current
+        }
+    }
 }
 
 impl PaneTerminal {
     /// Read cursor presentation at a supplied monotonic instant.
-    /// Position settling is enabled on Windows; visibility and shape remain live.
     #[must_use]
     pub fn cursor_state(&self, now: Instant) -> Option<TerminalCursorState> {
         let mut core = self.core.lock().ok()?;
         let current = core.current_cursor_state();
-        if cfg!(windows) {
-            core.cursor_settle_state.reported_cursor(current, now)
-        } else {
-            current
-        }
+        core.reported_cursor_state(current, now)
     }
 }
 

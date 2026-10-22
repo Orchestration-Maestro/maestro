@@ -144,3 +144,34 @@ existing `time` formatter. Chrono uses the MIT OR Apache-2.0 licence. No new
 package identity or version is added. Controlled deadline tests enable Tokio's
 existing `test-util` feature; production command execution reuses the process
 owner's captured-child stream and group termination operations.
+
+## Multiplexer frame library
+
+`maestro-multiplexer` uses `ratatui =0.30.0` with default features disabled and
+`underline-color` enabled, under its MIT licence. It is the only crate that uses
+the frame library. The multiplexer also uses the existing locked
+`unicode-width =0.2.2` with default features disabled and `tracing =0.1.44` with
+default features disabled and `std` enabled. Its fixture tests use the inherited
+`serde` and `serde_json` entries.
+
+The frame library adds these package identities to the native build; every other
+package of its closure was already locked:
+
+| Package | Version | Licence |
+|---|---|---|
+| castaway | 0.2.4 | MIT |
+| compact_str | 0.9.1 | MIT |
+| indoc | 2.0.8 | MIT OR Apache-2.0 |
+| instability | 0.3.14 | MIT |
+| kasuari | 0.4.13 | MIT OR Apache-2.0 |
+| line-clipping | 0.3.8 | MIT OR Apache-2.0 |
+| lru | 0.18.5 | MIT |
+| ratatui | 0.30.0 | MIT |
+| ratatui-core | 0.1.2 | MIT |
+| ratatui-widgets | 0.3.2 | MIT |
+| unicode-truncate | 2.0.1 | MIT OR Apache-2.0 |
+
+The lock file also lists the frame library's optional terminal backends, which no
+enabled feature builds.
+
+See [multiplexer rendering](../multiplexer.md#rendering) for the public operations.

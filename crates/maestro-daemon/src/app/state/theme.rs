@@ -61,12 +61,18 @@ impl ThemeRuntimeConfig {
     /// Selects the active name without interpreting palette colours.
     #[must_use]
     pub fn effective_name(&self, appearance: Option<HostAppearance>) -> &str {
+        self.effective_selection(appearance).0
+    }
+
+    /// Selects the active name and the built-in theme used when it is unknown.
+    #[must_use]
+    pub fn effective_selection(&self, appearance: Option<HostAppearance>) -> (&str, &'static str) {
         if !self.auto_switch {
-            &self.manual_name
+            (&self.manual_name, "catppuccin")
         } else if appearance == Some(HostAppearance::Light) {
-            &self.light_name
+            (&self.light_name, "catppuccin-latte")
         } else {
-            &self.dark_name
+            (&self.dark_name, "catppuccin")
         }
     }
 }
