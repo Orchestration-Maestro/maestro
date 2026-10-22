@@ -208,6 +208,7 @@ fn escaped_identifiers_match_by_decoded_value() {
 fn projected_context_reaches_the_shared_converter() {
     support::session_context::group("projected_context_reaches_the_shared_converter");
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn context_timestamps_use_local_time_only_for_offsetless_datetimes() {
     let name = "context_timestamps_use_local_time_only_for_offsetless_datetimes";

@@ -1,5 +1,6 @@
 //! Recorded display cases, a controlled theme and keybinding registry, and the call and result drivers.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 #[allow(
     dead_code,

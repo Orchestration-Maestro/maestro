@@ -1,6 +1,7 @@
 //! Shared display operations: escape removal, binary-output cleaning, string selection,
 //! path abbreviation, key hints and result text.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use crate::display_support;
 

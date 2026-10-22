@@ -1263,23 +1263,20 @@ impl Filesystem {
         fs
     }
     /// Real native symlinks exercise the resource owner, not a selector mock.
-    #[cfg(unix)]
+    ///
+    /// Only Windows and Unix hosts create links; the browser target compiles this
+    /// fixture without running it, so both spellings are resolved and discarded.
     fn link(&self, alias: &str, target: &str) {
-        std::os::unix::fs::symlink(
-            self.expand(&format!("$FS/{target}")),
-            self.expand(&format!("$FS/{alias}")),
-        )
-        .unwrap();
+        let target = self.expand(&format!("$FS/{target}"));
+        let alias = self.expand(&format!("$FS/{alias}"));
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(target, alias).unwrap();
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_dir(target, alias).unwrap();
+        #[cfg(not(any(unix, windows)))]
+        let _ = (alias, target);
     }
-    /// Windows native scenarios run only where link creation is admitted by the host.
-    #[cfg(not(unix))]
-    fn link(&self, alias: &str, target: &str) {
-        std::os::windows::fs::symlink_dir(
-            self.expand(&format!("$FS/{target}")),
-            self.expand(&format!("$FS/{alias}")),
-        )
-        .unwrap();
-    }
+
     /// Replaces only the fixture root, preserving authored aliases and all metadata.
     fn expand(&self, value: &str) -> String {
         value.replace("$FS", &self.root)

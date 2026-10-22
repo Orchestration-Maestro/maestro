@@ -20,6 +20,7 @@ mod credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
 #[path = "support/dynamic.rs"]
+#[cfg(not(target_arch = "wasm32"))]
 mod dynamic;
 #[path = "support/fallback.rs"]
 mod fallback;
@@ -32,6 +33,7 @@ mod model_reference_matching;
 mod model_restoration;
 mod model_scopes;
 #[path = "support/request.rs"]
+#[cfg(not(target_arch = "wasm32"))]
 mod request_support;
 #[path = "selection/scopes.rs"]
 mod scopes;

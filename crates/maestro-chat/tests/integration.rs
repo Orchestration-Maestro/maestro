@@ -38,6 +38,7 @@ mod session_picker;
 mod session_picker_scopes;
 #[path = "support/session_picker.rs"]
 mod session_picker_support;
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../../maestro-theme/tests/live/document.rs"]
 mod theme_document;
 // The session picker's helpers are compiled once, here and in the library tests that include it.

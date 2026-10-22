@@ -5,6 +5,7 @@ use crate::support;
 #[cfg(unix)]
 use maestro_session::session_manager::ReadonlySessionManager;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn memory_session_starts_with_current_header() {
     if maestro_test_process::selection().is_child() {

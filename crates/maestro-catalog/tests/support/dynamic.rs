@@ -1,7 +1,7 @@
 //! Typed dynamic definitions and subprocess isolation.
 pub use crate::isolation::isolated;
 use maestro_catalog::{ProviderConfigInput, ProviderModelInput};
-use maestro_models::{ModelCost, ModelInput};
+use maestro_models::{ModelCost, ModelInput, SharedHandle};
 use std::sync::{Arc, RwLock};
 /// Complete definition with distinguishable supplied metadata.
 #[must_use]
@@ -129,7 +129,7 @@ pub fn diagnostic(message: &str) -> maestro_models::DiagnosticErrorInfo {
 /// Account handle whose input identifier differs from registration.
 #[must_use]
 pub fn oauth(name: &'static str) -> maestro_models::OAuthProviderHandle {
-    Arc::new(OAuth {
+    SharedHandle::new(OAuth {
         calls: None,
         id: "ignored",
         name,
@@ -165,7 +165,7 @@ pub fn selected(
 /// # Panics
 /// Panics if the configuration guard is poisoned.
 pub fn callback(config: &Arc<RwLock<ProviderConfigInput>>, message: &'static str) {
-    config.write().unwrap().stream_simple = Some(Arc::new(FailedProvider(message)));
+    config.write().unwrap().stream_simple = Some(SharedHandle::new(FailedProvider(message)));
 }
 /// Invoke the current protocol through the raw public callback.
 /// # Panics

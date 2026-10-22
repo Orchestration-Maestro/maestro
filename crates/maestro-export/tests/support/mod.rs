@@ -1,4 +1,5 @@
 //! Controlled observations and real-file helpers for export tests.
+#![cfg(not(target_arch = "wasm32"))]
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_export::*;
 use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};

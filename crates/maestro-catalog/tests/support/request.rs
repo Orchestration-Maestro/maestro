@@ -117,7 +117,7 @@ impl OAuth {
     #[must_use]
     pub fn register(self) -> Registration {
         let id = self.id;
-        maestro_models::register_oauth_provider(std::sync::Arc::new(self));
+        maestro_models::register_oauth_provider(maestro_models::SharedHandle::new(self));
         Registration(id)
     }
 }

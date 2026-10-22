@@ -1,5 +1,6 @@
 //! Spreadsheet serialization through the public application boundary.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_app::browser::ssf::{self, Ssf};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
@@ -498,8 +499,8 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
 }
 
 /// Shared strings amplify four individually bounded sheets beyond the output bound.
-#[test]
 #[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn spreadsheet_extracted_output_past_the_bound_fails() {
     use maestro_app::browser::ssf::WorkbookError;
     use maestro_app::browser::utils::attachment_utils::AttachmentError;

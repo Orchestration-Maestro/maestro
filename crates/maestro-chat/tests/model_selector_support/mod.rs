@@ -14,6 +14,7 @@ use std::{
 };
 
 /// Every accepted environment authentication route, excluded from each child.
+#[cfg(not(target_arch = "wasm32"))]
 pub const AUTH_ENVIRONMENT: &[(&str, Option<&str>)] = &[
     ("COPILOT_GITHUB_TOKEN", None),
     ("GH_TOKEN", None),

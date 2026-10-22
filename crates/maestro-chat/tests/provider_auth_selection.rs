@@ -1,5 +1,6 @@
 //! Provider selection through the public terminal component.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::keybindings;
 use crate::manual_runtime;
 #[path = "provider_auth_support/mod.rs"]

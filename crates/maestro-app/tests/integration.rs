@@ -128,7 +128,9 @@ mod startup_timings;
 mod system_prompt_assembly;
 /// Strict recorded observations shared by several test modules.
 mod support {
+    #[cfg(not(target_arch = "wasm32"))]
     mod runtime;
+    #[cfg(not(target_arch = "wasm32"))]
     pub use runtime::*;
     pub mod attachment_observation;
     pub mod attachments;
@@ -139,9 +141,12 @@ mod support {
     pub mod document_extraction;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod pdf;
     pub mod session_harness;
+    #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod spreadsheet;
 }
 mod theme_selection;

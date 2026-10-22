@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Complete native model ordering with explicit and process locale operands.
 use crate::selection;
 use crate::subprocess;

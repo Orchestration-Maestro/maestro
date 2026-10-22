@@ -1,5 +1,6 @@
 //! Browser session persistence at the injected storage boundary.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::browser_storage_support as storage;
 use maestro_app::browser::storage::SessionsStore;
 use serde_json::json;

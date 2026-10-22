@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Dynamic provider admission and request observations.
 use crate::support;
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};

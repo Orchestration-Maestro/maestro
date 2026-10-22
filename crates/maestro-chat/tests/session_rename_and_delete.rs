@@ -105,6 +105,7 @@ fn session_file_delete_passes_literal_trash_arguments() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_file_delete_selects_trash_or_unlink() {
     session_picker::session_picker_scopes::mutations::run(
@@ -112,6 +113,7 @@ fn session_file_delete_selects_trash_or_unlink() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_file_delete_failure_combines_bounded_first_line_hint() {
     session_picker::session_picker_scopes::mutations::run(
@@ -119,6 +121,7 @@ fn session_file_delete_failure_combines_bounded_first_line_hint() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_delete_success_updates_both_caches_and_status() {
     session_picker::session_picker_scopes::mutations::run(
@@ -126,6 +129,7 @@ fn session_delete_success_updates_both_caches_and_status() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_delete_failure_keeps_records_without_refresh() {
     session_picker::session_picker_scopes::mutations::run(
@@ -147,6 +151,7 @@ fn session_rename_settles_callback_and_refresh_before_exit() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_mutation_refresh_uses_scope_at_effect_completion() {
     session_picker::session_picker_scopes::mutations::run(

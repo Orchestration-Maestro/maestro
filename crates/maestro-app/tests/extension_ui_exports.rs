@@ -5,7 +5,7 @@ use maestro_app::presentation_data::footer_data_provider::{
 use maestro_app::{
     AutocompleteProviderFactory, Cancellation, ExtensionUIContext, ExtensionUIDialogOptions,
     ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ReadonlyFooterDataProvider,
-    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
+    SharedHandle, TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 use maestro_tui::tui::InputListenerResult;
 use std::rc::Rc;
@@ -27,7 +27,7 @@ fn native_ui_exports_share_the_existing_records() {
     let options = MessageRenderOptions { expanded: true };
     let session: maestro_session::messages::MessageRenderOptions = options;
     let _: maestro_extensions::MessageRenderOptions = session;
-    let renderer: MessageRenderer = std::sync::Arc::new(|_, _, _, _| Ok(None));
+    let renderer: MessageRenderer = SharedHandle::new(|_, _, _, _| Ok(None));
     let _: maestro_extensions::MessageRenderer = renderer;
     let signal = Cancellation::new();
     let dialog = ExtensionUIDialogOptions {

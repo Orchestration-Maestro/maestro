@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Public catalog callbacks retain the original execution-family carriers.
 #[path = "../../maestro-models/tests/support/original_options.rs"]
 mod original_options;

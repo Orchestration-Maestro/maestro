@@ -1,5 +1,6 @@
 //! Browser request policy exercised through application exports.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::utils::proxy_utils::should_use_proxy_for_provider;
 use serde::Deserialize;
 

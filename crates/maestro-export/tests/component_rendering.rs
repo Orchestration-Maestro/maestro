@@ -1,5 +1,6 @@
 //! Standard component renderer behavior.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 #[test]
 fn result_padding_keeps_red_one_and_plain_two() {
     component_support::check("result_padding_keeps_red_one_and_plain_two");

@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Shared catalog state and reload observations.
 use crate::dynamic;
 use crate::support;

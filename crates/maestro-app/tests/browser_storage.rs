@@ -1,5 +1,6 @@
 //! Browser collection behavior through application-owned stores.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::browser_storage_support as support;
 use crate::support::run_io;
 use maestro_app::{

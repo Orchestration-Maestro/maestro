@@ -7,8 +7,9 @@ use crate::published;
 use crate::recording_terminal;
 use crate::runtime_spy;
 use crate::selector_failure_support;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::subprocess;
-use maestro_app::{Model, ScopedModel, SettingsManager};
+use maestro_app::{Model, ScopedModel, SettingsManager, SharedHandle};
 use maestro_chat::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
 use maestro_tui::{
     Component, TUI, TerminalImage,
@@ -22,6 +23,7 @@ use std::{
 };
 
 /// Execute each test group in a separate process, which owns global registry/binding state.
+#[cfg(not(target_arch = "wasm32"))]
 fn isolate(name: &str) -> bool {
     if !maestro_test_process::selection().is_child() {
         let credentials = std::env::current_exe()
@@ -43,6 +45,11 @@ fn isolate(name: &str) -> bool {
         );
         return true;
     }
+    false
+}
+/// The browser target has no child process, so each group runs in its own process state.
+#[cfg(target_arch = "wasm32")]
+fn isolate(_name: &str) -> bool {
     false
 }
 fn replay(name: &str) {
@@ -624,7 +631,7 @@ fn failing_registry(
         .register_provider(
             "maestro-unconfigured",
             Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
-                oauth: Some(Arc::new(RejectingModels)),
+                oauth: Some(SharedHandle::new(RejectingModels)),
                 models: Some(vec![
                     Descriptor {
                         provider: "maestro-unconfigured".into(),
@@ -781,7 +788,7 @@ fn rejecting_registry() -> maestro_app::ModelRegistry {
         .register_provider(
             "maestro-refresh-failure",
             Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
-                oauth: Some(Arc::new(RejectingModels)),
+                oauth: Some(SharedHandle::new(RejectingModels)),
                 models: Some(vec![
                     Descriptor {
                         provider: "maestro-refresh-failure".into(),

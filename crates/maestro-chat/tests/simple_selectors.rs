@@ -1,5 +1,6 @@
 //! Public selector behavior against recorded terminal rows.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::keybindings;
 use crate::manual_runtime;
 use crate::published;

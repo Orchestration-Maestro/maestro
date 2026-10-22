@@ -1,5 +1,6 @@
 //! Abandoned branch observations through the session library.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 #[test]
 fn maestro_branch_collection_uses_deepest_common_ancestor() {

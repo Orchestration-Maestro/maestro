@@ -70,7 +70,9 @@ struct PathInput {
     exec_path: Option<String>,
     exists: Option<Vec<String>>,
     platform: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     home: Option<String>,
+    #[cfg(not(target_arch = "wasm32"))]
     asset_name: Option<String>,
 }
 impl PathInput {
@@ -94,6 +96,7 @@ impl PathInput {
     fn windows(&self) -> bool {
         self.platform.as_deref() == Some("win32")
     }
+    #[cfg(not(target_arch = "wasm32"))]
     fn home(&self) -> String {
         self.home.clone().unwrap_or_else(|| {
             if self.windows() {
@@ -179,6 +182,7 @@ use std::cell::Cell;
 /// Run the calling test in a child whose working directory is a fresh `work` directory,
 /// or one that no longer exists when `removed`. Returns the child's working directory
 /// in the child, `None` in the calling process once the child passed.
+#[cfg(not(target_arch = "wasm32"))]
 fn in_work_directory(test: &str, removed: bool) -> Option<String> {
     let case = if removed { "removed-work" } else { "work" };
     let selection = maestro_test_process::selection();
@@ -207,6 +211,7 @@ fn in_work_directory(test: &str, removed: bool) -> Option<String> {
 }
 
 /// Replace the recorded working directory at the start of quoted fixture paths with `cwd`.
+#[cfg(not(target_arch = "wasm32"))]
 fn at_work(text: &str, cwd: &str) -> String {
     let recorded = if cfg!(windows) {
         r#""C:\\work"#
@@ -217,6 +222,7 @@ fn at_work(text: &str, cwd: &str) -> String {
     text.replace(recorded, &replacement[..replacement.len() - 1])
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct Paths {
@@ -259,6 +265,7 @@ struct Paths {
     #[serde(rename = "getBundledInteractiveAssetPath")]
     bundled_interactive_asset_path: String,
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn observe_paths(input: &PathInput) -> Paths {
     let installation = input.installation();
     let package = paths::get_package_dir(
@@ -298,6 +305,7 @@ fn observe_paths(input: &PathInput) -> Paths {
         ),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn check_paths(name: &str, text: &str, expected_rows: usize) {
     let Some(cwd) = in_work_directory(name, false) else {
         return;
@@ -313,6 +321,7 @@ fn check_paths(name: &str, text: &str, expected_rows: usize) {
     }
     assert_eq!(consumed, expected_rows);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn asset_and_user_paths_select_layout() {
     check_paths(
@@ -322,7 +331,7 @@ fn asset_and_user_paths_select_layout() {
     );
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn agent_directory_keeps_override_precedence() {
     check_paths(
@@ -439,7 +448,7 @@ fn directory_operations_read_home_only_when_needed() {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct CwdInput {
@@ -447,7 +456,7 @@ struct CwdInput {
     env: Environment,
     cwd_error: bool,
 }
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[derive(Deserialize)]
 enum TextOperation {
     #[serde(rename = "getReadmePath")]
@@ -459,7 +468,7 @@ enum TextOperation {
     #[serde(rename = "getChangelogPath")]
     Changelog,
 }
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn packaged_text_paths_read_cwd_only_when_needed() {
     let text =

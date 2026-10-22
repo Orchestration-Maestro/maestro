@@ -532,4 +532,5 @@ fn schema() -> serde_json::Value {
 }
 mod reconstruction;
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests;

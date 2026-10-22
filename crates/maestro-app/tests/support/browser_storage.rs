@@ -1,4 +1,5 @@
 //! Controlled collection adapter and lossless corpus comparisons.
+#![cfg(not(target_arch = "wasm32"))]
 use futures_util::future::LocalBoxFuture;
 use maestro_app::browser::storage::{
     IndexDirection, QuotaInfo, StorageBackend, StorageOperation, StorageTransaction,

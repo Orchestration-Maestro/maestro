@@ -1,5 +1,6 @@
 //! Session-tree panel and label behavior through public components.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 #[path = "tree_label_support/mod.rs"]
 mod tree_label_support;
 

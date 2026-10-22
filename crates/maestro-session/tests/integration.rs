@@ -22,12 +22,14 @@ mod summary_text;
 /// Recorded corpus support shared by the test modules.
 mod support {
     /// Branch scenarios.
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod branch_summary;
     /// Compaction corpus consumer.
     pub mod compaction_cases;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod discovery;
     /// Summary operation consumer.
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod generation;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod native;
@@ -36,8 +38,10 @@ mod support {
     pub mod session_files;
     /// Memory-history corpus consumer.
     pub mod session_history;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod session_tree;
     /// Consuming request controls.
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod summary_options;
     /// Full value comparison.
     pub mod value;
