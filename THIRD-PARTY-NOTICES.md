@@ -818,6 +818,13 @@ in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources.
 (`vendor/portable-pty/src/cmdbuilder.rs`, MIT). The adapter uses Rust
 `CommandExt::arg0` rather than incorporating that library or its native calls.
 
+The pane render, dirty-row patches, frame-record conversions, frame encoder and
+chrome palettes in `crates/maestro-multiplexer/` and their tests derive from the
+pane terminal, protocol render, protocol wire, application state and theme
+configuration sources under the same license. Changes include one changed-cell
+walk shared by encoding and profiling, one colour policy shared by frames and
+patches, and checked slicing of non-ASCII colour strings.
+
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations, owned identity allocation and separation of
 native runtime effects. Socket changes include supplied paths and overrides,

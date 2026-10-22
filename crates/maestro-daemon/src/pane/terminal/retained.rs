@@ -312,7 +312,7 @@ impl LogicalTextLine {
     }
 }
 /// Interpret blank and image-placeholder cells as one space.
-fn terminal_cell_text(graphemes: &[char]) -> String {
+pub(super) fn terminal_cell_text(graphemes: &[char]) -> String {
     if graphemes.is_empty() || graphemes.first() == Some(&'\u{10eeee}') {
         " ".to_owned()
     } else {

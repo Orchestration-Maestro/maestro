@@ -962,10 +962,10 @@ fn frontends_require_application_without_unused_allowed_edges() {
         }
         let mut mixed = String::new();
         for (index, target) in required.iter().enumerate() {
-            let (kind, extra) = DECLARATIONS[if index < 2 { index } else { index + 1 }];
+            let kind = DECLARATIONS[[0, 1, 3, 4][index % 4]].0;
             writeln!(
                 mixed,
-                "[{kind}]\nedge{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+                "[{kind}.edge{index}]\npackage = {target:?}\npath = \"../{target}\""
             )
             .unwrap();
         }

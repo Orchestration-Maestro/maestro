@@ -5,6 +5,7 @@ use crate::{
     pane::WheelRouting,
 };
 use maestro_terminal::Terminal;
+use std::time::Instant;
 
 #[test]
 fn pane_bracketed_paste_restores_host_page_navigation() {
@@ -53,8 +54,8 @@ fn seeded_history_is_retained_in_the_single_render_snapshot() {
     let pane = PaneTerminal::new(Terminal::new(20, 3, 100).unwrap());
     pane.seed_history_ansi("seeded");
     let text = pane
-        .with_render_state(|state| {
-            state
+        .with_render_view(Instant::now(), |view| {
+            view.render_state
                 .rows()
                 .flat_map(|row| {
                     row.cells()
@@ -66,7 +67,10 @@ fn seeded_history_is_retained_in_the_single_render_snapshot() {
         .unwrap();
     assert!(text.contains("seeded"));
     assert_eq!(pane.visible_text(), "seeded\n");
-    assert_eq!(pane.with_render_state(|state| state.cols), Some(20));
+    assert_eq!(
+        pane.with_render_view(Instant::now(), |view| view.render_state.cols),
+        Some(20)
+    );
 }
 
 #[test]

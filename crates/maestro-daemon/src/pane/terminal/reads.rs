@@ -1,11 +1,15 @@
 //! Read policy over the engine's retained rows and text formatters.
 
-use super::{PaneCore, PaneTerminal};
-use crate::selection::Selection;
+use super::{PaneCore, PaneTerminal, TerminalCursorState, retained::terminal_cell_text};
+use crate::{render_prof, selection::Selection, terminal_theme::TerminalTheme};
 use maestro_terminal::{
     Terminal,
+    color::{Palette, Rgb},
+    page::cell::Wide,
+    render::RenderState,
     terminal::{TextRange, TextShape},
 };
+use std::time::Instant;
 
 /// Retained text with an indication that physical rows were omitted.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -16,16 +20,50 @@ pub struct TerminalReadSnapshot {
     pub truncated: bool,
 }
 
+/// One pane's refreshed render snapshot and the colour policy a frame reads,
+/// borrowed under the pane lock.
+pub struct PaneRenderView<'a> {
+    /// Retained viewport rows, colours and dirty flags.
+    pub render_state: &'a mut RenderState,
+    /// Engine palette without the program's overrides.
+    pub default_palette: Palette,
+    /// Most recently observed host colours.
+    pub host_terminal_theme: TerminalTheme,
+    /// Engine default foreground when the pane was created.
+    pub initial_default_foreground: Rgb,
+    /// Engine default background when the pane was created.
+    pub initial_default_background: Rgb,
+    /// Whether images are drawn by the host instead of their placeholders.
+    pub kitty_graphics_enabled: bool,
+    /// Cursor presented at the supplied instant.
+    pub cursor: Option<TerminalCursorState>,
+    /// Profile start taken once the pane lock is held, when profiling is on.
+    pub prof_started: Option<Instant>,
+}
+
 impl PaneTerminal {
-    /// Access the single refreshed render snapshot under the pane lock.
-    /// Returning owned output keeps snapshot borrows inside the lock.
-    pub fn with_render_state<T>(
+    /// Refresh the single render snapshot and lend it with its colour policy
+    /// under the pane lock; returning owned output keeps the borrows inside.
+    pub fn with_render_view<T>(
         &self,
-        read: impl FnOnce(&mut maestro_terminal::render::RenderState) -> T,
+        now: Instant,
+        read: impl FnOnce(PaneRenderView<'_>) -> T,
     ) -> Option<T> {
         let mut core = self.core.lock().ok()?;
+        let prof_started = render_prof::timer();
         core.refresh_render_state();
-        Some(read(&mut core.render_state))
+        let cursor = core.reported_cursor_state(core.rendered_cursor_state(), now);
+        let core = &mut *core;
+        Some(read(PaneRenderView {
+            default_palette: core.terminal.default_palette(),
+            host_terminal_theme: core.host_terminal_theme,
+            initial_default_foreground: core.initial_default_foreground,
+            initial_default_background: core.initial_default_background,
+            kitty_graphics_enabled: core.kitty_graphics_enabled,
+            cursor,
+            prof_started,
+            render_state: &mut core.render_state,
+        }))
     }
 
     /// Visible physical rows, omitting trailing blank rows.
@@ -159,16 +197,21 @@ pub(super) fn full_range(t: &Terminal, start: usize, end: usize) -> Option<TextR
     })
 }
 
-/// Read each physical row through the existing formatter, preserving blank rows.
+/// Read each physical row cell by cell, preserving blank rows; a blank cell or
+/// a whole image-placeholder grapheme reads as one space.
 fn physical_text(t: &Terminal, start: usize, end: usize) -> String {
-    let mut rows: Vec<String> = (start..end)
+    let mut rows: Vec<String> = t
+        .screen_text_rows_range(start, end)
+        .unwrap_or_default()
+        .into_iter()
         .map(|row| {
-            full_range(t, row, row.saturating_add(1))
-                .and_then(|range| t.read_text_screen(range))
-                .unwrap_or_default()
-                .replace('\u{10eeee}', " ")
-                .trim_end()
-                .to_owned()
+            let text: String = row
+                .cells
+                .iter()
+                .filter(|cell| cell.wide != Wide::SpacerTail)
+                .map(|cell| terminal_cell_text(&cell.graphemes))
+                .collect();
+            text.trim_end().to_owned()
         })
         .collect();
     trim_trailing_blank_rows(&mut rows);

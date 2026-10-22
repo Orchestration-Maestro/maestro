@@ -401,6 +401,25 @@ pub struct CellData {
     pub hyperlink: Option<u32>,
 }
 
+/// Position of the underline style within [`CellData::modifier`].
+const UNDERLINE_STYLE_SHIFT: u16 = 12;
+
+/// Modifier bits holding the underline style: 0 for none, then the SGR 4
+/// subparameters 1 (single) to 5 (dashed).
+pub const UNDERLINE_STYLE_MASK: u16 = 0xF000;
+
+/// Read the underline style stored in a cell modifier.
+#[must_use]
+pub fn underline_style_from_modifier(modifier: u16) -> u8 {
+    u8::try_from((modifier & UNDERLINE_STYLE_MASK) >> UNDERLINE_STYLE_SHIFT).unwrap_or_default()
+}
+
+/// Add an underline style to a cell modifier, keeping its other bits.
+#[must_use]
+pub fn with_underline_style(modifier: u16, underline_style: u8) -> u16 {
+    modifier | ((u16::from(underline_style) & 0x0F) << UNDERLINE_STYLE_SHIFT)
+}
+
 /// Cursor shape encoded as a DECSCUSR parameter.
 ///
 /// 0 = terminal default, 1 = blinking block, 2 = steady block,

@@ -14,7 +14,7 @@ mod retained;
 mod stream;
 
 pub use modes::{InputMode, InputState};
-pub use reads::TerminalReadSnapshot;
+pub use reads::{PaneRenderView, TerminalReadSnapshot};
 pub use retained::{TerminalTextMatch, TerminalTextPoint, TerminalWordMotion};
 
 use super::{
@@ -22,7 +22,7 @@ use super::{
     xtgettcap::XtgettcapQueryTracker,
 };
 use crate::terminal_theme::TerminalTheme;
-use maestro_terminal::{Terminal, render::RenderState};
+use maestro_terminal::{Terminal, color::Rgb, render::RenderState};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -82,6 +82,10 @@ struct PaneCore {
     terminal: Terminal,
     /// Retained viewport snapshot for rendering.
     render_state: RenderState,
+    /// Engine default foreground before any host or child change.
+    initial_default_foreground: Rgb,
+    /// Engine default background before any host or child change.
+    initial_default_background: Rgb,
     /// Replies preserved while a host appearance update drains its own report.
     pending_pty_responses: Vec<Vec<u8>>,
     /// Most recently observed host colours.
@@ -112,11 +116,15 @@ struct PaneCore {
 impl PaneTerminal {
     /// Own an initialized emulator with one lock for pane policy.
     #[must_use]
-    pub fn new(terminal: Terminal) -> Self {
+    pub fn new(mut terminal: Terminal) -> Self {
+        let mut render_state = RenderState::default();
+        render_state.update(&mut terminal);
         Self {
             core: Mutex::new(PaneCore {
                 terminal,
-                render_state: RenderState::default(),
+                initial_default_foreground: render_state.colors.foreground,
+                initial_default_background: render_state.colors.background,
+                render_state,
                 pending_pty_responses: Vec::new(),
                 host_terminal_theme: TerminalTheme::default(),
                 transient_default_color_owner_pgid: None,
