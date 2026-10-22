@@ -31,9 +31,8 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
         Err(error @ AttachmentError::Docx(_)) => {
             package_failure::<DocxError>(&error, "Docx", "Failed to process DOCX: ")
         }
-        Err(AttachmentError::Excel(error)) => {
-            let wrapped = AttachmentError::Excel(error);
-            package_failure::<WorkbookError>(&wrapped, "Excel", "Failed to process Excel: ")
+        Err(error @ AttachmentError::Excel(_)) => {
+            package_failure::<WorkbookError>(&error, "Excel", "Failed to process Excel: ")
         }
         Err(AttachmentError::Unsupported(mime)) => {
             json!({"error":format!("Unsupported file type: {mime}")})

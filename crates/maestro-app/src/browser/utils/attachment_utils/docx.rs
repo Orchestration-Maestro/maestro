@@ -26,18 +26,23 @@ pub(super) fn process_docx(bytes: &[u8], file_name: &str) -> Result<String, Docx
 fn extract_text(tree: &OpenXmlElementTree, index: usize) -> Cow<'_, str> {
     match raw_text(tree, index) {
         Cow::Borrowed(text) => Cow::Borrowed(text.trim_matches(maestro_text::is_whitespace_scalar)),
-        Cow::Owned(text) => Cow::Owned(
-            text.trim_matches(maestro_text::is_whitespace_scalar)
-                .to_owned(),
-        ),
+        Cow::Owned(mut text) => {
+            let whitespace = maestro_text::is_whitespace_scalar;
+            let end = text.trim_end_matches(whitespace).len();
+            text.truncate(end);
+            let start = text.len() - text.trim_start_matches(whitespace).len();
+            text.drain(..start);
+            Cow::Owned(text)
+        }
     }
 }
 
 /// Untrimmed text of one element under its own child rule.
 ///
-/// Inline containers keep their children's text without a separator, embedded
-/// containers join it with one space, and every other element, drawings and
-/// drawn text boxes included, contributes none.
+/// Text contributes itself and a table its formatted rows. Inline containers
+/// keep their children's text without a separator, embedded containers join it
+/// with one space, and every other element, drawings and drawn text boxes
+/// included, contributes none.
 fn raw_text(tree: &OpenXmlElementTree, index: usize) -> Cow<'_, str> {
     let element = &tree.nodes[index];
     match &element.data {
