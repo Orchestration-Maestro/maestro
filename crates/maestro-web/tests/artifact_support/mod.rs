@@ -64,7 +64,7 @@ pub struct DecodeCase {
 /// Panics if the committed recording is invalid.
 #[must_use]
 pub fn corpus() -> Corpus {
-    use crate::support::strict_record;
+    use crate::support::{reject_sections, strict_record};
     let valid: serde_json::Value =
         serde_json::from_str(include_str!("../fixtures/generic_artifacts_portable.json")).unwrap();
     strict_record::<Corpus>(&valid, &["mime", "decode"]);
@@ -80,11 +80,7 @@ pub fn corpus() -> Corpus {
         };
         strict_record::<Decoded>(&row["output"], &[field]);
     }
-    for value in [serde_json::Value::Null, serde_json::json!([])] {
-        let mut sibling = valid.clone();
-        sibling["download"] = value;
-        assert!(serde_json::from_value::<Corpus>(sibling).is_err());
-    }
+    reject_sections::<Corpus>(&valid, &["download"]);
     serde_json::from_str(include_str!("../fixtures/generic_artifacts_portable.json")).unwrap()
 }
 /// Observer of submitted paint before texture updates are discarded.

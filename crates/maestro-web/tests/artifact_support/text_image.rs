@@ -46,43 +46,66 @@ pub struct Header {
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Text {
-    pub class: Option<String>,
-    pub text: String,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Bytes {
     pub bytes: Vec<u8>,
 }
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Image {
-    pub src: String,
-    pub alt: String,
-    pub fallback: String,
-}
-/// Complete projected recording; each row belongs to one observation route.
+/// Complete native projection; each row belongs to one observation route.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Corpus {
     pub text_language: Vec<Case<Name, Option<String>>>,
     pub text_mime: Vec<Case<Name, String>>,
     pub text_header: Vec<Case<File, Header>>,
-    pub text_render: Vec<Case<File, Text>>,
     pub image_mime: Vec<Case<Name, String>>,
-    pub image_url: Vec<Case<File, String>>,
     pub image_bytes: Vec<Case<Content, Bytes>>,
     pub image_invalid: Vec<Content>,
-    pub image_render: Vec<Case<File, Image>>,
 }
 /// Read the committed projection with no ignored fields.
 /// # Panics
-/// Panics if the committed source recording is malformed.
+/// Panics if the committed source recording is malformed or admits a browser-only
+/// section.
 #[must_use]
 pub fn corpus() -> Corpus {
-    serde_json::from_str(include_str!("../fixtures/text_image_artifacts.json")).unwrap()
+    use crate::support::{reject_sections, strict_record};
+    use serde_json::Value;
+    let source = include_str!("../fixtures/text_image_artifacts.json");
+    let valid: Value = serde_json::from_str(source).unwrap();
+    reject_sections::<Corpus>(&valid, &["textRender", "imageUrl", "imageRender"]);
+    strict_record::<Corpus>(
+        &valid,
+        &[
+            "textLanguage",
+            "textMime",
+            "textHeader",
+            "imageMime",
+            "imageBytes",
+            "imageInvalid",
+        ],
+    );
+    strict_record::<Case<Name, Option<String>>>(&valid["textLanguage"][0], &["input"]);
+    strict_record::<Name>(&valid["textLanguage"][0]["input"], &["filename"]);
+    strict_record::<Case<Name, String>>(&valid["textMime"][0], &["input", "output"]);
+    strict_record::<Case<Name, String>>(&valid["imageMime"][0], &["input", "output"]);
+    strict_record::<Case<File, Header>>(&valid["textHeader"][0], &["input", "output"]);
+    strict_record::<File>(&valid["textHeader"][0]["input"], &["filename", "content"]);
+    strict_record::<Header>(&valid["textHeader"][0]["output"], &["copy", "download"]);
+    strict_record::<Copy>(
+        &valid["textHeader"][0]["output"]["copy"],
+        &["text", "title", "showText"],
+    );
+    strict_record::<Download>(
+        &valid["textHeader"][0]["output"]["download"],
+        &["filename", "mimeType", "title", "bytes"],
+    );
+    strict_record::<Case<Content, Bytes>>(&valid["imageBytes"][0], &["input", "output"]);
+    strict_record::<Content>(&valid["imageBytes"][0]["input"], &["content"]);
+    strict_record::<Bytes>(&valid["imageBytes"][0]["output"], &["bytes"]);
+    strict_record::<Content>(&valid["imageInvalid"][0], &["content"]);
+    serde_json::from_str(source).unwrap()
 }
+#[cfg(target_arch = "wasm32")]
+#[path = "text_image_browser_records.rs"]
+pub mod browser_records;
 #[path = "../highlighter_support/recording.rs"]
 pub mod recording;
 pub use recording::Highlighter;

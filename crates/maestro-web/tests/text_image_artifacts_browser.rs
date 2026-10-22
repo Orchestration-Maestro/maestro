@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     use crate::reading_browser_support::{View, check, event, js, quoted, run};
-    use crate::text_image_support::corpus;
+    use crate::text_image_support::browser_records::corpus;
     use wasm_bindgen::prelude::*;
 
     /// Construct the explicit text view, independent of the application's file classifier.
