@@ -122,24 +122,48 @@ fn narrow_space_before_meridiem(path: &str) -> String {
     out
 }
 
-/// Resolve a path under the spelling it was written with, falling back to its
-/// Unicode-space normalization only when no path has the written spelling.
+/// Resolve a path under the spelling it was written with, keeping that spelling for
+/// every directory the file system has and replacing Unicode spaces only in the part
+/// nothing on disk has.
 ///
 /// `resolve` turns one authored spelling into a resolved path and must keep the
 /// spelling it is given; the home and working directories are read exactly as it
 /// reads them.
 ///
 /// # Errors
-/// Returns the error of `resolve` for the spelling it was finally called with.
+/// Returns the error of `resolve` for the spelling it was finally called with, or a
+/// path that is not valid UTF-8.
 pub fn resolve_existing_spelling<F>(file_path: &str, resolve: F) -> io::Result<String>
 where
     F: Fn(&str) -> io::Result<String>,
 {
     let as_written = resolve(file_path)?;
-    if Path::new(&as_written).exists() {
+    let normalized_spelling = normalize_unicode_spaces(file_path);
+    if normalized_spelling == file_path || Path::new(&as_written).exists() {
         return Ok(as_written);
     }
-    resolve(&normalize_unicode_spaces(file_path))
+    let normalized = resolve(&normalized_spelling)?;
+    utf8(
+        keep_written_directories(Path::new(&as_written), Path::new(&normalized)),
+        "resolved path",
+    )
+}
+
+/// Keep `written`'s spelling for the existing directories, and take the rest from `normalized`.
+///
+/// A relative `written` path with no existing directory of any ancestor keeps nothing,
+/// because only a directory the file system has may supply a spelling.
+fn keep_written_directories(written: &Path, normalized: &Path) -> PathBuf {
+    let Some(kept) = written
+        .ancestors()
+        .skip(1)
+        .find(|ancestor| ancestor.is_dir())
+    else {
+        return normalized.to_path_buf();
+    };
+    let mut result = kept.to_path_buf();
+    result.extend(normalized.components().skip(kept.components().count()));
+    result
 }
 
 /// Resolve an authored path against `cwd` under its written spelling when a path

@@ -27,7 +27,8 @@ Each path is resolved before its module loads:
 2. An absolute result is kept as written. A relative result is resolved
    lexically against `cwd`.
 3. When that path names no existing file, the supplied path is resolved again
-   with its Unicode spaces replaced by plain spaces. Both candidates come from
+   with its Unicode spaces replaced by plain spaces, keeping the written
+   spelling of every directory that exists. Both candidates come from
    [`resolve_existing_spelling`](../../crates/maestro-tools/src/path_utils.rs).
    A broken link counts as missing, because the check follows links.
 

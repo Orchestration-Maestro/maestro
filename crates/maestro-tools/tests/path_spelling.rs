@@ -3,7 +3,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::edit_support;
-use crate::read_support::{Fixture, Scratch, call, content_json, input, only_text, text_json};
+use crate::read_support::{
+    Fixture, Scratch, call, content_json, input, isolated, only_text, text_json,
+};
 use crate::runtime::run;
 #[cfg(unix)]
 use crate::{find_support, grep_support, ls_support};
@@ -11,6 +13,7 @@ use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolInput, WriteToolOptions,
     create_edit_tool_definition, create_read_tool_definition, create_write_tool_definition,
     edit_diff::{Edit, compute_edits_diff},
+    path_utils::{resolve_existing_path, resolve_existing_spelling},
 };
 use serde_json::json;
 #[cfg(unix)]
@@ -158,6 +161,127 @@ fn grep_reaches_a_directory_named_with_a_unicode_space() {
             .map(String::as_str),
         Some(written.as_str())
     );
+}
+
+/// A new file lands inside the directory the file system holds under its written spelling.
+#[test]
+fn write_creates_a_new_file_inside_a_directory_named_with_a_unicode_space() {
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
+    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
+    let arguments = WriteToolInput {
+        path: "s\u{a0}dir/new.txt".into(),
+        content: "body".into(),
+    };
+    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+    assert_eq!(
+        std::fs::read(dir.path().join("s\u{a0}dir/new.txt")).unwrap(),
+        b"body"
+    );
+    assert!(!dir.path().join("s dir").exists());
+}
+
+/// A written directory beside its plain-space twin is the one that receives the new file.
+#[test]
+fn write_leaves_the_plain_neighbour_directory_untouched() {
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
+    std::fs::create_dir(dir.path().join("s dir")).unwrap();
+    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
+    let arguments = WriteToolInput {
+        path: "s\u{a0}dir/new.txt".into(),
+        content: "body".into(),
+    };
+    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+    assert_eq!(
+        std::fs::read(dir.path().join("s\u{a0}dir/new.txt")).unwrap(),
+        b"body"
+    );
+    assert!(!dir.path().join("s dir/new.txt").exists());
+}
+
+/// Every directory on disk keeps the spelling the path was written with.
+#[test]
+fn path_resolution_keeps_every_existing_directory_spelling() {
+    let test = "path_resolution_keeps_every_existing_directory_spelling";
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir_all(dir.path().join("a\u{a0}b/c\u{a0}d")).unwrap();
+    std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
+    dir.file("s\u{a0}dir/existing.txt", b"written");
+    let cwd = dir.text();
+    let written = format!("{cwd}/s\u{a0}dir");
+    let nested = format!("{cwd}/a\u{a0}b/c\u{a0}d/new.txt");
+    for (ask, expected) in [
+        ("a\u{a0}b/c\u{a0}d/new.txt".to_owned(), nested),
+        (
+            "@s\u{a0}dir/new.txt".to_owned(),
+            format!("{written}/new.txt"),
+        ),
+        (format!("{written}/new.txt"), format!("{written}/new.txt")),
+        ("s\u{a0}dir/".to_owned(), written.clone()),
+        (
+            "s\u{a0}dir/existing.txt".to_owned(),
+            format!("{written}/existing.txt"),
+        ),
+    ] {
+        assert_eq!(
+            resolve_existing_path(&ask, &cwd).unwrap(),
+            expected,
+            "{ask:?}"
+        );
+    }
+    let home = Scratch::new().unwrap();
+    std::fs::create_dir(home.path().join("h\u{a0}d")).unwrap();
+    let home_text = home.text();
+    let envs = [
+        ("HOME", Some(home_text.as_str())),
+        ("USERPROFILE", Some(home_text.as_str())),
+    ];
+    if isolated(test, "home-written", &envs) {
+        let home = std::env::var("HOME").unwrap();
+        assert_eq!(
+            resolve_existing_path("~/h\u{a0}d/new.txt", &cwd).unwrap(),
+            format!("{home}/h\u{a0}d/new.txt")
+        );
+    }
+}
+
+/// A part of the path nothing on disk holds still takes the space-replaced spelling.
+#[test]
+fn path_resolution_normalizes_only_the_part_without_a_counterpart() {
+    let test = "path_resolution_normalizes_only_the_part_without_a_counterpart";
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir(dir.path().join("p q")).unwrap();
+    std::fs::create_dir_all(dir.path().join("a/b")).unwrap();
+    std::fs::create_dir(dir.path().join("a\u{a0}b")).unwrap();
+    dir.file("s\u{a0}dir", b"a file holds the written spelling");
+    let cwd = dir.text();
+    for (ask, expected) in [
+        ("s\u{a0}dir/new.txt", "s dir/new.txt"),
+        ("p\u{a0}q/new.txt", "p q/new.txt"),
+        ("a/b/c\u{a0}d/new.txt", "a/b/c d/new.txt"),
+        ("nothing\u{a0}here/new.txt", "nothing here/new.txt"),
+        ("d/x y.txt", "d/x y.txt"),
+    ] {
+        assert_eq!(
+            resolve_existing_path(ask, &cwd).unwrap(),
+            format!("{cwd}/{expected}"),
+            "{ask:?}"
+        );
+    }
+    assert_eq!(
+        resolve_existing_path("a\u{a0}b/c\u{a0}d/new.txt", &cwd).unwrap(),
+        format!("{cwd}/a\u{a0}b/c d/new.txt")
+    );
+    #[cfg(unix)]
+    if isolated(test, "no-existing-directory", &[]) {
+        let parent = Scratch::new().unwrap();
+        parent.enter_removed("gone").unwrap();
+        assert_eq!(
+            resolve_existing_spelling("up\u{a0}down/new.txt", |path| Ok(path.to_owned())).unwrap(),
+            "up down/new.txt"
+        );
+    }
 }
 
 /// A new file still takes the space-replaced name its author typed.
