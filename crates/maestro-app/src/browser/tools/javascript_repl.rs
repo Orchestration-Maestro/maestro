@@ -5,6 +5,7 @@ use crate::browser::components::sandboxed_iframe::{
     SandboxEnvironment, SandboxExecution, SandboxFile, SandboxFileContent, SandboxHost,
     SandboxResult, SandboxUrlProvider, SandboxValue,
 };
+use crate::utils::lock::read;
 use base64::Engine;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
 use maestro_models::SharedHandle;
@@ -179,10 +180,7 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
         "JavaScript REPL".into(),
         SharedHandle::new(move |_, args: JavaScriptReplParams, signal, _| {
             let providers = runtime_providers(&factory);
-            let url = url
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
+            let url = read(&url).clone();
             Box::pin(execute_tool(
                 args.code,
                 providers,
@@ -235,10 +233,7 @@ async fn execute_tool<V: SandboxValue>(
 fn runtime_providers<V: SandboxValue>(
     setting: &RwLock<Option<RuntimeProvidersFactory<V>>>,
 ) -> Result<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo> {
-    let factory = setting
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
+    let factory = read(setting).clone();
     factory.map_or_else(|| Ok(vec![]), |factory| factory())
 }
 /// Encode borrowed payload bytes without intermediate binary strings.

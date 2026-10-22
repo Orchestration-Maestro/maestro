@@ -1,5 +1,6 @@
 //! Extended comment links and shared lookup records.
 use super::super::{XmlElement, XmlParser, utils::key_by};
+use crate::utils::lock::read;
 use indexmap::IndexMap;
 use std::sync::{Arc, RwLock};
 /// Raw paragraph links and an optional completion token.
@@ -38,11 +39,7 @@ impl CommentsExtendedPart {
             })
             .collect();
         let comment_map = key_by(comments.iter().map(|comment| {
-            let key = comment
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .para_id
-                .clone();
+            let key = read(comment).para_id.clone();
             (key, Arc::clone(comment))
         }));
         Self {

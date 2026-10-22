@@ -3,6 +3,7 @@ use super::super::{
     DocxError, OwnedXmlElement, document_parser::comments::parse_comments, utils::key_by,
 };
 use super::WmlComment;
+use crate::utils::lock::read;
 use indexmap::IndexMap;
 use std::sync::{Arc, RwLock};
 /// Prepared comments with source-order records and snapshot lookup keys.
@@ -25,11 +26,7 @@ impl CommentsPart {
             .map(|c| Arc::new(RwLock::new(c)))
             .collect();
         let comment_map = key_by(comments.iter().map(|comment| {
-            let key = comment
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .id
-                .clone();
+            let key = read(comment).id.clone();
             (key, Arc::clone(comment))
         }));
         Ok(Self {

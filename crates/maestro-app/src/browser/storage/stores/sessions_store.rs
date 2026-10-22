@@ -2,6 +2,7 @@
 use super::super::{
     IndexConfig, SessionData, SessionMetadata, Store, StoreConfig, TransactionMode,
 };
+use crate::utils::lock::read;
 use maestro_agent::CustomAgentMessages;
 use serde::{Serialize, de::DeserializeOwned};
 use std::io;
@@ -160,9 +161,7 @@ impl SessionsStore {
         title: Option<&str>,
     ) -> io::Result<()> {
         let (data, metadata) = {
-            let state = state
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let state = read(state);
             prepare(id, &state, metadata, title, now)
         };
         self.save(&data, &metadata).await
@@ -230,13 +229,7 @@ fn prepare<C: CustomAgentMessages>(
         title: title.unwrap_or("").into(),
         created_at: now(),
         last_modified: now(),
-        message_count: state
-            .messages()
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .len()
-            .to_f64()
-            .unwrap_or(0.0),
+        message_count: read(state.messages()).len().to_f64().unwrap_or(0.0),
         usage: maestro_models::Usage::default(),
         thinking_level: state.thinking_level.clone(),
         preview: String::new(),

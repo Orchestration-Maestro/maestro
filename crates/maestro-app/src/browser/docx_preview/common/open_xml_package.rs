@@ -1,5 +1,6 @@
 //! One indexed ZIP owner for Word parts and resource bytes.
 use super::super::{DocxError, Options, Relationship, XmlParser, parse_xml_string, utils};
+use crate::utils::lock::lock;
 use std::{
     io::{Cursor, Read},
     sync::Mutex,
@@ -72,10 +73,7 @@ impl OpenXmlPackage {
         let Some(index) = index else {
             return Ok(None);
         };
-        let mut archive = self
-            .archive
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut archive = lock(&self.archive);
         let mut entry = archive.by_index(index).map_err(archive_error)?;
         // The archive reader fails an entry once it passes its declared size.
         if entry.size() > ENTRY_LIMIT {
