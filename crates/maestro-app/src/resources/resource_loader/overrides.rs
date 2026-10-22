@@ -4,12 +4,12 @@ use super::{
     Collection, DefaultEventBus, DefaultResourceLoader, LoadPromptsResult, LoadThemesResult,
     PathIndex, ResourceKind, ResourceOverride,
 };
-use maestro_path::{SEP, dirname, join};
+use maestro_path::{dirname, join};
 use maestro_resources::{
     DiagnosticType, LoadPromptTemplatesOptions, LoadSkillsOptions, LoadSkillsResult, PathMetadata,
     PromptTemplate, ResourceCollision, ResourceDiagnostic, SourceInfo, SourceOrigin, SourceScope,
     create_source_info, is_local_path, load_prompt_templates, load_skills,
-    paths::{CONFIG_DIR_NAME, resolve},
+    paths::{CONFIG_DIR_NAME, is_under_path, resolve},
 };
 use std::{
     cell::RefCell,
@@ -107,21 +107,6 @@ fn collision(
             loser_source: None,
         }),
     }
-}
-
-/// Whether the resolved `target` is `root` or below it.
-fn is_under(target: &str, root: &str) -> io::Result<bool> {
-    let root = resolve(&[root])?;
-    if target == root {
-        return Ok(true);
-    }
-    Ok(if root.ends_with(SEP) {
-        target.starts_with(&root)
-    } else {
-        target
-            .strip_prefix(&root)
-            .is_some_and(|rest| rest.starts_with(SEP))
-    })
 }
 
 impl<E: DefaultEventBus> DefaultResourceLoader<E> {
@@ -335,7 +320,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         .into_iter()
         .flat_map(|(base, scope)| DEFAULT_ROOTS.map(|name| (join(&[base, name]), scope)));
         for (root, scope) in roots {
-            if is_under(&normalized, &root)? {
+            if is_under_path(&normalized, &root)? {
                 return Ok(synthetic("local", scope, Some(root)));
             }
         }

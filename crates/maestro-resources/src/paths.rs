@@ -28,6 +28,17 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
         .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
+/// Compare preserved target spelling against a root resolved from the process
+/// directories, on a separator boundary: `root` itself or any path below it.
+///
+/// # Errors
+/// Returns the working directory's error when resolving `root` needs it.
+pub fn is_under_path(target: &str, root: &str) -> io::Result<bool> {
+    let root = resolve(&[root])?;
+    let sep = maestro_path::SEP;
+    Ok(target == root || target.starts_with(&format!("{}{sep}", root.trim_end_matches(sep))))
+}
+
 /// Return the real path or retain the original spelling when resolving it fails.
 #[must_use]
 pub fn canonicalize_path(path: &str) -> String {
