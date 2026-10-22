@@ -40,16 +40,17 @@ or above that directory, the build runs from its source checkout: the layout is
 package and the walk starts at that workspace root, which holds `README.md`,
 `docs/` and `examples/`. Any other build is standalone. `config::get_readme_path`,
 `config::get_docs_path` and `config::get_examples_path` resolve their paths in
-that package directory, so the examples folder exists in a source run and in a
-standalone layout. `config::get_theme_directories`
+that package directory. A checkout ships the examples folder there, and the copy
+recipes put it in a standalone layout. `config::get_theme_directories`
 probes the layout without the executable, and locates the executable only when
 no override applies. It pairs its shipped theme directory with the custom theme
 directory of the native agent directory; see
 [application resources](resources.md#theme-directories).
 
-Standalone assets use adjacent `theme`, `export-html` and `assets` directories,
-copied from the application crate; the README, release history, documentation
-and examples come from the package directory and are copied beside them.
+Standalone assets use `theme` and `assets` directories copied from the
+application crate and an `export-html` directory copied from the supplied viewer
+bundle; the README, release history, documentation and examples come from the
+package directory and are copied beside them.
 Package themes use `crates/maestro-theme/assets/theme`; the other package assets
 use `src` when that child exists, otherwise `dist`. Missing assets
 still produce paths. README, documentation, examples and changelog queries use

@@ -15,7 +15,7 @@ mise exec -- just extension-author-component
 ```
 
 The recipe adds the `wasm32-wasip2` target and builds the example in
-`examples/extensions/author_component.rs` as a component. An extension
+`crates/maestro-extensions-wasm/examples/author_component.rs` as a component. An extension
 crate is a `cdylib` whose root names its factory:
 
 ```rust

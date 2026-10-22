@@ -6,9 +6,11 @@ the conversation.
 
 ## Examples
 
-The executable examples arrive with the embedding work: #227 ports the thirteen
-reference examples, each registered as a Cargo example target of the crate that
-owns it. This page gains a row for each one as it lands.
+No SDK example ships yet.
+[The embedding ticket](https://github.com/Orchestration-Maestro/maestro/issues/227)
+delivers them, each registered as a Cargo example target of its owning crate and
+listed in
+[the examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074).
 
 ## Running
 
@@ -17,6 +19,3 @@ An example is built and run through its owning crate:
 ```sh
 cargo run -p <crate> --example <name>
 ```
-
-The remaining examples of the reference set arrive one ticket at a time; the
-tracking issue is #2074.

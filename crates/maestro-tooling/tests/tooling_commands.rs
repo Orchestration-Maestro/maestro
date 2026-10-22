@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use crate::recipe_support::write_input;
 use crate::toolchain_support;
 
 use std::fs;
@@ -1113,21 +1114,20 @@ fn standalone_inputs(source: &Path, package: &Path) {
     ] {
         write_input(source, name, bytes);
     }
+    package_inputs(package);
+}
+
+/// Write the package-level inputs the standalone layout copies.
+fn package_inputs(package: &Path) {
     for (name, bytes) in [
         ("README.md", "readme"),
         ("CHANGELOG.md", "history"),
         ("docs/.hidden", "hidden"),
+        ("docs/guide.md", "guide"),
         ("examples/nested/demo.rs", "example"),
     ] {
         write_input(package, name, bytes);
     }
-}
-
-/// Write one fixture input below its owning directory.
-fn write_input(root: &Path, name: &str, bytes: &str) {
-    let path = root.join(name);
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::write(path, bytes).unwrap();
 }
 
 fn assert_viewer_required(source: &Path, destination: &Path, package: &Path) {
@@ -1221,15 +1221,7 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
         write_input(&source, name, bytes);
     }
     let package = fixture.root.join("package");
-    for (name, bytes) in [
-        ("README.md", "readme"),
-        ("CHANGELOG.md", "history"),
-        ("docs/.hidden", "hidden"),
-        ("docs/guide.md", "guide"),
-        ("examples/nested/demo.rs", "example"),
-    ] {
-        write_input(&package, name, bytes);
-    }
+    package_inputs(&package);
     let metadata = fixture.root.join("binary/Cargo.toml");
     write_input(&fixture.root.join("binary"), "Cargo.toml", "manifest");
     let viewer = fixture.root.join("viewer");
@@ -1390,9 +1382,7 @@ fn maestro_asset_links_keep_layout_semantics() {
     fs::remove_file(themes.join("dangling.json")).unwrap();
     let package = fixture.root.join("package");
     for name in ["Cargo.toml", "viewer/index.html"] {
-        let path = source.join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, name).unwrap();
+        write_input(&source, name, name);
     }
     for name in [
         "README.md",
@@ -1400,9 +1390,7 @@ fn maestro_asset_links_keep_layout_semantics() {
         "docs/content",
         "examples/content",
     ] {
-        let path = package.join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, name).unwrap();
+        write_input(&package, name, name);
     }
     symlink("../examples", package.join("docs/linked-dir")).unwrap();
     symlink("missing", package.join("docs/dangling")).unwrap();

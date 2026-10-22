@@ -1,6 +1,7 @@
 # Examples
 
-Extension and SDK examples for Maestro.
+Extension and SDK examples for Maestro. No example ships yet: each folder holds
+an index page that gains a row for an example when it lands.
 
 The default system prompt points the model at this folder. It sits beside the
 package manifest, at `<package>/examples`, so the same path works in a source
@@ -22,6 +23,7 @@ extension interface.
 - [Extension examples](extensions/README.md)
 - [Writing an extension](../docs/extensions/guest.md)
 - [Extension loading](../docs/extensions/loading.md)
+- [Skills](../docs/resources/skills.md)
 
-The remaining examples of the reference set arrive one ticket at a time; the
-tracking issue is #2074.
+Every example file that does not ship yet is listed, with its owner, in
+[the examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074).

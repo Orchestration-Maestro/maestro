@@ -9,7 +9,7 @@ use std::process::{Command, Output};
 use crate::recipe_support;
 #[cfg(unix)]
 use recipe_support::ProcessGroup;
-use recipe_support::{Workspace, install_executable};
+use recipe_support::{Workspace, install_executable, write_input};
 
 #[test]
 fn maestro_workspace_recipes_keep_phase_order() {
@@ -373,6 +373,21 @@ fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
             "missing configured asset tree: {tree}"
         );
     }
+    let standalone = workspace
+        .path()
+        .join("compiler-output/maestro-binary-assets");
+    for (name, bytes) in [
+        ("README.md", "readme"),
+        ("CHANGELOG.md", "history"),
+        ("docs/guide.md", "guide"),
+        ("examples/example.txt", "example"),
+    ] {
+        assert_eq!(
+            fs::read(standalone.join(name)).unwrap(),
+            bytes.as_bytes(),
+            "standalone layout lacks package input {name}"
+        );
+    }
     development
 }
 
@@ -386,9 +401,7 @@ fn create_prepared_assets(workspace: &Workspace) {
         ("src/core/export-html/template.js", "js"),
         ("src/core/export-html/vendor/vendor.js", "vendor"),
     ] {
-        let path = root.join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, value).unwrap();
+        write_input(&root, name, value);
     }
     for (name, value) in [
         ("README.md", "readme"),
@@ -396,10 +409,12 @@ fn create_prepared_assets(workspace: &Workspace) {
         ("docs/guide.md", "guide"),
         ("examples/example.txt", "example"),
     ] {
-        let path = workspace.path().join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, value).unwrap();
+        write_input(&workspace.path(), name, value);
     }
+    assert!(
+        !root.join("README.md").exists(),
+        "package inputs belong to the package directory, not the crate"
+    );
     fs::create_dir_all(workspace.path().join("target/maestro-viewer")).unwrap();
     fs::write(
         workspace.path().join("target/maestro-viewer/index.html"),
