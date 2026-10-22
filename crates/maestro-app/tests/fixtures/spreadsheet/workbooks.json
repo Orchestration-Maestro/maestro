@@ -1,0 +1,134 @@
+[
+  {
+    "file": "crates/maestro-app/tests/fixtures/workbooks/formula-no-cache.xlsx",
+    "expected": [
+      {
+        "name": "Cached",
+        "range": "A1:B1",
+        "cells": {
+          "A1": {
+            "t": "n",
+            "v": 42,
+            "f": "SUM(40,2)",
+            "w": "42.00"
+          },
+          "B1": {
+            "t": "n",
+            "f": "1+1"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "crates/maestro-app/tests/fixtures/spreadsheet/formulas.xlsx",
+    "expected": [
+      {
+        "name": "Scalars",
+        "range": "A1:E2",
+        "cells": {
+          "A1": {
+            "t": "n",
+            "v": 42,
+            "f": "SUM(40,2)",
+            "w": "42"
+          },
+          "B1": {
+            "t": "n",
+            "f": "SUM(40,2)"
+          },
+          "C1": {
+            "t": "n",
+            "f": "1+1"
+          },
+          "D1": {
+            "t": "s",
+            "f": "\"empty\"",
+            "v": "",
+            "w": ""
+          },
+          "E1": {
+            "t": "n",
+            "v": 0,
+            "f": "99",
+            "w": "0"
+          },
+          "A2": {
+            "t": "n",
+            "f": "SINGLE(A1)"
+          },
+          "B2": {
+            "t": "n",
+            "v": 7,
+            "f": "IF(A1<42,\"A&B\",\"C\")",
+            "w": "7"
+          },
+          "C2": {
+            "t": "n",
+            "f": "\"hello\""
+          },
+          "D2": {
+            "t": "n",
+            "f": "SUM(\nA1)"
+          }
+        }
+      },
+      {
+        "name": "Shared",
+        "range": "A1:A3",
+        "cells": {
+          "A1": {
+            "t": "n",
+            "v": 9,
+            "f": "B1+$C1+D$1+$E$1",
+            "w": "9"
+          },
+          "A2": {
+            "t": "n",
+            "f": "B2+$C2+D$1+$E$1"
+          },
+          "A3": {
+            "t": "n",
+            "f": "B3+$C3+D$1+$E$1"
+          }
+        }
+      },
+      {
+        "name": "Array",
+        "range": "A1:D2",
+        "cells": {
+          "A1": {
+            "t": "n",
+            "f": "SUM(C1:C2)",
+            "F": "A1:B2"
+          },
+          "B1": {
+            "t": "n",
+            "F": "A1:B2"
+          },
+          "C1": {
+            "t": "n",
+            "f": "\"outside\""
+          },
+          "D1": {
+            "t": "n",
+            "v": 1,
+            "w": "1"
+          },
+          "A2": {
+            "t": "n",
+            "v": 0,
+            "F": "A1:B2",
+            "w": "0"
+          },
+          "B2": {
+            "t": "n",
+            "v": 1,
+            "F": "A1:B2",
+            "w": "1"
+          }
+        }
+      }
+    ]
+  }
+]

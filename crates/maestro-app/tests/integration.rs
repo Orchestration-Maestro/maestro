@@ -134,6 +134,7 @@ mod support {
     pub mod attachment_observation;
     pub mod attachments;
     pub mod browser_records;
+    pub mod browser_storage_records;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_attachments;
     #[cfg(not(target_arch = "wasm32"))]
@@ -146,6 +147,8 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;
     pub mod spreadsheet;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod spreadsheet_native;
 }
 mod theme_selection;
 mod tree_interface;

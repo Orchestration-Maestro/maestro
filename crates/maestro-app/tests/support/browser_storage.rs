@@ -1,11 +1,11 @@
-//! Controlled collection adapter and lossless corpus comparisons.
+//! Controlled collection adapter at numbered observable effects.
 #![cfg(not(target_arch = "wasm32"))]
+pub use crate::support::browser_storage_records::{Row, equal, provider_equal};
 use futures_util::future::LocalBoxFuture;
 use maestro_app::browser::storage::{
     IndexDirection, QuotaInfo, StorageBackend, StorageOperation, StorageTransaction,
     TransactionMode,
 };
-use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -15,64 +15,6 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-/// One source-recorded operation and result.
-pub struct Row {
-    /// Owning behavior test.
-    pub test: String,
-    /// Operation operands consumed by the test.
-    pub input: Value,
-    /// Complete observation.
-    pub expected: Value,
-}
-/// Compare all members in order, keeping floating-point signs.
-pub fn equal(actual: &Value, expected: &Value) {
-    compare(actual, expected, "", false);
-}
-/// Compare typed provider/model record fields by name, preserving ordered maps.
-pub fn provider_equal(actual: &Value, expected: &Value) {
-    compare(actual, expected, "", true);
-}
-/// Compare typed record fields by name, while preserving ordered data.
-fn compare(actual: &Value, expected: &Value, field: &str, records: bool) {
-    match (actual, expected) {
-        (Value::Number(a), Value::Number(b)) => {
-            assert_eq!(a.as_f64().unwrap().to_bits(), b.as_f64().unwrap().to_bits());
-        }
-        (Value::Array(a), Value::Array(b)) => {
-            assert_eq!(a.len(), b.len());
-            for (a, b) in a.iter().zip(b) {
-                compare(a, b, field, records);
-            }
-        }
-        (Value::Object(a), Value::Object(b)) => {
-            let typed = records
-                && (a.contains_key("role")
-                    || a.contains_key("createdAt")
-                    || a.contains_key("input") && a.contains_key("output")
-                    || a.contains_key("type")
-                    || a.contains_key("baseUrl"));
-            assert_eq!(a.len(), b.len());
-            if !typed
-                || [
-                    "headers",
-                    "thinkingLevelMap",
-                    "compat",
-                    "arguments",
-                    "details",
-                ]
-                .contains(&field)
-            {
-                assert_eq!(a.keys().collect::<Vec<_>>(), b.keys().collect::<Vec<_>>());
-            }
-            for (key, value) in a {
-                compare(value, b.get(key).expect("record member"), key, records);
-            }
-        }
-        _ => assert!(actual == expected, "recorded value differs"),
-    }
-}
 /// A distinguishable source error, without logging stored values.
 #[derive(Debug)]
 pub struct Cause(pub Arc<()>);

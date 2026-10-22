@@ -10,11 +10,6 @@ use serde_json::{Map, Value};
 pub struct Corpus {
     /// Direct CSV calls.
     pub csv: Vec<Csv>,
-    /// Complete attachment calls, read by the native runtime suite only.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub attachments: Vec<Attachment>,
-    /// Retained workbook observations.
-    pub workbooks: Vec<Workbook>,
 }
 /// One CSV call.
 #[derive(Deserialize)]
@@ -37,60 +32,6 @@ pub struct CsvResult {
     pub csv: String,
     /// Full retained cell state.
     pub cells: Map<String, Value>,
-}
-/// One attachment call.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Attachment {
-    /// Owning test.
-    pub test: String,
-    /// Input label.
-    pub id: String,
-    /// Supplied source.
-    pub input: Input,
-    /// Complete expected result.
-    pub expected: Value,
-    /// Ordered literal fetch URLs.
-    pub fetch_calls: Vec<String>,
-}
-/// Attachment input fields.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Input {
-    /// Source selector.
-    pub source: String,
-    /// Source name.
-    pub name: Option<String>,
-    /// Source MIME.
-    pub mime: Option<String>,
-    /// Name override.
-    pub r#override: Option<String>,
-    /// Source URL.
-    pub url: Option<String>,
-    /// Repository-relative workbook bytes.
-    pub file: String,
-}
-/// Retained reader projection.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Workbook {
-    /// Repository-relative workbook bytes.
-    pub file: String,
-    /// Ordered sheets.
-    pub expected: Vec<Sheet>,
-}
-/// Expected sheet state.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Sheet {
-    /// Sheet name.
-    pub name: String,
-    /// Declared range.
-    pub range: Option<String>,
-    /// Ordered cells.
-    pub cells: indexmap::IndexMap<String, Cell>,
 }
 /// Raw source cell fields.
 #[derive(Deserialize)]
@@ -187,13 +128,4 @@ pub fn equal_cell(actual: &CellObject, expected: &CellObject) {
     if let (CellValue::Number(a), CellValue::Number(b)) = (&actual.v, &expected.v) {
         assert_eq!(a.to_bits(), b.to_bits());
     }
-}
-/// Resolve a fixture from the repository root.
-pub fn bytes(file: &str) -> Vec<u8> {
-    std::fs::read(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../..")
-            .join(file),
-    )
-    .unwrap()
 }

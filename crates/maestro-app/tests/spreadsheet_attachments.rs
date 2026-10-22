@@ -3,6 +3,8 @@
 use crate::support;
 use maestro_app::browser::ssf::{self, Ssf};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
+#[cfg(not(target_arch = "wasm32"))]
+use support::spreadsheet_native::{attachments, bytes, workbooks};
 
 fn csv_suite(name: &str) {
     let cases: Vec<_> = corpus()
@@ -56,16 +58,12 @@ fn csv_formula_fallback_and_array_suppression() {
 }
 
 /// Compare owned cells after the native reader and XML borrows have gone away.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_formula_metadata_keeps_cached_and_missing_values() {
-    for recording in corpus().workbooks {
+    for recording in workbooks() {
         let mut ssf = Ssf::default();
-        let book = ssf::read(
-            &support::spreadsheet::bytes(&recording.file),
-            "formula.xlsx",
-            &mut ssf,
-        )
-        .unwrap();
+        let book = ssf::read(&bytes(&recording.file), "formula.xlsx", &mut ssf).unwrap();
         assert_eq!(
             book.sheets.keys().collect::<Vec<_>>(),
             recording
@@ -93,6 +91,7 @@ fn workbook_formula_metadata_keeps_cached_and_missing_values() {
 }
 
 /// Compare scalar state and metadata not owned by the specialized views.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_metadata(actual: &ssf::CellObject, expected: &ssf::CellObject, name: &str, address: &str) {
     assert_eq!(actual.t, expected.t);
     assert_eq!(actual.v, expected.v);
@@ -106,10 +105,11 @@ fn check_metadata(actual: &ssf::CellObject, expected: &ssf::CellObject, name: &s
 }
 
 /// Compare only the formula metadata owned by this reader view.
+#[cfg(not(target_arch = "wasm32"))]
 fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
-    let recording = corpus().workbooks.pop().unwrap();
+    let recording = workbooks().pop().unwrap();
     let book = ssf::read(
-        &support::spreadsheet::bytes(&recording.file),
+        &bytes(&recording.file),
         "formulas.xlsx",
         &mut Ssf::default(),
     )
@@ -131,14 +131,17 @@ fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_shared_formulas_are_sheet_local() {
     formula_view("Shared", |_| true);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_array_regions_suppress_missing_formula_replay() {
     formula_view("Array", |_| true);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_formula_text_decodes_entities_and_function_prefixes() {
     formula_view("Scalars", |address| address.ends_with('2'));
@@ -150,14 +153,13 @@ fn attachment_suite(name: &str) {
     use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
     use maestro_models::{Fetch, HttpResponse};
     use std::sync::{Arc, Mutex};
-    let rows: Vec<_> = corpus()
-        .attachments
+    let rows: Vec<_> = attachments()
         .into_iter()
         .filter(|c| c.test == name)
         .collect();
     assert!(!rows.is_empty());
     for row in rows {
-        let bytes = support::spreadsheet::bytes(&row.input.file);
+        let bytes = bytes(&row.input.file);
         let calls = Arc::new(Mutex::new(Vec::new()));
         let captured = calls.clone();
         let body = bytes.clone();
