@@ -1,5 +1,13 @@
 //! Quote-prefix and setext spelling transformations.
-use crate::source::{Cursor, ScopeSource};
+use crate::source::{Cursor, ScopeSource, Segmented};
+
+/// A recognized quote prefix and the operand its body admits.
+pub(crate) struct QuoteEntry {
+    /// Complete recognized raw, projected for the admitted extent.
+    pub(crate) raw: ScopeSource,
+    /// Body operand without the quote prefix.
+    pub(crate) body: Segmented,
+}
 
 /// Rewrite unquoted setext spelling within this chunk before removing prefixes.
 pub(super) fn quote_source(source: &ScopeSource) -> ScopeSource {

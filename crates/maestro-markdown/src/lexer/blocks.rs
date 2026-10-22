@@ -1,4 +1,5 @@
-//! Retained output and ordered recursive block admission.
+//! Retained output and suspended block admission.
+mod run;
 use super::Lexer;
 use crate::{
     Kind, MappedText, MarkedOptions, Node,
@@ -6,7 +7,9 @@ use crate::{
     rules,
     source::{ScopeSource, Segmented, Source},
     tokenizer,
+    tokenizer::block::ListState,
 };
+pub(crate) use run::{BlockRun, Level};
 use std::{collections::HashMap, ops::Range};
 
 /// Effective grammar tail, including an invisible retained definition.
@@ -28,7 +31,7 @@ pub(crate) struct BlockTokens {
     /// Last grammar token, independent of visible output.
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
-    pub(super) list: Option<Box<tokenizer::block::ListState>>,
+    pub(super) list: Option<Box<ListState>>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -38,7 +41,7 @@ impl Default for Tail {
 
 /// Output before a dispatch step whose admission can still change.
 #[derive(Clone, Default)]
-pub(super) struct Mark {
+pub(crate) struct Mark {
     /// Visible nodes before the step.
     nodes: usize,
     /// Spelling, extent and inline operand of the preceding node, which the step may extend.
@@ -198,62 +201,6 @@ impl<E> Lexer<'_, E> {
         output.nodes
     }
 
-    /// Append blocks while preserving the invocation's paragraph clipping state. `open`
-    /// receives the first open step, one whose grammar read the operand's apparent end or
-    /// whose following content sits on its unterminated last line; nested containers
-    /// recurse through this frame, so the step bookkeeping has its own frames.
-    pub(super) fn block_tokens(
-        &mut self,
-        source: &Segmented,
-        output: &mut BlockTokens,
-        mut clipped: bool,
-        mut open: Option<&mut Option<(usize, Mark)>>,
-    ) {
-        let callback = self.tokenizer.as_ref().map(|_| source.materialize());
-        let outer = std::mem::take(&mut self.undecided);
-        let mut cursor = 0;
-        while cursor < source.len() && self.error.is_none() {
-            let rest = source.select(cursor..source.len());
-            let caller = callback
-                .as_ref()
-                .map(|source| source.view(cursor..source.text.len()));
-            let mark = open
-                .as_deref()
-                .is_some_and(Option::is_none)
-                .then(|| Box::new(Mark::new(output, self.top)));
-            self.undecided = false;
-            let consumed = self
-                .block(&rest, output, caller.as_ref())
-                .or_else(|| self.paragraph_step(&rest, output, caller.as_ref(), &mut clipped));
-            if let (Some(open), Some(mark)) = (open.as_deref_mut(), mark) {
-                self.record(open, (cursor, *mark), &rest, consumed);
-            }
-            let Some(consumed) = consumed else {
-                break;
-            };
-            cursor += consumed;
-        }
-        self.undecided = outer;
-        self.top = true;
-    }
-
-    /// Keep the first open step: its grammar or a caller tokenizer read the operand's end, or
-    /// the content after it sits on the operand's unterminated last line.
-    fn record(
-        &self,
-        open: &mut Option<(usize, Mark)>,
-        step: (usize, Mark),
-        source: &Segmented,
-        consumed: Option<usize>,
-    ) {
-        if self.tokenizer.is_some()
-            || self.undecided
-            || consumed.is_none_or(|consumed| !source.settled_after(consumed))
-        {
-            *open = Some(step);
-        }
-    }
-
     /// Admit a paragraph that may merge into the visible tail.
     fn paragraph_step(
         &mut self,
@@ -280,8 +227,8 @@ impl<E> Lexer<'_, E> {
         Some(consumed)
     }
 
-    /// Admit everything preceding paragraph and line-text fallback.
-    fn block(
+    /// Admit every block kind that decides before container recognition.
+    fn block_lead(
         &mut self,
         source: &Segmented,
         output: &mut BlockTokens,
@@ -295,21 +242,19 @@ impl<E> Lexer<'_, E> {
         if let Some(consumed) = Self::space_block(&first, output).or_else(|| output.code(source)) {
             return Some(consumed);
         }
-        if let Some(block) = tokenizer::block::leaf(source, &first) {
-            if let Some(inline) = block.inline {
-                output.scopes.insert(
-                    (block.node.range.start, block.node.range.end, false),
-                    inline.into(),
-                );
-            }
-            output.push_segmented(source.select(0..block.consumed), block.node);
-            return Some(block.consumed);
+        let block = tokenizer::block::leaf(source, &first)?;
+        if let Some(inline) = block.inline {
+            output.scopes.insert(
+                (block.node.range.start, block.node.range.end, false),
+                inline.into(),
+            );
         }
-        if let Some((consumed, node, list)) = self.container(source) {
-            output.push_segmented(source.select(0..consumed), node);
-            output.list = list;
-            return Some(consumed);
-        }
+        output.push_segmented(source.select(0..block.consumed), block.node);
+        Some(block.consumed)
+    }
+
+    /// Admit the block kinds that decide after container recognition.
+    fn block_tail(&mut self, source: &Segmented, output: &mut BlockTokens) -> Option<usize> {
         if let Some(block) = tokenizer::block::html(source, self.options) {
             output.push_segmented(source.select(0..block.consumed), block.node);
             return Some(block.consumed);

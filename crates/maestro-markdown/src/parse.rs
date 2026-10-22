@@ -51,12 +51,18 @@ impl Extension<InvalidBlockToken> for Checked<'_> {
 }
 
 /// Parse caller-normalized owned source with terminal grammar.
+///
+/// Nesting depth costs heap frames, never the caller's stack, so no depth limit
+/// applies.
 #[must_use]
 pub fn parse(source: String) -> Document {
     parse_with_options(source, MarkedOptions::Terminal)
 }
 
 /// Parse owned source using the selected consumer's grammar.
+///
+/// Nesting depth costs heap frames, never the caller's stack, so no depth limit
+/// applies.
 #[must_use]
 pub fn parse_with_options(source: String, options: MarkedOptions) -> Document {
     match parse_inner::<Infallible>(source, options, None) {
@@ -66,6 +72,9 @@ pub fn parse_with_options(source: String, options: MarkedOptions) -> Document {
 }
 
 /// Parse through one optional caller-owned block extension before built-in grammar.
+///
+/// Nesting depth costs heap frames, never the caller's stack, so no depth limit
+/// applies.
 ///
 /// # Errors
 /// Returns an error if a token is not a nonempty input prefix, or a start hint

@@ -3,6 +3,7 @@ use crate::{InlineAtom, InlineContext, Kind, Node, parse};
 use std::cell::RefCell;
 
 mod code_progress;
+mod container_depth;
 mod container_frames;
 mod emphasis_work;
 mod html_progress;

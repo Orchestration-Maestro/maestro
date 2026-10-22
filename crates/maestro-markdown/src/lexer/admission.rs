@@ -50,26 +50,27 @@ impl Child {
         }
         output
     }
+
+    /// Grammar position this item's last open step was admitted from.
+    pub(crate) fn enter_top(&self) -> bool {
+        self.mark.top
+    }
+
+    /// Take the item's output for the block level admitting its body.
+    pub(crate) fn take_output(&mut self) -> BlockTokens {
+        std::mem::take(&mut self.output)
+    }
+
+    /// Keep the item's output once its body level completed.
+    pub(crate) fn restore_output(&mut self, output: BlockTokens) {
+        self.output = output;
+    }
 }
 
 impl<E> Lexer<'_, E> {
-    /// Admit only the operand suffix whose dispatch can still change; nested items recurse
-    /// through this frame, so its preparation and settlement stay in separate frames.
-    pub(crate) fn item_blocks(&mut self, source: &Segmented, prefix: usize, child: &mut Child) {
-        let Some(rest) = self.reopen(source, prefix, child) else {
-            // Every child invocation, even one with nothing to admit, ends in top-level grammar.
-            self.top = true;
-            return;
-        };
-        let mut open = None;
-        self.top = child.mark.top;
-        self.block_tokens(&rest, &mut child.output, false, Some(&mut open));
-        self.settle(source, child, open);
-    }
-
     /// Select the suffix to admit again from the first open step, or none when the operand is
     /// unchanged without a caller tokenizer or open indented code still runs to its end.
-    fn reopen(
+    pub(crate) fn reopen(
         &mut self,
         source: &Segmented,
         prefix: usize,
@@ -98,7 +99,12 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Retain the first open step, keeping undecided code unpublished.
-    fn settle(&mut self, source: &Segmented, child: &mut Child, open: Option<(usize, Mark)>) {
+    pub(crate) fn settle(
+        &mut self,
+        source: &Segmented,
+        child: &mut Child,
+        open: Option<(usize, Mark)>,
+    ) {
         let top = child.mark.top;
         let (offset, mark) =
             open.unwrap_or_else(|| (source.len() - child.open, Mark::new(&child.output, top)));

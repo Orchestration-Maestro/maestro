@@ -1,5 +1,5 @@
 //! Block accumulation ownership before inline publication.
-use super::{BlockTokens, Lexer};
+use super::{BlockTokens, Level, Lexer};
 use crate::{MarkedOptions, source::ScopeSource, tokenizer};
 use std::{collections::HashMap, convert::Infallible};
 
@@ -22,8 +22,7 @@ fn lexer() -> Lexer<'static, Infallible> {
 fn list_children_publish_scopes_at_their_invocation_boundary() {
     let source = ScopeSource::identity("- é\n- [X] β");
     let mut lexer = lexer();
-    let mut output = BlockTokens::default();
-    lexer.block_tokens(&source.into(), &mut output, false, None);
+    let output = lexer.append(source.into(), BlockTokens::default(), Level::Document);
     assert!(lexer.scopes.is_empty(), "provisional item scopes escaped");
     let nodes = lexer.finish_blocks(output);
     assert_eq!(lexer.scopes.len(), 2);
@@ -52,14 +51,13 @@ fn block_accumulator_retains_inline_operands_until_publication() {
         let text = format!("a\n{}", "    é\n".repeat(count));
         let source = ScopeSource::identity(&text);
         let mut lexer = lexer();
-        let mut output = BlockTokens::default();
         crate::tests::WORK.with_borrow_mut(|work| *work = crate::tests::Work::default());
+        let mut output = BlockTokens::default();
         for line in crate::lexer::lines(&text) {
-            lexer.block_tokens(
-                &source.select(std::iter::once(line)).into(),
-                &mut output,
-                true,
-                None,
+            output = lexer.append(
+                source.select(std::iter::once(line)).into(),
+                output,
+                Level::Chunk,
             );
         }
         let copied = crate::tests::WORK.with_borrow(|work| work.source_bytes + work.joined_bytes);

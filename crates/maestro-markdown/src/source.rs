@@ -323,11 +323,6 @@ impl Source<'_> {
                 .map(|range| self.offset + range.start..self.offset + range.end),
         )
     }
-    /// Project an original extent into this borrowed window's local coordinates.
-    pub(crate) fn local(&self, range: &Range<usize>) -> Option<Range<usize>> {
-        let local = self.owner.local(range)?;
-        Some(local.start.checked_sub(self.offset)?..local.end.checked_sub(self.offset)?)
-    }
     /// Project a construct from this borrowed window to original document coordinates.
     pub(crate) fn extent(&self, range: Range<usize>) -> Range<usize> {
         self.owner

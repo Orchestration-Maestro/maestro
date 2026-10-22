@@ -139,7 +139,7 @@ pub(crate) fn html(source: &Segmented, options: MarkedOptions) -> Option<Block> 
 }
 
 mod list;
-pub(crate) use list::ListState;
+pub(crate) use list::{ListEntry, ListFrame, ListState, ListTarget};
 
 /// Preserve a physical code terminator without retaining following blank separators.
 fn code_body(mut body: String, terminated: bool) -> String {
