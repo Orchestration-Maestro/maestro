@@ -142,7 +142,7 @@ relocates an authored path it reads. The process directories
 complete only what those operands leave open, and alone resolve native real
 paths and the user and project roots that classify explicit paths. A working
 directory that cannot be read is never replaced by an empty one: a resolution
-that needs it fails with that error's kind, which a scan turns into the end of the
+that needs it fails with the working-directory error, which a scan turns into the end of the
 affected directory, and one that the operands or a drive directory anchor does
 not need it.
 Each entered directory contributes `.gitignore`, `.ignore`, `.fdignore` in that

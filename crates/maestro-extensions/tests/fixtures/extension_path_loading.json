@@ -579,6 +579,86 @@
     }
   },
   {
+    "id": "load_unicode_space_in_disk_name",
+    "tree": [
+      [
+        "file",
+        "work/x\u202fy.ts",
+        "command:narrow"
+      ],
+      [
+        "file",
+        "work/p\u00a0q.ts",
+        "command:real"
+      ],
+      [
+        "file",
+        "work/p q.ts",
+        "command:plain"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/x\u202fy.ts",
+          "$ROOT/work/p\u00a0q.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/x\u202fy.ts",
+              "resolvedPath": "$ROOT/work/x\u202fy.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/x\u202fy.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "narrow"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/p\u00a0q.ts",
+              "resolvedPath": "$ROOT/work/p\u00a0q.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/p\u00a0q.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "real"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
     "id": "load_home_paths",
     "tree": [
       [

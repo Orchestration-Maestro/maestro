@@ -22,12 +22,16 @@ loaded extensions share that runtime.
 
 Each path is resolved before its module loads:
 
-1. Unicode spaces become plain spaces, through
-   [`normalize_unicode_spaces`](../../crates/maestro-tools/src/path_utils.rs).
-2. A leading `~` or `~/` is replaced by the home directory, and the rest is
+1. A leading `~` or `~/` is replaced by the home directory, and the rest is
    joined to it lexically. A `~` anywhere else is literal.
-3. An absolute result is kept as written. A relative result is resolved
+2. An absolute result is kept as written. A relative result is resolved
    lexically against `cwd`.
+3. When that path names nothing on disk, the supplied path is resolved again
+   with its Unicode spaces replaced by plain spaces, through
+   [`normalize_unicode_spaces`](../../crates/maestro-tools/src/path_utils.rs).
+
+So a file whose real name holds a no-break space loads under that name, and a
+typed name whose Unicode spaces stand for plain spaces still finds its file.
 
 A loaded extension keeps the supplied spelling as its path, and the resolved
 path as its resolved path. Its source is `local` and its base directory is the
@@ -64,9 +68,8 @@ Two calls with two fresh buses share nothing.
    when it does not exist, and then fails in the loader.
 
 Discovery compares paths by their lexically resolved form. The first spelling
-wins and discovery drops later duplicates. Paths found on disk reach the loader
-with their real spelling, Unicode spaces included. Only typed paths, the
-configured and explicit ones, have their spaces replaced.
+wins and discovery drops later duplicates. Paths found on disk exist, so they
+load under their real spelling.
 
 A scan reads one directory level in name order, hidden names included. It adds
 the extension files and links, and the declared entries of other directories and

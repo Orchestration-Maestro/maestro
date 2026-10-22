@@ -179,6 +179,9 @@ fn manifest_item_errors_drop_a_directory_or_reject_a_configured_one() {
 }
 
 #[test]
-fn discovered_names_keep_their_real_spelling() {
-    check(&["discover_unicode_space_in_discovered_name"]);
+fn existing_files_keep_their_real_spelling() {
+    check(&[
+        "load_unicode_space_in_disk_name",
+        "discover_unicode_space_in_discovered_name",
+    ]);
 }

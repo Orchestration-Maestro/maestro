@@ -150,7 +150,7 @@ pub struct LoadSkillsOptions<'a> {
 /// unreadable process working directory, that path gets a warning instead.
 ///
 /// # Errors
-/// Returns the working-directory error kind when resolving the project
+/// Returns the working-directory error when resolving the project
 /// configuration directory, or a relative explicit path, against `cwd` leaves
 /// the path unanchored and the process working directory cannot be read.
 pub fn load_skills(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult> {

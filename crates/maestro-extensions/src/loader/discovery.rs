@@ -1,5 +1,5 @@
 //! Extension discovery in the project, user and configured locations.
-use super::paths::{anchor_path, load_with, resolve_path};
+use super::paths::{load_extensions, resolve_path};
 use crate::{
     EventBusController, ExtensionExecution,
     types::{LoadExtensionsResult, ModuleLoader},
@@ -55,8 +55,7 @@ impl Discovered {
     }
 }
 /// Discovers `<cwd>/.maestro/extensions`, then `<agent_dir>/extensions`, then each
-/// configured path, and loads them as [`super::load_extensions`] does, except that paths
-/// found on disk keep their spelling.
+/// configured path, and loads them as [`load_extensions`] does.
 ///
 /// A configured directory contributes its declared entries, else a one-level scan; any
 /// other configured path is added as resolved. The first spelling of each resolved path
@@ -92,5 +91,5 @@ pub async fn discover_and_load_extensions<E: ExtensionExecution>(
             found.add(discover_extensions_in_dir(&resolved))?;
         }
     }
-    load_with(found.paths, anchor_path, cwd, event_bus, module_loader).await
+    load_extensions(found.paths, cwd, event_bus, module_loader).await
 }

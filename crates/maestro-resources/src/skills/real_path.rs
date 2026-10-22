@@ -20,12 +20,12 @@ use std::{borrow::Cow, io};
 /// link is expanded again before the scan has read any component of what
 /// followed it at its previous expansion, because the steps in between would
 /// repeat forever. A path its operands leave unanchored needs the working
-/// directory, so the resolution fails with the kind of the error reading it
-/// returns; an anchored path does not.
+/// directory, so the resolution fails with the working-directory error; an
+/// anchored path does not.
 ///
 /// # Errors
 /// Returns the first failure: a path that is not UTF-8, a path that needs a
-/// working directory that cannot be read (that error's kind), a component
+/// working directory that cannot be read (the working-directory error), a component
 /// that cannot be inspected, a link whose target is missing or loops, a link
 /// that cannot be read, or a link expanded again before the scan has read any
 /// component of what followed its previous expansion.
