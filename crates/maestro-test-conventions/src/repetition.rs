@@ -116,13 +116,16 @@ impl Documentation {
 
 /// Collect original code-block ranges, including those inside list and quote containers.
 fn code_ranges(nodes: &[Node], ranges: &mut Vec<std::ops::Range<usize>>) {
-    for node in nodes {
-        match &node.kind {
-            Kind::CodeBlock(..) => ranges.push(node.range.clone()),
-            Kind::List(_, children) | Kind::Item(children) | Kind::Quote(children, _) => {
-                code_ranges(children, ranges);
+    let mut pending = vec![nodes];
+    while let Some(nodes) = pending.pop() {
+        for node in nodes {
+            match &node.kind {
+                Kind::CodeBlock(..) => ranges.push(node.range.clone()),
+                Kind::List(_, children) | Kind::Item(children) | Kind::Quote(children, _) => {
+                    pending.push(children);
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 }
@@ -174,5 +177,43 @@ impl<'ast> Visit<'ast> for TestLayout<'_> {
             ));
         }
         syn::visit::visit_item_mod(self, item);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::code_ranges;
+    use maestro_markdown::{Kind, MappedText, Node};
+
+    #[test]
+    fn deep_markdown_containers_keep_checks_on_a_small_stack() {
+        let ranges = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(|| {
+                let mut node = Node {
+                    kind: Kind::CodeBlock(String::new(), None),
+                    authored: MappedText::default(),
+                    range: 4..8,
+                };
+                for level in 0..100_000 {
+                    let kind = match level % 3 {
+                        0 => Kind::Quote(vec![node], MappedText::default()),
+                        1 => Kind::Item(vec![node]),
+                        _ => Kind::List(None, vec![node]),
+                    };
+                    node = Node {
+                        kind,
+                        authored: MappedText::default(),
+                        range: 0..0,
+                    };
+                }
+                let mut ranges = Vec::new();
+                code_ranges(&[node], &mut ranges);
+                ranges
+            })
+            .expect("worker thread")
+            .join()
+            .expect("worker panicked");
+        assert_eq!(ranges, vec![4..8]);
     }
 }

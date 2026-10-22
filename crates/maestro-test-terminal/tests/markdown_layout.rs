@@ -877,3 +877,57 @@ fn markdown_continuation_keeps_authored_indentation() {
 fn container_frames_follow_configured_grammar() {
     markdown::cases("container_frames_follow_configured_grammar");
 }
+
+/// Worker stack well below the main thread's, so nesting cannot lean on it.
+const WORKER_STACK: usize = 2 * 1024 * 1024;
+
+/// Render Markdown at `width` on a worker thread of the witness stack size, resuming a
+/// worker failure instead of reporting empty rows.
+fn render_on_small_stack(text: String, width: usize) -> Vec<String> {
+    match std::thread::Builder::new()
+        .stack_size(WORKER_STACK)
+        .spawn(move || {
+            Markdown::new(
+                text,
+                MarkdownOptions {
+                    clean_content: false,
+                    padding_x: 0,
+                    padding_y: 0,
+                    default_text_style: None,
+                },
+                Rc::new(markdown::plain()),
+                TerminalImage::new(|_| None, || 1),
+            )
+            .render(width)
+        })
+        .map(std::thread::JoinHandle::join)
+    {
+        Ok(Ok(rows)) => rows,
+        Ok(Err(failure)) => std::panic::resume_unwind(failure),
+        Err(error) => std::panic::resume_unwind(Box::new(error)),
+    }
+}
+
+#[test]
+fn deep_quote_rows_format_on_a_small_stack() {
+    let rows = render_on_small_stack(format!("{}deepest text", ">".repeat(3_000)), 40);
+    assert!(!rows.is_empty());
+    assert!(
+        rows.iter().all(|row| row.trim_end().starts_with("│ ")),
+        "every row keeps its border"
+    );
+    let deepest: String = rows
+        .iter()
+        .map(|row| row.trim_end().trim_start_matches("│ "))
+        .collect();
+    assert_eq!(deepest, "deepesttext");
+}
+
+#[test]
+fn deep_nested_list_rows_format_on_a_small_stack() {
+    let rows = render_on_small_stack(format!("{}x", "- ".repeat(2_000)), 4_100);
+    let last = rows.last().expect("rows").trim_end();
+    assert_eq!(last, format!("{}- x", "  ".repeat(1_999)));
+    let bullets: usize = rows.iter().map(|row| row.matches("- ").count()).sum();
+    assert_eq!(bullets, 1);
+}

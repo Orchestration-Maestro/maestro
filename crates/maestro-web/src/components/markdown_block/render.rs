@@ -14,6 +14,7 @@ use std::{fmt::Write as _, ops::Range};
 
 pub(super) mod export;
 mod table;
+mod walk;
 
 /// Characters the browser's URL encoder leaves untouched, plus the percent sign.
 const URL_SAFE: &AsciiSet = &NON_ALPHANUMERIC
@@ -155,60 +156,6 @@ struct Writer<'a, 'd> {
     prepared: Prepared,
 }
 impl Writer<'_, '_> {
-    /// Write block nodes in order.
-    fn blocks(&mut self, nodes: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
-        for node in nodes {
-            self.block(node, atoms, out);
-        }
-    }
-    /// Write one block node.
-    fn block(&mut self, node: &Node, atoms: Atoms<'_, '_>, out: &mut String) {
-        match &node.kind {
-            Kind::CustomBlock(kind, text) => {
-                if let Some(formula) = block_formula(kind, text, node.authored.len()) {
-                    out.push_str(&self.math(&formula));
-                } else {
-                    escape_authored(node, out);
-                }
-            }
-            Kind::Paragraph(c) => self.flow(c, (&node.range, Flow::Paragraph), atoms, out),
-            Kind::Inline(c) => self.flow(c, (&node.range, Flow::Item), atoms, out),
-            Kind::Heading(level, c, _) => {
-                let _ = write!(out, "<h{level}>");
-                self.flow(c, (&node.range, Flow::Inline), atoms, out);
-                let _ = writeln!(out, "</h{level}>");
-            }
-            Kind::List(start, items) => {
-                let (tag, attr) = match start {
-                    None => ("ul", String::new()),
-                    Some(1) => ("ol", String::new()),
-                    Some(n) => ("ol", format!(" start=\"{n}\"")),
-                };
-                let _ = writeln!(out, "<{tag}{attr}>");
-                self.blocks(items, atoms, out);
-                let _ = writeln!(out, "</{tag}>");
-            }
-            Kind::Item(c) => {
-                out.push_str("<li>");
-                self.blocks(c, atoms, out);
-                out.push_str("</li>\n");
-            }
-            Kind::Quote(c, _) => {
-                out.push_str("<blockquote>\n");
-                self.blocks(c, atoms, out);
-                out.push_str("</blockquote>\n");
-            }
-            Kind::HtmlBlock(html) => match self.policy {
-                Policy::Transcript { .. } => out.push_str(html),
-                Policy::Export(_) => escape(html, out),
-            },
-            Kind::Rule => out.push_str("<hr>\n"),
-            Kind::CodeBlock(code, info) => self.code(code, info.as_deref(), out),
-            Kind::Table(table) => self.table(table, atoms, out),
-            Kind::Gap => {}
-            _ => self.inline(std::slice::from_ref(node), atoms, out),
-        }
-    }
     /// Reserve a listing slot for a code block.
     fn code(&mut self, code: &str, info: Option<&str>, out: &mut String) {
         if let Policy::Export(highlighter) = self.policy {
@@ -330,11 +277,10 @@ impl Writer<'_, '_> {
             .all(|node| matches!(node.kind, Kind::Paragraph(_)));
         let mut body = String::new();
         for node in &run.nodes {
-            match &node.kind {
-                Kind::Paragraph(c) => {
-                    self.inline(c, Some(&run.atoms), &mut body);
-                }
-                _ => self.block(node, Some(&run.atoms), &mut body),
+            if let Kind::Paragraph(c) = &node.kind {
+                self.inline(c, Some(&run.atoms), &mut body);
+            } else {
+                self.blocks(std::slice::from_ref(node), Some(&run.atoms), &mut body);
             }
         }
         wrapped(&body, wrap && inline, out);

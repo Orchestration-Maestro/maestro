@@ -68,6 +68,44 @@ pub struct Node {
     /// Extent in the normalized source.
     pub range: Range<usize>,
 }
+impl Drop for Node {
+    /// Release nested children without one native frame per container level.
+    fn drop(&mut self) {
+        let mut pending = Vec::new();
+        detach(&mut self.kind, &mut pending);
+        while let Some(mut node) = pending.pop() {
+            detach(&mut node.kind, &mut pending);
+        }
+    }
+}
+
+/// Move a container's children onto the teardown worklist.
+fn detach(kind: &mut Kind, pending: &mut Vec<Node>) {
+    match kind {
+        Kind::Quote(children, _)
+        | Kind::List(_, children)
+        | Kind::Item(children)
+        | Kind::Paragraph(children)
+        | Kind::Inline(children)
+        | Kind::Heading(_, children, _)
+        | Kind::Strong(children)
+        | Kind::Strike(children)
+        | Kind::Emphasis(children)
+        | Kind::Link(children, _, _, _) => pending.append(children),
+        Kind::Image(_, metadata) => pending.append(&mut metadata.children),
+        Kind::Table(table) => {
+            for cell in table
+                .header
+                .iter_mut()
+                .chain(table.rows.iter_mut().flatten())
+            {
+                pending.append(&mut cell.children);
+            }
+        }
+        _ => {}
+    }
+}
+
 /// Block and inline structures admitted by the configured parser.
 pub enum Kind {
     /// Caller-owned block classification and parsed content.

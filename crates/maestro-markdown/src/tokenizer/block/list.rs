@@ -1,14 +1,12 @@
 //! List admission and item continuation framing.
 use crate::{
     Kind, MarkedOptions, Node,
-    inline::ScopeKey,
-    lexer::Lexer,
+    lexer::{Done, Frame, Level, Lexer, Step},
     rules,
-    source::{ScopeSource, Segmented},
+    source::{Cursor, ScopeSource, Segmented},
     tokenizer::capture,
 };
 use maestro_text::is_whitespace_scalar;
-use std::collections::HashMap;
 mod state;
 use state::ItemLines;
 
@@ -84,15 +82,22 @@ pub(crate) struct ListState {
 }
 
 impl ListState {
-    /// Complete the trailing item and admit the next marker's first line; nested items
-    /// recurse through the list driver, so the replaced states stay out of its frame.
+    /// Complete the trailing item and admit the next marker's first line.
     fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
         let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
         self.completed.push(previous);
     }
 
-    /// Transfer each child's single output into its final item without cloning it.
-    pub(crate) fn finish(mut self, items: &mut [Node], scopes: &mut HashMap<ScopeKey, Segmented>) {
+    /// The item this level admits, from a replayed position or the trailing item.
+    fn item_mut(&mut self, replay: Option<usize>) -> Option<&mut ItemLines> {
+        match replay {
+            Some(index) => self.completed.get_mut(index),
+            None => Some(&mut self.item),
+        }
+    }
+
+    /// Produce each item's output and whether the list is loose.
+    pub(crate) fn outputs(mut self) -> (Vec<crate::lexer::BlockTokens>, bool) {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| {
             let mut retained = crate::tests::Retained::default();
@@ -124,21 +129,284 @@ impl ListState {
                 });
             outputs.push(output);
         }
-        for (output, node) in outputs.into_iter().zip(items) {
-            scopes.extend(output.scopes);
-            if let Kind::Item(children) = &mut node.kind {
-                *children = output.nodes;
+        (outputs, loose)
+    }
+}
+
+/// A recognized list whose items are admitted by their own levels.
+pub(crate) struct ListEntry {
+    /// Complete list operand.
+    pub(crate) source: Segmented,
+    /// Retained list identity and trailing item.
+    pub(crate) state: Box<ListState>,
+    /// Bytes the first marker already consumed.
+    pub(crate) offset: usize,
+}
+
+/// Where a completed list level delivers its node.
+pub(crate) enum ListTarget {
+    /// A container step in an enclosing block level.
+    Container,
+    /// The enclosing quote level, which publishes this node into its output.
+    Resumed,
+}
+
+/// One list level, suspended while an item admits its body.
+pub(crate) struct ListFrame {
+    /// Complete list operand.
+    source: Segmented,
+    /// Retained list identity, trailing item and completed items.
+    state: Option<Box<ListState>>,
+    /// Logical offset of the next unadmitted line.
+    offset: usize,
+    /// Published item wrappers, in authored order.
+    items: Vec<Node>,
+    /// Remaining physical lines.
+    pending: Cursor,
+    /// Where this level delivers its node.
+    target: ListTarget,
+    /// Next action of this level.
+    phase: ListPhase,
+}
+
+/// Next action of one list level.
+enum ListPhase {
+    /// Replay completed items for a caller tokenizer, from this index.
+    Replay(usize),
+    /// Scan the remaining physical lines.
+    Lines,
+    /// Await one item's admission; `next` begins the following item.
+    Item {
+        /// Following item's first line, when a marker begins one.
+        next: Option<Next>,
+        /// Completed item being replayed for a caller tokenizer.
+        replay: Option<usize>,
+        /// Operand of the item whose body a child level admits.
+        awaiting: Option<Segmented>,
+    },
+    /// The list cannot be published.
+    Reject,
+    /// Publish the completed list.
+    Publish,
+}
+
+/// A following item's first line and its marker.
+struct Next {
+    /// Complete first physical line of the following item.
+    line: ScopeSource,
+    /// Marker identity of the following item.
+    marker: Marker,
+}
+
+impl ListFrame {
+    /// Start one list level over its recognized operand.
+    pub(crate) fn new(entry: ListEntry, target: ListTarget) -> Self {
+        Self::start(entry.source, entry.state, entry.offset, Vec::new(), target)
+    }
+
+    /// Start one list level resuming a trailing item's retained history.
+    pub(crate) fn resuming(
+        source: Segmented,
+        mut state: Box<ListState>,
+        items: Vec<Node>,
+        target: ListTarget,
+    ) -> Self {
+        let start = state.item_start;
+        let offset = state.item.resume(&source, start);
+        Self::start(source, state, offset, items, target)
+    }
+
+    /// Keep the wrappers of the completed items and the list's identity.
+    fn start(
+        source: Segmented,
+        state: Box<ListState>,
+        offset: usize,
+        mut items: Vec<Node>,
+        target: ListTarget,
+    ) -> Self {
+        items.truncate(state.completed.len());
+        Self {
+            source,
+            state: Some(state),
+            offset,
+            items,
+            pending: Cursor::default(),
+            target,
+            phase: ListPhase::Replay(0),
+        }
+    }
+
+    /// Scan lines, admit the trailing item and publish this level.
+    pub(crate) fn step<E>(&mut self, lexer: &mut Lexer<'_, E>) -> Step {
+        loop {
+            let step = match self.phase {
+                ListPhase::Replay(index) => self.replay(lexer, index),
+                ListPhase::Lines => self.lines(lexer),
+                ListPhase::Item { .. } => return Step::Again,
+                ListPhase::Reject => return Step::Done(Done::Rejected),
+                ListPhase::Publish => return self.publish(lexer),
+            };
+            if let Some(step) = step {
+                return step;
             }
-            if loose {
-                loosen(node);
-            }
+        }
+    }
+
+    /// Replay one completed item for a caller tokenizer, or move on to the lines.
+    fn replay<E>(&mut self, lexer: &mut Lexer<'_, E>, index: usize) -> Option<Step> {
+        if lexer.tokenizer.is_some() && index < self.completed() {
+            return Some(self.begin_item(lexer, true, None, Some(index)));
+        }
+        self.phase = ListPhase::Lines;
+        self.pending
+            .segmented(self.source.select(self.offset..self.source.len()));
+        None
+    }
+
+    /// Admit the next physical line, or admit the trailing item once lines end.
+    fn lines<E>(&mut self, lexer: &mut Lexer<'_, E>) -> Option<Step> {
+        let Some(line) = self.pending.line() else {
+            return Some(self.begin_item(lexer, false, None, None));
+        };
+        let line = line.materialize();
+        let state = self.state.as_deref_mut()?;
+        if state.item.append(&line) {
+            self.offset += line.text.len();
+            return None;
+        }
+        let next = marker(&line.text).filter(|next| next.follows(&state.first));
+        Some(match next {
+            Some(marker) => self.begin_item(lexer, true, Some(Next { line, marker }), None),
+            None => self.begin_item(lexer, false, None, None),
+        })
+    }
+
+    /// Continue after the block level admitting one item's body completed.
+    pub(crate) fn resumed<E>(&mut self, lexer: &mut Lexer<'_, E>, done: Done) -> Option<Frame> {
+        let Done::Blocks(output, open) = done else {
+            return None;
+        };
+        let ListPhase::Item {
+            replay, awaiting, ..
+        } = &mut self.phase
+        else {
+            return None;
+        };
+        let body = awaiting.take()?;
+        let replay = *replay;
+        let state = self.state.as_deref_mut()?;
+        if let Some(item) = state.item_mut(replay) {
+            item.child.restore_output(output);
+            lexer.settle(&body, &mut item.child, open);
+        }
+        self.item_finished(lexer);
+        None
+    }
+
+    /// Begin admitting one item's body, or continue when it has nothing to admit.
+    fn begin_item<E>(
+        &mut self,
+        lexer: &mut Lexer<'_, E>,
+        following: bool,
+        next: Option<Next>,
+        replay: Option<usize>,
+    ) -> Step {
+        let Some(state) = self.state.as_deref_mut() else {
+            self.phase = ListPhase::Reject;
+            return Step::Done(Done::Rejected);
+        };
+        let Some(item) = state.item_mut(replay) else {
+            self.phase = ListPhase::Reject;
+            return Step::Done(Done::Rejected);
+        };
+        let (body, prefix) = operand(item, following);
+        let rest = lexer.reopen(&body, prefix, &mut item.child);
+        self.phase = ListPhase::Item {
+            next,
+            replay,
+            awaiting: rest.is_some().then_some(body),
+        };
+        let Some(rest) = rest else {
+            lexer.top = true;
+            self.item_finished(lexer);
+            return Step::Again;
+        };
+        lexer.top = item.child.enter_top();
+        let output = item.child.take_output();
+        Step::Push(Frame::Run(lexer.block_run(rest, output, Level::Item)))
+    }
+
+    /// Run the actions that follow one item's admission.
+    fn item_finished<E>(&mut self, lexer: &Lexer<'_, E>) {
+        let ListPhase::Item { next, replay, .. } =
+            std::mem::replace(&mut self.phase, ListPhase::Reject)
+        else {
+            return;
+        };
+        if let Some(index) = replay {
+            self.phase = ListPhase::Replay(index + 1);
+            return;
+        }
+        self.phase = ListPhase::Lines;
+        let Some(state) = self.state.as_deref_mut() else {
+            return;
+        };
+        let Some(node) = wrapper(&state.item) else {
+            self.phase = ListPhase::Reject;
+            return;
+        };
+        self.items.push(node);
+        let Some(Next { line, marker }) = next else {
+            self.phase = ListPhase::Publish;
+            return;
+        };
+        state.item_start = self.offset;
+        state.begin(&line, &marker, lexer.options);
+        self.offset += marker.line;
+    }
+
+    /// Number of completed items a caller tokenizer replays.
+    fn completed(&self) -> usize {
+        self.state
+            .as_deref()
+            .map_or(0, |state| state.completed.len())
+    }
+
+    /// Publish the completed list into the level that suspended for it.
+    fn publish<E>(&mut self, lexer: &mut Lexer<'_, E>) -> Step {
+        lexer.top = true;
+        let Some(state) = self.state.take() else {
+            return Step::Done(Done::Rejected);
+        };
+        let end = state.item_start + state.item.raw_end();
+        let raw = self.source.select(0..end);
+        let Some(range) = raw.native(&(0..end)) else {
+            return Step::Done(Done::Rejected);
+        };
+        let node = Node {
+            range,
+            authored: raw.mapped(),
+            kind: Kind::List(state.first.start, std::mem::take(&mut self.items)),
+        };
+        match self.target {
+            ListTarget::Container => Step::Done(Done::Consumed {
+                consumed: end,
+                node,
+                list: Some(state),
+            }),
+            ListTarget::Resumed => Step::Done(Done::Resumed {
+                used: raw,
+                node,
+                rest: self.source.select(end..self.source.len()),
+                list: Some(state),
+            }),
         }
     }
 }
 
 impl<E> Lexer<'_, E> {
-    /// Admit a list using bounded physical-line operands.
-    pub(crate) fn list(&mut self, source: &Segmented) -> Option<(usize, Node, Box<ListState>)> {
+    /// Recognize a list marker without admitting its items.
+    pub(crate) fn list_entry(&mut self, source: &Segmented) -> Option<ListEntry> {
         let first = source.first_line();
         let first_line = first.text.split_inclusive('\n').next()?;
         #[cfg(test)]
@@ -151,82 +419,28 @@ impl<E> Lexer<'_, E> {
             self.options,
         );
         let offset = first.line;
-        let state = Box::new(ListState {
-            first,
-            item,
-            item_start: 0,
-            completed: Vec::new(),
-        });
-        self.list_tail(source, state, offset, Vec::new())
+        Some(ListEntry {
+            source: source.clone(),
+            state: Box::new(ListState {
+                first,
+                item,
+                item_start: 0,
+                completed: Vec::new(),
+            }),
+            offset,
+        })
     }
+}
 
-    /// Resume the same item's source and history after its enclosing quote grows, keeping
-    /// the wrappers `items` already published for its completed items.
-    pub(crate) fn resume_list(
-        &mut self,
-        source: &Segmented,
-        mut state: Box<ListState>,
-        items: Vec<Node>,
-    ) -> Option<(usize, Node, Box<ListState>)> {
-        let start = state.item_start;
-        let offset = state.item.resume(source, start);
-        self.list_tail(source, state, offset, items)
+/// Select one item's child operand, trimmed only for the final list item.
+fn operand(item: &ItemLines, following: bool) -> (Segmented, usize) {
+    let (mut body, _) = task(item.body());
+    let prefix = item.body().len() - body.len();
+    if !following {
+        let trimmed = item.body().len() - item.body_end();
+        body.truncate(body.len().saturating_sub(trimmed));
     }
-
-    /// Continue item admission without revisiting completed physical lines.
-    fn list_tail(
-        &mut self,
-        source: &Segmented,
-        mut state: Box<ListState>,
-        mut offset: usize,
-        mut items: Vec<Node>,
-    ) -> Option<(usize, Node, Box<ListState>)> {
-        items.truncate(state.completed.len());
-        if self.tokenizer.is_some() {
-            // A caller tokenizer observes every item again, as each list call lexes them all.
-            for item in &mut state.completed {
-                self.list_item(item, true);
-            }
-        }
-        let mut pending = crate::source::Cursor::default();
-        pending.segmented(source.select(offset..source.len()));
-        while let Some(line) = pending.line() {
-            let line = line.materialize();
-            if state.item.append(&line) {
-                offset += line.text.len();
-                continue;
-            }
-            let Some(next) = marker(&line.text).filter(|next| next.follows(&state.first)) else {
-                break;
-            };
-            self.list_item(&mut state.item, true);
-            items.push(wrapper(&state.item)?);
-            state.item_start = offset;
-            state.begin(&line, &next, self.options);
-            offset += next.line;
-        }
-        self.list_item(&mut state.item, false);
-        items.push(wrapper(&state.item)?);
-        let end = state.item_start + state.item.raw_end();
-        let raw = source.select(0..end);
-        let node = Node {
-            range: raw.native(&(0..end))?,
-            authored: raw.mapped(),
-            kind: Kind::List(state.first.start, items),
-        };
-        Some((end, node, state))
-    }
-
-    /// Admit the item's grown child operand.
-    fn list_item(&mut self, item: &mut ItemLines, following: bool) {
-        let (mut body, _) = task(item.body());
-        let prefix = item.body().len() - body.len();
-        if !following {
-            let trimmed = item.body().len() - item.body_end();
-            body.truncate(body.len().saturating_sub(trimmed));
-        }
-        self.item_blocks(&body, prefix, &mut item.child);
-    }
+    (body, prefix)
 }
 
 /// Publish an item's provisional wrapper over its recognized raw.
@@ -261,7 +475,7 @@ fn task(source: &Segmented) -> (Segmented, Option<bool>) {
 }
 
 /// Loose items promote line text without changing genuine paragraphs.
-fn loosen(item: &mut Node) {
+pub(crate) fn loosen(item: &mut Node) {
     let Kind::Item(children) = &mut item.kind else {
         return;
     };

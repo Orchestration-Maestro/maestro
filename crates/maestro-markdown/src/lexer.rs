@@ -13,7 +13,8 @@ use crate::{
     tokenizer,
 };
 pub(crate) use admission::Child;
-pub(crate) use blocks::BlockTokens;
+pub(crate) use blocks::{BlockRun, BlockTokens, Level};
+pub(crate) use frames::{Done, Frame, Pending, Step};
 use maestro_text::is_whitespace_scalar;
 use std::{
     collections::{HashMap, hash_map::Entry},
@@ -27,7 +28,7 @@ pub(crate) struct Lexer<'a, E> {
     /// First invalid extension result, propagated before inline resolution.
     error: Option<E>,
     /// Current paragraph-versus-item grammar position.
-    top: bool,
+    pub(crate) top: bool,
     /// Whether the preceding paragraph was clipped at an extension hint.
     clipped: bool,
     /// Whether the current dispatch step's grammar read its operand's apparent end.
@@ -77,9 +78,19 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Admit a document into one retained block accumulator.
     pub(crate) fn blocks(&mut self, source: ScopeSource) -> Vec<Node> {
-        let mut output = BlockTokens::default();
-        self.block_tokens(&source.into(), &mut output, false, None);
+        let output = self.append(source.into(), BlockTokens::default(), Level::Document);
         self.finish_blocks(output)
+    }
+
+    /// Append one operand's blocks to a retained accumulator.
+    pub(crate) fn append(
+        &mut self,
+        source: Segmented,
+        output: BlockTokens,
+        level: Level,
+    ) -> BlockTokens {
+        let run = self.block_run(source, output, level);
+        self.drive(Frame::Document(run))
     }
 
     /// Try a validated caller block extension before built-in tokenizers.
@@ -123,17 +134,11 @@ impl<'a, E> Lexer<'a, E> {
         }
     }
 
-    /// Recognize quote/list containers before definitions and ordinary paragraphs.
-    fn container(
-        &mut self,
-        source: &Segmented,
-    ) -> Option<(usize, Node, Option<Box<tokenizer::block::ListState>>)> {
-        self.quote(source)
-            .map(|(end, node)| (end, node, None))
-            .or_else(|| {
-                self.list(source)
-                    .map(|(end, node, state)| (end, node, Some(state)))
-            })
+    /// Recognize the container a dispatch step admits through its own frame.
+    fn container(&mut self, source: &Segmented) -> Option<Pending> {
+        self.quote_entry(source)
+            .map(Pending::Quote)
+            .or_else(|| self.list_entry(source).map(Pending::List))
     }
 
     /// Register a recognized definition only once, reporting whether it is new.
@@ -296,22 +301,24 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Resolve inline bodies after nested containers supply their definitions.
     fn resolve(&mut self, nodes: &mut [Node]) {
-        for node in nodes {
-            self.resolve_node(node);
-        }
-    }
-
-    /// Resolve one retained container without rebuilding its document.
-    fn resolve_node(&mut self, node: &mut Node) {
-        match &mut node.kind {
-            Kind::Paragraph(children) | Kind::Inline(children) | Kind::Heading(_, children, _) => {
-                self.resolve_body(&node.range, children, false);
+        let mut levels = vec![nodes.iter_mut()];
+        while let Some(level) = levels.last_mut() {
+            let Some(node) = level.next() else {
+                levels.pop();
+                continue;
+            };
+            match &mut node.kind {
+                Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
+                    levels.push(children.iter_mut());
+                }
+                Kind::Paragraph(children)
+                | Kind::Inline(children)
+                | Kind::Heading(_, children, _) => {
+                    self.resolve_body(&node.range, children, false);
+                }
+                Kind::Table(table) => self.resolve_table(table),
+                _ => {}
             }
-            Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
-                self.resolve(children);
-            }
-            Kind::Table(table) => self.resolve_table(table),
-            _ => {}
         }
     }
 

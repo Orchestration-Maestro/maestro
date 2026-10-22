@@ -77,6 +77,22 @@ empty without erasing raw consumption. Code continuations reuse one
 indentation-removal operation; definitions continuing paragraph or item text
 stay literal instead of entering the reference index.
 
+Quote and list nesting runs on retained frames, not on native recursion: one frame
+stack drives quote chunks, list items and their block admission, so every deeper
+level holds heap frames instead of stack. A nested document parses to the structure
+a shallower one already produces, with no container depth limit and no nesting
+error. Inline spans are the exception: nested emphasis, links and labels still
+interpret on the native stack.
+
+Finished containers publish their items, and replaced subtrees and dropped documents
+release their children. The walks that follow a document - inline-scope indexing,
+terminal render rows, browser markup and the documentation checks - use explicit
+worklists.
+
+Depth costs work: each level reads its own operand again, so the cost grows with
+the square of the nesting depth. A single line of 1,000 quotes parses in about a
+second in a development build, 2,000 in about four, and 4,000 in about fifteen.
+
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and
 selection share a balanced sequence, so retained ownership depth stays logarithmic
