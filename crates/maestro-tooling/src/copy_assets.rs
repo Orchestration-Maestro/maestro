@@ -1,5 +1,5 @@
 use std::fs;
-use std::io;
+use std::io::{self, Read, Write};
 use std::path::Path;
 
 /// Destination layout for prepared assets.
@@ -163,13 +163,35 @@ fn input_error(source: &Path, error: &io::Error) -> io::Error {
     )
 }
 
-/// Copy one input file, naming its source when it cannot be opened.
+/// Copy one input file, naming the source for every failure on its side.
 ///
-/// Opening first separates the two sides: `fs::copy` reports one error for either.
+/// Readings and writes are separate calls: a source failure names the source path,
+/// while a destination failure keeps the operating system's own error. The source
+/// is classified before the destination is created, so an unusable source leaves
+/// no destination behind.
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
-    fs::File::open(source).map_err(|error| input_error(source, &error))?;
-    fs::copy(source, destination)?;
-    Ok(())
+    let mut reader = fs::File::open(source).map_err(|error| input_error(source, &error))?;
+    let metadata = reader
+        .metadata()
+        .map_err(|error| input_error(source, &error))?;
+    if !metadata.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("cannot copy {}: not a regular file", source.display()),
+        ));
+    }
+    let mut writer = fs::File::create(destination)?;
+    let mut buffer = [0; 8 * 1024];
+    loop {
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|error| input_error(source, &error))?;
+        if read == 0 {
+            break;
+        }
+        writer.write_all(&buffer[..read])?;
+    }
+    writer.set_permissions(metadata.permissions())
 }
 
 /// Replace a destination file with the source's symbolic link.

@@ -1426,6 +1426,37 @@ fn maestro_unreadable_viewer_names_its_path() {
     );
 }
 
+/// Assert that a requested source file this process cannot read names its own path.
+#[cfg(unix)]
+#[test]
+fn maestro_unreadable_source_file_names_its_path() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let input = package.join("README.md");
+    let Some(_denied) = maestro_test_directory::deny(&input, 0o000).unwrap() else {
+        return;
+    };
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: {}",
+            input.display(),
+            fs::File::open(&input).unwrap_err()
+        )
+    );
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+}
+
 /// Assert that an entry this process cannot read inside a copied tree is named.
 #[cfg(unix)]
 #[test]
@@ -1488,10 +1519,17 @@ fn assert_asset_match_order() {
     fs::create_dir(themes.join("b.json")).unwrap();
     fs::write(themes.join("c.json"), "later").unwrap();
     let destination = fixture.root.join("dist");
-    assert!(
+    let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
-            .is_err()
+            .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: not a regular file",
+            themes.join("b.json").display()
+        )
     );
+    assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
     assert_eq!(
         fs::read(destination.join("modes/interactive/theme/a.json")).unwrap(),
         b"first"
@@ -1531,9 +1569,12 @@ fn maestro_asset_errors_keep_prior_copies() {
             .is_err()
     );
     fs::create_dir(&image).unwrap();
-    assert!(
+    let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
-            .is_err()
+            .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!("cannot copy {}: not a regular file", image.display())
     );
     for args in [vec![], vec!["unknown".into()], vec!["copy-assets".into()]] {
         assert!(tooling::run(&args, &fixture.child, &fixture.root).is_err());
