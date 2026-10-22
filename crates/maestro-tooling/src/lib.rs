@@ -111,19 +111,24 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             Ok(ExitCode::SUCCESS)
         }
         Some("copy-binary-assets") => {
-            let metadata = binary_manifest(cargo, checkout)?;
-            copy_assets::copy(
-                argument(args, 0, "source")?,
-                argument(args, 1, "destination")?,
-                copy_assets::Layout::Standalone {
-                    metadata: &metadata,
-                    viewer: argument(args, 2, "viewer")?,
-                },
-            )?;
+            copy_binary_assets(args, cargo, checkout)?;
             Ok(ExitCode::SUCCESS)
         }
         _ => Err(io::Error::other("unknown development command")),
     }
+}
+
+/// Copy standalone assets, resolving the composition-root manifest.
+fn copy_binary_assets(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<()> {
+    copy_assets::copy(
+        argument(args, 0, "source")?,
+        argument(args, 1, "destination")?,
+        copy_assets::Layout::Standalone {
+            metadata: &binary_manifest(cargo, checkout)?,
+            viewer: argument(args, 2, "viewer")?,
+            package: argument(args, 3, "package")?,
+        },
+    )
 }
 
 /// Print the selected asset-output directory.

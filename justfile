@@ -162,8 +162,8 @@ copy-assets source="crates/maestro-app" destination="":
     cargo run --quiet --locked -p maestro-tooling --bin development -- copy-assets "$1" "${2:-$(cargo run --quiet --locked -p maestro-tooling --bin development -- asset-output app)}"
 
 # Copy prepared standalone assets and the supplied viewer bundle.
-copy-binary-assets source="crates/maestro-app" destination="" viewer="target/maestro-viewer":
-    cargo run --quiet --locked -p maestro-tooling --bin development -- copy-binary-assets "$1" "${2:-$(cargo run --quiet --locked -p maestro-tooling --bin development -- asset-output binary)}" "$3"
+copy-binary-assets source="crates/maestro-app" destination="" viewer="target/maestro-viewer" package=(justfile_directory()):
+    cargo run --quiet --locked -p maestro-tooling --bin development -- copy-binary-assets "$1" "${2:-$(cargo run --quiet --locked -p maestro-tooling --bin development -- asset-output binary)}" "$3" "$4"
 
 # Run the explicitly selected non-provider route in the invocation directory.
 [no-cd]

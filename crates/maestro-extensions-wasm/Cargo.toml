@@ -8,6 +8,7 @@ description = "Author-side contract for native-async extension components."
 
 [[example]]
 name = "author_component"
+path = "../../examples/extensions/author_component.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

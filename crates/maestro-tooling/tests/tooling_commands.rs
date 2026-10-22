@@ -1101,27 +1101,36 @@ fn maestro_library_assets_keep_selection_and_copy_order() {
     assert!(!destination.join("modes/interactive/theme/nested").exists());
 }
 
-fn standalone_inputs(source: &Path) {
+fn standalone_inputs(source: &Path, package: &Path) {
     for (name, bytes) in [
         (
             "Cargo.toml",
             "[package]\nname = 'maestro'\nversion = '0.1.0'\nedition = '2024'\n",
         ),
-        ("README.md", "readme"),
-        ("CHANGELOG.md", "history"),
-        ("docs/.hidden", "hidden"),
-        ("examples/nested/demo.rs", "example"),
         ("viewer/index.html", "viewer"),
         ("viewer/style.css", "style"),
         ("viewer/vendor/engine.js", "engine"),
     ] {
-        let path = source.join(name);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, bytes).unwrap();
+        write_input(source, name, bytes);
+    }
+    for (name, bytes) in [
+        ("README.md", "readme"),
+        ("CHANGELOG.md", "history"),
+        ("docs/.hidden", "hidden"),
+        ("examples/nested/demo.rs", "example"),
+    ] {
+        write_input(package, name, bytes);
     }
 }
 
-fn assert_viewer_required(source: &Path, destination: &Path) {
+/// Write one fixture input below its owning directory.
+fn write_input(root: &Path, name: &str, bytes: &str) {
+    let path = root.join(name);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, bytes).unwrap();
+}
+
+fn assert_viewer_required(source: &Path, destination: &Path, package: &Path) {
     for viewer in [source.join("absent-viewer"), source.join("empty-viewer")] {
         if viewer.ends_with("empty-viewer") {
             fs::create_dir(&viewer).unwrap();
@@ -1133,6 +1142,7 @@ fn assert_viewer_required(source: &Path, destination: &Path) {
                 tooling::copy_assets::Layout::Standalone {
                     metadata: &source.join("Cargo.toml"),
                     viewer: &viewer,
+                    package,
                 }
             )
             .is_err()
@@ -1144,7 +1154,8 @@ fn assert_viewer_required(source: &Path, destination: &Path) {
 fn maestro_standalone_assets_preserve_recursive_layout() {
     let fixture = Fixture::new();
     let source = asset_inputs(&fixture);
-    standalone_inputs(&source);
+    let package = fixture.root.join("package");
+    standalone_inputs(&source, &package);
     let destination = fixture.root.join("standalone");
     fs::create_dir_all(source.join("src")).unwrap();
     fs::write(source.join("src/main.rs"), "fn main() {}\n").unwrap();
@@ -1166,6 +1177,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         source.clone().into_os_string(),
         destination.clone().into_os_string(),
         source.join("viewer").into_os_string(),
+        package.clone().into_os_string(),
     ];
     assert_eq!(
         tooling::run(&args, Path::new(env!("CARGO")), &fixture.root).unwrap(),
@@ -1188,13 +1200,99 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
-    assert_viewer_required(&source, &destination);
+    assert_viewer_required(&source, &destination, &package);
     fs::write(
         source.join("Cargo.toml"),
         "[package]\nname = 'not-the-binary'\nversion = '0.1.0'\n",
     )
     .unwrap();
     assert!(tooling::run(&args, Path::new(env!("CARGO")), &fixture.root).is_err());
+}
+
+/// Build a crate-shaped source, a separate package directory and the metadata.
+fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
+    let source = asset_inputs(fixture);
+    for (name, bytes) in [
+        ("README.md", "crate-readme"),
+        ("CHANGELOG.md", "crate-history"),
+        ("docs/crate.md", "crate-docs"),
+        ("examples/crate.txt", "crate-example"),
+    ] {
+        write_input(&source, name, bytes);
+    }
+    let package = fixture.root.join("package");
+    for (name, bytes) in [
+        ("README.md", "readme"),
+        ("CHANGELOG.md", "history"),
+        ("docs/.hidden", "hidden"),
+        ("docs/guide.md", "guide"),
+        ("examples/nested/demo.rs", "example"),
+    ] {
+        write_input(&package, name, bytes);
+    }
+    let metadata = fixture.root.join("binary/Cargo.toml");
+    write_input(&fixture.root.join("binary"), "Cargo.toml", "manifest");
+    let viewer = fixture.root.join("viewer");
+    write_input(&viewer, "index.html", "viewer");
+    (source, package, metadata, viewer)
+}
+
+#[test]
+fn maestro_package_assets_come_from_the_package_directory() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let destination = fixture.root.join("standalone");
+    tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap();
+    for (name, bytes) in [
+        ("Cargo.toml", "manifest"),
+        ("README.md", "readme"),
+        ("CHANGELOG.md", "history"),
+        ("theme/schema.json", "schema"),
+        ("assets/mark.png", "image"),
+        ("docs/.hidden", "hidden"),
+        ("docs/guide.md", "guide"),
+        ("examples/nested/demo.rs", "example"),
+        ("export-html/index.html", "viewer"),
+    ] {
+        assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
+    }
+    assert!(!destination.join("docs/crate.md").exists());
+    assert!(!destination.join("examples/crate.txt").exists());
+}
+
+#[test]
+fn maestro_missing_package_input_keeps_completed_groups() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    fs::remove_dir_all(package.join("examples")).unwrap();
+    let destination = fixture.root.join("incomplete");
+    assert!(
+        tooling::copy_assets::copy(
+            &source,
+            &destination,
+            tooling::copy_assets::Layout::Standalone {
+                metadata: &metadata,
+                viewer: &viewer,
+                package: &package,
+            },
+        )
+        .is_err()
+    );
+    assert_eq!(
+        fs::read(destination.join("theme/schema.json")).unwrap(),
+        b"schema"
+    );
+    assert_eq!(fs::read(destination.join("README.md")).unwrap(), b"readme");
+    assert!(!destination.join("examples").exists());
 }
 
 fn assert_asset_match_order() {
@@ -1290,20 +1388,24 @@ fn maestro_asset_links_keep_layout_semantics() {
             .is_err()
     );
     fs::remove_file(themes.join("dangling.json")).unwrap();
-    for name in [
-        "README.md",
-        "CHANGELOG.md",
-        "Cargo.toml",
-        "viewer/index.html",
-        "docs/content",
-        "examples/content",
-    ] {
+    let package = fixture.root.join("package");
+    for name in ["Cargo.toml", "viewer/index.html"] {
         let path = source.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, name).unwrap();
     }
-    symlink("../examples", source.join("docs/linked-dir")).unwrap();
-    symlink("missing", source.join("docs/dangling")).unwrap();
+    for name in [
+        "README.md",
+        "CHANGELOG.md",
+        "docs/content",
+        "examples/content",
+    ] {
+        let path = package.join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, name).unwrap();
+    }
+    symlink("../examples", package.join("docs/linked-dir")).unwrap();
+    symlink("missing", package.join("docs/dangling")).unwrap();
     let standalone = fixture.root.join("standalone");
     tooling::copy_assets::copy(
         &source,
@@ -1311,6 +1413,7 @@ fn maestro_asset_links_keep_layout_semantics() {
         tooling::copy_assets::Layout::Standalone {
             metadata: &source.join("Cargo.toml"),
             viewer: &source.join("viewer"),
+            package: &package,
         },
     )
     .unwrap();
@@ -1329,9 +1432,10 @@ fn maestro_asset_links_keep_layout_semantics() {
 fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
     let fixture = Fixture::new();
     let source = asset_inputs(&fixture);
-    standalone_inputs(&source);
-    fs::rename(source.join("docs"), source.join("real-docs")).unwrap();
-    std::os::unix::fs::symlink("real-docs", source.join("docs")).unwrap();
+    let package = fixture.root.join("package");
+    standalone_inputs(&source, &package);
+    fs::rename(package.join("docs"), package.join("real-docs")).unwrap();
+    std::os::unix::fs::symlink("real-docs", package.join("docs")).unwrap();
     let destination = fixture.root.join("standalone");
     tooling::copy_assets::copy(
         &source,
@@ -1339,6 +1443,7 @@ fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
         tooling::copy_assets::Layout::Standalone {
             metadata: &source.join("Cargo.toml"),
             viewer: &source.join("viewer"),
+            package: &package,
         },
     )
     .unwrap();

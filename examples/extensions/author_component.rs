@@ -11,7 +11,7 @@
 )]
 
 #[cfg(target_arch = "wasm32")]
-#[path = "../src/tests/author.rs"]
+#[path = "../../crates/maestro-extensions-wasm/src/tests/author.rs"]
 mod author;
 
 #[cfg(target_arch = "wasm32")]

@@ -7,12 +7,14 @@ use std::path::Path;
 pub enum Layout<'a> {
     /// Application library assets.
     Library,
-    /// Standalone assets with supplied metadata and viewer inputs.
+    /// Standalone assets with supplied metadata, viewer and package inputs.
     Standalone {
         /// Composition-root package manifest.
         metadata: &'a Path,
         /// Prepared runnable viewer directory.
         viewer: &'a Path,
+        /// Package directory holding the README, history, documentation and examples.
+        package: &'a Path,
     },
 }
 
@@ -23,9 +25,11 @@ pub enum Layout<'a> {
 pub fn copy(source: &Path, destination: &Path, layout: Layout<'_>) -> io::Result<()> {
     match layout {
         Layout::Library => copy_library(source, destination),
-        Layout::Standalone { metadata, viewer } => {
-            copy_standalone(source, destination, metadata, viewer)
-        }
+        Layout::Standalone {
+            metadata,
+            viewer,
+            package,
+        } => copy_standalone(source, destination, metadata, viewer, package),
     }
 }
 
@@ -62,11 +66,12 @@ fn copy_standalone(
     destination: &Path,
     metadata: &Path,
     viewer: &Path,
+    package: &Path,
 ) -> io::Result<()> {
     fs::create_dir_all(destination)?;
     fs::copy(metadata, destination.join("Cargo.toml"))?;
     for name in ["README.md", "CHANGELOG.md"] {
-        fs::copy(source.join(name), destination.join(name))?;
+        fs::copy(package.join(name), destination.join(name))?;
     }
     copy_matches(
         &source.join("src/modes/interactive/theme"),
@@ -86,7 +91,7 @@ fn copy_standalone(
     }
     copy_tree(viewer, &destination.join("export-html"))?;
     for name in ["docs", "examples"] {
-        copy_tree(&source.join(name), &destination.join(name))?;
+        copy_tree(&package.join(name), &destination.join(name))?;
     }
     Ok(())
 }

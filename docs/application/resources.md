@@ -80,7 +80,9 @@ yellow when standard error is a terminal, and the next name is tried.
 
 `resources::system_prompt::build_system_prompt` takes the prompt options. The
 documentation paths come from the running process's package directory (see
-[application configuration](configuration.md#installation-paths)). A non-empty custom
+[application configuration](configuration.md#installation-paths)); the examples
+path is `<package>/examples`, which holds the index pages, the extension
+example and the SDK examples as they land. A non-empty custom
 prompt replaces the default one. The default prompt lists the selected tools
 (read, bash, edit and write when none are selected) that have a non-empty
 snippet, or `(none)`, followed by the guidelines and the documentation paths.

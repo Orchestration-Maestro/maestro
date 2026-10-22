@@ -385,12 +385,18 @@ fn create_prepared_assets(workspace: &Workspace) {
         ("src/core/export-html/template.css", "css"),
         ("src/core/export-html/template.js", "js"),
         ("src/core/export-html/vendor/vendor.js", "vendor"),
+    ] {
+        let path = root.join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, value).unwrap();
+    }
+    for (name, value) in [
         ("README.md", "readme"),
         ("CHANGELOG.md", "history"),
         ("docs/guide.md", "guide"),
         ("examples/example.txt", "example"),
     ] {
-        let path = root.join(name);
+        let path = workspace.path().join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, value).unwrap();
     }
