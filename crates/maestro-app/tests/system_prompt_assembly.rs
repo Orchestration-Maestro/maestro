@@ -3,7 +3,7 @@
 use maestro_app::BuildSystemPromptOptions;
 use maestro_app::resources::system_prompt::build_system_prompt;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::Value;
 
 /// The package directory the documentation paths are taken from.
 const PACKAGE_DIR: &str = "/package";
@@ -69,10 +69,12 @@ fn custom_prompt_never_reads_documentation_paths() {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         scratch.enter_removed("cwd").unwrap();
         let options = |custom: Value| {
-            let options = json!({"customPrompt": custom, "cwd": "/work"});
+            let options = serde_json::json!({"customPrompt": custom, "cwd": "/work"});
             serde_json::from_value::<BuildSystemPromptOptions>(options).unwrap()
         };
-        assert!(build_system_prompt(&options(json!("Custom base")), "relative").is_ok());
+        assert!(
+            build_system_prompt(&options(serde_json::json!("Custom base")), "relative").is_ok()
+        );
         let error = build_system_prompt(&options(Value::Null), "relative").unwrap_err();
         assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
         return;
