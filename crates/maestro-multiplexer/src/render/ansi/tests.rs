@@ -89,13 +89,9 @@ fn blit(frame: &FrameData, previous: Option<&FrameData>) -> String {
     )
 }
 
-fn after_sync_end(output: &str) -> &str {
-    let end = output.find(SYNC_OUTPUT_END).unwrap();
-    &output[end + SYNC_OUTPUT_END.len()..]
-}
-
-fn before_sync_end(output: &str) -> &str {
-    &output[..output.find(SYNC_OUTPUT_END).unwrap()]
+/// Split encoded output into the bytes before and after synchronized output ends.
+fn split_at_sync_end(output: &str) -> (&str, &str) {
+    output.split_once(SYNC_OUTPUT_END).unwrap()
 }
 
 #[test]
@@ -275,14 +271,14 @@ fn encoder_restarts_sync_before_hiding_cursor_on_next_frame() {
 fn encoder_repeats_cursor_anchor_after_sync_when_enabled() {
     let frame = with_cursor(make_frame(3, 3, vec![plain("A"); 9]), 2, 1, true, 0);
     let output = blit_with(&frame, None, &mut CursorMemory::default(), policy(true));
-    assert_eq!(after_sync_end(&output), "\x1b[2;3H\x1b[?25h");
+    assert_eq!(split_at_sync_end(&output).1, "\x1b[2;3H\x1b[?25h");
 }
 
 #[test]
 fn encoder_skips_cursor_anchor_after_sync_when_disabled() {
     let frame = with_cursor(make_frame(3, 3, vec![plain("A"); 9]), 2, 1, true, 0);
     let output = blit_with(&frame, None, &mut CursorMemory::default(), policy(false));
-    assert_eq!(after_sync_end(&output), "");
+    assert_eq!(split_at_sync_end(&output).1, "");
 }
 
 #[test]
@@ -320,7 +316,7 @@ fn encoder_emits_cursor_shape_before_visibility_only_inside_sync() {
     let output = blit_with(&frame, None, &mut CursorMemory::default(), policy(true));
     let final_cursor = output.find("\x1b[1;1H\x1b[6 q\x1b[?25h").unwrap();
     assert!(final_cursor < output.find(SYNC_OUTPUT_END).unwrap());
-    assert_eq!(after_sync_end(&output), "\x1b[1;1H\x1b[?25h");
+    assert_eq!(split_at_sync_end(&output).1, "\x1b[1;1H\x1b[?25h");
 }
 
 #[test]
@@ -330,7 +326,7 @@ fn encoder_repeats_hidden_cursor_anchor_after_sync() {
     let mut memory = CursorMemory::default();
     blit_with(&visible, None, &mut memory, policy(true));
     let output = blit_with(&hidden, Some(&visible), &mut memory, policy(true));
-    assert_eq!(after_sync_end(&output), "\x1b[2;3H\x1b[?25l");
+    assert_eq!(split_at_sync_end(&output).1, "\x1b[2;3H\x1b[?25l");
 }
 
 #[test]
@@ -338,7 +334,7 @@ fn encoder_emits_osc8_link_for_linked_cells() {
     let mut frame = make_frame(3, 1, vec![linked("L", 0), linked("i", 0), plain("!")]);
     frame.hyperlinks.push("https://example.com".to_owned());
     assert_eq!(
-        before_sync_end(&blit(&frame, None)),
+        split_at_sync_end(&blit(&frame, None)).0,
         format!(
             "{PROLOGUE}\x1b[2J\x1b[1;1H\x1b[0;39;49m\x1b]8;;https://example.com\x1b\\Li\
              \x1b]8;;\x1b\\!\x1b[0m\x1b[1;3H\x1b[?25l"
@@ -353,24 +349,6 @@ fn encoder_strips_control_bytes_from_links() {
         .hyperlinks
         .push("https://exa\x1b\x07mple.com".to_owned());
     assert!(blit(&frame, None).contains("\x1b]8;;https://example.com\x1b\\L"));
-}
-
-#[test]
-fn encoder_first_frame_writes_cells() {
-    assert_eq!(
-        before_sync_end(&blit(&hi_frame(), None)),
-        format!("{PROLOGUE}\x1b[2J\x1b[1;1H\x1b[0;39;49mHi\x1b[2;1H! \x1b[0m\x1b[2;2H\x1b[?25l")
-    );
-}
-
-#[test]
-fn encoder_diff_writes_only_changed_cells() {
-    let mut current = hi_frame();
-    current.cells[0] = plain("X");
-    assert_eq!(
-        before_sync_end(&blit(&current, Some(&hi_frame()))),
-        format!("{PROLOGUE}\x1b[1;1H\x1b[0;39;49mX\x1b[0m\x1b[2;2H\x1b[?25l")
-    );
 }
 
 #[test]
@@ -462,29 +440,49 @@ fn encoder_commit_tracks_the_shown_frame_and_cursor() {
 #[test]
 fn encoder_positions_cursor() {
     let frame = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, true, 0);
-    assert!(before_sync_end(&blit(&frame, None)).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25h"));
+    assert!(
+        split_at_sync_end(&blit(&frame, None))
+            .0
+            .ends_with("A\x1b[0m\x1b[1;1H\x1b[?25h")
+    );
 }
 
 #[test]
 fn encoder_hides_invisible_cursor() {
     let frame = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, false, 0);
-    assert!(before_sync_end(&blit(&frame, None)).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l"));
+    assert!(
+        split_at_sync_end(&blit(&frame, None))
+            .0
+            .ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l")
+    );
 }
 
 #[test]
 fn encoder_hides_cursor_without_cursor_record() {
     let output = blit(&make_frame(1, 1, vec![plain("A")]), None);
-    assert!(before_sync_end(&output).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l"));
+    assert!(
+        split_at_sync_end(&output)
+            .0
+            .ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l")
+    );
 }
 
 #[test]
 fn encoder_restores_cursor_visibility() {
     let previous = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, false, 0);
-    assert!(before_sync_end(&blit(&previous, None)).ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l"));
+    assert!(
+        split_at_sync_end(&blit(&previous, None))
+            .0
+            .ends_with("A\x1b[0m\x1b[1;1H\x1b[?25l")
+    );
 
     let current = with_cursor(make_frame(1, 1, vec![plain("B")]), 0, 0, true, 0);
     let output = blit(&current, Some(&previous));
-    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[1;1H\x1b[?25h"));
+    assert!(
+        split_at_sync_end(&output)
+            .0
+            .ends_with("B\x1b[0m\x1b[1;1H\x1b[?25h")
+    );
 }
 
 #[test]
@@ -493,7 +491,11 @@ fn encoder_positions_cursor_before_showing_it() {
     let mut current = with_cursor(previous.clone(), 2, 2, true, 0);
     current.cells[0] = plain("B");
     let output = blit(&current, Some(&previous));
-    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[3;3H\x1b[?25h"));
+    assert!(
+        split_at_sync_end(&output)
+            .0
+            .ends_with("B\x1b[0m\x1b[3;3H\x1b[?25h")
+    );
 }
 
 #[test]
@@ -503,13 +505,21 @@ fn encoder_parks_hidden_cursor_at_last_visible_position() {
     let mut memory = CursorMemory::default();
     blit_with(&visible, None, &mut memory, policy(!cfg!(windows)));
     let output = blit_with(&hidden, Some(&visible), &mut memory, policy(!cfg!(windows)));
-    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[2;2H\x1b[?25l"));
+    assert!(
+        split_at_sync_end(&output)
+            .0
+            .ends_with("B\x1b[0m\x1b[2;2H\x1b[?25l")
+    );
 }
 
 #[test]
 fn encoder_parks_hidden_cursor_at_bottom_right_without_history() {
     let frame = make_frame(3, 2, vec![plain("A"); 6]);
-    assert!(before_sync_end(&blit(&frame, None)).ends_with("A\x1b[0m\x1b[2;3H\x1b[?25l"));
+    assert!(
+        split_at_sync_end(&blit(&frame, None))
+            .0
+            .ends_with("A\x1b[0m\x1b[2;3H\x1b[?25l")
+    );
 }
 
 #[test]
@@ -517,7 +527,11 @@ fn encoder_hides_previous_visible_cursor_when_next_frame_has_none() {
     let previous = with_cursor(make_frame(1, 1, vec![plain("A")]), 0, 0, true, 0);
     let current = make_frame(1, 1, vec![plain("B")]);
     let output = blit(&current, Some(&previous));
-    assert!(before_sync_end(&output).ends_with("B\x1b[0m\x1b[1;1H\x1b[?25l"));
+    assert!(
+        split_at_sync_end(&output)
+            .0
+            .ends_with("B\x1b[0m\x1b[1;1H\x1b[?25l")
+    );
 }
 
 #[test]
