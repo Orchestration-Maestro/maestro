@@ -24,7 +24,8 @@ pub struct XmlInput {
 /// Parse the source and route its root, or a document's body, through the body parsers.
 ///
 /// # Panics
-/// Panics if the source is not XML or the operation names no body route.
+/// Panics if the source is not XML, the operation names no body route, or a
+/// document has no body.
 pub fn framed(input: &XmlInput) -> Result<OpenXmlElementTree, DocxError> {
     let xml = parse_xml_string(&input.xml, true).unwrap();
     let element = OwnedXmlElement::new(xml.root());

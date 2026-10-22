@@ -290,8 +290,9 @@ unsupported semantic kinds retain `data: None`.
 parse_run}` parse an `OwnedXmlElement` selection into an `OpenXmlElementTree`.
 Their `ignore_width` flag suppresses cell widths in every property group; table
 widths remain.
-Ordered arena positions preserve separate runs and their paragraph or simple-field
-parents, including hidden paragraphs used by content controls and change wrappers.
+Ordered arena positions preserve separate runs and their parents: a paragraph or
+simple field, or a hyperlink or smart tag inside one. Hidden paragraphs used by
+content controls and change wrappers remain.
 Text, breaks, tabs, symbols, note references and field metadata remain typed;
 paragraph-level simple fields retain their result runs without evaluating fields.
 Field locks read `fldLock`, falling back to `lock` only when `fldLock` is absent;
