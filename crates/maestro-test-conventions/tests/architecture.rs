@@ -2474,7 +2474,7 @@ const DIRECTORY: &str = "maestro-test-directory";
 const TRACING: &str = "maestro-test-tracing";
 
 /// Independently declared native tracing consumers.
-const TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-workspace"];
+const TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-workspace"];
 
 /// Independently declared native directory consumers.
 const DIRECTORY_CALLERS: &[&str] = &[
@@ -2656,7 +2656,7 @@ fn tracing_support_inventory_matches_contract() {
     let documented = std::iter::once("maestro-daemon")
         .chain(specification_names(
             "from\n`maestro-daemon`",
-            "; a caller declares it only when it\nuses it",
+            "; a caller\ndeclares it only when it uses it",
         ))
         .collect::<Vec<_>>();
     support_inventory_matches_contract(TRACING, TRACING_CALLERS, &documented);

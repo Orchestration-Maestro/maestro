@@ -4004,6 +4004,7 @@ dependencies = [
  "toml_parser",
  "tracing",
  "tracing-core",
+ "tracing-subscriber",
  "unicode-width",
  "uuid",
  "windows-sys 0.61.2",
@@ -4381,12 +4382,15 @@ dependencies = [
  "icu_properties",
  "maestro-dependencies",
  "maestro-test-directory",
+ "maestro-test-tracing",
  "maestro-text",
  "num-traits",
  "png 0.17.16",
  "rustix",
  "serde",
  "serde_json",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

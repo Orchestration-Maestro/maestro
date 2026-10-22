@@ -259,6 +259,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Terminal effects:** PTY reply bytes, bell counts, directory changes and clipboard writes captured by the terminal emulator for its caller to drain after a write.
 - **Render state:** The emulator's retained viewport snapshot with whole-screen and per-row dirty flags.
 - **Image placement:** An image's position on a pane terminal's grid, given directly or through placeholder cells.
+- **Host graphics cache:** The multiplexer-side record of images uploaded to the host terminal and the placements shown there. See [host graphics](docs/terminal-emulator.md#host-graphics).
 - **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active screen; zero disables history.
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
 - **Pane runtime:** The daemon's live object for one pane terminal: the PTY child, its emulator and its agent detection task.
@@ -293,6 +294,6 @@ From `docs/specs/tool-additions.md`.
 
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
   leaf that runs a test action under a scoped tracing subscriber that sees
-  every callsite, whichever thread reaches the callsite first. Only daemon and
-  workspace may use it through native development edges.
+  every callsite, whichever thread reaches the callsite first. Only daemon,
+  terminal and workspace may use it through native development edges.
   See the [contract](docs/specs/maestro-port.md#test-tracing-owner).
