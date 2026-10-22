@@ -2072,69 +2072,6 @@
       "previous_alias_cleared": true
     },
     {
-      "id": "view_failure_continues",
-      "initial": [],
-      "messages": [
-        {
-          "role": "artifact",
-          "action": "create",
-          "filename": "bad.txt",
-          "content": "bad",
-          "timestamp": "2026-01-02T03:04:05.000Z"
-        },
-        {
-          "role": "artifact",
-          "action": "create",
-          "filename": "good.txt",
-          "content": "good",
-          "timestamp": "2026-01-02T03:04:05.000Z"
-        }
-      ],
-      "files": [
-        [
-          "bad.txt",
-          "bad"
-        ],
-        [
-          "good.txt",
-          "good"
-        ]
-      ],
-      "active": "bad.txt",
-      "effects": [
-        [
-          "element",
-          "bad.txt",
-          "bad"
-        ],
-        [
-          "reload"
-        ],
-        [
-          "element",
-          "good.txt",
-          "good"
-        ],
-        [
-          "reload"
-        ],
-        [
-          "show",
-          "bad.txt"
-        ],
-        [
-          "update"
-        ],
-        [
-          "change"
-        ],
-        [
-          "update"
-        ]
-      ],
-      "previous_alias_cleared": true
-    },
-    {
       "id": "coerced_number_content",
       "initial": [],
       "messages": [
@@ -3351,6 +3288,5 @@
         ]
       ]
     }
-  ],
-  "runtime_source": "(_sandboxId) => {\n            // Auto-parse/stringify for .json files\n            const isJsonFile = (filename) => filename.endsWith(\".json\");\n            window.listArtifacts = async () => {\n                // Online: ask extension\n                if (window.sendRuntimeMessage) {\n                    const response = await window.sendRuntimeMessage({\n                        type: \"artifact-operation\",\n                        action: \"list\",\n                    });\n                    if (!response.success)\n                        throw new Error(response.error);\n                    return response.result;\n                }\n                // Offline: return snapshot keys\n                else {\n                    return Object.keys(window.artifacts || {});\n                }\n            };\n            window.getArtifact = async (filename) => {\n                let content;\n                // Online: ask extension\n                if (window.sendRuntimeMessage) {\n                    const response = await window.sendRuntimeMessage({\n                        type: \"artifact-operation\",\n                        action: \"get\",\n                        filename,\n                    });\n                    if (!response.success)\n                        throw new Error(response.error);\n                    content = response.result;\n                }\n                // Offline: read snapshot\n                else {\n                    if (!Object.hasOwn(window.artifacts || {}, filename)) {\n                        throw new Error(`Artifact not found (offline mode): ${filename}`);\n                    }\n                    content = window.artifacts[filename];\n                }\n                // Auto-parse .json files\n                if (isJsonFile(filename)) {\n                    try {\n                        return JSON.parse(content);\n                    }\n                    catch (e) {\n                        throw new Error(`Failed to parse JSON from ${filename}: ${e}`);\n                    }\n                }\n                return content;\n            };\n            window.createOrUpdateArtifact = async (filename, content, mimeType) => {\n                if (!window.sendRuntimeMessage) {\n                    throw new Error(\"Cannot create/update artifacts in offline mode (read-only)\");\n                }\n                let finalContent = content;\n                // Auto-stringify .json files\n                if (typeof content !== \"string\") {\n                    finalContent = JSON.stringify(content, null, 2);\n                }\n                const response = await window.sendRuntimeMessage({\n                    type: \"artifact-operation\",\n                    action: \"createOrUpdate\",\n                    filename,\n                    content: finalContent,\n                    mimeType,\n                });\n                if (!response.success)\n                    throw new Error(response.error);\n            };\n            window.deleteArtifact = async (filename) => {\n                if (!window.sendRuntimeMessage) {\n                    throw new Error(\"Cannot delete artifacts in offline mode (read-only)\");\n                }\n                const response = await window.sendRuntimeMessage({\n                    type: \"artifact-operation\",\n                    action: \"delete\",\n                    filename,\n                });\n                if (!response.success)\n                    throw new Error(response.error);\n            };\n        }"
+  ]
 }

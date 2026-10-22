@@ -165,8 +165,13 @@ where
                 self.change(command, action, filename, Some(content)).await
             }
             "delete" => {
-                let (command, action) = (ArtifactCommand::Delete, ArtifactAction::Delete);
-                self.change(command, action, filename, None).await
+                self.change(
+                    ArtifactCommand::Delete,
+                    ArtifactAction::Delete,
+                    filename,
+                    None,
+                )
+                .await
             }
             _ => ArtifactResponse::Failed(format!("Unknown artifact action: {action}")),
         }
@@ -191,15 +196,18 @@ where
         };
         let params = ArtifactsParams {
             command,
-            filename: filename.clone(),
-            content: content.clone(),
+            filename,
+            content,
             old_str: None,
             new_str: None,
         };
-        if let Err(error) = panel.execute(params, Options::default()).await {
+        if let Err(error) = panel.execute(&params, Options::default()).await {
             return ArtifactResponse::Failed(error);
         }
         if let Some(agent) = agent {
+            let ArtifactsParams {
+                filename, content, ..
+            } = params;
             agent.push_artifact(ArtifactMessage {
                 title: matches!(action, ArtifactAction::Create).then(|| filename.clone()),
                 action,

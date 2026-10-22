@@ -11,7 +11,9 @@ use super::prompts::{
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
-use maestro_models::{BoxFuture, SharedHandle, StringEnumOptions, Tool, present, string_enum};
+use maestro_models::{
+    BoxFuture, Execution, SharedHandle, StringEnumOptions, Threaded, Tool, present, string_enum,
+};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
@@ -138,8 +140,8 @@ struct State {
     artifacts: Artifacts,
     /// Selected filename, if any.
     active: Option<String>,
-    /// Conversation whose attachments HTML artifacts can read.
-    agent: Option<SharedHandle<dyn AgentLike>>,
+    /// Conversation whose attachments HTML artifacts can read, while its owner keeps it alive.
+    agent: Option<<Threaded as Execution>::Weak<dyn AgentLike>>,
 }
 /// Shared panel state, independent of its presentation operations.
 #[derive(Clone)]
@@ -156,7 +158,7 @@ impl ArtifactsPanelState {
     pub fn get_html_artifact_runtime_providers<V: RuntimeProviderValue>(
         &self,
     ) -> Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>> {
-        let agent = read(&self.0).agent.clone();
+        let agent = read(&self.0).agent.as_ref().and_then(Threaded::upgrade);
         let attachments = agent.map(|agent| agent.attachments()).unwrap_or_default();
         let mut providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>> = Vec::new();
         if !attachments.is_empty() {
@@ -218,7 +220,7 @@ macro_rules! caller {
                         let panel = panel.clone();
                         Box::pin(async move {
                             let text = panel
-                                .execute(params, Options::default())
+                                .execute(&params, Options::default())
                                 .await
                                 .unwrap_or_else(|error| error);
                             Ok(AgentToolResult::<()>::text_result(text, None))
@@ -255,9 +257,10 @@ where
     pub fn active_filename(&self) -> Option<String> {
         read(&self.state.0).active.clone()
     }
-    /// Retain the conversation whose attachments HTML artifacts can read.
-    pub fn set_agent(&self, agent: Option<SharedHandle<dyn AgentLike>>) {
-        let previous = std::mem::replace(&mut write(&self.state.0).agent, agent);
+    /// Retain the conversation whose attachments HTML artifacts can read without owning it.
+    pub fn set_agent(&self, agent: Option<&SharedHandle<dyn AgentLike>>) {
+        let retained = agent.map(Threaded::downgrade);
+        let previous = std::mem::replace(&mut write(&self.state.0).agent, retained);
         drop(previous);
     }
     /// Select an existing file and request that the host open the panel.
@@ -277,7 +280,7 @@ where
     /// Dispatch one typed command; a failure keeps its returned error text.
     pub(crate) async fn execute(
         &self,
-        params: ArtifactsParams,
+        params: &ArtifactsParams,
         options: Options,
     ) -> Result<String, String> {
         match params.command {
@@ -314,10 +317,10 @@ where
         write(&self.state.0).artifacts = Arc::new(RwLock::new(copy));
     }
     /// Create a dated record before issuing presentation effects.
-    async fn create(&self, params: ArtifactsParams, options: Options) -> Result<String, String> {
+    async fn create(&self, params: &ArtifactsParams, options: Options) -> Result<String, String> {
         let artifacts = self.artifacts();
         let exists = read(&artifacts).contains_key(&params.filename);
-        let content = created_content(&params, exists)?;
+        let content = created_content(params, exists)?;
         self.insert(&artifacts, &params.filename, content);
         self.replace_map(&artifacts);
         Ok(self.created(&params.filename, content, options).await)
@@ -349,9 +352,9 @@ where
         .await
     }
     /// Edit a retained record and publish its content before notifications.
-    async fn edit(&self, params: ArtifactsParams, options: Options) -> Result<String, String> {
+    async fn edit(&self, params: &ArtifactsParams, options: Options) -> Result<String, String> {
         let record = self.find(&params.filename)?;
-        let content = edited_content(&params, &read(&record).content)?;
+        let content = edited_content(params, &read(&record).content)?;
         let now = self.presentation.now();
         {
             let mut record = write(&record);

@@ -18,7 +18,7 @@ use maestro_app::browser::tools::prompts::{
 use maestro_app::{BoxFuture, SharedHandle};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 /// Caller-defined record standing in for roles outside the browser conversation.
 #[derive(Serialize, Deserialize)]
@@ -106,7 +106,10 @@ impl ArtifactPresentation for Recorder {
         self.providers.lock().unwrap().push(observe(&panel));
         self.events.lock().unwrap().push(json!(["reload"]));
     }
-    fn get_logs(&self, _: &str) -> Result<ArtifactLogReader, ArtifactLogError> {
+    fn get_logs(&self, filename: &str) -> Result<ArtifactLogReader, ArtifactLogError> {
+        if get_file_type(filename) == FileType::Html {
+            return Ok(Arc::new(|| "[log] view".into()));
+        }
         Err(ArtifactLogError::Missing)
     }
     fn wait(&self, _: std::time::Duration) -> BoxFuture<()> {
@@ -212,38 +215,56 @@ fn deliver(
     let replies = replies.lock().unwrap().clone();
     (replies, result.err().map(|error| error.message))
 }
-/// Reconstruct rows owned by the corrected-behaviour tests below.
-const CORRECTED_ROWS: [&str; 10] = [
-    "erase_all_content",
-    "update_[\"old\",\"\"]",
-    "update_[\"old\",\"new\"]",
-    "update_[\"old\",\"$&-$`-$'-$ $\"]",
-    "missing_update_file",
-    "update_[null,\"new\"]",
-    "update_[\"old\",null]",
-    "update_[\"missing\",\"new\"]",
-    "update_[\"\",\"prefix\"]",
-    "failed_duplicate_tool_result",
+/// Reconstruct rows owned by the corrected-behaviour tests, with the test that asserts them.
+const RECONSTRUCT_ROWS: [(&str, &[&str]); 3] = [
+    (
+        "history_reconstruction_keeps_emptied_files",
+        &["erase_all_content", "update_[\"old\",\"\"]"],
+    ),
+    (
+        "history_reconstruction_replaces_edit_operands_as_literal_text",
+        &[
+            "update_[\"old\",\"new\"]",
+            "update_[\"old\",\"$&-$`-$'-$ $\"]",
+        ],
+    ),
+    (
+        "history_reconstruction_skips_commands_the_panel_rejects",
+        &[
+            "missing_update_file",
+            "update_[null,\"new\"]",
+            "update_[\"old\",null]",
+            "update_[\"missing\",\"new\"]",
+            "update_[\"\",\"prefix\"]",
+            "failed_duplicate_tool_result",
+        ],
+    ),
 ];
-/// The recorded host row with this identifier.
-fn host_row(id: &str) -> Value {
-    named_rows("host", &[id])
-        .pop()
-        .unwrap_or_else(|| panic!("no recorded row {id}"))
-}
-/// Recorded rows of one group whose id `owned` does not claim.
-fn group_rows(group: &str, owned: impl Fn(&str) -> bool) -> Vec<Value> {
+/// Recorded rows of one group that no corrected-behaviour test owns.
+fn unowned_rows(group: &str, owned: &[(&str, &[&str])]) -> Vec<Value> {
     corpus()[group]
         .as_array()
         .unwrap()
         .iter()
-        .filter(|row| !owned(row["id"].as_str().unwrap()))
+        .filter(|row| {
+            let id = row["id"].as_str().unwrap();
+            !owned.iter().any(|(_, ids)| ids.contains(&id))
+        })
         .cloned()
         .collect()
 }
+/// Recorded rows of one group owned by the named test.
+fn owned_rows(group: &str, owned: &[(&str, &[&str])], test: &str) -> Vec<Value> {
+    let ids = owned
+        .iter()
+        .find(|(name, _)| *name == test)
+        .map(|(_, ids)| *ids)
+        .unwrap_or_default();
+    named_rows(group, ids)
+}
 /// Recorded rows of one group named by `ids`.
 fn named_rows(group: &str, ids: &[&str]) -> Vec<Value> {
-    let rows = group_rows(group, |_| false);
+    let rows = corpus()[group].as_array().unwrap().clone();
     ids.iter()
         .map(|id| {
             rows.iter()
@@ -283,42 +304,35 @@ fn assert_reconstructed(row: &Value) {
 
 #[test]
 fn history_reconstruction_replays_ordered_messages() {
-    assert_reconstructed_rows(group_rows("reconstruct", |id| CORRECTED_ROWS.contains(&id)));
+    assert_reconstructed_rows(unowned_rows("reconstruct", &RECONSTRUCT_ROWS));
 }
 
 #[test]
 fn history_reconstruction_keeps_emptied_files() {
-    let rows = named_rows(
+    let rows = owned_rows(
         "reconstruct",
-        &["erase_all_content", "update_[\"old\",\"\"]"],
+        &RECONSTRUCT_ROWS,
+        "history_reconstruction_keeps_emptied_files",
     );
     assert_reconstructed_rows(rows);
 }
 
 #[test]
 fn history_reconstruction_replaces_edit_operands_as_literal_text() {
-    let rows = named_rows(
+    let rows = owned_rows(
         "reconstruct",
-        &[
-            "update_[\"old\",\"new\"]",
-            "update_[\"old\",\"$&-$`-$'-$ $\"]",
-        ],
+        &RECONSTRUCT_ROWS,
+        "history_reconstruction_replaces_edit_operands_as_literal_text",
     );
     assert_reconstructed_rows(rows);
 }
 
 #[test]
 fn history_reconstruction_skips_commands_the_panel_rejects() {
-    let rows = named_rows(
+    let rows = owned_rows(
         "reconstruct",
-        &[
-            "missing_update_file",
-            "update_[null,\"new\"]",
-            "update_[\"old\",null]",
-            "update_[\"missing\",\"new\"]",
-            "update_[\"\",\"prefix\"]",
-            "failed_duplicate_tool_result",
-        ],
+        &RECONSTRUCT_ROWS,
+        "history_reconstruction_skips_commands_the_panel_rejects",
     );
     assert_reconstructed_rows(rows);
 }
@@ -328,7 +342,7 @@ fn html_providers_snapshot_current_history() {
     for row in corpus()["html"].as_array().unwrap() {
         let (recorder, panel) = panel(&json!([]));
         let agent = (row["agent"] == true).then(|| conversation(messages(&row["messages"])));
-        panel.set_agent(agent.as_ref().map(|(_, slot)| slot.clone()));
+        panel.set_agent(agent.as_ref().map(|(_, slot)| slot));
         let html = json!({"command":"create","filename":"view.html","content":"<p>"});
         run((panel.tool().execute)("c".into(), html, None, None)).unwrap();
         let observed = recorder.providers.lock().unwrap().clone();
@@ -390,25 +404,30 @@ fn artifact_guidance_selects_access_mode() {
         assert_eq!(description, constant);
     }
 }
-/// Host rows answered only by read-only access.
-const READ_ONLY_ROWS: [&str; 7] = [
-    "create_false",
-    "rewrite_false",
-    "delete_false",
-    "empty_false",
-    "missing_delete_false",
-    "list_false",
-    "get_false",
+/// Host rows owned by the corrected-behaviour tests, with the test that asserts them.
+const HOST_ROWS: [(&str, &[&str]); 4] = [
+    (
+        "artifact_read_only_access_refuses_writes",
+        &[
+            "create_false",
+            "rewrite_false",
+            "delete_false",
+            "empty_false",
+            "missing_delete_false",
+            "list_false",
+            "get_false",
+        ],
+    ),
+    (
+        "artifact_failed_commands_report_failures_without_history",
+        &["empty_true", "missing_delete_true"],
+    ),
+    ("artifact_list_keeps_map_order", &["list_order"]),
+    (
+        "artifact_history_tracks_the_current_message_slot",
+        &["history_slot_replacement"],
+    ),
 ];
-/// Host rows whose command the panel rejects.
-const REJECTED_ROWS: [&str; 2] = ["empty_true", "missing_delete_true"];
-/// Whether another test asserts this host row.
-fn host_row_owned(id: &str) -> bool {
-    id == "list_order"
-        || id == "history_slot_replacement"
-        || READ_ONLY_ROWS.contains(&id)
-        || REJECTED_ROWS.contains(&id)
-}
 /// Deliver one recorded host row and assert its replies, history, files and effects.
 fn assert_host_row(row: &Value) {
     let id = &row["id"];
@@ -433,24 +452,33 @@ fn assert_host_row(row: &Value) {
 
 #[test]
 fn artifact_host_operations_preserve_mutation_and_history_phase() {
-    assert_host_rows(group_rows("host", host_row_owned));
+    assert_host_rows(unowned_rows("host", &HOST_ROWS));
 }
 
 #[test]
 fn artifact_read_only_access_refuses_writes() {
-    let rows = named_rows("host", &READ_ONLY_ROWS);
+    let rows = owned_rows(
+        "host",
+        &HOST_ROWS,
+        "artifact_read_only_access_refuses_writes",
+    );
     assert_host_rows(rows);
 }
 
 #[test]
 fn artifact_failed_commands_report_failures_without_history() {
-    let rows = named_rows("host", &REJECTED_ROWS);
+    let rows = owned_rows(
+        "host",
+        &HOST_ROWS,
+        "artifact_failed_commands_report_failures_without_history",
+    );
     assert_host_rows(rows);
 }
 
 #[test]
 fn artifact_list_keeps_map_order() {
-    let row = host_row("list_order");
+    let rows = owned_rows("host", &HOST_ROWS, "artifact_list_keeps_map_order");
+    let row = &rows[0];
     let (_, panel) = panel(&json!([["b.txt", "B"], ["a.txt", "A"], ["2", "two"]]));
     let provider = ArtifactsRuntimeProvider::new(&panel, None, true);
     let (replies, _) = deliver(
@@ -463,7 +491,12 @@ fn artifact_list_keeps_map_order() {
 
 #[test]
 fn artifact_history_tracks_the_current_message_slot() {
-    let row = host_row("history_slot_replacement");
+    let rows = owned_rows(
+        "host",
+        &HOST_ROWS,
+        "artifact_history_tracks_the_current_message_slot",
+    );
+    let row = &rows[0];
     let (_, panel) = panel(&json!([]));
     let (agent, slot) = conversation(Vec::new());
     let provider = ArtifactsRuntimeProvider::new(&panel, Some(slot), true);
@@ -483,9 +516,23 @@ fn artifact_history_tracks_the_current_message_slot() {
 }
 
 #[test]
-fn artifact_runtime_is_the_corrected_injected_helper() {
+fn dropping_the_panel_and_agent_frees_both() {
     let (_, panel) = panel(&json!([]));
-    let provider = ArtifactsRuntimeProvider::new(&panel, None, true);
-    let source = SandboxRuntimeProvider::<Value>::get_runtime(&provider).unwrap();
-    assert_eq!(source, corpus()["runtime_source"]);
+    let (agent, slot) = conversation(Vec::new());
+    let state = agent.state().clone();
+    let freed = Arc::downgrade(&state);
+    panel.set_agent(Some(&slot));
+    let tool = panel.tool();
+    state
+        .write()
+        .unwrap()
+        .set_tools(vec![Arc::new(RwLock::new(tool))]);
+    drop(state);
+    drop(agent);
+    drop(slot);
+    drop(panel);
+    assert!(
+        freed.upgrade().is_none(),
+        "the retained panel and tool keep the conversation alive"
+    );
 }

@@ -53,7 +53,7 @@
                     throw new Error("Cannot create/update artifacts in offline mode (read-only)");
                 }
                 let finalContent = content;
-                // Auto-stringify .json files
+                // Serialize non-string content once
                 if (typeof content !== "string") {
                     finalContent = JSON.stringify(content, null, 2);
                 }

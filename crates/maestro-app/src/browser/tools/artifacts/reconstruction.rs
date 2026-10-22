@@ -18,10 +18,10 @@ where
 {
     /// Replace every artifact with the files the conversation's artifact history leaves.
     ///
-    /// History entries apply as recorded; artifact tool results apply only when the
-    /// live command would have accepted them. Views are removed and recreated without
-    /// HTML waits or per-file notifications; the first file is then selected and the
-    /// host is notified once.
+    /// History entries apply as recorded, and an entry whose content is empty leaves the
+    /// file out; artifact tool results apply only when the live command would have
+    /// accepted them. Views are removed and recreated without HTML waits or per-file
+    /// notifications; the first file is then selected and the host is notified once.
     pub async fn reconstruct_from_messages<C: CustomMessage>(
         &self,
         messages: &[AgentMessage<CustomAgentMessages<C>>],
@@ -30,9 +30,7 @@ where
         let previous = self.artifacts();
         let names: Vec<String> = {
             let mut previous = write(&previous);
-            let names = previous.keys().cloned().collect();
-            previous.clear();
-            names
+            previous.drain(..).map(|(name, _)| name).collect()
         };
         for name in &names {
             self.presentation.remove_artifact_element(name);
@@ -64,8 +62,8 @@ where
 fn replay<C: CustomMessage>(
     messages: &[AgentMessage<CustomAgentMessages<C>>],
 ) -> IndexMap<String, String> {
-    let calls = artifact_calls(messages);
     let declaration = definition();
+    let calls = artifact_calls(messages, &declaration.name);
     let mut files = IndexMap::new();
     for message in messages {
         match message {
@@ -77,7 +75,7 @@ fn replay<C: CustomMessage>(
             AgentMessage::ToolResult(result) => {
                 let result = read(result);
                 let call = calls.get(&result.tool_call_id);
-                if result.tool_name == "artifacts"
+                if result.tool_name == declaration.name
                     && !result.is_error
                     && let Some(params) = call.and_then(|call| prepared(&declaration, call))
                 {
@@ -92,6 +90,7 @@ fn replay<C: CustomMessage>(
 /// Every assistant artifact tool call by identifier; a later duplicate wins.
 fn artifact_calls<C: CustomMessage>(
     messages: &[AgentMessage<CustomAgentMessages<C>>],
+    tool_name: &str,
 ) -> HashMap<String, ToolCall> {
     let mut calls = HashMap::new();
     for message in messages {
@@ -100,7 +99,7 @@ fn artifact_calls<C: CustomMessage>(
         };
         for block in &read(assistant).content {
             if let AssistantContent::ToolCall(call) = block
-                && call.name == "artifacts"
+                && call.name == tool_name
             {
                 calls.insert(call.id.clone(), call.clone());
             }
@@ -140,11 +139,10 @@ fn apply_command(files: &mut IndexMap<String, String>, params: &ArtifactsParams)
             }
         }
         ArtifactCommand::Update | ArtifactCommand::Rewrite => {
-            let edited = files
-                .get(&params.filename)
-                .and_then(|current| edited_content(params, current).ok());
-            if let Some(edited) = edited {
-                files.insert(params.filename.clone(), edited);
+            if let Some(current) = files.get_mut(&params.filename)
+                && let Ok(edited) = edited_content(params, current)
+            {
+                *current = edited;
             }
         }
         ArtifactCommand::Delete => {

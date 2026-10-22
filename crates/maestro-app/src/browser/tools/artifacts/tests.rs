@@ -520,7 +520,7 @@ async fn step_output(
             return json!(
                 panel
                     .execute(
-                        params,
+                        &params,
                         Options {
                             silent: options.silent,
                             skip_wait: options.skip_wait
@@ -988,7 +988,7 @@ async fn timer_witness(recreate_before_completion: bool) -> (bool, Value, State,
     .unwrap();
     panel
         .execute(
-            params,
+            &params,
             Options {
                 silent: false,
                 skip_wait: true,

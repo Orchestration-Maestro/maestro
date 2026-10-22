@@ -102,7 +102,8 @@ pub trait RuntimeProviderValue: SandboxValue + Clone {
     /// # Errors
     /// Returns a native property-access failure.
     fn project_artifact_operation(&self) -> Result<ArtifactOperation, DiagnosticErrorInfo>;
-    /// Snapshot artifact contents as one object keyed by filename in map order.
+    /// Snapshot artifact contents as one object keyed by filename; a browser object
+    /// orders integer-like keys first.
     ///
     /// # Errors
     /// Returns a native object-construction failure.
@@ -203,17 +204,17 @@ impl RuntimeProviderValue for serde_json::Value {
         ))
     }
     fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo> {
-        Ok(match response {
-            ArtifactResponse::Done => return Self::success_response(),
+        match response {
+            ArtifactResponse::Done => Self::success_response(),
             ArtifactResponse::Listed(names) => {
-                serde_json::json!({"success": true, "result": names})
+                Ok(serde_json::json!({"success": true, "result": names}))
             }
             ArtifactResponse::Read(content) => {
-                serde_json::json!({"success": true, "result": content})
+                Ok(serde_json::json!({"success": true, "result": content}))
             }
             ArtifactResponse::Failed(error) => {
-                serde_json::json!({"success": false, "error": error})
+                Ok(serde_json::json!({"success": false, "error": error}))
             }
-        })
+        }
     }
 }

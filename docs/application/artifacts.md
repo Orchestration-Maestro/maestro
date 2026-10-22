@@ -70,27 +70,33 @@ These local types do not change the default SDK tool's thread-safety.
 `reconstruct_from_messages` rebuilds the panel from a conversation. Assistant
 artifact calls are collected by identifier, where a later duplicate wins; every
 message is then folded in order. A recorded artifact entry applies its action
-directly, and a successful artifact tool result applies only when the live
-command would accept the same arguments against the file replayed so far, so a
-rejected command leaves no trace. Replayed arguments pass through the shared
-argument checker, so a numeric `content` arrives as its string form. `update`
-replaces the first literal occurrence, keeps dollar sequences and empty
-replacements literal, and keeps a file whose content the replacement emptied.
+directly and leaves the file out when its content is empty; a successful
+artifact tool result applies only when the live command would accept the same
+arguments against the file replayed so far, so a rejected command leaves no
+trace. Replayed arguments pass through the shared argument checker, so a numeric
+`content` arrives as its string form. `update` replaces the first literal
+occurrence, keeps dollar sequences and empty replacements literal, and keeps a
+file whose content the replacement emptied.
 
 Reconstruction empties the previous map handle, removes every old view and
-materialises the files silently, without the HTML wait or per-file notifications.
-It selects the first file when nothing is selected, then notifies the host once
-and refreshes the dependent views.
+materializes the files silently, without the HTML log wait or per-file
+notifications; each view reloads as it is created, so it shows the state current
+at that step. It then selects the first file when nothing is selected and notifies
+the host once.
 
 ## Sandbox artifact access
 
 `ArtifactsPanelState` retains the map slot, the selection and the optional
 conversation independently of the presentation operations, so a view operation
-can read them without the panel.
+can read them without the panel. The state never owns the conversation: the
+caller supplies it and frees it by dropping it, and a view operation reads it
+only while the caller's handle is alive.
 `get_html_artifact_runtime_providers` returns the conversation's attachments
 provider when it has attachments, followed by read-only access to the panel's
-artifacts. Both read the live store and the live conversation, so a replaced
-conversation is observed rather than a captured one.
+artifacts. The read-only provider reads the live store and never the conversation;
+the attachments provider holds the attachments taken when the providers are
+built, so callers build providers per view operation to observe a replaced
+conversation.
 
 `ArtifactsRuntimeProvider` gives sandboxed code access to these artifacts. It
 injects a snapshot of every artifact at `get_data`, embeds its helper source at
@@ -102,7 +108,7 @@ nothing, while an accepted write appends its history entry to the current
 conversation collection. Read-only access refuses the write actions before any
 command runs, keeps no history and has no view effects, and reads keep working.
 The embedded helper finds an existing empty artifact by presence rather than by
-content and serialises non-string content once.
+content and serializes non-string content once.
 
 ## Browser integration
 

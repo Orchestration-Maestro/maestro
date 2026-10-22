@@ -110,9 +110,15 @@ impl RuntimeProviderValue for BrowserSandboxValue {
         Ok(Self(snapshot.into()))
     }
     fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo> {
-        let (success, name, value) = match response {
-            ArtifactResponse::Done => return Self::success_response(),
-            ArtifactResponse::Listed(names) => (
+        let reply = |success: bool, name: &str, value: JsValue| {
+            let reply = Object::new();
+            set(&reply, "success", &JsValue::from_bool(success))?;
+            set(&reply, name, &value)?;
+            Ok(Self(reply.into()))
+        };
+        match response {
+            ArtifactResponse::Done => Self::success_response(),
+            ArtifactResponse::Listed(names) => reply(
                 true,
                 "result",
                 names
@@ -121,12 +127,8 @@ impl RuntimeProviderValue for BrowserSandboxValue {
                     .collect::<Array>()
                     .into(),
             ),
-            ArtifactResponse::Read(content) => (true, "result", JsValue::from_str(&content)),
-            ArtifactResponse::Failed(error) => (false, "error", JsValue::from_str(&error)),
-        };
-        let reply = Object::new();
-        set(&reply, "success", &JsValue::from_bool(success))?;
-        set(&reply, name, &value)?;
-        Ok(Self(reply.into()))
+            ArtifactResponse::Read(content) => reply(true, "result", JsValue::from_str(&content)),
+            ArtifactResponse::Failed(error) => reply(false, "error", JsValue::from_str(&error)),
+        }
     }
 }
