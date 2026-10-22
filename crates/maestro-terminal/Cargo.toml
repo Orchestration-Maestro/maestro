@@ -24,6 +24,9 @@ maestro-dependencies.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"

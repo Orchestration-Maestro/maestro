@@ -3814,6 +3814,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-session",
+ "maestro-test-directory",
  "maestro-text",
  "maestro-theme",
  "maestro-tools",
@@ -4109,6 +4110,7 @@ dependencies = [
  "maestro-json",
  "maestro-lock",
  "maestro-path",
+ "maestro-test-directory",
  "maestro-test-process",
  "serde",
  "serde_json",
@@ -4124,6 +4126,7 @@ dependencies = [
  "flate2",
  "icu_properties",
  "maestro-dependencies",
+ "maestro-test-directory",
  "maestro-text",
  "num-traits",
  "png 0.17.16",
@@ -4161,6 +4164,7 @@ name = "maestro-test-process"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-test-directory",
 ]
 
 [[package]]
@@ -4316,6 +4320,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-path",
  "maestro-process",
+ "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
  "maestro-tui",

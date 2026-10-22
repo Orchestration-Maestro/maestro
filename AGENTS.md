@@ -227,8 +227,8 @@ the native-only `maestro-extensions` to `maestro-credentials`, for extension tes
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 and the native, non-optional dev-dependencies
-of the twenty-one declared callers on `maestro-test-process`, the dependency-free
-owner of checked child tests (see
+of the twenty-one declared callers on `maestro-test-process`, the owner of
+checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
@@ -237,8 +237,9 @@ general dev-dependency target.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
-foundation utility permission. Only app, chat, credentials, daemon, extensions,
-models, packages, resources, session, conventions, theme, tooling and tools may
+foundation utility permission. Only app, chat, credentials, daemon, export,
+extensions, models, packages, resources, session, settings, terminal,
+conventions, test-process, theme, tooling, tools and tui-crossterm may
 declare it, as a non-optional native development dependency when used. `Scratch::new`
 canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
 spelling. On Unix, `enter_removed` and `enter_unreadable` put a test process in a
