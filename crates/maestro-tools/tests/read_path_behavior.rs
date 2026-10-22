@@ -133,7 +133,6 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
 /// A path naming an existing file resolves to that file under the spelling it was written with.
 #[test]
 fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
-    let test = "read_paths_prefer_the_written_spelling_of_an_existing_file";
     let dir = TempDir::new();
     dir.file("x\u{a0}y.txt", b"written");
     dir.file("p\u{a0}q.txt", b"written pair");
@@ -160,7 +159,11 @@ fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
         ("HOME", Some(home_text.as_str())),
         ("USERPROFILE", Some(home_text.as_str())),
     ];
-    if isolated(test, "home-written", &envs) {
+    if isolated(
+        "read_paths_prefer_the_written_spelling_of_an_existing_file",
+        "home-written",
+        &envs,
+    ) {
         let home = std::env::var("HOME").unwrap();
         assert_eq!(
             resolve_read_path("~/h\u{a0}o.txt", &cwd).unwrap(),
