@@ -10,8 +10,8 @@ pub use maestro_resources::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::resources::resource_loader::{
     DefaultEventBus, DefaultResourceLoader, DefaultResourceLoaderOptions, LoadPromptsResult,
-    LoadThemesResult, ResourceCollision, ResourceDiagnostic, ResourceExtensionPaths, ResourceKind,
-    ResourceLoader, ResourceLoaderOptions, ResourceOverride, ResourcePath,
+    LoadThemesResult, ResourceCollision, ResourceDiagnostic, ResourceExtensionPath,
+    ResourceExtensionPaths, ResourceKind, ResourceLoader, ResourceLoaderOptions, ResourceOverride,
     load_project_context_files,
 };
 #[cfg(not(target_arch = "wasm32"))]

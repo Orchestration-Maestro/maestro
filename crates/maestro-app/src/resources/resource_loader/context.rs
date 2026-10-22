@@ -1,5 +1,6 @@
 //! Context files, system prompt files and the warning written when one cannot be read.
 use super::{ContextFile, DefaultEventBus, DefaultResourceLoader, ResourceKind, overrides::apply};
+use maestro_models::system_prompt::CONTEXT_FILE_NAMES;
 use maestro_path::join;
 use maestro_resources::{
     paths::{CONFIG_DIR_NAME, resolve},
@@ -11,9 +12,6 @@ use std::{
     path::Path,
     rc::Rc,
 };
-
-/// The context file names tried in each directory, in order.
-const CONTEXT_FILE_NAMES: [&str; 4] = ["AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"];
 
 /// Writes `text` to standard error, in yellow when standard error is a terminal.
 fn warn(text: &str) {

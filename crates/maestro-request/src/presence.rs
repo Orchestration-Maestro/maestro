@@ -24,6 +24,14 @@ impl<T> Presence<T> {
     pub fn is_missing(&self) -> bool {
         matches!(self, Self::Missing)
     }
+
+    /// The value, unless the property is absent or null.
+    pub fn present(&self) -> Option<&T> {
+        match self {
+            Self::Present(value) => Some(value),
+            Self::Missing | Self::Null => None,
+        }
+    }
 }
 
 impl<T: Serialize> Serialize for Presence<T> {

@@ -1,11 +1,12 @@
 //! Reload orchestration: settings refresh, source resolution, the provenance index and
 //! path merging.
-use super::{DefaultEventBus, DefaultResourceLoader, ResourceKind, ResourcePath};
+use super::{DefaultEventBus, DefaultResourceLoader, ResourceExtensionPath, ResourceKind};
 use indexmap::IndexMap;
 use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
 use maestro_path::{SEP, join};
 use maestro_resources::{
-    PathMetadata, SourceOrigin, SourceScope, canonicalize_path, paths::resolve,
+    PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
+    paths::{expand_tilde, resolve},
 };
 use std::{collections::HashSet, io, path::Path};
 
@@ -157,6 +158,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             state.skill_sources.sources = super::PathIndex::default();
             state.prompt_sources.sources = super::PathIndex::default();
             state.theme_sources.sources = super::PathIndex::default();
+            state.metadata = super::PathIndex::default();
             index_resources(&mut state.metadata, resolved, explicit)
         };
         let extension_paths = self.select(
@@ -213,18 +215,18 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         } else {
             explicit.extend(configured);
         }
-        self.merge_paths(&explicit, additional)
+        self.merge_paths(&explicit, additional.iter().map(String::as_str))
     }
 
     /// Resolves the location of each entry.
     pub(super) fn resolve_entries(
         &self,
-        entries: Vec<ResourcePath>,
-    ) -> io::Result<Vec<ResourcePath>> {
+        entries: Vec<ResourceExtensionPath>,
+    ) -> io::Result<Vec<ResourceExtensionPath>> {
         entries
             .into_iter()
             .map(|entry| {
-                Ok(ResourcePath {
+                Ok(ResourceExtensionPath {
                     path: self.resolve_resource_path(&entry.path)?,
                     metadata: entry.metadata,
                 })
@@ -233,14 +235,14 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     }
 
     /// Resolves `primary` then `additional`, keeping the first path per real path.
-    pub(super) fn merge_paths(
+    pub(super) fn merge_paths<'a>(
         &self,
-        primary: &[String],
-        additional: &[String],
+        primary: &'a [String],
+        additional: impl IntoIterator<Item = &'a str>,
     ) -> io::Result<Vec<String>> {
         let mut seen = HashSet::new();
         let mut merged = Vec::new();
-        for path in primary.iter().chain(additional) {
+        for path in primary.iter().map(String::as_str).chain(additional) {
             let resolved = self.resolve_resource_path(path)?;
             if seen.insert(canonicalize_path(&resolved)) {
                 merged.push(resolved);
@@ -253,13 +255,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     /// the loader's working directory.
     pub(super) fn resolve_resource_path(&self, path: &str) -> io::Result<String> {
         let trimmed = path.trim_matches(maestro_text::is_whitespace_scalar);
-        let expanded = match trimmed.strip_prefix('~') {
-            Some(rest) => join(&[
-                &maestro_tools::expand_path("~")?,
-                rest.strip_prefix('/').unwrap_or(rest),
-            ]),
-            None => trimmed.to_owned(),
-        };
+        let expanded = expand_tilde(trimmed, || maestro_tools::expand_path("~"))?;
         resolve(&[&self.cwd, &expanded])
     }
 }

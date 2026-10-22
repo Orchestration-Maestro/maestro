@@ -18,14 +18,8 @@ pub fn bash_execution_to_text(message: &BashExecutionMessage) -> String {
         output: &message.output,
         cancelled: message.cancelled,
         truncated: message.truncated,
-        exit_code: match message.exit_code {
-            Presence::Present(code) => Some(code),
-            _ => None,
-        },
-        full_output_path: match &message.full_output_path {
-            Presence::Present(path) => Some(path),
-            _ => None,
-        },
+        exit_code: message.exit_code.present().copied(),
+        full_output_path: message.full_output_path.present().map(String::as_str),
     })
 }
 /// Consumed shell fields shared by typed and historical projections.

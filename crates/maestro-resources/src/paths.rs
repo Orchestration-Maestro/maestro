@@ -28,6 +28,18 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
         .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
+/// Join the rest of a leading `~` of `path` to the home directory, which `home` reads only
+/// then; any other path is returned as written.
+///
+/// # Errors
+/// Returns the error of `home`.
+pub fn expand_tilde(path: &str, home: impl FnOnce() -> io::Result<String>) -> io::Result<String> {
+    match path.strip_prefix('~') {
+        Some(rest) => Ok(maestro_path::join(&[&home()?, rest])),
+        None => Ok(path.to_owned()),
+    }
+}
+
 /// Compare preserved target spelling against a root resolved from the process
 /// directories, on a separator boundary: `root` itself or any path below it.
 ///

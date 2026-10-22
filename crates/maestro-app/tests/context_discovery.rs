@@ -16,6 +16,7 @@ struct ContextCase {
     tree: Vec<Entry>,
     cwd: String,
     expected: Value,
+    #[serde(default)]
     stderr: Vec<String>,
 }
 

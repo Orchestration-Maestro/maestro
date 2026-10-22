@@ -29,7 +29,7 @@ use std::{cell::RefCell, collections::BTreeSet, io, rc::Rc};
 use tokio::task::LocalSet;
 
 /// One extension-contributed location and its provenance.
-pub struct ResourcePath {
+pub struct ResourceExtensionPath {
     /// The location, resolved like an additional path.
     pub path: String,
     /// The provenance of everything found there.
@@ -40,11 +40,11 @@ pub struct ResourcePath {
 #[derive(Default)]
 pub struct ResourceExtensionPaths {
     /// Skill files or directories.
-    pub skill_paths: Vec<ResourcePath>,
+    pub skill_paths: Vec<ResourceExtensionPath>,
     /// Prompt template files or directories.
-    pub prompt_paths: Vec<ResourcePath>,
+    pub prompt_paths: Vec<ResourceExtensionPath>,
     /// Theme files or directories.
-    pub theme_paths: Vec<ResourcePath>,
+    pub theme_paths: Vec<ResourceExtensionPath>,
 }
 
 /// Loaded prompt templates and their diagnostics.
@@ -235,7 +235,7 @@ struct LoaderState<E: ExtensionExecution> {
     prompt_sources: Contributed,
     /// Theme paths and contributions.
     theme_sources: Contributed,
-    /// Provenance of every resolved resource of the last reload, first entry per path.
+    /// Provenance of every resolved resource, rebuilt by each reload; first entry per path.
     metadata: PathIndex<PathMetadata>,
 }
 
@@ -345,7 +345,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     }
 
     /// Records the resolved `entries` as contributions to `collection`.
-    fn record_contributions(&self, collection: Collection, entries: &[ResourcePath]) {
+    fn record_contributions(&self, collection: Collection, entries: &[ResourceExtensionPath]) {
         let mut state = self.state.borrow_mut();
         let contributed = &mut state.contributed_mut(collection).sources;
         for entry in entries {
@@ -358,16 +358,16 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     fn extend_collection(
         &self,
         collection: Collection,
-        entries: &[ResourcePath],
+        entries: &[ResourceExtensionPath],
     ) -> io::Result<()> {
         if entries.is_empty() {
             return Ok(());
         }
-        let added: Vec<String> = entries.iter().map(|entry| entry.path.clone()).collect();
         {
             let mut state = self.state.borrow_mut();
             let contributed = state.contributed_mut(collection);
-            contributed.paths = self.merge_paths(&contributed.paths, &added)?;
+            let added = entries.iter().map(|entry| entry.path.as_str());
+            contributed.paths = self.merge_paths(&contributed.paths, added)?;
         }
         self.update(collection, &[])
     }

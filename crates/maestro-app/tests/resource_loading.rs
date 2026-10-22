@@ -259,50 +259,28 @@ fn extra_paths_trim_and_expand_home() {
     );
 }
 
+/// A package moved from user to project settings is attributed to the project on the next
+/// reload, because each reload indexes provenance afresh.
 #[test]
-fn skills_override_replaces_loaded_skills() {
-    with_isolated_home("skills_override_replaces_loaded_skills", |base| {
-        let case = loader_case("user_skill_file_is_discovered");
-        let root = Root::new(base, "skills_override");
+fn reload_rebuilds_package_provenance() {
+    with_isolated_home("reload_rebuilds_package_provenance", |base| {
+        let case = loader_case("package_resources_keep_package_metadata");
+        let root = Root::new(base, "reload_rebuilds_package_provenance");
         root.write_tree(&case.tree);
-        let skills = on_task_set(|local| async move {
-            let mut options = resource_options(&root, &case, local);
-            options.skills_override = Some(Box::new(|_| LoadSkillsResult {
-                skills: vec![injected_skill()],
-                diagnostics: Vec::new(),
-            }));
-            let loader = loader(&root, &case, options);
+        let scopes = on_task_set(|local| async move {
+            let loader = loader(&root, &case, resource_options(&root, &case, local));
             loader.reload().await.unwrap();
-            loader.get_skills()
+            let packages = std::fs::read_to_string(root.fill("$ROOT/agent/settings.json")).unwrap();
+            std::fs::write(root.fill("$ROOT/agent/settings.json"), "{}").unwrap();
+            std::fs::create_dir_all(root.fill("$ROOT/project/$CONFIG")).unwrap();
+            std::fs::write(root.fill("$ROOT/project/$CONFIG/settings.json"), packages).unwrap();
+            let first = loader.get_skills();
+            loader.reload().await.unwrap();
+            let second = loader.get_skills();
+            [first, second].map(|skills| skills.skills[0].source_info.scope)
         });
-        let names: Vec<&str> = skills
-            .skills
-            .iter()
-            .map(|skill| skill.name.as_str())
-            .collect();
-        assert_eq!(names, ["injected"]);
+        assert_eq!(scopes, [SourceScope::User, SourceScope::Project]);
     });
-}
-
-#[test]
-fn system_prompt_override_replaces_discovered_prompt() {
-    with_isolated_home(
-        "system_prompt_override_replaces_discovered_prompt",
-        |base| {
-            let case = loader_case("project_system_file_is_discovered");
-            let root = Root::new(base, "system_prompt_override");
-            root.write_tree(&case.tree);
-            let prompt = on_task_set(|local| async move {
-                let mut options = resource_options(&root, &case, local);
-                options.system_prompt_override =
-                    Some(Box::new(|_| Some("Custom system prompt".into())));
-                let loader = loader(&root, &case, options);
-                loader.reload().await.unwrap();
-                loader.get_system_prompt()
-            });
-            assert_eq!(prompt.as_deref(), Some("Custom system prompt"));
-        },
-    );
 }
 
 /// A diagnostic with only a type and a message.

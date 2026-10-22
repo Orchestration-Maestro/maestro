@@ -5,22 +5,15 @@ pub use maestro_models::system_prompt::BuildSystemPromptOptions;
 use crate::configuration::config::paths::{get_docs_path, get_examples_path, get_readme_path};
 use maestro_resources::format_skills_for_prompt;
 use maestro_session::Presence;
-use std::io;
+use std::{collections::HashSet, io};
 
 /// The tools listed when the caller selects none.
 const DEFAULT_TOOLS: [&str; 4] = ["read", "bash", "edit", "write"];
 
-/// The present value of an optional field.
-fn present<T>(value: &Presence<T>) -> Option<&T> {
-    match value {
-        Presence::Present(value) => Some(value),
-        Presence::Missing | Presence::Null => None,
-    }
-}
-
 /// The present, non-empty text of an optional field.
 fn text(value: &Presence<String>) -> Option<&str> {
-    present(value)
+    value
+        .present()
         .map(String::as_str)
         .filter(|text| !text.is_empty())
 }
@@ -39,7 +32,7 @@ pub fn build_system_prompt(
     options: &BuildSystemPromptOptions,
     package_dir: &str,
 ) -> io::Result<String> {
-    let selected = present(&options.selected_tools);
+    let selected = options.selected_tools.present();
     let (mut prompt, has_read) = if let Some(custom) = text(&options.custom_prompt) {
         let has_read = selected.is_none_or(|tools| tools.iter().any(|tool| tool == "read"));
         (custom.to_owned(), has_read)
@@ -55,7 +48,10 @@ pub fn build_system_prompt(
         prompt.push_str("\n\n");
         prompt.push_str(append);
     }
-    let context_files = present(&options.context_files).map_or(&[][..], Vec::as_slice);
+    let context_files = options
+        .context_files
+        .present()
+        .map_or(&[][..], Vec::as_slice);
     if !context_files.is_empty() {
         prompt
             .push_str("\n\n# Project Context\n\nProject-specific instructions and guidelines:\n\n");
@@ -65,7 +61,7 @@ pub fn build_system_prompt(
                 .map(|file| format!("## {}\n\n{}\n\n", file.path, file.content)),
         );
     }
-    let skills = present(&options.skills).map_or(&[][..], Vec::as_slice);
+    let skills = options.skills.present().map_or(&[][..], Vec::as_slice);
     if has_read && !skills.is_empty() {
         prompt.push_str(&format_skills_for_prompt(skills));
     }
@@ -88,21 +84,22 @@ fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
         ),
         (false, _) => None,
     };
-    let extra = present(&options.prompt_guidelines)
+    let extra = options
+        .prompt_guidelines
+        .present()
         .into_iter()
         .flatten()
         .map(|guideline| guideline.trim_matches(maestro_text::is_whitespace_scalar))
         .filter(|guideline| !guideline.is_empty());
-    let mut list: Vec<&str> = Vec::new();
-    for guideline in exploration.into_iter().chain(extra).chain([
-        "Be concise in your responses",
-        "Show file paths clearly when working with files",
-    ]) {
-        if !list.contains(&guideline) {
-            list.push(guideline);
-        }
-    }
-    list.iter()
+    let mut seen = HashSet::new();
+    exploration
+        .into_iter()
+        .chain(extra)
+        .chain([
+            "Be concise in your responses",
+            "Show file paths clearly when working with files",
+        ])
+        .filter(|guideline| seen.insert(*guideline))
         .map(|guideline| format!("- {guideline}"))
         .collect::<Vec<_>>()
         .join("\n")
@@ -115,7 +112,7 @@ fn default_prompt(
     tools: &[&str],
     package_dir: &str,
 ) -> io::Result<String> {
-    let snippets = present(&options.tool_snippets);
+    let snippets = options.tool_snippets.present();
     let listed: Vec<String> = tools
         .iter()
         .filter_map(|name| {

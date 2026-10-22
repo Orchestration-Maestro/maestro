@@ -92,9 +92,6 @@
           "path": "$ROOT/project/CLAUDE.md",
           "content": "claude fallback"
         }
-      ],
-      "stderr": [
-        "Warning: Could not read $ROOT/project/AGENTS.md: Error: EISDIR: illegal operation on a directory, read"
       ]
     },
     {

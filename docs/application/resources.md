@@ -23,9 +23,10 @@ A reload runs in this order:
 1. Wait for queued settings writes, then reload settings from storage.
 2. Resolve configured packages and automatic resources, then the additional
    extension sources as temporary sources.
-3. Record the provenance of every resolved resource, enabled or not: the first
-   entry per path wins. An enabled automatic or package skill directory that
-   holds `SKILL.md` is loaded through that file. Additional extension and skill
+3. Record the provenance of every resolved resource, enabled or not, in an
+   index built afresh for this reload: the first entry per path wins. An
+   enabled automatic or package skill directory that holds `SKILL.md` is
+   loaded through that file. Additional extension and skill
    sources record `cli` provenance.
 4. Load additional extensions before configured ones, then each inline factory
    as `<inline:N>` on the same runtime. Tool and flag names that a later

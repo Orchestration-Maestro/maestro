@@ -3,8 +3,8 @@
 #![cfg(unix)]
 use maestro_app::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionAPI, ExtensionFactory,
-    ExtensionRunner, ModuleLoader, ResourceDiagnostic, ResourceExtensionPaths, ResourceKind,
-    ResourceLoader, ResourceLoaderOptions, ResourcePath,
+    ExtensionRunner, ModuleLoader, ResourceDiagnostic, ResourceExtensionPath,
+    ResourceExtensionPaths, ResourceKind, ResourceLoader, ResourceLoaderOptions,
 };
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
@@ -417,7 +417,7 @@ pub fn loader(
 pub fn contributions(root: &Root, extend: &Extend) -> ResourceExtensionPaths {
     let paths = |entries: &[(String, Meta)]| {
         (entries.iter())
-            .map(|(path, meta)| ResourcePath {
+            .map(|(path, meta)| ResourceExtensionPath {
                 path: root.fill(path),
                 metadata: PathMetadata {
                     source: meta.source.clone(),

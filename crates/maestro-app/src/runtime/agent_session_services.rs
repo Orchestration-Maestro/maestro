@@ -8,6 +8,7 @@ use crate::resources::resource_loader::{
     DefaultEventBus, DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader,
     ResourceLoaderOptions,
 };
+use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::AuthStorage;
@@ -18,13 +19,7 @@ use maestro_extensions::{
 use maestro_models::Threaded;
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_settings::SettingsManager;
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    io,
-    rc::Rc,
-    sync::{Arc, PoisonError},
-};
+use std::{cell::RefCell, collections::HashMap, io, rc::Rc, sync::Arc};
 
 /// The severity of an [`AgentSessionRuntimeDiagnostic`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -101,19 +96,15 @@ fn apply_extension_flag_values<E: ExtensionExecution>(
 ) -> Vec<AgentSessionRuntimeDiagnostic> {
     let mut registered = HashMap::new();
     for extension in &extensions.extensions {
-        let extension = extension.read().unwrap_or_else(PoisonError::into_inner);
+        let extension = read(extension);
         for (name, flag) in &extension.flags {
-            let flag = flag.read().unwrap_or_else(PoisonError::into_inner);
+            let flag = read(flag);
             registered.insert(name.clone(), flag.r#type);
         }
     }
     let mut diagnostics = Vec::new();
     let mut unknown = Vec::new();
-    let mut flag_values = extensions
-        .runtime
-        .flag_values
-        .write()
-        .unwrap_or_else(PoisonError::into_inner);
+    let mut flag_values = write(&extensions.runtime.flag_values);
     for (name, value) in values {
         match (registered.get(&name), value) {
             (None, _) => unknown.push(format!("--{name}")),
@@ -146,13 +137,9 @@ fn register_providers<E: ExtensionExecution>(
     extensions: &LoadExtensionsResult<E>,
     model_registry: &ModelRegistry,
 ) -> Vec<AgentSessionRuntimeDiagnostic> {
-    let pending = std::mem::take(
-        &mut *extensions
-            .runtime
-            .pending_provider_registrations
-            .write()
-            .unwrap_or_else(PoisonError::into_inner),
-    );
+    let pending = std::mem::take(&mut *write(
+        &extensions.runtime.pending_provider_registrations,
+    ));
     pending
         .into_values()
         .filter_map(|registration| {

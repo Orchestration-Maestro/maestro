@@ -8,6 +8,7 @@ use super::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
     artifacts_tool_description,
 };
+pub(crate) use crate::utils::lock::{read, write};
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
@@ -528,16 +529,6 @@ fn schema() -> serde_json::Value {
         "old_str": {"type":"string", "description":"String to replace (for update command)"},
         "new_str": {"type":"string", "description":"Replacement string (for update command)"}
     }})
-}
-/// Recover the retained state after a caller unwinds while holding its write guard.
-pub(crate) fn read<T>(lock: &RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
-    lock.read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-/// Mutate retained state even after a caller has poisoned its lock.
-pub(crate) fn write<T>(lock: &RwLock<T>) -> std::sync::RwLockWriteGuard<'_, T> {
-    lock.write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 mod reconstruction;
 #[cfg(test)]

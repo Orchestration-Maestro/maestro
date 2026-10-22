@@ -1,6 +1,7 @@
 //! Path and inline extension loading, conflict diagnostics, extension provenance and the
 //! default event bus.
 use super::{DefaultResourceLoader, overrides::apply};
+use crate::utils::lock::{read, write};
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
     create_event_bus_for, load_extension_from_factory, load_extensions,
@@ -12,7 +13,7 @@ use std::{
     io,
     path::Path,
     rc::Rc,
-    sync::{Arc, PoisonError, RwLock},
+    sync::{Arc, RwLock},
 };
 use tokio::task::LocalSet;
 
@@ -60,16 +61,6 @@ impl DefaultEventBus for Threaded {
             Arc::new(report),
         )
     }
-}
-
-/// The read view of a lock, also after a panicking writer.
-fn read<T: ?Sized>(lock: &RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
-    lock.read().unwrap_or_else(PoisonError::into_inner)
-}
-
-/// The write view of a lock, also after a panicking writer.
-fn write<T: ?Sized>(lock: &RwLock<T>) -> std::sync::RwLockWriteGuard<'_, T> {
-    lock.write().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// A conflict error for each tool or flag that a later extension path registers again.

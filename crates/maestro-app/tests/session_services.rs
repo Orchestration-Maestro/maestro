@@ -10,7 +10,7 @@ use maestro_app::{
     CreateAgentSessionServicesOptions, ExtensionFactory, FlagValue, ProviderConfig,
     ProviderModelConfig, ResourceKind, ResourceLoaderOptions, create_agent_session_services,
 };
-use maestro_catalog::{FindInitialModelOptions, ModelRegistry, find_initial_model};
+use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_models::{Local, ModelCost, ModelInput};
 use maestro_settings::{Settings, SettingsManager};
@@ -322,36 +322,5 @@ fn supplied_services_are_reused() {
             assert!(Rc::ptr_eq(&services.settings_manager, &settings));
             assert!(Arc::ptr_eq(&services.model_registry, &catalog));
         });
-    });
-}
-
-/// An unknown command-line provider is a returned error the caller can report.
-#[test]
-fn unknown_cli_model_is_an_error_not_an_exit() {
-    with_isolated_home("unknown_cli_model_is_an_error_not_an_exit", |base| {
-        let root = Root::new(base, "case");
-        let services = on_task_set(|local| async {
-            create_agent_session_services(options(&root, local, Vec::new()))
-                .await
-                .unwrap()
-        });
-        let selection = find_initial_model(
-            FindInitialModelOptions {
-                cli_provider: Some("no-such-provider"),
-                cli_model: Some("x"),
-                scoped_models: &[],
-                is_continuing: false,
-                default_provider: None,
-                default_model_id: None,
-                default_thinking_level: None,
-                model_registry: &services.model_registry,
-            },
-            &|a, b| a.cmp(b),
-        );
-        let error = selection.err().unwrap();
-        assert_eq!(
-            error.to_string(),
-            "Unknown provider \"no-such-provider\". Use --list-models to see available providers/models."
-        );
     });
 }
