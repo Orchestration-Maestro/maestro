@@ -13,14 +13,14 @@ use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolInput, WriteToolOptions,
     create_edit_tool_definition, create_read_tool_definition, create_write_tool_definition,
     edit_diff::{Edit, compute_edits_diff},
-    path_utils::{resolve_existing_path, resolve_existing_spelling, resolve_to_cwd},
+    path_utils::{resolve_existing_path, resolve_to_cwd},
 };
 use serde_json::json;
 #[cfg(unix)]
 use {
     maestro_tools::{
         FindToolOptions, GrepToolOptions, LsToolOptions, create_find_tool, create_grep_tool,
-        create_ls_tool,
+        create_ls_tool, path_utils::resolve_existing_spelling,
     },
     std::sync::{Arc, atomic::AtomicUsize},
 };
@@ -244,6 +244,7 @@ fn path_resolution_keeps_every_existing_directory_spelling() {
 /// A part of the path nothing on disk holds still takes the space-replaced spelling.
 #[test]
 fn path_resolution_normalizes_only_the_part_without_a_counterpart() {
+    #[cfg(unix)]
     let test = "path_resolution_normalizes_only_the_part_without_a_counterpart";
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("p q")).unwrap();
