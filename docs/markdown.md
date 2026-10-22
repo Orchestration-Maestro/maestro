@@ -72,7 +72,9 @@ Admission resumes at the first open block: one whose grammar read the item's
 current end, or whose following content sits on the item's unterminated last
 line. Open indented code continues from the line it reached. A caller block
 tokenizer reads the whole remaining item, so when one is present every
-resumption admits the item again. Semantic text can change spelling or be
+resumption admits the item again. Item text answers the setext underline
+question from one classification per line instead of re-reading the rest of
+the item, so a long item costs its own length. Semantic text can change spelling or be
 empty without erasing raw consumption. Code continuations reuse one
 indentation-removal operation; definitions continuing paragraph or item text
 stay literal instead of entering the reference index.

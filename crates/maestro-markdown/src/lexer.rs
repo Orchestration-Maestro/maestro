@@ -170,13 +170,20 @@ impl<'a, E> Lexer<'a, E> {
         source: &Segmented,
         output: &mut BlockTokens,
         callback: Option<&Source<'_>>,
+        item: Option<&mut rules::paragraph::ItemText>,
     ) -> Option<(usize, Node)> {
-        let mut paragraph = rules::paragraph::Recognizer::new(self.options);
-        self.undecided |= matches!(
-            paragraph.extend(source),
-            rules::paragraph::Verdict::NeedMore
-        );
-        let recognized = paragraph.finish(source);
+        let recognized = match item.filter(|_| !self.top) {
+            Some(item) => {
+                let (heading, undecided) = item.attempt(source);
+                self.undecided |= undecided;
+                // Item text is one line per attempt, so no paragraph end is read here.
+                rules::paragraph::Recognized {
+                    heading,
+                    paragraph: None,
+                }
+            }
+            None => self.recognize(source),
+        };
         let limit = if recognized.heading.is_none() {
             callback.map_or(source.len(), |source| self.extension_start(source))
         } else {
@@ -218,6 +225,17 @@ impl<'a, E> Lexer<'a, E> {
             source.select(content),
         );
         Some((end, node))
+    }
+
+    /// Answer the running operand with a fresh paragraph recognizer.
+    fn recognize(&mut self, source: &Segmented) -> rules::paragraph::Recognized {
+        let mut recognizer = rules::paragraph::Recognizer::new(self.options);
+        let undecided = matches!(
+            recognizer.extend(source),
+            rules::paragraph::Verdict::NeedMore
+        );
+        self.undecided |= undecided;
+        recognizer.finish(source)
     }
 
     /// Select a table only when header and delimiter column counts agree.

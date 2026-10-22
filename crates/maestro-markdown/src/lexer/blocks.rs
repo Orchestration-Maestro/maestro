@@ -13,6 +13,15 @@ use crate::{
 pub(crate) use run::{BlockRun, Level};
 use std::{collections::HashMap, ops::Range};
 
+/// Paragraph admission state carried across one level's dispatch steps.
+#[derive(Default)]
+pub(crate) struct ParagraphState {
+    /// Clipping carried from the preceding paragraph step.
+    clipped: bool,
+    /// Setext lookahead for item text admitted one line at a time.
+    item: Option<rules::paragraph::ItemText>,
+}
+
 /// Effective grammar tail, including an invisible retained definition.
 #[derive(Clone)]
 enum Tail {
@@ -196,14 +205,14 @@ impl<E> Lexer<'_, E> {
         source: &Segmented,
         output: &mut BlockTokens,
         caller: Option<&Source<'_>>,
-        clipped: &mut bool,
+        state: &mut ParagraphState,
     ) -> Option<usize> {
         self.clipped = false;
-        let (consumed, node) = self.paragraph(source, output, caller)?;
+        let (consumed, node) = self.paragraph(source, output, caller, state.item.as_mut())?;
         let inline = matches!(node.kind, Kind::Inline(_));
         let merge = output.last().is_some_and(|last| {
             inline && matches!(last.kind, Kind::Inline(_))
-                || *clipped
+                || state.clipped
                     && matches!(node.kind, Kind::Paragraph(_))
                     && matches!(last.kind, Kind::Paragraph(_))
         });
@@ -212,7 +221,7 @@ impl<E> Lexer<'_, E> {
         } else {
             output.push_segmented(source.select(0..consumed), node);
         }
-        *clipped = self.clipped;
+        state.clipped = self.clipped;
         Some(consumed)
     }
 

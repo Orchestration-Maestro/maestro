@@ -1,5 +1,7 @@
 //! Retained paragraph and setext progress over a caller's growing source prefix.
+mod item_text;
 use crate::MarkedOptions;
+pub(crate) use item_text::ItemText;
 use regress::Regex;
 use std::{collections::VecDeque, ops::Range, sync::LazyLock};
 
@@ -95,6 +97,17 @@ fn grammar(options: MarkedOptions) -> Grammar {
     }
 }
 
+/// Immutable caller predicates for one option set.
+fn selected(options: MarkedOptions) -> &'static Grammar {
+    let index = match options {
+        MarkedOptions::Terminal | MarkedOptions::Browser { escape_html: false } => 0,
+        MarkedOptions::Documentation => 1,
+        MarkedOptions::Browser { escape_html: true } => 2,
+        MarkedOptions::Export => 3,
+    };
+    &GRAMMARS[index]
+}
+
 /// Immutable grammar alternatives in the public option order.
 static GRAMMARS: LazyLock<[Grammar; 4]> = LazyLock::new(|| {
     [
@@ -130,14 +143,8 @@ pub(crate) struct Recognizer {
 impl Recognizer {
     /// Begin one block operand without retaining its authored bytes.
     pub(crate) fn new(options: MarkedOptions) -> Self {
-        let index = match options {
-            MarkedOptions::Terminal | MarkedOptions::Browser { escape_html: false } => 0,
-            MarkedOptions::Documentation => 1,
-            MarkedOptions::Browser { escape_html: true } => 2,
-            MarkedOptions::Export => 3,
-        };
         Self {
-            grammar: &GRAMMARS[index],
+            grammar: selected(options),
             cursor: super::lines::Cursor::default(),
             lines: VecDeque::new(),
             result: Recognized::default(),

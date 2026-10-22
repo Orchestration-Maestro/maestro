@@ -1,10 +1,11 @@
 //! Suspended block admission over one operand.
-use super::{BlockTokens, Lexer, Mark};
+use super::{BlockTokens, Lexer, Mark, ParagraphState};
 use crate::{
     lexer::{
         Frame,
         frames::{Done, Pending, Step},
     },
+    rules::paragraph::ItemText,
     source::{ScopeSource, Segmented},
 };
 
@@ -35,8 +36,8 @@ pub(crate) struct BlockRun {
     source: Segmented,
     /// Next logical byte to admit.
     cursor: usize,
-    /// Paragraph clipping carried across this level's steps.
-    clipped: bool,
+    /// Paragraph admission state carried across this level's steps.
+    paragraph: ParagraphState,
     /// Caller tokenizer view over this level's operand.
     callback: Option<ScopeSource>,
     /// First open step, retained while an enclosing item can re-admit it.
@@ -82,7 +83,10 @@ impl BlockRun {
         Self {
             source,
             cursor: 0,
-            clipped: matches!(level, Level::Chunk),
+            paragraph: ParagraphState {
+                clipped: matches!(level, Level::Chunk),
+                ..ParagraphState::default()
+            },
             callback,
             open: match level {
                 Level::Item => Open::Unread,
@@ -198,7 +202,7 @@ impl BlockRun {
             .as_ref()
             .map(|source| source.view(step.0..source.text.len()));
         let consumed = lexer.block_tail(rest, &mut self.output).or_else(|| {
-            lexer.paragraph_step(rest, &mut self.output, caller.as_ref(), &mut self.clipped)
+            lexer.paragraph_step(rest, &mut self.output, caller.as_ref(), &mut self.paragraph)
         });
         if let Some(consumed) = consumed {
             self.admitted(lexer, rest, step, consumed);
@@ -253,6 +257,8 @@ impl<E> Lexer<'_, E> {
     ) -> BlockRun {
         let callback = self.tokenizer.as_ref().map(|_| source.materialize());
         let undecided = std::mem::take(&mut self.undecided);
-        BlockRun::new(source, output, level, callback, undecided)
+        let mut run = BlockRun::new(source, output, level, callback, undecided);
+        run.paragraph.item = matches!(level, Level::Item).then(|| ItemText::new(self.options));
+        run
     }
 }
