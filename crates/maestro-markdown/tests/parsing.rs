@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use maestro_markdown::{Alignment, Kind, parse};
+use maestro_markdown::{Alignment, Kind, Node, parse};
 
 #[test]
 fn parser_keeps_owned_browser_metadata() {
@@ -656,4 +656,81 @@ fn assert_raw_anchor_email(options: maestro_markdown::MarkedOptions) {
     assert_eq!(resolved.len(), 4);
     assert!(std::ptr::eq(resolved[1], &raw const children[1]));
     assert!(matches!(&resolved[3].kind, Kind::Link(_, _, href, _) if href == "https://live.test"));
+}
+
+#[test]
+fn list_publication_keeps_every_item_of_each_list() {
+    let cases: [(&str, &[Recorded]); 11] = [
+        ("- a\n- b\n", &[(None, &["a", "b"])]),
+        ("- a\n\n- b\n", &[(None, &["a", "b"])]),
+        (
+            "- a\n  - b\n  - c\n- d\n",
+            &[(None, &["a", "d"]), (None, &["b", "c"])],
+        ),
+        ("- a\n- b\n  - c\n", &[(None, &["a", "b"]), (None, &["c"])]),
+        ("1. a\n2. b\n", &[(Some(1), &["a", "b"])]),
+        ("- [ ] a\n- [x] b\n", &[(None, &["a", "b"])]),
+        ("> - a\n> - b\n", &[(None, &["a", "b"])]),
+        (
+            "- a\n  - b\n    - c\n",
+            &[(None, &["a"]), (None, &["b"]), (None, &["c"])],
+        ),
+        (
+            "- x\n\n- y\n  - z\n",
+            &[(None, &["x", "y"]), (None, &["z"])],
+        ),
+        ("- a\n-\n- b\n", &[(None, &["a", "", "b"])]),
+        (
+            "> intro\n> - a\n>   - b\n> - c\n",
+            &[(None, &["a", "c"]), (None, &["b"])],
+        ),
+    ];
+    for (input, expected) in cases {
+        let document = parse(input.to_owned());
+        let mut actual = Vec::new();
+        published_lists(&document.nodes, &mut actual);
+        let wanted: Vec<(Option<u64>, Vec<String>)> = expected
+            .iter()
+            .map(|(start, texts)| {
+                (
+                    *start,
+                    texts.iter().map(|text| (*text).to_owned()).collect(),
+                )
+            })
+            .collect();
+        assert_eq!(actual, wanted, "{input:?}");
+    }
+}
+
+/// One recorded list: its ordered start and each item's first text.
+type Recorded = (Option<u64>, &'static [&'static str]);
+
+/// Collect every list in document order with the first text of each item.
+fn published_lists(nodes: &[Node], out: &mut Vec<(Option<u64>, Vec<String>)>) {
+    for node in nodes {
+        match &node.kind {
+            Kind::List(start, items) => {
+                out.push((*start, items.iter().map(first_text).collect()));
+                published_lists(items, out);
+            }
+            Kind::Quote(children, _) | Kind::Item(children) => published_lists(children, out),
+            _ => {}
+        }
+    }
+}
+
+/// First decoded text inside a node: its own text, or the first its item holds.
+fn first_text(node: &Node) -> String {
+    if let Kind::Text(text) = &node.kind {
+        return text.decoded.clone();
+    }
+    let children: &[Node] = match &node.kind {
+        Kind::Item(children) | Kind::Inline(children) | Kind::Paragraph(children) => children,
+        _ => return String::new(),
+    };
+    children
+        .iter()
+        .map(first_text)
+        .find(|text| !text.is_empty())
+        .unwrap_or_default()
 }

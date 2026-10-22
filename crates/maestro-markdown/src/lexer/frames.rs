@@ -282,8 +282,7 @@ impl Quote {
                 rest,
                 list,
             } => {
-                publish_resume(&mut self.frame, used, node, rest)?;
-                self.frame.output.list = list;
+                publish_resume(&mut self.frame, used, node, rest, list)?;
                 self.phase = QuotePhase::Chunk;
             }
             Done::Rejected => self.phase = QuotePhase::Reject,
@@ -416,7 +415,7 @@ impl<E> Lexer<'_, E> {
         let Kind::List(_, items) = std::mem::replace(&mut old.kind, Kind::Gap) else {
             return None;
         };
-        let state = frame.output.list.take()?;
+        let state = frame.output.take_list()?;
         Some(Resume::List {
             joined,
             state,
@@ -431,6 +430,7 @@ fn publish_resume(
     used: Segmented,
     node: Node,
     rest: Segmented,
+    list: Option<Box<ListState>>,
 ) -> Option<()> {
     let extent = used.native(&(0..used.len()))?;
     let end = frame.source.local(&extent)?.end;
@@ -447,7 +447,7 @@ fn publish_resume(
     } else {
         frame.text.append(&used);
     }
-    frame.output.push_segmented(used, node);
+    frame.output.push_container(used, node, list);
     frame.pending.segmented(rest);
     frame.list_separator = true;
     Some(())

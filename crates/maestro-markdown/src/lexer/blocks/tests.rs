@@ -101,3 +101,45 @@ fn block_dispatch_bounds_operands_to_the_admitted_leaf() {
     eprintln!("bounded block dispatch operands: {counts:?}");
     assert!(counts.windows(2).all(|pair| pair[1] <= 3 * pair[0]));
 }
+
+/// Block output whose trailing list still carries its pending item history.
+fn pending_list(text: &'static str) -> BlockTokens {
+    let mut lexer = lexer();
+    lexer.append(
+        ScopeSource::identity(text).into(),
+        BlockTokens::default(),
+        Level::Document,
+    )
+}
+
+#[test]
+#[should_panic(expected = "a published list ends with the node carrying its item slots")]
+fn list_publication_reports_a_missing_list_node() {
+    let mut output = pending_list("- a\n- b\n");
+    let mut node = output.nodes.pop().expect("the published list node");
+    node.kind = crate::Kind::Paragraph(Vec::new());
+    output.nodes.push(node);
+    output.complete();
+}
+
+#[test]
+#[should_panic(expected = "every item slot of a list is filled by exactly one output")]
+fn list_publication_reports_item_slots_without_their_outputs() {
+    let mut output = pending_list("- a\n- b\n");
+    let crate::Kind::List(_, items) = &mut output.nodes.last_mut().expect("list").kind else {
+        panic!("list")
+    };
+    items.truncate(1);
+    output.complete();
+}
+
+#[test]
+#[should_panic(expected = "a list's item slot holds an item node")]
+fn list_publication_reports_a_slot_that_is_not_an_item() {
+    let mut output = pending_list("- a\n- b\n");
+    let crate::Kind::List(_, items) = &mut output.nodes.last_mut().expect("list").kind else {
+        panic!("list")
+    };
+    items[0].kind = crate::Kind::Gap;
+    output.complete();
+}
