@@ -1,6 +1,8 @@
 //! Package-override precedence over the executable lookup of the native getters.
 
-use super::{installation, package_dir, theme_directories};
+#[cfg(unix)]
+use super::theme_directories;
+use super::{installation, package_dir};
 use std::io;
 
 /// An executable lookup that fails, as when the running executable cannot be located.
