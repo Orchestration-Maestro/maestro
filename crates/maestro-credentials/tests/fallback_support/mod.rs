@@ -141,9 +141,8 @@ pub async fn drive(case: Case) {
     );
 }
 
-/// Select each environment row in its matching child, and other rows in one child only.
-fn applicable(case: &Case) -> bool {
-    let scenario = std::env::var("MAESTRO_FALLBACK_ENV").unwrap_or_default();
+/// Select each environment row in its matching `scenario`, and other rows in one child only.
+fn applicable(case: &Case, scenario: &str) -> bool {
     match case
         .input
         .earlier
@@ -154,9 +153,13 @@ fn applicable(case: &Case) -> bool {
         None => scenario.is_empty() || scenario == "environment",
     }
 }
-/// Replay the group's disjoint rows using the current isolated environment policy.
-pub async fn replay(name: &str) {
-    for case in cases(name).into_iter().filter(applicable) {
+/// Replay the group's disjoint rows for `scenario` using the current isolated environment
+/// policy.
+pub async fn replay(name: &str, scenario: &str) {
+    for case in cases(name)
+        .into_iter()
+        .filter(|case| applicable(case, scenario))
+    {
         drive(case).await;
     }
 }

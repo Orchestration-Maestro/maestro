@@ -469,13 +469,15 @@ mod tests {
             );
         });
     }
-    /// Reinvoke one test with isolated environment and an empty working directory.
+    /// Reinvoke one test in a child process that inherits the environment, with an empty
+    /// working directory.
     #[cfg(unix)]
     fn child_test_in_fresh_dir(name: &str) {
         let root = TempDir::new(name);
         child_test(name, root.root());
     }
-    /// Reinvoke one test with isolated environment and working directory.
+    /// Reinvoke one test in a child process that inherits the environment, with the supplied
+    /// working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
         let process = maestro_test_process::TestProcess::current(name).unwrap();

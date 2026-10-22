@@ -82,7 +82,8 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         "maestro-catalog-auth-marker-{}",
         std::process::id()
     ));
-    let helper = format!("!touch {}", marker.display());
+    let _ = std::fs::remove_file(&marker);
+    let helper = format!("!touch '{}'", marker.display());
     for (field, source, label) in [
         ("literal", AuthSource::ModelsJsonKey, None),
         (helper.as_str(), AuthSource::ModelsJsonCommand, None),

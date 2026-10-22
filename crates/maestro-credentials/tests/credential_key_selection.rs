@@ -271,7 +271,7 @@ mod tests {
 
     /// Name of the child scenario, empty in the parent.
     fn scenario() -> String {
-        std::env::var("MAESTRO_AUTH_SCENARIO").unwrap_or_default()
+        std::env::var(CASE_ENV).unwrap_or_default()
     }
 
     /// Storage with a fallback resolver returning `fallback`.
@@ -332,7 +332,7 @@ mod tests {
             ("absent", vec![]),
         ] {
             let mut envs = variables;
-            envs.push(("MAESTRO_AUTH_SCENARIO", name));
+            envs.push((CASE_ENV, name));
             run_isolated(
                 "credential_key_selection::tests::environment_precedes_optional_fallback",
                 &envs,
@@ -400,6 +400,7 @@ mod tests {
         }
         block_on(crate::fallback_support::replay(
             "fallback_keys_and_presence_keep_result_domains",
+            &scenario(),
         ));
     }
 
@@ -413,13 +414,14 @@ mod tests {
             ] {
                 run_isolated(
                     "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
-                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
         block_on(crate::fallback_support::replay(
             "earlier_sources_skip_failing_fallback",
+            &scenario(),
         ));
     }
 
@@ -433,6 +435,7 @@ mod tests {
         }
         block_on(crate::fallback_support::replay(
             "fallback_option_false_avoids_callback",
+            &scenario(),
         ));
     }
 }
