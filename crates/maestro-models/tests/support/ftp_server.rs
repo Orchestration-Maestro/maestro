@@ -2,8 +2,8 @@
 //! connection for each listing and transfer.
 
 #![cfg(not(target_arch = "wasm32"))]
-// The library and the integration binary share this peer; each builds only the reply shapes its
-// own scenarios need.
+// The library and the integration binary share this peer; each builds only the reply shapes and
+// helpers its own scenarios need, so the other consumer's items are unreachable here.
 #![allow(dead_code)]
 
 use std::io::{BufRead, BufReader, Read, Write};
