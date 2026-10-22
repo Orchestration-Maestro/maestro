@@ -247,58 +247,15 @@ fn resumed_list_items_keep_admission_and_leaf_outcomes() {
     );
 }
 
-/// One recorded reference document and its top-level block verdicts.
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ItemStopsRow {
-    /// Grammar family that owns the assertion.
-    group: String,
-    /// Stable case identity for failures.
-    id: String,
-    /// Original authored input.
-    input: String,
-    /// Reference top-level tokens in caller order.
-    targets: Vec<serde_json::Value>,
-}
-
-/// Describe one parsed block the way the reference tokenizes it.
-fn reference_token(node: &maestro_markdown::Node) -> serde_json::Value {
-    use maestro_markdown::Kind;
-    use serde_json::json;
-
-    match &node.kind {
-        Kind::List(..) => json!({ "kind": "list" }),
-        Kind::Rule => json!({ "kind": "hr" }),
-        Kind::CodeBlock(text, _) => json!({ "kind": "code", "text": text }),
-        Kind::HtmlBlock(text) => json!({ "kind": "html", "text": text }),
-        Kind::Heading(depth, _, text) => json!({ "kind": "heading", "depth": depth, "text": text }),
-        // A changed verdict may admit another block kind; report it as unmatched.
-        _ => json!({ "kind": "other" }),
-    }
-}
-
 #[test]
 fn list_item_continuation_follows_the_reference_verdicts() {
-    use maestro_markdown::{MarkedOptions, parse_with_options};
+    use maestro_markdown::MarkedOptions;
 
-    let rows: Vec<ItemStopsRow> =
-        serde_json::from_str(include_str!("fixtures/item_stops.json")).unwrap();
-    let mut differences = Vec::new();
-    for row in &rows {
-        let document = parse_with_options(
-            maestro_text::normalize_to_lf(&row.input),
-            MarkedOptions::Terminal,
-        );
-        let actual: Vec<_> = document.nodes.iter().map(reference_token).collect();
-        if actual != row.targets {
-            differences.push(format!(
-                "{} {}: {actual:?} != {}",
-                row.group,
-                row.id,
-                serde_json::Value::Array(row.targets.clone())
-            ));
-        }
-    }
-    assert_eq!(rows.len(), 23);
-    assert!(differences.is_empty(), "{}", differences.join("\n"));
+    let options = [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: true },
+    ];
+    let fixture = include_str!("fixtures/item_stops.json");
+    observations::check_with_options("stop-kind", 16, fixture, &options);
+    observations::check_with_options("marker-indent", 7, fixture, &options);
 }

@@ -62,30 +62,108 @@ fn resumed_empty_marker_and_first_line_code_keep_their_stop_rules() {
     assert!(!code.append(&source.select(std::iter::once(offset..source.text.len()))));
 }
 
+/// One reference stop kind and the verdicts it must reach.
+struct StopKind {
+    /// Reference rule the opener exercises.
+    kind: &'static str,
+    /// Spelling tested at every leading-space count around the prefix.
+    opener: &'static str,
+    /// Stops an item under the default caller grammar.
+    interrupts: bool,
+    /// Stops an item under the caller's literal-markup view.
+    interrupts_literal: bool,
+    /// Ends lazy continuation.
+    lazy: bool,
+}
+
+/// Reference stop kinds with their verdicts, HTML openers last.
+const STOP_KINDS: [StopKind; 8] = [
+    StopKind {
+        kind: "fence",
+        opener: "```",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: true,
+    },
+    StopKind {
+        kind: "tilde fence",
+        opener: "~~~",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: true,
+    },
+    StopKind {
+        kind: "heading",
+        opener: "# h",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: true,
+    },
+    StopKind {
+        kind: "marker",
+        opener: "- b",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: false,
+    },
+    StopKind {
+        kind: "ordered marker",
+        opener: "2. b",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: false,
+    },
+    StopKind {
+        kind: "rule",
+        opener: "---",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: true,
+    },
+    StopKind {
+        kind: "html comment",
+        opener: "<!-- c -->",
+        interrupts: true,
+        interrupts_literal: true,
+        lazy: false,
+    },
+    StopKind {
+        kind: "html tag",
+        opener: "<div>x</div>",
+        interrupts: true,
+        interrupts_literal: false,
+        lazy: false,
+    },
+];
+
 /// Compare one kind's stop verdicts at every leading-space count around the prefix.
 fn check_item_kind(
     prefix: usize,
     options: MarkedOptions,
-    kind: &str,
-    opener: &str,
+    row: &StopKind,
     failures: &mut Vec<String>,
 ) {
-    let literal_html = options == (MarkedOptions::Browser { escape_html: true });
     let stops = crate::rules::item_stops(prefix + 1, options);
-    let line = |spaces: usize| format!("{}{opener}", " ".repeat(spaces));
-    let html = matches!(kind, "html comment" | "html tag");
+    let line = |spaces: usize| format!("{}{}", " ".repeat(spaces), row.opener);
+    let interrupts = if options == (MarkedOptions::Browser { escape_html: true }) {
+        row.interrupts_literal
+    } else {
+        row.interrupts
+    };
     for spaces in 0..=prefix + 1 {
         let authored = line(spaces);
-        let admitted = spaces <= prefix && !(html && literal_html && kind == "html tag");
-        if stops.interrupts(&authored) != admitted {
-            failures.push(format!("{kind} {prefix} {options:?} {authored:?}"));
+        if stops.interrupts(&authored) != (interrupts && spaces <= prefix) {
+            failures.push(format!("{} {prefix} {options:?} {authored:?}", row.kind));
         }
     }
-    for spaces in 0..=prefix {
+    for spaces in 0..=prefix + 1 {
         let authored = line(spaces);
-        let lazy = matches!(kind, "fence" | "tilde fence" | "heading" | "rule");
+        let lazy = row.lazy && spaces <= prefix || spaces >= 4;
         if stops.ends_lazy(&authored) != lazy {
-            failures.push(format!("lazy {kind} {prefix} {options:?} {authored:?}"));
+            failures.push(format!(
+                "lazy {} {prefix} {options:?} {authored:?}",
+                row.kind
+            ));
         }
     }
 }
@@ -99,17 +177,8 @@ fn item_stops_admit_each_reference_kind_at_its_prefix() {
             MarkedOptions::Browser { escape_html: false },
             MarkedOptions::Browser { escape_html: true },
         ] {
-            for (kind, opener) in [
-                ("fence", "```"),
-                ("tilde fence", "~~~"),
-                ("heading", "# h"),
-                ("marker", "- b"),
-                ("ordered marker", "2. b"),
-                ("rule", "---"),
-                ("html comment", "<!-- c -->"),
-                ("html tag", "<div>x</div>"),
-            ] {
-                check_item_kind(prefix, options, kind, opener, &mut failures);
+            for row in &STOP_KINDS {
+                check_item_kind(prefix, options, row, &mut failures);
             }
         }
     }

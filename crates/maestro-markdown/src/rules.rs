@@ -104,13 +104,20 @@ pub(crate) static LIST_ITEM: LazyLock<Option<Regex>> = LazyLock::new(|| {
 pub(crate) static LIST_BLANK_END: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"\n[ \t]*\n[ \t]*$", "").ok());
 
-/// Item stop sources tested before a continuation line is dedented.
-const ITEM_STOP_ALTERNATIVES: [&str; 4] = [
-    "(?:```|~~~)",
-    "#",
-    r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))",
-    r"((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)",
-];
+/// Reference fence test that stops a list item before its line is dedented.
+const FENCES_BEGIN: &str = "(?:```|~~~)";
+
+/// Reference heading test that stops a list item before its line is dedented.
+const HEADING_BEGIN: &str = "#";
+
+/// Reference HTML test for the default caller grammar: a type 6 tag or a comment.
+const HTML_BEGIN: &str = r"<(?:[a-z].*>|!--)";
+
+/// Reference neighbour-marker test that starts a second item instead of continuing one.
+const NEXT_BULLET: &str = r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))";
+
+/// Reference thematic-break test that stops a list item before its line is dedented.
+const HR_BEGIN: &str = r"((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)";
 
 /// Item lookahead rules shared by every item of one indentation and caller grammar.
 pub(crate) struct ItemStops {
@@ -155,22 +162,15 @@ fn compile_item_stops(prefix: usize, literal_html: bool) -> ItemStops {
     let html = if literal_html {
         LITERAL_HTML_OPENERS
     } else {
-        r"<(?:[a-z].*>|!--)"
+        HTML_BEGIN
     };
     let compile = |sources: &[&str]| {
         let alternation = sources.join("|");
         Regex::with_flags(&format!("^ {{0,{prefix}}}(?:{alternation})"), "i").ok()
     };
-    let mut interrupts = ITEM_STOP_ALTERNATIVES.to_vec();
-    interrupts.push(html);
-    let lazy = [
-        ITEM_STOP_ALTERNATIVES[0],
-        ITEM_STOP_ALTERNATIVES[1],
-        ITEM_STOP_ALTERNATIVES[3],
-    ];
     ItemStops {
-        interrupts: compile(&interrupts),
-        lazy: compile(&lazy),
+        interrupts: compile(&[FENCES_BEGIN, HEADING_BEGIN, html, NEXT_BULLET, HR_BEGIN]),
+        lazy: compile(&[FENCES_BEGIN, HEADING_BEGIN, HR_BEGIN]),
     }
 }
 

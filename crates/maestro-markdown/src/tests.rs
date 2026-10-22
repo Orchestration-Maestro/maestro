@@ -44,7 +44,7 @@ pub(crate) struct Work {
     pub(crate) quote_lines: usize,
     /// Actual list continuation line visits.
     pub(crate) list_lines: usize,
-    /// Item-local lookahead patterns prepared.
+    /// Item stop rule sets compiled for a prefix and grammar not yet seen.
     pub(crate) list_rules: usize,
     /// Borrowed source windows created.
     pub(crate) source_views: usize,
