@@ -123,14 +123,73 @@ fn list_publication_reports_a_missing_list_node() {
 }
 
 #[test]
+#[should_panic(expected = "a published list ends with the node carrying its item slots")]
+fn list_publication_reports_an_output_without_nodes() {
+    let mut output = pending_list("- a\n- b\n");
+    output.nodes.clear();
+    output.complete();
+}
+
+#[test]
 #[should_panic(expected = "every item slot of a list is filled by exactly one output")]
-fn list_publication_reports_item_slots_without_their_outputs() {
+fn list_publication_reports_outputs_without_their_item_slots() {
     let mut output = pending_list("- a\n- b\n");
     let crate::Kind::List(_, items) = &mut output.nodes.last_mut().expect("list").kind else {
         panic!("list")
     };
     items.truncate(1);
     output.complete();
+}
+
+#[test]
+#[should_panic(expected = "every item slot of a list is filled by exactly one output")]
+fn list_publication_reports_item_slots_without_their_outputs() {
+    let mut output = pending_list("para\n\n- a\n- b\n");
+    let mut spare = output.nodes.remove(0);
+    spare.kind = crate::Kind::Item(Vec::new());
+    let crate::Kind::List(_, items) = &mut output.nodes.last_mut().expect("list").kind else {
+        panic!("list")
+    };
+    items.push(spare);
+    output.complete();
+}
+
+#[test]
+fn list_publication_pairs_every_item_slot_with_an_output() {
+    let mut output = pending_list("para\n\n- a\n");
+    let mut spare = output.nodes.remove(0);
+    spare.kind = crate::Kind::Item(Vec::new());
+    let crate::Kind::List(_, mut items) = std::mem::replace(
+        &mut output.nodes.last_mut().expect("list").kind,
+        crate::Kind::Gap,
+    ) else {
+        panic!("list")
+    };
+    items.push(spare);
+    let paired: Vec<_> = super::publish::pair_slots(items, vec![BlockTokens::default()]).collect();
+    assert_eq!(paired.len(), 2, "a slot with no output keeps its place");
+    assert!(
+        paired[1].1.nodes.is_empty(),
+        "a slot with no output is empty"
+    );
+}
+
+#[test]
+fn list_publication_pairs_no_slot_with_an_output_it_does_not_have() {
+    let mut output = pending_list("- a\n");
+    let crate::Kind::List(_, items) = std::mem::replace(
+        &mut output.nodes.last_mut().expect("list").kind,
+        crate::Kind::Gap,
+    ) else {
+        panic!("list")
+    };
+    let outputs = vec![BlockTokens::default(), BlockTokens::default()];
+    let paired: Vec<_> = super::publish::pair_slots(items, outputs).collect();
+    assert_eq!(
+        paired.len(),
+        1,
+        "an output without a slot has nothing to fill"
+    );
 }
 
 #[test]

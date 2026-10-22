@@ -661,39 +661,47 @@ fn assert_raw_anchor_email(options: maestro_markdown::MarkedOptions) {
 #[test]
 fn list_publication_keeps_every_item_of_each_list() {
     let cases: [(&str, &[Recorded]); 11] = [
-        ("- a\n- b\n", &[(None, &["a", "b"])]),
-        ("- a\n\n- b\n", &[(None, &["a", "b"])]),
+        ("- a\n- b\n", &[(None, &[], &["a", "b"])]),
+        ("- a\n\n- b\n", &[(None, &[], &["a", "b"])]),
         (
             "- a\n  - b\n  - c\n- d\n",
-            &[(None, &["a", "d"]), (None, &["b", "c"])],
+            &[(None, &[], &["a", "d"]), (None, &[0], &["b", "c"])],
         ),
-        ("- a\n- b\n  - c\n", &[(None, &["a", "b"]), (None, &["c"])]),
-        ("1. a\n2. b\n", &[(Some(1), &["a", "b"])]),
-        ("- [ ] a\n- [x] b\n", &[(None, &["a", "b"])]),
-        ("> - a\n> - b\n", &[(None, &["a", "b"])]),
+        (
+            "- a\n- b\n  - c\n",
+            &[(None, &[], &["a", "b"]), (None, &[1], &["c"])],
+        ),
+        ("1. a\n2. b\n", &[(Some(1), &[], &["a", "b"])]),
+        ("- [ ] a\n- [x] b\n", &[(None, &[], &["a", "b"])]),
+        ("> - a\n> - b\n", &[(None, &[], &["a", "b"])]),
         (
             "- a\n  - b\n    - c\n",
-            &[(None, &["a"]), (None, &["b"]), (None, &["c"])],
+            &[
+                (None, &[], &["a"]),
+                (None, &[0], &["b"]),
+                (None, &[0, 0], &["c"]),
+            ],
         ),
         (
             "- x\n\n- y\n  - z\n",
-            &[(None, &["x", "y"]), (None, &["z"])],
+            &[(None, &[], &["x", "y"]), (None, &[1], &["z"])],
         ),
-        ("- a\n-\n- b\n", &[(None, &["a", "", "b"])]),
+        ("- a\n-\n- b\n", &[(None, &[], &["a", "", "b"])]),
         (
             "> intro\n> - a\n>   - b\n> - c\n",
-            &[(None, &["a", "c"]), (None, &["b"])],
+            &[(None, &[], &["a", "c"]), (None, &[0], &["b"])],
         ),
     ];
     for (input, expected) in cases {
         let document = parse(input.to_owned());
         let mut actual = Vec::new();
-        published_lists(&document.nodes, &mut actual);
-        let wanted: Vec<(Option<u64>, Vec<String>)> = expected
+        published_lists(&document.nodes, &mut Vec::new(), &mut actual);
+        let wanted: Vec<RecordedOwned> = expected
             .iter()
-            .map(|(start, texts)| {
+            .map(|(start, holder, texts)| {
                 (
                     *start,
+                    holder.to_vec(),
                     texts.iter().map(|text| (*text).to_owned()).collect(),
                 )
             })
@@ -702,18 +710,28 @@ fn list_publication_keeps_every_item_of_each_list() {
     }
 }
 
-/// One recorded list: its ordered start and each item's first text.
-type Recorded = (Option<u64>, &'static [&'static str]);
+/// One recorded list: its ordered start, the item holding it, and each item's first text.
+type Recorded = (Option<u64>, &'static [usize], &'static [&'static str]);
 
-/// Collect every list in document order with the first text of each item.
-fn published_lists(nodes: &[Node], out: &mut Vec<(Option<u64>, Vec<String>)>) {
+/// One published list in the shape `Recorded` describes.
+type RecordedOwned = (Option<u64>, Vec<usize>, Vec<String>);
+
+/// Collect every list in document order with the item path holding it and each item's
+/// first text.
+fn published_lists(nodes: &[Node], path: &mut Vec<usize>, out: &mut Vec<RecordedOwned>) {
     for node in nodes {
         match &node.kind {
             Kind::List(start, items) => {
-                out.push((*start, items.iter().map(first_text).collect()));
-                published_lists(items, out);
+                out.push((*start, path.clone(), items.iter().map(first_text).collect()));
+                for (holder, item) in items.iter().enumerate() {
+                    path.push(holder);
+                    published_lists(std::slice::from_ref(item), path, out);
+                    path.pop();
+                }
             }
-            Kind::Quote(children, _) | Kind::Item(children) => published_lists(children, out),
+            Kind::Quote(children, _) | Kind::Item(children) => {
+                published_lists(children, path, out);
+            }
             _ => {}
         }
     }

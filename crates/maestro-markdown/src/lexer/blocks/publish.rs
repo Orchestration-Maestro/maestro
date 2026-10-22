@@ -4,6 +4,7 @@ use crate::{
     Kind, Node,
     tokenizer::block::{ListState, loosen},
 };
+use std::ops::ControlFlow;
 
 /// One list whose item nodes are being filled.
 ///
@@ -18,10 +19,23 @@ struct Listing {
     start: Option<u64>,
     /// Item slots paired with the output that fills each, in authored order.
     pending: std::vec::IntoIter<(Node, BlockTokens)>,
-    /// Item nodes whose nested lists are published, in authored order.
+    /// Filled item nodes, in authored order.
     filled: Vec<Node>,
     /// Whether every item of this list is loose.
     loose: bool,
+}
+
+/// Pair each item slot with the output that fills it, leaving a slot without an output empty.
+pub(super) fn pair_slots(
+    items: Vec<Node>,
+    outputs: Vec<BlockTokens>,
+) -> std::vec::IntoIter<(Node, BlockTokens)> {
+    let padding = std::iter::repeat_with(BlockTokens::default);
+    items
+        .into_iter()
+        .zip(outputs.into_iter().chain(padding))
+        .collect::<Vec<_>>()
+        .into_iter()
 }
 
 impl BlockTokens {
@@ -43,7 +57,7 @@ impl Listing {
     ///
     /// A list's item history is installed only together with its list node, so a
     /// published list always ends with the node carrying its item slots. Failing to
-    /// find one returns the whole output, so nothing is dropped.
+    /// find one returns the output unchanged.
     fn start(mut output: BlockTokens, state: Box<ListState>) -> Result<Self, Box<BlockTokens>> {
         debug_assert!(
             output
@@ -70,12 +84,11 @@ impl Listing {
             outputs.len(),
             "every item slot of a list is filled by exactly one output"
         );
-        let pending: Vec<(Node, BlockTokens)> = items.into_iter().zip(outputs).collect();
         Ok(Self {
             output,
             node,
             start,
-            pending: pending.into_iter(),
+            pending: pair_slots(items, outputs),
             filled: Vec::new(),
             loose,
         })
@@ -86,14 +99,14 @@ impl Listing {
         let mut parents: Vec<(Self, Node)> = Vec::new();
         loop {
             match self.step(&mut parents) {
-                Ok(next) => self = next,
-                Err(output) => return *output,
+                ControlFlow::Continue(next) => self = next,
+                ControlFlow::Break(output) => return output,
             }
         }
     }
 
     /// Descend into the nested list a slot holds, place a plain item, or close this level.
-    fn step(mut self, parents: &mut Vec<(Self, Node)>) -> Result<Self, Box<BlockTokens>> {
+    fn step(mut self, parents: &mut Vec<(Self, Node)>) -> ControlFlow<BlockTokens, Self> {
         let Some((node, output, state)) = self.next() else {
             return self.close(parents);
         };
@@ -101,20 +114,20 @@ impl Listing {
             Ok(nested) => nested,
             Err(output) => {
                 self.place(node, *output);
-                return Ok(self);
+                return ControlFlow::Continue(self);
             }
         };
         parents.push((self, node));
-        Ok(nested)
+        ControlFlow::Continue(nested)
     }
 
     /// Close this level into the level that suspended for it, or finish publication.
-    fn close(self, parents: &mut Vec<(Self, Node)>) -> Result<Self, Box<BlockTokens>> {
+    fn close(self, parents: &mut Vec<(Self, Node)>) -> ControlFlow<BlockTokens, Self> {
         let Some((mut parent, node)) = parents.pop() else {
-            return Err(Box::new(self.finish()));
+            return ControlFlow::Break(self.finish());
         };
         parent.place(node, self.finish());
-        Ok(parent)
+        ControlFlow::Continue(parent)
     }
 
     /// Place item outputs until one needs its own nested publication.
