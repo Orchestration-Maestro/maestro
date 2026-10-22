@@ -125,7 +125,9 @@ overwritten.
 
 `reload` waits for queued saves, loads global then project, accepts each healthy
 scope independently, keeps the accepted data of a failed scope, and discards
-runtime overrides and pending edits. Nothing is printed by any of these operations.
+runtime overrides and pending edits. `reload_from_storage` does the same without
+waiting; a caller that shares the manager awaits `flush` first, so it holds no
+borrow across the wait. Nothing is printed by any of these operations.
 
 ## Storage
 

@@ -22,12 +22,14 @@ pub fn expand_tilde_path(
     Ok(path.to_owned())
 }
 
-/// Select an override, standalone directory, or nearest package marker.
+/// Select an override, standalone directory, or nearest package marker, observing the
+/// installation only when no override applies.
 ///
 /// # Errors
-/// Returns the home lookup error when a tilde override needs it.
+/// Returns the home lookup error when a tilde override needs it, or the installation
+/// lookup error otherwise.
 pub fn get_package_dir(
-    installation: &Installation,
+    installation: impl FnOnce() -> io::Result<Installation>,
     override_dir: Option<&str>,
     home: impl FnOnce() -> io::Result<String>,
     exists: impl Fn(&str) -> bool,
@@ -35,6 +37,7 @@ pub fn get_package_dir(
     if let Some(path) = override_dir.filter(|s| !s.is_empty()) {
         return expand_tilde_path(path, home);
     }
+    let installation = installation()?;
     if installation.layout == PackageLayout::Standalone {
         return Ok(dirname(&installation.executable));
     }
@@ -42,7 +45,7 @@ pub fn get_package_dir(
     loop {
         let parent = dirname(&dir);
         if parent == *dir {
-            return Ok(installation.module_dir.clone());
+            return Ok(installation.module_dir);
         }
         if exists(&join(&[&dir, "package.json"])) || exists(&join(&[&dir, "Cargo.toml"])) {
             return Ok(dir.into_owned());
@@ -84,19 +87,16 @@ fn asset_dir(
     parts.extend_from_slice(packaged);
     join(&parts)
 }
-/// Get the built-in theme directory.
-pub fn get_themes_dir(
-    package_dir: &str,
-    layout: PackageLayout,
-    exists: impl Fn(&str) -> bool,
-) -> String {
-    asset_dir(
-        package_dir,
-        layout,
-        &["modes", "interactive", "theme"],
-        "theme",
-        exists,
-    )
+/// Get the built-in theme directory: the theme crate's assets in a source workspace, or
+/// the `theme` directory of a standalone package directory.
+#[must_use]
+pub fn get_themes_dir(package_dir: &str, layout: PackageLayout) -> String {
+    match layout {
+        PackageLayout::Package => {
+            join(&[package_dir, "crates", "maestro-theme", "assets", "theme"])
+        }
+        PackageLayout::Standalone => join(&[package_dir, "theme"]),
+    }
 }
 /// Get the export template directory.
 pub fn get_export_template_dir(

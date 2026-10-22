@@ -157,6 +157,13 @@ impl SettingsManager {
     /// and unsaved edits are discarded.
     pub async fn reload(&mut self) {
         self.queue.barrier().await;
+        self.reload_from_storage();
+    }
+
+    /// Reloads both scopes as [`Self::reload`] does, without waiting for queued
+    /// writes; await [`Self::flush`] first, so a shared manager can be reloaded
+    /// without holding its borrow across the wait.
+    pub fn reload_from_storage(&mut self) {
         self.load_scope(SettingsScope::Global);
         self.queue.clear_dirty();
         self.load_scope(SettingsScope::Project);

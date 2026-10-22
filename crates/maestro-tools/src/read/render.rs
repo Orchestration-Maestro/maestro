@@ -16,7 +16,7 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
 };
-use maestro_models::DiagnosticErrorInfo;
+use maestro_models::{DiagnosticErrorInfo, system_prompt::CONTEXT_FILE_NAMES};
 use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
 use maestro_theme::{Theme, ThemeColor, get_language_from_path, highlight_code};
 use maestro_tui::tui::ComponentHandle;
@@ -24,9 +24,6 @@ use serde_json::Value;
 
 /// Result of a render step.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
-
-/// Names that mark a resource file.
-const RESOURCE_FILE_NAMES: [&str; 4] = ["AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"];
 
 /// What a compact read is shown as.
 enum Kind {
@@ -116,7 +113,7 @@ fn classify(args: &Value, context: &ToolRenderContext<'_>) -> Rendered<Option<Cl
         }));
     }
     Ok(docs_classification(&absolute, context)?.or_else(|| {
-        RESOURCE_FILE_NAMES
+        CONTEXT_FILE_NAMES
             .contains(&name.as_str())
             .then_some(Classification {
                 kind: Kind::Resource,

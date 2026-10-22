@@ -5,7 +5,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -33,7 +33,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -61,7 +61,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -89,7 +89,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -117,7 +117,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -145,7 +145,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -173,7 +173,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -201,7 +201,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -229,7 +229,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",

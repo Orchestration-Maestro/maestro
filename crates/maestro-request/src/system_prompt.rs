@@ -1,8 +1,12 @@
-//! Already-assembled system prompt inputs carried by extension events.
+//! Already-assembled system prompt inputs carried by extension events, and the context
+//! file names those inputs are discovered under.
 
 use crate::extension_events::object;
 use crate::{presence::Presence, skills::Skill};
 use serde::{Deserialize, Serialize};
+/// The context file names tried in each directory, in order.
+pub const CONTEXT_FILE_NAMES: [&str; 4] = ["AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"];
+
 /// Supplied file text included in prompt context.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

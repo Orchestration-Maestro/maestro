@@ -10,13 +10,14 @@ pub use real_path::real_path;
 mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
-    parse_frontmatter, paths::resolve,
+    parse_frontmatter,
+    paths::{is_under_path, resolve},
 };
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
     read_text, symlink_metadata,
 };
-use maestro_path::{SEP, basename, dirname, is_absolute, join};
+use maestro_path::{basename, dirname, is_absolute, join};
 use std::{io, path::Path};
 pub use validation::SkillFrontmatter;
 
@@ -197,12 +198,6 @@ fn load_skills_in(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult
     }
     result.diagnostics.extend(collisions);
     Ok(result)
-}
-/// Compare preserved target spelling against a root resolved from the process
-/// directories, on a separator boundary.
-fn is_under_path(target: &str, root: &str) -> io::Result<bool> {
-    let root = resolve(&[root])?;
-    Ok(target == root || target.starts_with(&format!("{}{SEP}", root.trim_end_matches(SEP))))
 }
 /// Merge discoveries, retaining the first name and delaying collision messages.
 fn add_skills(

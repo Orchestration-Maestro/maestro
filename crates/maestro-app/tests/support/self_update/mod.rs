@@ -188,7 +188,7 @@ pub fn select(input: &Input, compose_root: bool) -> (io::Result<Value>, Vec<Valu
     let operations = Operations::new(input);
     let dir = if compose_root {
         config::paths::get_package_dir(
-            &installation,
+            || unreachable!(),
             Some(input.dir()),
             || unreachable!(),
             |_| unreachable!(),

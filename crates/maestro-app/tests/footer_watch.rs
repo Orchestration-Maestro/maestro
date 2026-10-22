@@ -3,8 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
 use crate::native;
-#[path = "support/watching.rs"]
-mod watching;
+use crate::watching;
 use maestro_app::presentation_data::footer_data_provider::{
     FooterDataProvider, FooterFileStats, ReadonlyFooterDataProvider,
 };

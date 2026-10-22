@@ -136,7 +136,7 @@ fn check_package_cases(text: &str, count: usize) {
     for case in cases {
         let probes = RefCell::new(Vec::new());
         let result = paths::get_package_dir(
-            &case.input.installation(),
+            || Ok(case.input.installation()),
             case.input.env.package.as_deref(),
             || Ok("/home/sample".to_owned()),
             |path| {
@@ -262,7 +262,7 @@ struct Paths {
 fn observe_paths(input: &PathInput) -> Paths {
     let installation = input.installation();
     let package = paths::get_package_dir(
-        &installation,
+        || Ok(input.installation()),
         input.env.package.as_deref(),
         || Ok(input.home()),
         |p| input.exists(p),
@@ -273,7 +273,7 @@ fn observe_paths(input: &PathInput) -> Paths {
         paths::get_interactive_assets_dir(&package, installation.layout, |p| input.exists(p));
     Paths {
         package_dir: package.clone(),
-        themes_dir: paths::get_themes_dir(&package, installation.layout, |p| input.exists(p)),
+        themes_dir: paths::get_themes_dir(&package, installation.layout),
         export_template_dir: paths::get_export_template_dir(&package, installation.layout, |p| {
             input.exists(p)
         }),
@@ -426,7 +426,7 @@ fn directory_operations_read_home_only_when_needed() {
         };
         let result = match case.input.op {
             HomeOperation::Package => paths::get_package_dir(
-                &PathInput::default().installation(),
+                || panic!("override must skip the installation"),
                 case.input.env.package.as_deref(),
                 home,
                 |_| panic!("override must skip marker probes"),
