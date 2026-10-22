@@ -1,27 +1,9 @@
 //! Recorded link admission at the shared owner and the pinned rule.
+use super::fixture_corpus::Corpus;
 use crate::{
     MarkedOptions, rules,
     tokenizer::{capture, inline::delimiters::Delimiters},
 };
-use serde::Deserialize;
-
-/// Recorded sources and their windows.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Corpus {
-    /// Whole sources the windows select from, each with its own windows.
-    texts: Vec<Source>,
-}
-
-/// One whole source with every recorded window over it.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Source {
-    /// Whole source text.
-    text: String,
-    /// Window start, window end, then one selection per caller grammar.
-    windows: Vec<Window>,
-}
 
 /// Window start, window end and the four recorded caller selections.
 type Window = (usize, usize, Selection, Selection, Selection, Selection);
@@ -31,7 +13,7 @@ type Selection = Option<(usize, usize, usize, String, String)>;
 
 #[test]
 fn link_admission_matches_selected_raw_windows() {
-    let corpus: Corpus =
+    let corpus: Corpus<Window> =
         serde_json::from_str(include_str!("../../tests/fixtures/link_windows.json")).unwrap();
     let mut windows = 0;
     let mut selected = 0;

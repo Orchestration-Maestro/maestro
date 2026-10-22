@@ -1,26 +1,7 @@
 //! Recorded code-span selections through the shared inline tokenizer.
-use super::SELECTIONS;
+use super::{SELECTIONS, fixture_corpus::Corpus};
 use crate::{Kind, source::ScopeSource};
-use serde::Deserialize;
 use std::collections::HashMap;
-
-/// Recorded sources and their windows.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Corpus {
-    /// Whole sources the windows select from, each with its own windows.
-    texts: Vec<Source>,
-}
-
-/// One whole source with every recorded window over it.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Source {
-    /// Whole source text.
-    text: String,
-    /// Window start, window end, then the recorded code-span selection.
-    windows: Vec<Window>,
-}
 
 /// Window start, window end and the selected consumed bytes and content.
 type Window = (usize, usize, Option<Selection>);
@@ -30,7 +11,7 @@ type Selection = (usize, String);
 
 #[test]
 fn code_span_lookup_matches_selected_raw_windows() {
-    let corpus: Corpus =
+    let corpus: Corpus<Window> =
         serde_json::from_str(include_str!("../../tests/fixtures/code_span_windows.json")).unwrap();
     let mut windows = 0;
     let mut selected = 0;

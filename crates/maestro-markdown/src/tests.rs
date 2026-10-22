@@ -8,6 +8,7 @@ mod container_depth;
 mod container_frames;
 mod deletion_scanning;
 mod emphasis_work;
+mod fixture_corpus;
 mod html_progress;
 mod link_windows;
 mod opener_work;
@@ -572,6 +573,26 @@ fn paragraph_work(source: String, options: crate::MarkedOptions) -> Work {
 /// Whether work measured at N, 2N and 4N units grows by the same amount per unit.
 fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
     large - medium == 2 * (medium - small)
+}
+
+/// Require only text and line breaks, spelled exactly as the source.
+///
+/// The closing line ending ends the paragraph rather than adding a node.
+fn assert_literal(children: &[Node], source: &str, case: &str) {
+    assert!(
+        children
+            .iter()
+            .all(|node| matches!(node.kind, Kind::Text(_) | Kind::Break)),
+        "{case}"
+    );
+    assert_eq!(
+        children
+            .iter()
+            .map(|node| node.authored.to_owned_string())
+            .collect::<String>(),
+        source.trim_end_matches('\n'),
+        "{case}"
+    );
 }
 
 #[test]

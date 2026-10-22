@@ -1,6 +1,6 @@
 //! Work each reached opener supplies to the shared delimiter owner.
-use super::{SELECTIONS, WORK, Work, parsed};
-use crate::{Kind, MarkedOptions, Node, source::ScopeSource};
+use super::{SELECTIONS, WORK, Work, assert_literal, parsed};
+use crate::{Kind, MarkedOptions, source::ScopeSource};
 use std::collections::HashMap;
 
 /// One unclosed code-span opener per distinct backtick width.
@@ -13,24 +13,6 @@ fn unclosed_links(count: usize) -> String {
     "[b ".repeat(count)
 }
 
-/// A workload whose last scalar ends the paragraph rather than opening it.
-fn control(children: &[Node], source: &str, case: &str) {
-    assert!(
-        children
-            .iter()
-            .all(|node| matches!(node.kind, Kind::Text(_) | Kind::Break)),
-        "{case}"
-    );
-    assert_eq!(
-        children
-            .iter()
-            .map(|node| node.authored.to_owned_string())
-            .collect::<String>(),
-        source.trim_end_matches('\n'),
-        "{case}"
-    );
-}
-
 /// Prepared-owner work for one source, through the private tokenizer.
 fn root_work(text: &str, options: MarkedOptions) -> usize {
     WORK.with_borrow_mut(|work| *work = Work::default());
@@ -39,7 +21,7 @@ fn root_work(text: &str, options: MarkedOptions) -> usize {
     let mut tokenizer =
         crate::tokenizer::inline::Tokenizer::new(&source, options, &definitions, None, false);
     let nodes = tokenizer.parse(&[], None);
-    control(&nodes, text, &format!("{options:?}"));
+    assert_literal(&nodes, text, &format!("{options:?}"));
     WORK.with_borrow(|work| work.inline_code_bytes)
 }
 
@@ -51,7 +33,7 @@ fn root_link_work(text: &str, options: MarkedOptions) -> usize {
     let mut tokenizer =
         crate::tokenizer::inline::Tokenizer::new(&source, options, &definitions, None, false);
     let nodes = tokenizer.parse(&[], None);
-    control(&nodes, text, &format!("{options:?}"));
+    assert_literal(&nodes, text, &format!("{options:?}"));
     WORK.with_borrow(|work| work.link_bytes)
 }
 
