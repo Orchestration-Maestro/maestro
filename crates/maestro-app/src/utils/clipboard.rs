@@ -22,8 +22,6 @@ use tokio::process::Command;
 pub trait ClipboardOperations {
     /// Observes the host platform.
     fn platform(&self) -> ClipboardPlatform;
-    /// Reads an environment variable at its point of use.
-    fn env(&self, name: &str) -> Option<String>;
     /// Returns the admitted native module, if available.
     fn clipboard(&self) -> Option<&dyn ClipboardModule>;
     /// Runs a synchronous helper using the process owner's options.
@@ -47,9 +45,14 @@ pub trait ClipboardOperations {
     fn write_stdout(&self, bytes: &[u8]) -> io::Result<()>;
 }
 
+/// Reads a process variable, substituting U+FFFD for undecodable bytes.
+pub(super) fn environment(name: &str) -> Option<String> {
+    std::env::var_os(name).map(|value| value.to_string_lossy().into_owned())
+}
+
 /// Nonempty environment strings select the corresponding route.
-fn present(operations: &impl ClipboardOperations, name: &str) -> bool {
-    operations.env(name).is_some_and(|value| !value.is_empty())
+fn present(name: &str) -> bool {
+    environment(name).is_some_and(|value| !value.is_empty())
 }
 
 /// Runs a fixed program; writers use a pipe and five-second limit, probes neither.
@@ -85,9 +88,9 @@ fn copy_to_x11_clipboard(operations: &impl ClipboardOperations, text: &str) -> b
 
 /// Prefers an acknowledged Wayland start, then X11 selection owners.
 fn copy_to_display(operations: &impl ClipboardOperations, text: &str) -> bool {
-    let wayland_display = present(operations, "WAYLAND_DISPLAY");
-    let x11_display = present(operations, "DISPLAY");
-    if super::clipboard_image::is_wayland_session(|name| operations.env(name))
+    let wayland_display = present("WAYLAND_DISPLAY");
+    let x11_display = present("DISPLAY");
+    if super::clipboard_image::is_wayland_session(environment)
         && wayland_display
         && run_tool(operations, "which", &["wl-copy"], None)
         && operations
@@ -117,13 +120,13 @@ pub async fn copy_to_clipboard_with(
     };
     let remote = ["SSH_CONNECTION", "SSH_CLIENT", "MOSH_CONNECTION"]
         .iter()
-        .any(|name| present(operations, name));
+        .any(|name| present(name));
     if !copied {
         copied = match operations.platform() {
             ClipboardPlatform::Darwin => run_tool(operations, "pbcopy", &[], Some(text)),
             ClipboardPlatform::Win32 => run_tool(operations, "clip", &[], Some(text)),
             _ => {
-                (present(operations, "TERMUX_VERSION")
+                (present("TERMUX_VERSION")
                     && run_tool(operations, "termux-clipboard-set", &[], Some(text)))
                     || copy_to_display(operations, text)
             }
@@ -154,9 +157,6 @@ impl ClipboardOperations for NativeClipboardOperations {
             "windows" => ClipboardPlatform::Win32,
             _ => ClipboardPlatform::Other,
         }
-    }
-    fn env(&self, name: &str) -> Option<String> {
-        std::env::var(name).ok()
     }
     fn clipboard(&self) -> Option<&dyn ClipboardModule> {
         super::clipboard_native::native_clipboard()
