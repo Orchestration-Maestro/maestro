@@ -4,7 +4,7 @@ use crate::{
     EventBusController, ExtensionExecution, create_extension_runtime,
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
-use maestro_resources::package_manifest::resolve_entry_path;
+use maestro_resources::paths::resolve;
 use maestro_tools::path_utils::normalize_unicode_spaces;
 use std::io;
 
@@ -20,13 +20,16 @@ fn expand_path(path: &str) -> io::Result<String> {
         rest.strip_prefix('/').unwrap_or(rest),
     ]))
 }
-/// Expands `extension_path`, keeping absolute results and resolving others against `cwd`.
-pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
-    let expanded = expand_path(extension_path)?;
-    if maestro_path::is_absolute(&expanded) {
-        return Ok(expanded);
+/// Keeps an absolute `path` as written and resolves a relative one against `cwd`.
+pub(super) fn anchor_path(path: &str, cwd: &str) -> io::Result<String> {
+    if maestro_path::is_absolute(path) {
+        return Ok(path.to_owned());
     }
-    resolve_entry_path(cwd, &expanded)
+    resolve(&[cwd, path])
+}
+/// Expands a typed `extension_path`, then anchors it at `cwd`.
+pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
+    anchor_path(&expand_path(extension_path)?, cwd)
 }
 /// Loads `paths` in order through `module_loader`, with one shared runtime and one bus
 /// identity per path. A failed path is recorded with its supplied spelling and loading
@@ -40,13 +43,24 @@ pub async fn load_extensions<E: ExtensionExecution>(
     event_bus: &EventBusController<E>,
     module_loader: &ModuleLoader<E>,
 ) -> io::Result<LoadExtensionsResult<E>> {
+    load_with(paths, resolve_path, cwd, event_bus, module_loader).await
+}
+/// Loads `paths` as [`load_extensions`] does, resolving each with `resolve` just before
+/// its module loads.
+pub(super) async fn load_with<E: ExtensionExecution>(
+    paths: Vec<String>,
+    resolve: fn(&str, &str) -> io::Result<String>,
+    cwd: &str,
+    event_bus: &EventBusController<E>,
+    module_loader: &ModuleLoader<E>,
+) -> io::Result<LoadExtensionsResult<E>> {
     let mut result = LoadExtensionsResult {
         extensions: Vec::new(),
         errors: Vec::new(),
         runtime: create_extension_runtime::<E>(),
     };
     for path in paths {
-        let resolved_path = resolve_path(&path, cwd)?;
+        let resolved_path = resolve(&path, cwd)?;
         let loaded = match module_loader(&resolved_path).await {
             Ok(Some(factory)) => {
                 let extension = create_extension::<E>(path.clone(), resolved_path);

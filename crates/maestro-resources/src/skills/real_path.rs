@@ -1,6 +1,6 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
-use super::files::resolve;
+use crate::paths::resolve;
 use maestro_path::{SEP, dirname};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

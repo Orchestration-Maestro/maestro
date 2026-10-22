@@ -1,6 +1,5 @@
 //! Filesystem observations of resource discovery.
 
-use maestro_path::resolve_with;
 use std::{ffi::OsString, io, path::Path};
 
 /// The observed kind of a resource entry.
@@ -91,20 +90,6 @@ pub fn drive_directories() -> Vec<(char, String)> {
 /// Returns the I/O cause when the directory cannot be read.
 pub fn current_directory() -> io::Result<String> {
     Ok(std::env::current_dir()?.to_string_lossy().into_owned())
-}
-
-/// Resolve `paths` from right to left, reading the process working directory and the
-/// drive directories only when the operands leave a part open.
-///
-/// Each resolution reads them anew.
-///
-/// # Errors
-/// Returns the kind of the working directory's error when it was needed and unreadable.
-pub(crate) fn resolve(paths: &[&str]) -> io::Result<String> {
-    resolve_with(&[paths], drive_directories, || {
-        current_directory().map_err(|error| io::Error::from(error.kind()))
-    })
-    .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Classify directory-entry or metadata observations.

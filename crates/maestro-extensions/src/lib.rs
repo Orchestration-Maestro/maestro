@@ -79,10 +79,9 @@ pub mod wrapper;
 pub use loader::load_extension_from_factory;
 #[cfg(not(target_arch = "wasm32"))]
 pub use loader::{discover_and_load_extensions, load_extensions};
-pub use types::{
-    ExtensionFactory, ExtensionHandler, ExtensionLoadError, LoadExtensionsResult, ModuleLoader,
-    RegisteredTool, RegisteredToolInput,
-};
+pub use types::{ExtensionFactory, ExtensionHandler, RegisteredTool, RegisteredToolInput};
+#[cfg(not(target_arch = "wasm32"))]
+pub use types::{ExtensionLoadError, LoadExtensionsResult, ModuleLoader};
 pub use wrapper::{wrap_registered_tool, wrap_registered_tools};
 
 pub use types::events::*;

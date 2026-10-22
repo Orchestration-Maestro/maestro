@@ -45,18 +45,6 @@ pub fn read_maestro_manifest_file(path: &str) -> Option<Manifest> {
     };
     Some(Manifest { fields })
 }
-/// Resolves literal manifest operands, consulting ambient directories only on demand.
-///
-/// # Errors
-/// Returns the working-directory error when `dir` and `entry` leave the path unanchored.
-pub fn resolve_entry_path(dir: &str, entry: &str) -> io::Result<String> {
-    maestro_path::resolve_with(
-        &[&[dir, entry]],
-        crate::drive_directories,
-        crate::current_directory,
-    )
-    .map(|paths| paths.into_iter().collect::<String>())
-}
 /// Whether a file name has an admitted extension module suffix; matching is case-sensitive.
 #[must_use]
 pub fn is_extension_file(name: &str) -> bool {
@@ -80,7 +68,7 @@ pub fn resolve_extension_entries(dir: &str) -> io::Result<Option<Vec<String>>> {
         let entries: Vec<String> = serde_json::from_str(entries.get())
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         for entry in entries {
-            let path = resolve_entry_path(dir, &entry)?;
+            let path = crate::paths::resolve(&[dir, &entry])?;
             if Path::new(&path).exists() {
                 found.push(path);
             }

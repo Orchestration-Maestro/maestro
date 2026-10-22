@@ -1,7 +1,6 @@
 //! Conventional resource collection over replaceable filesystem observations.
 use maestro_path::join;
 use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
-pub(super) use maestro_resources::package_manifest::resolve_entry_path;
 use maestro_resources::package_manifest::{is_extension_file, resolve_extension_entries};
 use maestro_resources::skills::{ResourceEntry, ResourceFileType, observed_type};
 use std::{io, path::Path};

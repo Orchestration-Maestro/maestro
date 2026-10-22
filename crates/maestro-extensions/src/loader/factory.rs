@@ -5,7 +5,7 @@ use crate::{
 };
 use std::sync::{Arc, RwLock};
 /// Creates an empty owner labelled `extension_path` whose base directory is the parent
-/// of `resolved_path`, except for bracketed labels.
+/// of `resolved_path`; a label starting with `<` has no base directory.
 pub(super) fn create_extension<E: ExtensionExecution>(
     extension_path: String,
     resolved_path: String,

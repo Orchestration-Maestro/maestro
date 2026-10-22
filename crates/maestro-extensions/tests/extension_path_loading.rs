@@ -1,12 +1,9 @@
 //! Loading extensions from paths and discovering them in standard and configured locations.
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
-#[cfg(unix)]
+#![cfg(unix)]
 use crate::module_loader::{Trace, check, check_with_home, module_loader};
-#[cfg(unix)]
 use serde_json::json;
 
-#[cfg(unix)]
 #[test]
 fn explicit_paths_load_in_order_without_discovery() {
     check(&[
@@ -16,7 +13,6 @@ fn explicit_paths_load_in_order_without_discovery() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
 fn failed_paths_record_messages_and_loading_continues() {
     check(&[
@@ -27,7 +23,6 @@ fn failed_paths_record_messages_and_loading_continues() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
 fn loaded_paths_keep_original_and_resolved_spellings() {
     check(&[
@@ -37,7 +32,6 @@ fn loaded_paths_keep_original_and_resolved_spellings() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
 fn home_paths_expand_against_the_home_directory() {
     check_with_home(
@@ -46,7 +40,6 @@ fn home_paths_expand_against_the_home_directory() {
     );
 }
 
-#[cfg(unix)]
 #[test]
 fn loaded_paths_share_the_bus_and_runtime_of_one_call() {
     check(&[
@@ -60,7 +53,6 @@ fn loaded_paths_share_the_bus_and_runtime_of_one_call() {
 
 /// A foreign listener reached from inside a callback runs after that callback returns,
 /// so each loaded path received its own bus identity.
-#[cfg(unix)]
 #[test]
 fn each_loaded_path_has_its_own_bus_identity() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -88,7 +80,6 @@ fn each_loaded_path_has_its_own_bus_identity() {
 }
 
 /// The default family runs path loading and discovery as `Send` tasks.
-#[cfg(unix)]
 #[test]
 fn default_family_loads_through_a_thread_safe_loader() {
     use maestro_extensions::{
@@ -144,7 +135,6 @@ fn default_family_loads_through_a_thread_safe_loader() {
     }
 }
 
-#[cfg(unix)]
 #[test]
 fn discovery_admits_files_indexes_and_manifest_entries() {
     check(&[
@@ -158,13 +148,11 @@ fn discovery_admits_files_indexes_and_manifest_entries() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
 fn discovery_orders_locations_and_keeps_first_spellings() {
     check(&["discover_location_order", "discover_first_wins"]);
 }
 
-#[cfg(unix)]
 #[test]
 fn configured_paths_load_files_and_directories() {
     check(&[
@@ -173,7 +161,6 @@ fn configured_paths_load_files_and_directories() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
 fn discovery_follows_links_and_skips_unlistable_directories() {
     check(&[
@@ -183,7 +170,6 @@ fn discovery_follows_links_and_skips_unlistable_directories() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
 fn manifest_item_errors_drop_a_directory_or_reject_a_configured_one() {
     check(&[
@@ -192,8 +178,7 @@ fn manifest_item_errors_drop_a_directory_or_reject_a_configured_one() {
     ]);
 }
 
-#[cfg(unix)]
 #[test]
-fn discovered_names_pass_through_path_resolution() {
+fn discovered_names_keep_their_real_spelling() {
     check(&["discover_unicode_space_in_discovered_name"]);
 }

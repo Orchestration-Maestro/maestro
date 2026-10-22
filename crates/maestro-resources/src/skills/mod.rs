@@ -10,9 +10,8 @@ pub use real_path::real_path;
 mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
-    parse_frontmatter,
+    parse_frontmatter, paths::resolve,
 };
-pub(crate) use files::resolve;
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
     read_text, symlink_metadata,

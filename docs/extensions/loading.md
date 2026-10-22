@@ -22,8 +22,8 @@ loaded extensions share that runtime.
 
 Each path is resolved before its module loads:
 
-1. U+00A0, U+2000 to U+200A, U+202F, U+205F and U+3000 become a plain space.
-   Other characters, such as tab, U+200B or U+FEFF, are kept.
+1. Unicode spaces become plain spaces, through
+   [`normalize_unicode_spaces`](../../crates/maestro-tools/src/path_utils.rs).
 2. A leading `~` or `~/` is replaced by the home directory, and the rest is
    joined to it lexically. A `~` anywhere else is literal.
 3. An absolute result is kept as written. A relative result is resolved
@@ -40,8 +40,9 @@ continues with the next path. The error is one of two messages:
   finds no factory. The path is the supplied spelling.
 - `Failed to load extension: <message>` when the loader or the factory fails.
 
-An empty list loads nothing. When the home or working directory is needed and
-cannot be read, the whole call fails before any module loads.
+An empty list loads nothing. When the home or working directory is needed for a
+path and cannot be read, the whole call fails before that path's module loads.
+Earlier paths have already loaded by then.
 
 ## Event bus
 
@@ -59,27 +60,25 @@ Two calls with two fresh buses share nothing.
 1. `<cwd>/.maestro/extensions`
 2. `<agent_dir>/extensions`
 3. Each configured path, resolved as above. A directory contributes its declared
-   entries, or else a scan of its own files. Anything else is added as resolved,
-   even when it does not exist, and then fails in the loader.
+   entries, or else a one-level scan. Anything else is added as resolved, even
+   when it does not exist, and then fails in the loader.
 
 Discovery compares paths by their lexically resolved form. The first spelling
-wins and discovery drops later duplicates. Discovered paths go through the same
-resolution when they load, so a discovered name containing one of those spaces
-reaches the loader with a plain space.
+wins and discovery drops later duplicates. Paths found on disk reach the loader
+with their real spelling, Unicode spaces included. Only typed paths, the
+configured and explicit ones, have their spaces replaced.
 
-A scan reads one directory level in name order, hidden names included.
-Files and links whose names end in `.ts`, `.js` or `.wasm` are added. Matching
-is case-sensitive, so `.d.ts` is admitted and `.TS` is not. Other directories
-and links add their declared entries. A missing or unreadable directory adds
-nothing, and so does a directory where any child's manifest lists a non-string
-item. The same manifest error in a configured directory fails the whole call.
+A scan reads one directory level in name order, hidden names included. It adds
+the extension files and links, and the declared entries of other directories and
+links, following the [entry rules](../packages.md#conventional-resource-discovery).
+A missing or unreadable directory adds nothing, and so does a directory where
+any child's manifest lists a non-string item. The same manifest error in a
+configured directory fails the whole call.
 
 The caller passes the agent directory; the application owns its default.
 
 ## Entry rules
 
 The entry rules belong to `maestro_resources::package_manifest`, which package
-discovery shares. A directory's entries are the existing paths that the
-`maestro.extensions` list in its `package.json` names, in list order. Without
-such a list, or when none of its paths exist, the entry is the first of
-`index.ts`, `index.js` and `index.wasm` that exists.
+discovery shares; [package resources](../packages.md#conventional-resource-discovery)
+states them.

@@ -1,5 +1,5 @@
 //! Extension discovery in the project, user and configured locations.
-use super::paths::{load_extensions, resolve_path};
+use super::paths::{anchor_path, load_with, resolve_path};
 use crate::{
     EventBusController, ExtensionExecution,
     types::{LoadExtensionsResult, ModuleLoader},
@@ -7,13 +7,13 @@ use crate::{
 use maestro_path::join;
 use maestro_resources::{
     ResourceFileType,
-    package_manifest::{is_extension_file, resolve_entry_path, resolve_extension_entries},
-    paths::CONFIG_DIR_NAME,
+    package_manifest::{is_extension_file, resolve_extension_entries},
+    paths::{CONFIG_DIR_NAME, resolve},
     read_entries,
 };
 use std::{collections::HashSet, io, path::Path};
 
-/// One level of `dir` in name order: admitted files and links, then each child directory's
+/// One level of `dir` in name order: admitted files and links, and each child directory's
 /// or link's declared entries. A listing or entry-resolution error drops the directory.
 fn discover_extensions_in_dir(dir: &str) -> Vec<String> {
     let Ok(entries) = read_entries(Path::new(dir)) else {
@@ -47,7 +47,7 @@ impl Discovered {
     /// Adds each path whose resolved key is new.
     fn add(&mut self, paths: Vec<String>) -> io::Result<()> {
         for path in paths {
-            if self.seen.insert(resolve_entry_path(&path, "")?) {
+            if self.seen.insert(resolve(&[&path])?) {
                 self.paths.push(path);
             }
         }
@@ -55,10 +55,12 @@ impl Discovered {
     }
 }
 /// Discovers `<cwd>/.maestro/extensions`, then `<agent_dir>/extensions`, then each
-/// configured path, and loads them through [`load_extensions`].
+/// configured path, and loads them as [`super::load_extensions`] does, except that paths
+/// found on disk keep their spelling.
 ///
-/// A configured directory contributes its declared entries, else its files; any other
-/// configured path is added as resolved. The first spelling of each resolved path wins.
+/// A configured directory contributes its declared entries, else a one-level scan; any
+/// other configured path is added as resolved. The first spelling of each resolved path
+/// wins.
 ///
 /// # Errors
 /// Returns a resolution error, or `InvalidData` for a configured directory whose manifest
@@ -90,5 +92,5 @@ pub async fn discover_and_load_extensions<E: ExtensionExecution>(
             found.add(discover_extensions_in_dir(&resolved))?;
         }
     }
-    load_extensions(found.paths, cwd, event_bus, module_loader).await
+    load_with(found.paths, anchor_path, cwd, event_bus, module_loader).await
 }

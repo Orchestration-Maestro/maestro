@@ -3232,13 +3232,28 @@
     "expected": {
       "outcomes": [
         {
-          "extensions": [],
-          "errors": [
+          "extensions": [
             {
               "path": "$ROOT/work/.maestro/extensions/x\u202fy.ts",
-              "error": "Failed to load extension: module not found: $ROOT/work/.maestro/extensions/x y.ts"
+              "resolvedPath": "$ROOT/work/.maestro/extensions/x\u202fy.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/x\u202fy.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "narrow"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
             }
           ],
+          "errors": [],
           "flagValues": {}
         }
       ],

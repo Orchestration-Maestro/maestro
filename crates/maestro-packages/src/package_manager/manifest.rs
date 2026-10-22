@@ -9,7 +9,7 @@ pub(super) fn collect_manifest_entries(
     root: &str,
     kind: super::resource_discovery::ResourceType,
 ) -> io::Result<Vec<String>> {
-    use super::resource_discovery::{collect_files_from_paths, resolve_entry_path};
+    use super::resource_discovery::collect_files_from_paths;
     let mut paths = Vec::new();
     for entry in entries
         .iter()
@@ -18,7 +18,7 @@ pub(super) fn collect_manifest_entries(
         if entry.contains(['*', '?']) {
             paths.extend(super::glob::glob_sync(entry, root)?);
         } else {
-            paths.push(resolve_entry_path(root, entry)?);
+            paths.push(maestro_resources::paths::resolve(&[root, entry])?);
         }
     }
     Ok(collect_files_from_paths(paths, kind))

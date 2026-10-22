@@ -53,7 +53,7 @@ drive. The loader reads the working directory and the drive directories at each
 resolution whose operands leave a part open: a relative path or, on Windows, a
 path rooted without a drive or relative to a drive. A call whose paths are all
 anchored never reads them, and a change of working directory between two
-resolutions shows in the second. When the working directory cannot be read, `load_skills` fails with that error's kind if resolving the
+resolutions shows in the second. When the working directory cannot be read, `load_skills` fails with that error if resolving the
 project configuration directory or an explicit path needs it, for example beneath
 a relative `cwd`; an absolute `cwd` on POSIX loads as usual.
 `load_skills_from_dir` never fails for it: a scan makes each entry's path

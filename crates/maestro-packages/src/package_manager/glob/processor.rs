@@ -3,7 +3,6 @@ use super::{
     path_scurry::{Children, comparison_key},
     pattern::Pattern,
 };
-use crate::package_manager::resource_discovery::resolve_entry_path;
 use maestro_pattern::{Minimatch, ParseReturnFiltered};
 use maestro_resources::skills::ResourceFileType;
 use std::{
@@ -28,7 +27,7 @@ impl Target {
     }
     /// Resolves a literal without following its final link.
     fn resolve(&self, text: &str, context: &mut Context<'_>) -> io::Result<Self> {
-        let mut path = resolve_entry_path(&self.path, text)?;
+        let mut path = maestro_resources::paths::resolve(&[&self.path, text])?;
         if !matches!(text, "" | "." | "..") && maestro_path::dirname(&path) != path {
             let parent = maestro_path::dirname(&path);
             let name = maestro_path::basename(&path, None);
