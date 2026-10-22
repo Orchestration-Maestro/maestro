@@ -161,6 +161,45 @@ payload and are cached per image generation, then pruned to visible images.
 Only a generation observed without stored placements skips later image queries;
 off-screen placements still need projection after scrolling or resizing.
 
+## Host graphics
+
+`kitty::host::HostGraphicsCache` remembers which images the host terminal holds
+and where it shows them, so a frame re-sends only what changed.
+`update_terminal` handles a screen that carries no pane layers. `update_layers`
+handles pane layers and returns the commands of at most one transaction with an
+`incomplete` flag; `drain_layers` repeats that call until the frame is complete.
+`clear_bytes` deletes every retained image. `request_placement_replay` asks for
+every visible placement to be displayed again without its pixels, and
+`update_view` reports a view change and drops the continuation cursor.
+
+Identical pixels share one upload, across sources and panes. The host image
+identity hashes the raw 32-bit pane identity with the payload signature:
+dimensions, format, payload length and fingerprint. The host placement identity
+hashes the source with the protocol image and placement identities. Changed
+content maps to a new host image, so the replaced one is deleted unless another
+source still shows it, and a shared image lives until its last source leaves. A
+placement that disappears is deleted without its image. A replaced pane layer is
+transmitted and displayed in one command, never deleted to a blank frame. A
+hidden layer keeps its image and loses only its placement.
+
+`HostPlacement` carries the pane's raw identity, the pane area as a `Rect` of
+cells, the host cell size, the placement the screen reports and its scrollback
+offset, so the crate holds no workspace, application or rendering record.
+`clipped_placement` crops the visible cells and maps them onto the source
+rectangle, dropping an in-cell offset on a cropped side.
+
+`kitty::host::encode` writes the commands: upload, transmit and display,
+display, delete image, delete placement, the regular-file command wrapped in
+save and restore cursor, and the direct-file command that transmits and displays
+once at the clipped origin. Payloads are base64 in 3072-byte raw chunks, with the
+continuation flag on every chunk but the last. Zero source and offset keys are
+omitted; the display, quiet and stacking keys are always written.
+
+A transaction budget keeps an oversized upload local to the frame that carries
+it. The payload is measured as its encoded bytes plus per-chunk overhead, and a
+payload that cannot fit is quarantined until its source changes. Without a
+budget nothing is quarantined and the caller loops on `incomplete`.
+
 ## Cell and row records
 
 `Cell` and `page::row::Row` are eight-byte `Copy` records with typed accessors.
