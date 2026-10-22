@@ -2,10 +2,12 @@
 
 use std::collections::HashSet;
 
+#[cfg(unix)]
+use super::encode_kitty_regular_file;
 use super::{
     HostCellSize, HostGraphicsCache, HostPlacement, HostSourceKey, HostView, Rect, WindowSize,
-    clipped_placement, direct_file_command, encode_kitty_regular_file, host_image_id,
-    host_image_id_for_signature, host_placement_id,
+    clipped_placement, direct_file_command, host_image_id, host_image_id_for_signature,
+    host_placement_id,
 };
 use crate::kitty::graphics::placements::{KittyImageFormat, KittyImagePlacement};
 use crate::kitty::graphics::render::PlacementRenderInfo;

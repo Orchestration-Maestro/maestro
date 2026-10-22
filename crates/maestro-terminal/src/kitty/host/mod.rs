@@ -29,9 +29,10 @@ pub use cell_size::{HostCellSize, WindowSize};
 
 pub use clip::clipped_placement;
 
-pub use encode::{
-    DirectFileCommand, KITTY_CHUNK_BYTES, direct_file_command, encode_kitty_regular_file,
-};
+pub use encode::{DirectFileCommand, KITTY_CHUNK_BYTES, direct_file_command};
+
+#[cfg(unix)]
+pub use encode::encode_kitty_regular_file;
 
 pub use identity::{
     HOST_IMAGE_ID_BASE, host_image_id, host_image_id_for_signature, host_placement_id,
