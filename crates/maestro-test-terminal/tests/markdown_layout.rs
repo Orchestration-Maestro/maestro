@@ -925,9 +925,9 @@ fn deep_quote_rows_format_on_a_small_stack() {
 
 #[test]
 fn deep_nested_list_rows_format_on_a_small_stack() {
-    let rows = render_on_small_stack(format!("{}x", "- ".repeat(1_000)), 2_100);
+    let rows = render_on_small_stack(format!("{}x", "- ".repeat(2_000)), 4_100);
     let last = rows.last().expect("rows").trim_end();
-    assert_eq!(last, format!("{}- x", "  ".repeat(999)));
+    assert_eq!(last, format!("{}- x", "  ".repeat(1_999)));
     let bullets: usize = rows.iter().map(|row| row.matches("- ").count()).sum();
     assert_eq!(bullets, 1);
 }

@@ -985,11 +985,11 @@ fn deep_quote_blocks_export_on_a_small_stack() {
 fn deep_nested_items_render_on_a_small_stack() {
     let html = std::thread::Builder::new()
         .stack_size(2 * 1024 * 1024)
-        .spawn(|| prepare(&format!("{}x", "- ".repeat(1_000)), false).html)
+        .spawn(|| prepare(&format!("{}x", "- ".repeat(2_000)), false).html)
         .expect("worker thread")
         .join()
         .expect("worker panicked");
-    assert_eq!(html.matches("<ul>").count(), 1_000);
-    assert_eq!(html.matches("<li>").count(), 1_000);
+    assert_eq!(html.matches("<ul>").count(), 2_000);
+    assert_eq!(html.matches("<li>").count(), 2_000);
     assert!(html.contains('x'));
 }

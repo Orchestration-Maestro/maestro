@@ -378,23 +378,19 @@ impl ListFrame {
             return Step::Done(Done::Rejected);
         };
         let (body, prefix) = operand(item, following);
-        let Some(rest) = lexer.reopen(&body, prefix, &mut item.child) else {
+        let rest = lexer.reopen(&body, prefix, &mut item.child);
+        self.phase = ListPhase::Item {
+            next,
+            replay,
+            awaiting: rest.is_some().then_some(body),
+        };
+        let Some(rest) = rest else {
             lexer.top = true;
-            self.phase = ListPhase::Item {
-                next,
-                replay,
-                awaiting: None,
-            };
             self.item_finished(lexer);
             return Step::Again;
         };
         lexer.top = item.child.enter_top();
         let output = item.child.take_output();
-        self.phase = ListPhase::Item {
-            next,
-            replay,
-            awaiting: Some(body),
-        };
         Step::Push(Frame::Run(lexer.block_run(rest, output, Level::Item)))
     }
 

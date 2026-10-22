@@ -127,9 +127,7 @@ impl BlockRun {
                 });
                 return Step::Push(lexer.admit(pending));
             }
-            if !self.tail(lexer, &rest, (start, mark)) {
-                self.stopped = true;
-            }
+            self.tail(lexer, &rest, (start, mark));
         }
         if self.awaiting.is_some() {
             return Step::Again;
@@ -184,19 +182,17 @@ impl BlockRun {
             });
             return Some(lexer.admit(Pending::List(entry)));
         }
-        if !self.tail(lexer, &rest, (cursor, mark)) {
-            self.stopped = true;
-        }
+        self.tail(lexer, &rest, (cursor, mark));
         None
     }
 
-    /// Admit the tail grammars at one position, reporting whether one consumed bytes.
+    /// Admit the tail grammars at one position, stopping this level when none consumed bytes.
     fn tail<E>(
         &mut self,
         lexer: &mut Lexer<'_, E>,
         rest: &Segmented,
         step: (usize, Option<Box<Mark>>),
-    ) -> bool {
+    ) {
         let caller = self
             .callback
             .as_ref()
@@ -206,10 +202,9 @@ impl BlockRun {
         });
         if let Some(consumed) = consumed {
             self.admitted(lexer, rest, step, consumed);
-            true
         } else {
             self.record(lexer, rest, step, None);
-            false
+            self.stopped = true;
         }
     }
 
