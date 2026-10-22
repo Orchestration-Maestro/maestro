@@ -1,6 +1,6 @@
 //! Installation evidence classification.
 
-/// The layout supplied by the application composition root.
+/// How an installation ships its assets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PackageLayout {
     /// A package tree with source or distribution directories.
@@ -17,6 +17,31 @@ pub struct Installation {
     pub executable: String,
     /// The supplied package layout.
     pub layout: PackageLayout,
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl Installation {
+    /// The running process: its executable and this crate's compile-time directory.
+    ///
+    /// A build that finds a package manifest walking up from that directory runs from
+    /// its source, so its assets come from that package tree; any other build is a
+    /// standalone executable whose assets sit beside it.
+    ///
+    /// # Errors
+    /// Returns the error of locating the running executable.
+    pub fn current() -> std::io::Result<Self> {
+        let module_dir = env!("CARGO_MANIFEST_DIR").to_owned();
+        let exists = |path: &str| std::path::Path::new(path).exists();
+        let layout = if super::paths::package_root(&module_dir, exists).is_some() {
+            PackageLayout::Package
+        } else {
+            PackageLayout::Standalone
+        };
+        Ok(Self {
+            module_dir,
+            executable: std::env::current_exe()?.to_string_lossy().into_owned(),
+            layout,
+        })
+    }
 }
 /// The package manager suggested by installation paths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

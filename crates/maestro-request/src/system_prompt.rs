@@ -1,4 +1,5 @@
-//! Already-assembled system prompt inputs carried by extension events.
+//! Already-assembled system prompt inputs carried by extension events, and the context
+//! file names those inputs are discovered under.
 
 use crate::extension_events::object;
 use crate::{presence::Presence, skills::Skill};

@@ -2,10 +2,7 @@
 #![cfg(unix)]
 use crate::resource_fixtures::{Entry, Root, with_environment};
 use crate::watching::Effects;
-use maestro_app::configuration::config::{
-    get_theme_directories,
-    installation::{Installation, PackageLayout},
-};
+use maestro_app::configuration::config::get_theme_directories;
 use maestro_theme::{ThemeExportColors, ThemeState, ThemeWatchOperations};
 use serde_json::{Value, json};
 use std::rc::Rc;
@@ -17,29 +14,26 @@ const VARIABLES: [(&str, &str); 2] = [
 ];
 
 /// Writes the shipped themes and `custom` into the case root, then returns the theme
-/// state over the directories selected for a standalone installation.
+/// state over the directories selected for the running process, which runs from its
+/// source and so takes the shipped themes from the package's distribution tree.
 fn state(base: &str, custom: &Value) -> (Root, Rc<ThemeState>) {
     let root = Root::new(base, "case");
     let entries: Vec<Entry> = serde_json::from_value(json!([
-        {"path": "package/theme/dark.json", "theme": {"name": "dark"}},
-        {"path": "package/theme/light.json", "theme": {"name": "light"}},
+        {"path": "package/dist/modes/interactive/theme/dark.json", "theme": {"name": "dark"}},
+        {"path": "package/dist/modes/interactive/theme/light.json", "theme": {"name": "light"}},
         custom,
     ]))
     .unwrap();
     root.write_tree(&entries);
-    let installation = Installation {
-        module_dir: root.path.clone(),
-        executable: root.fill("$ROOT/maestro"),
-        layout: PackageLayout::Standalone,
-    };
-    let directories = get_theme_directories(&installation).unwrap();
+    let directories = get_theme_directories().unwrap();
     assert_eq!(
         (
             directories.themes_dir.as_str(),
             directories.custom_themes_dir.as_str()
         ),
         (
-            root.fill("$ROOT/package/theme").as_str(),
+            root.fill("$ROOT/package/dist/modes/interactive/theme")
+                .as_str(),
             root.fill("$ROOT/agent/themes").as_str()
         ),
     );

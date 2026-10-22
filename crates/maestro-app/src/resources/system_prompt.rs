@@ -2,7 +2,7 @@
 
 pub use maestro_models::system_prompt::BuildSystemPromptOptions;
 
-use crate::configuration::config::paths::{get_docs_path, get_examples_path, get_readme_path};
+use crate::configuration::config::{get_docs_path, get_examples_path, get_readme_path};
 use maestro_resources::format_skills_for_prompt;
 use maestro_session::Presence;
 use std::{collections::HashSet, io};
@@ -18,7 +18,8 @@ fn text(value: &Presence<String>) -> Option<&str> {
         .filter(|text| !text.is_empty())
 }
 
-/// Assembles the system prompt; documentation paths come from `package_dir`.
+/// Assembles the system prompt; documentation paths come from the running process's
+/// package directory.
 ///
 /// A non-empty custom prompt replaces the default one, which lists the selected tools
 /// that have a snippet and the guidelines. Both are followed by the appended text, the
@@ -26,12 +27,9 @@ fn text(value: &Presence<String>) -> Option<&str> {
 /// working directory.
 ///
 /// # Errors
-/// Returns the working-directory error when a relative package directory needs it; only
-/// the default prompt reads documentation paths.
-pub fn build_system_prompt(
-    options: &BuildSystemPromptOptions,
-    package_dir: &str,
-) -> io::Result<String> {
+/// Returns the package-directory error, or the working-directory error when a relative
+/// package directory needs it; only the default prompt reads documentation paths.
+pub fn build_system_prompt(options: &BuildSystemPromptOptions) -> io::Result<String> {
     let selected = options.selected_tools.present();
     let (mut prompt, has_read) = if let Some(custom) = text(&options.custom_prompt) {
         let has_read = selected.is_none_or(|tools| tools.iter().any(|tool| tool == "read"));
@@ -42,7 +40,7 @@ pub fn build_system_prompt(
             |tools| tools.iter().map(String::as_str).collect(),
         );
         let has_read = tools.contains(&"read");
-        (default_prompt(options, &tools, package_dir)?, has_read)
+        (default_prompt(options, &tools)?, has_read)
     };
     if let Some(append) = text(&options.append_system_prompt) {
         prompt.push_str("\n\n");
@@ -107,11 +105,7 @@ fn guidelines(options: &BuildSystemPromptOptions, tools: &[&str]) -> String {
 
 /// The default prompt: identity, the tools with a snippet, the guidelines and where the
 /// documentation lives.
-fn default_prompt(
-    options: &BuildSystemPromptOptions,
-    tools: &[&str],
-    package_dir: &str,
-) -> io::Result<String> {
+fn default_prompt(options: &BuildSystemPromptOptions, tools: &[&str]) -> io::Result<String> {
     let snippets = options.tool_snippets.present();
     let listed: Vec<String> = tools
         .iter()
@@ -126,9 +120,9 @@ fn default_prompt(
         listed.join("\n")
     };
     let guidelines = guidelines(options, tools);
-    let readme = get_readme_path(package_dir)?;
-    let docs = get_docs_path(package_dir)?;
-    let examples = get_examples_path(package_dir)?;
+    let readme = get_readme_path()?;
+    let docs = get_docs_path()?;
+    let examples = get_examples_path()?;
     Ok(format!(
         "You are an expert coding assistant operating inside maestro, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
 

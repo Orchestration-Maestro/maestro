@@ -78,8 +78,9 @@ yellow when standard error is a terminal, and the next name is tried.
 
 ## System prompt
 
-`resources::system_prompt::build_system_prompt` takes the prompt options and the
-package directory that the documentation paths come from. A non-empty custom
+`resources::system_prompt::build_system_prompt` takes the prompt options. The
+documentation paths come from the running process's package directory (see
+[application configuration](configuration.md#installation-paths)). A non-empty custom
 prompt replaces the default one. The default prompt lists the selected tools
 (read, bash, edit and write when none are selected) that have a non-empty
 snippet, or `(none)`, followed by the guidelines and the documentation paths.
@@ -115,6 +116,6 @@ session is created; diagnostics are returned for the caller to present.
 ## Theme directories
 
 Native `config::get_theme_directories` selects the shipped theme directory from
-the package directory (`MAESTRO_PACKAGE_DIR`, else the installation's) and the
-custom theme directory from the environment-selected agent directory. See
+the package directory (`MAESTRO_PACKAGE_DIR`, else the running installation's)
+and the custom theme directory from the environment-selected agent directory. See
 [application configuration](configuration.md#installation-paths).

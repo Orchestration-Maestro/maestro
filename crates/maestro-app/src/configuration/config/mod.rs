@@ -42,38 +42,62 @@ pub fn get_agent_dir() -> std::io::Result<String> {
     paths::get_agent_dir(value.as_deref(), || maestro_tools::expand_path("~"))
 }
 
-/// Read the native package-directory override `MAESTRO_PACKAGE_DIR`, else select the
-/// installation's package directory.
+/// Select the package directory of the running process: the `MAESTRO_PACKAGE_DIR`
+/// override first, with `~` expanded, then the directory beside a compiled executable,
+/// or the nearest package manifest above this crate's source.
 ///
 /// # Errors
-/// Returns the native home lookup error when the override needs home.
+/// Returns the native home lookup error when the override needs home, or the error of
+/// locating the running executable.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_package_dir(installation: &installation::Installation) -> std::io::Result<String> {
+pub fn get_package_dir() -> std::io::Result<String> {
     let value = std::env::var(format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase())).ok();
     paths::get_package_dir(
-        installation,
+        &installation::Installation::current()?,
         value.as_deref(),
         || maestro_tools::expand_path("~"),
         |path| std::path::Path::new(path).exists(),
     )
 }
 
-/// Select the shipped theme directory of this installation and the custom theme
+/// Resolve the README path of the running process's package directory.
+///
+/// # Errors
+/// Returns package-directory or working-directory failures.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_readme_path() -> std::io::Result<String> {
+    paths::get_readme_path(&get_package_dir()?)
+}
+
+/// Resolve the documentation directory of the running process's package directory.
+///
+/// # Errors
+/// Returns package-directory or working-directory failures.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_docs_path() -> std::io::Result<String> {
+    paths::get_docs_path(&get_package_dir()?)
+}
+
+/// Resolve the examples directory of the running process's package directory.
+///
+/// # Errors
+/// Returns package-directory or working-directory failures.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_examples_path() -> std::io::Result<String> {
+    paths::get_examples_path(&get_package_dir()?)
+}
+
+/// Select the shipped theme directory of the running process and the custom theme
 /// directory of the environment-selected agent directory.
 ///
 /// # Errors
 /// Returns package-directory or agent-directory failures.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_theme_directories(
-    installation: &installation::Installation,
-) -> std::io::Result<maestro_theme::ThemeDirectories> {
+pub fn get_theme_directories() -> std::io::Result<maestro_theme::ThemeDirectories> {
+    let installation = installation::Installation::current()?;
     let exists = |path: &str| std::path::Path::new(path).exists();
     Ok(maestro_theme::ThemeDirectories {
-        themes_dir: paths::get_themes_dir(
-            &get_package_dir(installation)?,
-            installation.layout,
-            exists,
-        ),
+        themes_dir: paths::get_themes_dir(&get_package_dir()?, installation.layout, exists),
         custom_themes_dir: paths::get_custom_themes_dir(&get_agent_dir()?),
     })
 }

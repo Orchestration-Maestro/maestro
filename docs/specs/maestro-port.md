@@ -795,7 +795,8 @@ callbacks at call time and creates a fresh runner context per execution.
 
 `maestro-request::extension_events` owns extension event/result schemas with generic
 native/guest operands; `maestro-request::system_prompt` owns assembled prompt input
-records. Models re-exports both modules. Native aliases select existing model,
+records and `CONTEXT_FILE_NAMES`, the context file names that resource discovery and
+the read tool share. Models re-exports both modules. Native aliases select existing model,
 session and tool records; guest aliases keep their existing capability carriers.
 Request depends only on the dependency-free JSON leaf: the object reader stays
 JSON-owned and the Presence adaptation belongs beside the shared records. Fork
