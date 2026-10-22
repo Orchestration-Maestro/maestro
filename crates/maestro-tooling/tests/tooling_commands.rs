@@ -1220,7 +1220,11 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     let package = fixture.root.path().join("package");
     package_inputs(&package);
     let metadata = fixture.root.path().join("binary/Cargo.toml");
-    write_input(&fixture.root.path().join("binary"), "Cargo.toml", "manifest");
+    write_input(
+        &fixture.root.path().join("binary"),
+        "Cargo.toml",
+        "manifest",
+    );
     let viewer = fixture.root.path().join("viewer");
     write_input(&viewer, "index.html", "viewer");
     (source, package, metadata, viewer)
