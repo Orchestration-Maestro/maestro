@@ -23,8 +23,9 @@ fn anchor_path(path: &str, cwd: &str) -> io::Result<String> {
     }
     resolve(&[cwd, &expanded])
 }
-/// Anchors `extension_path` at `cwd` as written when that names an existing file, and
-/// otherwise with its Unicode spaces replaced by plain spaces.
+/// Anchors `extension_path` at `cwd` and resolves it through
+/// [`resolve_existing_spelling`], which keeps the spelling of the directories the file
+/// system holds.
 pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
     resolve_existing_spelling(extension_path, |path| anchor_path(path, cwd))
 }
