@@ -75,7 +75,7 @@ fn opening_width(text: &str, range: &Range<usize>) -> Option<usize> {
 }
 
 /// Exclusive endpoint of the homogeneous backtick run starting at `start`.
-fn run_end(bytes: &[u8], start: usize) -> usize {
+pub(super) fn run_end(bytes: &[u8], start: usize) -> usize {
     let mut end = start;
     while bytes.get(end) == Some(&b'`') {
         end += 1;

@@ -1,4 +1,5 @@
 //! Source-owned closing positions of the caller's inline label scan.
+use super::code_spans::run_end;
 
 /// Offset with no reachable closing pair.
 const ABSENT: usize = usize::MAX;
@@ -83,18 +84,8 @@ fn escaped(bytes: &[u8], offset: usize) -> Step {
 
 /// A code-span element closes on the next backtick run.
 fn code_span(bytes: &[u8], offset: usize, ticks: &[usize]) -> Step {
-    let mut opener = offset;
-    while bytes.get(opener) == Some(&b'`') {
-        opener += 1;
-    }
-    match ticks.get(opener).copied() {
-        Some(tick) if tick != ABSENT => {
-            let mut end = tick;
-            while bytes.get(end) == Some(&b'`') {
-                end += 1;
-            }
-            Step::Continue(end)
-        }
+    match ticks.get(run_end(bytes, offset)).copied() {
+        Some(tick) if tick != ABSENT => Step::Continue(run_end(bytes, tick)),
         _ => Step::Blocked,
     }
 }
