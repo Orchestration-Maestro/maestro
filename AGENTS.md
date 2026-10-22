@@ -248,8 +248,8 @@ returns its restoring guard, or `None` when the process is not refused, as in a
 privileged run. Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
-scoped tracing subscriber that sees every callsite. Only daemon and workspace
-may declare it, under the directory owner's rules. Capture helpers call its
+scoped tracing subscriber that sees every callsite. Only daemon, terminal and
+workspace may declare it, under the directory owner's rules. Capture helpers call its
 `with_default` instead of `tracing::subscriber::with_default`. See the
 [tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
 

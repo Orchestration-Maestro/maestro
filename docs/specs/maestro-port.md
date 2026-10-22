@@ -646,8 +646,9 @@ test action under a scoped tracing subscriber that sees every callsite. It has
 no workspace edges except the native feature unifier and is excluded from the
 foundation utility permission. Its only incoming edges are non-optional
 development dependencies under `cfg(not(target_arch = "wasm32"))` from
-`maestro-daemon` and `maestro-workspace`; a caller declares it only when it
-uses it. The directory owner's declaration, alias and cycle rules apply.
+`maestro-daemon`, `maestro-terminal` and `maestro-workspace`; a caller
+declares it only when it uses it. The directory owner's declaration, alias and
+cycle rules apply.
 
 `with_default(subscriber, action)` keeps one subscriber that records nothing
 registered for the life of the test process, then runs the action under
