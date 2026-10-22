@@ -439,45 +439,13 @@ XOR-decoding at most the first 32 bytes with the reversed hexadecimal key and
 leaving the tail unchanged. The archive is not rewritten. These operations do
 not create browser URLs, load fonts into a browser or render a preview.
 
-## Word stylesheet preparation
+## Word preview rendering
 
-The browser library's private stylesheet renderer prepares owned style records
-from those factories. Lookup selects the last occurrence of an exact nonempty
-identifier; CSS emission retains every occurrence in document order. Linked
-styles append their resolved declarations without merging metadata. Class names
-retain the caller's namespace, and the wrapper escapes that namespace while
-preserving trusted child markup.
-
-Inheritance fills only missing declarations and metadata, keeping child values,
-including explicit nulls, false flags and empty tab arrays. Missing property
-groups inherit owned values. Each chain reads unchanged definitions and stops on
-its first repeated occurrence, retaining the formatting gathered before that
-revisit. This corrects overwritten child metadata, missing inherited groups,
-forward-chain formatting loss and cyclic formatting loss. A present spacing
-group retains its nullable fields rather than inheriting over them.
-
-The renderer emits ordered stylesheet text with CRLF rule delimiters, default
-document CSS with an explicit print-wrapper policy, and wrapper HTML. It does not
-mount a preview.
-
-The same private renderer emits native paragraphs, runs and inline text from the
-owned element tree. Insertions flatten into ordered children; deleted content,
-field runs and non-wrapping breaks are omitted by this selected profile. Tabs use
-an em space, and nonbreaking hyphens remain visible without introducing a break.
-Symbols decode numeric entities without interpreting authored suffixes as HTML.
-Native class tokens, CSS properties and attributes retain browser validation.
-Paragraph tabs inherit only when absent, while an explicit empty group stays
-empty. Local numbering groups suppress style fallback, including empty groups.
-Numbering preparation updates the last retained matching style occurrence.
-
-Numbering CSS preserves counter levels, resets, authored declarations and picture
-placeholders. Literal marker text is serialized separately from numeric counter
-placeholders, so quotes, backslashes, newlines and literal percent signs cannot
-become CSS syntax or phantom counters. Picture loading and alternate-chunk
-settlement remain with [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784).
-[Hyperlink and smart-tag wiring](https://github.com/Orchestration-Maestro/maestro/issues/760)
-and [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
-remain separate consumers; this does not expose a partial preview entry point.
+The parsers above expose owned records and produce no rendered output. Rendering
+remains separate work: [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
+covers pages, sections, headers, footers, notes and tables, and
+[drawings, shapes, math, theme and fonts](https://github.com/Orchestration-Maestro/maestro/issues/784)
+covers the rest.
 
 ## Worksheet tables
 

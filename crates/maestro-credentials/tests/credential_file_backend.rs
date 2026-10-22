@@ -80,7 +80,7 @@ mod tests {
         );
     }
 
-    /// Environment-free configuration operations.
+    /// Configuration operations that resolve no command.
     struct NoOperations;
 
     impl ConfigValueOperations for NoOperations {

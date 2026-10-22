@@ -18,7 +18,7 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex, Weak};
 
-    /// Environment-free configuration operations.
+    /// Configuration operations that resolve no command.
     struct NoOperations;
 
     impl ConfigValueOperations for NoOperations {

@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::support::{TempDir, api_key, is_child, memory_text, run_child};
+    use crate::support::{TempDir, api_key, is_child, memory_text, run_isolated};
     use indexmap::IndexMap;
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
@@ -452,7 +452,6 @@ mod tests {
         if is_child() {
             return environment_scenario(&scenario);
         }
-        let dir = TempDir::new("environment");
         let cases: [(&str, &[(&str, &str)]); 3] = [
             ("single", &[("ANTHROPIC_API_KEY", "k")]),
             (
@@ -464,14 +463,8 @@ mod tests {
         for (name, variables) in cases {
             let mut envs = variables.to_vec();
             envs.push(("MAESTRO_AUTH_SCENARIO", name));
-            run_child(
-                maestro_test_process::TestProcess::named(
-                    "accepted_credentials::tests::environment_status_names_first_populated_key",
-                )
-                .unwrap()
-                .env_clear()
-                .case("*"),
-                dir.root(),
+            run_isolated(
+                "accepted_credentials::tests::environment_status_names_first_populated_key",
                 &envs,
             );
         }
@@ -558,20 +551,13 @@ mod tests {
     #[test]
     fn fallback_status_keeps_result_domain() {
         if !is_child() {
-            let dir = TempDir::new("fallback_status_keeps_result_domain");
             for (scenario, key) in [
                 ("environment", "environment"),
                 ("environment-empty", ""),
                 ("environment-whitespace", " \t"),
             ] {
-                run_child(
-                    maestro_test_process::TestProcess::named(
-                        "accepted_credentials::tests::fallback_status_keeps_result_domain",
-                    )
-                    .unwrap()
-                    .env_clear()
-                    .case("*"),
-                    dir.root(),
+                run_isolated(
+                    "accepted_credentials::tests::fallback_status_keeps_result_domain",
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
             }
@@ -585,15 +571,13 @@ mod tests {
     #[test]
     fn fallback_status_short_circuits_earlier_sources() {
         if !is_child() {
-            let dir = TempDir::new("fallback_status_short_circuits_earlier_sources");
             for (scenario, key) in [
                 ("environment", "environment"),
                 ("environment-empty", ""),
                 ("environment-whitespace", " \t"),
             ] {
-                run_child(
-                    maestro_test_process::TestProcess::named("accepted_credentials::tests::fallback_status_short_circuits_earlier_sources").unwrap().env_clear().case("*"),
-                    dir.root(),
+                run_isolated(
+                    "accepted_credentials::tests::fallback_status_short_circuits_earlier_sources",
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
             }

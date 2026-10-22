@@ -57,7 +57,7 @@ fn status_value(status: AuthStatus) -> Value {
     }
     value
 }
-/// Environment-free stored-value operations.
+/// Stored-value operations that resolve no command.
 struct NoOperations;
 impl ConfigValueOperations for NoOperations {
     fn execute(&self, _: &str) -> Option<Vec<u8>> {

@@ -873,7 +873,7 @@ fn extraction_reenters(registry: &Arc<ModelRegistry>) {
     assert!(registry.find("extraction", "nested").is_some());
 }
 
-/// Credential errors stop metadata before the configured key is read.
+/// A credential error ends provider auth status with its fallback diagnostic.
 fn metadata_error_stops_effects(registry: &ModelRegistry) {
     registry
         .auth_storage()

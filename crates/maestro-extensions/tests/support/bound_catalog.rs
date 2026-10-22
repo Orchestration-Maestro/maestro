@@ -78,7 +78,7 @@ pub fn catalog_callbacks_can_read_and_register_during_a_bound_registration() {
     }
 }
 
-/// Read supplied request values without a shell or ambient environment.
+/// Supplied request values that resolve no command.
 struct Values;
 impl maestro_credentials::ConfigValueOperations for Values {
     fn execute(&self, _: &str) -> Option<Vec<u8>> {
