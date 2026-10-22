@@ -1,5 +1,4 @@
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 //! Public catalog diagnostic ownership.
 use maestro_catalog::CatalogError;
 use maestro_models::{DiagnosticCode, DiagnosticErrorInfo};

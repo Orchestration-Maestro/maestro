@@ -1,10 +1,15 @@
 //! Typed dynamic definitions and subprocess isolation.
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::isolation::isolated;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_catalog::{ProviderConfigInput, ProviderModelInput};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{ModelCost, ModelInput, SharedHandle};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, RwLock};
 /// Complete definition with distinguishable supplied metadata.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn model(id: &str) -> ProviderModelInput {
     ProviderModelInput {
         id: id.into(),
@@ -28,6 +33,7 @@ pub fn model(id: &str) -> ProviderModelInput {
 }
 /// Valid provider input over supplied definitions.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn config(ids: &[&str]) -> Arc<RwLock<ProviderConfigInput>> {
     Arc::new(RwLock::new(ProviderConfigInput {
         api: Some("openai-completions".into()),
@@ -38,6 +44,7 @@ pub fn config(ids: &[&str]) -> Arc<RwLock<ProviderConfigInput>> {
     }))
 }
 /// Controlled model transformation callback.
+#[cfg(not(target_arch = "wasm32"))]
 pub type Transform = dyn for<'m> Fn(
         Vec<std::borrow::Cow<'m, maestro_models::Model>>,
     ) -> Result<
@@ -46,6 +53,7 @@ pub type Transform = dyn for<'m> Fn(
     > + Send
     + Sync;
 /// Controlled account implementation with an optional model transform.
+#[cfg(not(target_arch = "wasm32"))]
 pub struct OAuth {
     /// Optional operation observations for delegation tests.
     pub calls: Option<Arc<std::sync::Mutex<Vec<&'static str>>>>,
@@ -56,6 +64,7 @@ pub struct OAuth {
     /// Supplied value transformation.
     pub transform: Arc<Transform>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthProviderInterface for OAuth {
     fn id(&self) -> &str {
         self.id
@@ -108,6 +117,7 @@ impl maestro_models::OAuthProviderInterface for OAuth {
 }
 /// Complete controlled credentials.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn tokens() -> maestro_models::OAuthCredentials {
     maestro_models::OAuthCredentials {
         access: "unused-access".into(),
@@ -128,6 +138,7 @@ pub fn diagnostic(message: &str) -> maestro_models::DiagnosticErrorInfo {
 }
 /// Account handle whose input identifier differs from registration.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn oauth(name: &'static str) -> maestro_models::OAuthProviderHandle {
     SharedHandle::new(OAuth {
         calls: None,
@@ -140,6 +151,7 @@ pub fn oauth(name: &'static str) -> maestro_models::OAuthProviderHandle {
 /// # Panics
 /// Panics if a shared descriptor guard is poisoned.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn selected(
     registry: &maestro_catalog::ModelRegistry,
     providers: &[&str],
@@ -164,6 +176,7 @@ pub fn selected(
 /// Install an error callback labeling which ordered registration won.
 /// # Panics
 /// Panics if the configuration guard is poisoned.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn callback(config: &Arc<RwLock<ProviderConfigInput>>, message: &'static str) {
     config.write().unwrap().stream_simple = Some(SharedHandle::new(FailedProvider(message)));
 }
@@ -171,6 +184,7 @@ pub fn callback(config: &Arc<RwLock<ProviderConfigInput>>, message: &'static str
 /// # Panics
 /// Panics when the configured model or protocol is absent or unexpectedly succeeds.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn failure(registry: &maestro_catalog::ModelRegistry, provider: &str, id: &str) -> String {
     let model = registry.find(provider, id).unwrap().read().unwrap().clone();
     let callback = maestro_models::get_api_provider(&model.api).unwrap();
@@ -190,7 +204,9 @@ pub fn failure(registry: &maestro_catalog::ModelRegistry, provider: &str, id: &s
         .message
 }
 /// File effects with an observable read boundary.
+#[cfg(not(target_arch = "wasm32"))]
 pub struct CountFile(pub Arc<std::sync::atomic::AtomicUsize>);
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_catalog::ModelFileOperations for CountFile {
     fn exists(&self, _: &str) -> bool {
         true
@@ -204,6 +220,7 @@ impl maestro_catalog::ModelFileOperations for CountFile {
 /// # Panics
 /// Panics if the inline typed message cannot be decoded.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn terminal() -> maestro_models::SharedAssistantMessage {
     Arc::new(RwLock::new(serde_json::from_value(serde_json::json!({
         "role":"assistant", "content":[], "api":"openai-completions", "provider":"p", "model":"m", "stopReason":"stop", "timestamp":12,
@@ -211,6 +228,7 @@ pub fn terminal() -> maestro_models::SharedAssistantMessage {
     })).unwrap()))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl OAuth {
     /// Record a delegated operation after registration guards have been released.
     fn record(&self, name: &'static str) {
@@ -220,7 +238,9 @@ impl OAuth {
     }
 }
 /// Interaction which must never be requested by the controlled login operation.
+#[cfg(not(target_arch = "wasm32"))]
 pub struct NoInteraction;
+#[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for NoInteraction {
     fn on_auth(&self, _: maestro_models::OAuthAuthInfo) -> Result<(), maestro_models::OAuthError> {
         panic!("unexpected authorization")
@@ -318,7 +338,9 @@ pub fn assert_account_failure(error: &maestro_catalog::CatalogError, message: &s
 }
 
 /// Retained invocation owner for the controlled provider.
+#[cfg(not(target_arch = "wasm32"))]
 struct FailedProvider(&'static str);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for FailedProvider
 {

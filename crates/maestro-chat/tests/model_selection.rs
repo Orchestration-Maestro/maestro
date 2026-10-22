@@ -47,7 +47,7 @@ fn isolate(name: &str) -> bool {
     }
     false
 }
-/// The browser target has no child process, so each group runs in its own process state.
+/// The browser target has no child process, so every group shares this process.
 #[cfg(target_arch = "wasm32")]
 fn isolate(_name: &str) -> bool {
     false

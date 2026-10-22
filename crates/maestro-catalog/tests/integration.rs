@@ -20,7 +20,6 @@ mod credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
 #[path = "support/dynamic.rs"]
-#[cfg(not(target_arch = "wasm32"))]
 mod dynamic;
 #[path = "support/fallback.rs"]
 mod fallback;

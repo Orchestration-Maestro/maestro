@@ -42,18 +42,14 @@ pub fn corpus(group: &str) {
         .map(|m| ((m.provider.clone(), m.id.clone()), m))
         .collect();
     for (index, case) in cases.get(group).expect("fixture group").iter().enumerate() {
+        let registries = vec![(registry(&case.input), "<models-file>")];
         #[cfg(not(target_arch = "wasm32"))]
         let file = File::new(case.input.as_bytes());
         #[cfg(not(target_arch = "wasm32"))]
-        let registries = vec![
-            (registry(&case.input), "<models-file>"),
-            (
-                ModelRegistry::create(auth(), file.path()).unwrap(),
-                file.path(),
-            ),
-        ];
-        #[cfg(target_arch = "wasm32")]
-        let registries = vec![(registry(&case.input), "<models-file>")];
+        let registries = registries.into_iter().chain([(
+            ModelRegistry::create(auth(), file.path()).unwrap(),
+            file.path(),
+        )]);
         for (registry, path) in registries {
             check_case(&registry, &baseline, &case.expected, path, (group, index));
         }

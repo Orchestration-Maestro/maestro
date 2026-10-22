@@ -94,14 +94,15 @@ Native socket, process and runtime fixtures stay with their native tests.
 Portable assertions remain in browser targets, with strictly parsed fixture
 records owned by their readers. A test that needs a Tokio runtime, a checked
 child process or a disposable directory is native-only: the browser target has
-no executor, and these test binaries never run there. Such a module carries
-`#![cfg(not(target_arch = "wasm32"))]`. Where a file mixes both kinds, only
-its native part is conditioned and the portable witnesses keep compiling. An
+no Tokio runtime, and these test binaries never run there. Such a module carries
+`#![cfg(not(target_arch = "wasm32"))]`. Where a file mixes both kinds, only its
+native items are conditioned and the portable witnesses keep compiling. An
 isolation guard that only reports whether a child was started keeps its
 signature on both targets: the native body starts the child, and the browser
 body reports that none is available, so the group runs in one process with
-every assertion intact. A fixture that builds a shared pointer uses the
-owner's declared platform alias, so identity comparisons hold on both targets.
+every assertion intact. A portable fixture that builds a shared pointer uses
+the owner's declared platform alias, so identity comparisons hold on both
+targets; a native-only fixture keeps the native pointer type.
 
 Compilation does not replace the browser assertions below.
 The theme examples `brand_themes` and `browser_author_inputs` run their author

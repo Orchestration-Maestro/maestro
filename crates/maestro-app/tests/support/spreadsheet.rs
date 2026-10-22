@@ -10,7 +10,8 @@ use serde_json::{Map, Value};
 pub struct Corpus {
     /// Direct CSV calls.
     pub csv: Vec<Csv>,
-    /// Complete attachment calls.
+    /// Complete attachment calls, read by the native runtime suite only.
+    #[cfg(not(target_arch = "wasm32"))]
     pub attachments: Vec<Attachment>,
     /// Retained workbook observations.
     pub workbooks: Vec<Workbook>,
@@ -38,6 +39,7 @@ pub struct CsvResult {
     pub cells: Map<String, Value>,
 }
 /// One attachment call.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Attachment {
@@ -53,6 +55,7 @@ pub struct Attachment {
     pub fetch_calls: Vec<String>,
 }
 /// Attachment input fields.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Input {

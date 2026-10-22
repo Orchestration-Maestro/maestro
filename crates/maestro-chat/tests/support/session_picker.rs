@@ -1264,8 +1264,8 @@ impl Filesystem {
     }
     /// Real native symlinks exercise the resource owner, not a selector mock.
     ///
-    /// Only Windows and Unix hosts create links; the browser target compiles this
-    /// fixture without running it, so both spellings are resolved and discarded.
+    /// Only Windows and Unix hosts create links. Every other host, the browser
+    /// target included, resolves both paths and discards them.
     fn link(&self, alias: &str, target: &str) {
         let target = self.expand(&format!("$FS/{target}"));
         let alias = self.expand(&format!("$FS/{alias}"));

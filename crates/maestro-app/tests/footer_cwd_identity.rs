@@ -1,7 +1,6 @@
 //! Successful path resolution binds polling and Git query paths before the caller drives their task set.
 #![cfg(unix)]
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 use maestro_app::presentation_data::footer_data_provider::{
     FooterFileStats, FooterOperations, NativeFooterOperations,
 };

@@ -1,6 +1,5 @@
 //! Spreadsheet serialization through the public application boundary.
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_app::browser::ssf::{self, Ssf};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
@@ -146,6 +145,7 @@ fn workbook_formula_text_decodes_entities_and_function_prefixes() {
 }
 
 /// Replay complete source results through the injected transport.
+#[cfg(not(target_arch = "wasm32"))]
 fn attachment_suite(name: &str) {
     use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
     use maestro_models::{Fetch, HttpResponse};
@@ -204,6 +204,7 @@ fn attachment_suite(name: &str) {
     }
 }
 /// Project native errors to the recorded failure category, not engine wording.
+#[cfg(not(target_arch = "wasm32"))]
 fn expected_attachment(mut expected: serde_json::Value) -> serde_json::Value {
     if let Some(diagnostics) = expected
         .as_object_mut()
@@ -229,6 +230,7 @@ fn expected_attachment(mut expected: serde_json::Value) -> serde_json::Value {
     expected
 }
 /// Failures must remain native workbook categories, not unsupported MIME.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_failure(
     result: &Result<
         maestro_app::browser::utils::attachment_utils::Attachment,
@@ -250,36 +252,43 @@ fn check_failure(
         _ => {}
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_recognition_and_mime_selection() {
     attachment_suite("spreadsheet_recognition_and_mime_selection");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_attachments_keep_source_fields() {
     attachment_suite("spreadsheet_attachments_keep_source_fields");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_sheet_wrappers_keep_order_and_empty_layout() {
     attachment_suite("spreadsheet_sheet_wrappers_keep_order_and_empty_layout");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_url_sources_use_shared_transport() {
     attachment_suite("spreadsheet_url_sources_use_shared_transport");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_extraction_reuses_formatted_workbook_values() {
     attachment_suite("spreadsheet_extraction_reuses_formatted_workbook_values");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_failures_keep_typed_workbook_sources() {
     attachment_suite("spreadsheet_failures_keep_typed_workbook_sources");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_written_formula_escapes_decode_once() {
     use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
@@ -375,6 +384,7 @@ fn workbook_shared_unicode_defined_name_suffix_keeps_identity() {
     unicode_shared_formula("Suffix", "A1é+A1", "A1é+A2");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
     use base64::Engine as _;
