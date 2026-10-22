@@ -174,7 +174,7 @@ its proxy. The default sender returns redirects without following them.
 
 ### Proxy scripts
 
-A selected `pac+data:`, `pac+file:`, `pac+http:` or `pac+https:` URL loads a
+A selected `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
 proxy script instead of opening a direct destination connection. Both opaque
 `pac+data:,script` and hierarchical `pac+data://,script` spellings are accepted.
 The script receives the complete destination URL and its canonical host, including
@@ -198,10 +198,19 @@ Unchanged source keeps that context; successfully compiled replacement code
 creates a new one. Failed compilation cannot publish source metadata or
 revive an old script through a later unchanged response. File sources compare the
 opened file's millisecond modification time; HTTP and HTTPS sources use cache
-headers, validators and up to five redirects. Source requests do not recursively
-apply the script they are loading. Destination exclusions and a supplied sender
-skip script loading entirely. FTP sources are tracked separately in
-[#1908](https://github.com/Orchestration-Maestro/maestro/issues/1908).
+headers, validators and up to five redirects; FTP sources ask the server for the
+file's modification time and compare it at millisecond precision.
+Source requests do not recursively apply the script they are loading. Destination
+exclusions and a supplied sender skip script loading entirely.
+
+An FTP source logs in with the URL's decoded credentials, or anonymously when it
+has none, at the URL's port or 21. It asks the modification-time command first: a
+refused file is not found, while an unsupported command falls back to listing the
+containing directory. Only a machine listing carries a comparable instant, so an
+entry from a Unix or DOS listing is not found; a listing in no accepted format
+reports the listing format as its own error. A transfer the server refuses is not found rather than an
+empty script, and a transfer that breaks off is an error rather than a shortened
+one. The control and data connections close on success, failure and cancellation.
 
 ## Hooks and results
 

@@ -86,6 +86,17 @@ all offering MIT; no existing identity is removed. The interface adapter account
 for one new identity, `if-addrs`; its platform dependencies were already locked.
 All three direct declarations are native-only.
 
+FTP script sources add `suppaftp =12.2.0` with default features off and only `tokio`,
+under MIT or Apache-2.0, used under MIT. It owns the control-channel dialogue and
+the directory-listing parsers for DOS, Unix and machine listings; the source
+owner keeps the access defaults, the modification check and the transfer decision.
+Its closure adds three package identities to the lockfile: `suppaftp`, `lazy-regex
+=3.6.2` and `lazy-regex-proc_macros =3.6.2`, each MIT or Apache-2.0. Every other
+package it resolves was already locked, including `chrono =0.4.45` (the library
+additionally enables its `clock` feature), `async-trait`, `pin-project`, `log`,
+`thiserror`, `regex`, `regex-syntax`, `iana-time-zone` and `tokio`. The declaration is
+native-only, so the browser build gains nothing.
+
 ## Native credentials
 
 Native application-default credentials in `maestro-models` use `google-cloud-auth =1.17.0` with

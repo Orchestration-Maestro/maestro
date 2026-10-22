@@ -92,6 +92,8 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
+#[path = "support/ftp_server.rs"]
+mod ftp_server;
 mod handoff_tool_ids;
 #[path = "history_handoffs.rs"]
 mod history_handoffs;

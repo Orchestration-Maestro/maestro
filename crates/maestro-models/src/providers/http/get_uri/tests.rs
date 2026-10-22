@@ -283,4 +283,6 @@ async fn https_rejects_invalid_identity(trust: bool) {
 }
 
 mod files;
+mod ftp;
+mod listing;
 mod redirects;
