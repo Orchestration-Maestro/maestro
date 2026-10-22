@@ -473,8 +473,8 @@ page; endnotes are numbered through the document and listed at the end of the
 last page. A reference keeps its number when its note is missing, and repeated
 note identifiers use the last note. Tables keep their column widths, cell spans
 and placeholder cells for grid offsets. In a vertical merge the first cell spans
-the merged rows and the others are hidden. Body and header tables hand their cell
-borders and margins to cells that declare none.
+the merged rows and the others are hidden. Body, header and footer tables hand
+their cell borders and margins to cells that declare none.
 
 Insertions flatten into ordered children; deleted content, field runs and
 non-wrapping breaks are omitted. Tabs use an em space, and nonbreaking hyphens
@@ -483,27 +483,28 @@ without reading authored suffixes as markup. Paragraph and run classes keep the
 caller's namespace; a local numbering group, even an empty one, suppresses the
 style's numbering class.
 
-A link's target is the first relationship of the document part, in retained
-order, whose identifier equals the link's nonempty identifier and whose target
-mode is exactly `External`; the relationship type is not checked. A matched
+A link reads the relationships of the part that holds it: the main document for
+the body, the header or footer part for its content, and the notes part for
+notes. Its target is the first of those relationships, in retained order, whose
+identifier equals the link's nonempty identifier and whose target mode is
+exactly `External`; the relationship type is not checked. A matched
 relationship without a target gives an empty target and ends the search, and an
 absent, empty or unmatched identifier gives an empty target too. A nonempty
 anchor appends `#` and the anchor, so the target becomes `target#anchor`, or
 `#anchor` alone. The value keeps its authored spelling, with no percent-encoding
-or trimming. It then passes the same `executable` check the worksheet tables
-use: a `javascript:` or `vbscript:` URL, or a `data:` URL whose media type is
-HTML, XML, SVG, JavaScript or ECMAScript, is refused. A refused link keeps its
-element and text but has no `href`, so following it does nothing. Ordinary
-`http:`, `https:`, `mailto:`, relative and `#` targets keep their spelling, as do
-plain-text and image `data:` URLs and targets that do not parse as URLs.
+or trimming. It then passes the same
+[`executable`](../../crates/maestro-app/src/browser/links.rs) check the
+worksheet tables use. A refused link keeps its element and text but has no
+`href`, so following it does nothing.
 
-Style lookup selects the last occurrence of an exact nonempty identifier.
-Inheritance fills only missing declarations and metadata, keeping child values,
-including explicit nulls, false flags and empty tab arrays. Missing property
-groups inherit owned values. Each chain reads unchanged definitions and stops on
-its first repeated occurrence, retaining the formatting gathered before that
-revisit. This corrects overwritten child metadata, missing inherited groups,
-forward-chain formatting loss and cyclic formatting loss.
+Style lookup selects the last occurrence of an exact nonempty identifier. A
+style's numbering and page-break-before come from the nearest style along its
+base chain that sets them, with the numbering identifier and level resolved
+separately, so a style's own values, false flags included, win over its bases.
+Each chain reads unchanged definitions and stops at its first repeated style.
+This corrects base values overwriting a style's own, styles without paragraph
+properties inheriting nothing, and styles defined before their base losing the
+rest of the chain.
 
 Text and attribute values are escaped exactly once. Each style value stays inside
 its own declaration: a value whose strings or brackets do not close, or that

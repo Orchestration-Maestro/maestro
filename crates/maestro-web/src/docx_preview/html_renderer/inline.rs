@@ -19,9 +19,7 @@ impl<'a> HtmlRenderer<'a> {
         let mut element = HtmlElement::new("p");
         element.append(self.render_children(tree, index, children));
         let style_name = properties.style_name.as_ref().and_then(Option::as_deref);
-        let style = self
-            .find_style(style_name)
-            .and_then(|style| style.paragraph_props.as_ref());
+        let style = self.find_style(style_name);
         self.render_class(properties.class_name.as_deref(), style_name, &mut element);
         render_style_values(properties.css_style.as_ref(), &mut element);
         render_common_properties(&properties.common, &mut element);
@@ -62,7 +60,8 @@ impl<'a> HtmlRenderer<'a> {
         element
     }
 
-    /// Render a link around its runs; a refused target leaves the link without an `href`.
+    /// Render a link around its runs, its target read from the relationships of the part
+    /// holding it; a refused target leaves the link without an `href`.
     pub(super) fn render_hyperlink(
         &mut self,
         tree: &'a OpenXmlElementTree,
@@ -70,13 +69,9 @@ impl<'a> HtmlRenderer<'a> {
         link: &WmlHyperlink,
     ) -> HtmlElement {
         let mut element = self.render_container(tree, index, "a");
-        let relationships = self
-            .preview
-            .document
-            .document_part()
-            .and_then(|part| part.rels.as_deref());
+        let relationships = self.current_part.and_then(|part| part.rels.as_deref());
         if let Some(href) = hyperlink_href(link, relationships) {
-            element.set_attribute("href", &href);
+            element.set_attribute("href", href);
         }
         element
     }
@@ -143,21 +138,21 @@ pub(super) fn render_bookmark_start(name: Option<&str>) -> HtmlElement {
 }
 
 /// Render a symbol character in its font.
-pub(super) fn render_symbol(font: Option<&str>, char: Option<&str>) -> HtmlElement {
+pub(super) fn render_symbol(font: Option<&str>, code: Option<&str>) -> HtmlElement {
     let mut element = HtmlElement::new("span");
     element.set_style("font-family", font);
-    element.push_text(&symbol_text(char.unwrap_or("null")));
+    element.push_text(symbol_text(code.unwrap_or("null")));
     element
 }
 
-/// Read a symbol's character as the numeric reference `&#x{char};` reads: its leading
+/// Read a symbol's character code as the numeric reference `&#x{code};` reads: its leading
 /// hexadecimal digits name one character, and anything after them stays literal text.
-fn symbol_text(char: &str) -> String {
-    let end = char.bytes().take_while(u8::is_ascii_hexdigit).count();
+fn symbol_text(code: &str) -> String {
+    let end = code.bytes().take_while(u8::is_ascii_hexdigit).count();
     if end == 0 {
-        return format!("&#x{char};");
+        return format!("&#x{code};");
     }
-    let (digits, suffix) = char.split_at(end);
+    let (digits, suffix) = code.split_at(end);
     let character = u32::from_str_radix(digits, 16)
         .ok()
         .and_then(char::from_u32)
@@ -166,6 +161,6 @@ fn symbol_text(char: &str) -> String {
     let suffix = suffix.strip_prefix(';').unwrap_or(suffix);
     format!(
         "{character}{suffix}{}",
-        if end < char.len() { ";" } else { "" }
+        if end < code.len() { ";" } else { "" }
     )
 }

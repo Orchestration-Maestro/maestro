@@ -1,5 +1,4 @@
 //! Page composition: section groups, page breaks, and page and section elements.
-use super::notes::find_notes;
 use super::{Children, HtmlRenderer, render_style_values};
 use crate::docx_preview::html_element::HtmlElement;
 use maestro_app::browser::docx_preview::{
@@ -101,12 +100,12 @@ impl<'a> HtmlRenderer<'a> {
             props = section.sect_props;
         }
         if self.options().notes.render_footnotes {
-            let notes = find_notes(&self.current_footnote_ids, &self.preview.parts.footnotes);
-            element.extend(self.render_notes(notes));
+            let notes = self.footnote_map.find_notes(&self.current_footnote_ids);
+            element.extend(self.render_notes(self.footnote_map.part, notes));
         }
         if self.options().notes.render_endnotes && last {
-            let notes = find_notes(&self.current_endnote_ids, &self.preview.parts.endnotes);
-            element.extend(self.render_notes(notes));
+            let notes = self.endnote_map.find_notes(&self.current_endnote_ids);
+            element.extend(self.render_notes(self.endnote_map.part, notes));
         }
         if self.options().headers_footers.render_footers {
             let first_of_section = !prev_props.is_some_and(|prev| std::ptr::eq(prev, props));
@@ -137,8 +136,8 @@ impl<'a> HtmlRenderer<'a> {
         element
     }
 
-    /// Split body elements into sections at section groups and page breaks, then give each
-    /// section without a group the next group, or the body's.
+    /// Split body elements into sections at section groups, page-break-before styles and page
+    /// breaks, then give each section without a group the next group, or the body's.
     fn split_by_section(
         &self,
         tree: &'a OpenXmlElementTree,
@@ -193,8 +192,7 @@ impl<'a> HtmlRenderer<'a> {
     /// Whether a paragraph's style starts it on a new page.
     fn page_break_before(&self, paragraph: &ParagraphProperties) -> bool {
         self.find_style(paragraph.style_name.as_ref().and_then(Option::as_deref))
-            .and_then(|style| style.paragraph_props.as_ref())
-            .is_some_and(|props| props.page_break_before == Some(true))
+            .is_some_and(|style| style.page_break_before)
     }
 
     /// Find the first page break in a paragraph's children: the child and its position.

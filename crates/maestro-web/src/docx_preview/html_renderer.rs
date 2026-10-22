@@ -4,7 +4,7 @@ use super::utils::escape_class_name;
 use super::{Options, WordPreview};
 use indexmap::IndexMap;
 use maestro_app::browser::docx_preview::{
-    DomType, IDomStyle, Numbering, OpenXmlElementData as Data, OpenXmlElementTree,
+    DomType, Numbering, OpenXmlElementData as Data, OpenXmlElementTree, Part,
 };
 
 mod header_footer;
@@ -14,7 +14,9 @@ mod pages;
 mod styles;
 mod tables;
 
+use notes::NoteMap;
 use pages::Slice;
+use styles::ParagraphStyle;
 pub(crate) use styles::Styles;
 
 /// Ordered declarations as the document parser produces them.
@@ -36,6 +38,12 @@ const CELL_STYLE_KEYS: [&str; 8] = [
 pub(crate) struct HtmlRenderer<'a> {
     /// Prepared package, parts and options.
     preview: &'a WordPreview,
+    /// Part whose relationships the links being rendered resolve against.
+    current_part: Option<&'a Part>,
+    /// Footnotes by identifier.
+    footnote_map: NoteMap<'a>,
+    /// Endnotes by identifier.
+    endnote_map: NoteMap<'a>,
     /// Footnote references placed on the current page.
     current_footnote_ids: Vec<Option<&'a str>>,
     /// Endnote references placed so far in the document.
@@ -52,10 +60,13 @@ pub(crate) enum Children<'s> {
 }
 
 impl<'a> HtmlRenderer<'a> {
-    /// Start a rendering with empty note lists.
+    /// Start a rendering in the document part with empty note lists.
     pub(crate) fn new(preview: &'a WordPreview) -> Self {
         Self {
             preview,
+            current_part: preview.document.document_part(),
+            footnote_map: NoteMap::new(preview, preview.parts.footnotes.as_ref()),
+            endnote_map: NoteMap::new(preview, preview.parts.endnotes.as_ref()),
             current_footnote_ids: Vec::new(),
             current_endnote_ids: Vec::new(),
         }
@@ -66,19 +77,18 @@ impl<'a> HtmlRenderer<'a> {
         &self.preview.options
     }
 
-    /// Borrow the resolved style for a nonempty style name.
-    fn find_style(&self, style_name: Option<&str>) -> Option<&'a IDomStyle> {
+    /// Borrow the resolved paragraph values for a style name.
+    fn find_style(&self, style_name: Option<&str>) -> Option<&'a ParagraphStyle> {
         self.preview.parts.styles.find_style(style_name)
     }
 
     /// Prefix a nonempty style name with the class namespace.
     fn process_style_name(&self, class_name: &str) -> String {
-        let prefix = &self.options().class_name;
-        if class_name.is_empty() {
-            prefix.clone()
-        } else {
-            format!("{prefix}_{}", escape_class_name(class_name))
-        }
+        format!(
+            "{}_{}",
+            self.options().class_name,
+            escape_class_name(class_name)
+        )
     }
 
     /// Name the numbering class, spelling an absent part `undefined` and a null part `null`.
@@ -117,10 +127,35 @@ impl<'a> HtmlRenderer<'a> {
         tree: &'a OpenXmlElementTree,
         indices: &[usize],
     ) -> Vec<HtmlContent> {
-        indices
-            .iter()
-            .flat_map(|&index| self.render_element(tree, index, Children::Own))
-            .collect()
+        let mut output = Vec::new();
+        self.render_elements_into(tree, indices, &mut output);
+        output
+    }
+
+    /// Append rendered elements in order.
+    fn render_elements_into(
+        &mut self,
+        tree: &'a OpenXmlElementTree,
+        indices: &[usize],
+        output: &mut Vec<HtmlContent>,
+    ) {
+        for &index in indices {
+            self.render_element(tree, index, Children::Own, output);
+        }
+    }
+
+    /// Render elements whose links resolve against a part's relationships, then return to the
+    /// enclosing part.
+    fn render_part_elements(
+        &mut self,
+        part: Option<&'a Part>,
+        tree: &'a OpenXmlElementTree,
+        indices: &[usize],
+    ) -> Vec<HtmlContent> {
+        let enclosing = std::mem::replace(&mut self.current_part, part);
+        let output = self.render_elements(tree, indices);
+        self.current_part = enclosing;
+        output
     }
 
     /// Render page slices in order.
@@ -129,10 +164,11 @@ impl<'a> HtmlRenderer<'a> {
         tree: &'a OpenXmlElementTree,
         slices: &[Slice],
     ) -> Vec<HtmlContent> {
-        slices
-            .iter()
-            .flat_map(|slice| self.render_element(tree, slice.index, slice.children()))
-            .collect()
+        let mut output = Vec::new();
+        for slice in slices {
+            self.render_element(tree, slice.index, slice.children(), &mut output);
+        }
+        output
     }
 
     /// Render an element's own children or the ones a page split kept.
@@ -160,13 +196,14 @@ impl<'a> HtmlRenderer<'a> {
         element
     }
 
-    /// Render one element by kind; kinds without output here render nothing.
+    /// Append one element by kind; kinds without output here render nothing.
     fn render_element(
         &mut self,
         tree: &'a OpenXmlElementTree,
         index: usize,
         children: Children<'_>,
-    ) -> Vec<HtmlContent> {
+        output: &mut Vec<HtmlContent>,
+    ) {
         let node = &tree.nodes[index];
         let element = match &node.data {
             Data::Paragraph { properties } => {
@@ -183,19 +220,28 @@ impl<'a> HtmlRenderer<'a> {
             Data::Table(table) => Some(self.render_table(tree, index, table)),
             Data::Hyperlink(link) => Some(self.render_hyperlink(tree, index, link)),
             Data::SmartTag(_) => Some(self.render_container(tree, index, "span")),
-            Data::Text { text } => return vec![HtmlContent::Text(text.clone())],
+            Data::Text { text } => {
+                output.push(HtmlContent::Text(text.clone()));
+                return;
+            }
             Data::Tab => Some(inline::render_tab()),
-            Data::Symbol { font, char } => {
-                Some(inline::render_symbol(font.as_deref(), char.as_deref()))
+            Data::Symbol { font, char: code } => {
+                Some(inline::render_symbol(font.as_deref(), code.as_deref()))
             }
             Data::Break { r#break } => inline::render_break(r#break),
-            Data::NoBreakHyphen => return vec![HtmlContent::Text("\u{2011}".into())],
+            Data::NoBreakHyphen => {
+                output.push(HtmlContent::Text("\u{2011}".into()));
+                return;
+            }
             Data::FootnoteReference { id } => Some(self.render_footnote_reference(id.as_deref())),
             Data::EndnoteReference { id } => Some(self.render_endnote_reference(id.as_deref())),
-            Data::Inserted => return self.render_elements(tree, &node.base.children),
+            Data::Inserted => {
+                self.render_elements_into(tree, &node.base.children, output);
+                return;
+            }
             _ => None,
         };
-        element.map(HtmlContent::Element).into_iter().collect()
+        output.extend(element.map(HtmlContent::Element));
     }
 }
 
@@ -209,25 +255,14 @@ fn render_style_values(values: Option<&CssStyle>, output: &mut HtmlElement) {
     }
 }
 
-/// Fill the declarations the destination lacks, all of the source's or only the requested
-/// ones, creating the destination when the source exists.
-fn copy_style_properties(
-    input: Option<&CssStyle>,
-    output: &mut Option<CssStyle>,
-    attrs: Option<&[&str]>,
-) {
-    let Some(input) = input else { return };
-    let output = output.get_or_insert_default();
-    let mut copy = |key: &str| {
+/// Fill the requested declarations the destination lacks from the source.
+fn copy_style_properties(input: &CssStyle, output: &mut CssStyle, attrs: &[&str]) {
+    for &key in attrs {
         if let Some(value) = input.get(key)
             && !output.contains_key(key)
         {
             output.insert(key.to_owned(), value.clone());
         }
-    };
-    match attrs {
-        Some(attrs) => attrs.iter().for_each(|key| copy(key)),
-        None => input.keys().for_each(|key| copy(key)),
     }
 }
 
@@ -257,9 +292,9 @@ fn process_table(tree: &mut OpenXmlElementTree, table: usize) {
     for cell in cells {
         if let Data::Cell(cell) = &mut tree.nodes[cell].data {
             copy_style_properties(
-                Some(&cell_style),
-                &mut cell.css_style,
-                Some(&CELL_STYLE_KEYS),
+                &cell_style,
+                cell.css_style.get_or_insert_default(),
+                &CELL_STYLE_KEYS,
             );
         }
     }

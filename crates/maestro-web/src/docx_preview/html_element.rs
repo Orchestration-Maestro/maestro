@@ -4,7 +4,7 @@ use maestro_app::markup::{EscapeMode, escape_into};
 use std::collections::BTreeMap;
 
 /// One rendered element with ordered attributes, inline declarations and children.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct HtmlElement {
     /// Tag name.
     pub(super) tag: &'static str,
@@ -30,7 +30,9 @@ impl HtmlElement {
     pub(crate) fn new(tag: &'static str) -> Self {
         Self {
             tag,
-            ..Self::default()
+            attributes: IndexMap::new(),
+            style: BTreeMap::new(),
+            children: Vec::new(),
         }
     }
 
@@ -58,7 +60,7 @@ impl HtmlElement {
             write_attribute("style", &declarations.join(";"), out);
         }
         out.push('>');
-        if matches!(self.tag, "br" | "col" | "wbr") {
+        if matches!(self.tag, "br" | "col") {
             return;
         }
         for child in &self.children {
@@ -73,19 +75,19 @@ impl HtmlElement {
     }
 
     /// Assign one attribute, replacing an earlier value in place.
-    pub(crate) fn set_attribute(&mut self, name: &str, value: &str) {
-        self.attributes.insert(name.to_owned(), value.to_owned());
+    pub(crate) fn set_attribute(&mut self, name: &str, value: impl Into<String>) {
+        self.attributes.insert(name.to_owned(), value.into());
     }
 
     /// Assign one declaration as a style property assignment does: an absent or empty value
     /// removes the property, and a value that would leave its own declaration is rejected.
-    pub(crate) fn set_style(&mut self, property: &str, value: Option<&str>) {
-        match value {
-            None | Some("") => {
+    pub(crate) fn set_style(&mut self, property: &str, value: Option<impl Into<String>>) {
+        match value.map(Into::into).filter(|value| !value.is_empty()) {
+            None => {
                 self.style.remove(property);
             }
-            Some(value) if contained(value) => {
-                self.style.insert(property.to_owned(), value.to_owned());
+            Some(value) if contained(&value) => {
+                self.style.insert(property.to_owned(), value);
             }
             Some(_) => {}
         }
@@ -101,7 +103,7 @@ impl HtmlElement {
             }
         }
         let joined = tokens.join(" ");
-        self.set_attribute("class", &joined);
+        self.set_attribute("class", joined);
     }
 
     /// Append one child element.
@@ -116,8 +118,8 @@ impl HtmlElement {
     }
 
     /// Append literal text.
-    pub(crate) fn push_text(&mut self, text: &str) {
-        self.children.push(HtmlContent::Text(text.to_owned()));
+    pub(crate) fn push_text(&mut self, text: impl Into<String>) {
+        self.children.push(HtmlContent::Text(text.into()));
     }
 
     /// Append already rendered children in order.

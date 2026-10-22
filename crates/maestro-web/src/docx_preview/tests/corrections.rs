@@ -39,6 +39,26 @@ pub(crate) fn correct(name: &str, pages: &mut [Value]) {
             assert_eq!(link["attributes"], json!([["href", "javascript:alert(1)"]]));
             link["attributes"] = json!([]);
         }
+        // A link in a footer or a note reads the relationships of the part that holds it, not
+        // the main document's.
+        "part-relationship-links" => {
+            for (pointer, recorded, target) in [
+                (
+                    "/children/1/children/0/children/0/children/0",
+                    "https://example.test/document",
+                    "https://example.test/note",
+                ),
+                (
+                    "/children/2/children/0/children/0",
+                    "",
+                    "https://example.test/footer",
+                ),
+            ] {
+                let link = pages[0].pointer_mut(pointer).unwrap();
+                assert_eq!(link["attributes"], json!([["href", recorded]]));
+                link["attributes"] = json!([["href", target]]);
+            }
+        }
         _ => {}
     }
 }

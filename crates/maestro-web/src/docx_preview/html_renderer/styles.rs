@@ -1,153 +1,67 @@
-//! Resolved styles: each occurrence merged with its base chain, looked up by identifier.
-use super::{CssStyle, copy_style_properties};
-use indexmap::IndexMap;
-use maestro_app::browser::docx_preview::{
-    CommonProperties, IDomStyle, Numbering, ParagraphProperties,
-};
-use std::collections::HashSet;
+//! Paragraph style values the pages read, resolved through each style's base chain.
+use maestro_app::browser::docx_preview::{IDomStyle, Numbering};
+use std::collections::{HashMap, HashSet};
 
-/// Resolved style occurrences and the last occurrence of each identifier.
+/// Resolved paragraph values of the last style with each nonempty identifier.
 #[derive(Default)]
 pub(crate) struct Styles {
-    /// Resolved occurrences in source order, repeated identifiers included.
-    pub(crate) styles: Vec<IDomStyle>,
-    /// Last occurrence of each identifier.
-    style_map: IndexMap<String, usize>,
+    /// Resolved values by identifier.
+    styles: HashMap<String, ParagraphStyle>,
+}
+
+/// Paragraph values a style gives its paragraphs.
+pub(crate) struct ParagraphStyle {
+    /// Numbering reference, its identifier and level each taken from the nearest style that
+    /// sets it.
+    pub(crate) numbering: Option<Numbering>,
+    /// Whether paragraphs of the style start on a new page.
+    pub(crate) page_break_before: bool,
 }
 
 impl Styles {
-    /// Resolve every occurrence against the unchanged definitions and index identifiers.
+    /// Resolve the last style with each identifier against the unchanged definitions.
     pub(crate) fn process_styles(styles: &[IDomStyle]) -> Self {
-        let style_map: IndexMap<String, usize> = styles
+        let style_map: HashMap<&str, &IDomStyle> = styles
             .iter()
-            .enumerate()
-            .filter_map(|(index, style)| style.id.as_ref().map(|id| (id.clone(), index)))
-            .collect();
-        let resolved = (0..styles.len())
-            .map(|index| resolve_style(styles, index, &style_map))
+            .filter_map(|style| Some((style.id.as_deref().filter(|id| !id.is_empty())?, style)))
             .collect();
         Self {
-            styles: resolved,
-            style_map,
+            styles: style_map
+                .keys()
+                .map(|&id| (id.to_owned(), resolve_style(id, &style_map)))
+                .collect(),
         }
     }
 
-    /// Borrow the last occurrence of a nonempty identifier.
-    pub(crate) fn find_style(&self, style_name: Option<&str>) -> Option<&IDomStyle> {
-        let name = style_name.filter(|name| !name.is_empty())?;
-        self.style_map
-            .get(name)
-            .and_then(|&index| self.styles.get(index))
+    /// Borrow the resolved values for a style name.
+    pub(crate) fn find_style(&self, style_name: Option<&str>) -> Option<&ParagraphStyle> {
+        self.styles.get(style_name?)
     }
 }
 
-/// Resolve one occurrence, keeping each ancestor's contribution the first time it is visited.
-fn resolve_style(
-    styles: &[IDomStyle],
-    index: usize,
-    style_map: &IndexMap<String, usize>,
-) -> IDomStyle {
-    let mut result = styles[index].clone();
-    let mut visited = HashSet::from([index]);
-    let mut current = &styles[index];
-    while let Some(&base) = current
-        .based_on
-        .as_deref()
-        .filter(|id| !id.is_empty())
+/// Resolve one style, each value taken from the first style along its base chain that sets it;
+/// the chain stops at its first repeated style.
+fn resolve_style(id: &str, style_map: &HashMap<&str, &IDomStyle>) -> ParagraphStyle {
+    let mut numbering: Option<Numbering> = None;
+    let mut page_break_before = None;
+    let mut visited = HashSet::new();
+    let mut current = Some(id);
+    while let Some(style) = current
+        .filter(|id| visited.insert(*id))
         .and_then(|id| style_map.get(id))
     {
-        if !visited.insert(base) {
-            break;
+        if let Some(props) = &style.paragraph_props {
+            page_break_before = page_break_before.or(props.page_break_before);
+            if let Some(base) = &props.numbering {
+                let numbering = numbering.get_or_insert_default();
+                numbering.id = numbering.id.take().or_else(|| base.id.clone());
+                numbering.level = numbering.level.or(base.level);
+            }
         }
-        current = &styles[base];
-        inherit_style(&mut result, current);
+        current = style.based_on.as_deref();
     }
-    result
-}
-
-/// Fill a value only when the child has none.
-fn inherit<T: Clone>(child: &mut Option<T>, base: Option<&T>) {
-    if child.is_none() {
-        *child = base.cloned();
+    ParagraphStyle {
+        numbering,
+        page_break_before: page_break_before == Some(true),
     }
-}
-
-/// Copy an absent group or fill the missing fields of a present one.
-fn inherit_group<T: Clone>(
-    child: &mut Option<T>,
-    base: Option<&T>,
-    merge: impl FnOnce(&mut T, &T),
-) {
-    if let (Some(child), Some(base)) = (child.as_mut(), base) {
-        merge(child, base);
-    } else {
-        inherit(child, base);
-    }
-}
-
-/// Fill declarations and metadata from one ancestor, the child winning.
-fn inherit_style(child: &mut IDomStyle, base: &IDomStyle) {
-    inherit_group(
-        &mut child.paragraph_props,
-        base.paragraph_props.as_ref(),
-        inherit_paragraph,
-    );
-    inherit_group(
-        &mut child.run_props,
-        base.run_props.as_ref(),
-        inherit_common,
-    );
-    for inherited in &base.styles {
-        if let Some(target) = child
-            .styles
-            .iter_mut()
-            .find(|style| style.target == inherited.target)
-        {
-            let mut values: Option<CssStyle> = Some(std::mem::take(&mut target.values));
-            copy_style_properties(Some(&inherited.values), &mut values, None);
-            target.values = values.unwrap_or_default();
-        } else {
-            child.styles.push(inherited.clone());
-        }
-    }
-}
-
-/// Fill shared color and size without replacing explicit nulls.
-fn inherit_common(child: &mut CommonProperties, base: &CommonProperties) {
-    inherit(&mut child.color, base.color.as_ref());
-    inherit(&mut child.font_size, base.font_size.as_ref());
-}
-
-/// Fill numbering identifier and level independently.
-fn inherit_numbering(child: &mut Numbering, base: &Numbering) {
-    inherit(&mut child.id, base.id.as_ref());
-    inherit(&mut child.level, base.level.as_ref());
-}
-
-/// Fill paragraph metadata by the same child-first rule as declarations.
-fn inherit_paragraph(child: &mut ParagraphProperties, base: &ParagraphProperties) {
-    inherit_common(&mut child.common, &base.common);
-    inherit(&mut child.css_style, base.css_style.as_ref());
-    inherit(&mut child.tabs, base.tabs.as_ref());
-    inherit_group(
-        &mut child.numbering,
-        base.numbering.as_ref(),
-        inherit_numbering,
-    );
-    inherit(&mut child.line_spacing, base.line_spacing.as_ref());
-    inherit(&mut child.text_alignment, base.text_alignment.as_ref());
-    inherit(&mut child.keep_lines, base.keep_lines.as_ref());
-    inherit(&mut child.keep_next, base.keep_next.as_ref());
-    inherit(
-        &mut child.page_break_before,
-        base.page_break_before.as_ref(),
-    );
-    inherit(&mut child.outline_level, base.outline_level.as_ref());
-    inherit(&mut child.style_name, base.style_name.as_ref());
-    inherit_group(
-        &mut child.run_props,
-        base.run_props.as_ref(),
-        inherit_common,
-    );
-    inherit(&mut child.class_name, base.class_name.as_ref());
 }

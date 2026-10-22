@@ -114,12 +114,20 @@ pub struct WordPreview {
 struct Parts {
     /// Resolved styles.
     styles: Styles,
-    /// Footnotes in source order.
-    footnotes: Vec<WmlBaseNote>,
-    /// Endnotes in source order.
-    endnotes: Vec<WmlBaseNote>,
+    /// Footnotes and the part holding them.
+    footnotes: Option<Notes>,
+    /// Endnotes and the part holding them.
+    endnotes: Option<Notes>,
     /// Header and footer content by part path.
-    headers_footers: HashMap<String, (PartKind, OpenXmlElementTree)>,
+    headers_footers: HashMap<String, OpenXmlElementTree>,
+}
+
+/// Notes of one kind in source order and the package position of the part holding them.
+struct Notes {
+    /// Position of the notes part among the package parts.
+    part: usize,
+    /// Notes in source order.
+    notes: Vec<WmlBaseNote>,
 }
 
 impl WordPreview {
@@ -140,8 +148,8 @@ impl WordPreview {
         })?;
         process_element(&mut body.children);
         let mut parts = Parts::default();
-        for part in document.parts() {
-            parts.prepare(part, ignore_width)?;
+        for (index, part) in document.parts().iter().enumerate() {
+            parts.prepare(index, part, ignore_width)?;
         }
         Ok(Self {
             options,
@@ -157,21 +165,20 @@ impl WordPreview {
         HtmlRenderer::new(self).render_sections()
     }
 
-    /// Borrow the header or footer a document relationship names.
-    fn header_footer(&self, id: &str) -> Option<(PartKind, &OpenXmlElementTree)> {
+    /// Borrow the header or footer part a document relationship names, with its content.
+    fn header_footer(&self, id: &str) -> Option<(&Part, &OpenXmlElementTree)> {
         let part = self
             .document
             .find_part_by_rel_id(id, self.document.document_part())?;
-        self.parts
-            .headers_footers
-            .get(&part.path)
-            .map(|(kind, tree)| (*kind, tree))
+        let tree = self.parts.headers_footers.get(&part.path)?;
+        Some((part, tree))
     }
 }
 
 impl Parts {
-    /// Prepare one part the pages use; the last styles and notes parts win.
-    fn prepare(&mut self, part: &Part, ignore_width: bool) -> Result<(), DocxError> {
+    /// Prepare one part the pages use, given its package position; the last styles and notes
+    /// parts win.
+    fn prepare(&mut self, index: usize, part: &Part, ignore_width: bool) -> Result<(), DocxError> {
         let root = |xml: &XmlParser<'_>| OwnedXmlElement::new(xml.root());
         match part.kind {
             PartKind::Styles => {
@@ -184,23 +191,29 @@ impl Parts {
                 let notes = parse_part(part, |xml| {
                     FootnotesPart::parse_xml(&root(xml), ignore_width)
                 })?;
-                self.footnotes = notes.notes.into_iter().map(|note| note.base).collect();
+                self.footnotes = Some(Notes {
+                    part: index,
+                    notes: notes.notes.into_iter().map(|note| note.base).collect(),
+                });
             }
             PartKind::Endnotes => {
                 let notes = parse_part(part, |xml| {
                     EndnotesPart::parse_xml(&root(xml), ignore_width)
                 })?;
-                self.endnotes = notes.notes.into_iter().map(|note| note.base).collect();
+                self.endnotes = Some(Notes {
+                    part: index,
+                    notes: notes.notes.into_iter().map(|note| note.base).collect(),
+                });
             }
             PartKind::Header => {
                 let header =
                     parse_part(part, |xml| HeaderPart::parse_xml(&root(xml), ignore_width))?;
-                self.add_header_footer(part, PartKind::Header, header.root_element.children);
+                self.add_header_footer(part, header.root_element.children);
             }
             PartKind::Footer => {
                 let footer =
                     parse_part(part, |xml| FooterPart::parse_xml(&root(xml), ignore_width))?;
-                self.add_header_footer(part, PartKind::Footer, footer.root_element.children);
+                self.add_header_footer(part, footer.root_element.children);
             }
             _ => {}
         }
@@ -208,9 +221,9 @@ impl Parts {
     }
 
     /// Keep a header or footer's content, its tables' cell declarations handed down.
-    fn add_header_footer(&mut self, part: &Part, kind: PartKind, mut tree: OpenXmlElementTree) {
+    fn add_header_footer(&mut self, part: &Part, mut tree: OpenXmlElementTree) {
         process_element(&mut tree);
-        self.headers_footers.insert(part.path.clone(), (kind, tree));
+        self.headers_footers.insert(part.path.clone(), tree);
     }
 }
 

@@ -4560,5 +4560,144 @@
         ]
       }
     ]
+  },
+  {
+    "name": "part-relationship-links",
+    "options": {},
+    "outcome": "success",
+    "expected": [
+      {
+        "tag": "section",
+        "attributes": [
+          [
+            "class",
+            "docx"
+          ],
+          [
+            "style",
+            "min-height:841.9pt;width:595.3pt"
+          ]
+        ],
+        "children": [
+          {
+            "tag": "article",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        "https://example.test/body"
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "body"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "sup",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "li",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "tag": "a",
+                        "attributes": [
+                          [
+                            "href",
+                            "https://example.test/document"
+                          ]
+                        ],
+                        "children": [
+                          {
+                            "tag": "span",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "text": "note"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "footer",
+            "attributes": [],
+            "children": [
+              {
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "tag": "a",
+                    "attributes": [
+                      [
+                        "href",
+                        ""
+                      ]
+                    ],
+                    "children": [
+                      {
+                        "tag": "span",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "text": "footer"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

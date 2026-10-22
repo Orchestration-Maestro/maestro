@@ -10,13 +10,13 @@ use serde::Deserialize;
 struct Case {
     /// Owning test.
     test: String,
-    /// Link record and the document part's relationships.
+    /// Link record and the relationships of the part holding it.
     input: Input,
     /// Expected target, absent when refused.
     expected: Option<String>,
 }
 
-/// A link record and the document part's relationships.
+/// A link record and the relationships of the part holding it.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Input {
@@ -24,7 +24,7 @@ struct Input {
     id: Option<String>,
     /// Nullable bookmark anchor.
     anchor: Option<String>,
-    /// Ordered document-part relationships.
+    /// Ordered relationships of the holding part.
     relationships: Option<Vec<RecordedRelationship>>,
 }
 
@@ -89,4 +89,11 @@ fn word_hyperlink_refusal_spares_inert_data_and_fragment_targets() {
 #[test]
 fn parsed_hyperlink_records_reach_the_link_policy() {
     check("hyperlink-targets");
+}
+
+/// Body, footer and footnote links each resolve against their own part's relationships,
+/// even when the main document reuses the note link's identifier for another target.
+#[test]
+fn footer_and_note_links_use_their_own_part_relationships() {
+    check("part-relationship-links");
 }

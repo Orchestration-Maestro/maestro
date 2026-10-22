@@ -45,7 +45,7 @@ impl<'a> HtmlRenderer<'a> {
     ) -> HtmlElement {
         let mut table = Table {
             element: HtmlElement::new("table"),
-            row: HtmlElement::default(),
+            row: HtmlElement::new("tr"),
             col: 0,
             vertical_merge: HashMap::new(),
             spans: Vec::new(),
@@ -69,7 +69,7 @@ impl<'a> HtmlRenderer<'a> {
                 .child_mut(span.row)
                 .and_then(|row| row.child_mut(span.cell))
             {
-                cell.set_attribute("rowspan", &span.count.to_string());
+                cell.set_attribute("rowspan", span.count.to_string());
             }
         }
         element
@@ -83,7 +83,6 @@ impl<'a> HtmlRenderer<'a> {
         record: &'a WmlTableRow,
         table: &mut Table,
     ) {
-        table.row = HtmlElement::new("tr");
         table.col = 0;
         if let Some(count) = column_count(record.grid_before.flatten()) {
             table.row.push_element(render_table_cell_placeholder(count));
@@ -98,7 +97,7 @@ impl<'a> HtmlRenderer<'a> {
         if let Some(count) = column_count(record.grid_after.flatten()) {
             table.row.push_element(render_table_cell_placeholder(count));
         }
-        let row = std::mem::take(&mut table.row);
+        let row = std::mem::replace(&mut table.row, HtmlElement::new("tr"));
         table.element.push_element(row);
     }
 
@@ -143,7 +142,7 @@ impl<'a> HtmlRenderer<'a> {
         render_style_values(record.css_style.as_ref(), &mut cell);
         let span = column_count(record.span.flatten());
         if let Some(span) = span {
-            cell.set_attribute("colspan", &span.to_string());
+            cell.set_attribute("colspan", span.to_string());
         }
         table.col += span.unwrap_or(1);
         table.row.push_element(cell);
@@ -166,7 +165,7 @@ fn render_table_columns(columns: &[WmlTableColumn]) -> HtmlElement {
 /// Render a borderless cell spanning grid columns the row leaves empty.
 fn render_table_cell_placeholder(count: usize) -> HtmlElement {
     let mut element = HtmlElement::new("td");
-    element.set_attribute("colspan", &count.to_string());
+    element.set_attribute("colspan", count.to_string());
     element.set_style("border", Some("none"));
     element
 }

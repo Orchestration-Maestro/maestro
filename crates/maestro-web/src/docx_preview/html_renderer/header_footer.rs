@@ -20,10 +20,10 @@ impl<'a> HtmlRenderer<'a> {
             .flatten()
             .or_else(|| (page % 2 == 1).then(|| find("even")).flatten())
             .or_else(|| find("default"))?;
-        let (kind, tree) = self.preview.header_footer(reference.id.as_deref()?)?;
-        let header = kind == PartKind::Header;
+        let (part, tree) = self.preview.header_footer(reference.id.as_deref()?)?;
+        let header = part.kind == PartKind::Header;
         let mut element = HtmlElement::new(if header { "header" } else { "footer" });
-        element.append(self.render_elements(tree, &tree.roots));
+        element.append(self.render_part_elements(Some(part), tree, &tree.roots));
         if let Some(margins) = &props.page_margins {
             let (edge, offset, margin) = if header {
                 (&margins.top, &margins.header, "margin-top")
@@ -32,8 +32,8 @@ impl<'a> HtmlRenderer<'a> {
             };
             // An offset with a missing operand is invalid CSS, which a page never applies.
             if let (Some(edge), Some(offset)) = (edge, offset) {
-                element.set_style(margin, Some(&format!("calc({offset} - {edge})")));
-                element.set_style("min-height", Some(&format!("calc({edge} - {offset})")));
+                element.set_style(margin, Some(format!("calc({offset} - {edge})")));
+                element.set_style("min-height", Some(format!("calc({edge} - {offset})")));
             }
         }
         Some(element)

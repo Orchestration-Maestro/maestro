@@ -50,22 +50,23 @@ fn style_declarations_are_sorted_and_keep_the_last_value() {
     element.set_style("background-color", Some("#EEFFEE"));
     element.set_style("width", Some("2pt"));
     element.set_style("height", Some("3pt"));
-    element.set_style("height", None);
+    element.set_style("height", None::<&str>);
     element.set_style("color", Some(""));
     element.set_style("border", Some("none"));
     assert_eq!(
         element.to_html(),
         "<p style=\"background-color:#EEFFEE;border:none;width:2pt\"></p>"
     );
-    element.set_style("border", None);
-    element.set_style("background-color", None);
-    element.set_style("width", None);
+    element.set_style("border", None::<&str>);
+    element.set_style("background-color", None::<&str>);
+    element.set_style("width", None::<&str>);
     assert_eq!(element.to_html(), "<p></p>");
 }
 
-/// Page and column geometry is assigned through camel-case style properties.
+/// Page margins, page size and column layout reach the style attribute as sorted CSS
+/// declarations.
 #[test]
-fn style_values_convert_camel_case_names_to_css_properties() {
+fn page_and_column_geometry_reach_the_style_attribute() {
     let html = render("columns")[0].to_html();
     assert_eq!(
         html,
@@ -90,28 +91,14 @@ fn style_inheritance_follows_each_base_and_keeps_last_duplicates() {
     let parsed = StylesPart::parse_xml(&xml, xml.root(), false).unwrap();
     let styles = Styles::process_styles(&parsed.styles);
     let numbering = |name| {
-        let props = styles
-            .find_style(Some(name))
-            .unwrap()
-            .paragraph_props
-            .as_ref();
-        let numbering = props.unwrap().numbering.as_ref().unwrap();
+        let style = styles.find_style(Some(name)).unwrap();
+        let numbering = style.numbering.as_ref().unwrap();
         (numbering.id.clone().flatten(), numbering.level.flatten())
     };
-    let child = styles.find_style(Some("Child")).unwrap();
-    let child_props = child.paragraph_props.as_ref().unwrap();
-    assert_eq!(
-        (child_props.keep_next, child_props.page_break_before),
-        (Some(true), Some(true))
-    );
+    assert!(styles.find_style(Some("Child")).unwrap().page_break_before);
+    assert!(!styles.find_style(Some("Base")).unwrap().page_break_before);
     assert_eq!(numbering("Child"), (Some("7".into()), Some(2.0)));
     assert_eq!(numbering("Twin"), (Some("2".into()), None));
     assert_eq!(numbering("Orphan"), (Some("3".into()), None));
-    let order: Vec<_> = styles
-        .styles
-        .iter()
-        .map(|style| style.id.as_deref().unwrap())
-        .collect();
-    assert_eq!(order, ["Child", "Middle", "Base", "Twin", "Twin", "Orphan"]);
     assert!(styles.find_style(Some("")).is_none() && styles.find_style(None).is_none());
 }
