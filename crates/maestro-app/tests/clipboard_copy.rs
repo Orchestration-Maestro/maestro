@@ -138,6 +138,35 @@ fn wayland_detection_uses_nonempty_display_or_exact_session_type() {
     }
 }
 
+/// A remote marker that is not valid UTF-8 still reaches the terminal frame.
+#[cfg(unix)]
+#[test]
+fn undecodable_remote_marker_still_emits_the_terminal_frame() {
+    use std::os::unix::ffi::OsStringExt as _;
+    if maestro_test_process::selection().is_child() {
+        controlled::run_undecodable_remote_marker();
+        return;
+    }
+    let output = maestro_test_process::TestProcess::current(
+        "undecodable_remote_marker_still_emits_the_terminal_frame",
+    )
+    .unwrap()
+    .env_clear()
+    .case("*")
+    .env(
+        "SSH_CONNECTION",
+        std::ffi::OsString::from_vec(b"client \xff server".to_vec()),
+    )
+    .output()
+    .unwrap();
+    assert!(
+        output.status.success(),
+        "the cleared child failed: {}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 /// Child mode keeps all environment changes outside the parallel parent process.
 #[cfg(target_os = "linux")]
 #[test]

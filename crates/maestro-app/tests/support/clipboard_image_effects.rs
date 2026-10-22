@@ -148,15 +148,6 @@ impl ClipboardOperations for Effects<'_> {
                 .unwrap_or(&self.case.input.platform),
         )
     }
-    fn env(&self, name: &str) -> Option<String> {
-        self.case
-            .input
-            .ambient_env
-            .as_ref()
-            .unwrap_or(&self.case.input.env)
-            .get(name)
-            .cloned()
-    }
     fn clipboard(&self) -> Option<&dyn ClipboardModule> {
         (self.case.input.native != "absent").then_some(self)
     }
@@ -297,17 +288,37 @@ impl ClipboardImageOperations for Effects<'_> {
         PathBuf::from(TEMP)
     }
 }
-/// Executes all rows owned by one named behavior.
+/// Executes one named behavior's rows; a row that declares an ambient environment runs
+/// in a cleared child holding it.
 pub fn run(name: &str) {
-    let corpus = corpus();
-    let cases: Vec<_> = corpus
+    let cases: Vec<Case> = corpus()
         .cases
-        .iter()
+        .into_iter()
         .filter(|case| case.test == name)
         .collect();
     assert!(!cases.is_empty());
-    for case in cases {
-        replay(case);
+    // An environment-less row observes the child's own environment, so it declares it.
+    for case in &cases {
+        if matches!(
+            case.input.options.as_deref(),
+            Some("default" | "empty" | "platform-only")
+        ) {
+            assert!(
+                case.input.ambient_env.is_some(),
+                "{} declares its ambient environment",
+                case.id
+            );
+        }
+    }
+    let (here, ambient): (Vec<_>, Vec<_>) = cases
+        .into_iter()
+        .partition(|case| case.input.ambient_env.is_none());
+    let selected = maestro_test_process::run_per_environment(name, ambient, |case| {
+        case.input.ambient_env.clone().unwrap_or_default()
+    })
+    .unwrap();
+    for case in selected.unwrap_or(here) {
+        replay(&case);
     }
 }
 /// Drives a pending native read before releasing it and checking its complete result.

@@ -2218,63 +2218,6 @@
           "error": "output unavailable"
         }
       }
-    },
-    {
-      "id": "remote-observed-after-native-added",
-      "test": "remote_copy_waits_for_native_before_terminal",
-      "input": {
-        "platform": "darwin",
-        "env": {},
-        "native": "pending",
-        "text": "hello",
-        "envAfterNative": {
-          "SSH_CLIENT": "remote"
-        }
-      },
-      "expected": {
-        "trace": [
-          [
-            "native",
-            "hello"
-          ],
-          [
-            "native-done"
-          ],
-          [
-            "stdout"
-          ]
-        ],
-        "stdout": [
-          "\u001b]52;c;aGVsbG8=\u0007"
-        ],
-        "result": "ok"
-      }
-    },
-    {
-      "id": "remote-observed-after-native-removed",
-      "test": "remote_copy_waits_for_native_before_terminal",
-      "input": {
-        "platform": "darwin",
-        "env": {
-          "SSH_CLIENT": "remote"
-        },
-        "native": "pending",
-        "text": "hello",
-        "envAfterNative": {}
-      },
-      "expected": {
-        "trace": [
-          [
-            "native",
-            "hello"
-          ],
-          [
-            "native-done"
-          ]
-        ],
-        "stdout": [],
-        "result": "ok"
-      }
     }
   ],
   "wayland": [

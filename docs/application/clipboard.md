@@ -2,8 +2,9 @@
 
 Use `maestro_app::copy_to_clipboard(text).await` for desktop defaults, or
 `copy_to_clipboard_with(text, &operations).await` with a `ClipboardOperations`
-adapter. Both use the same policy; the adapter supplies native writes, environment
-observations, process launches and terminal output.
+adapter. Both use the same policy; the adapter supplies native writes, process
+launches and terminal output, and the policy reads the environment itself where it
+needs it.
 
 A successful native write on macOS or Windows finishes local copying. Otherwise,
 macOS uses `pbcopy` and Windows uses `clip`. Other hosts try the Termux helper,
@@ -29,10 +30,10 @@ The routing, exact bytes, bounds and errors are exercised by
 Use [`utils::clipboard_image::read_clipboard_image`](../../crates/maestro-app/src/utils/clipboard_image/reader.rs)
 for host defaults, or `read_clipboard_image_with` with a
 `ClipboardImageOperations` adapter. The returned `ClipboardImage` owns its bytes.
-An absent environment or platform option independently uses the adapter's host
-observation; a supplied environment replaces routing observations entirely,
-including when empty. Overrides do not change helper environments or cached
-native admission. A nonempty Termux marker skips all effects.
+An absent environment or platform option independently uses the process
+environment and the platform the adapter reports; a supplied environment replaces
+routing observations entirely, including when empty. Overrides do not change helper
+environments or cached native admission. A nonempty Termux marker skips all effects.
 
 Linux detects WSL from nonempty flags or the kernel version. Wayland and WSL try
 `wl-paste`, then `xclip`; WSL additionally tries PowerShell through a temporary
