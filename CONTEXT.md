@@ -257,7 +257,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Terminal effects:** PTY reply bytes, bell counts, directory changes and clipboard writes captured by the terminal emulator for its caller to drain after a write.
 - **Render state:** The emulator's retained viewport snapshot with whole-screen and per-row dirty flags.
 - **Image placement:** An image's position on a pane terminal's grid, given directly or through placeholder cells.
-- **Host graphics cache:** The record of images uploaded to the host terminal and the placements shown there. See [host graphics](docs/terminal-emulator.md#host-graphics).
+- **Host graphics cache:** The multiplexer-side record of images uploaded to the host terminal and the placements shown there. See [host graphics](docs/terminal-emulator.md#host-graphics).
 - **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active screen; zero disables history.
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
 - **Pane runtime:** The daemon's live object for one pane terminal: the PTY child, its emulator and its agent detection task.

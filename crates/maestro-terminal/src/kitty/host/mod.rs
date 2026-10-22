@@ -35,10 +35,6 @@ pub use encode::{DirectFileCommand, direct_file_command};
 #[cfg(unix)]
 pub use encode::encode_kitty_regular_file;
 
-pub use identity::{
-    host_image_id, host_image_id_for_signature, host_placement_id, kitty_format_code,
-};
-
 /// Cell rectangle in the terminal grid.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Rect {
@@ -142,31 +138,31 @@ pub struct ImageSignature {
 
 /// Shown geometry: where the host currently draws a placement.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct PlacementSignature {
+struct PlacementSignature {
     /// First shown column.
-    pub x: u16,
+    x: u16,
     /// First shown row.
-    pub y: u16,
+    y: u16,
     /// Shown columns.
-    pub cols: u32,
+    cols: u32,
     /// Shown rows.
-    pub rows: u32,
+    rows: u32,
     /// Source left pixel.
-    pub source_x: u32,
+    source_x: u32,
     /// Source top pixel.
-    pub source_y: u32,
+    source_y: u32,
     /// Source width in pixels.
-    pub source_width: u32,
+    source_width: u32,
     /// Source height in pixels.
-    pub source_height: u32,
+    source_height: u32,
     /// Horizontal in-cell destination offset.
-    pub x_offset: u32,
+    x_offset: u32,
     /// Vertical in-cell destination offset.
-    pub y_offset: u32,
+    y_offset: u32,
     /// Stacking order.
-    pub z: i32,
+    z: i32,
     /// Rows scrolled above the bottom of the terminal history.
-    pub scrollback_offset: u32,
+    scrollback_offset: u32,
 }
 
 /// Placement geometry after clipping to the visible pane area.
@@ -195,7 +191,7 @@ pub struct ClippedPlacement {
 }
 
 /// Wire bytes of one update, and whether more updates remain.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EncodedGraphics {
     /// Commands to write to the host terminal.
     pub bytes: Vec<u8>,

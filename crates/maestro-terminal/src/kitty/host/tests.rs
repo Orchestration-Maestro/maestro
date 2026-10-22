@@ -6,8 +6,8 @@ use std::collections::HashSet;
 use super::encode_kitty_regular_file;
 use super::{
     HostCellSize, HostGraphicsCache, HostPlacement, HostSourceKey, HostView, Rect, WindowSize,
-    clipped_placement, direct_file_command, host_image_id, host_image_id_for_signature,
-    host_placement_id,
+    clipped_placement, direct_file_command,
+    identity::{host_image_id, host_image_id_for_signature, host_placement_id, kitty_format_code},
 };
 use crate::kitty::graphics::placements::{KittyImageFormat, KittyImagePlacement};
 use crate::kitty::graphics::render::PlacementRenderInfo;
@@ -237,7 +237,7 @@ fn terminal_placement_keys_keep_their_wire_identity() {
             placement.pane_id,
             super::identity::image_signature(
                 &placement,
-                super::kitty_format_code(placement.placement.format)
+                kitty_format_code(placement.placement.format)
             ),
         ),
         174_084

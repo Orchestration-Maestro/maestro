@@ -13,9 +13,7 @@ use super::super::{
         encode_delete_image, encode_delete_placement, encode_display_placement,
         encode_transmit_and_display, encode_upload_image,
     },
-    host_placement_id,
-    identity::{image_signature, placement_signature},
-    kitty_format_code,
+    identity::{host_placement_id, image_signature, kitty_format_code, placement_signature},
 };
 use super::{
     host_identity, host_image_of, image_transaction_fits, placement_identity, release_source,

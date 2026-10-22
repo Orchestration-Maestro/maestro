@@ -3,7 +3,7 @@
 use super::Rect;
 
 /// Window size the terminal backend reports, in cells and pixels.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct WindowSize {
     /// Terminal columns.
     pub columns: u16,

@@ -1,8 +1,10 @@
 //! Kitty graphics commands the host terminal receives.
 //!
-//! Every command writes its control keys in a fixed order after `a=`, encodes
-//! its payload in base64 chunks of raw payload bytes, and carries the quiet level
-//! it needs.
+//! Transmit commands write their control keys after `a=` and carry the payload in
+//! base64 chunks of raw payload bytes: the first chunk holds the keys and its
+//! `m=`, every later chunk holds only its `m=`. Display and delete commands hold
+//! control keys and no payload. The regular-file command sends a base64 path as
+//! one unchunked payload under the control keys its caller supplies.
 
 use std::fmt::Write as _;
 use std::io::Write as _;
@@ -10,7 +12,9 @@ use std::io::Write as _;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 
 use super::{
-    ClippedPlacement, HostPlacement, clip::clipped_placement, host_placement_id, kitty_format_code,
+    ClippedPlacement, HostPlacement,
+    clip::clipped_placement,
+    identity::{host_placement_id, kitty_format_code},
 };
 
 /// Raw payload bytes carried by one Kitty transmission chunk.

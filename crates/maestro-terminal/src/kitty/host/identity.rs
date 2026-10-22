@@ -16,7 +16,7 @@ const HOST_IMAGE_ID_BASE: u32 = 10_000;
 
 /// Host image identity of a placement's pixels.
 #[must_use]
-pub fn host_image_id(pane_id: u32, placement: &KittyImagePlacement) -> u32 {
+pub(super) fn host_image_id(pane_id: u32, placement: &KittyImagePlacement) -> u32 {
     host_image_id_for_signature(
         pane_id,
         ImageSignature {
@@ -31,7 +31,7 @@ pub fn host_image_id(pane_id: u32, placement: &KittyImagePlacement) -> u32 {
 
 /// Host image identity of an already computed payload signature.
 #[must_use]
-pub fn host_image_id_for_signature(pane_id: u32, signature: ImageSignature) -> u32 {
+pub(super) fn host_image_id_for_signature(pane_id: u32, signature: ImageSignature) -> u32 {
     let mut hasher = DefaultHasher::new();
     pane_id.hash(&mut hasher);
     signature.hash(&mut hasher);
@@ -40,7 +40,10 @@ pub fn host_image_id_for_signature(pane_id: u32, signature: ImageSignature) -> u
 
 /// Host placement identity of a source's placement.
 #[must_use]
-pub fn host_placement_id(source_key: &HostSourceKey, placement: &KittyImagePlacement) -> u32 {
+pub(super) fn host_placement_id(
+    source_key: &HostSourceKey,
+    placement: &KittyImagePlacement,
+) -> u32 {
     let mut hasher = DefaultHasher::new();
     match source_key {
         HostSourceKey::Terminal { pane_id, .. } => pane_id.hash(&mut hasher),
@@ -57,7 +60,7 @@ pub fn host_placement_id(source_key: &HostSourceKey, placement: &KittyImagePlace
 
 /// Kitty format code of a pixel encoding.
 #[must_use]
-pub fn kitty_format_code(format: KittyImageFormat) -> u32 {
+pub(super) fn kitty_format_code(format: KittyImageFormat) -> u32 {
     match format {
         KittyImageFormat::Rgb => 24,
         KittyImageFormat::Rgba => 32,

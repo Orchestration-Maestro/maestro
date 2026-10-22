@@ -5,8 +5,10 @@ pub(super) mod layers;
 pub(super) mod terminal;
 
 use super::{
-    HostGraphicsCache, HostPlacement, HostSourceKey, encode::KITTY_CHUNK_BYTES,
-    encode::encode_delete_image, host_image_id, host_placement_id,
+    HostGraphicsCache, HostPlacement, HostSourceKey,
+    encode::KITTY_CHUNK_BYTES,
+    encode::encode_delete_image,
+    identity::{host_image_id, host_placement_id},
 };
 
 /// Whether one transmission of the placement fits the transport budget.

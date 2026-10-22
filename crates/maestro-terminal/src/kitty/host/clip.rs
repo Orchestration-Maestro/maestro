@@ -1,6 +1,6 @@
 //! Clipping of a placement to the visible pane area.
 
-use super::{ClippedPlacement, HostPlacement, Rect, identity::kitty_format_code};
+use super::{ClippedPlacement, HostPlacement, Rect, identity};
 use crate::kitty::graphics::render::PlacementRenderInfo;
 
 /// Placement geometry after clipping to the visible pane area.
@@ -25,8 +25,9 @@ struct Destination {
 /// The format code is the Kitty code of the placement's pixel encoding.
 #[must_use]
 pub fn clipped_placement(placement: &HostPlacement) -> Option<(ClippedPlacement, u32)> {
-    let destination = destination(placement.area, placement.placement.render)?;
+    let destination = destination(placement)?;
     let (source_x, source_y, source_width, source_height) = source_rect(placement, destination)?;
+    tracing::debug!("clipped_placement: success");
     Some((
         ClippedPlacement {
             x: destination.x,
@@ -40,19 +41,51 @@ pub fn clipped_placement(placement: &HostPlacement) -> Option<(ClippedPlacement,
             x_offset: offset(placement.placement.x_offset, destination.left_clip),
             y_offset: offset(placement.placement.y_offset, destination.top_clip),
         },
-        kitty_format_code(placement.placement.format),
+        identity::kitty_format_code(placement.placement.format),
     ))
 }
 
-/// Visible destination cells of a placement inside a pane area.
-fn destination(area: Rect, render: PlacementRenderInfo) -> Option<Destination> {
-    if area.width == 0 || area.height == 0 || render.grid_cols == 0 || render.grid_rows == 0 {
+/// Pane area and render geometry of a placement, or none when either is empty.
+fn drawn_geometry(placement: &HostPlacement) -> Option<(Rect, PlacementRenderInfo)> {
+    let area = placement.area;
+    let render = placement.placement.render;
+    if area.width == 0 || area.height == 0 {
+        tracing::debug!(
+            area_w = area.width,
+            area_h = area.height,
+            "clipped_placement: area zero"
+        );
         return None;
     }
+    if render.grid_cols == 0 || render.grid_rows == 0 {
+        tracing::debug!(
+            grid_cols = render.grid_cols,
+            grid_rows = render.grid_rows,
+            "clipped_placement: grid zero"
+        );
+        return None;
+    }
+    Some((area, render))
+}
+
+/// Visible destination cells of a placement inside a pane area.
+fn destination(placement: &HostPlacement) -> Option<Destination> {
+    let (area, render) = drawn_geometry(placement)?;
     let left_clip = cropped(render.viewport_col);
     let top_clip = cropped(render.viewport_row);
     let column = widen(render.viewport_col.max(0));
     let row = widen(render.viewport_row.max(0));
+    tracing::debug!(
+        viewport_col = column,
+        viewport_row = row,
+        area_w = area.width,
+        area_h = area.height,
+        scrollback_offset = placement.scrollback_offset,
+        raw_viewport_row = render.viewport_row,
+        cond1 = column >= u32::from(area.width),
+        cond2 = row >= u32::from(area.height),
+        "clipped_placement: viewport check"
+    );
     if column >= u32::from(area.width) || row >= u32::from(area.height) {
         return None;
     }
@@ -64,6 +97,13 @@ fn destination(area: Rect, render: PlacementRenderInfo) -> Option<Destination> {
         .grid_rows
         .saturating_sub(top_clip)
         .min(u32::from(area.height) - row);
+    tracing::debug!(
+        visible_cols = cols,
+        visible_rows = rows,
+        left_clip_cells = left_clip,
+        top_clip_cells = top_clip,
+        "clipped_placement: visible dims check"
+    );
     if cols == 0 || rows == 0 {
         return None;
     }
@@ -124,6 +164,13 @@ fn source_rect(
         image_height.saturating_sub(source_y),
     );
     if width == 0 || height == 0 {
+        tracing::debug!(
+            source_width = width,
+            source_height = height,
+            image_width = image_width,
+            image_height = image_height,
+            "clipped_placement: source dims zero"
+        );
         return None;
     }
     Some((source_x, source_y, width, height))
