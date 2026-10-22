@@ -73,17 +73,14 @@ pub(super) fn expand_home<O: AutocompleteOperations>(
     operations: &O,
     raw: &str,
 ) -> io::Result<String> {
-    if raw == "~" {
-        return operations.home_dir();
+    if !matches!(raw.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/')) {
+        return Ok(raw.to_owned());
     }
-    if let Some(rest) = raw.strip_prefix("~/") {
-        let mut expanded = join(&[&operations.home_dir()?, rest]);
-        if raw.ends_with('/') && !expanded.ends_with('/') {
-            expanded.push('/');
-        }
-        return Ok(expanded);
+    let mut expanded = maestro_resources::paths::expand_tilde(raw, || operations.home_dir())?;
+    if raw.ends_with('/') && !expanded.ends_with('/') {
+        expanded.push('/');
     }
-    Ok(raw.to_owned())
+    Ok(expanded)
 }
 
 /// Choose the directory operand and entry-name prefix.

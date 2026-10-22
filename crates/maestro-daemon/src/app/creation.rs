@@ -9,6 +9,19 @@ use crate::{
 use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_number};
 use std::{io, path::PathBuf};
 
+/// Expands only an exact `~` or a leading `~/`, keeping every other spelling.
+fn expand_home_path(path: &str) -> PathBuf {
+    if !matches!(path.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/')) {
+        return path.into();
+    }
+    let home = || {
+        std::env::var_os("HOME")
+            .map(|text| text.to_string_lossy().into_owned())
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
+    };
+    maestro_resources::paths::expand_tilde(path, home).map_or_else(|_| path.into(), PathBuf::from)
+}
+
 /// Resolves the configured cwd policy against one observed focused directory.
 fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<PathBuf>) -> PathBuf {
     let home = || std::env::var_os("HOME").map(PathBuf::from);
@@ -20,14 +33,7 @@ fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<Pa
             .unwrap_or_else(|| "/".into()),
         NewTerminalCwdConfig::Home => home().or_else(current).unwrap_or_else(|| "/".into()),
         NewTerminalCwdConfig::Current => current().unwrap_or_else(|| "/".into()),
-        NewTerminalCwdConfig::Path(path) => {
-            if path == "~" {
-                return home().unwrap_or_else(|| path.into());
-            }
-            path.strip_prefix("~/")
-                .and_then(|rest| home().map(|home| home.join(rest)))
-                .unwrap_or_else(|| path.into())
-        }
+        NewTerminalCwdConfig::Path(path) => expand_home_path(path),
     }
 }
 

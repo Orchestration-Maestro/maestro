@@ -1,7 +1,8 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use maestro_path::join;
+use maestro_resources::paths::expand_tilde;
 use serde_json::Value;
+use std::io;
 
 use super::SettingsManager;
 use super::conversion::number;
@@ -24,6 +25,21 @@ fn home_dir() -> Option<String> {
     std::env::home_dir().map(|home| home.to_string_lossy().into_owned())
 }
 
+/// Expand the two supported home forms, keeping every other spelling as written.
+fn expand_session_dir(configured: &str) -> String {
+    let supported = matches!(configured.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/'));
+    if !supported {
+        return configured.to_owned();
+    }
+    // A lone `~/` names the home directory itself, without a trailing separator.
+    let path = if configured == "~/" { "~" } else { configured };
+    expand_tilde(path, || {
+        home_dir()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
+    })
+    .unwrap_or_else(|_| configured.to_owned())
+}
+
 impl SettingsManager {
     /// Returns the session directory. An exact `~` reads as the home directory and
     /// a `~/` prefix is joined onto it lexically; any other text, and any text while
@@ -31,14 +47,7 @@ impl SettingsManager {
     #[must_use]
     pub fn get_session_dir(&self) -> Option<String> {
         let configured = self.text("sessionDir")?;
-        let expanded = if configured == "~" {
-            home_dir()
-        } else {
-            configured
-                .strip_prefix("~/")
-                .and_then(|suffix| Some(join(&[&home_dir()?, suffix])))
-        };
-        Some(expanded.unwrap_or_else(|| configured.to_owned()))
+        Some(expand_session_dir(configured))
     }
 
     /// Returns whether inline images are shown (default true).

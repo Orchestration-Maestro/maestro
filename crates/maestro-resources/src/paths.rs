@@ -16,6 +16,17 @@ pub fn is_local_path(value: &str) -> bool {
         .any(|prefix| value.starts_with(prefix))
 }
 
+/// Resolve each operand group from right to left, reading the process working
+/// directory and the drive directories only when an operand leaves a part open.
+///
+/// Every group sees one reading of those directories.
+///
+/// # Errors
+/// Returns the working directory's error when it was needed and unreadable.
+pub fn resolve_groups(groups: &[&[&str]]) -> io::Result<Vec<String>> {
+    maestro_path::resolve_with(groups, drive_directories, current_directory)
+}
+
 /// Resolve `paths` from right to left, reading the process working directory and the
 /// drive directories only when the operands leave a part open.
 ///
@@ -24,8 +35,7 @@ pub fn is_local_path(value: &str) -> bool {
 /// # Errors
 /// Returns the working directory's error when it was needed and unreadable.
 pub fn resolve(paths: &[&str]) -> io::Result<String> {
-    maestro_path::resolve_with(&[paths], drive_directories, current_directory)
-        .map(|resolved| resolved.into_iter().collect::<String>())
+    resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Join the rest of a leading `~` of `path` to the home directory, which `home` reads only

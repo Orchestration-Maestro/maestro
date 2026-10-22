@@ -3,8 +3,11 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
-use maestro_path::{Cwd, dirname, join, relative, resolve_with};
-use maestro_resources::{SourceScope, paths::CONFIG_DIR_NAME};
+use maestro_path::{Cwd, dirname, join, relative};
+use maestro_resources::{
+    SourceScope,
+    paths::{CONFIG_DIR_NAME, expand_tilde, resolve},
+};
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
 impl<O: PackageOperations> DefaultPackageManager<O> {
@@ -80,8 +83,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<String> {
         if let Source::Local(path) = sources::parse(source) {
             let resolved = resolve_local(path, &self.options.cwd)?;
-            let base = resolve_operands(&[&self.base(scope)])?;
-            let resolved = resolve_operands(&[&resolved])?;
+            let base = resolve(&[&self.base(scope)])?;
+            let resolved = resolve(&[&resolved])?;
             let result = relative(
                 &base,
                 &resolved,
@@ -120,31 +123,11 @@ fn temporary_dir(prefix: &str, suffix: &str) -> String {
     ])
 }
 
-/// Resolves each operand group against one ambient context: the drive directories and
-/// the working directory are read at most once, and only when an operand needs them.
-pub(super) fn resolve_together(groups: &[&[&str]]) -> io::Result<Vec<String>> {
-    resolve_with(
-        groups,
-        maestro_resources::drive_directories,
-        maestro_resources::current_directory,
-    )
-}
-
 /// Resolves local input with this caller's trim and tilde rules.
 pub(super) fn resolve_local(source: &str, base: &str) -> io::Result<String> {
     let source = crate::trim(source);
-    if let Some(after) = source.strip_prefix('~') {
-        let home = super::operations::home_dir()?;
-        return Ok(if after.is_empty() {
-            home
-        } else {
-            join(&[&home, after.strip_prefix('/').unwrap_or(after)])
-        });
+    if source.starts_with('~') {
+        return expand_tilde(source, super::operations::home_dir);
     }
-    resolve_operands(&[base, source])
-}
-
-/// Consults ambient directories only after authored operands fail to resolve.
-pub(super) fn resolve_operands(operands: &[&str]) -> io::Result<String> {
-    Ok(resolve_together(&[operands])?.concat())
+    resolve(&[base, source])
 }

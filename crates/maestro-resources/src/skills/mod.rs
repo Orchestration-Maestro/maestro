@@ -11,7 +11,7 @@ mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
     parse_frontmatter,
-    paths::{is_under_path, resolve},
+    paths::{expand_tilde, is_under_path, resolve},
 };
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
@@ -186,12 +186,11 @@ fn load_skills_in(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult
     };
     for path in options.skill_paths {
         let path = path.trim_matches(crate::frontmatter::text_whitespace);
-        let path = if let Some(suffix) = path.strip_prefix('~') {
-            join(&[options.home, suffix])
-        } else if is_absolute(path) {
-            path.to_owned()
+        let expanded = expand_tilde(path, || Ok(options.home.to_owned()))?;
+        let path = if is_absolute(&expanded) {
+            expanded
         } else {
-            resolve(&[options.cwd, path])?
+            resolve(&[options.cwd, &expanded])?
         };
         let loaded = explicit_path(&path, options.cwd, &source_of);
         add_skills(&mut result, &mut collisions, &mut paths, loaded);
