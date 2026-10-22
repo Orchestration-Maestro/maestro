@@ -32,6 +32,7 @@ mod default_configuration;
 mod default_path_routes;
 mod diff_root_exports;
 mod document_extraction;
+mod docx_attachments;
 mod docx_body;
 mod docx_comments;
 mod docx_drawing_records;
@@ -115,12 +116,12 @@ mod support {
     pub mod attachments;
     pub mod browser_records;
     #[cfg(not(target_arch = "wasm32"))]
+    pub mod document_attachments;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod document_extraction;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
     pub mod pdf;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod pptx;
     mod shared_operands;
     pub mod spreadsheet;
 }

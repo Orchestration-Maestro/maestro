@@ -132,15 +132,7 @@ fn document_formats_do_not_fall_through_to_images_or_text() {
             "a.pdf",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         ),
-        (
-            "a.docx",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        ),
         ("a.pptx", "application/pdf"),
-        (
-            "a.pptx",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ),
     ] {
         let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
         let result = run(load_attachment(
@@ -156,14 +148,9 @@ fn document_formats_do_not_fall_through_to_images_or_text() {
     }
     for (name, mime) in [
         ("a.PDF", "image/png"),
-        ("a.docx", "text/plain"),
         ("a.XLSX", "text/plain"),
         ("a.xls", "image/png"),
         ("plain.txt", "application/pdf"),
-        (
-            "plain.txt",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ),
         ("plain.txt", "application/vnd.ms-excel"),
         (
             "plain.txt",

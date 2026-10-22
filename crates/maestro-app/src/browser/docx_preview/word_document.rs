@@ -1,6 +1,6 @@
 //! Ordered, cached discovery of supported Word package parts.
 use super::{
-    DocxError, Options, Part, PartData, PartKind, Relationship,
+    DocxError, OpenXmlElementTree, Options, Part, PartData, PartKind, Relationship,
     common::open_xml_package::OpenXmlPackage, utils,
 };
 use std::collections::HashMap;
@@ -143,6 +143,26 @@ impl WordDocument {
     /// Borrow the latest designated document part.
     pub fn document_part(&self) -> Option<&Part> {
         self.document.map(|i| &self.parts[i])
+    }
+    /// Parse the latest designated document part body.
+    ///
+    /// # Errors
+    /// Returns an XML error for an unreadable main part.
+    pub fn document_body(&self) -> Result<Option<OpenXmlElementTree>, DocxError> {
+        let Some(part) = self.document_part() else {
+            return Ok(None);
+        };
+        let xml = self.package.parse(&part.xml, &part.path)?;
+        let Some(body) = xml.element(xml.root(), "body") else {
+            return Ok(None);
+        };
+        super::document_parser::parse_selected(
+            &xml,
+            body,
+            super::document_parser::Framing::Body,
+            false,
+        )
+        .map(Some)
     }
     /// Borrow the latest designated core props data.
     pub fn core_props_part(&self) -> Option<&super::CorePropsPart> {

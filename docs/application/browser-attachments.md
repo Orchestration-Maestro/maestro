@@ -22,12 +22,13 @@ are case-sensitive. Existing text MIME strings, including parameters, are kept;
 a suffix-only text match uses `text/plain`.
 
 PDF, Word, PowerPoint and spreadsheet recognition precedes image/text handling.
-PowerPoint recognition uses the exact presentation MIME or a case-insensitive
-`.pptx` suffix. Earlier PDF/Word recognition wins; presentation recognition
-precedes spreadsheet recognition. Word still returns
-`AttachmentError::Unsupported`. The separate
+Word recognition uses the exact wordprocessing MIME or a case-insensitive
+`.docx` suffix. PowerPoint recognition uses the exact presentation MIME or a
+case-insensitive `.pptx` suffix. Earlier PDF/Word recognition wins;
+presentation recognition precedes spreadsheet recognition. The separate
 [Word property preparation](document-formats.md#word-default-properties-and-conditional-table-styles)
-reads table layout and indentation without rendering or extracting attachments.
+reads table layout and indentation without rendering; attachment text comes from
+the Word extraction below.
 Transport/body errors retain the original
 `FetchError`, while rejected response status has its own `HttpStatus` variant.
 
@@ -63,6 +64,28 @@ text segmentation, Type3 text, bidirectional ordering and font rasterization.
 Thumbnail sizing reads inherited page boxes at full precision before intersecting
 the crop and media boxes and applying page rotation. Documents, caches and pixels
 are scoped to the operation.
+
+Word documents retain the original bytes/name/size, use the canonical
+wordprocessing MIME and have extracted text without a preview. The
+[shared package reader](document-formats.md#word-package-reader) supplies the
+typed body through `WordDocument::document_body`. Body elements keep document
+order and are joined by LF, dropping empty results. A paragraph contributes its
+inline text concatenated without added separators; hyperlinks, smart tags,
+tracked insertions, simple fields, content controls and equations contribute
+through the same rule, while tracked deletions and the bookmarks, comment
+markers, drawings, drawn text boxes, field markers, breaks, tabs and
+instructions around them add no text. A table contributes `\n[Table]\n`, one
+line per row, `\n[/Table]\n`; cells are joined by ` | ` and a cell's own element
+texts by one space, dropping empty cells and rows. Every element result is
+trimmed with the shared whitespace policy, which treats U+00A0 and U+FEFF as
+whitespace while U+0085 stays in the text. The
+literal `<docx filename="<name>">`, `\n<page number="1">\n` wrapper, body and
+`\n</page>\n</docx>` closing keep the filename unescaped. A package without a
+main part, or a main part without a body, yields an empty page. Extracted output
+above 512 MiB returns a processing error. Processing failures return
+`AttachmentError::Docx`, display `Failed to process DOCX: ` before the diagnostic
+and expose the retained document error through `Error::source`. Exhaustive SDK
+matches must handle this variant.
 
 Presentation documents retain the original bytes/name/size, use the canonical
 presentation MIME and have extracted text without a preview. The
