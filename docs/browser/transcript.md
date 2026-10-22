@@ -88,6 +88,13 @@ The input remains the caller's `AgentMessage<NativeMessage>`. Changing its
 counter changes the next prepared recipe; no registry or message guard spans
 recipe drawing.
 
+`MessageRenderer<C, T>` takes the produced content as a second type parameter,
+with the canvas `Box<dyn ToolContent>` as its default. Registering a
+`MessageRenderer<C, Box<dyn DomContent>>` keeps a separate page-content table
+with the same open roles and replacement rules. In the browser build,
+`get_message_renderer_dom` and `render_message_dom` read that table; the canvas
+lookups never see page renderers, and the other way round.
+
 ## Native copy controls
 
 `maestro_web::components::copy_button::CopyButton` retains a supplied

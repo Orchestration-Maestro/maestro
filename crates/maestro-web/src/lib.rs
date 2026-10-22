@@ -2,10 +2,14 @@
 
 pub mod browser;
 pub mod components;
+pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
+pub mod dom;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::input::Input;
+#[cfg(target_arch = "wasm32")]
+pub use components::message_renderer_registry::render_message_dom;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
 };

@@ -1,6 +1,8 @@
 //! Default browser tool input and output preparation.
 use crate::tools::types::ToolUiError;
 mod content;
+#[cfg(target_arch = "wasm32")]
+mod dom;
 use super::super::{
     renderer_registry::{ToolHeaderState, get_text_output},
     types::ToolResultMessageView,
@@ -127,5 +129,37 @@ impl DefaultRenderer {
             }),
             is_custom: false,
         }
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl DefaultRenderer {
+    /// Retain formatted inputs and raw output as page content.
+    pub(crate) fn render_dom_prepared(
+        state: ToolHeaderState,
+        params: Option<String>,
+        output: Option<String>,
+    ) -> ToolRenderResult<Box<dyn crate::dom::DomContent>> {
+        ToolRenderResult {
+            content: Box::new(dom::DefaultDomContent {
+                state,
+                params,
+                output,
+            }),
+            is_custom: false,
+        }
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl<D> ToolRenderer<Value, D, Box<dyn crate::dom::DomContent>> for DefaultRenderer {
+    fn render(
+        &self,
+        params: Option<&Value>,
+        result: Option<ToolResultMessageView<'_, D>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult<Box<dyn crate::dom::DomContent>>, ToolUiError> {
+        let state = status(result.as_ref(), is_streaming);
+        let params = params.map(format_params).transpose()?.flatten();
+        let output = result.as_ref().map(|result| get_text_output(Some(result)));
+        Ok(Self::render_dom_prepared(state, params, output))
     }
 }

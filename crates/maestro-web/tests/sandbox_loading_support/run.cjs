@@ -4,15 +4,22 @@ const http = require('node:http');
 const path = require('node:path');
 const os = require('node:os');
 const {spawnSync} = require('node:child_process');
+const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const deviceScaleFactor = 1.25;
 const launchArgs = ['--no-sandbox', `--force-device-scale-factor=${deviceScaleFactor}`];
+const families = ['execution', 'loading', 'contributions'];
+const counts = {execution: 26, loading: 19, contributions: 31};
+const total = Object.values(counts).reduce((sum, count) => sum + count);
+// Runtime modules initialize without unsafe-eval; frames load their own document.
+const contributionPolicy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'";
+const fixtureModules = path.resolve(__dirname, '../fixtures/browser_modules');
 
 function validateInventory(value) {
   assert(value && typeof value === 'object', 'missing inventory');
-  assert.deepEqual(Object.keys(value).sort(), ['execution', 'expectedError', 'loading'], 'inventory fields');
+  assert.deepEqual(Object.keys(value).sort(), ['contributions', 'execution', 'expectedError', 'loading'], 'inventory fields');
   const names = [];
-  for (const family of ['execution', 'loading']) {
+  for (const family of families) {
     assert(Array.isArray(value[family]) && value[family].length, `empty ${family} selection`);
     for (const name of value[family]) {
       assert(typeof name === 'string' && /^[a-z][a-z0-9_]*$/.test(name), `invalid ${family} export`);
@@ -20,8 +27,7 @@ function validateInventory(value) {
       names.push(name);
     }
   }
-  assert.equal(value.execution.length, 26, 'execution inventory');
-  assert.equal(value.loading.length, 19, 'loading inventory');
+  for (const family of families) assert.equal(value[family].length, counts[family], `${family} inventory`);
   assert.deepEqual(value.expectedError, {
     export: 'inline_programs_preserve_text_policies_and_order', name: 'TypeError',
     message: 'window.complete is not a function', source: 'about:srcdoc', count: 1,
@@ -138,10 +144,31 @@ print('LOCK external identity additions: 0')
     fs.mkdirSync(output, {recursive: true});
     command('wasm-bindgen', [runtime, '--target', 'web', '--split-linked-modules', '--out-dir', output, '--out-name', 'sandbox']);
     materialize(output);
+    packageModules(output, target);
   } finally {
     fs.rmSync(scratch, {recursive: true, force: true});
   }
   return output;
+}
+
+// Build each fixture module optimized from its own manifest and lock, with its own binding glue,
+// into a copy of the fixture package.
+function packageModules(output, target) {
+  fs.cpSync(path.join(fixtureModules, 'package'), path.join(output, 'package'), {recursive: true});
+  for (const name of ['a', 'b']) {
+    const manifest = path.join(fixtureModules, `module_${name}`, 'Cargo.toml');
+    const built = command('cargo', ['build', '--manifest-path', manifest, '--lib', '--release', '--target', 'wasm32-unknown-unknown', '--locked', '--message-format=json'], {env: {...process.env, CARGO_TARGET_DIR: target}});
+    const wasm = artifact(built, 'cdylib', `contribution_module_${name}`);
+    command('wasm-bindgen', [wasm, '--target', 'web', '--out-dir', path.join(output, 'package', 'modules', name), '--out-name', 'module']);
+  }
+}
+
+// Digest every host file outside the module package.
+function hostDigest(root) {
+  const digest = crypto.createHash('sha256');
+  const files = fs.readdirSync(root, {recursive: true}).filter(file => !file.startsWith('package') && fs.statSync(path.join(root, file)).isFile()).sort();
+  for (const file of files) digest.update(file).update(fs.readFileSync(path.join(root, file)));
+  return digest.digest('hex');
 }
 
 function materialize(root) {
@@ -157,6 +184,12 @@ async function serve(root) {
     try {
       const url = decodeURIComponent(request.url.split('?')[0]);
       assert(!url.includes('\\') && !url.includes('\0') && !url.split('/').includes('..'));
+      if (url === '/contributions.html') {
+        response.setHeader('Content-Security-Policy', contributionPolicy);
+        response.setHeader('Content-Type', 'text/html');
+        response.end('<!doctype html><body></body>');
+        return;
+      }
       const relative = url === '/' ? 'index.html' : url.replace(/^\//, '');
       let file = path.resolve(root, relative);
       assert(file.startsWith(root + path.sep));
@@ -229,8 +262,9 @@ async function run({root, chromium, executablePath, inventory, log = console.log
       disconnected = true;
       if (!closing) rejectDisconnect(new Error('unexpected browser disconnection'));
     });
-    const names = [...inventory.execution, ...inventory.loading];
-    const counts = {execution: 0, loading: 0};
+    const names = families.flatMap(family => inventory[family]);
+    const passed = {execution: 0, loading: 0, contributions: 0};
+    const hostBefore = hostDigest(root);
     // Preflight the entire inventory before invoking any assertion.
     await withPage('inventory', async page => {
       const missing = await page.evaluate(async names => {
@@ -240,22 +274,26 @@ async function run({root, chromium, executablePath, inventory, log = console.log
       }, names);
       assert.deepEqual(missing, [], `missing/non-callable exports: ${missing.join(', ')}`);
     });
-    for (const family of ['execution', 'loading']) {
+    for (const family of families) {
       for (const name of inventory[family]) {
         log(`START ${family} ${name}`);
-        await withPage(name, page => page.evaluate(async name => {
+        // Contribution exports receive the page bootstrap's module import, as an embedder supplies it.
+        await withPage(name, page => page.evaluate(async ([name, family]) => {
           const module = await import('/sandbox.js');
           await module.default();
-          await module[name]();
-        }, name));
-        counts[family]++;
+          await (family === 'contributions' ? module[name](url => import(url)) : module[name]());
+        }, [name, family]), family === 'contributions' ? '/contributions.html' : '/');
+        passed[family]++;
         log(`PASS ${family} ${name}`);
       }
-      log(`FAMILY ${family} ${counts[family]}/${inventory[family].length}`);
+      log(`FAMILY ${family} ${passed[family]}/${inventory[family].length}`);
     }
-    log(`COMPLETE ${counts.execution + counts.loading}/45`);
+    const hostAfter = hostDigest(root);
+    assert.equal(hostAfter, hostBefore, 'host bundle changed while modules loaded');
+    log(`HOST ${hostBefore} unchanged`);
+    log(`COMPLETE ${families.reduce((sum, family) => sum + passed[family], 0)}/${total}`);
 
-    async function withPage(name, action) {
+    async function withPage(name, action, entry = '/') {
       const page = await Promise.race([browser.newPage({deviceScaleFactor}), disconnect]);
       const errors = [];
       const phase = message => log(`PHASE ${name} ${message}`);
@@ -278,13 +316,16 @@ async function run({root, chromium, executablePath, inventory, log = console.log
         await Promise.race([(async () => {
           await page.exposeBinding('inspectSandbox', (context, id, action) => inspectSandbox(context, id, action, phase));
           await page.exposeBinding('sandboxDriverPhase', ({frame}, message) => phase(`${message}; frame ${frame.url()}`));
+          // Real keyboard input and the accessibility tree for the contribution exports.
+          await page.exposeBinding('driverPress', ({page}, key) => page.keyboard.press(key));
+          await page.exposeBinding('driverAria', ({page}, selector) => page.locator(selector).ariaSnapshot());
           await page.addInitScript(() => {
             addEventListener('message', event => {
               if (event.data?.type === 'pointer-done') void window.sandboxDriverPhase('pointer-done received');
             });
             addEventListener('click', () => { void window.sandboxDriverPhase('click dispatched'); }, true);
           });
-          await page.goto(url);
+          await page.goto(url + entry);
           phase('page loaded');
           await action(page);
           phase('export resolved');

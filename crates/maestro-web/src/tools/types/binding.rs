@@ -12,9 +12,9 @@ pub struct ToolRendererBinding {
     /// Existing typed handle owner; native and JSON views share it.
     owner: ToolRendererState,
 }
-/// One concrete native or decoded renderer handle.
-struct RendererSlot<P, D>(Option<Rc<dyn ToolRenderer<P, D>>>);
-impl<P, D> Default for RendererSlot<P, D> {
+/// One concrete native or decoded renderer handle for one content representation.
+struct RendererSlot<P, D, C>(Option<Rc<dyn ToolRenderer<P, D, C>>>);
+impl<P, D, C> Default for RendererSlot<P, D, C> {
     fn default() -> Self {
         Self(None)
     }
@@ -31,14 +31,42 @@ impl ToolRendererBinding {
     /// Retain an additional native callback view in this binding.
     #[must_use]
     pub fn with_raw<P: 'static, D: 'static>(self, renderer: Rc<dyn ToolRenderer<P, D>>) -> Self {
+        self.with_slot(renderer)
+    }
+    /// Retain a page-content renderer for these native operand types.
+    #[must_use]
+    pub fn from_dom<P: 'static, D: 'static>(
+        renderer: Rc<dyn ToolRenderer<P, D, Box<dyn crate::dom::DomContent>>>,
+    ) -> Self {
+        let binding = Self {
+            owner: ToolRendererState::default(),
+        };
+        binding.with_slot(renderer)
+    }
+    /// Replace the handle stored for one operand and content combination.
+    fn with_slot<P: 'static, D: 'static, C: 'static>(
+        self,
+        renderer: Rc<dyn ToolRenderer<P, D, C>>,
+    ) -> Self {
         let previous = self
             .owner
-            .state::<RendererSlot<P, D>>()
+            .state::<RendererSlot<P, D, C>>()
             .borrow_mut()
             .0
             .replace(renderer);
         drop(previous);
         self
+    }
+    /// Clone the stored handle for one operand and content combination.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn slot<P: 'static, D: 'static, C: 'static>(
+        &self,
+    ) -> Option<Rc<dyn ToolRenderer<P, D, C>>> {
+        self.owner
+            .state::<RendererSlot<P, D, C>>()
+            .borrow()
+            .0
+            .clone()
     }
     /// Additionally admit present JSON operands through their selected decoders.
     #[must_use]
@@ -67,7 +95,9 @@ impl ToolRendererBinding {
     /// Clone the renderer handle for these concrete operand types.
     #[must_use]
     pub fn renderer<P: 'static, D: 'static>(&self) -> Option<Rc<dyn ToolRenderer<P, D>>> {
-        let slot = self.owner.state::<RendererSlot<P, D>>();
+        let slot = self
+            .owner
+            .state::<RendererSlot<P, D, Box<dyn super::ToolContent>>>();
         if slot.borrow().0.is_none()
             && (TypeId::of::<P>() == TypeId::of::<JsonObject>()
                 || TypeId::of::<P>() == TypeId::of::<Value>())

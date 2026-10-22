@@ -1,0 +1,10 @@
+{
+  "id": "fixture-message",
+  "kind": "message-renderer",
+  "target": "user",
+  "module": {
+    "entry": "modules/a/module.js",
+    "wasm": "modules/a/module_bg.wasm",
+    "register": "register"
+  }
+}

@@ -4,6 +4,7 @@
 
 pub mod browser;
 pub mod configuration;
+pub mod contributions;
 pub mod presentation_data;
 pub mod utils;
 

@@ -20,6 +20,8 @@ pub struct ResolvedPaths {
     pub prompts: Vec<ResolvedResource>,
     /// Theme files.
     pub themes: Vec<ResolvedResource>,
+    /// Browser contribution files.
+    pub contributions: Vec<ResolvedResource>,
 }
 use super::{
     DefaultPackageManager, PackageOperations,
@@ -216,6 +218,7 @@ impl ResolvedPaths {
             ResourceType::Skills => &mut self.skills,
             ResourceType::Prompts => &mut self.prompts,
             ResourceType::Themes => &mut self.themes,
+            ResourceType::Contributions => &mut self.contributions,
         }
     }
 }
@@ -226,7 +229,7 @@ pub(super) struct Accumulator {
     /// Ordered resources.
     paths: ResolvedPaths,
     /// Authored identities already admitted for each kind.
-    seen: [HashMap<String, usize>; 4],
+    seen: [HashMap<String, usize>; 5],
 }
 impl Accumulator {
     /// Stably ranks resources before retaining the first canonical identity.

@@ -28,6 +28,27 @@ native value with a formatter that runs only when default rendering is selected.
 The borrowed result view delegates the original message envelope and content;
 custom renderers can retain their own shared data in the returned recipe.
 
+## Page content
+
+`ToolRenderer<P, D, C>` and `ToolRenderResult<C>` take the produced content as a
+third type parameter. Its default, `Box<dyn ToolContent>`, keeps the canvas
+renderers below working unchanged while that family remains; page renderers
+produce `Box<dyn DomContent>` (see [page content](frontend.md#page-content)).
+`ToolRendererBinding::from_dom` retains a page renderer for its native operand
+types. A page binding never answers the canvas lookup and a canvas binding never
+answers the page lookup; the mismatched lookup returns the operand-type error.
+
+In the browser build, `tools::dom::render_tool` routes the same operands through
+the same registry and JSON mode to the page renderer, or to the default page
+content. That content shows the status header (the tool icon, its caption and a
+spinner while in progress) and `Input` and `Output` sections holding
+`code-block` listings. Input is pretty-printed JSON, and output is pretty JSON
+when it parses, otherwise text, or `(no output)` when empty. Before parameters
+arrive the caption reads `Preparing tool...`, and while streaming empty
+parameters it reads `Preparing tool parameters...`; the result is never a
+custom card. Callback-bearing native parameters and details reach a page
+renderer by reference, without serialization.
+
 ## Drawing a retained row
 
 Keep one `ToolRenderState` per row outside the frame loop. Given the caller's

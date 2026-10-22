@@ -15,6 +15,8 @@ use std::{
 pub use ui_error::ReadingUiError;
 
 pub(crate) mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
 
 /// Borrowed operands of one frame, never retained by native callbacks.
 pub struct CodeBlockView<'a, F: ?Sized> {

@@ -1,0 +1,11 @@
+{
+  "id": "fixture-bad-tab",
+  "kind": "tab",
+  "target": "fixture-page.tabs",
+  "input": "other.contract",
+  "module": {
+    "entry": "modules/a/module.js",
+    "wasm": "modules/a/module_bg.wasm",
+    "register": "register"
+  }
+}

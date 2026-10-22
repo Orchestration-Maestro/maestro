@@ -88,3 +88,125 @@ bodies, progressive PDF pages and original-byte header downloads.
 The [offline viewer's retained copy-link control](session-viewer.md#message-links)
 uses the shared browser effects host for native clipboard success, with owned
 feedback and caller-measured message slots. It does not render message content.
+
+## Page content
+
+[`DomContent`](../../crates/maestro-web/src/dom.rs) is page content: `mount`
+creates its own root and `update` brings that root up to date. `DomView` carries
+the page operands once (document, localization, syntax engine, brand pack and
+mode). `MountedContent` keeps one placed root. Showing content of the same type
+updates the root in place; content of another type mounts a new root in place of
+the old one. A failed mount returns its error and keeps the previous root.
+
+`ContributionHost::new` defines the built-in `copy-button`, `code-block` and
+`maestro-slot` elements once per page. A definition is permanent: its
+constructor callback lives as long as the page, while views connect and
+disconnect. A changed definition needs a fresh element name or a page reload.
+`code-block` shows its `code` attribute literally under its `language` label
+(`plaintext` when empty) with a copy control. `copy-button` copies its `text`
+attribute, shows success (with `Copied!` when `show-text` is present) and
+restores after two seconds. `components::button::button` creates a native
+`type="button"` element with `maestro-button maestro-button-<variant>
+maestro-button-<size>` classes, an optional title and a spinner while loading;
+disabled and loading buttons refuse activation.
+
+## Contributions
+
+A package lists browser contribution files under `maestro.contributions` in its
+`package.json`, or places them in a `contributions/` directory. Package
+resolution treats them as the fifth resource kind beside extensions, skills,
+prompts and themes, with the same ordering, deduplication and `contributions`
+settings filter. `maestro_app::contributions::load_contributions` reads each
+enabled file as one descriptor. An unreadable or invalid file yields one warning
+naming its path, and the other files still load. The records live in
+`maestro-protocol::contributions` and reach the browser as plain JSON.
+
+| Field | Meaning |
+|---|---|
+| `id`, `kind`, `target` | Required strings: the identifier within its package, an extensible kind and the tool name, message role, slot name or API name the kind selects |
+| `route` | Optional route of a page |
+| `input` | Optional data contract the contribution consumes |
+| `slots` | Child slots it supplies, each `{name, input?}` |
+| `requires` | Host API names it needs |
+| `module` | Optional `{entry, wasm, register}` of a separately built browser module |
+| `document` | Optional package-relative document shown in an isolated frame |
+
+The `tool-renderer`, `message-renderer` and `api` kinds register with the tool
+registry, the message registry and the host API table. Every other kind attaches
+to the slot its `target` names. `register_contribution` registers built-in
+content; the same package and identifier replace an entry in place, and
+`ContributionRegistration::unregister` removes it only while that registration
+still owns it. `slot_contributions`, `route_contribution`, `slot_input` and
+`admit` read the registry.
+
+A contribution that declares `input` admits only where its slot supplies that
+contract (the supplier's `slots` entry); one without `input` admits anywhere.
+A slot mounts every attached contribution through one caller: `SlotMount`, or a
+connected `<maestro-slot name="…">` element whose `maestroInput` property holds
+its input. Each contribution gets its own wrapper and keeps its root across
+updates. Registration changes refresh every connected slot once. An incompatible
+input or a missing required API shows its sentence in a `role="alert"` element
+in place of that contribution, and the rest of the slot still mounts:
+
+- `<id>: missing host API <api>`
+- `<id>: expects <input>, slot supplies <input or "no input">`
+- `<id>: not declared by its package`
+- `<entry>: <cause>`, for a module or document that failed to load
+
+## Runtime modules
+
+A browser module is built separately from the host with
+`wasm-bindgen --target web`. Its `entry` is the generated module, `wasm` its
+matching binary and `register` an exported function. `ContributionHost::load`
+groups contributions by module, imports each entry once, initializes it with
+`{module_or_path: wasm}` and calls `register` with an interface object:
+
+- `register(id, tag)` binds a declared contribution to an element the module
+  defined; tool and message renderers receive `maestroInput`
+  (`{params, result, isStreaming}` or `{message}`) and a `maestro-input` event on
+  each update.
+- `provide(id, value)` provides a declared API; a second provider is refused.
+- `api(name)` returns a provided API the module declared as required.
+
+The host imports modules through a function the embedding page supplies. The
+page bootstrap passes `url => import(url)` as the `import_module` argument of
+`ContributionHost::new`:
+
+```js
+await start(url => import(url)); // the page's Rust entry calls ContributionHost::new
+```
+
+The embedding page is trusted: modules run in the page with its authority. The
+host calls `import_module` only for entry and binary URLs below `base_url`, which
+names the package directory and must end with `/`; it refuses any other URL
+before importing anything. `load` returns `ModuleRegistrations`. Dropping it releases,
+newest first, exactly the registrations each module invocation still owns, so
+a later explicit replacement keeps serving. A module that fails to initialize
+releases what it acquired and reports one failure; the executed code stays
+loaded, so only a fresh element name or a page reload replaces its definitions.
+
+Untrusted or generated UI uses `document` instead. The host fetches it from
+below the package base and shows it in an isolated frame (`sandbox="allow-scripts
+allow-modals"`): an opaque origin without cookies, storage or access to the host
+page. Its input is the frame global `maestroInput`, and the runtime message
+router admits only messages from the frame registered under the contribution
+identifier. When a descriptor names both, the module wins and the host reports
+the document as ignored.
+
+Pages may run under a content security policy without `unsafe-eval`. Modules
+need `script-src 'self' 'wasm-unsafe-eval'`, and built-in elements set inline
+style attributes. Isolated frames under such a policy need the sandbox document
+URL (the `sandbox_url` argument), because a `srcdoc` frame inherits the page's
+policy and its inline scripts would be refused. The browser tests run the
+contribution family under
+`default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'`.
+
+Run them with the pinned driver, which the shared Chromium job also uses:
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright CHROMIUM_PATH=/absolute/path/to/chrome \
+  CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just browser-test
+```
+
+See [browser integration qualification](../development.md#browser-integration-qualification)
+for the tool versions and the run's log lines.

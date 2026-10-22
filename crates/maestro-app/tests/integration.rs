@@ -6,6 +6,7 @@ mod artifact_runtime_access;
 mod attachment_loading;
 #[path = "docx_support/body_tree.rs"]
 mod body_tree;
+mod browser_contributions;
 mod browser_decimal;
 mod browser_discovery;
 mod browser_messages;

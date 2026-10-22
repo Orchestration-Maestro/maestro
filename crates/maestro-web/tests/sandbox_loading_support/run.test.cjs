@@ -12,7 +12,7 @@ const chromium = require(process.env.PLAYWRIGHT_MODULE).chromium;
 const executablePath = process.env.CHROMIUM_PATH;
 const policy = inventory.expectedError.export;
 const first = inventory.execution[0];
-const all = [...inventory.execution, ...inventory.loading];
+const all = [...inventory.execution, ...inventory.loading, ...inventory.contributions];
 const pointerDocument = import('./programs.js').then(module => module.program_input('click-document'));
 
 function fixture(t, overrides = {}, setup = '') {
@@ -66,6 +66,7 @@ test('inventory_rejects_empty_or_invalid_names', () => {
   const selected = runner.validateInventory(inventory);
   assert.equal(selected.execution.length, 26);
   assert.equal(selected.loading.length, 19);
+  assert.equal(selected.contributions.length, 31);
 });
 
 test('inventory_requires_every_callable_export', async t => {
@@ -101,13 +102,14 @@ test('exports_run_serially_in_fresh_pages', async t => {
   assert.equal(seen.length, 2, 'only inventory and the pending first export');
   release();
   const lines = await running;
-  assert.equal(seen.length, 46, 'inventory page plus 45 fresh assertion pages');
-  assert.equal(new Set(seen).size, 46);
+  assert.equal(seen.length, 77, 'inventory page plus 76 fresh assertion pages');
+  assert.equal(new Set(seen).size, 77);
   assert.deepEqual(lines.filter(line => line.startsWith('START ')).map(line => line.split(' ')[2]), all);
   assert.deepEqual(lines.filter(line => line.startsWith('PASS ')).map(line => line.split(' ')[2]), all);
   assert(lines.includes('FAMILY execution 26/26'));
   assert(lines.includes('FAMILY loading 19/19'));
-  assert.equal(lines.at(-1), 'COMPLETE 45/45');
+  assert(lines.includes('FAMILY contributions 31/31'));
+  assert.equal(lines.at(-1), 'COMPLETE 76/76');
 });
 
 test('assertion_failures_keep_sync_and_async_errors', async t => {
@@ -132,7 +134,7 @@ test('unexpected_page_errors_fail', async t => {
 
 test('expected_policy_error_matches_once', async t => {
   const root = fixture(t);
-  assert.equal((await execute(root)).at(-1), 'COMPLETE 45/45');
+  assert.equal((await execute(root)).at(-1), 'COMPLETE 76/76');
 });
 
 test('expected_policy_error_is_required', async t => {
@@ -357,6 +359,13 @@ test('packaging_keeps_linked_modules_and_locked_sources', t => {
     const names = [...source.matchAll(/pub async fn (\w+)\(\)/g)].map(match => match[1]);
     assert.deepEqual(inventory[family], names);
   }
+  const contributions = ['dom_content_browser.rs', 'contributions_browser.rs']
+    .map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8'))
+    .flatMap(source => [...source.matchAll(/#\[wasm_bindgen\]\npub (?:async )?fn (\w+)\(/g)].map(match => match[1]));
+  assert.deepEqual(inventory.contributions, contributions);
+  for (const file of ['package.json', 'contributions/page.json', 'frames/card.html', 'modules/a/module.js', 'modules/a/module_bg.wasm', 'modules/b/module.js', 'modules/b/module_bg.wasm']) {
+    assert(fs.existsSync(path.join(root, 'package', file)), file);
+  }
 });
 
 
@@ -446,7 +455,7 @@ test('sandbox_inspection_ignores_detached_unrelated_frames', async t => {
       assert(lines.includes(`PHASE ${first} waiting for pointer-done ${sandboxId}; frame about:srcdoc`));
       assert(lines.includes(`PHASE ${first} click returned ${sandboxId}`));
     }
-    assert.equal(lines.at(-1), 'COMPLETE 45/45');
+    assert.equal(lines.at(-1), 'COMPLETE 76/76');
   }
 });
 
@@ -676,7 +685,7 @@ window.prepareDelivery = async function(nested, svg) {
     }, setup, {shared, log: line => lines.push(line)});
     if (scenario === 'control') {
       await running;
-      assert.equal(lines.at(-1), 'COMPLETE 45/45');
+      assert.equal(lines.at(-1), 'COMPLETE 76/76');
       assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
     } else {
       await assert.rejects(running, error => {

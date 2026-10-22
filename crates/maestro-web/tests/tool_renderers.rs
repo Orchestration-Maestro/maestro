@@ -366,3 +366,50 @@ fn raw_registration_after_decoder_failures() {
         .is_custom
     );
 }
+
+/// A canvas renderer that names the content parameter explicitly.
+struct ExplicitCanvas(Rc<Cell<u32>>);
+impl ToolRenderer<Value, Value, Box<dyn maestro_web::tools::types::ToolContent>>
+    for ExplicitCanvas
+{
+    fn render(
+        &self,
+        _: Option<&Value>,
+        _: Option<ToolResultMessageView<'_>>,
+        _: bool,
+    ) -> Result<ToolRenderResult<Box<dyn maestro_web::tools::types::ToolContent>>, ToolUiError>
+    {
+        self.0.set(self.0.get() + 1);
+        Ok(content("explicit", true))
+    }
+}
+
+/// Canvas renderers with the defaulted or explicit content type dispatch as before.
+#[test]
+fn content_parameter_keeps_canvas_renderers_working() {
+    reset();
+    let calls = Rc::new(Cell::new(0));
+    register_tool_renderer(
+        "explicit",
+        ToolRendererBinding::from_raw::<Value, Value>(Rc::new(ExplicitCanvas(calls.clone()))),
+    );
+    let count = calls.clone();
+    let defaulted: Rc<dyn ToolRenderer<Value>> = Rc::new(CallbackRenderer(Rc::new(
+        move |_: Option<&Value>, _: Option<ToolResultMessageView<'_>>, _| {
+            count.set(count.get() + 10);
+            Ok(content("defaulted", false))
+        },
+    )));
+    register_tool_renderer("defaulted", ToolRendererBinding::from_raw(defaulted));
+    let explicit: ToolRenderResult =
+        render_tool::<Value, Value>("explicit", None, None, false).unwrap();
+    let defaulted = render_tool::<Value, Value>("defaulted", None, None, false).unwrap();
+    assert!(explicit.is_custom);
+    assert!(!defaulted.is_custom);
+    assert_eq!(calls.get(), 11);
+    assert!(
+        !render_tool::<Value, Value>("unknown", None, None, false)
+            .unwrap()
+            .is_custom
+    );
+}

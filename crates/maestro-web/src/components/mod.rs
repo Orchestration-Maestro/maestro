@@ -18,6 +18,8 @@ pub(crate) mod download_button;
 /// Retained sandbox loading and document preparation.
 pub mod sandboxed_iframe;
 
+/// Native button element.
+pub mod button;
 /// Original-text copy control.
 pub mod copy_button;
 

@@ -1,0 +1,6 @@
+{
+  "id": "fixture-frame",
+  "kind": "card",
+  "target": "home",
+  "document": "frames/card.html"
+}

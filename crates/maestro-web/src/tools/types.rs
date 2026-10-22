@@ -85,10 +85,13 @@ impl<'a> ToolRenderView<'a> {
         }
     }
 }
-/// Rendered recipe and outer-card choice.
-pub struct ToolRenderResult {
+/// Rendered content and outer-card choice.
+///
+/// `C` selects the content representation. Its canvas default exists only while the
+/// canvas renderer family remains; page content uses [`crate::dom::DomContent`].
+pub struct ToolRenderResult<C = Box<dyn ToolContent>> {
     /// Owned content, independent of call-scoped operands.
-    pub content: Box<dyn ToolContent>,
+    pub content: C,
     /// Whether the caller should omit its ordinary tool card.
     pub is_custom: bool,
 }
@@ -102,7 +105,7 @@ pub struct ToolRenderState {
     /// Non-aliased placement lifetime, distinct from retained widget ownership.
     scope: Option<(egui::Id, PlacementScope)>,
 }
-impl ToolRenderResult {
+impl ToolRenderResult<Box<dyn ToolContent>> {
     /// Draw the content, releasing prior widget state when its recipe type changes.
     /// # Errors
     /// Returns the content's rendering failure.
@@ -135,7 +138,9 @@ impl ToolRenderState {
     }
 }
 /// Custom renderer receiving original native operands or explicitly decoded JSON.
-pub trait ToolRenderer<P = JsonObject, D = Value> {
+///
+/// `C` is the produced content representation; see [`ToolRenderResult`].
+pub trait ToolRenderer<P = JsonObject, D = Value, C = Box<dyn ToolContent>> {
     /// Prepare owned content without retaining borrowed operands.
     /// # Errors
     /// Returns the renderer's preparation failure.
@@ -144,7 +149,7 @@ pub trait ToolRenderer<P = JsonObject, D = Value> {
         params: Option<&P>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, ToolUiError>;
+    ) -> Result<ToolRenderResult<C>, ToolUiError>;
 }
 /// Borrowed parameters with a deferred default-rendering projection.
 pub struct ToolParams<'a, P = Value> {

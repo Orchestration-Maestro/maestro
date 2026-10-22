@@ -70,7 +70,7 @@ impl maestro_web::ToolRenderer<String, Rc<Cell<i32>>> for Renderer {
 pub fn tool_content_keeps_owned_inputs_and_independent_row_lifetimes() {
     let (prepared, weak) = prepare_owned();
     let alias = Rc::new(RefCell::new(None));
-    let recipe = ToolRenderResult {
+    let recipe: ToolRenderResult = ToolRenderResult {
         content: Box::new(crate::tool_renderers_browser::Aliased {
             inner: prepared.content,
             alias: alias.clone(),

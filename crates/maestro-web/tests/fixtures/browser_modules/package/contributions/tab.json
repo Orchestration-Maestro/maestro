@@ -1,0 +1,11 @@
+{
+  "id": "fixture-tab",
+  "kind": "tab",
+  "target": "fixture-page.tabs",
+  "input": "fixture.tab",
+  "module": {
+    "entry": "modules/a/module.js",
+    "wasm": "modules/a/module_bg.wasm",
+    "register": "register"
+  }
+}
