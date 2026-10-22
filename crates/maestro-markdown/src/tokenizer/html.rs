@@ -125,11 +125,6 @@ pub(super) fn inline(source: &str) -> Option<Html> {
     scanner.result()
 }
 
-/// Whether the caller displays this angle span as text rather than masking HTML.
-pub(super) fn displayed_tag(source: &str) -> bool {
-    literal(source).is_some()
-}
-
 /// Keep one block line terminator without retaining separator-only lines.
 pub(super) fn block_value(mut value: String) -> String {
     let end = value.trim_end_matches('\n').len();
