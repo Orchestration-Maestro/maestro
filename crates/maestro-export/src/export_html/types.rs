@@ -82,12 +82,10 @@ pub enum ExportAsset {
     /// Highlighting library script.
     Highlight,
 }
-/// Imported filesystem, bundle and theme observations.
+/// Imported bundle and theme observations.
 pub trait ExportOperations {
     /// Application name used in default output filenames.
     fn app_name(&self) -> &str;
-    /// Observe input publication.
-    fn exists(&self, path: &str) -> bool;
     /// Read one supplied asset.
     ///
     /// # Errors
@@ -103,11 +101,6 @@ pub trait ExportOperations {
     ) -> Result<Vec<(String, String)>, ThemeError>;
     /// Observe optional explicit backgrounds.
     fn get_theme_export_colors(&self, theme_name: Option<&str>) -> ThemeExportColors;
-    /// Write the completed document using the authored path.
-    ///
-    /// # Errors
-    /// Returns the original write failure.
-    fn write(&self, path: &str, document: &str) -> io::Result<()>;
 }
 /// Preconditions and failures reached while producing a document.
 #[derive(Debug)]

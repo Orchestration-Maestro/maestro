@@ -26,7 +26,7 @@ pub fn export_session_to_html(
         .get_session_file()
         .filter(|file| !file.is_empty())
         .ok_or(ExportError::InMemorySession)?;
-    if !operations.exists(file) {
+    if !std::path::Path::new(file).exists() {
         return Err(ExportError::UnpublishedSession);
     }
     let options = options.unwrap_or_default();
@@ -59,7 +59,7 @@ pub fn export_from_file(
     options: Option<ExportOptions<'_>>,
     operations: &dyn ExportOperations,
 ) -> Result<String, ExportError> {
-    if !operations.exists(input_path) {
+    if !std::path::Path::new(input_path).exists() {
         return Err(ExportError::MissingFile(input_path.to_owned()));
     }
     let session = maestro_session::SessionManager::open(input_path, None, None)?;
@@ -87,7 +87,7 @@ fn publish(
             },
             str::to_owned,
         );
-    operations.write(&path, &html)?;
+    std::fs::write(&path, &html)?;
     Ok(path)
 }
 /// Whether a tool is rendered by the supplied viewer rather than custom callbacks.

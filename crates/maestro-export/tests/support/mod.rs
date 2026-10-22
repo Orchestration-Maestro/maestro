@@ -222,7 +222,7 @@ pub struct View {
 impl Default for View {
     fn default() -> Self {
         Self {
-            file: Some("tree.jsonl".into()),
+            file: None,
             data: json!({"header":null,"entries":[],"leafId":null}),
         }
     }
@@ -270,10 +270,8 @@ impl ReadonlySessionManager for View {
         Ok(None)
     }
 }
-/// Controlled bundle and output with independently queued theme observations.
+/// Controlled bundle with independently queued theme observations.
 pub struct Operations {
-    /// Whether input publication is reported.
-    pub present: bool,
     /// Configured application name.
     pub app: String,
     /// Supplied asset text, in read order.
@@ -282,21 +280,16 @@ pub struct Operations {
     pub events: RefCell<Vec<String>>,
     /// Theme callback transcript.
     pub themes: RefCell<Vec<Value>>,
-    /// Captured output path/document.
-    pub output: RefCell<Option<(String, String)>>,
     /// Queued colors.
     pub resolved: RefCell<VecDeque<Value>>,
     /// Queued explicit backgrounds.
     pub explicit: RefCell<VecDeque<Value>>,
-    /// Failure at the output operation.
-    pub write_failure: bool,
 }
 /// CSS slots used by the independent corpus.
 pub const CSS: &str = ":root {\n      {{THEME_VARS}}\n      --body-bg: {{BODY_BG}};\n      --container-bg: {{CONTAINER_BG}};\n      --info-bg: {{INFO_BG}};\n    }";
 impl Default for Operations {
     fn default() -> Self {
         Self {
-            present: true,
             app: "maestro".into(),
             assets: [
                 include_str!("../../assets/document/template.html").into(),
@@ -307,10 +300,8 @@ impl Default for Operations {
             ],
             events: RefCell::default(),
             themes: RefCell::default(),
-            output: RefCell::default(),
             resolved: RefCell::new(VecDeque::from([json!({"userMessageBg":"#343541"})])),
             explicit: RefCell::new(VecDeque::from([json!({})])),
-            write_failure: false,
         }
     }
 }
@@ -326,9 +317,6 @@ fn observe(queue: &RefCell<VecDeque<Value>>) -> Value {
 impl ExportOperations for Operations {
     fn app_name(&self) -> &str {
         &self.app
-    }
-    fn exists(&self, _: &str) -> bool {
-        self.present
     }
     fn read_asset(&self, asset: ExportAsset) -> io::Result<String> {
         self.events.borrow_mut().push(format!("{asset:?}"));
@@ -353,14 +341,6 @@ impl ExportOperations for Operations {
     fn get_theme_export_colors(&self, theme: Option<&str>) -> ThemeExportColors {
         self.themes.borrow_mut().push(json!(["export", theme]));
         explicit(&observe(&self.explicit))
-    }
-    fn write(&self, path: &str, document: &str) -> io::Result<()> {
-        self.events.borrow_mut().push("write".into());
-        if self.write_failure {
-            return Err(io::Error::other("controlled output failure"));
-        }
-        *self.output.borrow_mut() = Some((path.into(), document.into()));
-        Ok(())
     }
 }
 /// Convert an explicit-background input without truthiness fallback.
@@ -407,9 +387,34 @@ pub fn payload(document: &str) -> String {
     )
     .unwrap()
 }
-/// Last written document, asserting that output was actually published.
-pub fn html(operations: &Operations) -> String {
-    operations.output.borrow().as_ref().unwrap().1.clone()
+/// Disposable output path owned by one export witness.
+pub fn output_path(scratch: &Scratch) -> String {
+    scratch.at("out.html")
+}
+/// Export one view to its disposable output path and return the written document.
+pub fn export_document(
+    scratch: &Scratch,
+    view: &View,
+    state: Option<ExportState<'_>>,
+    options: &ExportOptions<'_>,
+    operations: &dyn ExportOperations,
+) -> Result<String, ExportError> {
+    let path = output_path(scratch);
+    export_session_to_html(
+        view,
+        state,
+        Some(ExportOptions {
+            output_path: Some(&path),
+            theme_name: options.theme_name,
+            tool_renderer: options.tool_renderer,
+        }),
+        operations,
+    )?;
+    Ok(read_document(&path))
+}
+/// Read the document the export wrote to a native output path.
+pub fn read_document(path: &str) -> String {
+    std::fs::read_to_string(path).expect("the export wrote its document")
 }
 /// Callback recorder with independent source outputs.
 pub struct Renderer {
@@ -485,14 +490,20 @@ pub fn record(name: &str) {
         .unwrap();
     let renderer = Renderer::from(row.returns);
     let operations = Operations::default();
-    let view = View {
-        data: json!({"header":null,"entries":row.entries,"leafId":null}),
-        ..View::default()
-    };
+    let scratch = Scratch::new().unwrap();
+    let output = scratch.at("out.html");
+    let view = published(
+        &scratch,
+        View {
+            data: json!({"header":null,"entries":row.entries,"leafId":null}),
+            ..View::default()
+        },
+    );
     let result = export_session_to_html(
         &view,
         None,
         Some(ExportOptions {
+            output_path: Some(&output),
             tool_renderer: Some(&renderer),
             ..ExportOptions::default()
         }),
@@ -509,9 +520,10 @@ pub fn record(name: &str) {
             assert!(std::error::Error::source(&error).is_some());
         }
         assert!(operations.events.borrow().is_empty());
+        assert!(!std::path::Path::new(&output).exists());
     } else {
         result.unwrap();
-        let payload = payload(&html(&operations));
+        let payload = payload(&read_document(&output));
         let data: Value = serde_json::from_str(&payload).unwrap();
         assert_eq!(data["entries"], view.data["entries"]);
         let records = data
@@ -533,6 +545,8 @@ pub fn document(name: &str) -> String {
         .find(|row| row.name == name)
         .unwrap();
     let operations = Operations::default();
+    let scratch = Scratch::new().unwrap();
+    let output = scratch.at("out.html");
     let mut colors = row.colors;
     if name == "ordered" {
         let value = colors.as_object_mut().unwrap().shift_remove("2").unwrap();
@@ -544,10 +558,13 @@ pub fn document(name: &str) -> String {
         .data
         .get("tools")
         .map(|value| serde_json::from_value(value.clone()).unwrap());
-    let mut view = View {
-        data: row.data,
-        ..View::default()
-    };
+    let mut view = published(
+        &scratch,
+        View {
+            data: row.data,
+            ..View::default()
+        },
+    );
     if name == "unicode" {
         view.data["entries"][1]["numbers"][1] = json!(-0.0);
     }
@@ -555,8 +572,14 @@ pub fn document(name: &str) -> String {
         system_prompt: view.data.get("systemPrompt").and_then(Value::as_str),
         tools: tools.as_deref(),
     };
-    export_session_to_html(&view, Some(state), None, &operations).unwrap();
-    let html = html(&operations);
+    export_session_to_html(
+        &view,
+        Some(state),
+        Some(output.as_str().into()),
+        &operations,
+    )
+    .unwrap();
+    let html = read_document(&output);
     assert_eq!(html, row.expected.html);
     assert_eq!(payload(&html), row.expected.payload);
     assert_eq!(*operations.themes.borrow(), row.expected.observations);
@@ -584,6 +607,13 @@ impl Fixture for Scratch {
             .collect::<String>();
         std::fs::write(&path, text).unwrap();
         path
+    }
+}
+/// Give a supplied-data view one real published session file.
+pub fn published(scratch: &Scratch, view: View) -> View {
+    View {
+        file: Some(scratch.session("tree.jsonl", &[])),
+        ..view
     }
 }
 /// A custom call whose fields distinguish rendering from omission.
@@ -630,9 +660,6 @@ impl ExportOperations for NativeObserved<'_> {
     fn app_name(&self) -> &str {
         self.native.app_name()
     }
-    fn exists(&self, path: &str) -> bool {
-        self.native.exists(path)
-    }
     fn read_asset(&self, asset: ExportAsset) -> io::Result<String> {
         self.events
             .borrow_mut()
@@ -649,10 +676,6 @@ impl ExportOperations for NativeObserved<'_> {
     fn get_theme_export_colors(&self, theme: Option<&str>) -> ThemeExportColors {
         self.events.borrow_mut().push("export".into());
         self.native.get_theme_export_colors(theme)
-    }
-    fn write(&self, path: &str, document: &str) -> io::Result<()> {
-        self.events.borrow_mut().push("write".into());
-        self.native.write(path, document)
     }
 }
 /// Two native same-format packs feed the unchanged exporter.
@@ -727,25 +750,18 @@ pub fn adapter_swap() {
         )
     };
     assert_eq!(run(&native, "first rendering").unwrap(), output);
+    let native_document = read_document(&output);
     assert_eq!(run(&operations, "first rendering").unwrap(), output);
-    assert_eq!(std::fs::read_to_string(&output).unwrap(), html(&operations));
+    assert_eq!(read_document(&output), native_document);
     operations.assets[2] = "second bundle".into();
     run(&operations, "second rendering").unwrap();
-    assert!(html(&operations).contains("second bundle"));
-    assert!(!html(&operations).contains("first bundle"));
-    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    assert!(read_document(&output).contains("second bundle"));
+    assert!(!read_document(&output).contains("first bundle"));
+    let data: Value = serde_json::from_str(&payload(&read_document(&output))).unwrap();
     assert_eq!(
         data["renderedTools"]["rendered"]["callHtml"],
         "second rendering"
     );
-    let failing = Operations {
-        write_failure: true,
-        ..Operations::default()
-    };
-    assert!(matches!(
-        run(&failing, "failed rendering"),
-        Err(ExportError::Io(_))
-    ));
 }
 /// A theme failure with `message`, raised through the owner's public change callback.
 fn theme_error(message: &str) -> ThemeError {

@@ -3,7 +3,7 @@ use super::{ExportAsset, ExportOperations};
 use maestro_theme::{ThemeError, ThemeExportColors, ThemeState};
 use std::{fs, io};
 
-/// Native output and bundle paths with a supplied theme owner.
+/// Native bundle paths with a supplied theme owner.
 pub struct NativeExportOperations<'a> {
     /// Application configuration name for default output names.
     pub app_name: &'a str,
@@ -15,9 +15,6 @@ pub struct NativeExportOperations<'a> {
 impl ExportOperations for NativeExportOperations<'_> {
     fn app_name(&self) -> &str {
         self.app_name
-    }
-    fn exists(&self, path: &str) -> bool {
-        std::path::Path::new(path).exists()
     }
     fn read_asset(&self, asset: ExportAsset) -> io::Result<String> {
         let name = match asset {
@@ -40,8 +37,5 @@ impl ExportOperations for NativeExportOperations<'_> {
     }
     fn get_theme_export_colors(&self, theme_name: Option<&str>) -> ThemeExportColors {
         self.theme.get_theme_export_colors(theme_name)
-    }
-    fn write(&self, path: &str, document: &str) -> io::Result<()> {
-        fs::write(path, document)
     }
 }
