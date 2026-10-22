@@ -4,7 +4,7 @@ use maestro_app::markdown::{Kind, Node};
 use std::fmt::Write as _;
 
 /// One pending step of a block walk, innermost last.
-pub(super) enum Step<'a, 'b> {
+enum Step<'a, 'b> {
     /// Write the remaining nodes of one sibling run.
     Nodes(std::slice::Iter<'a, Node>, Atoms<'a, 'b>),
     /// Close a container whose children are written.

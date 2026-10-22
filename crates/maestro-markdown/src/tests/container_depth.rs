@@ -1,4 +1,5 @@
 //! Deep container nesting, its recorded documents and record teardown.
+use super::{REDUCED_STACK, WORKER_STACK, on_small_stack, on_stack};
 use crate::{Document, InlineContext, Kind, MappedText, MarkedOptions, Node, parse_with_options};
 
 /// Caller grammars every depth row covers.
@@ -9,28 +10,6 @@ const OPTIONS: [MarkedOptions; 5] = [
     MarkedOptions::Export,
     MarkedOptions::Documentation,
 ];
-
-/// Worker stack well below the main thread's, so depth cannot lean on it.
-const WORKER_STACK: usize = 2 * 1024 * 1024;
-
-/// Worker stack that makes one native frame per container observable at a depth
-/// debug can afford.
-const REDUCED_STACK: usize = 128 * 1024;
-
-/// Run one case on a worker thread of the witness stack size.
-fn on_small_stack<T: Send + 'static>(case: impl FnOnce() -> T + Send + 'static) -> T {
-    on_stack(WORKER_STACK, case)
-}
-
-/// Run one case on a worker thread of the selected witness stack size.
-fn on_stack<T: Send + 'static>(stack: usize, case: impl FnOnce() -> T + Send + 'static) -> T {
-    std::thread::Builder::new()
-        .stack_size(stack)
-        .spawn(case)
-        .expect("worker thread")
-        .join()
-        .expect("worker panicked")
-}
 
 /// Container chain length and complete node count of one document.
 fn shape(document: &Document) -> (usize, usize) {
@@ -144,7 +123,10 @@ fn recorded(document: &Document) -> String {
     let mut scopes: Vec<_> = document.scopes.iter().collect();
     scopes.sort_by(|left, right| left.0.cmp(right.0));
     for (key, source) in scopes {
-        lines.push(format!("scope {}..{} {:?}", key.0, key.1, source.text));
+        lines.push(format!(
+            "scope {}..{} label={} {:?}",
+            key.0, key.1, key.2, &*source.text
+        ));
     }
     lines.join("\n")
 }
@@ -218,6 +200,8 @@ fn repeated_quote_list_resumption_keeps_reference_depth() {
     for options in OPTIONS {
         let measured = resumption(64, options);
         assert_eq!(measured.0, 193, "{options:?} at 64");
+        let measured = resumption(128, options);
+        assert_eq!(measured.0, 385, "{options:?} at 128");
     }
     for (repeats, expected) in [(64, (193, 578)), (128, (385, 1_154)), (256, (769, 2_306))] {
         let measured = resumption(repeats, MarkedOptions::Terminal);
@@ -375,7 +359,7 @@ fn work_of(source: String, depth: usize, levels: usize) -> usize {
 }
 
 #[test]
-fn deep_container_work_grows_linearly_with_depth() {
+fn deep_container_line_visits_grow_linearly_with_depth() {
     let quotes = [250, 500, 1_000].map(|depth| work_of(">".repeat(depth), depth, 1));
     assert!(super::grows_linearly(quotes), "quotes {quotes:?}");
     let items =

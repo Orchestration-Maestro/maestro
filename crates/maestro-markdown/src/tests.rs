@@ -14,6 +14,31 @@ mod table_progress;
 
 pub(crate) use shared_text::Retained;
 
+/// Worker stack well below the main thread's, so depth cannot lean on it.
+pub(crate) const WORKER_STACK: usize = 2 * 1024 * 1024;
+
+/// Worker stack that makes one native frame per container observable at a depth
+/// debug can afford.
+pub(crate) const REDUCED_STACK: usize = 128 * 1024;
+
+/// Run one case on a worker thread of the witness stack size.
+pub(crate) fn on_small_stack<T: Send + 'static>(case: impl FnOnce() -> T + Send + 'static) -> T {
+    on_stack(WORKER_STACK, case)
+}
+
+/// Run one case on a worker thread of the selected witness stack size.
+pub(crate) fn on_stack<T: Send + 'static>(
+    stack: usize,
+    case: impl FnOnce() -> T + Send + 'static,
+) -> T {
+    std::thread::Builder::new()
+        .stack_size(stack)
+        .spawn(case)
+        .expect("worker thread")
+        .join()
+        .expect("worker panicked")
+}
+
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
