@@ -33,19 +33,19 @@ pub fn normalize_unicode_spaces(text: &str) -> String {
     )
 }
 
-/// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
+/// Join the `~` or `~/` prefix of `path` to the home directory.
 ///
-/// The home directory is read only for those two forms: on Unix `HOME` as set, even
-/// empty, otherwise [`std::env::home_dir`].
+/// Every other spelling is returned unchanged. The home directory is read only for
+/// those two forms: on Unix `HOME` as set, even empty, otherwise
+/// [`std::env::home_dir`].
 ///
 /// # Errors
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
-pub fn expand_path(file_path: &str) -> io::Result<String> {
-    let normalized = normalize_unicode_spaces(file_path.strip_prefix('@').unwrap_or(file_path));
-    let rest = match normalized.strip_prefix('~') {
+fn with_home(path: &str) -> io::Result<String> {
+    let rest = match path.strip_prefix('~') {
         Some("") => "",
         Some(rest) if rest.starts_with('/') => rest,
-        _ => return Ok(normalized),
+        _ => return Ok(path.to_owned()),
     };
     let home = homedir(
         std::env::var_os("HOME")
@@ -55,6 +55,32 @@ pub fn expand_path(file_path: &str) -> io::Result<String> {
     )
     .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
     Ok(utf8(home, "home directory")? + rest)
+}
+
+/// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
+///
+/// The home directory is read only for those two forms: on Unix `HOME` as set, even
+/// empty, otherwise [`std::env::home_dir`].
+///
+/// # Errors
+/// Returns an error when the home directory is needed but unknown or not UTF-8.
+pub fn expand_path(file_path: &str) -> io::Result<String> {
+    with_home(&normalize_unicode_spaces(
+        file_path.strip_prefix('@').unwrap_or(file_path),
+    ))
+}
+
+/// Strip one leading `@` and expand a bare `~` or `~/`, keeping every other spelling.
+fn expand_written_path(file_path: &str) -> io::Result<String> {
+    with_home(file_path.strip_prefix('@').unwrap_or(file_path))
+}
+
+/// Keep an absolute `expanded` spelling and resolve a relative one against `cwd`.
+fn anchored(expanded: String, cwd: &str) -> io::Result<String> {
+    if is_absolute(&expanded) {
+        return Ok(expanded);
+    }
+    resolve_path(&[cwd, &expanded])
 }
 
 /// Resolve an authored path lexically against `cwd`, leaving absolute spellings unchanged.
@@ -67,11 +93,12 @@ pub fn expand_path(file_path: &str) -> io::Result<String> {
 /// # Errors
 /// Returns an error when expansion fails or a needed host directory is unavailable.
 pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
-    let expanded = expand_path(file_path)?;
-    if is_absolute(&expanded) {
-        return Ok(expanded);
-    }
-    resolve_path(&[cwd, &expanded])
+    anchored(expand_path(file_path)?, cwd)
+}
+
+/// Resolve an authored path against `cwd` keeping the spelling it was written with.
+fn resolve_written_path(file_path: &str, cwd: &str) -> io::Result<String> {
+    anchored(expand_written_path(file_path)?, cwd)
 }
 
 /// Resolve `parts` lexically right to left, reading the process working directory only
@@ -106,16 +133,46 @@ fn narrow_space_before_meridiem(path: &str) -> String {
     out
 }
 
-/// Resolve like [`resolve_to_cwd`], then prefer the first existing macOS-style spelling.
+/// Resolve a path under the spelling it was written with, falling back to its
+/// Unicode-space normalization only when no path has the written spelling.
+///
+/// `resolve` turns one authored spelling into a resolved path and must keep the
+/// spelling it is given; the home and working directories are read exactly as it
+/// reads them.
+///
+/// # Errors
+/// Returns the error of `resolve` for the spelling it was finally called with.
+pub fn resolve_existing_spelling<F>(file_path: &str, resolve: F) -> io::Result<String>
+where
+    F: Fn(&str) -> io::Result<String>,
+{
+    let as_written = resolve(file_path)?;
+    if Path::new(&as_written).exists() {
+        return Ok(as_written);
+    }
+    resolve(&normalize_unicode_spaces(file_path))
+}
+
+/// Resolve an authored path against `cwd` under its written spelling when a path
+/// has it, and otherwise under its Unicode-space normalization.
+///
+/// # Errors
+/// Returns the home-directory, working-directory or invalid-UTF-8 error of the
+/// spelling the path was finally resolved with.
+pub fn resolve_existing_path(file_path: &str, cwd: &str) -> io::Result<String> {
+    resolve_existing_spelling(file_path, |path| resolve_written_path(path, cwd))
+}
+
+/// Resolve like [`resolve_existing_path`], then prefer the first existing macOS-style spelling.
 ///
 /// Candidates are tried in order: the resolved path, the AM/PM variant, the NFD
 /// variant, the curly-apostrophe variant, and NFD with curly apostrophes. When none
 /// exists the resolved path is returned.
 ///
 /// # Errors
-/// Returns the error of [`resolve_to_cwd`].
+/// Returns the error of [`resolve_existing_path`].
 pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
-    let resolved = resolve_to_cwd(file_path, cwd)?;
+    let resolved = resolve_existing_path(file_path, cwd)?;
     let nfd = String::from(DecomposingNormalizer::new_nfd().normalize(&resolved));
     let candidates = [
         narrow_space_before_meridiem(&resolved),

@@ -8,7 +8,7 @@ pub use render::EditRenderState;
 
 use crate::{
     file_mutation_queue::with_file_mutation_queue,
-    path_utils::resolve_to_cwd,
+    path_utils::resolve_existing_path,
     tool_definition_wrapper::wrap_tool_definition,
     types::{ToolDefinition, ToolRenderShell},
     utils::diagnostics::{diagnostic, failure},
@@ -101,7 +101,7 @@ pub fn create_edit_tool_definition<C: 'static>(
             if input.edits.is_empty() {
                 return Box::pin(std::future::ready(Err(failure("edits must contain at least one replacement"))));
             }
-            let absolute = match resolve_to_cwd(&input.path, &cwd) {
+            let absolute = match resolve_existing_path(&input.path, &cwd) {
                 Ok(path) => path,
                 Err(error) => return Box::pin(std::future::ready(Err(diagnostic(&error)))),
             };
@@ -128,7 +128,7 @@ pub mod local {
     use super::{
         Arc, EditRenderState, EditToolDetails, EditToolInput, EditToolOptions,
         NativeEditOperations, Tool, ToolRenderShell, diagnostic, edit_file, failure, json, prepare,
-        render, resolve_to_cwd, with_file_mutation_queue,
+        render, resolve_existing_path, with_file_mutation_queue,
     };
     use crate::tool_definition_wrapper::local::wrap_tool_definition;
     use crate::types::local::ToolDefinition;

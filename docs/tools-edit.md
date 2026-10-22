@@ -24,7 +24,9 @@ mistyped `path` and `content` follow the shared argument validation. No preparat
 execution-mode override or shell override is declared.
 
 Path resolution is the first step of execution and follows
-[`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs); the working directory is read only when the path and the tool's `cwd` cannot
+[`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs), so a typed path whose
+Unicode spaces stand for plain spaces creates the space-replaced name even when a
+file with the written spelling exists. The working directory is read only when the path and the tool's `cwd` cannot
 anchor the result. The path is resolved when the tool is called, before its future
 is first polled, so a later change of the process working directory does not move
 the write.
@@ -123,7 +125,9 @@ Preparation runs before the
 no file operations. Direct execution takes already prepared arguments.
 
 Empty lists fail before path resolution or queue admission. Other calls use
-[`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs); successful resolution
+[`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), which keeps a
+file's written spelling and falls back to its Unicode-space normalization only when
+no path has that spelling; successful resolution
 enters the [file mutation queue](#file-mutation-queue) before polling.
 Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
 [matching owner](#original-snapshot-matching) against one original snapshot.
@@ -181,7 +185,7 @@ and no first changed line.
 [`compute_edits_diff`](../crates/maestro-tools/src/edit_diff/preview.rs) checks
 readability, reads the target and returns a diff or caught failure without writing it.
 `compute_edit_diff` delegates one replacement to that operation. Path resolution
-uses [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs) when called;
+uses [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs) when called;
 resolution failures are returned before a future is created. Access, read and
 matching failures are returned by the future. Access failures retain the authored
 path and supplied error code, including native numeric codes; read and matching

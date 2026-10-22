@@ -5,8 +5,8 @@ use crate::{
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
 use maestro_resources::paths::resolve;
-use maestro_tools::path_utils::normalize_unicode_spaces;
-use std::{io, path::Path};
+use maestro_tools::path_utils::resolve_existing_spelling;
+use std::io;
 
 /// Joins the rest of a leading `~` or `~/` of `path` to the home directory, then keeps an
 /// absolute result as written and resolves a relative one against `cwd`.
@@ -26,11 +26,7 @@ fn anchor_path(path: &str, cwd: &str) -> io::Result<String> {
 /// Anchors `extension_path` at `cwd` as written when that names an existing file, and
 /// otherwise with its Unicode spaces replaced by plain spaces.
 pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
-    let as_written = anchor_path(extension_path, cwd)?;
-    if Path::new(&as_written).exists() {
-        return Ok(as_written);
-    }
-    anchor_path(&normalize_unicode_spaces(extension_path), cwd)
+    resolve_existing_spelling(extension_path, |path| anchor_path(path, cwd))
 }
 /// Loads `paths` in order through `module_loader`, with one shared runtime and one bus
 /// identity per path. A failed path is recorded with its supplied spelling and loading

@@ -41,6 +41,7 @@ mod ls_execution;
 mod ls_rendering;
 mod ls_support;
 mod maestro_tool_factories;
+mod path_spelling;
 mod process_support;
 mod queue_ordering;
 mod read_execution;

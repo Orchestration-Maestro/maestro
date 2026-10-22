@@ -77,7 +77,7 @@ type Fallback = (&'static [&'static str], &'static str, &'static str);
 #[test]
 fn read_paths_try_original_ampm_nfd_curly_then_combined() {
     const AM: &str = "shot 10.00\u{202f}AM.png";
-    let cases: [Fallback; 14] = [
+    let cases: [Fallback; 15] = [
         (&[], "shot 10.00 AM.png", "shot 10.00 AM.png"),
         (&[AM], "shot 10.00 AM.png", AM),
         (
@@ -108,6 +108,11 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
             "t 1 AM. it's",
         ),
         (&["am\u{202f}AM. x"], "am AM. x", "am\u{202f}AM. x"),
+        (
+            &["x\u{a0}y 1\u{202f}AM.png"],
+            "x\u{a0}y 1 AM.png",
+            "x y 1 AM.png",
+        ),
     ];
     for (index, (files, ask, found)) in cases.into_iter().enumerate() {
         let dir = Scratch::new().unwrap();
@@ -122,6 +127,64 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
     assert_eq!(
         resolve_read_path("folder", &dir.text()).unwrap(),
         format!("{}/folder", dir.text())
+    );
+}
+
+/// A path naming an existing file resolves to that file under the spelling it was written with.
+#[test]
+fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
+    let test = "read_paths_prefer_the_written_spelling_of_an_existing_file";
+    let dir = TempDir::new();
+    dir.file("x\u{a0}y.txt", b"written");
+    dir.file("p\u{a0}q.txt", b"written pair");
+    dir.file("p q.txt", b"plain pair");
+    let cwd = dir.text();
+    let written = format!("{cwd}/x\u{a0}y.txt");
+    for ask in [
+        "x\u{a0}y.txt",
+        "@x\u{a0}y.txt",
+        &written,
+        "./sub/../x\u{a0}y.txt",
+    ] {
+        assert_eq!(resolve_read_path(ask, &cwd).unwrap(), written, "{ask:?}");
+    }
+    assert_eq!(
+        resolve_read_path("p\u{a0}q.txt", &cwd).unwrap(),
+        format!("{cwd}/p\u{a0}q.txt")
+    );
+    assert_eq!(std::fs::read(&written).unwrap(), b"written");
+    let home = TempDir::new();
+    home.file("h\u{a0}o.txt", b"home written");
+    let home_text = home.text();
+    let envs = [
+        ("HOME", Some(home_text.as_str())),
+        ("USERPROFILE", Some(home_text.as_str())),
+    ];
+    if isolated(test, "home-written", &envs) {
+        let home = std::env::var("HOME").unwrap();
+        assert_eq!(
+            resolve_read_path("~/h\u{a0}o.txt", &cwd).unwrap(),
+            format!("{home}/h\u{a0}o.txt")
+        );
+    }
+}
+
+/// A typed path whose Unicode spaces stand for plain spaces still finds its file.
+#[test]
+fn read_paths_fall_back_to_the_normalized_spelling_when_nothing_has_the_written_one() {
+    let dir = TempDir::new();
+    dir.file("sp ace.txt", b"plain");
+    let cwd = dir.text();
+    for ask in ["sp\u{a0}ace.txt", "@sp\u{a0}ace.txt"] {
+        assert_eq!(
+            resolve_read_path(ask, &cwd).unwrap(),
+            format!("{cwd}/sp ace.txt"),
+            "{ask:?}"
+        );
+    }
+    assert_eq!(
+        resolve_read_path("n\u{a0}e.txt", &cwd).unwrap(),
+        format!("{cwd}/n e.txt")
     );
 }
 
