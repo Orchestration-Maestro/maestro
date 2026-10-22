@@ -1,6 +1,6 @@
 //! FTP source login, modification checks, listing fallback, transfer and teardown.
 
-use super::super::ftp::{basename, dirname, instant_millis, port};
+use super::super::ftp::{instant_millis, port};
 use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
 use crate::providers::http::{Route, configured_fetch};
 use crate::tests::ftp_server::{self, Features, Listing, Modification, Peer, Scenario, Transfer};
@@ -494,6 +494,8 @@ fn ftp_cancelled_load_releases_the_connection() {
 
 #[test]
 fn ftp_path_segments_follow_the_reference_rules() {
+    // The loader splits a source path with the path owner, so this pins the rules it relies on,
+    // including the empty segment that separates it from trimming each side.
     for (path, directory, name) in [
         ("/script.pac", "/", "script.pac"),
         ("/a/b/c.pac", "/a/b", "c.pac"),
@@ -501,9 +503,10 @@ fn ftp_path_segments_follow_the_reference_rules() {
         ("/", "/", ""),
         ("/a", "/", "a"),
         ("script.pac", ".", "script.pac"),
+        ("/a//b.pac", "/a/", "b.pac"),
     ] {
-        assert_eq!(dirname(path), directory, "{path}");
-        assert_eq!(basename(path), name, "{path}");
+        assert_eq!(maestro_path::posix::dirname(path), directory, "{path}");
+        assert_eq!(maestro_path::posix::basename(path, None), name, "{path}");
     }
 }
 

@@ -3,6 +3,7 @@
 use tokio::io::AsyncReadExt as _;
 
 use super::{Cache, Failure, Source, listing, notfound::NotFound, notmodified::NotModified};
+use maestro_path::posix;
 use suppaftp::Status;
 use suppaftp::tokio::AsyncFtpStream;
 use suppaftp::types::{FileType, FtpError, Mode};
@@ -163,8 +164,8 @@ async fn listed(
     path: &str,
     machine: bool,
 ) -> Result<Option<i64>, Failure> {
-    let directory = dirname(path);
-    let name = basename(path);
+    let directory = posix::dirname(path);
+    let name = posix::basename(path, None);
     let lines = if machine {
         match stream.mlsd(Some(&directory)).await {
             Ok(lines) => lines,
@@ -222,29 +223,4 @@ fn unavailable(error: FtpError) -> Failure {
         }
         error => error.into(),
     }
-}
-
-/// Node's `path.posix.dirname`: trailing slashes are dropped and the root keeps its slash.
-pub(super) fn dirname(path: &str) -> String {
-    let trimmed = path.trim_end_matches('/');
-    let parent = trimmed
-        .rfind('/')
-        .map_or("", |index| &trimmed[..index])
-        .trim_end_matches('/');
-    if !parent.is_empty() {
-        parent.to_owned()
-    } else if path.starts_with('/') {
-        "/".to_owned()
-    } else {
-        ".".to_owned()
-    }
-}
-
-/// Node's `path.posix.basename`: trailing slashes are dropped and a directory has no name.
-pub(super) fn basename(path: &str) -> String {
-    path.trim_end_matches('/')
-        .rsplit('/')
-        .next()
-        .unwrap_or_default()
-        .to_owned()
 }
