@@ -65,12 +65,50 @@ panels use the same command state, declarations and policy.
 The module also exposes `LocalArtifactPresentation` and the typed `FileType`.
 These local types do not change the default SDK tool's thread-safety.
 
+## History reconstruction
+
+`reconstruct_from_messages` rebuilds the panel from a conversation. Assistant
+artifact calls are collected by identifier, where a later duplicate wins; every
+message is then folded in order. A recorded artifact entry applies its action
+directly, and a successful artifact tool result applies only when the live
+command would accept the same arguments against the file replayed so far, so a
+rejected command leaves no trace. Replayed arguments pass through the shared
+argument checker, so a numeric `content` arrives as its string form. `update`
+replaces the first literal occurrence, keeps dollar sequences and empty
+replacements literal, and keeps a file whose content the replacement emptied.
+
+Reconstruction empties the previous map handle, removes every old view and
+materialises the files silently, without the HTML wait or per-file notifications.
+It selects the first file when nothing is selected, then notifies the host once
+and refreshes the dependent views.
+
+## Sandbox artifact access
+
+`ArtifactsPanelState` retains the map slot, the selection and the optional
+conversation independently of the presentation operations, so a view operation
+can read them without the panel.
+`get_html_artifact_runtime_providers` returns the conversation's attachments
+provider when it has attachments, followed by read-only access to the panel's
+artifacts. Both read the live store and the live conversation, so a replaced
+conversation is observed rather than a captured one.
+
+`ArtifactsRuntimeProvider` gives sandboxed code access to these artifacts. It
+injects a snapshot of every artifact at `get_data`, embeds its helper source at
+`get_runtime`, answers `artifact-operation` messages for `list`, `get`,
+`createOrUpdate` and `delete`, and returns one of the two guidance constants for
+its access mode. Reads answer from the live map. Writes run the panel's own
+commands, so a command the panel rejects replies with its failure text and records
+nothing, while an accepted write appends its history entry to the current
+conversation collection. Read-only access refuses the write actions before any
+command runs, keeps no history and has no view effects, and reads keep working.
+The embedded helper finds an existing empty artifact by presence rather than by
+content and serialises non-string content once.
+
 ## Browser integration
 
-This interface does not mount browser views or format console records. Artifact
-reconstruction and runtime access remain in [#753](https://github.com/Orchestration-Maestro/maestro/issues/753),
-HTML views in [#819](https://github.com/Orchestration-Maestro/maestro/issues/819),
-and tool cards in [#820](https://github.com/Orchestration-Maestro/maestro/issues/820).
+This interface does not mount browser views or format console records. HTML view
+mounting is owned by [#1761](https://github.com/Orchestration-Maestro/maestro/issues/1761),
+and tool cards by [#820](https://github.com/Orchestration-Maestro/maestro/issues/820).
 Sandbox corrections remain in [#104](https://github.com/Orchestration-Maestro/maestro/issues/104)
 and [#105](https://github.com/Orchestration-Maestro/maestro/issues/105).
 

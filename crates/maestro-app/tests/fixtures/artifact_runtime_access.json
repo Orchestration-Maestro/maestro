@@ -1,0 +1,3356 @@
+{
+  "reconstruct": [
+    {
+      "id": "empty",
+      "initial": [],
+      "messages": [],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "irrelevant_roles",
+      "initial": [],
+      "messages": [
+        {
+          "role": "user",
+          "content": "ignored",
+          "timestamp": 0
+        },
+        {
+          "role": "foreign",
+          "reference_role": "aborted"
+        },
+        {
+          "role": "foreign",
+          "reference_role": "other"
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "create",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "one"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "one"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "one"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "result_before_call",
+      "initial": [],
+      "messages": [
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "one"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "one"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "one"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "unknown_call",
+      "initial": [],
+      "messages": [
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "absent",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "error_flag",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "one"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "wrong_tool",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "other",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "one"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "wrong_result_tool",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "one"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "other",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "duplicate_call_id",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "first.txt",
+                "content": "first"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "last.txt",
+                "content": "last"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "last.txt",
+          "last"
+        ]
+      ],
+      "active": "last.txt",
+      "effects": [
+        [
+          "element",
+          "last.txt",
+          "last"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "last.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "read_only_commands",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "g",
+              "name": "artifacts",
+              "arguments": {
+                "command": "get",
+                "filename": "x"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "g",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "l",
+              "name": "artifacts",
+              "arguments": {
+                "command": "logs",
+                "filename": "x"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "l",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "artifact_lifecycle",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "one",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "update",
+          "filename": "a.txt",
+          "content": "two",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "delete",
+          "filename": "a.txt",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "artifact_update_upserts",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "update",
+          "filename": "a.txt",
+          "content": "two",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "two"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "two"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "mixed_order",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "one",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "one",
+                "new_str": "two"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "artifact",
+          "action": "update",
+          "filename": "a.txt",
+          "content": "three",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "three"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "three"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "duplicate_create",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "one",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "two",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "two"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "two"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "delete_recreate_order",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "b.txt",
+          "content": "b",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "a",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "delete",
+          "filename": "b.txt",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "b.txt",
+          "content": "next",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "a"
+        ],
+        [
+          "b.txt",
+          "next"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "a"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "element",
+          "b.txt",
+          "next"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "rewrite_keeps_order",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "b.txt",
+          "content": "b",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "a",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "update",
+          "filename": "b.txt",
+          "content": "changed",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "b.txt",
+          "changed"
+        ],
+        [
+          "a.txt",
+          "a"
+        ]
+      ],
+      "active": "b.txt",
+      "effects": [
+        [
+          "element",
+          "b.txt",
+          "changed"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "element",
+          "a.txt",
+          "a"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "b.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "create_content_undefined",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "create_content_\"\"",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "create_content_\"0\"",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "0",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "0"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "0"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "create_content_\"﻿\"",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "﻿",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "﻿"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "﻿"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "missing_update_file",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "missing.txt",
+                "old_str": "a",
+                "new_str": "b"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [],
+      "active": null,
+      "effects": [
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[null,\"new\"]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "new_str": "new"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "old old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "old old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[\"old\",null]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "old"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "old old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "old old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[\"missing\",\"new\"]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "missing",
+                "new_str": "new"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "old old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "old old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[\"old\",\"\"]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "old",
+                "new_str": ""
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          " old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          " old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[\"old\",\"new\"]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "old",
+                "new_str": "new"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "new old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "new old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[\"\",\"prefix\"]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "",
+                "new_str": "prefix"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "old old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "old old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "update_[\"old\",\"$&-$`-$'-$ $\"]",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "old old",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "old",
+                "new_str": "$&-$`-$'-$ $"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "$&-$`-$'-$ $ old"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "$&-$`-$'-$ $ old"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "erase_all_content",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "one",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "u",
+              "name": "artifacts",
+              "arguments": {
+                "command": "update",
+                "filename": "a.txt",
+                "old_str": "one",
+                "new_str": ""
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "u",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          ""
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          ""
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "html_never_waits",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "index.html",
+          "content": "<h1>A</h1>",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "index.html",
+          "<h1>A</h1>"
+        ]
+      ],
+      "active": "index.html",
+      "effects": [
+        [
+          "element",
+          "index.html",
+          "<h1>A</h1>"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "index.html"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "reset_old_alias",
+      "initial": [
+        [
+          "old.txt",
+          "old"
+        ]
+      ],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "new.txt",
+          "content": "new",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "new.txt",
+          "new"
+        ]
+      ],
+      "active": "new.txt",
+      "effects": [
+        [
+          "remove",
+          "old.txt"
+        ],
+        [
+          "element",
+          "new.txt",
+          "new"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "new.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "view_failure_continues",
+      "initial": [],
+      "messages": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "bad.txt",
+          "content": "bad",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        },
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "good.txt",
+          "content": "good",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [
+        [
+          "bad.txt",
+          "bad"
+        ],
+        [
+          "good.txt",
+          "good"
+        ]
+      ],
+      "active": "bad.txt",
+      "effects": [
+        [
+          "element",
+          "bad.txt",
+          "bad"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "element",
+          "good.txt",
+          "good"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "bad.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "coerced_number_content",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "n",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "n.txt",
+                "content": 5
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "n",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "n.txt",
+          "5"
+        ]
+      ],
+      "active": "n.txt",
+      "effects": [
+        [
+          "element",
+          "n.txt",
+          "5"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "n.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    },
+    {
+      "id": "failed_duplicate_tool_result",
+      "initial": [],
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "a",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "one"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "a",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "ok"
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "b",
+              "name": "artifacts",
+              "arguments": {
+                "command": "create",
+                "filename": "a.txt",
+                "content": "two"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "fixture-model",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "toolUse",
+          "timestamp": 0
+        },
+        {
+          "role": "toolResult",
+          "toolName": "artifacts",
+          "toolCallId": "b",
+          "isError": false,
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: File a.txt already exists"
+            }
+          ],
+          "timestamp": 0
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "one"
+        ]
+      ],
+      "active": "a.txt",
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "one"
+        ],
+        [
+          "reload"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ]
+      ],
+      "previous_alias_cleared": true
+    }
+  ],
+  "html": [
+    {
+      "id": "no_agent",
+      "agent": false,
+      "messages": [],
+      "providers": [
+        {
+          "provider": "artifacts",
+          "readWrite": false
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "agent": true,
+      "messages": [],
+      "providers": [
+        {
+          "provider": "artifacts",
+          "readWrite": false
+        }
+      ],
+      "replacement": [
+        {
+          "role": "user-with-attachments",
+          "attachments": [
+            {
+              "fileName": "",
+              "type": "document",
+              "mimeType": "text/plain",
+              "size": 0,
+              "content": "",
+              "id": "new"
+            }
+          ],
+          "content": "",
+          "timestamp": 0
+        }
+      ],
+      "providers_after_replacement": [
+        {
+          "provider": "attachments",
+          "attachments": [
+            {
+              "id": "new",
+              "fileName": ""
+            }
+          ]
+        },
+        {
+          "provider": "artifacts",
+          "readWrite": false
+        }
+      ]
+    },
+    {
+      "id": "duplicates",
+      "agent": true,
+      "messages": [
+        {
+          "role": "user-with-attachments",
+          "attachments": [
+            {
+              "fileName": "one",
+              "type": "document",
+              "mimeType": "text/plain",
+              "size": 0,
+              "content": "",
+              "id": "a"
+            }
+          ],
+          "content": "",
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": "",
+          "timestamp": 0
+        },
+        {
+          "role": "user-with-attachments",
+          "attachments": [
+            {
+              "fileName": "two",
+              "type": "document",
+              "mimeType": "text/plain",
+              "size": 0,
+              "content": "",
+              "id": "a"
+            }
+          ],
+          "content": "",
+          "timestamp": 0
+        }
+      ],
+      "providers": [
+        {
+          "provider": "attachments",
+          "attachments": [
+            {
+              "id": "a",
+              "fileName": "one"
+            },
+            {
+              "id": "a",
+              "fileName": "two"
+            }
+          ]
+        },
+        {
+          "provider": "artifacts",
+          "readWrite": false
+        }
+      ],
+      "replacement": [
+        {
+          "role": "user-with-attachments",
+          "attachments": [
+            {
+              "fileName": "",
+              "type": "document",
+              "mimeType": "text/plain",
+              "size": 0,
+              "content": "",
+              "id": "new"
+            }
+          ],
+          "content": "",
+          "timestamp": 0
+        }
+      ],
+      "providers_after_replacement": [
+        {
+          "provider": "attachments",
+          "attachments": [
+            {
+              "id": "new",
+              "fileName": ""
+            }
+          ]
+        },
+        {
+          "provider": "artifacts",
+          "readWrite": false
+        }
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "entries": [],
+      "keys": [],
+      "later_entry_detached": true
+    },
+    {
+      "entries": [
+        [
+          "b.txt",
+          "B"
+        ],
+        [
+          "2",
+          "two"
+        ],
+        [
+          "1",
+          "one"
+        ],
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "keys": [
+        "b.txt",
+        "2",
+        "1",
+        "a.txt"
+      ],
+      "later_entry_detached": true
+    },
+    {
+      "entries": [
+        [
+          "empty.txt",
+          ""
+        ],
+        [
+          "data.json",
+          "{\"b\":2,\"a\":1}"
+        ]
+      ],
+      "keys": [
+        "empty.txt",
+        "data.json"
+      ],
+      "later_entry_detached": true
+    }
+  ],
+  "descriptions": [
+    {
+      "read_write": true,
+      "description": "\n### Artifacts Storage\n\nCreate, read, update, and delete files in artifacts storage.\n\n#### When to Use\n- Store intermediate results between tool calls\n- Save generated files (images, CSVs, processed data) for user to view and download\n\n#### Do NOT Use For\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\n\n#### Example\nJSON workflow:\n```javascript\n// Fetch and save\nconst response = await fetch('https://api.example.com/products');\nconst products = await response.json();\nawait createOrUpdateArtifact('products.json', products);\n\n// Later: read and filter\nconst all = await getArtifact('products.json');\nconst cheap = all.filter(p => p.price < 100);\nawait createOrUpdateArtifact('cheap.json', cheap);\n```\n\nBinary file (image):\n```javascript\nconst canvas = document.createElement('canvas');\ncanvas.width = 800; canvas.height = 600;\nconst ctx = canvas.getContext('2d');\nctx.fillStyle = 'blue';\nctx.fillRect(0, 0, 800, 600);\n// Remove data:image/png;base64, prefix\nconst base64 = canvas.toDataURL().split(',')[1];\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\n```\n"
+    },
+    {
+      "read_write": true,
+      "description": "\n### Artifacts Storage\n\nCreate, read, update, and delete files in artifacts storage.\n\n#### When to Use\n- Store intermediate results between tool calls\n- Save generated files (images, CSVs, processed data) for user to view and download\n\n#### Do NOT Use For\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\n\n#### Example\nJSON workflow:\n```javascript\n// Fetch and save\nconst response = await fetch('https://api.example.com/products');\nconst products = await response.json();\nawait createOrUpdateArtifact('products.json', products);\n\n// Later: read and filter\nconst all = await getArtifact('products.json');\nconst cheap = all.filter(p => p.price < 100);\nawait createOrUpdateArtifact('cheap.json', cheap);\n```\n\nBinary file (image):\n```javascript\nconst canvas = document.createElement('canvas');\ncanvas.width = 800; canvas.height = 600;\nconst ctx = canvas.getContext('2d');\nctx.fillStyle = 'blue';\nctx.fillRect(0, 0, 800, 600);\n// Remove data:image/png;base64, prefix\nconst base64 = canvas.toDataURL().split(',')[1];\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\n```\n"
+    },
+    {
+      "read_write": false,
+      "description": "\n### Artifacts Storage\n\nRead files from artifacts storage.\n\n#### When to Use\n- Read artifacts created by REPL or artifacts tool\n- Access data from other HTML artifacts\n- Load configuration or data files\n\n#### Do NOT Use For\n- Creating new artifacts (not available in HTML artifacts)\n- Modifying artifacts (read-only access)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n\n#### Example\nJSON data:\n```javascript\nconst products = await getArtifact('products.json');\nconst html = products.map(p => `<div>${p.name}: $${p.price}</div>`).join('');\ndocument.body.innerHTML = html;\n```\n\nBinary image:\n```javascript\nconst base64 = await getArtifact('chart.png');\nconst img = document.createElement('img');\nimg.src = 'data:image/png;base64,' + base64;\ndocument.body.appendChild(img);\n```\n"
+    }
+  ],
+  "host": [
+    {
+      "id": "irrelevant",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "other",
+        "action": "list"
+      },
+      "replies": [],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "list",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "list"
+      },
+      "replies": [
+        {
+          "success": true,
+          "result": [
+            "a.txt"
+          ]
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "get",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "get",
+        "filename": "a.txt"
+      },
+      "replies": [
+        {
+          "success": true,
+          "result": "A"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "missing",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "get",
+        "filename": "missing"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Artifact not found: missing"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "unknown",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "rename",
+        "filename": "a.txt"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Unknown artifact action: rename"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "create_true",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "new.txt",
+        "content": "new"
+      },
+      "replies": [
+        {
+          "success": true
+        }
+      ],
+      "history": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "new.txt",
+          "content": "new",
+          "title": "new.txt",
+          "timestamp": "2026-01-02T03:04:05.002Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ],
+        [
+          "new.txt",
+          "new"
+        ]
+      ],
+      "effects": [
+        [
+          "element",
+          "new.txt",
+          "new"
+        ],
+        [
+          "show",
+          "new.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ],
+        [
+          "reload"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "id": "rewrite_true",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "a.txt",
+        "content": "changed"
+      },
+      "replies": [
+        {
+          "success": true
+        }
+      ],
+      "history": [
+        {
+          "role": "artifact",
+          "action": "update",
+          "filename": "a.txt",
+          "content": "changed",
+          "timestamp": "2026-01-02T03:04:05.001Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "changed"
+        ]
+      ],
+      "effects": [
+        [
+          "element",
+          "a.txt",
+          "changed"
+        ],
+        [
+          "change"
+        ],
+        [
+          "show",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "reload"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "id": "delete_true",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "delete",
+        "filename": "a.txt"
+      },
+      "replies": [
+        {
+          "success": true
+        }
+      ],
+      "history": [
+        {
+          "role": "artifact",
+          "action": "delete",
+          "filename": "a.txt",
+          "timestamp": "2026-01-02T03:04:05.000Z"
+        }
+      ],
+      "files": [],
+      "effects": [
+        [
+          "remove",
+          "a.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ],
+        [
+          "reload"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "id": "empty_true",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "new.txt",
+        "content": ""
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Error: create command requires filename and content"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "missing_delete_true",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "delete",
+        "filename": "absent"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Error: File absent not found. Available files: a.txt"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "create_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "new.txt",
+        "content": "new"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Cannot create/update artifacts in read-only mode"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "rewrite_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "a.txt",
+        "content": "changed"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Cannot create/update artifacts in read-only mode"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "delete_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "delete",
+        "filename": "a.txt"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Cannot delete artifacts in read-only mode"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "empty_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "new.txt",
+        "content": ""
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Cannot create/update artifacts in read-only mode"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "missing_delete_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "delete",
+        "filename": "absent"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Cannot delete artifacts in read-only mode"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "list_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "list"
+      },
+      "replies": [
+        {
+          "success": true,
+          "result": [
+            "a.txt"
+          ]
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "get_false",
+      "read_write": false,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "get",
+        "filename": "a.txt"
+      },
+      "replies": [
+        {
+          "success": true,
+          "result": "A"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "missing_action",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Unknown artifact action: "
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "numeric_filename_get",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "get",
+        "filename": 5
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Artifact not found: "
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "numeric_content",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "n.txt",
+        "content": 5
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Error: create command requires filename and content"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "missing_content",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "n.txt"
+      },
+      "replies": [
+        {
+          "success": false,
+          "error": "Error: create command requires filename and content"
+        }
+      ],
+      "history": [],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ]
+      ],
+      "effects": [],
+      "error": null
+    },
+    {
+      "id": "no_agent",
+      "read_write": true,
+      "agent": false,
+      "reply_fails": false,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "new.txt",
+        "content": "new"
+      },
+      "replies": [
+        {
+          "success": true
+        }
+      ],
+      "history": null,
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ],
+        [
+          "new.txt",
+          "new"
+        ]
+      ],
+      "effects": [
+        [
+          "element",
+          "new.txt",
+          "new"
+        ],
+        [
+          "show",
+          "new.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ],
+        [
+          "reload"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "id": "response_throw",
+      "read_write": true,
+      "agent": true,
+      "reply_fails": true,
+      "message": {
+        "type": "artifact-operation",
+        "action": "createOrUpdate",
+        "filename": "new.txt",
+        "content": "new"
+      },
+      "replies": [
+        {
+          "success": true
+        }
+      ],
+      "history": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "new.txt",
+          "content": "new",
+          "title": "new.txt",
+          "timestamp": "2026-01-02T03:04:05.002Z"
+        }
+      ],
+      "files": [
+        [
+          "a.txt",
+          "A"
+        ],
+        [
+          "new.txt",
+          "new"
+        ]
+      ],
+      "effects": [
+        [
+          "element",
+          "new.txt",
+          "new"
+        ],
+        [
+          "show",
+          "new.txt"
+        ],
+        [
+          "update"
+        ],
+        [
+          "change"
+        ],
+        [
+          "update"
+        ],
+        [
+          "reload"
+        ]
+      ],
+      "error": "reply failed"
+    },
+    {
+      "id": "list_order",
+      "replies": [
+        {
+          "success": true,
+          "result": [
+            "b.txt",
+            "a.txt",
+            "2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "history_slot_replacement",
+      "old": [
+        {
+          "role": "artifact",
+          "action": "create",
+          "filename": "a.txt",
+          "content": "first",
+          "title": "a.txt",
+          "timestamp": "2026-01-02T03:04:05.002Z"
+        }
+      ],
+      "current": [
+        {
+          "role": "artifact",
+          "action": "update",
+          "filename": "a.txt",
+          "content": "second",
+          "timestamp": "2026-01-02T03:04:05.004Z"
+        }
+      ],
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "success": true
+        }
+      ],
+      "replayed": [
+        [
+          "a.txt",
+          "second"
+        ]
+      ]
+    }
+  ],
+  "runtime_source": "(_sandboxId) => {\n            // Auto-parse/stringify for .json files\n            const isJsonFile = (filename) => filename.endsWith(\".json\");\n            window.listArtifacts = async () => {\n                // Online: ask extension\n                if (window.sendRuntimeMessage) {\n                    const response = await window.sendRuntimeMessage({\n                        type: \"artifact-operation\",\n                        action: \"list\",\n                    });\n                    if (!response.success)\n                        throw new Error(response.error);\n                    return response.result;\n                }\n                // Offline: return snapshot keys\n                else {\n                    return Object.keys(window.artifacts || {});\n                }\n            };\n            window.getArtifact = async (filename) => {\n                let content;\n                // Online: ask extension\n                if (window.sendRuntimeMessage) {\n                    const response = await window.sendRuntimeMessage({\n                        type: \"artifact-operation\",\n                        action: \"get\",\n                        filename,\n                    });\n                    if (!response.success)\n                        throw new Error(response.error);\n                    content = response.result;\n                }\n                // Offline: read snapshot\n                else {\n                    if (!Object.hasOwn(window.artifacts || {}, filename)) {\n                        throw new Error(`Artifact not found (offline mode): ${filename}`);\n                    }\n                    content = window.artifacts[filename];\n                }\n                // Auto-parse .json files\n                if (isJsonFile(filename)) {\n                    try {\n                        return JSON.parse(content);\n                    }\n                    catch (e) {\n                        throw new Error(`Failed to parse JSON from ${filename}: ${e}`);\n                    }\n                }\n                return content;\n            };\n            window.createOrUpdateArtifact = async (filename, content, mimeType) => {\n                if (!window.sendRuntimeMessage) {\n                    throw new Error(\"Cannot create/update artifacts in offline mode (read-only)\");\n                }\n                let finalContent = content;\n                // Auto-stringify .json files\n                if (typeof content !== \"string\") {\n                    finalContent = JSON.stringify(content, null, 2);\n                }\n                const response = await window.sendRuntimeMessage({\n                    type: \"artifact-operation\",\n                    action: \"createOrUpdate\",\n                    filename,\n                    content: finalContent,\n                    mimeType,\n                });\n                if (!response.success)\n                    throw new Error(response.error);\n            };\n            window.deleteArtifact = async (filename) => {\n                if (!window.sendRuntimeMessage) {\n                    throw new Error(\"Cannot delete artifacts in offline mode (read-only)\");\n                }\n                const response = await window.sendRuntimeMessage({\n                    type: \"artifact-operation\",\n                    action: \"delete\",\n                    filename,\n                });\n                if (!response.success)\n                    throw new Error(response.error);\n            };\n        }"
+}

@@ -455,6 +455,9 @@ fn runtime_sources_keep_complete_functions() {
     }
 }
 
+use maestro_app::browser::components::sandbox::artifacts_runtime_provider::{
+    ArtifactOperation, ArtifactResponse,
+};
 use maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleLog;
 use maestro_app::browser::components::sandbox::file_download_runtime_provider::DownloadableFile;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::RuntimeProviderValue;
@@ -519,6 +522,23 @@ impl RuntimeProviderValue for Retained {
     fn attachment_array(attachments: &[Attachment]) -> Result<Self, DiagnosticErrorInfo> {
         Ok(Self {
             fields: Value::attachment_array(attachments)?,
+            payload: Arc::default(),
+        })
+    }
+    fn project_artifact_operation(&self) -> Result<ArtifactOperation, DiagnosticErrorInfo> {
+        self.fields.project_artifact_operation()
+    }
+    fn artifact_snapshot(
+        artifacts: indexmap::IndexMap<String, String>,
+    ) -> Result<Self, DiagnosticErrorInfo> {
+        Ok(Self {
+            fields: Value::artifact_snapshot(artifacts)?,
+            payload: Arc::default(),
+        })
+    }
+    fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo> {
+        Ok(Self {
+            fields: Value::artifact_response(response)?,
             payload: Arc::default(),
         })
     }

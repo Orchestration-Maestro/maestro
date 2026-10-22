@@ -1,11 +1,13 @@
 //! Native field selection for application-owned sandbox runtime providers.
 use super::{BrowserSandboxValue, diagnostic};
+use indexmap::IndexMap;
 use js_sys::{Array, Object, Reflect};
 use maestro_app::{
     DiagnosticErrorInfo,
     browser::{
         components::{
             sandbox::{
+                artifacts_runtime_provider::{ArtifactOperation, ArtifactResponse},
                 console_runtime_provider::{ConsoleLog, ConsoleLogType},
                 file_download_runtime_provider::DownloadableFile,
                 sandbox_runtime_provider::RuntimeProviderValue,
@@ -89,5 +91,42 @@ impl RuntimeProviderValue for BrowserSandboxValue {
             values.push(&object);
         }
         Ok(Self(values.into()))
+    }
+    fn project_artifact_operation(&self) -> Result<ArtifactOperation, DiagnosticErrorInfo> {
+        let text = |name| {
+            Ok::<_, DiagnosticErrorInfo>(field(&self.0, name)?.as_string().unwrap_or_default())
+        };
+        Ok(ArtifactOperation {
+            action: text("action")?,
+            filename: text("filename")?,
+            content: text("content")?,
+        })
+    }
+    fn artifact_snapshot(artifacts: IndexMap<String, String>) -> Result<Self, DiagnosticErrorInfo> {
+        let snapshot = Object::new();
+        for (filename, content) in &artifacts {
+            set(&snapshot, filename, &JsValue::from_str(content))?;
+        }
+        Ok(Self(snapshot.into()))
+    }
+    fn artifact_response(response: ArtifactResponse) -> Result<Self, DiagnosticErrorInfo> {
+        let (success, name, value) = match response {
+            ArtifactResponse::Done => return Self::success_response(),
+            ArtifactResponse::Listed(names) => (
+                true,
+                "result",
+                names
+                    .iter()
+                    .map(|name| JsValue::from_str(name))
+                    .collect::<Array>()
+                    .into(),
+            ),
+            ArtifactResponse::Read(content) => (true, "result", JsValue::from_str(&content)),
+            ArtifactResponse::Failed(error) => (false, "error", JsValue::from_str(&error)),
+        };
+        let reply = Object::new();
+        set(&reply, "success", &JsValue::from_bool(success))?;
+        set(&reply, name, &value)?;
+        Ok(Self(reply.into()))
     }
 }
