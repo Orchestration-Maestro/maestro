@@ -6,6 +6,12 @@ use crate::{
 };
 use std::ops::ControlFlow;
 
+/// Item slots paired with the outputs that fill them, padded with an empty output.
+type Slots = std::iter::Zip<
+    std::vec::IntoIter<Node>,
+    std::iter::Chain<std::vec::IntoIter<BlockTokens>, std::iter::RepeatWith<fn() -> BlockTokens>>,
+>;
+
 /// One list whose item nodes are being filled.
 ///
 /// Each item slot travels with the output that fills it, so an output can never
@@ -18,7 +24,7 @@ struct Listing {
     /// Ordered start the list node carries.
     start: Option<u64>,
     /// Item slots paired with the output that fills each, in authored order.
-    pending: std::vec::IntoIter<(Node, BlockTokens)>,
+    pending: Slots,
     /// Filled item nodes, in authored order.
     filled: Vec<Node>,
     /// Whether every item of this list is loose.
@@ -26,16 +32,11 @@ struct Listing {
 }
 
 /// Pair each item slot with the output that fills it, leaving a slot without an output empty.
-pub(super) fn pair_slots(
-    items: Vec<Node>,
-    outputs: Vec<BlockTokens>,
-) -> std::vec::IntoIter<(Node, BlockTokens)> {
-    let padding = std::iter::repeat_with(BlockTokens::default);
+pub(super) fn pair_slots(items: Vec<Node>, outputs: Vec<BlockTokens>) -> Slots {
+    let padding: fn() -> BlockTokens = BlockTokens::default;
     items
         .into_iter()
-        .zip(outputs.into_iter().chain(padding))
-        .collect::<Vec<_>>()
-        .into_iter()
+        .zip(outputs.into_iter().chain(std::iter::repeat_with(padding)))
 }
 
 impl BlockTokens {
