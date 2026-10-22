@@ -35,6 +35,7 @@ mod docx_body;
 mod docx_comments;
 mod docx_drawing_records;
 mod docx_formatting;
+mod docx_links;
 mod docx_metadata;
 mod docx_metadata_packages;
 mod docx_numbering_fonts;

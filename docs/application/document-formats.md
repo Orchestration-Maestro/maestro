@@ -475,9 +475,32 @@ placeholders. Literal marker text is serialized separately from numeric counter
 placeholders, so quotes, backslashes, newlines and literal percent signs cannot
 become CSS syntax or phantom counters. Picture loading and alternate-chunk
 settlement remain with [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784).
-[Hyperlink and smart-tag wiring](https://github.com/Orchestration-Maestro/maestro/issues/760)
-and [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
-remain separate consumers; this does not expose a partial preview entry point.
+[Element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
+remains a separate consumer and reads the link target decision below; this does not
+expose a partial preview entry point.
+
+## Word hyperlink targets
+
+`hyperlink_href(link, relationships)` returns the `href` a rendered Word hyperlink
+carries, or nothing when the target is refused. The target is the first relationship,
+in retained order, whose identifier equals the hyperlink's nonempty identifier and
+whose target mode is exactly `External`; the relationship type is not filtered. A
+matched relationship without a target gives an empty target and ends the search, so a
+later matching relationship is never reached, and an absent, empty or unmatched
+identifier gives an empty target too.
+
+A nonempty anchor appends `#` and the anchor verbatim, so an external target with an
+anchor composes `target#anchor` and an anchor alone composes `#anchor`. The composed
+value is written raw: Maestro does not percent-encode, trim or respell it.
+
+The composed value passes the same `executable` predicate the table writer applies, so
+one rule covers both formats. A target a browser would run as script or an active
+document is refused: `javascript:`, `vbscript:`, or a `data:` URL whose media type is
+HTML, XML, SVG, JavaScript or ECMAScript. A refused link keeps its element, its style
+values and its text, and carries no `href` at all, so activating it does nothing.
+Ordinary `http:`, `https:`, `mailto:`, relative and `#` fragment targets keep their
+authored spelling, as do plain-text and image `data:` URLs and targets that do not
+parse as URLs.
 
 ## Worksheet tables
 

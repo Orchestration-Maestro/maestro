@@ -6,7 +6,7 @@ mod links;
 pub mod ssf;
 
 pub use decimal::strip_decimal;
-pub use links::{executable, script_scheme};
+pub use links::{executable, hyperlink_href, script_scheme};
 
 /// Attachment source resolution.
 pub mod utils;

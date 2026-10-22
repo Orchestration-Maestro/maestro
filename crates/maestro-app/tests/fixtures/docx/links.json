@@ -1,0 +1,572 @@
+[
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://example.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "https://example.test/page"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "http://example.test/plain",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "http://example.test/plain"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "mailto:someone@example.test",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "mailto:someone@example.test"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": null,
+      "anchor": "section-one",
+      "relationships": null
+    },
+    "expected": "#section-one"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": "section-one",
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://example.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "https://example.test/page#section-one"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://internal.test/target",
+          "target_mode": null
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://internal.test/target",
+          "target_mode": "Internal"
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://internal.test/target",
+          "target_mode": "external"
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "shared",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "shared",
+          "target": "https://first.test/page",
+          "target_mode": "External"
+        },
+        {
+          "id": "shared",
+          "target": "https://second.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "https://first.test/page"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "shared-internal",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "shared-internal",
+          "target": "https://internal.test/page",
+          "target_mode": null
+        },
+        {
+          "id": "shared-internal",
+          "target": "https://second.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "https://second.test/page"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": null,
+      "anchor": null,
+      "relationships": null
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "",
+          "target": "https://ignored.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": null,
+      "anchor": "",
+      "relationships": null
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": null
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "folder/page.html",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "folder/page.html"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": "section-one",
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "#fragment",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "#fragment#section-one"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": null,
+      "anchor": "rätsel & φ",
+      "relationships": null
+    },
+    "expected": "#rätsel & φ"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": "rätsel & φ",
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://example.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "https://example.test/page#rätsel & φ"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "HTTP://EXAMPLE.TEST/X",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "HTTP://EXAMPLE.TEST/X"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://example.test/other-type",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "https://example.test/other-type"
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "https://internal.test/target",
+          "target_mode": "External "
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_follow_external_relationships_and_anchors",
+    "input": {
+      "id": "shared-empty",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "shared-empty",
+          "target": "",
+          "target_mode": "External"
+        },
+        {
+          "id": "shared-empty",
+          "target": "https://second.test/page",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": ""
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "javascript:alert(1)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "JaVaScRiPt:alert(2)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "  javascript:alert(3)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "vbscript:msgbox(1)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:text/html,<script>alert(1)</script>",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:TEXT/HTML,<script>alert(1)</script>",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:image/svg+xml,<svg onload=\"alert(1)\"/>",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": "section-one",
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "javascript:alert(4)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:text/xml,<x/>",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:application/xhtml+xml,<html/>",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_targets_refuse_executable_schemes",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:application/javascript,alert(1)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "test": "word_hyperlink_refusal_spares_inert_data_and_fragment_targets",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:text/plain,hello",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "data:text/plain,hello"
+  },
+  {
+    "test": "word_hyperlink_refusal_spares_inert_data_and_fragment_targets",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:,hello",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "data:,hello"
+  },
+  {
+    "test": "word_hyperlink_refusal_spares_inert_data_and_fragment_targets",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "data:image/png;base64,iVBORw0KGgo=",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "data:image/png;base64,iVBORw0KGgo="
+  },
+  {
+    "test": "word_hyperlink_refusal_spares_inert_data_and_fragment_targets",
+    "input": {
+      "id": "rId1",
+      "anchor": null,
+      "relationships": [
+        {
+          "id": "rId1",
+          "target": "#javascript:alert(5)",
+          "target_mode": "External"
+        }
+      ]
+    },
+    "expected": "#javascript:alert(5)"
+  }
+]
