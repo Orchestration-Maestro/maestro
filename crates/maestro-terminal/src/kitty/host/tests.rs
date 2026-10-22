@@ -1,7 +1,11 @@
 //! Behaviour of the host graphics cache and its wire encoding.
 
 use std::collections::HashSet;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_arch = "wasm32"))]
+use super::ClippedPlacement;
 #[cfg(unix)]
 use super::encode_kitty_regular_file;
 use super::{
@@ -720,4 +724,117 @@ fn view_identity_reports_a_change_and_clears_the_continuation() {
     assert!(!cache.update_view(Some(HostView::new(1))));
     assert!(cache.update_view(Some(HostView::new(2))));
     assert!(cache.update_view(None));
+}
+
+/// Debug line a placement at the pane origin emits before it is clipped.
+#[cfg(not(target_arch = "wasm32"))]
+const ORIGIN_VIEWPORT_CHECK: &str = "clipped_placement: viewport check viewport_col=0 \
+     viewport_row=0 area_w=20 area_h=10 scrollback_offset=0 raw_viewport_row=0 \
+     cond1=false cond2=false";
+
+/// Buffer one captured debug stream appends to.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Clone, Default)]
+struct Buffer(Arc<Mutex<Vec<u8>>>);
+
+#[cfg(not(target_arch = "wasm32"))]
+impl std::io::Write for Buffer {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// Debug lines one clipping call emits, without the event header, and its result.
+#[cfg(not(target_arch = "wasm32"))]
+fn clipping_events(placement: &HostPlacement) -> (Option<(ClippedPlacement, u32)>, Vec<String>) {
+    let buffer = Buffer::default();
+    let writer = buffer.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .without_time()
+        .with_ansi(false)
+        .with_level(false)
+        .with_target(false)
+        .with_max_level(tracing::Level::DEBUG)
+        .with_writer(move || writer.clone())
+        .finish();
+    let clipped = maestro_test_tracing::with_default(subscriber, || clipped_placement(placement));
+    let text = String::from_utf8(buffer.0.lock().unwrap().clone()).unwrap();
+    (clipped, text.lines().map(str::to_owned).collect())
+}
+
+/// Assert one clipping call's emitted debug lines and whether it kept a placement.
+#[cfg(not(target_arch = "wasm32"))]
+fn assert_clipping(placement: &HostPlacement, expected: &[&str], kept: bool) {
+    let (clipped, events) = clipping_events(placement);
+    assert_eq!(events, expected);
+    assert_eq!(clipped.is_some(), kept);
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn clipping_reports_each_rejection_reason_and_success() {
+    let mut zero_area = test_placement(0, 0);
+    zero_area.area = Rect::new(0, 0, 0, 10);
+    assert_clipping(
+        &zero_area,
+        &["clipped_placement: area zero area_w=0 area_h=10"],
+        false,
+    );
+
+    let mut zero_grid = test_placement(0, 0);
+    zero_grid.placement.render.grid_cols = 0;
+    assert_clipping(
+        &zero_grid,
+        &["clipped_placement: grid zero grid_cols=0 grid_rows=3"],
+        false,
+    );
+
+    assert_clipping(
+        &test_placement(20, 0),
+        &[
+            "clipped_placement: viewport check viewport_col=20 viewport_row=0 area_w=20 area_h=10 \
+             scrollback_offset=0 raw_viewport_row=0 cond1=true cond2=false",
+        ],
+        false,
+    );
+
+    assert_clipping(
+        &test_placement(-3, 0),
+        &[
+            ORIGIN_VIEWPORT_CHECK,
+            "clipped_placement: visible dims check visible_cols=0 visible_rows=3 \
+             left_clip_cells=3 top_clip_cells=0",
+        ],
+        false,
+    );
+
+    let mut past_image = test_placement(0, 0);
+    past_image.placement.render.source_x = 30;
+    assert_clipping(
+        &past_image,
+        &[
+            ORIGIN_VIEWPORT_CHECK,
+            "clipped_placement: visible dims check visible_cols=3 visible_rows=3 \
+             left_clip_cells=0 top_clip_cells=0",
+            "clipped_placement: source dims zero source_width=0 source_height=30 image_width=30 \
+             image_height=30",
+        ],
+        false,
+    );
+
+    assert_clipping(
+        &test_placement(0, 0),
+        &[
+            ORIGIN_VIEWPORT_CHECK,
+            "clipped_placement: visible dims check visible_cols=3 visible_rows=3 \
+             left_clip_cells=0 top_clip_cells=0",
+            "clipped_placement: success",
+        ],
+        true,
+    );
 }
