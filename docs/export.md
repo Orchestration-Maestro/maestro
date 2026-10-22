@@ -30,11 +30,13 @@ only after writing succeeds.
 
 ## Bundle and theme effects
 
-`ExportOperations` supplies publication checks, asset reads, theme observations
-and output writes. Native `NativeExportOperations` reads, in order:
+`ExportOperations` supplies asset reads and theme observations.
+Native `NativeExportOperations` reads, in order:
 `template.html`, `template.css`, `template.js`, `vendor/marked.min.js` and
 `vendor/highlight.min.js`, from its supplied directory. Native decoding replaces
-invalid UTF-8. Native writes overwrite the output, without creating parents.
+invalid UTF-8. The export checks the input's presence and writes the completed
+document directly through the file system, overwriting an existing output
+without creating parents.
 
 The serializer resolves colors and explicit backgrounds for CSS properties,
 then observes both again for background slots. Explicit page, card and info
