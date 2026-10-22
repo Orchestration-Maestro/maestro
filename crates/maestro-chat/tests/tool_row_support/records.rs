@@ -78,8 +78,8 @@ pub enum Operation {
         #[serde(default, deserialize_with = "present")]
         value: Option<Value>,
     },
-    Started,
-    Complete,
+    Started {},
+    Complete {},
     Result {
         value: ResultRecord,
         partial: Option<bool>,
@@ -93,23 +93,23 @@ pub enum Operation {
     ImageWidth {
         value: f64,
     },
-    Invalidate,
-    Theme,
+    Invalidate {},
+    Theme {},
     Append {
         text: String,
     },
-    Capture,
+    Capture {},
     AliasAppend {
         text: String,
     },
-    Clear,
+    Clear {},
     Callback {
         slot: String,
     },
     Keys {
         value: Vec<String>,
     },
-    Flush,
+    Flush {},
 }
 /// Raw result payload consumed by the public update method.
 #[derive(Deserialize)]

@@ -45,7 +45,7 @@ enum Segment {
     /// Literal lookup operand.
     Literal { text: String },
     /// Recursive wildcard.
-    Globstar,
+    Globstar {},
     /// Scalar queries through the compiled evaluator.
     Pattern { matches: Vec<(String, bool)> },
 }
@@ -91,7 +91,7 @@ fn compare_segment(actual: &ParseReturnFiltered, expected: &Segment, case: &str)
         (ParseReturnFiltered::Literal(actual), Segment::Literal { text }) => {
             assert_eq!(actual, text, "{case}: literal");
         }
-        (ParseReturnFiltered::Globstar, Segment::Globstar) => {}
+        (ParseReturnFiltered::Globstar, Segment::Globstar {}) => {}
         (ParseReturnFiltered::Pattern(actual), Segment::Pattern { matches }) => {
             for (input, expected) in matches {
                 assert_eq!(actual.test(input), *expected, "{case}: query {input:?}");

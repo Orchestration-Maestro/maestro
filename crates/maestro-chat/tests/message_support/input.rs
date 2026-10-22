@@ -68,15 +68,15 @@ pub enum Action {
     #[serde(rename = "expand")]
     Expand { value: bool },
     #[serde(rename = "invalidate")]
-    Invalidate,
+    Invalidate {},
     #[serde(rename = "theme")]
     Theme { value: String },
     #[serde(rename = "keys")]
     Keys { value: Vec<String> },
     #[serde(rename = "captureChildren")]
-    CaptureChildren,
+    CaptureChildren {},
     #[serde(rename = "clear")]
-    Clear,
+    Clear {},
     #[serde(rename = "appendAlias")]
     AppendAlias { text: String },
     #[serde(rename = "append")]
