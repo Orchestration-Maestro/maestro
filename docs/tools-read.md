@@ -236,13 +236,13 @@ working directory is read only when `cwd` and those directories cannot anchor a
 relative result (elsewhere: only for a relative `cwd`), and the home directory
 only for `~`. A cancellation observed after the bytes are read, including while
 converting them, still settles the read as cancelled, for results and failures.
-`resolve_read_path` keeps the first existing spelling among the written path, its
-Unicode-space normalization, the narrow-space AM/PM form, NFD, curly apostrophes,
-and NFD with curly apostrophes. The normalization replaces U+00A0, U+2000-U+200A,
-U+202F, U+205F and U+3000 with a space and is used only when no path has the
-written spelling, so a file whose real name holds one of those spaces opens under
-that name while a typed name whose Unicode spaces stand for plain spaces still
-finds its file.
+`resolve_read_path` tries the written path, then its macOS variants: the
+narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly apostrophes. It
+then tries the same four spellings of its Unicode-space normalization, which
+replaces U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 with a space. The
+normalization is used only when nothing matches the written spelling, so a file
+whose real name holds one of those spaces opens under that name while a typed name
+whose Unicode spaces stand for plain spaces still finds its file.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a

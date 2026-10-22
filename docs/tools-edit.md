@@ -24,10 +24,9 @@ mistyped `path` and `content` follow the shared argument validation. No preparat
 execution-mode override or shell override is declared.
 
 Path resolution is the first step of execution and follows
-[`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs), so a typed path whose
-Unicode spaces stand for plain spaces creates the space-replaced name even when a
-file with the written spelling exists. The working directory is read only when the path and the tool's `cwd` cannot
-anchor the result. The path is resolved when the tool is called, before its future
+[`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), so a rewrite
+changes the file that carries the written spelling, while only a new file takes the
+space-replaced name. The path is resolved when the tool is called, before its future
 is first polled, so a later change of the process working directory does not move
 the write.
 
@@ -124,11 +123,10 @@ Preparation runs before the
 [shared argument validation](models/arguments.md) in the agent loop and performs
 no file operations. Direct execution takes already prepared arguments.
 
-Empty lists fail before path resolution or queue admission. Other calls use
-[`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), which keeps a
-file's written spelling and falls back to its Unicode-space normalization only when
-no path has that spelling; successful resolution
-enters the [file mutation queue](#file-mutation-queue) before polling.
+Empty lists fail before path resolution or queue admission. Other calls resolve
+through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), whose
+spelling rules the [read tool](tools-read.md#read-tool) describes; successful
+resolution enters the [file mutation queue](#file-mutation-queue) before polling.
 Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
 [matching owner](#original-snapshot-matching) against one original snapshot.
 After restoring the retained prefix BOM and detected line endings, it writes

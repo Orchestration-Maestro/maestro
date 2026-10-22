@@ -3,7 +3,7 @@
 use super::{DEFAULT_LIMIT, LsOperations, LsToolDetails, LsToolInput};
 use crate::{
     output::render_parts::{float, num},
-    path_utils::resolve_to_cwd,
+    path_utils::resolve_existing_path,
     utils::diagnostics::{aborted, blocking, diagnostic, failure, guarded},
 };
 use maestro_agent::AgentToolResult;
@@ -57,7 +57,7 @@ impl Lister {
             return Err(aborted());
         }
         let requested = input.path.as_deref().filter(|path| !path.is_empty());
-        let directory = resolve_to_cwd(requested.unwrap_or("."), &self.cwd)
+        let directory = resolve_existing_path(requested.unwrap_or("."), &self.cwd)
             .map_err(|error| diagnostic(&error))?;
         let limit = input.limit.unwrap_or(DEFAULT_LIMIT);
         let operations = &self.operations;

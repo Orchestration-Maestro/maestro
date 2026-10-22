@@ -9,8 +9,9 @@ searches file names; `grep` searches file contents.
 
 `path` is the directory to list. An absent or empty value means the working
 directory the tool was built over. The path is resolved when the tool is called, not
-when it is built, by [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs), which
-owns the rules for absolute spellings, `~` and the working directory.
+when it is built, by
+[`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), so a directory
+whose name holds Unicode spaces is listed under the spelling it was written with.
 
 `limit` is the number of entries to return and defaults to 500. It is a number, not an
 integer: a fractional limit such as 1.5 allows two entries, and zero or a negative limit
@@ -108,7 +109,8 @@ neither resolves paths nor acquires a program. Both factories are native-only.
 
 `pattern` is a required glob string, for example `*.ts` or `src/**/*.spec.ts`.
 `path` defaults to `.` when absent or empty; execution delegates authored path
-resolution to [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs).
+resolution to [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs),
+which keeps the spelling of a directory that exists.
 `limit` defaults to 1000 and is forwarded as a number without rounding.
 
 With supplied `FindOperations`, execution checks `exists` before calling `glob`
@@ -153,7 +155,8 @@ row's previous `Text`, and a rendering failure leaves its text unchanged.
 [`create_grep_tool` and `create_grep_tool_definition`](../crates/maestro-tools/src/search/grep/mod.rs)
 take a working directory, `GrepToolOptions` and an `Arc<ToolsManager>`. They are native-only
 and construction performs no I/O. `pattern` is required; `path` names a file or directory
-and defaults to the working directory. Paths resolve at execution after silent acquisition.
+and defaults to the working directory. Paths resolve at execution, after silent
+acquisition, through the same written-spelling rule as `find`.
 `glob` filters files, `ignoreCase` enables case-insensitive matching and `literal` disables
 regular-expression interpretation. A `--` delimiter protects flag-like search text.
 

@@ -5,7 +5,7 @@ mod highlight;
 mod render;
 
 use crate::{
-    file_mutation_queue::with_file_mutation_queue, path_utils::resolve_to_cwd,
+    file_mutation_queue::with_file_mutation_queue, path_utils::resolve_existing_path,
     tool_definition_wrapper::wrap_tool_definition, types::ToolDefinition,
     utils::diagnostics::diagnostic,
 };
@@ -84,7 +84,7 @@ pub fn create_write_tool_definition<C: 'static>(
         prepare_arguments: None,
         execution_mode: None,
         execute: $ptr::new(move |_id, input, signal, _update, _context| {
-            let absolute_path = match resolve_to_cwd(&input.path, &cwd) {
+            let absolute_path = match resolve_existing_path(&input.path, &cwd) {
                 Ok(path) => path,
                 Err(error) => return Box::pin(std::future::ready(Err(diagnostic(&error)))),
             };
@@ -113,7 +113,7 @@ factories!(Arc, [+ Send]);
 pub mod local {
     use super::{
         Arc, NativeWriteOperations, Tool, WriteToolInput, WriteToolOptions, diagnostic, dirname,
-        json, render, resolve_to_cwd, with_file_mutation_queue, write_file,
+        json, render, resolve_existing_path, with_file_mutation_queue, write_file,
     };
     use crate::tool_definition_wrapper::local::wrap_tool_definition;
     use crate::types::local::ToolDefinition;

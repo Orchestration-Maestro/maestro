@@ -111,7 +111,7 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
         (
             &["x\u{a0}y 1\u{202f}AM.png"],
             "x\u{a0}y 1 AM.png",
-            "x y 1 AM.png",
+            "x\u{a0}y 1\u{202f}AM.png",
         ),
     ];
     for (index, (files, ask, found)) in cases.into_iter().enumerate() {
@@ -151,7 +151,6 @@ fn read_paths_prefer_the_written_spelling_of_an_existing_file() {
         resolve_read_path("p\u{a0}q.txt", &cwd).unwrap(),
         format!("{cwd}/p\u{a0}q.txt")
     );
-    assert_eq!(std::fs::read(&written).unwrap(), b"written");
     let home = TempDir::new();
     home.file("h\u{a0}o.txt", b"home written");
     let home_text = home.text();

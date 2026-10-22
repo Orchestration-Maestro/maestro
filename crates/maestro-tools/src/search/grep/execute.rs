@@ -5,7 +5,7 @@ use crate::{
         render_parts::{float, num},
         truncate::truncate_line,
     },
-    path_utils::{resolve_path, resolve_to_cwd},
+    path_utils::{resolve_existing_path, resolve_path},
     search::{
         listing::select_listing,
         tools_manager::{SearchTool, ToolsManager},
@@ -64,7 +64,7 @@ impl Searcher {
         })
         .await?
         .ok_or_else(|| failure("ripgrep (rg) is not available and could not be downloaded"))?;
-        let root = resolve_to_cwd(
+        let root = resolve_existing_path(
             input
                 .path
                 .as_deref()
