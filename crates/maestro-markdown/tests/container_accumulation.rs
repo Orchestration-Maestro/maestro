@@ -246,3 +246,16 @@ fn resumed_list_items_keep_admission_and_leaf_outcomes() {
         include_str!("fixtures/list_resumption.json"),
     );
 }
+
+#[test]
+fn list_item_continuation_follows_the_reference_verdicts() {
+    use maestro_markdown::MarkedOptions;
+
+    let options = [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: true },
+    ];
+    let fixture = include_str!("fixtures/item_stops.json");
+    observations::check_with_options("stop-kind", 16, fixture, &options);
+    observations::check_with_options("marker-indent", 7, fixture, &options);
+}

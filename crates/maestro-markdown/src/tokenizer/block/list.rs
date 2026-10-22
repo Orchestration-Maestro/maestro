@@ -71,64 +71,6 @@ fn marker(source: &str) -> Option<Marker> {
     })
 }
 
-/// Item-local lookahead rules, prepared once for the selected indentation.
-struct ItemRules {
-    /// Fences, headings, neighboring markers, rules and HTML prefixes.
-    stops: [Option<regress::Regex>; 5],
-}
-impl ItemRules {
-    /// Bind the five shared prefix factories to this item's indentation.
-    fn new(indent: usize, options: MarkedOptions) -> Self {
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.list_rules += 5);
-        let prefix = format!("^ {{0,{}}}", indent.saturating_sub(1).min(3));
-        let factories = [
-            "(?:```|~~~)",
-            "#",
-            r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))",
-            r"((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)",
-            if options == (MarkedOptions::Browser { escape_html: true }) {
-                "<!--"
-            } else {
-                "<(?:[a-z].*>|!--)"
-            },
-        ];
-        let stops =
-            factories.map(|rule| regress::Regex::with_flags(&format!("{prefix}{rule}"), "i").ok());
-        Self { stops }
-    }
-
-    /// A current line can end framing before it is dedented.
-    fn interrupts(&self, line: &str) -> bool {
-        self.stops.iter().flatten().any(|rule| {
-            #[cfg(test)]
-            crate::tests::block_operand(line);
-            rule.find(line).is_some()
-        })
-    }
-
-    /// A previous code line or block opener cannot admit another lazy line.
-    fn ends_lazy(&self, line: &str) -> bool {
-        let code = line
-            .find(|scalar| !matches!(scalar, ' ' | '\t'))
-            .is_some_and(|end| {
-                line[..end]
-                    .chars()
-                    .map(|scalar| if scalar == '\t' { 4 } else { 1 })
-                    .sum::<usize>()
-                    >= 4
-            });
-        code || [0, 1, 3]
-            .into_iter()
-            .filter_map(|index| self.stops[index].as_ref())
-            .any(|rule| {
-                #[cfg(test)]
-                crate::tests::block_operand(line);
-                rule.find(line).is_some()
-            })
-    }
-}
-
 /// Retained list identity and trailing item's admission history.
 pub(crate) struct ListState {
     /// The first marker fixes orderedness and delimiter identity.

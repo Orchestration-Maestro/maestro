@@ -86,8 +86,10 @@ fn container_mapping_matches_the_reference_work_shape() {
     let chained = [32, 64, 128]
         .map(|n| measured_containers(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n))));
     let visits = chained.map(|work| work.list_lines);
-    // The one retained item prepares its rules once, however often its quote resumes.
-    assert_eq!(chained.map(|work| work.list_rules), [5; 3]);
+    // The shared rule sets compile at most twice per cold key, however often its quote resumes.
+    let prepared = chained.map(|work| work.list_rules);
+    assert!(prepared[0] <= 2, "{prepared:?}");
+    assert_eq!(&prepared[1..], &[0, 0], "{prepared:?}");
     let copied = chained.map(|work| work.source_bytes + work.joined_bytes);
     let built_in = chained.map(|work| {
         work.block_recognizer_bytes
@@ -135,6 +137,21 @@ fn container_mapping_matches_the_reference_work_shape() {
         assert_eq!(borrowed[1].source_views, 2 * borrowed[0].source_views);
         eprintln!("container {unit:?}: {counts:?}");
     }
+}
+
+/// Item lookahead rules prepared while parsing one list of one-line items.
+fn item_rule_preparations(lines: usize) -> usize {
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let source = "- item\n".repeat(lines);
+    assert_eq!(parse(source).nodes.len(), 1);
+    super::WORK.with_borrow(|work| work.list_rules)
+}
+
+#[test]
+fn item_rule_preparation_does_not_grow_with_list_length() {
+    let counts = [16, 256, 4096].map(item_rule_preparations);
+    assert!(counts[0] <= 2, "{counts:?}");
+    assert_eq!(&counts[1..], &[0, 0], "{counts:?}");
 }
 
 #[test]
