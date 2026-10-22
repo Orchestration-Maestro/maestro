@@ -12,6 +12,13 @@ pub struct Workspace {
     name: OsString,
 }
 
+/// Write one fixture input below its owning directory.
+pub fn write_input(root: &Path, name: &str, bytes: &str) {
+    let path = root.join(name);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, bytes).unwrap();
+}
+
 /// Copies an executable through a child `install`, so this process never holds a
 /// writable descriptor to a file it later runs (a concurrent fork would otherwise
 /// make `exec` fail with "Text file busy").

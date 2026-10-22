@@ -37,17 +37,20 @@ The native getters take no arguments and describe the running process.
 then calls `Installation::current`, which uses the running executable and this
 crate's compile-time directory. When a `Cargo.toml` declaring `[workspace]` sits at
 or above that directory, the build runs from its source checkout: the layout is
-package and the walk starts at that workspace root, which holds `README.md` and
-`docs/`. Any other build is standalone. `config::get_readme_path`,
+package and the walk starts at that workspace root, which holds `README.md`,
+`docs/` and `examples/`. Any other build is standalone. `config::get_readme_path`,
 `config::get_docs_path` and `config::get_examples_path` resolve their paths in
-that package directory. The workspace has no `examples/` folder yet, so the
-examples path does not exist in a source run. `config::get_theme_directories`
+that package directory. A checkout ships the examples folder there, and the copy
+recipes put it in a standalone layout. `config::get_theme_directories`
 probes the layout without the executable, and locates the executable only when
 no override applies. It pairs its shipped theme directory with the custom theme
 directory of the native agent directory; see
 [application resources](resources.md#theme-directories).
 
-Standalone assets use adjacent `theme`, `export-html` and `assets` directories.
+Standalone assets use `theme` and `assets` directories copied from the
+application crate and an `export-html` directory copied from the supplied viewer
+bundle; the README, release history, documentation and examples come from the
+package directory and are copied beside them.
 Package themes use `crates/maestro-theme/assets/theme`; the other package assets
 use `src` when that child exists, otherwise `dist`. Missing assets
 still produce paths. README, documentation, examples and changelog queries use

@@ -337,9 +337,12 @@ workspace `clean` removes the complete configured output. Explicit copy
 destinations remain available.
 
 `copy-assets SOURCE DESTINATION` copies prepared library themes, images, export
-templates and vendor assets. `copy-binary-assets SOURCE DESTINATION VIEWER` resolves
-the `maestro` manifest through Cargo metadata and copies metadata, README,
+templates and vendor assets. `copy-binary-assets SOURCE DESTINATION VIEWER PACKAGE`
+resolves the `maestro` manifest through Cargo metadata and copies metadata, README,
 release-generated history, themes, images, the supplied viewer, docs and examples.
+Themes and images come from `SOURCE`, the `export-html` directory from `VIEWER`,
+and the README, history, documentation and examples from the package directory
+`PACKAGE`, which defaults to the justfile directory.
 These commands do not generate a viewer or regenerate assets. Missing inputs fail;
 already copied groups and unrelated destination files remain. `app-build` compiles
 before library copying. `build-binary` compiles toolkit, models, agent, application

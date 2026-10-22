@@ -104,6 +104,7 @@ mod settings_manager_bug_checks;
 mod settings_manager_checks;
 mod share_links;
 mod shell_root_exports;
+mod shipped_examples;
 mod skill_precedence;
 mod spreadsheet_attachments;
 mod spreadsheet_html;
