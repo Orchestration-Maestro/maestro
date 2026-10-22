@@ -238,7 +238,7 @@ only for `~`. A cancellation observed after the bytes are read, including while
 converting them, still settles the read as cancelled, for results and failures.
 `resolve_read_path` tries the written path, then its macOS variants: the
 narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly apostrophes. It
-then tries the same four spellings of its Unicode-space normalization, which
+then tries the same five spellings of its Unicode-space normalization, which
 replaces U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 with a space. The
 normalization is used only when nothing matches the written spelling, so a file
 whose real name holds one of those spaces opens under that name while a typed name

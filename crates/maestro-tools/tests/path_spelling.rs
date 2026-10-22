@@ -6,7 +6,7 @@ use crate::edit_support;
 use crate::read_support::{TempDir, call, content_json, input, only_text, text_json};
 use crate::runtime::run;
 #[cfg(unix)]
-use crate::{find_support, ls_support};
+use crate::{find_support, grep_support, ls_support};
 use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolInput, WriteToolOptions,
     create_edit_tool_definition, create_read_tool_definition, create_write_tool_definition,
@@ -15,10 +15,9 @@ use maestro_tools::{
 use serde_json::json;
 #[cfg(unix)]
 use {
-    maestro_agent::AgentTool,
     maestro_tools::{
-        FindToolOptions, GrepToolOptions, LsToolOptions, ToolsManager, create_find_tool,
-        create_grep_tool, create_ls_tool,
+        FindToolOptions, GrepToolOptions, LsToolOptions, create_find_tool, create_grep_tool,
+        create_ls_tool,
     },
     std::sync::{Arc, atomic::AtomicUsize},
 };
@@ -78,36 +77,29 @@ fn write_rewrites_a_file_named_with_a_unicode_space() {
     assert!(!dir.0.join("x y.txt").exists());
 }
 
-/// Run `tool` over a program that records its operands, and return them.
+/// Run `tool` over a recorded program and return the operands it was given.
 #[cfg(unix)]
-fn recorded_operands(
-    program: &str,
-    tool: impl FnOnce(Arc<ToolsManager>) -> AgentTool,
-    params: serde_json::Value,
-) -> Vec<String> {
-    let bin = TempDir::new();
-    let operands = bin.0.join("operands.json");
-    let body = format!(
-        "#!/usr/bin/python3\nimport sys,json\njson.dump(sys.argv[1:],open({},'w'))\n",
-        json!(operands.to_str().unwrap())
-    );
-    find_support::executable(&bin, program, &body);
-    let manager = find_support::manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
-    let tool = tool(manager);
-    run((tool.execute)("call".into(), params, None, None)).unwrap();
-    serde_json::from_slice(&std::fs::read(&operands).unwrap()).unwrap()
+fn recorded(path: &std::path::Path) -> Vec<String> {
+    serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
 }
 
-/// Listing and searching reach a directory named with a no-break space, not its neighbour.
+/// A directory named with a no-break space beside its plain-space twin.
 #[cfg(unix)]
-#[test]
-fn search_roots_reach_a_directory_named_with_a_unicode_space() {
+fn spaced_directories() -> (TempDir, String) {
     let dir = TempDir::new();
     std::fs::create_dir(dir.0.join("s\u{a0}dir")).unwrap();
     dir.file("s\u{a0}dir/written.txt", b"");
     std::fs::create_dir(dir.0.join("s dir")).unwrap();
     dir.file("s dir/plain.txt", b"");
-    let written_root = format!("{}/s\u{a0}dir", dir.text());
+    let written = format!("{}/s\u{a0}dir", dir.text());
+    (dir, written)
+}
+
+/// Listing reaches a directory named with a no-break space, not its neighbour.
+#[cfg(unix)]
+#[test]
+fn ls_reaches_a_directory_named_with_a_unicode_space() {
+    let (dir, _) = spaced_directories();
     let ls = create_ls_tool(dir.text(), LsToolOptions::default());
     let listed = run((ls.execute)(
         "call".into(),
@@ -120,23 +112,51 @@ fn search_roots_reach_a_directory_named_with_a_unicode_space() {
         ls_support::result_json(&listed.content, listed.details)["content"][0]["text"],
         json!("written.txt")
     );
-    let found = recorded_operands(
-        "fd",
-        |manager| create_find_tool(dir.text(), FindToolOptions::default(), manager),
+}
+
+/// Searching with `find` reaches a directory named with a no-break space, not its neighbour.
+#[cfg(unix)]
+#[test]
+fn find_reaches_a_directory_named_with_a_unicode_space() {
+    let (dir, written) = spaced_directories();
+    let bin = TempDir::new();
+    let operands = find_support::recorder(&bin);
+    let manager = find_support::manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
+    let tool = create_find_tool(dir.text(), FindToolOptions::default(), manager);
+    run((tool.execute)(
+        "call".into(),
         json!({"pattern": "*", "path": "s\u{a0}dir"}),
-    );
+        None,
+        None,
+    ))
+    .unwrap();
     assert_eq!(
-        found.last().map(String::as_str),
-        Some(written_root.as_str())
+        recorded(&operands).last().map(String::as_str),
+        Some(written.as_str())
     );
-    let searched = recorded_operands(
-        "rg",
-        |manager| create_grep_tool(dir.text(), GrepToolOptions::default(), manager),
+}
+
+/// Searching with `grep` reaches a directory named with a no-break space, not its neighbour.
+#[cfg(unix)]
+#[test]
+fn grep_reaches_a_directory_named_with_a_unicode_space() {
+    let (dir, written) = spaced_directories();
+    let bin = TempDir::new();
+    grep_support::producer(&bin, &grep_support::Input::default());
+    let manager = find_support::manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
+    let tool = create_grep_tool(dir.text(), GrepToolOptions::default(), manager);
+    run((tool.execute)(
+        "call".into(),
         json!({"pattern": "hit", "path": "s\u{a0}dir"}),
-    );
+        None,
+        None,
+    ))
+    .unwrap();
     assert_eq!(
-        searched.last().map(String::as_str),
-        Some(written_root.as_str())
+        recorded(&bin.0.join("args.json"))
+            .last()
+            .map(String::as_str),
+        Some(written.as_str())
     );
 }
 

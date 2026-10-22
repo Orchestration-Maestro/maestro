@@ -77,7 +77,7 @@ type Fallback = (&'static [&'static str], &'static str, &'static str);
 #[test]
 fn read_paths_try_original_ampm_nfd_curly_then_combined() {
     const AM: &str = "shot 10.00\u{202f}AM.png";
-    let cases: [Fallback; 15] = [
+    let cases: [Fallback; 16] = [
         (&[], "shot 10.00 AM.png", "shot 10.00 AM.png"),
         (&[AM], "shot 10.00 AM.png", AM),
         (
@@ -112,6 +112,11 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
             &["x\u{a0}y 1\u{202f}AM.png"],
             "x\u{a0}y 1 AM.png",
             "x\u{a0}y 1\u{202f}AM.png",
+        ),
+        (
+            &["x y 1\u{202f}AM.png"],
+            "x\u{a0}y 1 AM.png",
+            "x y 1\u{202f}AM.png",
         ),
     ];
     for (index, (files, ask, found)) in cases.into_iter().enumerate() {

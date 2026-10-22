@@ -24,11 +24,13 @@ mistyped `path` and `content` follow the shared argument validation. No preparat
 execution-mode override or shell override is declared.
 
 Path resolution is the first step of execution and follows
-[`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), so a rewrite
-changes the file that carries the written spelling, while only a new file takes the
-space-replaced name. The path is resolved when the tool is called, before its future
-is first polled, so a later change of the process working directory does not move
-the write.
+[`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs); the working
+directory is read only when the path and the tool's `cwd` cannot anchor the result.
+A path naming an existing file resolves to that file, so a rewrite changes the file
+that carries the written spelling; a path naming nothing keeps its space-replaced
+spelling, so a new file takes that name. The path is resolved when the tool is
+called, before its future is first polled, so a later change of the process working
+directory does not move the write.
 
 A successful call creates the missing parent directories and replaces the file,
 including with empty content. It returns one text block, `Successfully wrote N bytes
@@ -124,9 +126,10 @@ Preparation runs before the
 no file operations. Direct execution takes already prepared arguments.
 
 Empty lists fail before path resolution or queue admission. Other calls resolve
-through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), whose
-spelling rules the [read tool](tools-read.md#read-tool) describes; successful
-resolution enters the [file mutation queue](#file-mutation-queue) before polling.
+through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs), which
+keeps the spelling of a file that exists and otherwise uses the space-replaced
+spelling; successful resolution enters the
+[file mutation queue](#file-mutation-queue) before polling.
 Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
 [matching owner](#original-snapshot-matching) against one original snapshot.
 After restoring the retained prefix BOM and detected line endings, it writes

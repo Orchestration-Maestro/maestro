@@ -155,32 +155,40 @@ pub fn resolve_existing_path(file_path: &str, cwd: &str) -> io::Result<String> {
 /// The first existing spelling among `resolved` and its macOS variants.
 ///
 /// Variants are tried in order: the AM/PM form, NFD, curly apostrophes, and NFD with
-/// curly apostrophes.
+/// curly apostrophes. A variant that repeats `resolved` costs no second check.
 fn existing_variant(resolved: &str) -> Option<String> {
+    if Path::new(resolved).exists() {
+        return Some(resolved.to_owned());
+    }
     let nfd = String::from(DecomposingNormalizer::new_nfd().normalize(resolved));
     [
-        resolved.to_owned(),
         narrow_space_before_meridiem(resolved),
         nfd.clone(),
         resolved.replace('\'', "\u{2019}"),
         nfd.replace('\'', "\u{2019}"),
     ]
     .into_iter()
+    .filter(|candidate| candidate.as_str() != resolved)
     .find(|candidate| Path::new(candidate).exists())
 }
 
 /// Resolve a path under the written spelling or one of its variants, then under its
 /// Unicode-space normalization in the same order.
 ///
-/// When nothing exists the normalized spelling is returned.
+/// When nothing exists the spelling that was resolved last is returned.
 ///
 /// # Errors
 /// Returns the home-directory, working-directory or invalid-UTF-8 error of the
 /// spelling the path was resolved with.
 pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
-    if let Some(found) = existing_variant(&resolve_written_path(file_path, cwd)?) {
+    let written = resolve_written_path(file_path, cwd)?;
+    if let Some(found) = existing_variant(&written) {
         return Ok(found);
     }
-    let normalized = resolve_to_cwd(file_path, cwd)?;
-    Ok(existing_variant(&normalized).unwrap_or(normalized))
+    let normalized = normalize_unicode_spaces(file_path);
+    if normalized == file_path {
+        return Ok(written);
+    }
+    let resolved = resolve_written_path(&normalized, cwd)?;
+    Ok(existing_variant(&resolved).unwrap_or(resolved))
 }
