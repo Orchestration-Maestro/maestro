@@ -8,14 +8,15 @@ use maestro_app::{AgentMessage, JsonObject, SharedHandle};
 use maestro_web::{
     MessageRenderer, RUNTIME_MESSAGE_ROUTER,
     browser::sandbox_value::BrowserSandboxValue,
+    components::message_renderer_registry::dom::render_message,
     components::sandbox::runtime_message_router::MessageConsumer,
     contributions::{
         BrowserContribution, ContributionDescriptor, ContributionFailure, ContributionHost,
         ContributionView, SlotMount, admit, register_contribution, route_contribution,
         slot_contributions,
     },
-    dom::{DomContent, DomView, MountedContent},
-    register_message_renderer, register_tool_renderer, render_message_dom, set_show_json_mode,
+    dom::{DomContent, DomRoot, DomView, MountedContent},
+    register_message_renderer, register_tool_renderer, set_show_json_mode,
     tools::{
         dom::render_tool,
         types::{
@@ -72,7 +73,7 @@ fn user_message() -> AgentMessage {
 }
 /// Text the page message renderer for `message` shows, if one is registered.
 fn message_text(view: &DomView, message: &AgentMessage) -> Option<String> {
-    let content = render_message_dom(message).unwrap()?;
+    let content = render_message(message).unwrap()?;
     let parent: Node = container().into();
     MountedContent::default()
         .show(content.as_ref(), &parent, view)
@@ -175,7 +176,7 @@ pub async fn contributions_load_two_independent_modules_without_rebuilding_the_h
         message_text(&view, &user_message()).as_deref(),
         Some("message:user:hi")
     );
-    let page = route_contribution("fixture-page").unwrap();
+    let page = route_contribution("fixture-page").unwrap().unwrap();
     assert_eq!(
         (page.package.as_str(), page.descriptor.id.as_str()),
         (PACKAGE, "fixture-page")
@@ -284,13 +285,13 @@ struct BuiltIn;
 /// The built-in code listing element.
 struct CodeListing;
 impl DomContent for CodeListing {
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let block = view.document.create_element("code-block").unwrap();
         block.set_attribute("code", "let built_in = 1;").unwrap();
         block.set_attribute("language", "rust").unwrap();
-        Ok(block.into())
+        Ok(DomRoot::new(block))
     }
-    fn update(&self, _: &Node, _: &DomView) -> Result<(), ToolUiError> {
+    fn update(&self, _: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
         Ok(())
     }
 }
@@ -313,7 +314,7 @@ pub async fn slot_mounts_built_in_module_and_frame_through_one_caller(
     let _listing = register_contribution(built_in, Rc::new(BuiltIn));
     let parent = container();
     let mut home = SlotMount::new("home", parent.clone());
-    let failures = home.show(&json!({"title": "Home"}), &view).unwrap();
+    let failures = home.show(&json!({"title": "Home"}), &view);
     assert_eq!(
         sentences(&failures),
         ["fixture-needs-missing: missing host API absent.api"]
@@ -490,7 +491,7 @@ pub async fn failed_initialization_releases_and_reports(import_module: js_sys::F
             && failures[0].contains("NotSupportedError")
     );
     assert!(failures[1].starts_with("modules/missing/module.js: "));
-    assert_eq!(route_contribution("fixture-page"), None);
+    assert_eq!(route_contribution("fixture-page"), Ok(None));
     assert_eq!(
         admit(&greeting_required(), None),
         Err(ContributionFailure::MissingApi {
@@ -545,11 +546,8 @@ pub async fn undeclared_and_duplicate_definitions_are_rejected(import_module: js
     );
     assert_eq!(window.custom_elements().get("qa-page-view"), defined);
     // Defining the built-in elements again for the same page is not attempted.
-    let again = ContributionHost::<maestro_app::NoCustomMessages>::new(
-        Rc::clone(&view),
-        None,
-        import_module.clone(),
-    );
+    let again =
+        ContributionHost::<maestro_app::NoCustomMessages>::new(&view, None, import_module.clone());
     assert!(again.is_ok());
 }
 
@@ -575,7 +573,7 @@ pub async fn disabling_releases_only_still_owned_registrations(import_module: js
     ));
     assert_eq!(text(&tool), "native");
     assert_eq!(message_text(&view, &user_message()), None);
-    assert_eq!(route_contribution("fixture-page"), None);
+    assert_eq!(route_contribution("fixture-page"), Ok(None));
     assert!(
         slot_contributions("home").is_empty() && slot_contributions("fixture-page.tabs").is_empty()
     );
@@ -667,23 +665,19 @@ pub async fn class_definition_outlives_mounted_views(import_module: js_sys::Func
     let registry = web_sys::window().unwrap().custom_elements();
     let parent = container();
     let mut home = SlotMount::new("home", parent.clone());
-    home.show(&json!({"title": "One"}), &view).unwrap();
+    home.show(&json!({"title": "One"}), &view);
     let first = parent.query_selector("qa-card-view").unwrap().unwrap();
     let copy = registry.get("copy-button");
     home.clear();
     assert_eq!(parent.child_element_count(), 0);
     assert!(!registry.get("qa-card-view").is_undefined());
-    home.show(&json!({"title": "Two"}), &view).unwrap();
+    home.show(&json!({"title": "Two"}), &view);
     let second = parent.query_selector("qa-card-view").unwrap().unwrap();
     assert_ne!(first, second);
     assert_eq!(text(&second), "card:Two");
     assert!(
-        ContributionHost::<maestro_app::NoCustomMessages>::new(
-            Rc::clone(&view),
-            None,
-            import_module.clone()
-        )
-        .is_ok()
+        ContributionHost::<maestro_app::NoCustomMessages>::new(&view, None, import_module.clone())
+            .is_ok()
     );
     assert_eq!(registry.get("copy-button"), copy);
 }
@@ -736,24 +730,29 @@ async fn frame_messages(
 ) -> (
     Element,
     SlotMount,
+    Rc<DomView>,
     impl Sized,
     tokio::sync::mpsc::UnboundedReceiver<Value>,
 ) {
     let (view, host, registrations, _) = loaded(import_module).await;
     let parent = container();
     let mut home = SlotMount::new("home", parent.clone());
-    home.show(&json!({"title": "Home"}), &view).unwrap();
+    home.show(&json!({"title": "Home"}), &view);
+    (parent, home, view, (host, registrations), frame_receiver())
+}
+/// Subscribe to the frame contribution's admitted messages; each load registers the frame anew.
+fn frame_receiver() -> tokio::sync::mpsc::UnboundedReceiver<Value> {
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
     let consumer: SharedHandle<dyn MessageConsumer<BrowserSandboxValue>> =
         SharedHandle::new(Received(sender));
     RUNTIME_MESSAGE_ROUTER.with(|router| router.add_consumer("fixture-frame", consumer));
-    (parent, home, (view, host, registrations), receiver)
+    receiver
 }
 
 /// The router delivers the frame's own messages and drops a forged one from the page.
 #[wasm_bindgen]
 pub async fn isolated_frame_accepts_only_its_registered_source(import_module: js_sys::Function) {
-    let (parent, _home, _kept, mut received) = frame_messages(&import_module).await;
+    let (parent, _home, _view, _kept, mut received) = frame_messages(&import_module).await;
     let first = received.recv().await.unwrap();
     assert_eq!(
         (first["type"].as_str(), first["text"].as_str()),
@@ -782,7 +781,7 @@ pub async fn isolated_frame_accepts_only_its_registered_source(import_module: js
 /// The isolated frame has an opaque origin, no storage or cookies and no reach into the host page.
 #[wasm_bindgen]
 pub async fn isolated_frame_denies_credentials_and_native_access(import_module: js_sys::Function) {
-    let (parent, _home, _kept, mut received) = frame_messages(&import_module).await;
+    let (parent, _home, _view, _kept, mut received) = frame_messages(&import_module).await;
     let probe = received.recv().await.unwrap();
     assert_eq!(probe["origin"].as_str(), Some("null"));
     for field in ["cookie", "storage", "parent"] {
@@ -820,7 +819,7 @@ pub async fn exercised_elements_keep_accessible_names_focus_and_find_text(
         parent.append_child(&block).unwrap();
     }
     let mut home = SlotMount::new("home", container());
-    home.show(&json!({"title": "Home"}), &view).unwrap();
+    home.show(&json!({"title": "Home"}), &view);
     let tree = driver("driverAria", "body").await.as_string().unwrap();
     assert_eq!(tree.matches("button \"Copy code\"").count(), 2, "{tree}");
     assert!(
@@ -967,7 +966,7 @@ pub async fn repeated_mount_and_unmount_records_mutations_timings_memory_and_siz
     let heap_before = plain(&page, "heap", &no_arguments).await;
     let mut home = SlotMount::new("home", container());
     for cycle in 0..200 {
-        home.show(&json!({"title": cycle}), &view).unwrap();
+        home.show(&json!({"title": cycle}), &view);
         home.clear();
     }
     let heap_after = plain(&page, "heap", &no_arguments).await;
@@ -979,4 +978,284 @@ pub async fn repeated_mount_and_unmount_records_mutations_timings_memory_and_siz
         "assets": asset_sizes(&page).await,
     });
     web_sys::console::log_1(&format!("MEASURE {report}").into());
+}
+
+/// An isolated frame follows a changed slot input by loading again with it.
+#[wasm_bindgen]
+pub async fn isolated_frame_receives_changed_input(import_module: js_sys::Function) {
+    let (parent, mut home, view, _kept, mut received) = frame_messages(&import_module).await;
+    let first = received.recv().await.unwrap();
+    assert_eq!(first["text"].as_str(), Some("frame:Home"));
+    let before = parent.query_selector("iframe").unwrap().unwrap();
+    let failures = home.show(&json!({"title": "Next"}), &view);
+    assert_eq!(
+        sentences(&failures),
+        ["fixture-needs-missing: missing host API absent.api"]
+    );
+    let after = parent.query_selector("iframe").unwrap().unwrap();
+    assert_ne!(before, after, "the frame kept its first input");
+    assert_eq!(parent.query_selector_all("iframe").unwrap().length(), 1);
+    let next = frame_receiver().recv().await.unwrap();
+    assert_eq!(next["text"].as_str(), Some("frame:Next"));
+    // Showing the same input again keeps the loaded frame.
+    home.show(&json!({"title": "Next"}), &view);
+    assert_eq!(parent.query_selector("iframe").unwrap(), Some(after));
+}
+
+/// Content whose mount always fails.
+struct Unmountable;
+impl DomContent for Unmountable {
+    fn mount(&self, _: &DomView) -> Result<DomRoot, ToolUiError> {
+        Err(ToolUiError::Presentation("cannot mount".into()))
+    }
+    fn update(&self, _: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        Err(ToolUiError::Presentation("cannot mount".into()))
+    }
+}
+/// A contribution view whose content never mounts.
+struct FailingView;
+impl ContributionView for FailingView {
+    fn content(&self, _: &Value) -> Box<dyn DomContent> {
+        Box::new(Unmountable)
+    }
+}
+/// A built-in contribution with these descriptor fields.
+fn built_in(fields: Value) -> BrowserContribution {
+    BrowserContribution {
+        package: "built-in".into(),
+        descriptor: descriptor(fields),
+    }
+}
+
+/// A failing mount shows its failure in place, later contributions still mount and clearing removes every wrapper.
+#[wasm_bindgen]
+pub fn failing_mounts_show_their_failure_and_later_contributions_mount() {
+    let view = view();
+    let _failing = register_contribution(
+        built_in(json!({"id": "qa-failing", "kind": "card", "target": "qa-failures"})),
+        Rc::new(FailingView),
+    );
+    let _later = register_contribution(
+        built_in(json!({"id": "qa-later", "kind": "card", "target": "qa-failures"})),
+        Rc::new(BuiltIn),
+    );
+    let parent = container();
+    let mut slot = SlotMount::new("qa-failures", parent.clone());
+    let shown = slot.show(&json!({}), &view);
+    assert_eq!(sentences(&shown), ["qa-failing: cannot mount"]);
+    assert_eq!(parent.child_element_count(), 2);
+    let alert = parent.query_selector("[role=alert]").unwrap().unwrap();
+    assert_eq!(text(&alert), "qa-failing: cannot mount");
+    assert!(parent.query_selector("code-block").unwrap().is_some());
+    slot.clear();
+    assert_eq!(parent.child_element_count(), 0);
+}
+
+/// A replacement renderer under a fresh element name replaces the mounted element.
+#[wasm_bindgen]
+pub async fn a_replacement_with_a_new_tag_replaces_the_element(import_module: js_sys::Function) {
+    let (view, _host, _registrations, _) = loaded(&import_module).await;
+    let parent: Node = container().into();
+    let mut mounted = MountedContent::default();
+    show_tool(&mut mounted, &parent, &view, "fixture_tool", ("one", false));
+    let name = |mounted: &MountedContent| mounted.root().unwrap().node_name().to_lowercase();
+    assert_eq!(name(&mounted), "qa-tool-view");
+    let entry = format!("{}modules/a/module.js", base());
+    let module = crate::contributions_support::settle(
+        import_module.call1(&JsValue::NULL, &entry.into()).unwrap(),
+    )
+    .await
+    .unwrap();
+    call(&module, "upgrade", &js_sys::Array::new()).await;
+    show_tool(&mut mounted, &parent, &view, "fixture_tool", ("two", false));
+    assert_eq!(name(&mounted), "qa-tool-view-2");
+    assert_eq!(parent.child_nodes().length(), 1);
+    assert_eq!(text(&parent), "tool:two:false:hello A");
+}
+
+/// Two contributions declaring one child slot with different contracts make the slot's entries visible failures.
+#[wasm_bindgen]
+pub fn conflicting_slot_contracts_are_visible_failures() {
+    let view = view();
+    let _one = register_contribution(
+        built_in(json!({"id": "qa-one", "kind": "page", "target": "qa-pages",
+            "slots": [{"name": "qa-shared", "input": "qa.a"}]})),
+        Rc::new(BuiltIn),
+    );
+    let _two = register_contribution(
+        built_in(json!({"id": "qa-two", "kind": "page", "target": "qa-pages",
+            "slots": [{"name": "qa-shared", "input": "qa.b"}]})),
+        Rc::new(BuiltIn),
+    );
+    let _child = register_contribution(
+        built_in(json!({"id": "qa-child", "kind": "tab", "target": "qa-shared", "input": "qa.a"})),
+        Rc::new(BuiltIn),
+    );
+    let parent = container();
+    let failures = SlotMount::new("qa-shared", parent.clone()).show(&json!({}), &view);
+    let conflict = "qa-shared: declared by qa-one and qa-two";
+    assert_eq!(sentences(&failures), [conflict]);
+    let alert = parent.query_selector("[role=alert]").unwrap();
+    assert_eq!(alert.map(|alert| text(&alert)).as_deref(), Some(conflict));
+    assert!(parent.query_selector("code-block").unwrap().is_none());
+}
+
+/// A module message renderer whose required API is missing shows its failure instead of the element.
+#[wasm_bindgen]
+pub async fn message_renderers_report_a_missing_required_api(import_module: js_sys::Function) {
+    let view = view();
+    let host = host(&view, &import_module);
+    let mut declared = contributions().await;
+    for contribution in &mut declared {
+        if contribution.descriptor.id == "fixture-message" {
+            contribution.descriptor.requires.push("absent.api".into());
+        }
+    }
+    let (_registrations, _) = host.load(&declared, &base()).await;
+    assert_eq!(
+        message_text(&view, &user_message()).as_deref(),
+        Some("fixture-message: missing host API absent.api")
+    );
+}
+
+/// A module registering from an update handler while it is released keeps nothing registered.
+#[wasm_bindgen]
+pub async fn registrations_from_teardown_callbacks_do_not_survive(import_module: js_sys::Function) {
+    let view = view();
+    let host = host(&view, &import_module);
+    // A built-in page supplies the tab contract, so module A's tabs stay admitted while it is released.
+    let _tabs_page = register_contribution(
+        built_in(
+            json!({"id": "qa-tabs-page", "kind": "page", "target": "qa-pages",
+            "slots": [{"name": "fixture-page.tabs", "input": "fixture.tab"}]}),
+        ),
+        Rc::new(BuiltIn),
+    );
+    let module_a: Vec<BrowserContribution> = contributions()
+        .await
+        .into_iter()
+        .filter(|c| {
+            c.descriptor
+                .module
+                .as_ref()
+                .is_some_and(|m| m.entry == "modules/a/module.js")
+        })
+        .collect();
+    let (registrations, _) = host.load(&module_a, &base()).await;
+    // Each update of this tab registers the module's tool renderer again.
+    let _tabs = slot("fixture-page.tabs", &json!({"tab": "again"}));
+    drop(registrations);
+    let tool: Node = container().into();
+    let custom = show_tool(
+        &mut MountedContent::default(),
+        &tool,
+        &view,
+        "fixture_tool",
+        ("x", false),
+    );
+    assert!(!custom, "{}", text(&tool));
+    assert!(text(&tool).starts_with("Tool Call"));
+}
+
+/// Identifiers, element tags and API names that are not strings are refused.
+#[wasm_bindgen]
+pub async fn non_string_identifiers_tags_and_names_are_refused(import_module: js_sys::Function) {
+    let (_view, _host, _registrations, _) = loaded(&import_module).await;
+    let window = web_sys::window().unwrap();
+    let recorded = |name: &str| {
+        js_sys::Reflect::get(&window, &name.into())
+            .unwrap()
+            .as_string()
+    };
+    assert_eq!(
+        recorded("qaNonStringId").as_deref(),
+        Some("register: identifier is not a string")
+    );
+    assert_eq!(
+        recorded("qaNonStringTag").as_deref(),
+        Some("register: tag is not a string")
+    );
+    assert_eq!(
+        recorded("qaNonStringApi").as_deref(),
+        Some("api: name is not a string")
+    );
+}
+
+/// A descriptor naming both a module and a document mounts the module and reports the ignored document.
+#[wasm_bindgen]
+pub async fn a_descriptor_with_module_and_document_mounts_the_module(
+    import_module: js_sys::Function,
+) {
+    let view = view();
+    let host = host(&view, &import_module);
+    let mut declared = contributions().await;
+    for contribution in &mut declared {
+        if contribution.descriptor.id == "fixture-card" {
+            contribution.descriptor.document = Some("frames/card.html".into());
+        }
+    }
+    let (_registrations, failures) = host.load(&declared, &base()).await;
+    assert!(
+        sentences(&failures)
+            .contains(&"frames/card.html: ignored, the module supplies this contribution".into()),
+        "{failures:?}",
+        failures = sentences(&failures)
+    );
+    let home = slot("home", &json!({"title": "Home"}));
+    assert_eq!(home.query_selector_all("qa-card-view").unwrap().length(), 1);
+    assert_eq!(home.query_selector_all("iframe").unwrap().length(), 1);
+}
+
+/// A missing registration export and binding glue paired with another module's WebAssembly fail initialization.
+#[wasm_bindgen]
+pub async fn missing_register_export_and_mismatched_glue_fail_initialization(
+    import_module: js_sys::Function,
+) {
+    let view = view();
+    let host = host(&view, &import_module);
+    let card = |register: &str, wasm: &str| BrowserContribution {
+        package: PACKAGE.into(),
+        descriptor: descriptor(json!({"id": "qa-module", "kind": "card", "target": "home",
+            "module": {"entry": "modules/a/module.js", "wasm": wasm, "register": register}})),
+    };
+    // Glue initializes once per page, so the mismatch runs before any successful start.
+    let (_registrations, failures) = host
+        .load(&[card("register", "modules/b/module_bg.wasm")], &base())
+        .await;
+    let failures = sentences(&failures);
+    assert_eq!(failures.len(), 1, "{failures:?}");
+    assert!(
+        failures[0].starts_with("modules/a/module.js: ") && failures[0].contains("Error"),
+        "{failures:?}"
+    );
+    let (_registrations, failures) = host
+        .load(&[card("absent", "modules/a/module_bg.wasm")], &base())
+        .await;
+    assert_eq!(
+        sentences(&failures),
+        ["modules/a/module.js: missing export absent"]
+    );
+    assert!(slot_contributions("home").is_empty());
+}
+
+/// The page runs the pinned element bridge's shipped 43-line subclass shim unchanged.
+#[wasm_bindgen]
+pub async fn the_element_bridge_ships_its_pinned_shim(import_module: js_sys::Function) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let shim: Vec<String> = fetched()
+        .into_iter()
+        .filter(|name| name.starts_with("/snippets/custom-element-"))
+        .collect();
+    assert_eq!(shim.len(), 1, "{shim:?}");
+    assert!(shim[0].ends_with("/src/createCustomElement.js"), "{shim:?}");
+    let source =
+        crate::contributions_support::fetch_text(&format!("{}{}", origin(), shim[0])).await;
+    assert_eq!(source.lines().count(), 43);
+    let page = page_module(&import_module).await;
+    let digest = call(&page, "sha256", &js_sys::Array::of1(&source.into())).await;
+    assert_eq!(
+        digest.as_string().as_deref(),
+        Some("3aa9226c9bc4b441dafcfe30649deef5e2f5dfe57eefe915a3ad0eaffe95f1e8")
+    );
 }

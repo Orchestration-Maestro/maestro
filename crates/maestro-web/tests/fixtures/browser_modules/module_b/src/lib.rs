@@ -113,6 +113,16 @@ pub fn register(host: JsValue) -> Result<(), JsValue> {
             &"qa-card-view".into(),
         ),
     );
+    let number = JsValue::from_f64(7.0);
+    record(
+        "qaNonStringId",
+        call("register", &number, &"qa-card-view".into()),
+    );
+    record(
+        "qaNonStringTag",
+        call("register", &"fixture-card".into(), &number),
+    );
+    record("qaNonStringApi", call("api", &number, &JsValue::UNDEFINED));
     define("qa-page-view", true)?;
     define("qa-card-view", false)?;
     for (id, tag) in [

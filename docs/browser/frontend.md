@@ -92,23 +92,41 @@ feedback and caller-measured message slots. It does not render message content.
 ## Page content
 
 [`DomContent`](../../crates/maestro-web/src/dom.rs) is page content: `mount`
-creates its own root and `update` brings that root up to date. `DomView` carries
-the page operands once (document, localization, syntax engine, brand pack and
-mode). `MountedContent` keeps one placed root. Showing content of the same type
-updates the root in place; content of another type mounts a new root in place of
-the old one. A failed mount returns its error and keeps the previous root.
+creates its own `DomRoot` and `update` brings that root up to date. A `DomRoot`
+holds the root node and, optionally, an owner for native resources that live
+exactly as long as the root, such as an isolated frame. `DomView` carries the
+page operands once (document, localization, syntax engine, brand pack and mode).
+`MountedContent` keeps one placed root. Content of the same type and `key`
+updates the root in place. Content of another type, or of another key (module
+elements use their tag), mounts a new root in place of the old one and releases
+the old root's owner. A failed mount returns its error and keeps the
+previous root.
 
 `ContributionHost::new` defines the built-in `copy-button`, `code-block` and
-`maestro-slot` elements once per page. A definition is permanent: its
+`maestro-slot` elements once per page and installs their stylesheet once: the
+selected pack's properties on the document root, then the rules for listings,
+buttons, tool headers and contribution failures. A definition is permanent: its
 constructor callback lives as long as the page, while views connect and
 disconnect. A changed definition needs a fresh element name or a page reload.
-`code-block` shows its `code` attribute literally under its `language` label
-(`plaintext` when empty) with a copy control. `copy-button` copies its `text`
-attribute, shows success (with `Copied!` when `show-text` is present) and
-restores after two seconds. `components::button::button` creates a native
-`type="button"` element with `maestro-button maestro-button-<variant>
-maestro-button-<size>` classes, an optional title and a spinner while loading;
-disabled and loading buttons refuse activation.
+
+`code-block` shows its `code` attribute under its `language` label (`plaintext`
+when empty). It decodes the attribute as base64 UTF-8 text and shows anything
+else literally. It uses the same listing as the canvas code block, with a scroller bounded
+at 24rem, and a copy control. Later changes of `code` or `language` change only
+the parts that differ, so a selection elsewhere in the listing survives.
+`copy-button` copies its `text` attribute, shows success (with `Copied!` when
+`show-text` is present) and restores after two seconds; changing `title` or
+`show-text` renders it again. The `code`, `language`, `text` and `showText`
+properties set the matching attributes.
+
+`components::button::button` creates a native button whose `type` comes from
+`ButtonType` (`button` by default), with `maestro-button
+maestro-button-<variant> maestro-button-<size>` classes followed by the
+caller's `class_name`, an optional title and a spinning loader while loading.
+Disabled and loading buttons refuse activation. Each variant paints from the
+pack: `default` on the accent color, `destructive` on the error color,
+`outline` with a border, `secondary` on the panel color, `ghost` without a
+background and `link` in the accent color.
 
 ## Contributions
 
@@ -118,8 +136,11 @@ resolution treats them as the fifth resource kind beside extensions, skills,
 prompts and themes, with the same ordering, deduplication and `contributions`
 settings filter. `maestro_app::contributions::load_contributions` reads each
 enabled file as one descriptor. An unreadable or invalid file yields one warning
-naming its path, and the other files still load. The records live in
-`maestro-protocol::contributions` and reach the browser as plain JSON.
+naming its path, and the other files still load. `DefaultResourceLoader` reads
+them on each reload, beside the other four kinds, and
+`ResourceLoader::get_contributions` returns the accepted records and warnings.
+The records live in `maestro-protocol::contributions`. Delivering them to
+browser pages as plain JSON belongs to the shell's protocol operation.
 
 | Field | Meaning |
 |---|---|
@@ -137,7 +158,9 @@ to the slot its `target` names. `register_contribution` registers built-in
 content; the same package and identifier replace an entry in place, and
 `ContributionRegistration::unregister` removes it only while that registration
 still owns it. `slot_contributions`, `route_contribution`, `slot_input` and
-`admit` read the registry.
+`admit` read the registry. A route claimed by two contributions, or a child
+slot two contributions declare with different contracts, makes
+`route_contribution` or `slot_input` return a conflict.
 
 A contribution that declares `input` admits only where its slot supplies that
 contract (the supplier's `slots` entry); one without `input` admits anywhere.
@@ -145,13 +168,17 @@ A slot mounts every attached contribution through one caller: `SlotMount`, or a
 connected `<maestro-slot name="…">` element whose `maestroInput` property holds
 its input. Each contribution gets its own wrapper and keeps its root across
 updates. Registration changes refresh every connected slot once. An incompatible
-input or a missing required API shows its sentence in a `role="alert"` element
-in place of that contribution, and the rest of the slot still mounts:
+input, a missing required API, a conflicting slot contract or content that fails
+to mount shows its sentence in a `role="alert"` element in place of that
+contribution, and the rest of the slot still mounts. `SlotMount::show` returns
+the sentences it showed, and clearing removes every wrapper:
 
 - `<id>: missing host API <api>`
 - `<id>: expects <input>, slot supplies <input or "no input">`
 - `<id>: not declared by its package`
 - `<entry>: <cause>`, for a module or document that failed to load
+- `<id>: <cause>`, for content that failed to mount
+- `<name>: declared by <first> and <second>`, for a conflicting route or slot
 
 ## Runtime modules
 
@@ -164,9 +191,14 @@ groups contributions by module, imports each entry once, initializes it with
 - `register(id, tag)` binds a declared contribution to an element the module
   defined; tool and message renderers receive `maestroInput`
   (`{params, result, isStreaming}` or `{message}`) and a `maestro-input` event on
-  each update.
+  each update. Registering the same identifier with a new tag replaces the
+  mounted element. A tool or message renderer whose required API is missing
+  shows that failure instead of its element.
 - `provide(id, value)` provides a declared API; a second provider is refused.
 - `api(name)` returns a provided API the module declared as required.
+
+Each method throws `<method>: <argument> is not a string` when an identifier,
+tag or API name is not a string.
 
 The host imports modules through a function the embedding page supplies. The
 page bootstrap passes `url => import(url)` as the `import_module` argument of
@@ -179,9 +211,11 @@ await start(url => import(url)); // the page's Rust entry calls ContributionHost
 The embedding page is trusted: modules run in the page with its authority. The
 host calls `import_module` only for entry and binary URLs below `base_url`, which
 names the package directory and must end with `/`; it refuses any other URL
-before importing anything. `load` returns `ModuleRegistrations`. Dropping it releases,
-newest first, exactly the registrations each module invocation still owns, so
-a later explicit replacement keeps serving. A module that fails to initialize
+before importing anything. `load` returns `ModuleRegistrations`. Dropping it
+releases each module's interface first, so callbacks that run during the
+release cannot register again. It then releases, newest first, exactly the
+registrations each module invocation still owns, so a later explicit
+replacement keeps serving. A module that fails to initialize
 releases what it acquired and reports one failure; the executed code stays
 loaded, so only a fresh element name or a page reload replaces its definitions.
 
@@ -190,8 +224,11 @@ below the package base and shows it in an isolated frame (`sandbox="allow-script
 allow-modals"`): an opaque origin without cookies, storage or access to the host
 page. Its input is the frame global `maestroInput`, and the runtime message
 router admits only messages from the frame registered under the contribution
-identifier. When a descriptor names both, the module wins and the host reports
-the document as ignored.
+identifier. A changed input loads the document again with the new
+`maestroInput`. Each load registers the frame anew, so a message consumer is
+added after each load. The mounted root owns the frame and removes it when the root is replaced or
+cleared. When a descriptor names both, the module wins and the host reports the
+document as ignored.
 
 Pages may run under a content security policy without `unsafe-eval`. Modules
 need `script-src 'self' 'wasm-unsafe-eval'`, and built-in elements set inline

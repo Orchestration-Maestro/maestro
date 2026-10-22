@@ -1,16 +1,21 @@
 //! Mounted page content, page-content registries and built-in elements in a real document.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{Text, body, container, host, result, text, view};
+use crate::message_renderer_support::{NativeMessage, message};
 use maestro_app::{AgentMessage, JsonObject, NoCustomMessages, ToolResultMessage};
+use maestro_web::DefaultRenderer;
 use maestro_web::{
     MessageRenderer,
     components::{
-        button::{ButtonProps, ButtonSize, ButtonVariant, button},
-        message_renderer_registry::get_message_renderer_dom,
+        button::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
+        message_renderer_registry::dom::{
+            get_message_renderer as get_page_message_renderer,
+            render_message as render_page_message,
+        },
     },
-    dom::{DomContent, DomView, MountedContent},
+    dom::{DomContent, DomRoot, DomView, MountedContent},
     get_message_renderer, register_message_renderer, register_tool_renderer, render_message,
-    render_message_dom, render_tool, set_show_json_mode,
+    render_tool, set_show_json_mode,
     tools::{
         dom::render_tool as render_page_tool,
         types::{
@@ -20,10 +25,16 @@ use maestro_web::{
     },
 };
 use serde_json::{Value, json};
-use std::{cell::Cell, rc::Rc};
-use wasm_bindgen::JsCast as _;
-use wasm_bindgen::prelude::wasm_bindgen;
-use web_sys::{Element, Node};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    },
+};
+use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
+use web_sys::{Element, HtmlElement, Node};
 
 /// Content counting its mounts and updates.
 struct Counted {
@@ -35,11 +46,11 @@ struct Counted {
     updates: Rc<Cell<u32>>,
 }
 impl DomContent for Counted {
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         self.mounts.set(self.mounts.get() + 1);
         Text(self.text).mount(view)
     }
-    fn update(&self, root: &Node, view: &DomView) -> Result<(), ToolUiError> {
+    fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
         self.updates.set(self.updates.get() + 1);
         Text(self.text).update(root, view)
     }
@@ -47,10 +58,10 @@ impl DomContent for Counted {
 /// Content whose mount always fails.
 struct Refused;
 impl DomContent for Refused {
-    fn mount(&self, _: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, _: &DomView) -> Result<DomRoot, ToolUiError> {
         Err(ToolUiError::Presentation("refused".into()))
     }
-    fn update(&self, _: &Node, _: &DomView) -> Result<(), ToolUiError> {
+    fn update(&self, _: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
         Err(ToolUiError::Presentation("refused".into()))
     }
 }
@@ -289,23 +300,23 @@ fn shown(renderer: &Rc<dyn MessageRenderer<NoCustomMessages, Box<dyn DomContent>
 /// Page lookups accept open roles, replace in place and keep retained handles alive.
 #[wasm_bindgen]
 pub fn page_message_renderers_keep_open_roles_and_replacements() {
-    assert!(get_message_renderer_dom::<NoCustomMessages>("雪").is_none());
+    assert!(get_page_message_renderer::<NoCustomMessages>("雪").is_none());
     for role in ["", "雪", "__proto__"] {
         let original: Rc<dyn MessageRenderer<NoCustomMessages, Box<dyn DomContent>>> =
             Rc::new(PageMessage("original"));
         register_message_renderer(role, original);
     }
-    let retained = get_message_renderer_dom::<NoCustomMessages>("雪").unwrap();
+    let retained = get_page_message_renderer::<NoCustomMessages>("雪").unwrap();
     let replacement: Rc<dyn MessageRenderer<NoCustomMessages, Box<dyn DomContent>>> =
         Rc::new(PageMessage("replacement"));
     register_message_renderer("雪", Rc::clone(&replacement));
-    let current = get_message_renderer_dom::<NoCustomMessages>("雪").unwrap();
+    let current = get_page_message_renderer::<NoCustomMessages>("雪").unwrap();
     assert!(Rc::ptr_eq(&current, &replacement));
     assert_eq!(shown(&retained), "original");
     assert_eq!(shown(&current), "replacement");
     for role in ["", "__proto__"] {
         assert_eq!(
-            shown(&get_message_renderer_dom::<NoCustomMessages>(role).unwrap()),
+            shown(&get_page_message_renderer::<NoCustomMessages>(role).unwrap()),
             "original"
         );
     }
@@ -323,14 +334,14 @@ pub fn canvas_and_page_message_lookups_stay_separate() {
         serde_json::from_value(json!({"role": "user", "content": "hi", "timestamp": 1})).unwrap();
     assert!(get_message_renderer::<NoCustomMessages>("user").is_none());
     assert!(render_message(&user).unwrap().is_none());
-    let content = render_message_dom(&user).unwrap().unwrap();
+    let content = render_page_message(&user).unwrap().unwrap();
     let view = view();
     let parent: Node = container().into();
     MountedContent::default()
         .show(content.as_ref(), &parent, &view)
         .unwrap();
     assert_eq!(text(&parent), "page");
-    assert!(get_message_renderer_dom::<NoCustomMessages>("assistant").is_none());
+    assert!(get_page_message_renderer::<NoCustomMessages>("assistant").is_none());
     assert!(get_message_renderer::<NoCustomMessages>("assistant").is_some());
 }
 
@@ -356,7 +367,7 @@ fn default_content(
         .unwrap();
     parent.first_element_child().unwrap()
 }
-/// Section labels and listing attributes of mounted default content.
+/// Section labels, shown listing text and listing languages of mounted default content.
 fn listings(root: &Element) -> Vec<(String, String, String)> {
     let codes = root.query_selector_all("code-block").unwrap();
     (0..codes.length())
@@ -365,7 +376,7 @@ fn listings(root: &Element) -> Vec<(String, String, String)> {
             let label = code.previous_element_sibling().unwrap();
             (
                 text(&label),
-                code.get_attribute("code").unwrap(),
+                text(&code.query_selector("pre code").unwrap().unwrap()),
                 code.get_attribute("language").unwrap(),
             )
         })
@@ -383,7 +394,8 @@ fn caption(root: &Element) -> String {
 
 /// The default page renderer shows formatted input, text or JSON output and its preparing states.
 #[wasm_bindgen]
-pub fn default_page_renderer_prepares_input_and_output() {
+pub fn default_page_renderer_prepares_input_and_output(import_module: &js_sys::Function) {
+    let _host = host(&view(), import_module);
     let params = json!({"path": "a.txt", "n": 1});
     let done = default_content(Some(&params), Some(("done", false)), false);
     assert_eq!(caption(&done), "Tool Call");
@@ -483,7 +495,7 @@ pub fn page_code_block_keeps_literal_code_and_language(import_module: &js_sys::F
         assert_eq!(text(&listing), code);
         assert!(listing.query_selector("b").unwrap().is_none());
         let shown = block
-            .query_selector(".maestro-code-block-language")
+            .query_selector(".maestro-code-label")
             .unwrap()
             .unwrap();
         assert_eq!(text(&shown), label);
@@ -562,4 +574,295 @@ pub fn button_classes_cover_each_variant_size_and_state() {
     }
     let plain = button(&document, &ButtonProps::default(), &[]).unwrap();
     assert_eq!(plain.title(), "");
+}
+
+/// The built-in listing decodes base64 code and shows other code literally.
+#[wasm_bindgen]
+pub fn page_code_block_decodes_encoded_code(import_module: &js_sys::Function) {
+    use base64::Engine as _;
+    let view = view();
+    let _host = host(&view, import_module);
+    let original = "let 雪 = \"<b>\";";
+    let block = view.document.create_element("code-block").unwrap();
+    let encoded = base64::engine::general_purpose::STANDARD.encode(original);
+    block.set_attribute("code", &encoded).unwrap();
+    body().append_child(&block).unwrap();
+    let listing = block.query_selector("pre code").unwrap().unwrap();
+    assert_eq!(text(&listing), original);
+    let copy = block.query_selector("copy-button").unwrap().unwrap();
+    assert_eq!(copy.get_attribute("text").as_deref(), Some(original));
+}
+
+/// Stub the clipboard and collect each written text.
+fn recorded_clipboard() -> (Rc<RefCell<Vec<String>>>, impl Sized) {
+    let copies = Rc::new(RefCell::new(Vec::new()));
+    let recorded = Rc::clone(&copies);
+    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(move |text: String| {
+        recorded.borrow_mut().push(text);
+        js_sys::Promise::resolve(&JsValue::UNDEFINED)
+    });
+    let navigator = web_sys::window().unwrap().navigator();
+    let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
+    js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
+    (copies, write)
+}
+
+/// Built-in elements follow their properties and observed attributes after connecting.
+#[wasm_bindgen]
+pub async fn built_in_elements_follow_property_and_attribute_changes(
+    import_module: js_sys::Function,
+) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let block = view.document.create_element("code-block").unwrap();
+    body().append_child(&block).unwrap();
+    js_sys::Reflect::set(&block, &"code".into(), &"from property".into()).unwrap();
+    js_sys::Reflect::set(&block, &"language".into(), &"rust".into()).unwrap();
+    let listing = block.query_selector("pre code").unwrap().unwrap();
+    assert_eq!(text(&listing), "from property");
+    assert_eq!(
+        text(&block.query_selector("span").unwrap().unwrap()),
+        "rust"
+    );
+    let (copies, _write) = recorded_clipboard();
+    let control = view.document.create_element("copy-button").unwrap();
+    body().append_child(&control).unwrap();
+    let title = |control: &Element| {
+        control
+            .query_selector("button")
+            .unwrap()
+            .unwrap()
+            .unchecked_into::<HtmlElement>()
+            .title()
+    };
+    assert_eq!(title(&control), "Copy");
+    control.set_attribute("title", "Copy this").unwrap();
+    assert_eq!(title(&control), "Copy this");
+    js_sys::Reflect::set(&control, &"text".into(), &"property text".into()).unwrap();
+    js_sys::Reflect::set(&control, &"showText".into(), &JsValue::TRUE).unwrap();
+    assert!(control.has_attribute("show-text"));
+    let page = crate::contributions_support::page_module(&import_module).await;
+    control
+        .query_selector("button")
+        .unwrap()
+        .unwrap()
+        .unchecked_into::<HtmlElement>()
+        .click();
+    crate::contributions_support::until(&page, &control, || text(&control) == "Copied!").await;
+    assert_eq!(*copies.borrow(), ["property text"]);
+}
+
+/// A CSS `rgb(...)` value for a `#rrggbb` brand color.
+fn rgb(hex: &str) -> String {
+    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
+    format!("rgb({}, {}, {})", channel(1), channel(3), channel(5))
+}
+/// One computed style property of an element.
+fn computed(element: &Element, property: &str) -> String {
+    web_sys::window()
+        .unwrap()
+        .get_computed_style(element)
+        .unwrap()
+        .unwrap()
+        .get_property_value(property)
+        .unwrap()
+}
+/// Running animations on an element.
+fn animations(element: &Element) -> u32 {
+    let list: js_sys::Function = js_sys::Reflect::get(element, &"getAnimations".into())
+        .unwrap()
+        .unchecked_into();
+    list.call0(element)
+        .unwrap()
+        .unchecked_into::<js_sys::Array>()
+        .length()
+}
+
+/// Built-in elements paint the selected pack's roles: status colors, a spinning loader, a bounded listing and distinct buttons.
+#[wasm_bindgen]
+pub fn built_in_elements_paint_their_token_styles(import_module: &js_sys::Function) {
+    let view = view();
+    let _host = host(&view, import_module);
+    let presentation = view.pack.presentation(view.mode).unwrap();
+    let role = |name: &str| rgb(presentation.colors[name]);
+    let params = json!({"a": 1});
+    for (output, streaming, color) in [
+        (None, true, role("text")),
+        (Some(("done", false)), false, role("success")),
+        (Some(("failed", true)), false, role("error")),
+    ] {
+        let root = default_content(Some(&params), output, streaming);
+        let status = root
+            .query_selector(".maestro-tool-header-lead > span")
+            .unwrap()
+            .unwrap();
+        assert_eq!(computed(&status, "color"), color, "{output:?}");
+        if let Some(spinner) = root.query_selector(".maestro-tool-spinner").unwrap() {
+            assert!(animations(&spinner) > 0, "the loader does not spin");
+        }
+    }
+    let block = view.document.create_element("code-block").unwrap();
+    block.set_attribute("code", &"line\n".repeat(200)).unwrap();
+    body().append_child(&block).unwrap();
+    let scroller = block
+        .query_selector("pre")
+        .unwrap()
+        .unwrap()
+        .parent_element()
+        .unwrap();
+    assert!(scroller.client_height() > 0 && scroller.client_height() <= 384);
+    assert!(scroller.scroll_height() > scroller.client_height());
+    assert_button_variants_differ(&view.document);
+}
+/// Each button variant paints a background, text color and border no other variant shares.
+fn assert_button_variants_differ(document: &web_sys::Document) {
+    let variants = [
+        ButtonVariant::Default,
+        ButtonVariant::Destructive,
+        ButtonVariant::Outline,
+        ButtonVariant::Secondary,
+        ButtonVariant::Ghost,
+        ButtonVariant::Link,
+    ];
+    let painted: Vec<[String; 3]> = variants
+        .into_iter()
+        .map(|variant| {
+            let props = ButtonProps {
+                variant,
+                ..ButtonProps::default()
+            };
+            let created = button(document, &props, &[]).unwrap();
+            body().append_child(&created).unwrap();
+            ["background-color", "color", "border-top-color"]
+                .map(|property| computed(&created, property))
+        })
+        .collect();
+    for (index, style) in painted.iter().enumerate() {
+        assert!(
+            !painted[index + 1..].contains(style),
+            "{:?} paints like a later variant: {style:?}",
+            variants[index]
+        );
+    }
+}
+
+/// Updating default page content keeps the mounted listings and changes them in place.
+#[wasm_bindgen]
+pub fn default_page_content_updates_its_listings_in_place(import_module: &js_sys::Function) {
+    let view = view();
+    let _host = host(&view, import_module);
+    let params = json!({"path": "a.txt"});
+    let parent: Node = container().into();
+    let mut mounted = MountedContent::default();
+    let show = |mounted: &mut MountedContent, message: Option<ToolResultMessage<Value>>| {
+        let shown = render_page_tool::<Value, Value>(
+            "unknown",
+            Some(ToolParams::json(&params)),
+            message.as_ref(),
+            message.is_none(),
+        )
+        .unwrap();
+        mounted
+            .show(shown.content.as_ref(), &parent, &view)
+            .unwrap();
+    };
+    show(&mut mounted, None);
+    let root: Element = mounted.root().cloned().unwrap().unchecked_into();
+    let input = root.query_selector("code-block").unwrap().unwrap();
+    show(&mut mounted, Some(result("done", false)));
+    let blocks = root.query_selector_all("code-block").unwrap();
+    assert_eq!(blocks.length(), 2);
+    assert_eq!(blocks.item(0), Some(input.into()));
+    let output: Element = blocks.item(1).unwrap().unchecked_into();
+    assert_eq!(
+        text(&output.query_selector("pre code").unwrap().unwrap()),
+        "done"
+    );
+    assert_eq!(caption(&root), "Tool Call");
+}
+
+/// The default renderer renders page content directly from its operands.
+#[wasm_bindgen]
+pub fn default_renderer_renders_page_content_directly(import_module: &js_sys::Function) {
+    let _host = host(&view(), import_module);
+    let params = json!({"path": "a.txt"});
+    let rendered = ToolRenderer::<Value, Value, Box<dyn DomContent>>::render(
+        &DefaultRenderer,
+        Some(&params),
+        None,
+        false,
+    )
+    .unwrap();
+    assert!(!rendered.is_custom);
+    let view = view();
+    let parent = container();
+    MountedContent::default()
+        .show(rendered.content.as_ref(), &parent, &view)
+        .unwrap();
+    let root = parent.first_element_child().unwrap();
+    let pretty = "{\n  \"path\": \"a.txt\"\n}";
+    assert_eq!(
+        listings(&root),
+        [("Input".into(), pretty.into(), "json".into())]
+    );
+}
+
+/// Page message renderer observing the original native handle of a custom message.
+struct HandlePage(Rc<Cell<u32>>, Arc<AtomicU32>);
+impl MessageRenderer<NativeMessage, Box<dyn DomContent>> for HandlePage {
+    fn render(
+        &self,
+        message: &AgentMessage<NativeMessage>,
+    ) -> Result<Box<dyn DomContent>, ToolUiError> {
+        let AgentMessage::Custom(value) = message else {
+            unreachable!()
+        };
+        let value = value.read().unwrap();
+        assert!(Arc::ptr_eq(&value.handle, &self.1));
+        self.0.set(value.handle.load(Ordering::Relaxed));
+        Ok(Box::new(Text("custom")))
+    }
+}
+
+/// Custom messages with live native handles reach page renderers unserialized.
+#[wasm_bindgen]
+pub fn custom_messages_keep_callbacks_through_the_page_registry() {
+    let handle = Arc::new(AtomicU32::new(5));
+    let input = message("qa-native", Arc::clone(&handle));
+    let seen = Rc::new(Cell::new(0));
+    let renderer: Rc<dyn MessageRenderer<NativeMessage, Box<dyn DomContent>>> =
+        Rc::new(HandlePage(Rc::clone(&seen), Arc::clone(&handle)));
+    register_message_renderer("qa-native", renderer);
+    handle.store(42, Ordering::Relaxed);
+    let content = render_page_message(&input).unwrap().unwrap();
+    assert_eq!(seen.get(), 42);
+    let view = view();
+    let parent: Node = container().into();
+    MountedContent::default()
+        .show(content.as_ref(), &parent, &view)
+        .unwrap();
+    assert_eq!(text(&parent), "custom");
+}
+
+/// Caller classes follow the variant and size classes, and the form type is the caller's.
+#[wasm_bindgen]
+pub fn button_props_add_caller_classes_and_form_type() {
+    let document = view().document.clone();
+    for (r#type, name) in [
+        (ButtonType::Button, "button"),
+        (ButtonType::Submit, "submit"),
+        (ButtonType::Reset, "reset"),
+    ] {
+        let props = ButtonProps {
+            r#type,
+            class_name: "qa-extra",
+            ..ButtonProps::default()
+        };
+        let created = button(&document, &props, &[]).unwrap();
+        assert_eq!(created.type_(), name);
+        assert_eq!(
+            created.class_name(),
+            "maestro-button maestro-button-default maestro-button-md qa-extra"
+        );
+    }
 }

@@ -1,8 +1,8 @@
 //! Separately built browser modules initialized and registered at runtime.
 use super::{
-    BrowserContribution, BrowserModule, ContributionFailure,
+    BrowserContribution, BrowserModule, ContributionFailure, ContributionRegistration,
     adapters::FrameView,
-    host::{Callables, Invocation, Owned, interface, release},
+    host::{Callables, Invocation, interface, release},
 };
 use crate::dom::DomView;
 use js_sys::{Function, Object, Promise, Reflect};
@@ -13,8 +13,6 @@ use wasm_bindgen_futures::JsFuture;
 
 /// Page host for built-in elements and runtime module contributions.
 pub struct ContributionHost<C: CustomAgentMessages + 'static = NoCustomMessages> {
-    /// Page operands.
-    view: Rc<DomView>,
     /// Isolated-frame document URL selection; absence selects inline documents.
     sandbox_url: Option<SandboxUrlProvider>,
     /// The embedding page's dynamic module import.
@@ -25,24 +23,28 @@ pub struct ContributionHost<C: CustomAgentMessages + 'static = NoCustomMessages>
 /// Registrations acquired by one load; dropping it releases those still owned.
 pub struct ModuleRegistrations<C: CustomAgentMessages + 'static = NoCustomMessages> {
     /// Isolated-frame contributions registered by the load itself.
-    frames: Vec<Owned<C>>,
+    frames: Vec<ContributionRegistration>,
     /// Initialized module invocations, which may still register from their callbacks.
     modules: Vec<(Rc<RefCell<Invocation<C>>>, Callables)>,
 }
 impl<C: CustomAgentMessages + 'static> Drop for ModuleRegistrations<C> {
     fn drop(&mut self) {
-        release(std::mem::take(&mut self.frames));
+        for frame in std::mem::take(&mut self.frames) {
+            // A later replacement owns the entry when this returns false.
+            let _ = frame.unregister();
+        }
         for (invocation, callables) in std::mem::take(&mut self.modules) {
+            // Releasing runs module callbacks; with the interface gone they cannot register again.
+            drop(callables);
             let owned = std::mem::take(&mut invocation.borrow_mut().owned);
             release(owned);
-            drop(callables);
         }
     }
 }
 /// Modules in first-declaration order with the contributions each declares.
 type Modules<'a> = Vec<(&'a BrowserModule, Vec<BrowserContribution>)>;
 impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
-    /// Define the built-in elements once for the page.
+    /// Define the built-in elements and install their stylesheet once for the page.
     ///
     /// `import_module` is the embedding page's `(url) => import(url)`. The page that
     /// supplies it is trusted: the host calls it only with module URLs below the
@@ -50,7 +52,7 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
     /// # Errors
     /// Returns a browser registration failure.
     pub fn new(
-        view: Rc<DomView>,
+        view: &Rc<DomView>,
         sandbox_url: Option<SandboxUrlProvider>,
         import_module: Function,
     ) -> Result<Self, JsValue> {
@@ -60,21 +62,16 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
             .ok_or_else(|| JsValue::from_str("No window"))?
             .custom_elements();
         if registry.get(super::slot::TAG).is_undefined() {
-            crate::components::copy_button::dom::define(&view)?;
-            crate::components::code_block::dom::define(&view)?;
-            super::slot::define(&view)?;
+            crate::dom::install_styles(view)?;
+            crate::components::copy_button::dom::define(view)?;
+            crate::components::code_block::dom::define(view)?;
+            super::slot::define(view)?;
         }
         Ok(Self {
-            view,
             sandbox_url,
             import_module,
             messages: PhantomData,
         })
-    }
-    /// Page operands.
-    #[must_use]
-    pub fn view(&self) -> &Rc<DomView> {
-        &self.view
     }
     /// Load enabled contributions whose assets are served below `base_url`.
     ///
@@ -126,7 +123,7 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
         contribution: &BrowserContribution,
         document: &str,
         base_url: &str,
-    ) -> Result<Owned<C>, ContributionFailure> {
+    ) -> Result<ContributionRegistration, ContributionFailure> {
         let failed = |cause| ContributionFailure::Initialization {
             entry: document.to_owned(),
             cause,
@@ -139,10 +136,10 @@ impl<C: CustomAgentMessages + serde::Serialize + 'static> ContributionHost<C> {
             document: text,
             url: self.sandbox_url.clone(),
         };
-        Ok(Owned::Slot(super::register_contribution(
+        Ok(super::register_contribution(
             contribution.clone(),
             Rc::new(view),
-        )))
+        ))
     }
     /// Initialize one module, releasing what it acquired when initialization fails.
     async fn initialize(

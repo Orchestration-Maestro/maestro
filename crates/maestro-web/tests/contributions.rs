@@ -5,7 +5,7 @@ use maestro_web::{
         BrowserContribution, ContributionDescriptor, ContributionFailure, ContributionView, admit,
         register_contribution, route_contribution, slot_contributions, slot_input,
     },
-    dom::{DomContent, DomView},
+    dom::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use serde_json::{Value, json};
@@ -21,12 +21,12 @@ impl ContributionView for Marker {
 /// Content that registry lookups never mount.
 struct Unmounted;
 impl DomContent for Unmounted {
-    fn mount(&self, _: &DomView) -> Result<web_sys::Node, ToolUiError> {
+    fn mount(&self, _: &DomView) -> Result<DomRoot, ToolUiError> {
         Err(ToolUiError::Presentation(
             "registry lookups do not mount".into(),
         ))
     }
-    fn update(&self, _: &web_sys::Node, _: &DomView) -> Result<(), ToolUiError> {
+    fn update(&self, _: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
         Err(ToolUiError::Presentation(
             "registry lookups do not update".into(),
         ))
@@ -119,13 +119,13 @@ fn route_lookup_returns_the_page_registered_for_it() {
         ),
         Rc::new(Marker),
     );
-    let page = route_contribution("/fixture").unwrap();
+    let page = route_contribution("/fixture").unwrap().unwrap();
     assert_eq!(
         (page.package.as_str(), page.descriptor.id.as_str()),
         ("pkg", "page")
     );
-    assert!(route_contribution("/other").is_none());
-    assert!(route_contribution("").is_none());
+    assert_eq!(route_contribution("/other"), Ok(None));
+    assert_eq!(route_contribution(""), Ok(None));
 }
 
 /// A slot reports the input contract its supplier declares.
@@ -141,11 +141,34 @@ fn slot_input_reports_the_declared_contract() {
         ),
         Rc::new(Marker),
     );
-    assert_eq!(slot_input("page.tabs").as_deref(), Some("fixture.tab"));
-    assert_eq!(slot_input("page.free"), None);
-    assert_eq!(slot_input("missing"), None);
+    assert_eq!(slot_input("page.tabs"), Ok(Some("fixture.tab".into())));
+    assert_eq!(slot_input("page.free"), Ok(None));
+    assert_eq!(slot_input("missing"), Ok(None));
 }
 
+/// A second claim of a route, or a child slot declared with another contract, is a conflict.
+#[test]
+fn conflicting_routes_and_slot_contracts_are_reported() {
+    let page = |package: &str, id: &str, input: &str| {
+        contribution(
+            package,
+            json!({"id": id, "kind": "page", "target": "pages", "route": "/shared",
+                "slots": [{"name": "shared.tabs", "input": input}]}),
+        )
+    };
+    let _first = register_contribution(page("one", "a", "tab.one"), Rc::new(Marker));
+    assert_eq!(slot_input("shared.tabs"), Ok(Some("tab.one".into())));
+    let _same = register_contribution(page("two", "b", "tab.one"), Rc::new(Marker));
+    let conflict = |name: &str| ContributionFailure::Conflict {
+        name: name.into(),
+        first: "a".into(),
+        second: "b".into(),
+    };
+    assert_eq!(route_contribution("/shared"), Err(conflict("/shared")));
+    assert_eq!(slot_input("shared.tabs"), Ok(Some("tab.one".into())));
+    let _other = register_contribution(page("two", "b", "tab.two"), Rc::new(Marker));
+    assert_eq!(slot_input("shared.tabs"), Err(conflict("shared.tabs")));
+}
 /// Mismatched input and an unprovided required API each have their own failure.
 #[test]
 fn admission_rejects_incompatible_input_and_missing_api() {
@@ -219,6 +242,21 @@ fn failure_messages_name_the_identifier_and_the_problem() {
                 cause: "HTTP 404".into(),
             },
             "modules/a/module.js: HTTP 404",
+        ),
+        (
+            ContributionFailure::Mount {
+                id: "card".into(),
+                cause: "refused".into(),
+            },
+            "card: refused",
+        ),
+        (
+            ContributionFailure::Conflict {
+                name: "/shared".into(),
+                first: "a".into(),
+                second: "b".into(),
+            },
+            "/shared: declared by a and b",
         ),
     ];
     for (failure, sentence) in cases {

@@ -114,9 +114,7 @@ pub mod dom {
             params: Option<String>,
             output: Option<String>,
         ) -> ToolRenderResult<Self> {
-            super::renderers::default_renderer::DefaultRenderer::render_dom_prepared(
-                state, params, output,
-            )
+            super::renderers::default_renderer::dom::render_prepared(state, params, output)
         }
     }
     /// Route original operands to the selected page-content or default renderer.

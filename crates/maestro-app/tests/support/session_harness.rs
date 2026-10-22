@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentInitialState, AgentOptions};
+use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::resources::resource_loader::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
 };
@@ -210,6 +211,9 @@ impl ResourceLoader<Local> for TestResourceLoader {
         Rc::default()
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
+        Rc::default()
+    }
+    fn get_contributions(&self) -> Rc<LoadContributionsResult> {
         Rc::default()
     }
     fn get_agents_files(&self) -> Rc<[ContextFile]> {

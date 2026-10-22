@@ -62,19 +62,24 @@ pub(super) fn interface<C: CustomAgentMessages + serde::Serialize + 'static>(
     }
     Ok((object, callables))
 }
+/// A string argument of an interface method, or the thrown refusal naming it.
+fn string(value: &JsValue, method: &str, argument: &str) -> Result<String, JsValue> {
+    value
+        .as_string()
+        .ok_or_else(|| JsValue::from_str(&format!("{method}: {argument} is not a string")))
+}
 /// Find the declaration for a registered identifier.
 fn declared<C: CustomAgentMessages>(
     invocation: &Rc<RefCell<Invocation<C>>>,
-    id: &JsValue,
+    id: &str,
 ) -> Result<BrowserContribution, JsValue> {
-    let id = id.as_string().unwrap_or_default();
     invocation
         .borrow()
         .declared
         .iter()
         .find(|c| c.descriptor.id == id)
         .cloned()
-        .ok_or_else(|| undeclared(id))
+        .ok_or_else(|| undeclared(id.to_owned()))
 }
 /// The thrown value for an identifier the module did not declare with this kind.
 fn undeclared(id: String) -> JsValue {
@@ -86,11 +91,12 @@ fn register<C: CustomAgentMessages + serde::Serialize + 'static>(
     id: &JsValue,
     tag: &JsValue,
 ) -> Result<JsValue, JsValue> {
-    let contribution = declared(invocation, id)?;
+    let id = string(id, "register", "identifier")?;
+    let tag = string(tag, "register", "tag")?;
+    let contribution = declared(invocation, &id)?;
     if contribution.descriptor.kind == "api" {
         return Err(undeclared(contribution.descriptor.id));
     }
-    let tag = tag.as_string().unwrap_or_default();
     let target = contribution.descriptor.target.clone();
     let owned = match contribution.descriptor.kind.as_str() {
         "tool-renderer" => {
@@ -107,7 +113,10 @@ fn register<C: CustomAgentMessages + serde::Serialize + 'static>(
         }
         "message-renderer" => {
             let renderer: Rc<dyn MessageRenderer<C, Box<dyn DomContent>>> =
-                Rc::new(ElementMessageRenderer { tag });
+                Rc::new(ElementMessageRenderer {
+                    tag,
+                    descriptor: contribution.descriptor,
+                });
             crate::register_message_renderer(&target, Rc::clone(&renderer));
             Owned::Message(target, renderer)
         }
@@ -125,7 +134,7 @@ fn provide<C: CustomAgentMessages + 'static>(
     id: &JsValue,
     value: &JsValue,
 ) -> Result<JsValue, JsValue> {
-    let contribution = declared(invocation, id)?;
+    let contribution = declared(invocation, &string(id, "provide", "identifier")?)?;
     if contribution.descriptor.kind != "api" {
         return Err(undeclared(contribution.descriptor.id));
     }
@@ -148,7 +157,7 @@ fn api<C: CustomAgentMessages + 'static>(
     name: &JsValue,
     _: &JsValue,
 ) -> Result<JsValue, JsValue> {
-    let api = name.as_string().unwrap_or_default();
+    let api = string(name, "api", "name")?;
     let requiring = invocation
         .borrow()
         .declared
@@ -166,17 +175,9 @@ fn api<C: CustomAgentMessages + 'static>(
 pub(super) fn release<C: CustomAgentMessages + 'static>(owned: Vec<Owned<C>>) {
     for registration in owned.into_iter().rev() {
         match registration {
+            // A later replacement owns the entry when a guarded removal returns false.
             Owned::Tool(name, renderer) => {
-                let removed = crate::tools::renderer_registry::TOOL_RENDERERS.with(|all| {
-                    let mut all = all.borrow_mut();
-                    let current = all.get(&name).and_then(
-                        ToolRendererBinding::slot::<JsonObject, Value, Box<dyn DomContent>>,
-                    );
-                    current
-                        .filter(|c| Rc::ptr_eq(c, &renderer))
-                        .and_then(|_| all.shift_remove(&name))
-                });
-                drop(removed);
+                crate::tools::renderer_registry::unregister_tool_renderer(&name, &renderer);
             }
             Owned::Message(role, renderer) => {
                 crate::components::message_renderer_registry::unregister_message_renderer(
@@ -184,7 +185,6 @@ pub(super) fn release<C: CustomAgentMessages + 'static>(owned: Vec<Owned<C>>) {
                 );
             }
             Owned::Slot(registration) => {
-                // A later replacement owns the entry when this returns false.
                 let _ = registration.unregister();
             }
             Owned::Api(name, value) => {

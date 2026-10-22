@@ -40,14 +40,20 @@ answers the page lookup; the mismatched lookup returns the operand-type error.
 
 In the browser build, `tools::dom::render_tool` routes the same operands through
 the same registry and JSON mode to the page renderer, or to the default page
-content. That content shows the status header (the tool icon, its caption and a
-spinner while in progress) and `Input` and `Output` sections holding
-`code-block` listings. Input is pretty-printed JSON, and output is pretty JSON
-when it parses, otherwise text, or `(no output)` when empty. Before parameters
+content. That content shows the status header, then `Input` and `Output`
+sections holding `code-block` listings. The header shows the tool icon and its
+caption. The icon takes the text color with a spinning loader while in progress,
+the success color when complete and the error color on failure. Input is
+pretty-printed JSON, and output is pretty JSON when it parses, otherwise text,
+or `(no output)` when empty. The listings receive their text base64-encoded, so
+text that happens to look like base64 still shows literally. Before parameters
 arrive the caption reads `Preparing tool...`, and while streaming empty
-parameters it reads `Preparing tool parameters...`; the result is never a
-custom card. Callback-bearing native parameters and details reach a page
-renderer by reference, without serialization.
+parameters it reads `Preparing tool parameters...`; the result is never a custom
+card. Updating the content replaces the header and changes the existing listings
+in place, so a selection and the copy feedback survive. Callback-bearing native
+parameters and details reach a page renderer by reference, without
+serialization. The page `DefaultRenderer` also renders this content directly
+from JSON operands.
 
 ## Drawing a retained row
 

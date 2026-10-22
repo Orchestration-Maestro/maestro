@@ -78,6 +78,10 @@ impl CustomElement for View {
                 .unwrap_or(0);
             let _ = root.set_attribute("data-updates", &(updates + 1).to_string());
             root.set_text_content(Some(&text(&root)));
+            // An update handler may register too, including while the host releases this module.
+            if input(&root, &["tab"]) == "again" {
+                let _ = call("register", &"fixture-tool".into(), &"qa-tool-view".into());
+            }
         });
         let _ = root
             .add_event_listener_with_callback("maestro-input", listener.as_ref().unchecked_ref());
@@ -136,6 +140,19 @@ fn define(tag: &str, text: fn(&HtmlElement) -> String, late: bool) -> Result<(),
     registry.define(tag, &constructor)?;
     CLASSES.with(|all| all.borrow_mut().push(closure));
     Ok(())
+}
+/// Register the tool view again under a fresh element name, as a changed definition must.
+/// # Errors
+/// Returns a definition or registration failure.
+#[wasm_bindgen]
+pub fn upgrade() -> Result<(), JsValue> {
+    define("qa-tool-view-2", tool_text, false)?;
+    call(
+        "register",
+        &"fixture-tool".into(),
+        &"qa-tool-view-2".into(),
+    )
+    .map(drop)
 }
 /// Registration export.
 /// # Errors

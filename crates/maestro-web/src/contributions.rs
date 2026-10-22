@@ -120,28 +120,46 @@ fn is_slotted(kind: &str) -> bool {
     !matches!(kind, "tool-renderer" | "message-renderer" | "api")
 }
 /// The page registered for `route`.
-#[must_use]
-pub fn route_contribution(route: &str) -> Option<BrowserContribution> {
+/// # Errors
+/// Returns a conflict when two contributions claim the route.
+pub fn route_contribution(route: &str) -> Result<Option<BrowserContribution>, ContributionFailure> {
     CONTRIBUTIONS.with(|all| {
-        all.borrow()
+        let all = all.borrow();
+        let mut claims = all
             .iter()
-            .find(|e| e.contribution.descriptor.route.as_deref() == Some(route))
-            .map(|e| e.contribution.clone())
+            .filter(|e| e.contribution.descriptor.route.as_deref() == Some(route));
+        match (claims.next(), claims.next()) {
+            (Some(first), Some(second)) => Err(conflict(route, first, second)),
+            (first, _) => Ok(first.map(|e| e.contribution.clone())),
+        }
     })
 }
-/// The input contract a registered contribution declares for `slot`.
-#[must_use]
-pub fn slot_input(slot: &str) -> Option<String> {
+/// The input contract the registered contributions declare for `slot`.
+/// # Errors
+/// Returns a conflict when two contributions declare the slot with different contracts.
+pub fn slot_input(slot: &str) -> Result<Option<String>, ContributionFailure> {
     CONTRIBUTIONS.with(|all| {
-        all.borrow().iter().find_map(|e| {
-            e.contribution
-                .descriptor
-                .slots
-                .iter()
-                .find(|s| s.name == slot)
-                .and_then(|s| s.input.clone())
-        })
+        let all = all.borrow();
+        let mut declared = all.iter().filter_map(|e| {
+            let mut slots = e.contribution.descriptor.slots.iter();
+            slots.find(|s| s.name == slot).map(|s| (e, &s.input))
+        });
+        let Some((first, input)) = declared.next() else {
+            return Ok(None);
+        };
+        match declared.find(|(_, other)| *other != input) {
+            Some((second, _)) => Err(conflict(slot, first, second)),
+            None => Ok(input.clone()),
+        }
     })
+}
+/// The failure for two entries claiming `name`.
+fn conflict(name: &str, first: &Entry, second: &Entry) -> ContributionFailure {
+    ContributionFailure::Conflict {
+        name: name.to_owned(),
+        first: first.contribution.descriptor.id.clone(),
+        second: second.contribution.descriptor.id.clone(),
+    }
 }
 /// Check a contribution against its slot's contract and the provided APIs.
 /// # Errors
@@ -150,10 +168,12 @@ pub fn admit(
     descriptor: &ContributionDescriptor,
     slot_input: Option<&str>,
 ) -> Result<(), ContributionFailure> {
-    if descriptor.input.is_some() && descriptor.input.as_deref() != slot_input {
+    if let Some(expected) = &descriptor.input
+        && Some(expected.as_str()) != slot_input
+    {
         return Err(ContributionFailure::IncompatibleInput {
             id: descriptor.id.clone(),
-            expected: descriptor.input.clone().unwrap_or_default(),
+            expected: expected.clone(),
             supplied: slot_input.map(str::to_owned),
         });
     }

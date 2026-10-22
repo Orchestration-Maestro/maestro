@@ -8,7 +8,7 @@ use maestro_resources::{
     PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
     paths::{expand_tilde, resolve},
 };
-use std::{collections::HashSet, io, path::Path};
+use std::{collections::HashSet, io, path::Path, rc::Rc};
 
 /// Paths in insertion order; lookups walk a path's separator-bounded prefixes, so their
 /// cost follows the path's depth rather than the number of entries.
@@ -145,16 +145,19 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let flushed = self.settings_manager.borrow().flush();
         flushed.await;
         self.settings_manager.borrow_mut().reload_from_storage();
-        let resolved = self.package_manager.resolve(None).await?;
-        let explicit = self
+        let mut resolved = self.package_manager.resolve(None).await?;
+        let mut explicit = self
             .package_manager
             .resolve_extension_sources(
                 &self.options.additional_extension_paths,
                 Some(SourceScope::Temporary),
             )
             .await?;
+        let mut contributions = std::mem::take(&mut explicit.contributions);
+        contributions.append(&mut resolved.contributions);
         let (configured, explicit) = {
             let mut state = self.state.borrow_mut();
+            state.contributions = Rc::new(crate::contributions::load_contributions(&contributions));
             state.skill_sources.sources = super::PathIndex::default();
             state.prompt_sources.sources = super::PathIndex::default();
             state.theme_sources.sources = super::PathIndex::default();

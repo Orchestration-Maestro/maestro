@@ -4,7 +4,7 @@ use crate::{
         attachment_content::ClipboardMode, event_subscription::EventSubscription, timer::Timer,
     },
     components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::DomView,
+    dom::{DomView, Property, Reflected},
 };
 use js_sys::WeakRef;
 use std::{
@@ -20,6 +20,11 @@ pub(crate) const TAG: &str = "copy-button";
 const FEEDBACK_MS: i32 = 2000;
 /// The active restoring timer while success feedback shows.
 type Feedback = Rc<RefCell<Option<Timer>>>;
+/// Properties reflected onto the attributes; `title` is the element's own.
+const PROPERTIES: &[Property] = &[
+    Property::Text("text", "text"),
+    Property::Flag("showText", "show-text"),
+];
 /// One mounted copy control; `text`, `title` and `show-text` are its attributes.
 struct CopyElement {
     /// Element owning this state.
@@ -30,8 +35,17 @@ struct CopyElement {
     click: Option<EventSubscription<Closure<dyn Fn()>>>,
     /// Restoring timer while the success state shows.
     feedback: Feedback,
+    /// Accessors of the `text` and `showText` properties.
+    _properties: Reflected,
 }
 impl custom_element::CustomElement for CopyElement {
+    fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
+        if let Some(root) = live(&self.root).filter(|root| root.is_connected()) {
+            let copied = self.feedback.borrow().is_some();
+            // Lifecycle callbacks have no error channel; a failed render keeps the previous control.
+            let _ = render(&root, &self.view, copied);
+        }
+    }
     fn connected_callback(&mut self) {
         let Some(root) = live(&self.root) else {
             return;
@@ -128,10 +142,14 @@ fn render(root: &HtmlElement, view: &DomView, copied: bool) -> Result<(), JsValu
 /// Returns the browser's registration failure.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
-    crate::dom::define_element(TAG, Vec::new(), move |root| CopyElement {
-        root: WeakRef::new(&root),
-        view: Rc::clone(&view),
-        click: None,
-        feedback: Rc::default(),
+    let observed = vec!["title".into(), "show-text".into()];
+    crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
+        CopyElement {
+            root: WeakRef::new(&root),
+            view: Rc::clone(&view),
+            click: None,
+            feedback: Rc::default(),
+            _properties: properties,
+        }
     })
 }

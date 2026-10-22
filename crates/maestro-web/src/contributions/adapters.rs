@@ -2,14 +2,18 @@
 use super::{ContributionFailure, ContributionView};
 use crate::{
     MessageRenderer,
-    browser::attachment_content::browser::{element, host_error},
-    dom::{DomContent, DomView},
+    browser::{
+        attachment_content::browser::{element, host_error},
+        sandbox_value::BrowserSandboxValue,
+    },
+    dom::{DomContent, DomRoot, DomView},
     tools::types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
 use maestro_app::{AgentMessage, CustomAgentMessages, JsonObject};
 use serde_json::{Value, json};
-use wasm_bindgen::JsCast as _;
-use web_sys::{Element, Node};
+use std::{cell::RefCell, io};
+use wasm_bindgen::{JsCast as _, JsValue};
+use web_sys::Element;
 
 /// Property carrying a module element's serializable input.
 const INPUT_PROPERTY: &str = "maestroInput";
@@ -23,16 +27,16 @@ pub(super) struct ElementContent {
     pub(super) input: Value,
 }
 impl DomContent for ElementContent {
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let created = view
             .document
             .create_element(&self.tag)
             .map_err(|error| host_error(&error))?;
         set_input(&created, &self.input)?;
-        Ok(created.into())
+        Ok(DomRoot::new(created))
     }
-    fn update(&self, root: &Node, _: &DomView) -> Result<(), ToolUiError> {
-        let mounted: &Element = root.unchecked_ref();
+    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        let mounted: &Element = root.node.unchecked_ref();
         set_input(mounted, &self.input)?;
         let event = web_sys::Event::new(INPUT_EVENT).map_err(|error| host_error(&error))?;
         mounted
@@ -40,30 +44,50 @@ impl DomContent for ElementContent {
             .map_err(|error| host_error(&error))?;
         Ok(())
     }
+    fn key(&self) -> Option<&str> {
+        Some(&self.tag)
+    }
+}
+/// The input as a plain browser value.
+fn plain(input: &Value) -> Result<JsValue, ToolUiError> {
+    crate::browser::json::encode_json(input, |error| io::Error::other(format!("{error:?}")))
+        .map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 /// Store the input as a plain browser value.
 fn set_input(target: &Element, input: &Value) -> Result<(), ToolUiError> {
-    let text =
-        serde_json::to_string(input).map_err(|e| ToolUiError::Presentation(e.to_string()))?;
-    let value = js_sys::JSON::parse(&text).map_err(|error| host_error(&error))?;
-    js_sys::Reflect::set(target, &INPUT_PROPERTY.into(), &value)
+    js_sys::Reflect::set(target, &INPUT_PROPERTY.into(), &plain(input)?)
         .map_err(|error| host_error(&error))?;
     Ok(())
 }
 /// A visible failure in place of the contribution.
 pub(super) struct FailureContent(pub(super) ContributionFailure);
 impl DomContent for FailureContent {
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let failure = element(&view.document, "div", "maestro-contribution-failure")?;
         failure
             .set_attribute("role", "alert")
             .map_err(|error| host_error(&error))?;
-        self.update(&failure, view)?;
-        Ok(failure.into())
+        let root = DomRoot::new(failure);
+        self.update(&root, view)?;
+        Ok(root)
     }
-    fn update(&self, root: &Node, _: &DomView) -> Result<(), ToolUiError> {
-        root.set_text_content(Some(&self.0.to_string()));
+    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        root.node.set_text_content(Some(&self.0.to_string()));
         Ok(())
+    }
+}
+/// Content for a module element, or the failure its declaration's admission reports.
+fn admitted(
+    descriptor: &super::ContributionDescriptor,
+    tag: &str,
+    input: Value,
+) -> Box<dyn DomContent> {
+    match super::admit(descriptor, None) {
+        Err(failure) => Box::new(FailureContent(failure)),
+        Ok(()) => Box::new(ElementContent {
+            tag: tag.to_owned(),
+            input,
+        }),
     }
 }
 /// Module element rendering one tool.
@@ -80,19 +104,13 @@ impl ToolRenderer<JsonObject, Value, Box<dyn DomContent>> for ElementToolRendere
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
     ) -> Result<ToolRenderResult<Box<dyn DomContent>>, ToolUiError> {
-        let content: Box<dyn DomContent> = match super::admit(&self.descriptor, None) {
-            Err(failure) => Box::new(FailureContent(failure)),
-            Ok(()) => Box::new(ElementContent {
-                tag: self.tag.clone(),
-                input: json!({
-                    "params": params,
-                    "result": result.as_ref().map(result_json),
-                    "isStreaming": is_streaming,
-                }),
-            }),
-        };
+        let input = json!({
+            "params": params,
+            "result": result.as_ref().map(result_json),
+            "isStreaming": is_streaming,
+        });
         Ok(ToolRenderResult {
-            content,
+            content: admitted(&self.descriptor, &self.tag, input),
             is_custom: true,
         })
     }
@@ -113,6 +131,8 @@ fn result_json(result: &ToolResultMessageView<'_, Value>) -> Value {
 pub(super) struct ElementMessageRenderer {
     /// Element tag.
     pub(super) tag: String,
+    /// Declaration, for required APIs.
+    pub(super) descriptor: super::ContributionDescriptor,
 }
 impl<C: CustomAgentMessages + serde::Serialize> MessageRenderer<C, Box<dyn DomContent>>
     for ElementMessageRenderer
@@ -120,10 +140,11 @@ impl<C: CustomAgentMessages + serde::Serialize> MessageRenderer<C, Box<dyn DomCo
     fn render(&self, message: &AgentMessage<C>) -> Result<Box<dyn DomContent>, ToolUiError> {
         let message =
             serde_json::to_value(message).map_err(|e| ToolUiError::Presentation(e.to_string()))?;
-        Ok(Box::new(ElementContent {
-            tag: self.tag.clone(),
-            input: json!({ "message": message }),
-        }))
+        Ok(admitted(
+            &self.descriptor,
+            &self.tag,
+            json!({ "message": message }),
+        ))
     }
 }
 /// Module element showing a slotted contribution.
@@ -169,8 +190,26 @@ struct FrameContent {
     /// Isolated-frame document URL selection.
     url: Option<maestro_app::SandboxUrlProvider>,
 }
+/// The mounted frame and the input it was loaded with; dropping it removes the frame.
+struct MountedFrame {
+    /// Frame lifecycle owner.
+    frame: crate::SandboxIframe,
+    /// Input of the current load.
+    input: RefCell<Value>,
+}
+impl FrameContent {
+    /// Load the document into `frame` with this content's input.
+    fn load(&self, frame: &crate::SandboxIframe) -> Result<(), ToolUiError> {
+        let provider: maestro_app::SharedHandle<
+            dyn maestro_app::SandboxRuntimeProvider<BrowserSandboxValue>,
+        > = maestro_app::SharedHandle::new(InputProvider(self.input.clone()));
+        frame
+            .load_content(&self.id, &self.document, vec![provider], Vec::new())
+            .map_err(|e| ToolUiError::Presentation(e.message))
+    }
+}
 impl DomContent for FrameContent {
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let parent: web_sys::HtmlElement = view
             .document
             .create_element("div")
@@ -186,54 +225,41 @@ impl DomContent for FrameContent {
             .sandbox_url_provider
             .borrow_mut()
             .clone_from(&self.url);
-        let provider: maestro_app::SharedHandle<
-            dyn maestro_app::SandboxRuntimeProvider<
-                    crate::browser::sandbox_value::BrowserSandboxValue,
-                >,
-        > = maestro_app::SharedHandle::new(InputProvider(self.input.clone()));
-        frame
-            .load_content(&self.id, &self.document, vec![provider], Vec::new())
-            .map_err(|e| ToolUiError::Presentation(e.message))?;
-        FRAMES.with(|all| all.borrow_mut().push((parent.clone().into(), frame)));
-        Ok(parent.into())
+        self.load(&frame)?;
+        Ok(DomRoot {
+            node: parent.into(),
+            owner: Some(Box::new(MountedFrame {
+                frame,
+                input: RefCell::new(self.input.clone()),
+            })),
+        })
     }
-    fn update(&self, _: &Node, _: &DomView) -> Result<(), ToolUiError> {
+    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        let mounted = root
+            .owner
+            .as_ref()
+            .and_then(|owner| owner.downcast_ref::<MountedFrame>())
+            .ok_or_else(|| ToolUiError::Presentation("Missing mounted frame".into()))?;
+        if *mounted.input.borrow() == self.input {
+            return Ok(());
+        }
+        self.load(&mounted.frame)?;
+        mounted.input.borrow_mut().clone_from(&self.input);
         Ok(())
-    }
-}
-thread_local! {
-    /// Mounted frames kept until their container leaves the slot.
-    static FRAMES: std::cell::RefCell<Vec<(Node, crate::SandboxIframe)>> = const { std::cell::RefCell::new(Vec::new()) };
-}
-/// Release the frame mounted in `root`.
-pub(super) fn release_frame(root: &Node) {
-    let removed = FRAMES.with(|all| {
-        let mut all = all.borrow_mut();
-        let index = all.iter().position(|(node, _)| node == root)?;
-        Some(all.remove(index))
-    });
-    if let Some((_, frame)) = removed {
-        let _ = frame.remove();
     }
 }
 /// Injects the contribution input as a frame global.
 struct InputProvider(Value);
-impl maestro_app::SandboxRuntimeProvider<crate::browser::sandbox_value::BrowserSandboxValue>
-    for InputProvider
-{
+impl maestro_app::SandboxRuntimeProvider<BrowserSandboxValue> for InputProvider {
     fn get_data(
         &self,
-    ) -> Result<
-        indexmap::IndexMap<String, crate::browser::sandbox_value::BrowserSandboxValue>,
-        maestro_app::DiagnosticErrorInfo,
-    > {
-        let text = serde_json::to_string(&self.0)
-            .map_err(|e| maestro_app::DiagnosticErrorInfo::error(e.to_string()))?;
-        let value = js_sys::JSON::parse(&text)
-            .map_err(|_| maestro_app::DiagnosticErrorInfo::error("Invalid input"))?;
+    ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, maestro_app::DiagnosticErrorInfo>
+    {
+        let value =
+            plain(&self.0).map_err(|e| maestro_app::DiagnosticErrorInfo::error(e.to_string()))?;
         Ok(indexmap::IndexMap::from([(
             INPUT_PROPERTY.to_owned(),
-            crate::browser::sandbox_value::BrowserSandboxValue(value),
+            BrowserSandboxValue(value),
         )]))
     }
     fn get_runtime(&self) -> Result<String, maestro_app::DiagnosticErrorInfo> {

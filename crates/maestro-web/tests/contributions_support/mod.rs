@@ -4,7 +4,7 @@ use maestro_app::{SandboxUrlProvider, SharedHandle, TextContent, ToolResultMessa
 use maestro_web::{
     I18n,
     contributions::{BrowserContribution, ContributionHost},
-    dom::{DomContent, DomView},
+    dom::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use serde_json::Value;
@@ -13,8 +13,8 @@ use wasm_bindgen::{JsCast as _, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Document, Element, HtmlElement, Node};
 
-/// Supplying package of every fixture contribution.
-pub(crate) const PACKAGE: &str = "fixture-package";
+/// Supplying package of every fixture contribution, as the resource loader names it.
+pub(crate) const PACKAGE: &str = "./package";
 
 /// The page document.
 pub(crate) fn document() -> Document {
@@ -51,7 +51,7 @@ pub(crate) fn sandbox_url() -> SandboxUrlProvider {
 }
 /// A host for `view` that imports modules through the page's `import_module`.
 pub(crate) fn host(view: &Rc<DomView>, import_module: &js_sys::Function) -> ContributionHost {
-    ContributionHost::new(Rc::clone(view), Some(sandbox_url()), import_module.clone()).unwrap()
+    ContributionHost::new(view, Some(sandbox_url()), import_module.clone()).unwrap()
 }
 /// Await a promise, or take a plain value as settled.
 pub(crate) async fn settle(value: JsValue) -> Result<JsValue, JsValue> {
@@ -72,19 +72,9 @@ pub(crate) async fn fetch_text(url: &str) -> String {
         .as_string()
         .unwrap()
 }
-/// The fixture package's contributions, read from its manifest's `maestro.contributions` files.
+/// The fixture package's contributions as plain JSON, which the resource loader's own output must equal.
 pub(crate) async fn contributions() -> Vec<BrowserContribution> {
-    let manifest: Value =
-        serde_json::from_str(&fetch_text(&format!("{}package.json", base())).await).unwrap();
-    let mut accepted = Vec::new();
-    for file in manifest["maestro"]["contributions"].as_array().unwrap() {
-        let text = fetch_text(&format!("{}{}", base(), file.as_str().unwrap())).await;
-        accepted.push(BrowserContribution {
-            package: PACKAGE.into(),
-            descriptor: serde_json::from_str(&text).unwrap(),
-        });
-    }
-    accepted
+    serde_json::from_str(&fetch_text(&format!("{}contributions.json", base())).await).unwrap()
 }
 /// The browser observation helpers, imported through the page's own module import.
 pub(crate) async fn page_module(import_module: &js_sys::Function) -> JsValue {
@@ -157,13 +147,13 @@ pub(crate) fn result(output: &str, is_error: bool) -> ToolResultMessage<Value> {
 /// Page content showing fixed text in a paragraph.
 pub(crate) struct Text(pub &'static str);
 impl DomContent for Text {
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError> {
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let root = view.document.create_element("p").unwrap();
         root.set_text_content(Some(self.0));
-        Ok(root.into())
+        Ok(DomRoot::new(root))
     }
-    fn update(&self, root: &Node, _: &DomView) -> Result<(), ToolUiError> {
-        root.set_text_content(Some(self.0));
+    fn update(&self, root: &DomRoot, _: &DomView) -> Result<(), ToolUiError> {
+        root.node.set_text_content(Some(self.0));
         Ok(())
     }
 }

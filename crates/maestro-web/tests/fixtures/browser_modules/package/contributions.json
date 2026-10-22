@@ -1,0 +1,157 @@
+[
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-greeting",
+      "kind": "api",
+      "target": "fixture.greeting",
+      "module": {
+        "entry": "modules/b/module.js",
+        "wasm": "modules/b/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-page",
+      "kind": "page",
+      "target": "pages",
+      "route": "fixture-page",
+      "slots": [
+        {
+          "name": "fixture-page.tabs",
+          "input": "fixture.tab"
+        }
+      ],
+      "module": {
+        "entry": "modules/b/module.js",
+        "wasm": "modules/b/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-card",
+      "kind": "card",
+      "target": "home",
+      "module": {
+        "entry": "modules/b/module.js",
+        "wasm": "modules/b/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-needs-missing",
+      "kind": "card",
+      "target": "home",
+      "requires": [
+        "absent.api"
+      ],
+      "module": {
+        "entry": "modules/b/module.js",
+        "wasm": "modules/b/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-tool",
+      "kind": "tool-renderer",
+      "target": "fixture_tool",
+      "requires": [
+        "fixture.greeting"
+      ],
+      "module": {
+        "entry": "modules/a/module.js",
+        "wasm": "modules/a/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-message",
+      "kind": "message-renderer",
+      "target": "user",
+      "module": {
+        "entry": "modules/a/module.js",
+        "wasm": "modules/a/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-tab",
+      "kind": "tab",
+      "target": "fixture-page.tabs",
+      "input": "fixture.tab",
+      "module": {
+        "entry": "modules/a/module.js",
+        "wasm": "modules/a/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-bad-tab",
+      "kind": "tab",
+      "target": "fixture-page.tabs",
+      "input": "other.contract",
+      "module": {
+        "entry": "modules/a/module.js",
+        "wasm": "modules/a/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-late",
+      "kind": "tab",
+      "target": "fixture-page.tabs",
+      "input": "fixture.tab",
+      "module": {
+        "entry": "modules/a/module.js",
+        "wasm": "modules/a/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-frame",
+      "kind": "card",
+      "target": "home",
+      "document": "frames/card.html"
+    }
+  },
+  {
+    "package": "./package",
+    "descriptor": {
+      "id": "fixture-broken",
+      "kind": "card",
+      "target": "home",
+      "module": {
+        "entry": "modules/missing/module.js",
+        "wasm": "modules/missing/module_bg.wasm",
+        "register": "register"
+      }
+    }
+  }
+]

@@ -41,6 +41,24 @@ pub fn register_tool_renderer(tool_name: &str, renderer: ToolRendererBinding) {
     let old = TOOL_RENDERERS.with(|all| all.borrow_mut().insert(tool_name.into(), renderer));
     drop(old);
 }
+/// Remove a tool's page renderer only while `renderer` is still the registered one.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn unregister_tool_renderer<P: 'static, D: 'static>(
+    tool_name: &str,
+    renderer: &Rc<dyn ToolRenderer<P, D, Box<dyn crate::dom::DomContent>>>,
+) -> bool {
+    let removed = TOOL_RENDERERS.with(|all| {
+        let mut all = all.borrow_mut();
+        let current = all
+            .get(tool_name)
+            .and_then(ToolRendererBinding::slot::<P, D, Box<dyn crate::dom::DomContent>>);
+        let owned = current.is_some_and(|current| Rc::ptr_eq(&current, renderer));
+        owned.then(|| all.shift_remove(tool_name)).flatten()
+    });
+    let owned = removed.is_some();
+    drop(removed);
+    owned
+}
 /// Retain the registered renderer for these native operand types.
 #[must_use]
 pub fn get_tool_renderer<P: 'static, D: 'static>(

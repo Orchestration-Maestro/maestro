@@ -19,30 +19,53 @@ pub struct DomView {
     /// Selected brand mode.
     pub mode: maestro_theme::BrandMode,
 }
-/// Content that mounts its native root once and updates that root while its type stays selected.
+/// A mounted root and the native resources that live exactly as long as it.
+pub struct DomRoot {
+    /// Root node the caller places.
+    pub node: Node,
+    /// Resources released when the root is replaced or dropped, such as an isolated frame.
+    pub owner: Option<Box<dyn Any>>,
+}
+impl DomRoot {
+    /// A root that owns no further resources.
+    #[must_use]
+    pub fn new(node: impl Into<Node>) -> Self {
+        Self {
+            node: node.into(),
+            owner: None,
+        }
+    }
+}
+/// Content that mounts its native root once and updates that root while its type and key stay selected.
 pub trait DomContent: Any {
     /// Create the root.
     /// # Errors
     /// Returns a native or presentation failure.
-    fn mount(&self, view: &DomView) -> Result<Node, ToolUiError>;
-    /// Bring a root this content type mounted up to date.
+    fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError>;
+    /// Bring a root mounted by content of this type and key up to date.
     /// # Errors
     /// Returns a native or presentation failure.
-    fn update(&self, root: &Node, view: &DomView) -> Result<(), ToolUiError>;
+    fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError>;
+    /// Separates contents of one type whose roots cannot update each other, such as elements of different tags.
+    fn key(&self) -> Option<&str> {
+        None
+    }
 }
-/// One placed root and the content type that owns it.
+/// One placed root and the content type and key that own it.
 #[derive(Default)]
 pub struct MountedContent {
-    /// Owning content type and its root.
-    active: Option<(TypeId, Node)>,
+    /// Owning content type, its key and its root.
+    active: Option<(TypeId, Option<String>, DomRoot)>,
 }
 impl MountedContent {
     /// The current root, if any.
     #[must_use]
     pub fn root(&self) -> Option<&Node> {
-        self.active.as_ref().map(|(_, root)| root)
+        self.active.as_ref().map(|(.., root)| &root.node)
     }
-    /// Update the root in place, or replace it under `parent` when the content type changed.
+    /// Update the root in place, or replace it under `parent` when the content type or key changed.
+    ///
+    /// A replaced root's owned resources are released once the new root is placed.
     /// # Errors
     /// Returns the content's failure; a failed replacement keeps the previous root.
     #[cfg(target_arch = "wasm32")]
@@ -53,31 +76,119 @@ impl MountedContent {
         view: &DomView,
     ) -> Result<(), ToolUiError> {
         let kind = (content as &dyn Any).type_id();
-        if let Some((active, root)) = &self.active
+        if let Some((active, key, root)) = &self.active
             && *active == kind
+            && key.as_deref() == content.key()
         {
             return content.update(root, view);
         }
         let root = content.mount(view)?;
         match &self.active {
-            Some((_, old)) => parent.replace_child(&root, old),
-            None => parent.append_child(&root),
+            Some((.., old)) => parent.replace_child(&root.node, &old.node),
+            None => parent.append_child(&root.node),
         }
         .map_err(|e| {
             ToolUiError::Host(crate::browser::attachment_content::browser::host_error(&e))
         })?;
-        self.active = Some((kind, root));
+        self.active = Some((kind, content.key().map(str::to_owned), root));
         Ok(())
     }
 }
+/// An element property reflected onto one of its attributes.
+#[cfg(target_arch = "wasm32")]
+#[derive(Clone, Copy)]
+pub(crate) enum Property {
+    /// A string property holding the attribute's text; a non-string removes the attribute.
+    Text(&'static str, &'static str),
+    /// A boolean property holding the attribute's presence.
+    Flag(&'static str, &'static str),
+}
+/// A property getter callable.
+#[cfg(target_arch = "wasm32")]
+type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
+/// A property setter callable.
+#[cfg(target_arch = "wasm32")]
+type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+/// Property accessors installed on one element, kept as long as its state.
+#[cfg(target_arch = "wasm32")]
+pub(crate) struct Reflected {
+    /// Getter and setter callables, released with the element's state.
+    _accessors: Vec<(Getter, Setter)>,
+}
+/// Install accessors for `properties` on `element`, so setting one changes its observed attribute.
+#[cfg(target_arch = "wasm32")]
+fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected {
+    use wasm_bindgen::JsValue;
+    let live = |weak: &js_sys::WeakRef<web_sys::HtmlElement>| weak.deref();
+    let mut kept = Vec::new();
+    for &property in properties {
+        let (name, attribute, flag) = match property {
+            Property::Text(name, attribute) => (name, attribute, false),
+            Property::Flag(name, attribute) => (name, attribute, true),
+        };
+        let weak = js_sys::WeakRef::new(element);
+        let read = weak.clone();
+        let get = Getter::new(move || match live(&read) {
+            Some(element) if flag => element.has_attribute(attribute).into(),
+            Some(element) => element.get_attribute(attribute).unwrap_or_default().into(),
+            None => JsValue::UNDEFINED,
+        });
+        let set = Setter::new(move |value: JsValue| {
+            let Some(element) = live(&weak) else { return };
+            let text = if flag {
+                value.is_truthy().then(String::new)
+            } else {
+                value.as_string()
+            };
+            // Attribute changes on a live element only fail for invalid names, which these are not.
+            let _ = match text {
+                Some(text) => element.set_attribute(attribute, &text),
+                None => element.remove_attribute(attribute),
+            };
+        });
+        let descriptor = js_sys::Object::new();
+        for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
+            let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
+        }
+        let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
+        if js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok() {
+            kept.push((get, set));
+        }
+    }
+    Reflected { _accessors: kept }
+}
+/// Install the built-in elements' stylesheet once per document, with the selected pack's properties.
+/// # Errors
+/// Returns a presentation, highlighting or native failure.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn install_styles(view: &DomView) -> Result<(), wasm_bindgen::JsValue> {
+    let failure =
+        |error: &dyn std::fmt::Display| wasm_bindgen::JsValue::from_str(&error.to_string());
+    let presentation = view
+        .pack
+        .presentation(view.mode)
+        .map_err(|error| failure(&error))?;
+    let mut css = String::from(":root{");
+    crate::browser::append_brand_properties(&mut css, &presentation);
+    css.push('}');
+    css.push_str(crate::icons::ICON_STYLES);
+    css.push_str(include_str!("components/code_block/code.css"));
+    css.push_str(&maestro_theme::highlight_css().map_err(|error| failure(&error))?);
+    css.push_str(include_str!("dom.css"));
+    crate::browser::install_stylesheet(&view.document, "maestro-dom-styles", &css)
+        .map_err(|error| failure(&error))
+}
 /// Define an autonomous element whose constructor callback lives as long as the page.
+///
+/// Each instance gets accessors for `properties`, which `construct` receives to keep.
 /// # Errors
 /// Returns the browser's registration failure, including a repeated name.
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn define_element<E: custom_element::CustomElement + 'static>(
     name: &str,
     observed: Vec<String>,
-    construct: impl Fn(web_sys::HtmlElement) -> E + 'static,
+    properties: &'static [Property],
+    construct: impl Fn(web_sys::HtmlElement, Reflected) -> E + 'static,
 ) -> Result<(), wasm_bindgen::JsValue> {
     use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
     /// Constructor callbacks retained for the page lifetime.
@@ -88,7 +199,11 @@ pub(crate) fn define_element<E: custom_element::CustomElement + 'static>(
     }
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
     let (closure, constructor) = custom_element::create_custom_element(
-        move |instance, _| construct(instance.unchecked_into()),
+        move |instance, _| {
+            let element: web_sys::HtmlElement = instance.unchecked_into();
+            let reflected = reflect(&element, properties);
+            construct(element, reflected)
+        },
         observed,
     );
     window.custom_elements().define(name, &constructor)?;

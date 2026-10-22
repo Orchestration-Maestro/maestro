@@ -1,5 +1,5 @@
-//! Extensions, skills, prompt templates, themes, context files and system prompt files
-//! discovered for one working directory, with provenance for every resource.
+//! Extensions, skills, prompt templates, themes, browser contributions, context files and
+//! system prompt files discovered for one working directory, with provenance for every resource.
 
 mod context;
 mod discovery;
@@ -12,6 +12,7 @@ pub use extensions::DefaultEventBus;
 pub use maestro_models::system_prompt::ContextFile;
 pub use maestro_resources::{ResourceCollision, ResourceDiagnostic};
 
+use crate::contributions::LoadContributionsResult;
 use discovery::PathIndex;
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionFactory, LoadExtensionsResult, ModuleLoader,
@@ -96,6 +97,8 @@ pub trait ResourceLoader<E: ExtensionExecution = Threaded> {
     fn get_prompts(&self) -> Rc<LoadPromptsResult>;
     /// The loaded themes and their diagnostics.
     fn get_themes(&self) -> Rc<LoadThemesResult>;
+    /// The loaded browser contributions and their diagnostics.
+    fn get_contributions(&self) -> Rc<LoadContributionsResult>;
     /// The context files in prompt order.
     fn get_agents_files(&self) -> Rc<[ContextFile]>;
     /// The system prompt replacing the default one, if any.
@@ -223,6 +226,8 @@ struct LoaderState<E: ExtensionExecution> {
     prompts: Rc<LoadPromptsResult>,
     /// Loaded themes.
     themes: Rc<LoadThemesResult>,
+    /// Loaded browser contributions.
+    contributions: Rc<LoadContributionsResult>,
     /// Discovered context files.
     agents_files: Rc<[ContextFile]>,
     /// The replacing system prompt.
@@ -320,6 +325,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             skills: Rc::default(),
             prompts: Rc::default(),
             themes: Rc::default(),
+            contributions: Rc::default(),
             agents_files: Rc::from([]),
             system_prompt: None,
             append_system_prompt: Rc::from([]),
@@ -385,6 +391,9 @@ impl<E: DefaultEventBus> ResourceLoader<E> for DefaultResourceLoader<E> {
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
         Rc::clone(&self.state.borrow().themes)
+    }
+    fn get_contributions(&self) -> Rc<LoadContributionsResult> {
+        Rc::clone(&self.state.borrow().contributions)
     }
     fn get_agents_files(&self) -> Rc<[ContextFile]> {
         Rc::clone(&self.state.borrow().agents_files)

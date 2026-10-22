@@ -19,6 +19,7 @@ pub(crate) mod download_button;
 pub mod sandboxed_iframe;
 
 /// Native button element.
+#[cfg(target_arch = "wasm32")]
 pub mod button;
 /// Original-text copy control.
 pub mod copy_button;

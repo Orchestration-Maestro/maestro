@@ -21,8 +21,10 @@ pub struct SlotMount {
     /// Container receiving each contribution's wrapper.
     parent: Element,
     /// One wrapper and mount per package and identifier.
-    mounted: Vec<((String, String), Element, MountedContent)>,
+    mounted: Vec<Mounted>,
 }
+/// One contribution's identity, wrapper and mounted content.
+type Mounted = ((String, String), Element, MountedContent);
 impl SlotMount {
     /// Mount nothing yet into `parent`.
     #[must_use]
@@ -33,16 +35,12 @@ impl SlotMount {
             mounted: Vec::new(),
         }
     }
-    /// Show every attached contribution for `input`, replacing failed ones with visible failures.
+    /// Show every attached contribution for `input` and return the failures shown in place.
     ///
-    /// Wrappers and roots of contributions that stay attached are kept in place.
-    /// # Errors
-    /// Returns a native placement failure.
-    pub fn show(
-        &mut self,
-        input: &Value,
-        view: &DomView,
-    ) -> Result<Vec<ContributionFailure>, JsValue> {
+    /// Wrappers and roots of contributions that stay attached are kept in place. A
+    /// contribution that is not admitted, conflicts or fails to mount shows its failure
+    /// in its own wrapper, and the rest of the slot still mounts.
+    pub fn show(&mut self, input: &Value, view: &DomView) -> Vec<ContributionFailure> {
         let contract = super::slot_input(&self.name);
         let mut failures = Vec::new();
         let mut next = Vec::new();
@@ -51,49 +49,70 @@ impl SlotMount {
                 contribution.package.clone(),
                 contribution.descriptor.id.clone(),
             );
-            let (wrapper, mut mounted) = match self.mounted.iter().position(|(k, ..)| *k == key) {
-                Some(index) => {
-                    let (_, wrapper, mounted) = self.mounted.remove(index);
-                    (wrapper, mounted)
-                }
-                None => (
-                    view.document.create_element("div")?,
-                    MountedContent::default(),
-                ),
-            };
-            let previous = mounted.root().cloned();
-            let shown = match super::admit(&contribution.descriptor, contract.as_deref()) {
-                Ok(()) => mounted.show(factory.content(input).as_ref(), &wrapper, view),
-                Err(failure) => {
-                    let shown = mounted.show(&FailureContent(failure.clone()), &wrapper, view);
-                    failures.push(failure);
-                    shown
+            let (wrapper, mut mounted) = match self.take(&key, view) {
+                Ok(taken) => taken,
+                Err(error) => {
+                    failures.push(mount_failure(&key.1, format!("{error:?}")));
+                    continue;
                 }
             };
-            shown.map_err(|error| JsValue::from_str(&error.to_string()))?;
-            // A replaced root may be an isolated frame that still holds its registration.
-            if let Some(previous) = previous.filter(|previous| mounted.root() != Some(previous)) {
-                super::adapters::release_frame(&previous);
+            let admitted = match &contract {
+                Ok(contract) => super::admit(&contribution.descriptor, contract.as_deref()),
+                Err(conflict) => Err(conflict.clone()),
+            };
+            let shown = admitted.and_then(|()| {
+                let content = factory.content(input);
+                mounted
+                    .show(content.as_ref(), &wrapper, view)
+                    .map_err(|error| mount_failure(&key.1, error.to_string()))
+            });
+            if let Err(failure) = shown {
+                // A failure that cannot be placed leaves its wrapper empty; it is still reported.
+                let _ = mounted.show(&FailureContent(failure.clone()), &wrapper, view);
+                failures.push(failure);
             }
-            if wrapper.parent_node().is_none() {
-                self.parent.append_child(&wrapper)?;
+            if wrapper.parent_node().is_none()
+                && let Err(error) = self.parent.append_child(&wrapper)
+            {
+                failures.push(mount_failure(&key.1, format!("{error:?}")));
             }
             next.push((key, wrapper, mounted));
         }
-        release(std::mem::replace(&mut self.mounted, next));
-        Ok(failures)
+        remove(std::mem::replace(&mut self.mounted, next));
+        failures
+    }
+    /// The wrapper and mount kept for `key`, or a new empty wrapper.
+    fn take(
+        &mut self,
+        key: &(String, String),
+        view: &DomView,
+    ) -> Result<(Element, MountedContent), JsValue> {
+        match self.mounted.iter().position(|(k, ..)| k == key) {
+            Some(index) => {
+                let (_, wrapper, mounted) = self.mounted.remove(index);
+                Ok((wrapper, mounted))
+            }
+            None => Ok((
+                view.document.create_element("div")?,
+                MountedContent::default(),
+            )),
+        }
     }
     /// Remove every mounted contribution.
     pub fn clear(&mut self) {
-        release(std::mem::take(&mut self.mounted));
+        remove(std::mem::take(&mut self.mounted));
     }
 }
-/// Remove wrappers, releasing any isolated frame they hold.
-fn release(mounted: Vec<((String, String), Element, MountedContent)>) {
-    for (_, wrapper, mounted) in mounted {
-        if let Some(root) = mounted.root() {
-            super::adapters::release_frame(root);
-        }
+/// The failure for contribution `id` whose content or wrapper could not be placed.
+fn mount_failure(id: &str, cause: String) -> ContributionFailure {
+    ContributionFailure::Mount {
+        id: id.to_owned(),
+        cause,
+    }
+}
+/// Remove wrappers; dropping their mounted content releases what each root owns.
+fn remove(mounted: Vec<Mounted>) {
+    for (_, wrapper, _) in mounted {
         wrapper.remove();
     }
 }
@@ -185,8 +204,8 @@ fn refresh(root: &WeakRef, state: &Rc<RefCell<SlotState>>, view: &DomView) {
     loop {
         let taken = state.borrow_mut().mount.take();
         let Some(mut mount) = taken else { break };
-        // Native placement failures leave the previous wrappers; lifecycle callbacks have no error channel.
-        let _ = mount.show(&input(root), view);
+        // Failures are shown in place; lifecycle callbacks have no error channel.
+        mount.show(&input(root), view);
         let mut current = state.borrow_mut();
         if !current.connected {
             drop(current);
@@ -212,7 +231,7 @@ fn input(root: &WeakRef) -> Value {
 /// Define the slot element once for the page.
 pub(super) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
-    crate::dom::define_element(TAG, Vec::new(), move |root| SlotElement {
+    crate::dom::define_element(TAG, Vec::new(), &[], move |root, _| SlotElement {
         root: WeakRef::new(&root),
         view: Rc::clone(&view),
         state: Rc::default(),

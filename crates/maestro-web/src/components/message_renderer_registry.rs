@@ -1,6 +1,4 @@
 //! Role-keyed custom content with typed retained callback ownership.
-#[cfg(target_arch = "wasm32")]
-use crate::dom::DomContent;
 use crate::tools::types::{ToolContent, ToolUiError};
 use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages, ToolRendererState};
 use std::{collections::HashMap, rc::Rc};
@@ -39,14 +37,6 @@ pub fn get_message_renderer<C: CustomAgentMessages + 'static>(
 ) -> Option<Rc<dyn MessageRenderer<C>>> {
     retain::<C, Box<dyn ToolContent>>(role)
 }
-/// Retain the current page-content role callback for this message representation.
-#[cfg(target_arch = "wasm32")]
-#[must_use]
-pub fn get_message_renderer_dom<C: CustomAgentMessages + 'static>(
-    role: &str,
-) -> Option<Rc<dyn MessageRenderer<C, Box<dyn DomContent>>>> {
-    retain::<C, Box<dyn DomContent>>(role)
-}
 /// Retain the callback registered for this role and content representation.
 fn retain<C: CustomAgentMessages + 'static, T: 'static>(
     role: &str,
@@ -78,15 +68,6 @@ pub fn render_message<C: CustomAgentMessages + 'static>(
 ) -> Result<Option<Box<dyn ToolContent>>, ToolUiError> {
     render::<C, Box<dyn ToolContent>>(message)
 }
-/// Prepare registered page content, or none for an unregistered role.
-/// # Errors
-/// Returns the reached renderer's original error without converting it to empty content.
-#[cfg(target_arch = "wasm32")]
-pub fn render_message_dom<C: CustomAgentMessages + 'static>(
-    message: &AgentMessage<C>,
-) -> Result<Option<Box<dyn DomContent>>, ToolUiError> {
-    render::<C, Box<dyn DomContent>>(message)
-}
 /// Prepare the content its role's registered renderer produces.
 fn render<C: CustomAgentMessages + 'static, T: 'static>(
     message: &AgentMessage<C>,
@@ -104,4 +85,27 @@ fn render<C: CustomAgentMessages + 'static, T: 'static>(
     retain::<C, T>(&role)
         .map(|renderer| renderer.render(message))
         .transpose()
+}
+/// Page-content message lookups.
+#[cfg(target_arch = "wasm32")]
+pub mod dom {
+    use super::{
+        AgentMessage, CustomAgentMessages, MessageRenderer, Rc, ToolUiError, render, retain,
+    };
+    use crate::dom::DomContent;
+    /// Retain the current page-content role callback for this message representation.
+    #[must_use]
+    pub fn get_message_renderer<C: CustomAgentMessages + 'static>(
+        role: &str,
+    ) -> Option<Rc<dyn MessageRenderer<C, Box<dyn DomContent>>>> {
+        retain::<C, Box<dyn DomContent>>(role)
+    }
+    /// Prepare registered page content, or none for an unregistered role.
+    /// # Errors
+    /// Returns the reached renderer's original error without converting it to empty content.
+    pub fn render_message<C: CustomAgentMessages + 'static>(
+        message: &AgentMessage<C>,
+    ) -> Result<Option<Box<dyn DomContent>>, ToolUiError> {
+        render::<C, Box<dyn DomContent>>(message)
+    }
 }

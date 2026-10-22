@@ -137,14 +137,14 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 19 loading exports and 31 contribution exports. Packaging
+26 execution exports, 19 loading exports and 48 contribution exports. Packaging
 also builds the two runtime-module fixtures, each from its own manifest and lock
 with its own binding glue, into a copy of the fixture package. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAMILY` total, the unchanged `HOST` digest and
-`COMPLETE 76/76` on success. `PHASE` records
+`COMPLETE 93/93` on success. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
