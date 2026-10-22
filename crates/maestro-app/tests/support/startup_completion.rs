@@ -240,7 +240,7 @@ fn operation() {
     );
 }
 fn replay(name: &str, case: Case<Input, Expected>) {
-    let Some(scratch) = admitted_scenario(name) else {
+    let Some(scratch) = admitted_scenario(name, &case) else {
         return;
     };
     setup(scratch.0.path(), &case.input);
@@ -302,16 +302,26 @@ fn replay(name: &str, case: Case<Input, Expected>) {
     }
 }
 
-/// A scratch directory for a scenario this host can author: the migration finds a managed
-/// binary by the spelling the host resolves, so both case spellings of one must stay apart.
-fn admitted_scenario(name: &str) -> Option<child::Scratch> {
+/// A scratch directory for a scenario this host can author, with the spellings it cannot store
+/// apart reported. The migration resolves managed names by their lower-case spelling through the
+/// host's own lookup, so an authored upper-case spelling is exercisable only where the host
+/// keeps it apart from its lower-case twin.
+fn admitted_scenario(name: &str, case: &Case<Input, Expected>) -> Option<child::Scratch> {
     let scratch = child::Scratch::new();
-    let pair = [OsStr::new("rg.exe"), OsStr::new("RG.EXE")];
-    if scratch.0.keeps_distinct(&pair).unwrap() {
-        return Some(scratch);
+    for entry in case.input.entries.keys() {
+        let leaf = entry.rsplit('/').next().unwrap_or(entry.as_str());
+        let lower = leaf.to_ascii_lowercase();
+        if lower != leaf
+            && !scratch
+                .0
+                .keeps_distinct(&[OsStr::new(leaf), OsStr::new(&lower)])
+                .unwrap()
+        {
+            eprintln!("{name}: host folds {leaf:?} and {lower:?}");
+            return None;
+        }
     }
-    eprintln!("{name}: host folds rg.exe and RG.EXE");
-    None
+    Some(scratch)
 }
 
 pub fn run(name: &str) {

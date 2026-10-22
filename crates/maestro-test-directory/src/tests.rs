@@ -58,6 +58,42 @@ fn folded_spellings_report_the_host_answer() {
     );
 }
 
+/// A name stored once is never two entries, so a repeated name is refused everywhere.
+#[test]
+fn repeated_names_report_a_refusal() {
+    let scratch = Scratch::new().unwrap();
+    assert!(
+        !scratch
+            .keeps_distinct(&[OsStr::new("same"), OsStr::new("same")])
+            .unwrap(),
+        "repeated name"
+    );
+}
+
+/// A name the host cannot store is refused everywhere while its control name is stored.
+#[test]
+fn unstoreable_names_report_a_refusal() {
+    let scratch = Scratch::new().unwrap();
+    let name = "n".repeat(300);
+    assert!(
+        !scratch.keeps_distinct(&[OsStr::new(&name)]).unwrap(),
+        "long name"
+    );
+}
+
+/// Every path component answers the host question, not only the leaf.
+#[test]
+fn refused_components_outside_the_leaf_are_reported() {
+    let scratch = Scratch::new().unwrap();
+    let directory = "d".repeat(300);
+    let path = format!("{directory}/file");
+    assert_eq!(
+        scratch.folded_names(&[&path]).unwrap(),
+        vec![vec![directory]],
+        "refused directory component"
+    );
+}
+
 /// A host that refuses native name bytes answers the same question the write does.
 #[cfg(unix)]
 #[test]

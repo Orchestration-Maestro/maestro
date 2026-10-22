@@ -293,7 +293,6 @@ fn theme_lists_json_names_with_ordinal_order() {
     let scratch = Scratch::new();
     for file in [
         "z.json",
-        "Z.json",
         "a.json",
         ".json",
         "ignored.JSON",
@@ -311,16 +310,19 @@ fn theme_lists_json_names_with_ordinal_order() {
     state.set_registered_themes(vec![
         registered(Some("z"), None),
         registered(Some("registered-only"), None),
+        registered(Some("A"), None),
+        registered(Some("e\u{301}"), None),
     ]);
     assert_eq!(
         state.get_available_themes().unwrap(),
         [
             "",
-            "Z",
+            "A",
             "a",
             "custom-only",
             "dark",
             "directory",
+            "e\u{301}",
             "light",
             "registered-only",
             "z",

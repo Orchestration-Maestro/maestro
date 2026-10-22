@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 #[cfg(unix)]
 use std::io;
-use std::{collections::BTreeMap, ffi::OsStr, path::Path, rc::Rc};
+use std::{collections::BTreeMap, rc::Rc};
 /// One recorded recipe and its independently observed output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -97,34 +97,22 @@ fn admit(case: &Recipe) -> Option<Scratch> {
         return None;
     }
     let dir = Scratch::new().unwrap();
-    let folded = folded_names(&dir, case);
+    let paths: Vec<&str> = case
+        .files
+        .keys()
+        .chain(&case.dirs)
+        .chain(case.links.keys())
+        .map(String::as_str)
+        .collect();
+    let folded = dir.folded_names(&paths).unwrap();
     if folded.is_empty() {
         return Some(dir);
     }
     eprintln!(
-        "{} needs leaf names this host keeps apart: {folded:?}",
+        "{} needs names this host keeps apart: {folded:?}",
         case.case
     );
     None
-}
-
-/// The authored leaf names this host does not keep apart inside their own directory.
-fn folded_names(dir: &Scratch, case: &Recipe) -> Vec<String> {
-    let mut groups: BTreeMap<&Path, Vec<&OsStr>> = BTreeMap::new();
-    for name in case.files.keys().chain(&case.dirs).chain(case.links.keys()) {
-        let path = Path::new(name);
-        if let Some(leaf) = path.file_name() {
-            groups
-                .entry(path.parent().unwrap_or(Path::new("")))
-                .or_default()
-                .push(leaf);
-        }
-    }
-    groups
-        .into_iter()
-        .filter(|(_, leaves)| !dir.keeps_distinct(leaves).unwrap())
-        .map(|(_, leaves)| format!("{leaves:?}"))
-        .collect()
 }
 
 /// Creates only the filesystem inputs selected by the recipe.

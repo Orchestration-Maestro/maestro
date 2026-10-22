@@ -2,6 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::{
+    collections::{BTreeMap, BTreeSet},
     ffi::OsStr,
     fs, io,
     path::{Path, PathBuf},
@@ -64,6 +65,35 @@ impl Scratch {
         let removed = fs::remove_dir_all(&probe);
         let stored = stored?;
         removed.map(|()| stored == names.len())
+    }
+
+    /// The authored name groups this host does not keep apart, one group per directory that
+    /// holds names it folded onto one entry or refused to store.
+    ///
+    /// Callers pass relative paths separated by `/`. Every component of every path is compared
+    /// with the other names its own directory holds, so a fold or a refusal through a directory
+    /// component is reported like one at a leaf. An empty answer states a premise the host can
+    /// exercise; each reported group names the spellings it could not store together.
+    ///
+    /// # Errors
+    /// Returns a creation or removal failure that is not the host's answer about a name.
+    pub fn folded_names(&self, paths: &[&str]) -> io::Result<Vec<Vec<String>>> {
+        let mut groups: BTreeMap<String, BTreeSet<&str>> = BTreeMap::new();
+        for path in paths {
+            let mut parent = Vec::new();
+            for name in path.split('/').filter(|name| !name.is_empty()) {
+                groups.entry(parent.join("/")).or_default().insert(name);
+                parent.push(name);
+            }
+        }
+        let mut folded = Vec::new();
+        for names in groups.into_values() {
+            let spellings: Vec<&OsStr> = names.iter().map(OsStr::new).collect();
+            if !self.keeps_distinct(&spellings)? {
+                folded.push(names.into_iter().map(str::to_owned).collect());
+            }
+        }
+        Ok(folded)
     }
 
     /// Create `name` in this directory, make it the process working directory and remove it.

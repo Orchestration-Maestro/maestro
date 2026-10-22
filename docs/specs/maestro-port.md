@@ -638,9 +638,11 @@ what the mode takes from the owner. It returns the guard that restores the earli
 permissions, or `None`, with them already restored, when the process is not
 refused, as in a privileged run; callers then skip the denial. `keeps_distinct(names)`
 creates a set of leaf names in one directory below the owner and reports whether the
-host stored that many entries, so a caller can state a premise a folding or restrictive
-host cannot exercise. The leaf owns no caller policy, process launcher, timer,
-retry limit or ownership-transfer API.
+host stored that many entries. `folded_names(paths)` compares every component of each
+supplied relative path with the other names its own directory holds and returns the
+groups the host does not keep apart. Both let a caller state a premise a folding or
+restrictive host cannot exercise. The leaf owns no caller policy, process launcher,
+timer, retry limit or ownership-transfer API.
 
 ### Test tracing owner
 

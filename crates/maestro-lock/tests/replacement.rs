@@ -58,10 +58,18 @@ fn replacement_handles_relative_and_extensionless_paths() {
         let path = dir.0.join(&name);
         // A host may refuse names that are not valid UTF-8; the observations above stay
         // unconditional.
-        if fs::write(&path, b"probe").is_err() {
-            eprintln!("host refuses the name bytes {:?}", name.as_bytes());
-            return;
+        match fs::write(&path, b"probe") {
+            Ok(()) => (),
+            // A control name in the same directory is stored, so this is the host refusing
+            // these bytes rather than another write failure.
+            Err(error) if fs::write(dir.0.join("control"), b"control").is_ok() => {
+                eprintln!("host refuses the name bytes {:?}: {error}", name.as_bytes());
+                return;
+            }
+            Err(error) => panic!("the recorded name bytes could not be written: {error}"),
         }
+        // Leave the target absent, so the subcase still creates it.
+        fs::remove_file(&path).unwrap();
         replace(
             &path,
             b"native",
