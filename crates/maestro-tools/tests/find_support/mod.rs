@@ -6,7 +6,7 @@ use crate::{
         RecordedTruncation, assert_rows, canon, check_reuse_as, check_theme_error_as,
         render_case_as, result_json, with_home,
     },
-    read_support::TempDir,
+    read_support::{Fixture, Scratch},
     runtime::run,
 };
 use futures_util::FutureExt;
@@ -162,7 +162,7 @@ async fn invoke(
     let options = FindToolOptions {
         operations: Some(Arc::clone(operations) as Arc<dyn FindOperations>),
     };
-    let bin = TempDir::new();
+    let bin = Scratch::new().unwrap();
     let tools_manager = manager(bin.text(), fetches);
     let count = Arc::clone(updates);
     if input.wrapped {
@@ -323,12 +323,12 @@ struct Native {
 }
 /// Install an executable via a child so no parent-owned writable descriptor survives.
 #[cfg(unix)]
-pub fn executable(root: &TempDir, name: &str, body: &str) {
+pub fn executable(root: &Scratch, name: &str, body: &str) {
     let source = root.file(&format!("{name}.source"), body.as_bytes());
     assert!(
         std::process::Command::new("install")
             .args(["-m", "0700", &source])
-            .arg(root.0.join(name))
+            .arg(root.path().join(name))
             .status()
             .unwrap()
             .success()
@@ -364,8 +364,8 @@ pub fn check_controlled(test: &str) {
     for c in cases(test).into_iter().filter(|c| c.id != "unavailable") {
         assert_eq!(c.op, "native-controlled");
         let input: Native = serde_json::from_value(c.input.clone()).unwrap();
-        let root = TempDir::new();
-        let args = root.0.join("args.json");
+        let root = Scratch::new().unwrap();
+        let args = root.path().join("args.json");
         let body = native_script(&input, &args);
         if input.spawn_error {
             root.file("fd", b"not executable");
@@ -419,7 +419,7 @@ pub fn check_controlled(test: &str) {
     }
 }
 /// Run real fd; missing binaries fail instead of skipping.
-pub fn native(root: &TempDir, pattern: &str, limit: Option<f64>) -> Result<Value, String> {
+pub fn native(root: &Scratch, pattern: &str, limit: Option<f64>) -> Result<Value, String> {
     let tool = create_find_tool(
         root.text(),
         FindToolOptions::default(),

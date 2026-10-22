@@ -2,7 +2,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support;
 use maestro_session::SessionManager;
 use maestro_session::session_cwd::{
     MissingSessionCwdError, SessionCwdIssue, assert_session_cwd_exists,
@@ -10,12 +9,11 @@ use maestro_session::session_cwd::{
     get_missing_session_cwd_issue,
 };
 use maestro_session::session_manager::ReadonlySessionManager;
-use std::path::Path;
-use support::scratch::Scratch;
+use maestro_test_directory::Scratch;
 
 /// Write a one-record history whose header holds the given working directory.
 fn stored_history(scratch: &Scratch, cwd: &str) -> String {
-    let path = Path::new(scratch.text()).join("stored.jsonl");
+    let path = scratch.path().join("stored.jsonl");
     let header = serde_json::json!({
         "type": "session", "version": 3, "id": "stored", "cwd": cwd,
         "timestamp": "2025-01-01T00:00:00.000Z"
@@ -26,8 +24,8 @@ fn stored_history(scratch: &Scratch, cwd: &str) -> String {
 
 #[test]
 fn maestro_persisted_session_reports_missing_cwd() {
-    let scratch = Scratch::new();
-    let missing = Path::new(scratch.text()).join("gone");
+    let scratch = Scratch::new().unwrap();
+    let missing = scratch.path().join("gone");
     let file = stored_history(&scratch, missing.to_str().unwrap());
     let manager = SessionManager::open(&file, None, None).unwrap();
     assert_eq!(
@@ -42,26 +40,28 @@ fn maestro_persisted_session_reports_missing_cwd() {
 
 #[test]
 fn maestro_open_cwd_override_preserves_header() {
-    let scratch = Scratch::new();
-    let missing = Path::new(scratch.text()).join("gone");
+    let scratch = Scratch::new().unwrap();
+    let missing = scratch.path().join("gone");
     let file = stored_history(&scratch, missing.to_str().unwrap());
     let before = std::fs::read(&file).unwrap();
-    let manager = SessionManager::open(&file, None, Some(scratch.text())).unwrap();
-    assert_eq!(manager.get_cwd(), scratch.text());
+    let manager =
+        SessionManager::open(&file, None, Some(scratch.path().to_str().unwrap())).unwrap();
+    assert_eq!(manager.get_cwd(), scratch.path().to_str().unwrap());
     assert_eq!(get_missing_session_cwd_issue(&manager, "/fallback"), None);
     assert_eq!(std::fs::read(&file).unwrap(), before);
 }
 
 #[test]
 fn cwd_diagnosis_skips_memory_empty_and_existing_paths() {
-    let scratch = Scratch::new();
-    let missing = Path::new(scratch.text()).join("gone");
+    let scratch = Scratch::new().unwrap();
+    let missing = scratch.path().join("gone");
     let memory = SessionManager::in_memory(Some(missing.to_str().unwrap())).unwrap();
     assert_eq!(get_missing_session_cwd_issue(&memory, "/fallback"), None);
     let empty_cwd = stored_history(&scratch, "");
     let manager = SessionManager::open(&empty_cwd, None, Some("")).unwrap();
     assert_eq!(get_missing_session_cwd_issue(&manager, "/fallback"), None);
-    let healthy = SessionManager::open(&empty_cwd, None, Some(scratch.text())).unwrap();
+    let healthy =
+        SessionManager::open(&empty_cwd, None, Some(scratch.path().to_str().unwrap())).unwrap();
     assert_eq!(
         get_missing_session_cwd_issue(&healthy, "/does/not/exist"),
         None
@@ -70,8 +70,8 @@ fn cwd_diagnosis_skips_memory_empty_and_existing_paths() {
 
 #[test]
 fn cwd_diagnosis_accepts_existing_files_and_unpublished_sessions() {
-    let scratch = Scratch::new();
-    let dir = Path::new(scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let file = stored_history(&scratch, "/unused");
     let plain = dir.join("plain");
     std::fs::write(&plain, "x").unwrap();
@@ -79,7 +79,7 @@ fn cwd_diagnosis_accepts_existing_files_and_unpublished_sessions() {
     assert_eq!(get_missing_session_cwd_issue(&manager, "/fallback"), None);
     let unpublished = SessionManager::create(
         dir.join("absent").to_str().unwrap(),
-        Some(scratch.text()),
+        Some(scratch.path().to_str().unwrap()),
         "unused",
     )
     .unwrap();
@@ -90,8 +90,8 @@ fn cwd_diagnosis_accepts_existing_files_and_unpublished_sessions() {
 #[cfg(unix)]
 #[test]
 fn cwd_diagnosis_follows_symlinks_to_existing_targets_only() {
-    let scratch = Scratch::new();
-    let dir = Path::new(scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let file = stored_history(&scratch, "/unused");
     let plain = dir.join("plain");
     std::fs::write(&plain, "x").unwrap();
@@ -137,11 +137,11 @@ fn cwd_formatting_keeps_exact_messages_and_optional_file() {
 
 #[test]
 fn cwd_assertion_returns_typed_error_with_original_issue() {
-    let scratch = Scratch::new();
-    let healthy = stored_history(&scratch, scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let healthy = stored_history(&scratch, scratch.path().to_str().unwrap());
     let manager = SessionManager::open(&healthy, None, None).unwrap();
     assert!(assert_session_cwd_exists(&manager, "/fallback").is_ok());
-    let missing = Path::new(scratch.text()).join("gone");
+    let missing = scratch.path().join("gone");
     let file = stored_history(&scratch, missing.to_str().unwrap());
     let manager = SessionManager::open(&file, None, None).unwrap();
     let error = assert_session_cwd_exists(&manager, "/fallback").unwrap_err();

@@ -36,17 +36,17 @@ use crate::runtime::run;
 use maestro_models::Cancellation;
 use maestro_tools::BashError;
 use maestro_tools::utils::shell::{ShellEnv, get_shell_config};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use std::{ffi::OsString, future::Future};
 
 #[test]
 fn shell_native_probes_validate_filesystem_boundaries() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     assert_eq!(
         get_shell_config(Some(&dir.text())).unwrap().shell,
         dir.text()
     );
-    let file = dir.0.join("not-executable");
+    let file = dir.path().join("not-executable");
     std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -58,15 +58,15 @@ fn shell_native_probes_validate_filesystem_boundaries() {
             .shell,
         file.to_str().unwrap()
     );
-    assert!(get_shell_config(Some(dir.0.join("missing").to_str().unwrap())).is_err());
+    assert!(get_shell_config(Some(dir.path().join("missing").to_str().unwrap())).is_err());
     assert_eq!(get_shell_config(None).unwrap().shell, "/bin/bash");
 }
 
 #[test]
 fn local_bash_forwards_factory_shell_path_each_run() {
     run(async {
-        let dir = TempDir::new();
-        let path = dir.0.join("selected-shell");
+        let dir = Scratch::new().unwrap();
+        let path = dir.path().join("selected-shell");
         let operations =
             create_local_bash_operations("/tools".into(), Some(path.to_str().unwrap().into()));
         std::os::unix::fs::symlink("/bin/bash", &path).unwrap();
@@ -167,7 +167,7 @@ async fn environment_routes(bin: &str, cwd: &str, shell: &str) {
 #[test]
 fn local_bash_replaces_environment_or_builds_fresh_default() {
     run(async {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         for bin in ["/first-tool-bin", "/second-tool-bin"] {
             environment_routes(bin, &dir.text(), "/bin/bash").await;
         }
@@ -180,7 +180,7 @@ fn local_bash_replaces_environment_or_builds_fresh_default() {
 #[test]
 fn local_bash_preserves_exit_and_native_failure_precedence() {
     run(async {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
         let mut sink = |_: &[u8]| {};
         for (command, wanted) in [
@@ -203,7 +203,7 @@ fn local_bash_preserves_exit_and_native_failure_precedence() {
                 .unwrap();
             assert_eq!(result.exit_code, wanted);
         }
-        let file = dir.0.join("ordinary-file");
+        let file = dir.path().join("ordinary-file");
         std::fs::OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -234,7 +234,7 @@ fn local_bash_preserves_exit_and_native_failure_precedence() {
 #[test]
 fn local_bash_spawns_before_honoring_preabort() {
     run(async {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let signal = Cancellation::new();
         signal.abort();
         let mut sink = |_: &[u8]| {};
@@ -274,7 +274,7 @@ fn local_bash_spawns_before_honoring_preabort() {
 #[test]
 fn local_bash_timeout_is_optional_seconds() {
     run(async {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
         let mut sink = |_: &[u8]| {};
         for timeout in [
@@ -307,8 +307,8 @@ fn local_bash_timeout_is_optional_seconds() {
 #[test]
 fn local_bash_errors_keep_exact_authored_messages() {
     run(async {
-        let dir = TempDir::new();
-        let missing = dir.0.join("missing").to_str().unwrap().to_owned();
+        let dir = Scratch::new().unwrap();
+        let missing = dir.path().join("missing").to_str().unwrap().to_owned();
         let mut sink = |_: &[u8]| {};
         let options = create_local_bash_operations("/tools".into(), Some(missing.clone()));
         let error = options
@@ -389,8 +389,8 @@ fn local_bash_has_its_own_session_and_process_group() {
 #[test]
 fn local_bash_streams_raw_bytes_before_completion() {
     run(async {
-        let dir = TempDir::new();
-        let gate = dir.0.join("release");
+        let dir = Scratch::new().unwrap();
+        let gate = dir.path().join("release");
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
         let mut bytes = Vec::new();
         let mut released = false;
@@ -523,8 +523,8 @@ fn native_shell_environment_reads_each_process_inheritance() {
 #[test]
 fn local_bash_keeps_interleaved_split_unicode_and_large_output_raw() {
     run(async {
-        let dir = TempDir::new();
-        let gates = [dir.0.join("first"), dir.0.join("second")];
+        let dir = Scratch::new().unwrap();
+        let gates = [dir.path().join("first"), dir.path().join("second")];
         let mut bytes = Vec::new();
         let mut released = 0;
         let mut sink = |data: &[u8]| {

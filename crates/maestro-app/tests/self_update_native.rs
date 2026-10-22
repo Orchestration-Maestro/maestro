@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::configuration::config::{NativeSelfUpdateOperations, SelfUpdateOperations};
+use maestro_test_directory::Scratch;
 
 #[cfg(unix)]
 #[test]
@@ -10,11 +11,11 @@ fn native_update_probes_capture_only_helper_output() {
     use maestro_app::configuration::config::installation::{Installation, PackageLayout};
     use maestro_app::configuration::config::{SelfUpdateContext, get_self_update_command};
     use std::{fs, os::unix::fs::symlink};
-    let scratch = Scratch::new();
-    let root = scratch.0.join("global");
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().join("global");
     let package = root.join("agent");
     fs::create_dir_all(&package).unwrap();
-    let alias = scratch.0.join("alias");
+    let alias = scratch.path().join("alias");
     symlink(&root, &alias).unwrap();
     let helper = install_helper(&scratch);
     let installation = Installation {
@@ -51,7 +52,7 @@ fn native_update_probes_capture_only_helper_output() {
         error.to_string(),
         format!("Failed to run {} fail root -g: query denied", configured[0])
     );
-    let missing = vec![scratch.0.join("absent").to_string_lossy().into_owned()];
+    let missing = vec![scratch.path().join("absent").to_string_lossy().into_owned()];
     let source_error = operations
         .run_command_sync(&missing[0], &["root".into(), "-g".into()])
         .unwrap_err();
@@ -69,7 +70,7 @@ fn native_update_probes_capture_only_helper_output() {
 #[cfg(unix)]
 fn install_helper(scratch: &Scratch) -> std::path::PathBuf {
     use std::{fs::OpenOptions, io::Write};
-    let source = scratch.0.join("query-source");
+    let source = scratch.path().join("query-source");
     let mut file = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -77,7 +78,7 @@ fn install_helper(scratch: &Scratch) -> std::path::PathBuf {
         .unwrap();
     file.write_all(b"#!/bin/sh\nroot=$1\nshift\n[ \"$*\" = 'root -g' ] || exit 91\nif [ \"$root\" = fail ]; then printf ' query denied\\n' >&2; exit 7; fi\nprintf ' \\357\\273\\277%s\\n' \"$root\"\n").unwrap();
     drop(file);
-    let target = scratch.0.join("query-helper");
+    let target = scratch.path().join("query-helper");
     assert!(
         std::process::Command::new("install")
             .args(["-m", "0700"])
@@ -98,8 +99,8 @@ fn native_update_access_matches_system_decision() {
         SelfUpdateContext, get_self_update_command, get_self_update_unavailable_instruction,
     };
     use std::{fs, os::unix::fs::PermissionsExt};
-    let scratch = Scratch::new();
-    let parent = scratch.0.join("node_modules");
+    let scratch = Scratch::new().unwrap();
+    let parent = scratch.path().join("node_modules");
     let package = parent.join("agent");
     fs::create_dir_all(&package).unwrap();
     let helper = install_helper(&scratch);
@@ -153,11 +154,11 @@ fn native_update_access_matches_system_decision() {
 #[test]
 fn native_windows_update_access_matches_directory_rule() {
     use std::fs;
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let operations = NativeSelfUpdateOperations;
-    let dir = scratch.0.join("directory");
+    let dir = scratch.path().join("directory");
     fs::create_dir(&dir).unwrap();
-    let file = scratch.0.join("file");
+    let file = scratch.path().join("file");
     drop(
         fs::OpenOptions::new()
             .write(true)
@@ -185,7 +186,7 @@ fn native_windows_update_access_matches_directory_rule() {
     }
     assert!(
         operations
-            .check_write_access(scratch.0.join("absent").to_str().unwrap())
+            .check_write_access(scratch.path().join("absent").to_str().unwrap())
             .is_err()
     );
     windows_selection_uses_native_access(&scratch);
@@ -193,32 +194,18 @@ fn native_windows_update_access_matches_directory_rule() {
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
 }
 
-struct Scratch(std::path::PathBuf);
-impl Scratch {
-    fn new() -> Self {
-        let path = std::env::temp_dir().join(format!(
-            "maestro-update-{}-{}",
-            std::process::id(),
-            uuid::Uuid::new_v4()
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
 #[cfg(windows)]
 fn windows_selection_uses_native_access(scratch: &Scratch) {
     use maestro_app::configuration::config::installation::{Installation, PackageLayout};
     use maestro_app::configuration::config::{SelfUpdateContext, get_self_update_command};
-    let package = scratch.0.join("directory").join("agent");
+    let package = scratch.path().join("directory").join("agent");
     std::fs::create_dir(&package).unwrap();
     let operations = WindowsQuery {
-        root: scratch.0.join("directory").to_string_lossy().into_owned(),
+        root: scratch
+            .path()
+            .join("directory")
+            .to_string_lossy()
+            .into_owned(),
     };
     let installation = Installation {
         module_dir: r"C:\source".into(),

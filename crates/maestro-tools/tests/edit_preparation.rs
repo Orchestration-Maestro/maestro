@@ -173,7 +173,7 @@ fn edit_arguments_use_preparation_before_shared_validation() {
 #[test]
 fn prepared_edit_runs_through_agent_loop() {
     use maestro_tools::create_edit_tool;
-    use read_support::TempDir;
+    use read_support::{Fixture, Scratch};
     use serde_json::json;
     for (id, args) in [
         (
@@ -189,7 +189,7 @@ fn prepared_edit_runs_through_agent_loop() {
             json!({"path":"file","edits":"[]","oldText":"hello","newText":"world"}),
         ),
     ] {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let path = dir.file("file", b"hello");
         let mut retained = args.clone();
         if id == "array" {
@@ -233,9 +233,9 @@ fn parallel_edit_observers_share_normalized_call() {
 #[test]
 fn parsed_edit_arguments_survive_validation_failure() {
     use maestro_tools::create_edit_tool;
-    use read_support::TempDir;
+    use read_support::{Fixture, Scratch};
     use serde_json::json;
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = dir.file("file", b"hello");
     let turn = loop_support::run_turn(
         vec![create_edit_tool(dir.text(), EditToolOptions::default())],

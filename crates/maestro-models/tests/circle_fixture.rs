@@ -30,13 +30,13 @@ impl io::Write for ObserveImage<'_> {
 
 #[test]
 fn circle_materialization_preserves_bytes_and_decoded_pixels() {
-    let scratch = Scratch::new();
-    let target = scratch.0.join("tests/data/red-circle.png");
+    let scratch = Scratch::new().unwrap();
+    let target = scratch.path().join("tests/data/red-circle.png");
     let mut output = ObserveImage {
         target: &target,
         bytes: Vec::new(),
     };
-    generate_test_image(&scratch.0, &mut output).unwrap();
+    generate_test_image(scratch.path(), &mut output).unwrap();
     let bytes = fs::read(&target).unwrap();
     assert_eq!(bytes.len(), 2_565);
     assert_eq!(
@@ -68,9 +68,9 @@ fn circle_materialization_preserves_bytes_and_decoded_pixels() {
 
 #[test]
 fn circle_materialization_creates_missing_parents() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let package = scratch
-        .0
+        .path()
         .join("missing/nested/package with spaces é\u{feff}");
     let target = package.join("tests/data/red-circle.png");
     let mut output = Vec::new();
@@ -87,13 +87,13 @@ fn circle_materialization_creates_missing_parents() {
 
 #[test]
 fn circle_materialization_replaces_existing_target() {
-    let scratch = Scratch::new();
-    let target = scratch.0.join("tests/data/red-circle.png");
+    let scratch = Scratch::new().unwrap();
+    let target = scratch.path().join("tests/data/red-circle.png");
     fs::create_dir_all(target.parent().unwrap()).unwrap();
     fs::write(&target, vec![b'x'; 5_130]).unwrap();
     for _ in 0..2 {
         let mut output = Vec::new();
-        generate_test_image(&scratch.0, &mut output).unwrap();
+        generate_test_image(scratch.path(), &mut output).unwrap();
         assert_eq!(
             fs::read(&target).unwrap(),
             include_bytes!("data/red-circle.png")
@@ -108,13 +108,13 @@ fn circle_materialization_replaces_existing_target() {
 #[test]
 fn circle_materialization_reports_parent_failure_before_notice() {
     for blocker in ["tests", "tests/data"] {
-        let scratch = Scratch::new();
-        let path = scratch.0.join(blocker);
+        let scratch = Scratch::new().unwrap();
+        let path = scratch.path().join(blocker);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(&path, b"blocking file").unwrap();
-        let expected = fs::create_dir_all(scratch.0.join("tests/data")).unwrap_err();
+        let expected = fs::create_dir_all(scratch.path().join("tests/data")).unwrap_err();
         let mut output = Vec::new();
-        let error = generate_test_image(&scratch.0, &mut output).unwrap_err();
+        let error = generate_test_image(scratch.path(), &mut output).unwrap_err();
         assert_eq!(error.raw_os_error(), expected.raw_os_error());
         assert!(error.raw_os_error().is_some());
         assert_eq!(fs::read(path).unwrap(), b"blocking file");
@@ -124,11 +124,11 @@ fn circle_materialization_reports_parent_failure_before_notice() {
 
 #[test]
 fn circle_materialization_reports_write_failure_before_notice() {
-    let scratch = Scratch::new();
-    let target = scratch.0.join("tests/data/red-circle.png");
+    let scratch = Scratch::new().unwrap();
+    let target = scratch.path().join("tests/data/red-circle.png");
     fs::create_dir_all(&target).unwrap();
     let mut output = Vec::new();
-    let error = generate_test_image(&scratch.0, &mut output).unwrap_err();
+    let error = generate_test_image(scratch.path(), &mut output).unwrap_err();
     let expected = fs::write(&target, b"probe").unwrap_err();
     assert_eq!(error.raw_os_error(), expected.raw_os_error());
     assert!(error.raw_os_error().is_some());
@@ -138,15 +138,15 @@ fn circle_materialization_reports_write_failure_before_notice() {
 
 #[test]
 fn circle_notice_failure_keeps_completed_file() {
-    let scratch = Scratch::new();
-    let target = scratch.0.join("tests/data/red-circle.png");
+    let scratch = Scratch::new().unwrap();
+    let target = scratch.path().join("tests/data/red-circle.png");
     let notice = format!("Generated test image at: {}\n", target.display());
     for limit in [0, 7] {
         let mut output = crate::catalog_command_support::FailingWriter {
             bytes: Vec::new(),
             remaining: limit,
         };
-        let error = generate_test_image(&scratch.0, &mut output).unwrap_err();
+        let error = generate_test_image(scratch.path(), &mut output).unwrap_err();
         assert_eq!(error.raw_os_error(), Some(28));
         assert_eq!(output.bytes, notice.as_bytes()[..limit]);
         assert_eq!(

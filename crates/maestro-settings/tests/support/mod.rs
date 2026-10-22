@@ -284,29 +284,7 @@ pub fn report(value: &Value) {
     println!("REPORT:{value}");
 }
 
-/// A uniquely named directory below the system temporary directory, removed on drop.
-pub struct TempDir(std::path::PathBuf);
-
-impl TempDir {
-    pub fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let number = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("maestro-settings-{}-{number}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    pub fn path(&self) -> &std::path::Path {
-        &self.0
-    }
-}
-
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+pub use maestro_test_directory::Scratch;
 
 /// Environment variable naming the file a lock child works on.
 const CHILD_PATH: &str = "MAESTRO_SETTINGS_TEST_PATH";
@@ -402,14 +380,14 @@ pub fn file_storage(root: &std::path::Path) -> FileSettingsStorage {
 /// A storage adapter that scenarios seed and edit from outside the manager.
 pub enum Backend {
     Memory(Arc<InMemorySettingsStorage>),
-    Native(TempDir, Arc<FileSettingsStorage>),
+    Native(Scratch, Arc<FileSettingsStorage>),
     Controlled(Arc<ControlledStorage>),
 }
 
 impl Backend {
     /// One backend per adapter.
     pub fn all() -> Vec<Self> {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let native = Arc::new(file_storage(root.path()));
         vec![
             Self::Memory(Arc::new(InMemorySettingsStorage::new())),

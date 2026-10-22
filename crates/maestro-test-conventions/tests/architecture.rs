@@ -2482,15 +2482,20 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-chat",
     "maestro-credentials",
     "maestro-daemon",
+    "maestro-export",
     "maestro-extensions",
     "maestro-models",
     "maestro-packages",
     "maestro-resources",
     "maestro-session",
+    "maestro-settings",
+    "maestro-terminal",
     "maestro-test-conventions",
+    "maestro-test-process",
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
+    "maestro-tui-crossterm",
 ];
 
 #[test]

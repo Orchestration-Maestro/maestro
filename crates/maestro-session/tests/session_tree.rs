@@ -7,9 +7,9 @@ use chrono::TimeZone;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use support::native::broken_history;
-use support::scratch::Scratch;
 
 /// Write a native history file below the scratch directory.
 fn history_file(scratch: &Scratch, name: &str, records: &[Value]) -> String {
@@ -20,7 +20,7 @@ fn history_file(scratch: &Scratch, name: &str, records: &[Value]) -> String {
         text.push('\n');
         text.push_str(&record.to_string());
     }
-    let path = std::path::Path::new(scratch.text()).join(name);
+    let path = scratch.path().join(name);
     std::fs::write(&path, text).unwrap();
     path.to_str().unwrap().to_owned()
 }
@@ -108,8 +108,9 @@ fn reset_leaf_selects_before_first_without_writing() {
 
 #[test]
 fn reset_leaf_leaves_native_file_bytes_unchanged() {
-    let scratch = Scratch::new();
-    let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+    let scratch = Scratch::new().unwrap();
+    let mut manager =
+        SessionManager::create("/work", Some(scratch.path().to_str().unwrap()), "unused").unwrap();
     manager
         .append_message(json!({"role": "user", "content": "first", "timestamp": 1}))
         .unwrap();
@@ -229,7 +230,7 @@ fn readonly_view_exposes_thirteen_current_reads() {
 #[test]
 fn deep_trees_build_and_drop_without_recursive_stack_growth() {
     const DEPTH: usize = 30_000;
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let records: Vec<Value> = (0..DEPTH)
         .map(|index| {
             let parent = index.checked_sub(1).map(|parent| format!("n{parent}"));
@@ -259,7 +260,7 @@ fn tree_local_dates_use_the_native_local_zone() {
     let name = "tree_local_dates_use_the_native_local_zone";
     let zone = std::env::var("MAESTRO_TREE_ZONE");
     if cfg!(windows) || zone.is_ok() {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let path = history_file(
             &scratch,
             "local.jsonl",
@@ -314,7 +315,7 @@ fn failed_label_publication_keeps_old_resolved_maps() {
         Presence::Missing,
         Presence::Null,
     ] {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let seeded = "2000-01-01T00:00:00.000Z";
         let file = history_file(
             &scratch,
@@ -344,7 +345,7 @@ fn failed_label_publication_keeps_old_resolved_maps() {
         assert_eq!(tree[0].label, Some(&json!("old")));
         assert_eq!(tree[0].label_timestamp, Some(&json!(seeded)));
     }
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let (mut manager, first) = broken_history(&scratch);
     manager
         .append_label_change(&first, Presence::Present("fresh"))
@@ -354,7 +355,7 @@ fn failed_label_publication_keeps_old_resolved_maps() {
 
 #[test]
 fn switching_histories_rebuilds_labels_with_candidate_state() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let labeled = history_file(
         &scratch,
         "labeled.jsonl",
@@ -398,7 +399,7 @@ fn switching_histories_rebuilds_labels_with_candidate_state() {
 
 #[test]
 fn failed_history_switch_preserves_existing_labels() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let labeled = history_file(
         &scratch,
         "labeled.jsonl",
@@ -415,7 +416,7 @@ fn failed_history_switch_preserves_existing_labels() {
             json!({"type": "message", "id": null}),
         ],
     );
-    let unreadable = scratch.text().to_owned();
+    let unreadable = scratch.path().to_str().unwrap().to_owned();
     let rewrite_failure = history_file(&scratch, "headerless.jsonl", &[]);
     std::fs::write(&rewrite_failure, "not a session header\n").unwrap();
     let mut permissions = std::fs::metadata(&rewrite_failure).unwrap().permissions();
@@ -443,7 +444,7 @@ fn failed_history_switch_preserves_existing_labels() {
 
 #[test]
 fn tree_containers_are_fresh_over_borrowed_entries() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let path = history_file(
         &scratch,
         "tree.jsonl",
@@ -468,7 +469,7 @@ fn tree_containers_are_fresh_over_borrowed_entries() {
 
 #[test]
 fn reachable_tree_cycles_omit_only_active_path_back_edges() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let stamp = |second: u32| format!("2025-01-01T00:00:{second:02}Z");
     let path = history_file(
         &scratch,
@@ -494,7 +495,7 @@ fn reachable_tree_cycles_omit_only_active_path_back_edges() {
 #[test]
 fn forest_constructor_uses_each_callers_selected_metadata() {
     use maestro_session::export_html::template::build_tree;
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let entries = [
         record("t", None, "2025-01-01T00:00:00Z"),
         label("l", "t", "t", "kept"),

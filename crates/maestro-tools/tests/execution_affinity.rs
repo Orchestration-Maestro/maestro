@@ -1,6 +1,8 @@
 //! Caller-local tool execution through the public factory boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
+use crate::read_support::Fixture;
 use futures_util::FutureExt;
 use maestro_agent::{AgentToolResult, ToolExecutionMode};
 use maestro_models::{Cancellation, Tool};
@@ -568,7 +570,7 @@ fn local_bash_sink_uses_native_child_waiter() {
     use std::io::Write;
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
-    let root = crate::read_support::TempDir::new();
+    let root = crate::read_support::Scratch::new().unwrap();
     crate::runtime::run(async {
         let tool = maestro_tools::local::create_bash_tool_definition::<()>(
             root.text(),
@@ -728,7 +730,7 @@ fn local_builtin_execution_reuses_existing_operations() {
     use crate::factory_support::execution::Probes;
     use maestro_agent::{AgentMessage, PromptInput};
     use maestro_models::{Execution, Local};
-    let root = crate::read_support::TempDir::new();
+    let root = crate::read_support::Scratch::new().unwrap();
     crate::grep_support::producer(&root, &crate::grep_support::Input::default());
     let probes = Probes::new(false);
     let context_calls = Rc::new(Cell::new(0));
@@ -791,7 +793,7 @@ fn local_builtin_execution_reuses_existing_operations() {
 fn check_builtin_results(
     results: &[maestro_models::ToolResultMessage],
     probes: &crate::factory_support::execution::Probes,
-    root: &crate::read_support::TempDir,
+    root: &crate::read_support::Scratch,
     progress: &[(String, Value)],
 ) {
     assert_eq!(
@@ -1071,7 +1073,7 @@ fn check_builtin_projection(
 /// Bind the existing file probes to local definitions before erasure.
 #[cfg(unix)]
 fn builtin_tools(
-    root: &crate::read_support::TempDir,
+    root: &crate::read_support::Scratch,
     probes: &crate::factory_support::execution::Probes,
     factory: &maestro_tools::local::ToolContextFactory<LocalContext>,
 ) -> Vec<maestro_agent::SharedAgentTool<maestro_models::Local>> {

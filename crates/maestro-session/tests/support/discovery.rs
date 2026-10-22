@@ -3,7 +3,6 @@ use maestro_request::presence::Presence;
 use maestro_session::SessionInfo;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::path::Path;
 
 /// One recorded history and the metadata its listing must return.
 #[derive(Deserialize)]
@@ -83,8 +82,8 @@ pub fn replay(names: &[&str], adjust: impl Fn(&str, &mut Value)) {
         .unwrap();
     for name in names {
         let case = cases.iter().find(|case| case.name == *name).unwrap();
-        let scratch = super::scratch::Scratch::new();
-        let path = Path::new(scratch.text()).join("case.jsonl");
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let path = scratch.path().join("case.jsonl");
         std::fs::write(&path, &case.input).unwrap();
         let file = std::fs::File::options().write(true).open(&path).unwrap();
         file.set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_millis(case.mtime))
@@ -92,7 +91,7 @@ pub fn replay(names: &[&str], adjust: impl Fn(&str, &mut Value)) {
         let listed = runtime
             .block_on(maestro_session::SessionManager::list(
                 "/unused",
-                Some(scratch.text()),
+                Some(scratch.path().to_str().unwrap()),
                 "/unused",
                 None,
             ))

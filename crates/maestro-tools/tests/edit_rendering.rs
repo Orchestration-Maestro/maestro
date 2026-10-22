@@ -16,7 +16,7 @@ use maestro_tools::{
     ToolRenderContext, ToolRenderResultOptions, create_edit_tool_definition,
 };
 use maestro_tui::{Text, tui::ComponentHandle};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -34,7 +34,7 @@ struct Row {
     /// Controlled live theme and runtime.
     env: Env,
     /// Directory used by previews.
-    dir: TempDir,
+    dir: Scratch,
     /// Shared renderer state.
     state: Rc<RefCell<EditRenderState>>,
     /// Accepted completion notifications.
@@ -43,7 +43,7 @@ struct Row {
 impl Row {
     /// A controlled row with distinguishable source text.
     fn new() -> Self {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         dir.file("file", b"alpha\n");
         Self {
             tool: create_edit_tool_definition(
@@ -396,7 +396,7 @@ async fn native(name: &str) {
     assert_eq!(cases.len(), 4);
     let case = cases.into_iter().find(|case| case.name == name).unwrap();
     let mut row = Row::new();
-    let definition_dir = TempDir::new();
+    let definition_dir = Scratch::new().unwrap();
     definition_dir.file("file", b"definition decoy\n");
     let operations = Arc::new(edit_support::Operations::new(b"execution decoy\n"));
     row.tool = edit_support::tool(&operations, &definition_dir.text());
@@ -427,7 +427,7 @@ async fn native(name: &str) {
     assert!(operations.events.entries().is_empty());
     assert!(operations.script.calls().is_empty());
     assert_eq!(
-        std::fs::read_to_string(definition_dir.0.join("file")).unwrap(),
+        std::fs::read_to_string(definition_dir.path().join("file")).unwrap(),
         "definition decoy\n"
     );
     if let Some(expected) = case.expected.invalidations {
@@ -436,7 +436,7 @@ async fn native(name: &str) {
 }
 /// Reconstruct a native replay after deleting its source.
 fn replay_native(row: &Row, case: &NativeCase, exists: bool) {
-    std::fs::remove_file(row.dir.0.join("file")).unwrap();
+    std::fs::remove_file(row.dir.path().join("file")).unwrap();
     let details: Details = serde_json::from_value(case.expected.preview.clone()).unwrap();
     let out = row.result(
         &case.input,
@@ -452,7 +452,7 @@ fn replay_native(row: &Row, case: &NativeCase, exists: bool) {
         None,
     );
     assert_eq!(out.render(80), *case.expected.result_rows.as_ref().unwrap());
-    assert_eq!(row.dir.0.join("file").exists(), exists);
+    assert_eq!(row.dir.path().join("file").exists(), exists);
     assert_eq!(row.env.runtime.futures(), 0);
 }
 /// Complete and compare the native preview and optional result.
@@ -461,7 +461,7 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
     assert!(Rc::ptr_eq(call, &row.call(&case.input, None)));
     assert_eq!(call.render(80), case.expected.rows);
     assert_eq!(
-        std::fs::read_to_string(row.dir.0.join("file")).unwrap(),
+        std::fs::read_to_string(row.dir.path().join("file")).unwrap(),
         case.expected.file_after.as_ref().unwrap().as_str()
     );
     if let Some(expected) = &case.expected.result_rows {

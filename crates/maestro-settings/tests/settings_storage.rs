@@ -11,7 +11,7 @@ mod tests {
     use serde_json::json;
 
     use crate::support::{
-        ControlledStorage, Holder, TempDir, block_on, file_storage, location, probe_lock, raw,
+        ControlledStorage, Holder, Scratch, block_on, file_storage, location, probe_lock, raw,
     };
     use maestro_settings::{
         FileSettingsStorage, InMemorySettingsStorage, PackageSource, SettingsManager,
@@ -86,7 +86,7 @@ mod tests {
         }
         assert_eq!(std::env::var("MAESTRO_REMOVE").unwrap(), "inherited");
         let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let output = support::child_command(NAME, "control")
             .current_dir(root.path())
             .env("MAESTRO_EXPECT_CWD", root.path())
@@ -194,7 +194,7 @@ mod tests {
     fn adapters_share_raw_transaction_contract() {
         assert_raw_transaction_contract(&InMemorySettingsStorage::new());
         assert_raw_transaction_contract(&*ControlledStorage::new());
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         assert_raw_transaction_contract(&file_storage(root.path()));
         assert_eq!(
             fs::read_to_string(root.path().join("agent/settings.json")).unwrap(),
@@ -281,7 +281,7 @@ mod tests {
 
     #[test]
     fn supplied_paths_fold_dot_segments_before_reading() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let (agent, config) = (root.path().join("agent"), root.path().join("work/.maestro"));
         fs::create_dir_all(&agent).unwrap();
         fs::create_dir_all(&config).unwrap();
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn supplied_paths_fold_dot_segments_before_writing() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = dotted_storage(root.path());
         for scope in BOTH {
             transact(&storage, scope, Ok(Some("written"))).1.unwrap();
@@ -332,7 +332,7 @@ mod tests {
         if support::child_case().is_some() {
             return replace_through_relative_locations();
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let process_directory = root.path().join("a/b");
         let files = [
             root.path().join("a/agent/settings.json"),
@@ -421,7 +421,7 @@ mod tests {
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let agent = root.path().join("agent");
         fs::create_dir_all(&agent).unwrap();
         let file = agent.join("settings.json");
@@ -472,7 +472,7 @@ mod tests {
 
     #[test]
     fn missing_read_creates_nothing() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         fs::create_dir_all(root.path().join("work")).unwrap();
         let mut settings = create_manager(root.path());
         assert!(settings.drain_errors().is_empty());
@@ -506,7 +506,7 @@ mod tests {
 
     #[test]
     fn missing_write_calls_before_acquiring() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let config = root.path().join("work/.maestro");
         let mut calls = 0;
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn first_project_write_creates_the_configuration_directory() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         fs::create_dir_all(root.path().join("agent")).unwrap();
         fs::write(
             root.path().join("agent/settings.json"),
@@ -576,7 +576,7 @@ mod tests {
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let (agent, config) = (root.path().join("agent"), root.path().join("work/.maestro"));
         fs::create_dir_all(&config).unwrap();
@@ -615,7 +615,7 @@ mod tests {
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(&agent).unwrap();
@@ -638,7 +638,7 @@ mod tests {
 
     #[test]
     fn sidecar_open_and_read_failures_skip_update() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(agent.join("settings.json.lock")).unwrap();
@@ -661,7 +661,7 @@ mod tests {
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         fs::create_dir_all(&agent).unwrap();
@@ -697,7 +697,7 @@ mod tests {
         if support::run_lock_child() {
             return;
         }
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let agent = root.path().join("agent");
         transact(&storage, SettingsScope::Global, Ok(Some("one")))
@@ -725,7 +725,7 @@ mod tests {
 
     /// Child side: successful saves, a reload and a failed load, with nothing printed.
     fn run_quiet_operations() {
-        let root = TempDir::new();
+        let root = Scratch::new().unwrap();
         fs::create_dir_all(root.path().join("agent")).unwrap();
         let mut settings = create_manager(root.path());
         settings.set_theme("quiet".into());

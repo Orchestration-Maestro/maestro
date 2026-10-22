@@ -117,13 +117,8 @@ use crate::runtime::run;
 
 fn corpus(name: &str) {
     if !maestro_test_process::selection().is_child() {
-        let dir = read_support::TempDir::new();
-        let root = Some(dir.0.as_os_str());
-        read_support::isolated_os(
-            name,
-            "direct-corpus",
-            &[("TMPDIR", root), ("TMP", root), ("TEMP", root)],
-        );
+        let dir = read_support::Scratch::new().unwrap();
+        read_support::isolated_temp_dir(name, "direct-corpus", dir.path());
         return;
     }
     let cases: Vec<Case> =
@@ -458,8 +453,8 @@ fn direct_local_abort_retains_sanitized_prefix() {
 fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
     use tokio::io::AsyncWriteExt;
     run(async {
-        let dir = read_support::TempDir::new();
-        let gate = dir.0.join("exit");
+        let dir = read_support::Scratch::new().unwrap();
+        let gate = dir.path().join("exit");
         let command = format!(
             "printf '%s\\n' \"$$\"; while [ ! -f '{}' ]; do :; done; printf child-exiting",
             gate.display()
@@ -540,10 +535,11 @@ impl Drop for WindowsDescendant {
 #[test]
 #[cfg(windows)]
 fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
+    use crate::read_support::Fixture;
     run(async {
-        let dir = read_support::TempDir::new();
+        let dir = read_support::Scratch::new().unwrap();
         let guard = WindowsDescendant {
-            pid_file: dir.0.join("grandchild.pid"),
+            pid_file: dir.path().join("grandchild.pid"),
             signal: Cancellation::new(),
         };
         let operand = guard

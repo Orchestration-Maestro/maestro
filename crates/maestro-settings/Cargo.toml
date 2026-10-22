@@ -21,6 +21,7 @@ maestro-dependencies.workspace = true
 maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]

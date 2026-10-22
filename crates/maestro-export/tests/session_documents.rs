@@ -6,13 +6,14 @@ use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use serde_json::{Value, json};
 use std::{collections::VecDeque, io};
 use support::{
-    ASSETS, CSS, NativeObserved, Operations, Renderer, Returns, Scratch, View, adapter_swap,
-    brand_swap, bundle, call_view, corpus, document, html, native_theme, payload, record,
+    ASSETS, CSS, Fixture, NativeObserved, Operations, Renderer, Returns, Scratch, View,
+    adapter_swap, brand_swap, bundle, call_view, corpus, document, html, native_theme, payload,
+    record,
 };
 
 #[test]
 fn preconditions_precede_render_assets_and_write() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let session = SessionManager::in_memory(Some("/work")).unwrap();
     let operations = Operations::default();
     assert!(matches!(
@@ -20,7 +21,7 @@ fn preconditions_precede_render_assets_and_write() {
         Err(ExportError::InMemorySession)
     ));
     let unpublished =
-        SessionManager::create("/work", Some(scratch.0.to_str().unwrap()), "/unused").unwrap();
+        SessionManager::create("/work", Some(scratch.path().to_str().unwrap()), "/unused").unwrap();
     let missing = Operations {
         present: false,
         ..Operations::default()
@@ -65,12 +66,12 @@ fn preconditions_precede_render_assets_and_write() {
 }
 #[test]
 fn file_precondition_precedes_session_open() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let operations = Operations {
         present: false,
         ..Operations::default()
     };
-    let path = scratch.path("missing.jsonl");
+    let path = scratch.at("missing.jsonl");
     assert!(
         matches!(export_from_file(&path, None, &operations), Err(ExportError::MissingFile(ref input)) if input == &path)
     );
@@ -79,7 +80,7 @@ fn file_precondition_precedes_session_open() {
 }
 #[test]
 fn complete_tree_and_selected_leaf_survive_export() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let entries = vec![
         json!({"type":"custom","id":"root","parentId":null,"data":null,"unknown":""}),
         json!({"type":"custom","id":"left","parentId":"root","data":[]}),
@@ -142,7 +143,7 @@ fn default_names_and_option_routes_preserve_authored_paths() {
             row.expected
         );
     }
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let path = scratch.session("tree.jsonl", &[]);
     for row in corpus().options {
         let options = if row.input.get("absent") == Some(&json!(true)) {
@@ -168,7 +169,7 @@ fn default_names_and_option_routes_preserve_authored_paths() {
 }
 #[test]
 fn file_export_uses_session_open_and_omits_renderer() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let entries = vec![
         json!({"type":"message","id":"a","parentId":null,"message":{"role":"assistant","content":[{"type":"toolCall","id":"tool","name":"custom","arguments":{}}]}}),
     ];
@@ -197,8 +198,8 @@ fn file_export_uses_session_open_and_omits_renderer() {
 }
 #[test]
 fn file_open_recovery_is_visible() {
-    let scratch = Scratch::new();
-    let empty = scratch.path("empty.jsonl");
+    let scratch = Scratch::new().unwrap();
+    let empty = scratch.at("empty.jsonl");
     std::fs::write(&empty, "").unwrap();
     let operations = Operations::default();
     export_from_file(&empty, None, &operations).unwrap();
@@ -208,14 +209,14 @@ fn file_open_recovery_is_visible() {
     assert_eq!(data["header"]["type"], "session");
     let failed = Operations::default();
     assert!(matches!(
-        export_from_file(scratch.0.to_str().unwrap(), None, &failed),
+        export_from_file(scratch.path().to_str().unwrap(), None, &failed),
         Err(ExportError::Io(_))
     ));
     assert!(failed.events.borrow().is_empty());
 }
 #[test]
 fn output_write_overwrites_and_propagates_failure() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let theme = native_theme(&scratch);
     let bundle = bundle(&scratch, &Operations::default().assets);
     let native = NativeExportOperations {
@@ -224,7 +225,7 @@ fn output_write_overwrites_and_propagates_failure() {
         theme: &theme,
     };
     let input = scratch.session("tree.jsonl", &[]);
-    let output = scratch.path("out.html");
+    let output = scratch.at("out.html");
     std::fs::write(&output, "old").unwrap();
     export_from_file(&input, Some(output.as_str().into()), &native).unwrap();
     assert!(
@@ -232,12 +233,19 @@ fn output_write_overwrites_and_propagates_failure() {
             .unwrap()
             .contains("id=\"session-data\"")
     );
-    let missing = scratch.path("absent/out.html");
+    let missing = scratch.at("absent/out.html");
     assert!(
         matches!(export_from_file(&input, Some(missing.as_str().into()), &native), Err(ExportError::Io(error)) if error.kind() == io::ErrorKind::NotFound)
     );
-    assert!(!std::path::Path::new(&scratch.path("absent")).exists());
-    assert!(export_from_file(&input, Some(scratch.0.to_str().unwrap().into()), &native).is_err());
+    assert!(!std::path::Path::new(&scratch.at("absent")).exists());
+    assert!(
+        export_from_file(
+            &input,
+            Some(scratch.path().to_str().unwrap().into()),
+            &native
+        )
+        .is_err()
+    );
     let failing = Operations {
         write_failure: true,
         ..Operations::default()
@@ -252,7 +260,7 @@ fn output_write_overwrites_and_propagates_failure() {
 #[test]
 fn asset_reads_stop_before_theme_on_failure() {
     for (index, row) in corpus().asset_failures.into_iter().enumerate() {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let theme = native_theme(&scratch);
         let directory = bundle(&scratch, &Operations::default().assets);
         std::fs::remove_file(maestro_path::join(&[&directory, &row.asset])).unwrap();
@@ -273,7 +281,7 @@ fn asset_reads_stop_before_theme_on_failure() {
         assert_eq!(*observed.events.borrow(), ASSETS[..=index]);
         assert!(row.expected.theme_calls.is_empty());
     }
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let theme = native_theme(&scratch);
     let directory = bundle(&scratch, &Operations::default().assets);
     let row = corpus().asset_utf8;
@@ -283,7 +291,7 @@ fn asset_reads_stop_before_theme_on_failure() {
         template_dir: &directory,
         theme: &theme,
     };
-    let output = scratch.path("utf8.html");
+    let output = scratch.at("utf8.html");
     let input = scratch.session("tree.jsonl", &[]);
     let view = View {
         file: Some(input),
@@ -599,7 +607,7 @@ fn empty_renderer_map_is_omitted_without_filtering_entries() {
 }
 #[test]
 fn public_options_forward_theme_and_renderer() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let path = scratch.session("tree.jsonl", &[]);
     for name in ["bright", "", "dark"] {
         let renderer = Renderer::from(Returns {

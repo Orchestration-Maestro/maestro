@@ -17,7 +17,7 @@ use maestro_tools::{
     ToolDefinition, WriteOperations, WriteToolInput, WriteToolOptions, create_write_tool,
     create_write_tool_definition, with_file_mutation_queue,
 };
-use read_support::{TempDir, content_json, isolated};
+use read_support::{Fixture, Scratch, content_json, isolated};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::{
@@ -70,12 +70,12 @@ fn write_reports_written_utf8_bytes() {
     for row in rows("write_reports_written_utf8_bytes") {
         let args: Input = serde_json::from_value(row.input).unwrap();
         let expected: Expected = serde_json::from_value(row.expected).unwrap();
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let tool: Tool = create_write_tool_definition(dir.text(), WriteToolOptions::default());
         let result = runtime::run(start(&tool, input(&args.path, &args.content), None)).unwrap();
         assert_eq!(json!({"content": content_json(&result)}), expected.result);
         assert!(result.details.is_none() && result.terminate.is_none());
-        let written = std::fs::read(dir.0.join(&args.path)).unwrap();
+        let written = std::fs::read(dir.path().join(&args.path)).unwrap();
         assert_eq!(hex(&written), expected.bytes);
     }
 }
@@ -166,7 +166,7 @@ fn write_resolves_paths_before_filesystem_work() {
         assert_eq!(ops.calls(), expected.calls, "path {:?}", args.path);
         assert_eq!(json!({"content": content_json(&result)}), expected.result);
     }
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("shot\u{202F}PM.png", b"existing");
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
     runtime::run(start(
@@ -254,7 +254,7 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
         "write_abort_during_mkdir_skips_write_after_queue_release",
     ))
     .unwrap();
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let signal = Cancellation::new();
@@ -297,7 +297,7 @@ fn write_abort_releases_queue_and_drops_pending_operation() {
         "write_abort_releases_queue_and_drops_pending_operation",
     ))
     .unwrap();
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let signal = Cancellation::new();
@@ -362,7 +362,7 @@ fn write_abort_after_completed_success_keeps_the_result() {
 
 #[test]
 fn write_waiting_abort_preserves_predecessor_order() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = format!("{}/f.txt", dir.text());
     let journal = Journal::default();
     let (open_a, gate_a) = Gate::new();
@@ -411,34 +411,34 @@ fn through(
 }
 
 /// Write natively below `dir` and check the file each time.
-fn native_writes(dir: &TempDir) {
+fn native_writes(dir: &Scratch) {
     let write = |path: &str, content: &str| {
         through(WriteToolOptions::default(), &dir.text(), path, content)
     };
     for (content, expected) in [("first", "first"), ("2nd", "2nd"), ("", "")] {
         write("a/b/c.txt", content).unwrap();
         assert_eq!(
-            std::fs::read_to_string(dir.0.join("a/b/c.txt")).unwrap(),
+            std::fs::read_to_string(dir.path().join("a/b/c.txt")).unwrap(),
             expected
         );
     }
     #[cfg(unix)]
     {
         let target = dir.file("target.txt", b"old");
-        std::os::unix::fs::symlink(&target, dir.0.join("alias.txt")).unwrap();
+        std::os::unix::fs::symlink(&target, dir.path().join("alias.txt")).unwrap();
         write("alias.txt", "through alias").unwrap();
-        let alias = std::fs::symlink_metadata(dir.0.join("alias.txt")).unwrap();
+        let alias = std::fs::symlink_metadata(dir.path().join("alias.txt")).unwrap();
         assert!(alias.file_type().is_symlink());
         assert_eq!(std::fs::read_to_string(&target).unwrap(), "through alias");
     }
-    std::fs::create_dir(dir.0.join("folder")).unwrap();
+    std::fs::create_dir(dir.path().join("folder")).unwrap();
     let error = write("folder", "x").err().unwrap();
     assert!(matches!(error.code, Some(DiagnosticCode::Number(_))));
 }
 
 #[test]
 fn write_native_and_supplied_adapters_share_one_caller() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     native_writes(&dir);
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
     let options = WriteToolOptions {
@@ -461,12 +461,12 @@ fn write_native_and_supplied_adapters_share_one_caller() {
             ]
         ]
     );
-    assert!(!dir.0.join("x").exists());
+    assert!(!dir.path().join("x").exists());
 }
 
 #[test]
 fn wrapped_write_runs_through_agent_loop() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let tool = create_write_tool(dir.text(), WriteToolOptions::default());
     let turn = run_turn(
         vec![tool],
@@ -480,10 +480,10 @@ fn wrapped_write_runs_through_agent_loop() {
         ],
     );
     assert_eq!(
-        std::fs::read_to_string(dir.0.join("out/f.txt")).unwrap(),
+        std::fs::read_to_string(dir.path().join("out/f.txt")).unwrap(),
         "loop"
     );
-    assert!(!dir.0.join("never.txt").exists());
+    assert!(!dir.path().join("never.txt").exists());
     let [good, bad] = turn.results.as_slice() else {
         panic!("expected two results");
     };
@@ -518,13 +518,14 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
         assert_eq!(ops.names().len(), 2);
     }
     if isolated(test, "bound", &[]) {
-        let (original, decoy) = (TempDir::new(), TempDir::new());
-        std::env::set_current_dir(&original.0).unwrap();
+        let (original, decoy) = (Scratch::new().unwrap(), Scratch::new().unwrap());
+        std::env::set_current_dir(original.path()).unwrap();
         let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
         let pending = start(&tool_over(&ops, "."), input("f.txt", "x"), None);
-        std::env::set_current_dir(&decoy.0).unwrap();
+        std::env::set_current_dir(decoy.path()).unwrap();
         runtime::run(pending).unwrap();
-        let written = std::fs::canonicalize(original.0.join("f.txt").parent().unwrap()).unwrap();
+        let written =
+            std::fs::canonicalize(original.path().join("f.txt").parent().unwrap()).unwrap();
         assert_eq!(ops.calls()[1][1], written.join("f.txt").to_str().unwrap());
     }
 }

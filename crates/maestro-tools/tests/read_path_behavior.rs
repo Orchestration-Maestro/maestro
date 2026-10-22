@@ -11,7 +11,6 @@ use maestro_tools::{
 use read_support::*;
 #[cfg(unix)]
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[test]
 fn path_expansion_preserves_only_the_named_transforms() {
@@ -111,15 +110,15 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
         (&["am\u{202f}AM. x"], "am AM. x", "am\u{202f}AM. x"),
     ];
     for (index, (files, ask, found)) in cases.into_iter().enumerate() {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         for file in files {
             dir.file(file, b"");
         }
         let resolved = resolve_read_path(ask, &dir.text()).unwrap();
         assert_eq!(resolved, format!("{}/{found}", dir.text()), "case {index}");
     }
-    let dir = TempDir::new();
-    std::fs::create_dir(dir.0.join("folder")).unwrap();
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir(dir.path().join("folder")).unwrap();
     assert_eq!(
         resolve_read_path("folder", &dir.text()).unwrap(),
         format!("{}/folder", dir.text())
@@ -129,7 +128,7 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
 #[test]
 fn read_paths_accept_lowercase_meridiem() {
     for suffix in ["am", "pm"] {
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let chosen = format!("Screenshot 2024-01-01 at 10.00.00\u{202f}{suffix}.png");
         dir.file(&chosen, b"chosen");
         let ask = format!("Screenshot 2024-01-01 at 10.00.00 {suffix}.png");
@@ -142,11 +141,11 @@ fn read_paths_accept_lowercase_meridiem() {
 #[cfg(unix)]
 #[test]
 fn read_paths_keep_lexical_symlink_identity() {
-    let dir = TempDir::new();
-    std::fs::create_dir_all(dir.0.join("a/b")).unwrap();
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir_all(dir.path().join("a/b")).unwrap();
     dir.file("f", b"top");
     dir.file("a/f", b"under a");
-    std::os::unix::fs::symlink(dir.0.join("a/b"), dir.0.join("link")).unwrap();
+    std::os::unix::fs::symlink(dir.path().join("a/b"), dir.path().join("link")).unwrap();
     let cwd = dir.text();
     assert_eq!(
         resolve_read_path("link", &cwd).unwrap(),
@@ -225,7 +224,7 @@ fn home_expansion_rejects_non_utf8_without_replacing_it() {
 #[test]
 fn read_resolves_empty_and_absent_home_without_home_writes() {
     let test = "read_resolves_empty_and_absent_home_without_home_writes";
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("MiXeD-Note.txt", b"empty home keeps the path root");
     let authored = format!("~{}/MiXeD-Note.txt", dir.text());
     if isolated(test, "empty", &[("HOME", Some(""))]) {
@@ -255,36 +254,14 @@ fn read_paths_bind_before_future_poll() {
     if !isolated("read_paths_bind_before_future_poll", "bind", &[]) {
         return;
     }
-    let (original, decoy) = (TempDir::new(), TempDir::new());
+    let (original, decoy) = (Scratch::new().unwrap(), Scratch::new().unwrap());
     original.file("f.txt", b"original");
     decoy.file("f.txt", b"decoy");
-    std::env::set_current_dir(&original.0).unwrap();
+    std::env::set_current_dir(original.path()).unwrap();
     let tool = create_read_tool_definition::<()>(".".into(), ReadToolOptions::default());
     let pending = (tool.execute)("id".into(), input("f.txt", None, None), None, None, None);
-    std::env::set_current_dir(&decoy.0).unwrap();
+    std::env::set_current_dir(decoy.path()).unwrap();
     assert_eq!(only_text(&run(pending).unwrap()), "original");
     let fresh = call(&tool, input("f.txt", None, None), None, None).unwrap();
     assert_eq!(only_text(&fresh), "decoy");
-}
-
-#[test]
-fn scratch_directory_never_adopts_an_existing_candidate() {
-    let root = TempDir::new();
-    let tmp = root.0.join("tmp");
-    std::fs::create_dir(&tmp).unwrap();
-    let next = AtomicUsize::new(0);
-    drop(TempDir::create_in(&tmp, "scratch", &next));
-    assert!(tmp.is_dir());
-    assert_eq!(std::fs::read_dir(&tmp).unwrap().count(), 0);
-
-    let taken = tmp.join("scratch-0");
-    std::fs::create_dir(&taken).unwrap();
-    std::fs::write(taken.join("note.txt"), b"kept").unwrap();
-    next.store(0, Ordering::Relaxed);
-    let fresh = TempDir::create_in(&tmp, "scratch", &next);
-    assert_eq!(fresh.0, tmp.join("scratch-1"));
-    drop(fresh);
-    assert!(!tmp.join("scratch-1").exists());
-    assert_eq!(std::fs::read(taken.join("note.txt")).unwrap(), b"kept");
-    assert!(tmp.is_dir() && root.0.is_dir());
 }

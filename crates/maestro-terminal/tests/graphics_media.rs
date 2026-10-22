@@ -44,6 +44,9 @@ fn assert_error(cmd: &Command, expected: ImageError) {
     assert_eq!(complete(cmd), Err(expected));
 }
 
+/// Per-process shared-memory segment identity allocation.
+#[cfg(target_os = "linux")]
+static NEXT_SEGMENT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 #[cfg(target_os = "linux")]
 struct Segment(String);
 #[cfg(target_os = "linux")]
@@ -53,7 +56,7 @@ impl Segment {
         let name = format!(
             "/maestro-image-{}-{}",
             std::process::id(),
-            NEXT_FILE.fetch_add(1, Ordering::Relaxed)
+            NEXT_SEGMENT.fetch_add(1, Ordering::Relaxed)
         );
         let fd = shm::open(
             name.as_str(),
@@ -283,8 +286,8 @@ fn loading_retains_owned_first_chunk_state() {
 
 #[test]
 fn temporary_file_requires_its_protocol_name() {
-    let scratch = Scratch::new();
-    let path = scratch.file("ordinary.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "ordinary.rgb", b"ABC");
     assert_error(
         &local(&path, Medium::TemporaryFile),
         ImageError::TemporaryFileNotNamedCorrectly,
@@ -294,8 +297,8 @@ fn temporary_file_requires_its_protocol_name() {
 
 #[test]
 fn temporary_file_pixels_are_loaded_and_removed() {
-    let scratch = Scratch::new();
-    let path = scratch.file("tty-graphics-protocol.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "tty-graphics-protocol.rgb", b"ABC");
     assert_eq!(
         complete(&local(&path, Medium::TemporaryFile)).unwrap().data,
         b"ABC"
@@ -305,8 +308,8 @@ fn temporary_file_pixels_are_loaded_and_removed() {
 
 #[test]
 fn regular_file_pixels_are_loaded_and_retained() {
-    let scratch = Scratch::new();
-    let path = scratch.file("ordinary.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "ordinary.rgb", b"ABC");
     assert_eq!(complete(&local(&path, Medium::File)).unwrap().data, b"ABC");
     assert_eq!(fs::read(path).unwrap(), b"ABC");
 }
@@ -325,8 +328,8 @@ fn direct_load_ignores_local_medium_flags() {
 
 #[test]
 fn file_load_honours_disabled_file_flag() {
-    let scratch = Scratch::new();
-    let path = scratch.file("ordinary.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "ordinary.rgb", b"ABC");
     let error = LoadingImage::init(
         &local(&path, Medium::File),
         Limits {
@@ -342,8 +345,8 @@ fn file_load_honours_disabled_file_flag() {
 
 #[test]
 fn file_load_honours_enabled_file_flag() {
-    let scratch = Scratch::new();
-    let path = scratch.file("ordinary.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "ordinary.rgb", b"ABC");
     assert_eq!(
         LoadingImage::init(
             &local(&path, Medium::File),
@@ -363,8 +366,8 @@ fn file_load_honours_enabled_file_flag() {
 
 #[test]
 fn temporary_load_honours_disabled_temporary_flag() {
-    let scratch = Scratch::new();
-    let path = scratch.file("tty-graphics-protocol.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "tty-graphics-protocol.rgb", b"ABC");
     assert_eq!(
         LoadingImage::init(
             &local(&path, Medium::TemporaryFile),
@@ -382,8 +385,8 @@ fn temporary_load_honours_disabled_temporary_flag() {
 
 #[test]
 fn temporary_load_honours_enabled_temporary_flag() {
-    let scratch = Scratch::new();
-    let path = scratch.file("tty-graphics-protocol.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "tty-graphics-protocol.rgb", b"ABC");
     assert_eq!(
         LoadingImage::init(
             &local(&path, Medium::TemporaryFile),
@@ -407,8 +410,8 @@ fn regular_file_ranges_and_path_failures_are_observable() {
     #[cfg(unix)]
     assert_native_file_bytes();
 
-    let scratch = Scratch::new();
-    let path = scratch.file("pixels.rgb", b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "pixels.rgb", b"ABC");
     for (offset, size, expected) in [
         (0, 0, b"ABC".as_slice()),
         (1, 0, b"BC".as_slice()),
@@ -431,7 +434,7 @@ fn regular_file_ranges_and_path_failures_are_observable() {
         LoadingImage::init(&cmd, Limits::ALL).unwrap_err(),
         ImageError::InvalidData
     );
-    for path in [scratch.0.join("missing"), scratch.0.clone()] {
+    for path in [scratch.path().join("missing"), scratch.path().to_path_buf()] {
         assert_error(&local(&path, Medium::File), ImageError::InvalidData);
     }
     let mut cmd = command(b"invalid\0path");
@@ -446,8 +449,8 @@ fn regular_file_ranges_and_path_failures_are_observable() {
     }
     #[cfg(target_os = "linux")]
     {
-        let shared_scratch = Scratch::in_dir(Path::new("/dev/shm"));
-        let path = shared_scratch.file("pixels.rgb", b"ABC");
+        let shared_scratch = Scratch::new_in(Path::new("/dev/shm")).unwrap();
+        let path = fixture_file(&shared_scratch, "pixels.rgb", b"ABC");
         let image = complete(&local(&path, Medium::File)).unwrap();
         let data = fs::read(&path).unwrap();
         assert_eq!(image.data, b"ABC");
@@ -457,13 +460,13 @@ fn regular_file_ranges_and_path_failures_are_observable() {
 
 #[test]
 fn temporary_aliases_and_failure_cleanup_are_safe() {
-    let scratch = Scratch::new();
-    let path = scratch.file("tty-graphics-protocol-overflow.rgb", b"ABCD");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(&scratch, "tty-graphics-protocol-overflow.rgb", b"ABCD");
     let mut cmd = local(&path, Medium::TemporaryFile);
     transmission_mut(&mut cmd).size = 3;
     assert_error(&cmd, ImageError::InvalidData);
     assert!(!path.exists());
-    let directory = scratch.0.join("tty-graphics-protocol-dir");
+    let directory = scratch.path().join("tty-graphics-protocol-dir");
     fs::create_dir(&directory).unwrap();
     assert_error(
         &local(&directory, Medium::TemporaryFile),
@@ -473,8 +476,8 @@ fn temporary_aliases_and_failure_cleanup_are_safe() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::symlink;
-        let real = scratch.file("tty-graphics-protocol-real.rgb", b"ABC");
-        let alias = scratch.0.join("alias");
+        let real = fixture_file(&scratch, "tty-graphics-protocol-real.rgb", b"ABC");
+        let alias = scratch.path().join("alias");
         symlink(&real, &alias).unwrap();
         assert_eq!(
             complete(&local(&alias, Medium::TemporaryFile))
@@ -484,11 +487,11 @@ fn temporary_aliases_and_failure_cleanup_are_safe() {
         );
         assert!(!real.exists());
         assert!(alias.symlink_metadata().is_ok());
-        let target = scratch.0.join("parent");
+        let target = scratch.path().join("parent");
         fs::create_dir(&target).unwrap();
-        let parent_alias = scratch.0.join("parent-alias");
+        let parent_alias = scratch.path().join("parent-alias");
         symlink(&target, &parent_alias).unwrap();
-        let real = scratch.file("parent/tty-graphics-protocol-parent.rgb", b"ABC");
+        let real = fixture_file(&scratch, "parent/tty-graphics-protocol-parent.rgb", b"ABC");
         assert_eq!(
             complete(&local(
                 &parent_alias.join("tty-graphics-protocol-parent.rgb"),
@@ -504,8 +507,9 @@ fn temporary_aliases_and_failure_cleanup_are_safe() {
 
 #[test]
 fn png_file_overrides_declared_geometry() {
-    let scratch = Scratch::new();
-    let path = scratch.file(
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(
+        &scratch,
         "sample.png",
         include_bytes!("fixtures/images/sample50x76.png"),
     );
@@ -754,8 +758,8 @@ fn image_data_limits_are_enforced_at_the_owner() {
         assert_eq!(loading.data.len(), LIMIT);
     }
     {
-        let scratch = Scratch::new();
-        let path = scratch.file("excess.rgb", b"");
+        let scratch = Scratch::new().unwrap();
+        let path = fixture_file(&scratch, "excess.rgb", b"");
         OpenOptions::new()
             .write(true)
             .open(&path)
@@ -803,8 +807,12 @@ fn image_data_limits_are_enforced_at_the_owner() {
 #[cfg(unix)]
 fn assert_native_file_bytes() {
     use std::os::unix::ffi::OsStrExt as _;
-    let scratch = Scratch::new();
-    let path = scratch.file(std::ffi::OsStr::from_bytes(b"pixels-\xff.rgb"), b"ABC");
+    let scratch = Scratch::new().unwrap();
+    let path = fixture_file(
+        &scratch,
+        std::ffi::OsStr::from_bytes(b"pixels-\xff.rgb"),
+        b"ABC",
+    );
     assert_eq!(complete(&local(&path, Medium::File)).unwrap().data, b"ABC");
     assert_eq!(fs::read(path).unwrap(), b"ABC");
 }

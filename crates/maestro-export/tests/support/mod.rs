@@ -5,7 +5,7 @@ use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};
 use maestro_theme::{ThemeError, ThemeExportColors};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{cell::RefCell, collections::VecDeque, io, path::PathBuf};
+use std::{cell::RefCell, collections::VecDeque, io};
 
 /// Read the independent document corpus.
 pub fn corpus() -> Corpus {
@@ -562,39 +562,28 @@ pub fn document(name: &str) -> String {
     assert_eq!(*operations.themes.borrow(), row.expected.observations);
     html
 }
-/// Disposable native directory created exclusively.
-pub struct Scratch(pub PathBuf);
-impl Scratch {
-    /// Allocate a process-local uniquely named directory without truncating files.
-    pub fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-export-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
-    }
+pub use maestro_test_directory::Scratch;
+
+/// Native fixture spellings over the shared disposable directory.
+pub trait Fixture {
     /// Join an authored filename for native I/O.
-    pub fn path(&self, name: &str) -> String {
-        self.0.join(name).to_str().unwrap().into()
-    }
+    fn at(&self, name: &str) -> String;
     /// Write a complete current session file.
-    pub fn session(&self, name: &str, entries: &[Value]) -> String {
-        let path = self.path(name);
-        let header = json!({"type":"session","version":3,"id":"history","timestamp":"2026-01-01T00:00:00Z","cwd":self.0.to_str().unwrap()});
+    fn session(&self, name: &str, entries: &[Value]) -> String;
+}
+impl Fixture for Scratch {
+    fn at(&self, name: &str) -> String {
+        self.path().join(name).to_str().unwrap().into()
+    }
+    fn session(&self, name: &str, entries: &[Value]) -> String {
+        let path = self.at(name);
+        let header = json!({"type":"session","version":3,"id":"history","timestamp":"2026-01-01T00:00:00Z","cwd":self.path().to_str().unwrap()});
         let text = std::iter::once(&header)
             .chain(entries)
             .map(|entry| serde_json::to_string(entry).unwrap() + "\n")
             .collect::<String>();
         std::fs::write(&path, text).unwrap();
         path
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
     }
 }
 /// A custom call whose fields distinguish rendering from omission.
@@ -606,7 +595,7 @@ pub fn call_view(id: &str) -> View {
 }
 /// Native theme state with controlled shipped documents.
 pub fn native_theme(scratch: &Scratch) -> maestro_theme::ThemeState {
-    let directory = scratch.path("themes");
+    let directory = scratch.at("themes");
     std::fs::create_dir(&directory).unwrap();
     for name in ["dark", "light"] {
         std::fs::write(
@@ -617,12 +606,12 @@ pub fn native_theme(scratch: &Scratch) -> maestro_theme::ThemeState {
     }
     maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
         themes_dir: directory,
-        custom_themes_dir: scratch.path("custom"),
+        custom_themes_dir: scratch.at("custom"),
     })
 }
 /// Publish supplied assets to an actual native bundle.
 pub fn bundle(scratch: &Scratch, assets: &[String; 5]) -> String {
-    let directory = scratch.path("bundle");
+    let directory = scratch.at("bundle");
     std::fs::create_dir(&directory).unwrap();
     std::fs::create_dir(maestro_path::join(&[&directory, "vendor"])).unwrap();
     for (name, text) in ASSETS.iter().zip(assets) {
@@ -671,7 +660,7 @@ pub fn brand_swap() {
     let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/");
     let mut outputs = Vec::new();
     for name in ["brand.json", "packs/signal.json"] {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let pack = maestro_theme::load_brand_pack(&maestro_path::join(&[root, name])).unwrap();
         let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
         let properties = presentation.css_properties();
@@ -692,7 +681,7 @@ pub fn brand_swap() {
             theme: &theme,
         };
         let input = scratch.session("tree.jsonl", &[]);
-        let output = scratch.path("brand.html");
+        let output = scratch.at("brand.html");
         export_from_file(&input, Some(output.as_str().into()), &native).unwrap();
         let document = std::fs::read_to_string(output).unwrap();
         assert!(document.contains(&css));
@@ -705,7 +694,7 @@ pub fn brand_swap() {
 }
 /// Swap native/memory/failing outputs and bundles through the same public operation.
 pub fn adapter_swap() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let mut view = call_view("rendered");
     view.data["entries"][0]["id"] = json!("entry");
     view.data["entries"][0]["parentId"] = Value::Null;
@@ -720,7 +709,7 @@ pub fn adapter_swap() {
         template_dir: &directory,
         theme: &theme,
     };
-    let output = scratch.path("out.html");
+    let output = scratch.at("out.html");
     let run = |provider: &dyn ExportOperations, html: &str| {
         let renderer = Renderer::from(Returns {
             call: vec![json!(html)],
@@ -781,7 +770,7 @@ fn theme_error(message: &str) -> ThemeError {
 
 /// Native theme state projected from the selected supplied pack.
 fn pack_theme(scratch: &Scratch, pack: &maestro_theme::BrandPack) -> maestro_theme::ThemeState {
-    let theme_dir = scratch.path("themes");
+    let theme_dir = scratch.at("themes");
     std::fs::create_dir(&theme_dir).unwrap();
     for mode in [
         maestro_theme::BrandMode::Dark,
@@ -795,6 +784,6 @@ fn pack_theme(scratch: &Scratch, pack: &maestro_theme::BrandPack) -> maestro_the
     }
     maestro_theme::ThemeState::new(maestro_theme::ThemeDirectories {
         themes_dir: theme_dir,
-        custom_themes_dir: scratch.path("custom"),
+        custom_themes_dir: scratch.at("custom"),
     })
 }

@@ -5,9 +5,9 @@ use crate::{process_support, read_support, runtime::run_paused};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
-use read_support::TempDir;
 #[cfg(target_os = "linux")]
 use read_support::pipe_holder;
+use read_support::{Fixture, Scratch};
 use std::{
     sync::{
         Arc,
@@ -111,8 +111,8 @@ fn local_bash_orders_abort_and_timeout_during_exit_grace() {
 /// Exercises one execution with an independently reaped writer holding its pipe.
 #[cfg(target_os = "linux")]
 async fn grace_case(policy: GracePolicy) {
-    let dir = TempDir::new();
-    let gate = dir.0.join("exit");
+    let dir = Scratch::new().unwrap();
+    let gate = dir.path().join("exit");
     let command = format!(
         "printf '%s\\n' \"$$\"; while [ ! -f '{}' ]; do :; done",
         gate.display()
@@ -322,11 +322,11 @@ impl ChildWitness {
 }
 
 /// Creates a gate without truncating an existing entry.
-fn release(dir: &TempDir, name: &str) -> std::io::Result<std::fs::File> {
+fn release(dir: &Scratch, name: &str) -> std::io::Result<std::fs::File> {
     std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
-        .open(dir.0.join(name))
+        .open(dir.path().join(name))
 }
 
 /// Observes the 24ms acknowledgement and delivers the timer at exactly 25ms.
@@ -334,7 +334,7 @@ async fn drive_timeout(
     witness: &mut ChildWitness,
     operation: &mut Operation<'_>,
     receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
-    dir: &TempDir,
+    dir: &Scratch,
 ) {
     let start = tokio::time::Instant::now();
     tokio::time::advance(Duration::from_millis(24)).await;
@@ -350,7 +350,7 @@ async fn drive_timeout(
 
 /// Attempts both gate releases, terminating a known PID on errors other than an existing gate.
 /// Then drives the same execution to settlement.
-async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>, dir: &TempDir) {
+async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>, dir: &Scratch) {
     for name in ["alive", "release"] {
         if let Err(error) = release(dir, name)
             && error.kind() != std::io::ErrorKind::AlreadyExists
@@ -367,7 +367,7 @@ async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>,
 
 /// Proves the selected stop effect before checking its final error.
 async fn termination_case(stop: Stop) {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let cwd = dir.text();
     let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
     let signal = Cancellation::new();
@@ -409,11 +409,11 @@ async fn termination_case(stop: Stop) {
 }
 
 /// Checks the reaped root, closed marker observation set and exact error.
-fn assert_termination(stop: Stop, signal: &Cancellation, witness: ChildWitness, dir: &TempDir) {
+fn assert_termination(stop: Stop, signal: &Cancellation, witness: ChildWitness, dir: &Scratch) {
     #[cfg(target_os = "linux")]
     assert!(!std::path::Path::new(&format!("/proc/{}", witness.pid.unwrap())).exists());
     assert!(
-        !dir.0.join("survived").exists(),
+        !dir.path().join("survived").exists(),
         "child survived the stop effect"
     );
     let error = witness.settled.unwrap().unwrap_err();

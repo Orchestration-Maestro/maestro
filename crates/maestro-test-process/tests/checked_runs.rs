@@ -3,10 +3,10 @@
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
-use std::sync::atomic::{AtomicUsize, Ordering};
 
+use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, run_alone, test_name};
 
 /// The harness bytes that open a one-test run.
@@ -31,33 +31,6 @@ mod right {
     #[ignore = "runs only inside a controlled child"]
     pub(super) fn selected_child() {
         crate::behave("right");
-    }
-}
-
-/// A scratch directory removed when dropped.
-struct Scratch(PathBuf);
-
-impl Scratch {
-    /// Create a fresh directory.
-    fn new() -> Self {
-        static COUNT: AtomicUsize = AtomicUsize::new(0);
-        let n = COUNT.fetch_add(1, Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("maestro-test-process-{}-{n}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-
-    /// A path inside the directory.
-    fn join(&self, name: &str) -> PathBuf {
-        self.0.join(name)
-    }
-}
-
-impl Drop for Scratch {
-    /// Remove the directory and everything in it.
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 
@@ -185,8 +158,8 @@ fn current_identity_rejects_mismatch_and_unnamed_threads() {
 
 #[test]
 fn sibling_names_are_exact_not_suffixes() {
-    let scratch = Scratch::new();
-    let marker = scratch.join("marker");
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("marker");
     for (name, label) in [
         (left_name(), "left"),
         (right_name(), "right"),
@@ -228,8 +201,8 @@ fn missing_selection_is_not_a_checked_success() {
 
 #[test]
 fn ignored_selection_requires_explicit_execution() {
-    let scratch = Scratch::new();
-    let marker = scratch.join("marker");
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("marker");
     let name = left_name();
     let raw = Command::new(std::env::current_exe().unwrap())
         .args(["--exact", &name])
@@ -259,8 +232,8 @@ fn ignored_selection_requires_explicit_execution() {
 #[test]
 fn skip_matches_exact_identity_and_preserves_literal_operands() {
     let name = left_name();
-    let scratch = Scratch::new();
-    let marker = scratch.join("marker");
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("marker");
     let excluded = probe(&name, "marker")
         .env("MTP_MARKER", &marker)
         .skip(&name)
@@ -422,8 +395,8 @@ fn dropping_live_stdout_closes_the_only_read_end() {
 #[cfg(unix)]
 #[test]
 fn failed_live_start_closes_and_reaps_direct_child() {
-    let scratch = Scratch::new();
-    let pid_file = scratch.join("pid");
+    let scratch = Scratch::new().unwrap();
+    let pid_file = scratch.path().join("pid");
     let setup = format!(
         "echo $$ > '{}'; printf 'invalid startup\\n'; read -r line",
         pid_file.display()
@@ -483,9 +456,12 @@ fn status_replays_streams_separately_with_inherited_stdin() {
 #[test]
 fn file_stdout_remains_a_file_and_preserves_shared_cursor() {
     use std::io::Seek;
-    let scratch = Scratch::new();
-    let (input, err_path, out_path) =
-        (scratch.join("in"), scratch.join("err"), scratch.join("out"));
+    let scratch = Scratch::new().unwrap();
+    let (input, err_path, out_path) = (
+        scratch.path().join("in"),
+        scratch.path().join("err"),
+        scratch.path().join("out"),
+    );
     std::fs::write(&input, "from file").unwrap();
     let out = std::fs::OpenOptions::new()
         .read(true)
@@ -519,14 +495,14 @@ fn file_stdout_remains_a_file_and_preserves_shared_cursor() {
 #[test]
 fn file_stdout_refuses_existing_bytes_or_offset_before_launch() {
     use std::io::{Seek, SeekFrom};
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     for (index, contents, append, offset) in [
         (0, b"existing bytes\n".as_slice(), true, 0),
         (1, START, false, 0),
         (2, b"".as_slice(), false, 1),
     ] {
-        let path = scratch.join(&format!("out-{index}"));
-        let marker = scratch.join(&format!("marker-{index}"));
+        let path = scratch.path().join(format!("out-{index}"));
+        let marker = scratch.path().join(format!("marker-{index}"));
         std::fs::write(&path, contents).unwrap();
         let mut file = std::fs::OpenOptions::new()
             .read(true)
@@ -552,8 +528,8 @@ fn file_stdout_refuses_existing_bytes_or_offset_before_launch() {
 
 #[test]
 fn file_stdout_accepts_an_empty_append_file() {
-    let scratch = Scratch::new();
-    let path = scratch.join("out");
+    let scratch = Scratch::new().unwrap();
+    let path = scratch.path().join("out");
     let file = std::fs::OpenOptions::new()
         .create_new(true)
         .read(true)
@@ -570,8 +546,8 @@ fn file_stdout_accepts_an_empty_append_file() {
 #[cfg(unix)]
 #[test]
 fn shell_setup_preserves_configuration_and_proves_exec() {
-    let scratch = Scratch::new();
-    let marker = scratch.join("marker");
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("marker");
     let setup = "echo setup >> \"$MTP_MARKER\"";
     let output = probe(&left_name(), "marker")
         .shell_setup(setup)
@@ -580,7 +556,7 @@ fn shell_setup_preserves_configuration_and_proves_exec() {
         .unwrap();
     assert!(output.status.success());
     assert_eq!(std::fs::read_to_string(&marker).unwrap(), "setup\nleft\n");
-    let directory = scratch.join("work");
+    let directory = scratch.path().join("work");
     std::fs::create_dir(&directory).unwrap();
     let output = probe(&left_name(), "cwd")
         .current_dir(&directory)
@@ -721,8 +697,8 @@ fn environment_edits_keep_order_profile_bytes_and_parent_state() {
         check_edits(std::env::var("LLVM_PROFILE_FILE").ok().as_deref());
         return;
     }
-    let scratch = Scratch::new();
-    let profile = format!("{}/prof-%p-%m.profraw", scratch.0.display());
+    let scratch = Scratch::new().unwrap();
+    let profile = format!("{}/prof-%p-%m.profraw", scratch.path().display());
     for ambient in [Some(profile.as_str()), None] {
         let mut command = outer("environment_edits_keep_order_profile_bytes_and_parent_state");
         command
@@ -769,8 +745,8 @@ fn startup_failures_name_selection_and_keep_diagnostics() {
     assert!(failure.to_string().contains("invoker failed"));
     #[cfg(unix)]
     {
-        let scratch = Scratch::new();
-        let pid_file = scratch.join("pid");
+        let scratch = Scratch::new().unwrap();
+        let pid_file = scratch.path().join("pid");
         let setup = format!(
             "echo $$ > '{}'; printf 'invalid startup\\n'; exit 0",
             pid_file.display()
@@ -798,8 +774,8 @@ fn alone_runs_the_test_once_in_a_fresh_one_test_process() {
         assert_eq!(arguments, ["--exact", &format!("checked_runs::{name}")]);
         return;
     }
-    let scratch = Scratch::new();
-    let path = scratch.join("launches");
+    let scratch = Scratch::new().unwrap();
+    let path = scratch.path().join("launches");
     std::fs::write(&path, "").unwrap();
     let output = TestProcess::current(name)
         .unwrap()
@@ -904,7 +880,7 @@ fn native_values() -> Vec<std::ffi::OsString> {
 /// Run an environment probe over the capture, live and file routes and return each printout.
 fn route_outputs(configure: impl Fn(TestProcess) -> TestProcess) -> Vec<String> {
     let name = left_name();
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let captured = configure(plain(&name).env("MTP_BEHAVIOR", "cwd"))
         .output()
         .unwrap();
@@ -917,11 +893,11 @@ fn route_outputs(configure: impl Fn(TestProcess) -> TestProcess) -> Vec<String> 
         .write(true)
         .create(true)
         .truncate(true)
-        .open(scratch.join("out"))
+        .open(scratch.path().join("out"))
         .unwrap();
     let process = configure(plain(&name).env("MTP_BEHAVIOR", "cwd"));
     process.status_with_stdout(file).unwrap();
-    let from_file = std::fs::read(scratch.join("out")).unwrap();
+    let from_file = std::fs::read(scratch.path().join("out")).unwrap();
     #[cfg_attr(not(unix), allow(unused_mut))]
     let mut outputs = vec![text(&captured.stdout), text(&live.stdout), text(&from_file)];
     #[cfg(unix)]
@@ -949,8 +925,8 @@ fn native_os_values_and_working_directory_reach_each_transport() {
             );
         }
     }
-    let scratch = Scratch::new();
-    let directory = scratch.join("cwd");
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path().join("cwd");
     std::fs::create_dir(&directory).unwrap();
     let canonical = directory.canonicalize().unwrap();
     let here = std::env::current_dir().unwrap();

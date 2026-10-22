@@ -578,8 +578,9 @@ that calls this same entry. The test-process leaf does not depend on process.
 
 `maestro-test-process` is a dedicated, unpublished, native, std-only test-support
 leaf that starts one named libtest child and proves the child started exactly that
-test. It has no workspace dependencies except the native feature unifier, and it is
-excluded from the foundation utility permission. Its only incoming edges are
+test. It has no workspace dependencies except the native feature unifier and one
+native development edge to the disposable directory owner for its own child
+fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
@@ -610,9 +611,10 @@ exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
-`maestro-chat`, `maestro-credentials`, `maestro-daemon`, `maestro-extensions`, `maestro-models`, `maestro-packages`,
-`maestro-resources`, `maestro-session`, `maestro-test-conventions`, `maestro-theme`, `maestro-tooling` and
-`maestro-tools`; a caller
+`maestro-chat`, `maestro-credentials`, `maestro-daemon`, `maestro-export`, `maestro-extensions`, `maestro-models`,
+`maestro-packages`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-terminal`,
+`maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools` and
+`maestro-tui-crossterm`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
