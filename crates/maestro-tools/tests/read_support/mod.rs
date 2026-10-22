@@ -390,13 +390,9 @@ pub fn isolated_os_output(
     })
 }
 
-/// Run [`isolated_os`] with the child's temporary directory below `root`.
-pub fn isolated_temp_dir(test: &str, mode: &str, root: &std::path::Path) -> bool {
-    if maestro_test_process::selection().is_child() {
-        return maestro_test_process::selection().runs_case(mode);
-    }
+/// Run a passing isolated child with its temporary directory set to `root`.
+pub fn isolated_temp_dir(test: &str, mode: &str, root: &std::path::Path) {
     isolated_output(test, mode, |command| command.temp_dir(root));
-    false
 }
 
 /// Run a passing isolated child configured by `configure` and retain its output.

@@ -1,8 +1,8 @@
 //! File finding through the public tool definition.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[cfg(unix)]
 use crate::read_support::Fixture;
+#[cfg(unix)]
 use crate::runtime;
 use crate::{display_support, find_support, read_support};
 use maestro_tools::{FindToolOptions, ToolsManager, create_find_tool_definition};

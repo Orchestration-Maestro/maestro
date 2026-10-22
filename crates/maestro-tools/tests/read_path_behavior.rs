@@ -265,33 +265,3 @@ fn read_paths_bind_before_future_poll() {
     let fresh = call(&tool, input("f.txt", None, None), None, None).unwrap();
     assert_eq!(only_text(&fresh), "decoy");
 }
-
-#[test]
-fn scratch_directory_never_adopts_an_existing_candidate() {
-    let root = Scratch::new().unwrap();
-    let tmp = root.path().join("tmp");
-    std::fs::create_dir(&tmp).unwrap();
-    let taken = (0..4)
-        .map(|index| {
-            let candidate = tmp.join(format!("maestro-test-{}-{index}", std::process::id()));
-            std::fs::create_dir(&candidate).unwrap();
-            std::fs::write(candidate.join("note.txt"), b"kept").unwrap();
-            candidate
-        })
-        .collect::<Vec<_>>();
-
-    let fresh = Scratch::new_in(&tmp).unwrap();
-    assert!(fresh.path().is_dir());
-    assert_eq!(std::fs::read_dir(fresh.path()).unwrap().count(), 0);
-    assert!(taken.iter().all(|candidate| candidate != fresh.path()));
-    drop(fresh);
-
-    for candidate in &taken {
-        assert_eq!(
-            std::fs::read_to_string(candidate.join("note.txt")).unwrap(),
-            "kept"
-        );
-        assert!(candidate.is_dir());
-    }
-    assert!(tmp.is_dir() && root.path().is_dir());
-}

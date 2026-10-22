@@ -535,6 +535,7 @@ impl Drop for WindowsDescendant {
 #[test]
 #[cfg(windows)]
 fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
+    use crate::read_support::Fixture;
     run(async {
         let dir = read_support::Scratch::new().unwrap();
         let guard = WindowsDescendant {

@@ -44,9 +44,9 @@ fn assert_error(cmd: &Command, expected: ImageError) {
     assert_eq!(complete(cmd), Err(expected));
 }
 
-#[cfg(target_os = "linux")]
 /// Per-process shared-memory segment identity allocation.
-static NEXT_FILE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+#[cfg(target_os = "linux")]
+static NEXT_SEGMENT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 #[cfg(target_os = "linux")]
 struct Segment(String);
 #[cfg(target_os = "linux")]
@@ -56,7 +56,7 @@ impl Segment {
         let name = format!(
             "/maestro-image-{}-{}",
             std::process::id(),
-            NEXT_FILE.fetch_add(1, Ordering::Relaxed)
+            NEXT_SEGMENT.fetch_add(1, Ordering::Relaxed)
         );
         let fd = shm::open(
             name.as_str(),

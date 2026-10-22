@@ -1,6 +1,7 @@
 //! Caller-local tool execution through the public factory boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 use crate::read_support::Fixture;
 use futures_util::FutureExt;
 use maestro_agent::{AgentToolResult, ToolExecutionMode};

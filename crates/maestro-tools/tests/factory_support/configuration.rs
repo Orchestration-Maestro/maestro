@@ -1,6 +1,7 @@
 //! Observable native environment, progress and pending-operation consumption.
 #![cfg(test)]
 use super::{execution, factories, select};
+#[cfg(unix)]
 use crate::read_support::Fixture;
 use crate::runtime;
 use crate::{agent_shell_support, read_support, write_support};
