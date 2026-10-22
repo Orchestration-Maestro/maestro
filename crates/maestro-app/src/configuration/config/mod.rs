@@ -43,21 +43,35 @@ pub fn get_agent_dir() -> std::io::Result<String> {
 }
 
 /// Select the package directory of the running process: the `MAESTRO_PACKAGE_DIR`
-/// override first, with `~` expanded, then the directory beside a compiled executable,
-/// or the nearest package manifest above this crate's source.
+/// override first, with `~` expanded, then the directory beside a standalone executable,
+/// or the root of the source workspace a build runs from.
 ///
 /// # Errors
 /// Returns the native home lookup error when the override needs home, or the error of
 /// locating the running executable.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_package_dir() -> std::io::Result<String> {
+    package_dir(installation::Installation::current)
+}
+
+/// Select the package directory from the override or the lazily observed installation.
+#[cfg(not(target_arch = "wasm32"))]
+fn package_dir(
+    installation: impl FnOnce() -> std::io::Result<installation::Installation>,
+) -> std::io::Result<String> {
     let value = std::env::var(format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase())).ok();
     paths::get_package_dir(
-        &installation::Installation::current()?,
+        installation,
         value.as_deref(),
         || maestro_tools::expand_path("~"),
-        |path| std::path::Path::new(path).exists(),
+        exists,
     )
+}
+
+/// Whether a native path exists.
+#[cfg(not(target_arch = "wasm32"))]
+fn exists(path: &str) -> bool {
+    std::path::Path::new(path).exists()
 }
 
 /// Resolve the README path of the running process's package directory.
@@ -90,14 +104,26 @@ pub fn get_examples_path() -> std::io::Result<String> {
 /// Select the shipped theme directory of the running process and the custom theme
 /// directory of the environment-selected agent directory.
 ///
+/// A run from a source checkout reads the shipped themes from the theme crate's assets;
+/// a standalone executable reads them beside itself.
+///
 /// # Errors
 /// Returns package-directory or agent-directory failures.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_theme_directories() -> std::io::Result<maestro_theme::ThemeDirectories> {
     let installation = installation::Installation::current()?;
-    let exists = |path: &str| std::path::Path::new(path).exists();
+    let layout = installation.layout;
+    let package_dir = package_dir(|| Ok(installation))?;
+    let themes_dir = match layout {
+        installation::PackageLayout::Package => {
+            maestro_path::join(&[&package_dir, "crates", "maestro-theme", "assets", "theme"])
+        }
+        installation::PackageLayout::Standalone => {
+            paths::get_themes_dir(&package_dir, layout, exists)
+        }
+    };
     Ok(maestro_theme::ThemeDirectories {
-        themes_dir: paths::get_themes_dir(&get_package_dir()?, installation.layout, exists),
+        themes_dir,
         custom_themes_dir: paths::get_custom_themes_dir(&get_agent_dir()?),
     })
 }

@@ -11,37 +11,54 @@ pub enum PackageLayout {
 /// Owned installation location observations.
 #[derive(Debug)]
 pub struct Installation {
-    /// The directory containing the configuration module.
+    /// The directory the package-directory walk starts from.
     pub module_dir: String,
-    /// The executable path observed by the caller.
+    /// The path of the running executable.
     pub executable: String,
-    /// The supplied package layout.
+    /// How this installation ships its assets.
     pub layout: PackageLayout,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl Installation {
-    /// The running process: its executable and this crate's compile-time directory.
+    /// The running process and its executable.
     ///
-    /// A build that finds a package manifest walking up from that directory runs from
-    /// its source, so its assets come from that package tree; any other build is a
-    /// standalone executable whose assets sit beside it.
+    /// A build whose compile-time crate directory still sits below its source workspace
+    /// runs from that checkout, so the walk starts at the workspace root, which holds the
+    /// shipped documentation; any other build is a standalone executable whose assets sit
+    /// beside it.
     ///
     /// # Errors
     /// Returns the error of locating the running executable.
     pub fn current() -> std::io::Result<Self> {
-        let module_dir = env!("CARGO_MANIFEST_DIR").to_owned();
-        let exists = |path: &str| std::path::Path::new(path).exists();
-        let layout = if super::paths::package_root(&module_dir, exists).is_some() {
-            PackageLayout::Package
-        } else {
-            PackageLayout::Standalone
-        };
-        Ok(Self {
-            module_dir,
-            executable: std::env::current_exe()?.to_string_lossy().into_owned(),
-            layout,
+        let executable = std::env::current_exe()?.to_string_lossy().into_owned();
+        let crate_dir = env!("CARGO_MANIFEST_DIR");
+        Ok(match workspace_root(crate_dir) {
+            Some(module_dir) => Self {
+                module_dir,
+                executable,
+                layout: PackageLayout::Package,
+            },
+            None => Self {
+                module_dir: crate_dir.to_owned(),
+                executable,
+                layout: PackageLayout::Standalone,
+            },
         })
     }
+}
+/// The nearest directory from `start` upward whose `Cargo.toml` declares `[workspace]`.
+#[cfg(not(target_arch = "wasm32"))]
+fn workspace_root(start: &str) -> Option<String> {
+    // shortcut: matches only a `[workspace]` header line; parse the manifest if a dotted
+    // `workspace.` key ever declares the workspace instead.
+    let declares_workspace = |dir: &std::path::Path| {
+        std::fs::read_to_string(dir.join("Cargo.toml"))
+            .is_ok_and(|manifest| manifest.lines().any(|line| line.trim() == "[workspace]"))
+    };
+    std::path::Path::new(start)
+        .ancestors()
+        .find(|dir| declares_workspace(dir))
+        .map(|dir| dir.to_string_lossy().into_owned())
 }
 /// The package manager suggested by installation paths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

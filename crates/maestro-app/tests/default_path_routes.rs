@@ -199,23 +199,25 @@ fn package(input: &Value, expected: &Value, root: &str) {
         format!("{package}/Cargo.toml"),
         "[package]\nname = 'fixture'\n",
     );
-    let installation = Installation {
-        module_dir: format!("{package}/src"),
-        executable: format!("{package}/bin/maestro"),
-        layout: PackageLayout::Package,
+    let installation = || -> std::io::Result<Installation> {
+        Ok(Installation {
+            module_dir: format!("{package}/src"),
+            executable: format!("{package}/bin/maestro"),
+            layout: PackageLayout::Package,
+        })
     };
     let native_override = std::env::var("MAESTRO_PACKAGE_DIR").ok();
     assert_eq!(native_override, input.package_override);
     let home = std::env::var("HOME").unwrap();
     let native = paths::get_package_dir(
-        &installation,
+        installation,
         native_override.as_deref(),
         || Ok(home.clone()),
         |p| Path::new(p).exists(),
     )
     .unwrap();
     let controlled = paths::get_package_dir(
-        &installation,
+        installation,
         input.package_override.as_deref(),
         || Ok(home),
         |p| p == format!("{package}/Cargo.toml"),

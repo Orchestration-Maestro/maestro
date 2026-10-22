@@ -22,12 +22,14 @@ pub fn expand_tilde_path(
     Ok(path.to_owned())
 }
 
-/// Select an override, standalone directory, or nearest package marker.
+/// Select an override, standalone directory, or nearest package marker, observing the
+/// installation only when no override applies.
 ///
 /// # Errors
-/// Returns the home lookup error when a tilde override needs it.
+/// Returns the home lookup error when a tilde override needs it, or the installation
+/// lookup error otherwise.
 pub fn get_package_dir(
-    installation: &Installation,
+    installation: impl FnOnce() -> io::Result<Installation>,
     override_dir: Option<&str>,
     home: impl FnOnce() -> io::Result<String>,
     exists: impl Fn(&str) -> bool,
@@ -35,24 +37,18 @@ pub fn get_package_dir(
     if let Some(path) = override_dir.filter(|s| !s.is_empty()) {
         return expand_tilde_path(path, home);
     }
+    let installation = installation()?;
     if installation.layout == PackageLayout::Standalone {
         return Ok(dirname(&installation.executable));
     }
-    Ok(package_root(&installation.module_dir, exists)
-        .unwrap_or_else(|| installation.module_dir.clone()))
-}
-
-/// The nearest directory from `start` upward holding `package.json` or `Cargo.toml`,
-/// checked in that order; the filesystem root is not probed.
-pub(super) fn package_root(start: &str, exists: impl Fn(&str) -> bool) -> Option<String> {
-    let mut dir = std::borrow::Cow::Borrowed(start);
+    let mut dir = std::borrow::Cow::Borrowed(installation.module_dir.as_str());
     loop {
         let parent = dirname(&dir);
         if parent == *dir {
-            return None;
+            return Ok(installation.module_dir);
         }
         if exists(&join(&[&dir, "package.json"])) || exists(&join(&[&dir, "Cargo.toml"])) {
-            return Some(dir.into_owned());
+            return Ok(dir.into_owned());
         }
         dir = parent.into();
     }

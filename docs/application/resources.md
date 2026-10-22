@@ -117,5 +117,8 @@ session is created; diagnostics are returned for the caller to present.
 
 Native `config::get_theme_directories` selects the shipped theme directory from
 the package directory (`MAESTRO_PACKAGE_DIR`, else the running installation's)
-and the custom theme directory from the environment-selected agent directory. See
+and the custom theme directory from the environment-selected agent directory. A
+run from a source checkout reads the shipped themes from
+`crates/maestro-theme/assets/theme` in that package directory; a standalone
+executable reads them from the `theme` directory beside it. See
 [application configuration](configuration.md#installation-paths).

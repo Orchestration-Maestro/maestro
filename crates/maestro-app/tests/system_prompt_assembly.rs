@@ -1,10 +1,12 @@
 //! System prompt assembly against the recorded prompt texts.
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_app::BuildSystemPromptOptions;
+use maestro_app::configuration::config::{get_docs_path, get_readme_path};
 use maestro_app::resources::system_prompt::build_system_prompt;
 use maestro_test_process::{TestProcess, selection};
 use serde::Deserialize;
 use serde_json::Value;
+use std::path::Path;
 
 /// The package directory override the recorded prompts are checked under.
 const PACKAGE_DIR: &str = "/package";
@@ -83,8 +85,8 @@ fn prompt_sections_match_recorded_text() {
 }
 
 /// Without the override the documentation paths come from the running installation. A
-/// test build runs beside its source checkout, where the nearest package manifest is the
-/// application crate's own.
+/// test build runs from its source checkout, whose workspace root holds the README and the
+/// documentation folder the prompt names.
 #[test]
 fn prompt_names_the_running_installation_without_override() {
     if !selection().is_child() {
@@ -93,7 +95,10 @@ fn prompt_names_the_running_installation_without_override() {
             None,
         );
     }
-    assert_recorded_prompts(env!("CARGO_MANIFEST_DIR"));
+    assert!(Path::new(&get_readme_path().unwrap()).is_file());
+    assert!(Path::new(&get_docs_path().unwrap()).is_dir());
+    let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(2);
+    assert_recorded_prompts(workspace.unwrap().to_str().unwrap());
 }
 
 /// Only the default prompt resolves documentation paths, so a relative package override in

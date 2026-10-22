@@ -25,19 +25,23 @@ See [default resource routes](defaults.md) for caller-level selection boundaries
 
 ## Installation paths
 
-`paths::get_package_dir` takes an `Installation` with module directory, executable
-path and `PackageLayout`. A nonempty package override wins. Otherwise standalone
+`paths::get_package_dir` takes a function returning an `Installation` with module
+directory, executable path and `PackageLayout`. A nonempty package override wins
+without calling that function. Otherwise standalone
 layout uses the executable directory; package layout walks ancestors from the module
 directory, checking `package.json` before `Cargo.toml` at each non-root directory.
 No marker returns the original module directory; the filesystem root is not probed.
 
 The native getters take no arguments and describe the running process.
-`Installation::current` uses the running executable and this crate's compile-time
-directory. Its layout is package when the walk from that directory finds a marker,
-as it does for a build run from its source, and standalone otherwise.
-`config::get_package_dir` applies the `MAESTRO_PACKAGE_DIR` override to it.
-`config::get_readme_path`, `config::get_docs_path` and `config::get_examples_path`
-resolve their paths in that package directory. `config::get_theme_directories`
+`config::get_package_dir` reads the `MAESTRO_PACKAGE_DIR` override first and only
+then calls `Installation::current`, which uses the running executable and this
+crate's compile-time directory. When a `Cargo.toml` declaring `[workspace]` sits at
+or above that directory, the build runs from its source checkout: the layout is
+package and the walk starts at that workspace root, which holds `README.md` and
+`docs/`. Any other build is standalone. `config::get_readme_path`,
+`config::get_docs_path` and `config::get_examples_path` resolve their paths in
+that package directory. The workspace has no `examples/` folder yet, so the
+examples path does not exist in a source run. `config::get_theme_directories`
 pairs its shipped theme directory with the custom theme directory of the native
 agent directory; see [application resources](resources.md#theme-directories).
 

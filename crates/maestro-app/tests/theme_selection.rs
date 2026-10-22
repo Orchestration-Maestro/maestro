@@ -3,7 +3,7 @@
 use crate::resource_fixtures::{Entry, Root, with_environment};
 use crate::watching::Effects;
 use maestro_app::configuration::config::get_theme_directories;
-use maestro_theme::{ThemeExportColors, ThemeState, ThemeWatchOperations};
+use maestro_theme::{ThemeChangeResult, ThemeExportColors, ThemeState, ThemeWatchOperations};
 use serde_json::{Value, json};
 use std::rc::Rc;
 
@@ -15,12 +15,12 @@ const VARIABLES: [(&str, &str); 2] = [
 
 /// Writes the shipped themes and `custom` into the case root, then returns the theme
 /// state over the directories selected for the running process, which runs from its
-/// source and so takes the shipped themes from the package's distribution tree.
+/// source checkout and so takes the shipped themes from the theme crate's assets.
 fn state(base: &str, custom: &Value) -> (Root, Rc<ThemeState>) {
     let root = Root::new(base, "case");
     let entries: Vec<Entry> = serde_json::from_value(json!([
-        {"path": "package/dist/modes/interactive/theme/dark.json", "theme": {"name": "dark"}},
-        {"path": "package/dist/modes/interactive/theme/light.json", "theme": {"name": "light"}},
+        {"path": "package/crates/maestro-theme/assets/theme/dark.json", "theme": {"name": "dark"}},
+        {"path": "package/crates/maestro-theme/assets/theme/light.json", "theme": {"name": "light"}},
         custom,
     ]))
     .unwrap();
@@ -32,12 +32,27 @@ fn state(base: &str, custom: &Value) -> (Root, Rc<ThemeState>) {
             directories.custom_themes_dir.as_str()
         ),
         (
-            root.fill("$ROOT/package/dist/modes/interactive/theme")
+            root.fill("$ROOT/package/crates/maestro-theme/assets/theme")
                 .as_str(),
             root.fill("$ROOT/agent/themes").as_str()
         ),
     );
     (root, Rc::new(ThemeState::new(directories)))
+}
+
+/// Without the package override a run from the source checkout loads the themes it ships.
+#[test]
+fn source_run_loads_the_shipped_themes() {
+    with_environment(
+        "source_run_loads_the_shipped_themes",
+        &VARIABLES[..1],
+        |_| {
+            let state = Rc::new(ThemeState::new(get_theme_directories().unwrap()));
+            let changed = state.set_theme("light", None).unwrap();
+            assert!(matches!(changed, ThemeChangeResult::Success));
+            assert_eq!(state.theme().get().unwrap().name(), Some("light"));
+        },
+    );
 }
 
 #[test]
