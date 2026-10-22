@@ -206,6 +206,38 @@ impl ClipboardOperations for Effects<'_> {
 use crate::clipboard_status as completed;
 use completed::status;
 
+/// Runs the remote row a fixture cannot hold, whose marker is not valid UTF-8.
+///
+/// The native write succeeds, so the marker alone decides whether the terminal frame
+/// follows it.
+#[cfg(unix)]
+pub fn run_undecodable_remote_marker() {
+    let case = Case {
+        id: "remote-undecodable-marker".to_owned(),
+        test: "undecodable_remote_marker_still_emits_the_terminal_frame".to_owned(),
+        input: Input {
+            platform: "darwin".to_owned(),
+            env: BTreeMap::new(),
+            native: "success".to_owned(),
+            text: "hello".to_owned(),
+            fail: Vec::new(),
+            spawn_fail: false,
+            stdout_error: false,
+            backpressure: false,
+        },
+        expected: Expected {
+            trace: vec![
+                json!(["native", "hello"]),
+                json!(["native-done"]),
+                json!(["stdout"]),
+            ],
+            stdout: vec!["\x1b]52;c;aGVsbG8=\x07".to_owned()],
+            result: json!("ok"),
+        },
+    };
+    crate::support::run_io(replay(vec![case]));
+}
+
 /// Runs one behavior's rows, each in a cleared child holding its environment.
 pub fn run(name: &str) {
     let cases: Vec<Case> = corpus()

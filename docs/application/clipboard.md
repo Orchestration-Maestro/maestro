@@ -31,8 +31,8 @@ Use [`utils::clipboard_image::read_clipboard_image`](../../crates/maestro-app/sr
 for host defaults, or `read_clipboard_image_with` with a
 `ClipboardImageOperations` adapter. The returned `ClipboardImage` owns its bytes.
 An absent environment or platform option independently uses the process
-environment and the host platform; a supplied environment replaces routing
-observations entirely, including when empty. Overrides do not change helper
+environment and the platform the adapter reports; a supplied environment replaces
+routing observations entirely, including when empty. Overrides do not change helper
 environments or cached native admission. A nonempty Termux marker skips all effects.
 
 Linux detects WSL from nonempty flags or the kernel version. Wayland and WSL try

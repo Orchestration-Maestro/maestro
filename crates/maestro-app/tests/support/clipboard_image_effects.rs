@@ -297,6 +297,19 @@ pub fn run(name: &str) {
         .filter(|case| case.test == name)
         .collect();
     assert!(!cases.is_empty());
+    // An environment-less row observes the child's own environment, so it declares it.
+    for case in &cases {
+        if matches!(
+            case.input.options.as_deref(),
+            Some("default" | "empty" | "platform-only")
+        ) {
+            assert!(
+                case.input.ambient_env.is_some(),
+                "{} declares its ambient environment",
+                case.id
+            );
+        }
+    }
     let (here, ambient): (Vec<_>, Vec<_>) = cases
         .into_iter()
         .partition(|case| case.input.ambient_env.is_none());
