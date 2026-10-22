@@ -23,18 +23,11 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
             assert!(!error.is_empty());
             json!({"error_kind":"Pdf", "prefix":"Failed to process PDF: "})
         }
-        Err(AttachmentError::Pptx(error)) => {
-            let wrapped = AttachmentError::Pptx(error);
-            let source = std::error::Error::source(&wrapped).unwrap();
-            assert!(
-                source
-                    .downcast_ref::<maestro_app::browser::docx_preview::DocxError>()
-                    .is_some()
-            );
-            assert!(!source.to_string().is_empty());
-            let prefix = "Failed to process PPTX: ";
-            assert!(wrapped.to_string().starts_with(prefix));
-            json!({"error_kind":"Pptx", "prefix":prefix})
+        Err(error @ AttachmentError::Pptx(_)) => {
+            package_failure(&error, "Pptx", "Failed to process PPTX: ")
+        }
+        Err(error @ AttachmentError::Docx(_)) => {
+            package_failure(&error, "Docx", "Failed to process DOCX: ")
         }
         Err(AttachmentError::Excel(error)) => {
             let wrapped = AttachmentError::Excel(error);
@@ -55,4 +48,16 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
         Err(AttachmentError::HttpStatus(_)) => json!({"error":"Failed to fetch file"}),
         Err(AttachmentError::Fetch(error)) => json!({"error":error.to_string()}),
     }
+}
+/// Project a package-processing failure with its prefix and retained source.
+fn package_failure(wrapped: &AttachmentError, kind: &str, prefix: &str) -> Value {
+    let source = std::error::Error::source(wrapped).unwrap();
+    assert!(
+        source
+            .downcast_ref::<maestro_app::browser::docx_preview::DocxError>()
+            .is_some()
+    );
+    assert!(!source.to_string().is_empty());
+    assert!(wrapped.to_string().starts_with(prefix));
+    json!({"error_kind":kind, "prefix":prefix})
 }

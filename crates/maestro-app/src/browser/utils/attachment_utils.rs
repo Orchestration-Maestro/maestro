@@ -6,6 +6,7 @@ use maestro_models::{Fetch, FetchError, HttpRequest};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, fmt};
 
+mod docx;
 /// Native PDF text extraction and page rendering.
 pub mod pdf;
 
@@ -77,6 +78,8 @@ pub enum AttachmentError {
     Pdf(String),
     /// Presentation package processing failure.
     Pptx(DocxError),
+    /// Word package processing failure.
+    Docx(DocxError),
     /// Spreadsheet workbook processing failure.
     Excel(WorkbookError),
 }
@@ -90,6 +93,7 @@ impl fmt::Display for AttachmentError {
             Self::Unsupported(mime) => write!(formatter, "Unsupported file type: {mime}"),
             Self::Pdf(error) => write!(formatter, "Failed to process PDF: {error}"),
             Self::Pptx(error) => write!(formatter, "Failed to process PPTX: {error}"),
+            Self::Docx(error) => write!(formatter, "Failed to process DOCX: {error}"),
             Self::Excel(error) => write!(formatter, "Failed to process Excel: {error}"),
         }
     }
@@ -98,7 +102,7 @@ impl std::error::Error for AttachmentError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Fetch(error) => Some(error),
-            Self::Pptx(error) => Some(error),
+            Self::Pptx(error) | Self::Docx(error) => Some(error),
             Self::Excel(error) => Some(error),
             _ => None,
         }
@@ -108,7 +112,7 @@ impl std::error::Error for AttachmentError {
 ///
 /// # Errors
 /// Returns transport/body failures, non-success status, unsupported media types,
-/// or document processing failures. Word documents remain unsupported.
+/// or document processing failures.
 pub async fn load_attachment(
     source: AttachmentSource<'_>,
     file_name: Option<&str>,
@@ -209,6 +213,9 @@ async fn resolve_source<'a>(
     ))
 }
 
+/// Canonical Word media type.
+const DOCX_MIME: &str = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 /// Canonical presentation media type.
 const PPTX_MIME: &str = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
@@ -297,10 +304,11 @@ fn attachment_text(
     mime: String,
 ) -> Result<(String, Option<String>), AttachmentError> {
     let lower_name = name.to_lowercase();
-    if [".docx"].iter().any(|suffix| lower_name.ends_with(suffix))
-        || mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    {
-        return Err(AttachmentError::Unsupported(mime));
+    if [".docx"].iter().any(|suffix| lower_name.ends_with(suffix)) || mime == DOCX_MIME {
+        return Ok((
+            DOCX_MIME.into(),
+            Some(docx::process_docx(bytes, name).map_err(AttachmentError::Docx)?),
+        ));
     }
     if mime == PPTX_MIME
         || name

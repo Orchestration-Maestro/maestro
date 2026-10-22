@@ -236,10 +236,15 @@ relationship paths retain their resolved absolute URLs. Resource lookup reads
 bytes on demand without network requests or filesystem writes. XML entry decoding uses lossy UTF-8. DOCTYPE is rejected.
 Before inflation, the reader returns an archive error if an entry declares more
 than 512 MiB expanded. The archive library rejects data that exceeds its declared
-size. Presentation and spreadsheet attachment builders also reject extracted
-output above 512 MiB with a document processing error. The reader has no
+size. Word, presentation and spreadsheet attachment builders also reject
+extracted output above 512 MiB with a document processing error. The reader has no
 cumulative read quota. These bounds do not cover parsed document structures,
 archive metadata or lossy UTF-8 expansion.
+
+`WordDocument::document_body` reparses the retained main-part XML and returns the
+[owned body tree](#owned-word-element-tree), or `None` when the package has no
+main part or the main part has no `w:body` element. An extraction therefore reads
+the body once through this reader.
 
 `parse_xml_string` provides borrowed element/attribute queries and descendant
 text. Element selection uses immediate children and local names; attribute

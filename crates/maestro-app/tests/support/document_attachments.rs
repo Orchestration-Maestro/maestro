@@ -1,4 +1,4 @@
-//! Presentation fixture replay through the public loader.
+//! Document attachment fixture replay through the public loader.
 #![cfg(test)]
 use super::attachment_observation::observed;
 use maestro_app::browser::utils::attachment_utils::{
@@ -9,10 +9,34 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
 
-/// Complete recorded presentation observations.
+/// Presentation packages with their recorded observations.
+pub const PRESENTATION: Corpus = Corpus::new(
+    include_str!("../fixtures/pptx/pptx.json"),
+    "tests/fixtures/pptx",
+);
+/// Word packages with their recorded observations.
+pub const WORD: Corpus = Corpus::new(
+    include_str!("../fixtures/docx/attachments.json"),
+    "tests/fixtures/docx",
+);
+
+/// One recorded attachment corpus and the directory holding its packages.
+pub struct Corpus {
+    /// Recorded observation document.
+    json: &'static str,
+    /// Package directory below the crate root.
+    directory: &'static str,
+}
+impl Corpus {
+    /// Record the observations of the packages in one directory.
+    pub const fn new(json: &'static str, directory: &'static str) -> Self {
+        Self { json, directory }
+    }
+}
+/// Recorded observations of one corpus document.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Corpus {
+struct Recorded {
     /// Ordered cases.
     rows: Vec<Row>,
 }
@@ -48,10 +72,10 @@ struct Input {
     /// Scripted earlier transport failure.
     transport: Option<String>,
 }
-/// Replay every row owned by one witness.
-pub fn suite(test: &str) {
-    let corpus: Corpus = serde_json::from_str(include_str!("../fixtures/pptx/pptx.json")).unwrap();
-    let rows: Vec<_> = corpus
+/// Replay every row of one corpus owned by one witness.
+pub fn suite(corpus: &Corpus, test: &str) {
+    let recorded: Recorded = serde_json::from_str(corpus.json).unwrap();
+    let rows: Vec<_> = recorded
         .rows
         .into_iter()
         .filter(|row| row.test == test)
@@ -60,7 +84,7 @@ pub fn suite(test: &str) {
     for row in rows {
         let bytes = std::fs::read(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("tests/fixtures/pptx")
+                .join(corpus.directory)
                 .join(&row.input.file),
         )
         .unwrap();
