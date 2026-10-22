@@ -5,6 +5,7 @@ use std::cell::RefCell;
 mod code_progress;
 mod container_depth;
 mod container_frames;
+mod deletion_scanning;
 mod emphasis_work;
 mod html_progress;
 mod paragraph_progress;
@@ -100,7 +101,7 @@ pub(crate) struct Work {
     pub(crate) operand_admissions: usize,
     /// Suffix bytes supplied to direct-link admission, including rejected links.
     pub(crate) link_bytes: usize,
-    /// Raw suffix bytes supplied to the deletion recognizer.
+    /// Bytes visited by deletion preparation and reached-opener lookups.
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
@@ -516,12 +517,12 @@ fn suffix_work(extension: bool, paragraph: &str) {
         counts[1].operand_admissions,
         2 * counts[0].operand_admissions
     );
-    assert!(counts[1].deletion_bytes <= 4 * counts[0].deletion_bytes);
+    assert!(counts[1].deletion_bytes <= 2 * counts[0].deletion_bytes);
     assert_eq!(counts[1].mask_bytes, 2 * counts[0].mask_bytes);
 }
 
 #[test]
-fn deletion_raw_suffix_work_matches_reference_growth() {
+fn deletion_scans_bound_each_selected_scope() {
     for paragraph in [
         "~ ",
         "~~[a `b~~` c](/u)~~\n\n",

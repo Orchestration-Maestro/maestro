@@ -1,5 +1,5 @@
 //! Inline precedence over original source and typed atom boundaries.
-mod delimiter_runs;
+pub(crate) mod delimiters;
 mod emphasis;
 mod entities;
 mod links;
@@ -53,8 +53,8 @@ impl LinkContext {
 
 /// One inline invocation; original definitions and policy are never reconstructed.
 pub(crate) struct Tokenizer<'a> {
-    /// Source-owned delimiter endpoints shared by recursive calls.
-    runs: delimiter_runs::DelimiterRuns,
+    /// Source-owned delimiter observations shared by recursive calls.
+    delimiters: delimiters::Delimiters,
     /// Framed authored source.
     pub(crate) source: &'a ScopeSource,
     /// Immutable grammar selection.
@@ -80,7 +80,7 @@ impl<'a> Tokenizer<'a> {
         in_link: bool,
     ) -> Self {
         Self {
-            runs: delimiter_runs::DelimiterRuns::new(&source.text),
+            delimiters: delimiters::Delimiters::new(&source.text, options),
             source,
             options,
             definitions,
@@ -245,20 +245,9 @@ impl<'a> Tokenizer<'a> {
         atoms: &[Range<usize>],
         admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Option<(usize, Kind)> {
-        let text = &self.source.text[range.clone()];
-        if !text.starts_with('~') {
-            return None;
-        }
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.deletion_bytes += text.len());
-        let matched = rules::inline_del(self.options)?.find(text)?;
-        let body = matched.group(2)?;
-        let children = self.tokens(
-            range.start + body.start..range.start + body.end,
-            atoms,
-            admission,
-        );
-        Some((matched.end(), Kind::Strike(children)))
+        let (consumed, body) = self.delimiters.deletion(&self.source.text, &range)?;
+        let children = self.tokens(body, atoms, admission);
+        Some((consumed, Kind::Strike(children)))
     }
 
     /// Admit native operands through the token-producing recognizers.

@@ -1,15 +1,19 @@
-//! Source-local delimiter endpoints shared by recursive inline windows.
+//! Source-local delimiter observations shared by recursive inline windows.
+pub(super) mod deletion;
+use crate::MarkedOptions;
 use std::ops::Range;
 
-/// Homogeneous delimiter endpoints indexed by original source bytes.
-pub(super) struct DelimiterRuns {
+/// Homogeneous delimiter observations indexed by original source bytes.
+pub(crate) struct Delimiters {
     /// Exclusive run endpoint, or zero at non-delimiter bytes.
     ends: Vec<usize>,
+    /// Caller-selected raw deletion closers, absent where the grammar cannot delete.
+    tildes: Option<deletion::DeletionEnds>,
 }
 
-impl DelimiterRuns {
-    /// Retain each homogeneous delimiter run in one source traversal.
-    pub(super) fn new(source: &str) -> Self {
+impl Delimiters {
+    /// Retain each homogeneous delimiter run beside the deletion closers of one source.
+    pub(crate) fn new(source: &str, options: MarkedOptions) -> Self {
         let mut ends = vec![0; source.len()];
         let mut runs = source.bytes().enumerate().peekable();
         while let Some((start, marker)) = runs.next() {
@@ -26,12 +30,24 @@ impl DelimiterRuns {
             }
             ends[start..end].fill(end);
         }
-        Self { ends }
+        Self {
+            ends,
+            tildes: deletion::DeletionEnds::prepare(source, options),
+        }
     }
 
     /// Select the remaining width without crossing the recursive window's end.
     pub(super) fn width(&self, range: &Range<usize>) -> Option<usize> {
         let end = self.ends.get(range.start)?.min(&range.end);
         end.checked_sub(range.start).filter(|width| *width > 0)
+    }
+
+    /// Select the first raw closing pair inside the recursive window.
+    pub(crate) fn deletion(
+        &self,
+        text: &str,
+        range: &Range<usize>,
+    ) -> Option<(usize, Range<usize>)> {
+        self.tildes.as_ref()?.find(text, range)
     }
 }

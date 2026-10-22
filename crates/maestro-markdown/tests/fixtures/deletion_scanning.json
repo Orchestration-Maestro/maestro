@@ -1,0 +1,2976 @@
+[
+  {
+    "id": "approximations",
+    "group": "deletion_keeps_unclosed_approximations_literal",
+    "input": "step takes about ~5 min, step takes about ~10 %, ",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "step takes about ~5 min, step takes about ~10 %, "
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "step takes about ~5 min, step takes about ~10 %, "
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "step takes about ~5 min, step takes about ~10 %, "
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "step takes about ~5 min, step takes about ~10 %, "
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "plain-text",
+    "group": "deletion_keeps_unclosed_approximations_literal",
+    "input": "ordinary words",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "ordinary words"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "ordinary words"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "ordinary words"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "ordinary words"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "double-unclosed",
+    "group": "deletion_keeps_unclosed_approximations_literal",
+    "input": "~~s0 ~~s1 ~~s2 ",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~s0 ~~s1 ~~s2 "
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~s0 ~~s1 ~~s2 "
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~s0 ~~s1 ~~s2 "
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~s0 ~~s1 ~~s2 "
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "one",
+    "group": "deletion_preserves_caller_width_and_minimum_body",
+    "input": "~a~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~a~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~a~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "two",
+    "group": "deletion_preserves_caller_width_and_minimum_body",
+    "input": "~~a~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "empty",
+    "group": "deletion_preserves_caller_width_and_minimum_body",
+    "input": "literal ~~~~ end",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~~ end"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~~ end"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~~ end"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~~ end"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "three",
+    "group": "deletion_preserves_caller_width_and_minimum_body",
+    "input": "literal ~~~a~~~ end",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~a~~~ end"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~a~~~ end"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~a~~~ end"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "literal ~~~a~~~ end"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "long-run",
+    "group": "deletion_preserves_caller_width_and_minimum_body",
+    "input": "a ~~~~b~~~~ c",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a ~~~~b~~~~ c"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a ~~~~b~~~~ c"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a ~~~~b~~~~ c"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "a ~~~~b~~~~ c"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "mixed",
+    "group": "deletion_preserves_caller_width_and_minimum_body",
+    "input": "~a~~ b~~c~ d~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~a~~ b"
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "c~ d"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a~~ b~~c"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " d~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a~~ b~~c"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " d~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~a~~ b"
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "c~ d"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "left-space",
+    "group": "deletion_preserves_flanking_and_whitespace",
+    "input": "~~ a~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "right-space",
+    "group": "deletion_preserves_flanking_and_whitespace",
+    "input": "~~a ~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a ~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a ~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a ~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a ~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "tab",
+    "group": "deletion_preserves_flanking_and_whitespace",
+    "input": "~~\ta~~ ~~a\t~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~\ta~~ ~~a\t~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~\ta~~ ~~a\t~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~\ta~~ ~~a\t~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~\ta~~ ~~a\t~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "feff",
+    "group": "deletion_preserves_flanking_and_whitespace",
+    "input": "~~﻿a~~ ~~a﻿~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~﻿a~~ ~~a﻿~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~﻿a~~ ~~a﻿~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~﻿a~~ ~~a﻿~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~﻿a~~ ~~a﻿~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "nel",
+    "group": "deletion_preserves_flanking_and_whitespace",
+    "input": "~~a~~ ~~a~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "nbsp",
+    "group": "deletion_preserves_flanking_and_whitespace",
+    "input": "~~ a~~ ~~a ~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~ ~~a ~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~ ~~a ~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~ ~~a ~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~ a~~ ~~a ~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "internal-newline",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\nb~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\nb"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\nb"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\nb"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ],
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "escaped-newline",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\\nb~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a"
+            ],
+            [
+              "break"
+            ],
+            [
+              "text",
+              "b~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ],
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ],
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a"
+            ],
+            [
+              "break"
+            ],
+            [
+              "text",
+              "b~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "escaped-ls",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\ b~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\ b~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\ b~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "escaped-ps",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\ b~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\ b~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\ b~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "first-escaped-space",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~\\ ~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "first-escaped-tilde",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~\\~~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "first-escaped-newline",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~\\\na~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~"
+            ],
+            [
+              "break"
+            ],
+            [
+              "text",
+              "a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~"
+            ],
+            [
+              "break"
+            ],
+            [
+              "text",
+              "a~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "escaped-space",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\ ~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\ "
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "escaped-tilde",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\~~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "even-slashes",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\\\~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\\"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "odd-slashes",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "last-slash",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a\\"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "escape-then-valid",
+    "group": "deletion_preserves_escape_units_and_line_terminators",
+    "input": "~~a\\\nx ~~b~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a"
+            ],
+            [
+              "break"
+            ],
+            [
+              "text",
+              "x "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ],
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "x ~~b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ],
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "x ~~b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "~~a"
+            ],
+            [
+              "break"
+            ],
+            [
+              "text",
+              "x "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "lazy-first",
+    "group": "deletion_selects_first_raw_closer",
+    "input": "~~a~~ b~~c~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " b"
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "c"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " b"
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "c"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " b"
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "c"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " b"
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "c"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "raw-code",
+    "group": "deletion_selects_first_raw_closer",
+    "input": "~~a `b~~` c~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "raw-link",
+    "group": "deletion_selects_first_raw_closer",
+    "input": "~~[label](u~~)",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[label](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              ")"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[label](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              ")"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[label](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              ")"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[label](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              ")"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "raw-title",
+    "group": "deletion_selects_first_raw_closer",
+    "input": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[x](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " \""
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\")"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[x](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " \""
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\")"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[x](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " \""
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\")"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "[x](u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " \""
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\")"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "raw-html",
+    "group": "deletion_selects_first_raw_closer",
+    "input": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "<b title=\"u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\">"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "<b title=\"u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\">"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "<b title=\"u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\">"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "<b title=\"u"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a `b"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "` c~~\">"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "code-before",
+    "group": "deletion_respects_earlier_operands_and_recursive_labels",
+    "input": "`~not~` ~~yes~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "code",
+              "~not~"
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "yes"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "code",
+              "~not~"
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "yes"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "code",
+              "~not~"
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "yes"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "code",
+              "~not~"
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "yes"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "label",
+    "group": "deletion_respects_earlier_operands_and_recursive_labels",
+    "input": "[~~a `b~~` c~~](/u)",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "link",
+              "/u",
+              "",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a `b"
+                    ]
+                  ]
+                ],
+                [
+                  "text",
+                  "` c~~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "link",
+              "/u",
+              "",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a `b"
+                    ]
+                  ]
+                ],
+                [
+                  "text",
+                  "` c~~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "link",
+              "/u",
+              "",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a `b"
+                    ]
+                  ]
+                ],
+                [
+                  "text",
+                  "` c~~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "link",
+              "/u",
+              "",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a `b"
+                    ]
+                  ]
+                ],
+                [
+                  "text",
+                  "` c~~"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "emphasis",
+    "group": "deletion_respects_earlier_operands_and_recursive_labels",
+    "input": "*~~a~~* ~~*b*~~",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "emphasis",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "b"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "emphasis",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "b"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "emphasis",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "b"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "emphasis",
+              [
+                [
+                  "strike",
+                  [
+                    [
+                      "text",
+                      "a"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              "text",
+              " "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "emphasis",
+                  [
+                    [
+                      "text",
+                      "b"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "unicode",
+    "group": "deletion_keeps_unicode_source_extents",
+    "input": "é ~~😀é~~ fin",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "é "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "😀é"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " fin"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "é "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "😀é"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " fin"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "é "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "😀é"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " fin"
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "text",
+              "é "
+            ],
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "😀é"
+                ]
+              ]
+            ],
+            [
+              "text",
+              " fin"
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "crlf",
+    "group": "deletion_keeps_unicode_source_extents",
+    "input": "~~a\r\nb~~\r",
+    "targets": [
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\nb"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\nb"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a\nb"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      [
+        [
+          "paragraph",
+          [
+            [
+              "strike",
+              [
+                [
+                  "text",
+                  "a"
+                ],
+                [
+                  "break"
+                ],
+                [
+                  "text",
+                  "b"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  }
+]

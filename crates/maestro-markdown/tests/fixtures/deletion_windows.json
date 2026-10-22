@@ -1,0 +1,1793 @@
+[
+  {
+    "text": "",
+    "start": 0,
+    "end": 0,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\r~~",
+    "start": 0,
+    "end": 7,
+    "strict": null,
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a~~~",
+    "start": 0,
+    "end": 5,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "~a~~",
+    "start": 0,
+    "end": 3,
+    "strict": null,
+    "browser": [
+      3,
+      1,
+      2
+    ]
+  },
+  {
+    "text": "~~a~~tail",
+    "start": 0,
+    "end": 5,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "~~a~~",
+    "start": 0,
+    "end": 4,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "x~~a~~",
+    "start": 1,
+    "end": 6,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "\\~~a~~",
+    "start": 1,
+    "end": 6,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "~~a\\~~~tail",
+    "start": 0,
+    "end": 7,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a\\\nx ~~b~~",
+    "start": 7,
+    "end": 12,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "step takes about ~5 min, step takes about ~10 %, ",
+    "start": 17,
+    "end": 49,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "step takes about ~5 min, step takes about ~10 %, ",
+    "start": 42,
+    "end": 49,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~s0 ~~s1 ~~s2 ",
+    "start": 0,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~s0 ~~s1 ~~s2 ",
+    "start": 1,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~s0 ~~s1 ~~s2 ",
+    "start": 5,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~s0 ~~s1 ~~s2 ",
+    "start": 6,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~s0 ~~s1 ~~s2 ",
+    "start": 10,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~s0 ~~s1 ~~s2 ",
+    "start": 11,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~a~",
+    "start": 0,
+    "end": 3,
+    "strict": null,
+    "browser": [
+      3,
+      1,
+      2
+    ]
+  },
+  {
+    "text": "~a~",
+    "start": 2,
+    "end": 3,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~",
+    "start": 0,
+    "end": 5,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "~~a~~",
+    "start": 1,
+    "end": 5,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~",
+    "start": 3,
+    "end": 5,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~",
+    "start": 4,
+    "end": 5,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~~ end",
+    "start": 8,
+    "end": 16,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~~ end",
+    "start": 9,
+    "end": 16,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~~ end",
+    "start": 10,
+    "end": 16,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~~ end",
+    "start": 11,
+    "end": 16,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~a~~~ end",
+    "start": 8,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~a~~~ end",
+    "start": 9,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~a~~~ end",
+    "start": 10,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~a~~~ end",
+    "start": 12,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~a~~~ end",
+    "start": 13,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "literal ~~~a~~~ end",
+    "start": 14,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 2,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 3,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 4,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 5,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 7,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 8,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 9,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "a ~~~~b~~~~ c",
+    "start": 10,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 0,
+    "end": 14,
+    "strict": null,
+    "browser": [
+      10,
+      1,
+      9
+    ]
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 2,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 3,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 6,
+    "end": 14,
+    "strict": [
+      8,
+      2,
+      6
+    ],
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 7,
+    "end": 14,
+    "strict": null,
+    "browser": [
+      3,
+      1,
+      2
+    ]
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 9,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 12,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~a~~ b~~c~ d~~",
+    "start": 13,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~",
+    "start": 0,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~",
+    "start": 1,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~",
+    "start": 4,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~",
+    "start": 5,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a ~~",
+    "start": 0,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a ~~",
+    "start": 1,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a ~~",
+    "start": 4,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a ~~",
+    "start": 5,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 0,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 1,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 4,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 5,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 7,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 8,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 11,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\ta~~ ~~a\t~~",
+    "start": 12,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 0,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 1,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 6,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 7,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 9,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 10,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 15,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~﻿a~~ ~~a﻿~~",
+    "start": 16,
+    "end": 17,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 0,
+    "end": 15,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 1,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 5,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 6,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 8,
+    "end": 15,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 9,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 13,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ ~~a~~",
+    "start": 14,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 0,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 1,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 5,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 6,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 8,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 9,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 13,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~ a~~ ~~a ~~",
+    "start": 14,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\nb~~",
+    "start": 0,
+    "end": 7,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a\nb~~",
+    "start": 1,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\nb~~",
+    "start": 5,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\nb~~",
+    "start": 6,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nb~~",
+    "start": 0,
+    "end": 8,
+    "strict": null,
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "~~a\\\nb~~",
+    "start": 1,
+    "end": 8,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nb~~",
+    "start": 6,
+    "end": 8,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nb~~",
+    "start": 7,
+    "end": 8,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 0,
+    "end": 10,
+    "strict": null,
+    "browser": [
+      10,
+      2,
+      8
+    ]
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 1,
+    "end": 10,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 8,
+    "end": 10,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 9,
+    "end": 10,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 0,
+    "end": 10,
+    "strict": null,
+    "browser": [
+      10,
+      2,
+      8
+    ]
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 1,
+    "end": 10,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 8,
+    "end": 10,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ b~~",
+    "start": 9,
+    "end": 10,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\ ~~",
+    "start": 0,
+    "end": 6,
+    "strict": [
+      6,
+      2,
+      4
+    ],
+    "browser": [
+      6,
+      2,
+      4
+    ]
+  },
+  {
+    "text": "~~\\ ~~",
+    "start": 1,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\ ~~",
+    "start": 4,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\ ~~",
+    "start": 5,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\~~~",
+    "start": 0,
+    "end": 6,
+    "strict": [
+      6,
+      2,
+      4
+    ],
+    "browser": [
+      6,
+      2,
+      4
+    ]
+  },
+  {
+    "text": "~~\\~~~",
+    "start": 1,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\~~~",
+    "start": 3,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\~~~",
+    "start": 4,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\~~~",
+    "start": 5,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\\na~~",
+    "start": 0,
+    "end": 7,
+    "strict": null,
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~\\\na~~",
+    "start": 1,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\\na~~",
+    "start": 5,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~\\\na~~",
+    "start": 6,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ ~~",
+    "start": 0,
+    "end": 7,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a\\ ~~",
+    "start": 1,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ ~~",
+    "start": 5,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\ ~~",
+    "start": 6,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~~",
+    "start": 0,
+    "end": 7,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a\\~~~",
+    "start": 1,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~~",
+    "start": 4,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~~",
+    "start": 5,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~~",
+    "start": 6,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\\~~",
+    "start": 0,
+    "end": 7,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a\\\\~~",
+    "start": 1,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\\~~",
+    "start": 5,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\\~~",
+    "start": 6,
+    "end": 7,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~",
+    "start": 0,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~",
+    "start": 1,
+    "end": 6,
+    "strict": null,
+    "browser": [
+      5,
+      1,
+      4
+    ]
+  },
+  {
+    "text": "~~a\\~~",
+    "start": 4,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\~~",
+    "start": 5,
+    "end": 6,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\",
+    "start": 0,
+    "end": 4,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\",
+    "start": 1,
+    "end": 4,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nx ~~b~~",
+    "start": 0,
+    "end": 12,
+    "strict": null,
+    "browser": [
+      12,
+      2,
+      10
+    ]
+  },
+  {
+    "text": "~~a\\\nx ~~b~~",
+    "start": 1,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nx ~~b~~",
+    "start": 8,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nx ~~b~~",
+    "start": 10,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\\\nx ~~b~~",
+    "start": 11,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 0,
+    "end": 12,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 1,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 3,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 4,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 7,
+    "end": 12,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 8,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 10,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a~~ b~~c~~",
+    "start": 11,
+    "end": 12,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a `b~~` c~~",
+    "start": 0,
+    "end": 13,
+    "strict": [
+      8,
+      2,
+      6
+    ],
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "~~a `b~~` c~~",
+    "start": 1,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a `b~~` c~~",
+    "start": 6,
+    "end": 13,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~a `b~~` c~~",
+    "start": 7,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a `b~~` c~~",
+    "start": 11,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a `b~~` c~~",
+    "start": 12,
+    "end": 13,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[label](u~~)",
+    "start": 0,
+    "end": 14,
+    "strict": [
+      13,
+      2,
+      11
+    ],
+    "browser": [
+      13,
+      2,
+      11
+    ]
+  },
+  {
+    "text": "~~[label](u~~)",
+    "start": 1,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[label](u~~)",
+    "start": 11,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[label](u~~)",
+    "start": 12,
+    "end": 14,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 0,
+    "end": 26,
+    "strict": [
+      9,
+      2,
+      7
+    ],
+    "browser": [
+      9,
+      2,
+      7
+    ]
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 1,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 7,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 8,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 11,
+    "end": 26,
+    "strict": [
+      8,
+      2,
+      6
+    ],
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 12,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 17,
+    "end": 26,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 18,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 22,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~[x](u~~ \"~~a `b~~` c~~\")",
+    "start": 23,
+    "end": 26,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 0,
+    "end": 31,
+    "strict": [
+      15,
+      2,
+      13
+    ],
+    "browser": [
+      15,
+      2,
+      13
+    ]
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 1,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 13,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 14,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 16,
+    "end": 31,
+    "strict": [
+      8,
+      2,
+      6
+    ],
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 17,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 22,
+    "end": 31,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 23,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 27,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+    "start": 28,
+    "end": 31,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "`~not~` ~~yes~~",
+    "start": 1,
+    "end": 15,
+    "strict": null,
+    "browser": [
+      5,
+      1,
+      4
+    ]
+  },
+  {
+    "text": "`~not~` ~~yes~~",
+    "start": 5,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "`~not~` ~~yes~~",
+    "start": 8,
+    "end": 15,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "`~not~` ~~yes~~",
+    "start": 9,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "`~not~` ~~yes~~",
+    "start": 13,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "`~not~` ~~yes~~",
+    "start": 14,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "[~~a `b~~` c~~](/u)",
+    "start": 1,
+    "end": 19,
+    "strict": [
+      8,
+      2,
+      6
+    ],
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "[~~a `b~~` c~~](/u)",
+    "start": 2,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "[~~a `b~~` c~~](/u)",
+    "start": 7,
+    "end": 19,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "[~~a `b~~` c~~](/u)",
+    "start": 8,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "[~~a `b~~` c~~](/u)",
+    "start": 12,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "[~~a `b~~` c~~](/u)",
+    "start": 13,
+    "end": 19,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 1,
+    "end": 15,
+    "strict": [
+      5,
+      2,
+      3
+    ],
+    "browser": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 2,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 4,
+    "end": 15,
+    "strict": [
+      11,
+      2,
+      9
+    ],
+    "browser": [
+      11,
+      2,
+      9
+    ]
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 5,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 8,
+    "end": 15,
+    "strict": [
+      7,
+      2,
+      5
+    ],
+    "browser": [
+      7,
+      2,
+      5
+    ]
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 9,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 13,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "*~~a~~* ~~*b*~~",
+    "start": 14,
+    "end": 15,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "é ~~😀é~~ fin",
+    "start": 3,
+    "end": 18,
+    "strict": [
+      11,
+      2,
+      9
+    ],
+    "browser": [
+      11,
+      2,
+      9
+    ]
+  },
+  {
+    "text": "é ~~😀é~~ fin",
+    "start": 4,
+    "end": 18,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "é ~~😀é~~ fin",
+    "start": 12,
+    "end": 18,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "é ~~😀é~~ fin",
+    "start": 13,
+    "end": 18,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\r\nb~~\r",
+    "start": 0,
+    "end": 9,
+    "strict": [
+      8,
+      2,
+      6
+    ],
+    "browser": [
+      8,
+      2,
+      6
+    ]
+  },
+  {
+    "text": "~~a\r\nb~~\r",
+    "start": 1,
+    "end": 9,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\r\nb~~\r",
+    "start": 6,
+    "end": 9,
+    "strict": null,
+    "browser": null
+  },
+  {
+    "text": "~~a\r\nb~~\r",
+    "start": 7,
+    "end": 9,
+    "strict": null,
+    "browser": null
+  }
+]

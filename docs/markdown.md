@@ -31,12 +31,15 @@ not the temporary tokenizer. Code, image and autolink ranges remain barriers.
 An earlier caller token may consume an authored HTML tag; otherwise the tag remains
 one retained operand, so tokens never start inside its attributes.
 
-Each inline tokenizer indexes its source's `*` and `_` run endpoints once.
-Recursive emphasis reuses that index with widths clipped to its selected window;
-projected link labels build an index for their own source. Masks remain local
-to each window because clipping can reveal syntax hidden by an enclosing mask.
-Run-width lookup is constant time; right matching and recursive masking still
-have their own traversal costs.
+Each inline tokenizer indexes its source's `*` and `_` run endpoints once, and
+prepares the raw closing positions its caller's deletion grammar admits. Recursive
+emphasis and deletion reuse that preparation, with widths and closers clipped to
+their selected window; projected link labels build an index for their own source.
+Masks remain local to each window because clipping can reveal syntax hidden by an
+enclosing mask. Width and closer lookup are constant time; right matching and
+recursive masking still have their own traversal costs. Deletion keeps its own raw
+closing rules rather than the emphasis mask, so a raw `~~` inside code ticks still
+closes it.
 
 Parsing emits bare URL, www and email links at reached inline cursors outside
 link labels and raw anchors in the terminal, browser and export grammars.

@@ -451,33 +451,6 @@ pub(crate) fn inline_br(options: MarkedOptions) -> Option<&'static Regex> {
     }
 }
 
-/// Immutable caller-specific inline strict del recognizer.
-static INLINE_STRICT_DEL: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(
-        r"^(~~)(?=[^\s~])((?:\\.|[^\\])*?(?:\\.|[^\s~\\]))\1(?=[^~]|$)",
-        "",
-    )
-    .ok()
-});
-
-/// Immutable caller-specific inline browser del recognizer.
-static INLINE_BROWSER_DEL: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(
-        r"^(~~?)(?=[^\s~])((?:\\[\s\S]|[^\\])*?(?:\\[\s\S]|[^\s~\\]))\1(?=[^~]|$)",
-        "",
-    )
-    .ok()
-});
-
-/// Match only deletion admitted by the selected caller.
-pub(crate) fn inline_del(options: MarkedOptions) -> Option<&'static Regex> {
-    match options {
-        MarkedOptions::Terminal | MarkedOptions::Export => INLINE_STRICT_DEL.as_ref(),
-        MarkedOptions::Browser { .. } => INLINE_BROWSER_DEL.as_ref(),
-        MarkedOptions::Documentation => None,
-    }
-}
-
 /// Block syntax over caller-displayed tag spans, with directive boundaries retained.
 static BLOCK_BLOCKQUOTE_LITERAL: LazyLock<Option<Regex>> =
     LazyLock::new(|| blockquote(LITERAL_HTML_OPENERS));
