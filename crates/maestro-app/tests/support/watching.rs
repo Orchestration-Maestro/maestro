@@ -194,9 +194,6 @@ impl WatchOperations for Effects {
     }
 }
 impl FooterOperations for Effects {
-    fn exists(&self, path: &str) -> bool {
-        std::fs::exists(path).unwrap_or(false)
-    }
     fn symbolic_ref_sync(&self, _: &str) -> io::Result<Option<String>> {
         self.sync_calls.set(self.sync_calls.get() + 1);
         Ok(Some("main\n".into()))

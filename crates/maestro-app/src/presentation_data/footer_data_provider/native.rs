@@ -2,7 +2,6 @@
 
 use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
-use std::fs;
 use std::io;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -108,10 +107,6 @@ impl FooterOperations for NativeFooterOperations {
         listener: Rc<dyn Fn(FooterFileStats, FooterFileStats)>,
     ) -> Box<dyn FsWatcher> {
         Box::new(Polling(poll(&self.local, path, interval, listener)))
-    }
-
-    fn exists(&self, path: &str) -> bool {
-        fs::exists(path).unwrap_or(false)
     }
 
     fn symbolic_ref_sync(&self, repo_dir: &str) -> io::Result<Option<String>> {
