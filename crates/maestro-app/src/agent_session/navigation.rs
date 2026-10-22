@@ -18,6 +18,7 @@ use maestro_session::{
     collect_entries_for_branch_summary, generate_branch_summary,
     session_manager::{BranchSummaryEntry, NavigateTreeOptions, ReadonlySessionManager},
 };
+use serde::Deserialize as _;
 use serde_json::{Value, json};
 use std::sync::{Arc, RwLock};
 
@@ -76,12 +77,14 @@ enum BeforeTree {
     Continue(Option<BranchSummary>),
 }
 
-/// The entry moved to and the leaf moved from.
+/// The entry moved to, the leaf it selects and the leaf moved from.
 struct TreeMove<'a> {
     /// The target entry identity.
     target_id: &'a str,
-    /// The target entry.
-    target: Value,
+    /// The leaf the target selects.
+    new_leaf_id: Option<String>,
+    /// Text to put back in the editor.
+    editor_text: Option<String>,
     /// The leaf before the move.
     old_leaf_id: Option<String>,
 }
@@ -140,7 +143,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 let Some(summary) = summary.await? else {
                     return Ok(NavigateTreeResult {
                         cancelled: true,
-                        aborted: Some(true),
+                        aborted: true,
                         ..NavigateTreeResult::default()
                     });
                 };
@@ -166,8 +169,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }
         let target = manager
             .get_entry(target_id)
-            .cloned()
             .ok_or_else(|| DiagnosticErrorInfo::error(format!("Entry {target_id} not found")))?;
+        let (new_leaf_id, editor_text) = leaf_for(target, target_id);
         let collected =
             collect_entries_for_branch_summary(&*manager, old_leaf_id.as_deref(), target_id)
                 .map_err(thrown)?;
@@ -186,7 +189,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         let tree_move = TreeMove {
             target_id,
-            target,
+            new_leaf_id,
+            editor_text,
             old_leaf_id,
         };
         Ok(Some((tree_move, event)))
@@ -203,16 +207,16 @@ impl<E: ExtensionExecution> AgentSession<E> {
         if !self.extension_runner.has_handlers("session_before_tree") {
             return Ok(BeforeTree::Continue(None));
         }
-        let Some(result) = self.extension_runner.emit(event).await.map_err(thrown)? else {
+        let Some(mut result) = self.extension_runner.emit(event).await.map_err(thrown)? else {
             return Ok(BeforeTree::Continue(None));
         };
         if matches!(result.cancel, Presence::Present(true)) {
             return Ok(BeforeTree::Cancelled);
         }
-        let summary = match &result.summary {
+        let summary = match std::mem::take(&mut result.summary) {
             Presence::Present(summary) if summarize => Some(BranchSummary {
-                text: summary.summary.clone(),
-                details: summary.details.clone(),
+                text: summary.summary,
+                details: summary.details,
                 from_extension: true,
             }),
             _ => None,
@@ -274,15 +278,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         summary: Option<BranchSummary>,
         label: Option<String>,
     ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
-        let (new_leaf_id, editor_text) = leaf_for(&tree_move.target, tree_move.target_id);
         let summary = summary.filter(|summary| !summary.text.is_empty());
+        let from_extension = summary.as_ref().map(|summary| summary.from_extension);
         let label = label.filter(|label| !label.is_empty());
-        let summary_entry = self.store_move(
-            &tree_move,
-            new_leaf_id.as_deref(),
-            summary.as_ref(),
-            label.as_deref(),
-        )?;
+        let summary_entry = self.store_move(&tree_move, summary, label.as_deref())?;
         let context = self
             .session_manager
             .borrow()
@@ -298,41 +297,41 @@ impl<E: ExtensionExecution> AgentSession<E> {
             new_leaf_id,
             old_leaf_id: tree_move.old_leaf_id,
             summary_entry: presence(summary_entry.clone()),
-            from_extension: presence(summary.map(|summary| summary.from_extension)),
+            from_extension: presence(from_extension),
         };
         self.extension_runner
             .emit(&mut event)
             .await
             .map_err(thrown)?;
         Ok(NavigateTreeResult {
-            editor_text,
+            editor_text: tree_move.editor_text,
             cancelled: false,
-            aborted: None,
+            aborted: false,
             summary_entry,
         })
     }
 
-    /// Branches to `new_leaf_id`, through a summary entry when there is a summary, and puts
-    /// the label on the summary or else on the target; returns the stored summary entry.
+    /// Branches to the target's leaf, through a summary entry when there is a summary, and
+    /// puts the label on the summary or else on the target; returns the stored summary entry.
     fn store_move(
         &self,
         tree_move: &TreeMove<'_>,
-        new_leaf_id: Option<&str>,
-        summary: Option<&BranchSummary>,
+        summary: Option<BranchSummary>,
         label: Option<&str>,
     ) -> Result<Option<BranchSummaryEntry>, DiagnosticErrorInfo> {
         let mut manager = self.session_manager.borrow_mut();
+        let new_leaf_id = tree_move.new_leaf_id.as_deref();
         let (summary_entry, labelled) = if let Some(summary) = summary {
             let id = manager
                 .branch_with_summary(
                     new_leaf_id,
                     &summary.text,
-                    summary.details.clone(),
+                    summary.details,
                     Presence::Present(summary.from_extension),
                 )
                 .map_err(thrown)?;
-            let entry = manager.get_entry(&id).cloned().unwrap_or_default();
-            let entry = serde_json::from_value::<BranchSummaryEntry>(entry).map_err(thrown)?;
+            let entry = manager.get_entry(&id).unwrap_or(&Value::Null);
+            let entry = BranchSummaryEntry::deserialize(entry).map_err(thrown)?;
             (Some(entry), id)
         } else {
             match new_leaf_id {
@@ -372,11 +371,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
         model: &Arc<RwLock<Model>>,
     ) -> Result<(String, Option<IndexMap<String, String>>), DiagnosticErrorInfo> {
         let provider = read(model).provider.clone();
-        let no_key = || {
-            let docs = get_docs_path().map_err(thrown)?;
-            Ok(DiagnosticErrorInfo::error(format_no_api_key_found_message(
-                &provider, &docs,
-            )))
+        let no_key = || match get_docs_path() {
+            Ok(docs) => {
+                DiagnosticErrorInfo::error(format_no_api_key_found_message(&provider, &docs))
+            }
+            Err(error) => thrown(error),
         };
         let resolved = self
             .model_registry
@@ -384,7 +383,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .await;
         match resolved {
             ResolvedRequestAuth::Error { error } if error.starts_with("No API key found") => {
-                Err(no_key()?)
+                Err(no_key())
             }
             ResolvedRequestAuth::Error { error } => Err(DiagnosticErrorInfo::error(error)),
             ResolvedRequestAuth::Ok {
@@ -396,7 +395,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     "Authentication failed for \"{provider}\". Credentials may have expired or network is unavailable. Run '/login {provider}' to re-authenticate."
                 )))
             }
-            ResolvedRequestAuth::Ok { .. } => Err(no_key()?),
+            ResolvedRequestAuth::Ok { .. } => Err(no_key()),
         }
     }
 }

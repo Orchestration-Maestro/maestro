@@ -23,7 +23,6 @@ use serde_json::{Map, Value, json};
 use std::{
     cell::RefCell,
     collections::BTreeMap,
-    future::Future,
     rc::Rc,
     sync::{Arc, RwLock},
 };
@@ -353,15 +352,7 @@ pub fn module_loader() -> ModuleLoader<Local> {
     })
 }
 
-/// Completes `body` on a fresh current-thread runtime inside a task set it receives.
-pub fn on_task_set<F: Future>(body: impl FnOnce(Rc<LocalSet>) -> F) -> F::Output {
-    let local = Rc::new(LocalSet::new());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(local.run_until(body(Rc::clone(&local))))
-}
+pub use crate::support::session_harness::on_task_set;
 
 /// The loader inputs a recorded case describes.
 pub fn resource_options(

@@ -106,10 +106,19 @@ pub struct AgentSessionConfig<E: ExtensionExecution = Threaded> {
     pub resource_loader: Rc<dyn ResourceLoader<E>>,
     /// The model catalog used for credentials and model discovery.
     pub model_registry: Arc<ModelRegistry>,
-    /// The extensions' runner; the session builds its own once its runtime builds.
+    /// The extensions' runner.
     pub extension_runner: Rc<ExtensionRunner<E>>,
     /// Runs the commands that configured credentials name.
     pub config_value_operations: Arc<dyn ConfigValueOperations>,
+}
+
+/// What a tool-registry refresh activates.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RefreshToolRegistryOptions {
+    /// The tools to activate in place of the active ones.
+    pub active_tool_names: Option<Vec<String>>,
+    /// Whether every extension tool is activated as well.
+    pub include_all_extension_tools: bool,
 }
 
 /// Which way models are cycled.
@@ -180,7 +189,7 @@ pub struct NavigateTreeResult {
     /// Whether navigation was cancelled.
     pub cancelled: bool,
     /// Whether summarizing was aborted.
-    pub aborted: Option<bool>,
+    pub aborted: bool,
     /// The stored summary.
     pub summary_entry: Option<BranchSummaryEntry>,
 }

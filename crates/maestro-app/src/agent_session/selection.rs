@@ -84,7 +84,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let current = self.model();
         let index = candidates
             .iter()
-            .position(|(model, _)| models_are_equal(Some(&read(model)), Some(&read(&current))))
+            .position(|(model, _)| same_model(model, &current))
             .unwrap_or(0);
         let next = match direction {
             CycleDirection::Forward => (index + 1) % candidates.len(),
@@ -221,7 +221,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         previous: Arc<RwLock<Model>>,
         source: ModelSelectSource,
     ) -> Result<(), DiagnosticErrorInfo> {
-        if models_are_equal(Some(&read(&previous)), Some(&read(&next))) {
+        if same_model(&previous, &next) {
             return Ok(());
         }
         let mut event = ModelSelectEvent {
@@ -236,7 +236,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Starts the selection notification now and lets it finish on the agent's task facility.
+    /// Starts the selection notification now and lets it finish on the agent's task facility;
+    /// without one, a notification that does not finish at once is dropped.
     fn emit_thinking_level_select(&self, mut event: ThinkingLevelSelectEvent) {
         let runner = Rc::clone(&self.extension_runner);
         let mut task: Pin<Box<dyn Future<Output = ()>>> = Box::pin(async move {
@@ -268,6 +269,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }
         read(self.agent.state()).thinking_level.clone()
     }
+}
+
+/// Whether two shared models have one identity, reading each lock once.
+fn same_model(a: &Arc<RwLock<Model>>, b: &Arc<RwLock<Model>>) -> bool {
+    Arc::ptr_eq(a, b) || models_are_equal(Some(&read(a)), Some(&read(b)))
 }
 
 /// The saved form of a queue mode.

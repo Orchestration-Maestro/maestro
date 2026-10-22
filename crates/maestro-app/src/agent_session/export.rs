@@ -2,13 +2,13 @@
 use super::{AgentSession, state::thrown};
 use crate::utils::lock::read;
 use chrono::{SecondsFormat, Utc};
-use maestro_agent::AgentToolRecord;
+use maestro_agent::agent_loop::tool_definitions;
 use maestro_export::{
     ExportOperations, ExportOptions, ExportState, ToolHtmlRendererDeps, create_tool_html_renderer,
     export_session_to_html,
 };
 use maestro_extensions::ExtensionExecution;
-use maestro_models::{DiagnosticErrorInfo, Tool};
+use maestro_models::{DiagnosticErrorInfo, Local, Tool};
 use maestro_session::{CURRENT_SESSION_VERSION, session_manager::ReadonlySessionManager};
 use maestro_tools::ToolRenderEnvironment;
 use serde_json::{Value, json};
@@ -17,6 +17,9 @@ use std::rc::Rc;
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Writes the session as an HTML document with the agent's prompt and tools, the saved
     /// theme and custom tool rendering; returns the written path.
+    ///
+    /// Custom tool rendering needs the published theme; without one, tools keep their
+    /// standard rendering.
     ///
     /// # Errors
     /// Returns the export failure, such as for a session only in memory.
@@ -27,20 +30,22 @@ impl<E: ExtensionExecution> AgentSession<E> {
         environment: Rc<ToolRenderEnvironment>,
     ) -> Result<String, DiagnosticErrorInfo> {
         let theme_name = self.settings_manager.borrow().get_theme();
-        let theme = environment.live_theme.get().map_err(thrown)?;
-        let manager = self.session_manager.borrow();
-        let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-            get_tool_definition: |name: &str| {
-                self.get_tool_definition(name)
-                    .map(|tool| tool.renderer_binding())
-                    .transpose()
-            },
-            theme: &theme,
-            cwd: manager.get_cwd(),
-            width: None,
-            environment,
-        });
         let (system_prompt, tools) = self.export_state()?;
+        let manager = self.session_manager.borrow();
+        let theme = environment.live_theme.get().ok();
+        let renderer = theme.as_deref().map(|theme| {
+            create_tool_html_renderer(ToolHtmlRendererDeps {
+                get_tool_definition: |name: &str| {
+                    self.get_tool_definition(name)
+                        .map(|tool| tool.renderer_binding())
+                        .transpose()
+                },
+                theme,
+                cwd: manager.get_cwd(),
+                width: None,
+                environment,
+            })
+        });
         export_session_to_html(
             &*manager,
             Some(ExportState {
@@ -50,27 +55,24 @@ impl<E: ExtensionExecution> AgentSession<E> {
             Some(ExportOptions {
                 output_path,
                 theme_name: theme_name.as_deref(),
-                tool_renderer: Some(&renderer),
+                tool_renderer: match &renderer {
+                    Some(renderer) => Some(renderer),
+                    None => None,
+                },
             }),
             operations,
         )
         .map_err(thrown)
     }
 
-    /// The prompt and resolved tool declarations an export records.
+    /// The prompt and resolved tool declarations an export records, read without holding
+    /// the agent state while descriptions resolve.
     fn export_state(&self) -> Result<(String, Vec<Tool>), DiagnosticErrorInfo> {
-        let state = read(self.agent.state());
-        let tools = read(state.tools())
-            .iter()
-            .map(|tool| {
-                let tool = read(tool);
-                AgentToolRecord::<maestro_models::Local>::resolve_definition(
-                    tool.definition.clone(),
-                    tool.description.clone(),
-                )
-            })
-            .collect::<Result<_, _>>()?;
-        Ok((state.system_prompt.clone(), tools))
+        let (system_prompt, tools) = {
+            let state = read(self.agent.state());
+            (state.system_prompt.clone(), Rc::clone(state.tools()))
+        };
+        Ok((system_prompt, tool_definitions::<Local>(&tools)?))
     }
 
     /// Writes a fresh header and the current branch, chained in order, as JSONL; returns

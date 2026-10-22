@@ -3,10 +3,10 @@
 #![cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentInitialState, AgentOptions};
-use maestro_app::agent_session::{AgentSession, AgentSessionConfig, AgentSessionEvent};
 use maestro_app::resources::resource_loader::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
 };
+use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};
 use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData, ConfigValueOperations};
 use maestro_extensions::{
@@ -235,10 +235,7 @@ pub async fn create_test_extensions_result(
     cwd: &str,
 ) -> LoadExtensionsResult<Local> {
     let runtime = create_extension_runtime::<Local>();
-    let bus = create_event_bus_for::<Local>(
-        Rc::new(|task| drop(tokio::task::spawn_local(task))),
-        Rc::new(|_| {}),
-    );
+    let bus = create_event_bus_for::<Local>(spawn_local(), Rc::new(|_| {}));
     let mut extensions = Vec::new();
     for (index, factory) in factories.into_iter().enumerate() {
         let path = format!("<inline:{}>", index + 1);
@@ -483,7 +480,7 @@ fn agent(model: &Model, window: Option<f64>) -> Rc<Agent<CustomAgentMessages, Lo
     let mut initial = model.clone();
     initial.context_window = window.unwrap_or(initial.context_window);
     Rc::new(Agent::new_local(AgentOptions {
-        spawn: Some(Rc::new(|task| drop(tokio::task::spawn_local(task)))),
+        spawn: Some(spawn_local()),
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
@@ -588,7 +585,15 @@ pub fn session_event_view(event: &AgentSessionEvent) -> Option<Value> {
     }
 }
 
-/// Runs `body` on the shared current-thread test runtime inside a task set.
-pub fn on_task_set<F: std::future::Future>(body: F) -> F::Output {
-    tokio::task::LocalSet::new().block_on(&super::io_runtime(), body)
+/// Completes `body` on a fresh current-thread runtime inside a task set it receives.
+pub fn on_task_set<F: std::future::Future>(
+    body: impl FnOnce(Rc<tokio::task::LocalSet>) -> F,
+) -> F::Output {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    super::io_runtime().block_on(local.run_until(body(Rc::clone(&local))))
+}
+
+/// A spawner running each task on the current task set.
+fn spawn_local() -> maestro_agent::AgentSpawner<Local> {
+    Rc::new(|task| drop(tokio::task::spawn_local(task)))
 }

@@ -4,38 +4,17 @@ use crate::{
     ExtensionExecution,
     types::{ExtensionError, ExtensionErrorListener},
 };
-use std::rc::Rc;
+use maestro_models::records::listeners::Listeners;
 impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Adds a failure listener; the returned operation removes it.
     pub fn on_error(&self, listener: ExtensionErrorListener) -> impl Fn() + use<E> {
-        let identity = Rc::downgrade(&listener);
-        let listeners = Rc::downgrade(&self.error_listeners);
-        self.error_listeners.borrow_mut().add(listener);
-        move || {
-            if let Some(listeners) = listeners.upgrade() {
-                let removed = listeners.borrow_mut().remove(identity.as_ptr());
-                drop(removed);
-            }
-        }
+        Listeners::subscribe(&self.error_listeners, listener)
     }
     /// Reports `error` to each listener in registration order, including ones added meanwhile.
     /// # Errors
     /// Returns the first listener failure.
     pub fn emit_error(&self, error: &ExtensionError) -> Result<(), crate::EventError> {
-        let mut cursor = 0;
-        loop {
-            let next = self
-                .error_listeners
-                .borrow()
-                .next_from(cursor)
-                .map(|(next, listener)| (next, Rc::clone(listener)));
-            let Some((next, listener)) = next else {
-                break;
-            };
-            cursor = next;
-            listener(error)?;
-        }
-        Ok(())
+        Listeners::try_for_each_live(&self.error_listeners, |listener| listener(error))
     }
 }
 

@@ -5,6 +5,7 @@ use crate::support::session_harness::{
     Harness, HarnessOptions, TS, assistant, case, corpus, harness, model_view, on_task_set,
     session_event_view, usage, user,
 };
+use maestro_app::{AgentSessionEventListener, SessionStats};
 use maestro_extensions::NativeAgentMessage;
 use maestro_json::compact_json;
 use maestro_session::{
@@ -61,7 +62,7 @@ type Compaction = fn(&mut SessionManager, &[String]);
 /// statistics, context usage and last answer text with the recorded case.
 fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: Option<Compaction>) {
     let expected = case("statistics", name);
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions {
             context_window: window,
             ..HarnessOptions::default()
@@ -84,7 +85,7 @@ fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: O
             .write()
             .unwrap()
             .set_messages(history);
-        let stats = h.session.get_session_stats().unwrap();
+        let stats: SessionStats = h.session.get_session_stats().unwrap();
         assert_eq!(stats.session_id, h.session.session_id());
         assert_eq!(stats.session_file, None);
         let usage = |usage: Option<maestro_extensions::ContextUsage>| {
@@ -300,7 +301,7 @@ fn fork_history(manager: &mut SessionManager) {
 #[test]
 fn fork_points_list_user_messages_with_text() {
     let expected = corpus("history");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         fork_history(&mut h.session.session_manager().borrow_mut());
         let forks = h.session.get_user_messages_for_forking();
@@ -316,7 +317,7 @@ fn fork_points_list_user_messages_with_text() {
 #[test]
 fn session_names_are_trimmed_and_announced() {
     let expected = corpus("history");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         let mut names = Vec::new();
         for name in ["  Release notes  ", "", "Second"] {
@@ -338,12 +339,12 @@ fn session_names_are_trimmed_and_announced() {
 #[test]
 fn listeners_receive_events_until_removed() {
     let expected = corpus("listeners");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         let seen = Rc::new(RefCell::new(Vec::new()));
-        let listener = |label: &'static str| {
+        let listener = |label: &'static str| -> AgentSessionEventListener {
             let seen = Rc::clone(&seen);
-            Rc::new(move |event: &_| {
+            Rc::new(move |event| {
                 let view = session_event_view(event).unwrap();
                 let name = view["name"].as_str().unwrap_or_default().to_owned();
                 seen.borrow_mut()
@@ -362,13 +363,14 @@ fn listeners_receive_events_until_removed() {
 
 /// The owner-backed observations of a session.
 fn owner_view(h: &Harness) -> Value {
-    let state = h.session.state().read().unwrap();
+    let history = h.session.messages();
+    let live_history = Arc::ptr_eq(&history, h.session.state().read().unwrap().messages());
     json!({
         "model": model_view(&h.session.model()),
         "thinkingLevel": h.session.thinking_level(),
         "streaming": h.session.is_streaming(),
         "systemPrompt": h.session.system_prompt(),
-        "liveHistory": Arc::ptr_eq(&h.session.messages(), state.messages()),
+        "liveHistory": live_history,
         "sessionId": h.session.session_id() == h.session.session_manager().borrow().get_session_id(),
         "templates": h.session.prompt_templates().prompts.len(),
         "scoped": h.session.scoped_models().len(),
@@ -379,7 +381,7 @@ fn owner_view(h: &Harness) -> Value {
 fn session_getters_read_the_supplied_owners() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
-    on_task_set(async {
+    on_task_set(|_| async {
         let memory = harness(HarnessOptions::default()).await;
         let view = json!({"model": "faux/plain", "thinkingLevel": "off", "streaming": false,
             "systemPrompt": "base", "liveHistory": true, "sessionId": true, "templates": 0, "scoped": 0});

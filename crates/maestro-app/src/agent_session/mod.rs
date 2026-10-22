@@ -99,32 +99,15 @@ impl<E: ExtensionExecution> AgentSession<E> {
 
     /// Adds a listener; the returned operation removes it.
     pub fn subscribe(&self, listener: AgentSessionEventListener) -> impl Fn() + use<E> {
-        let identity = Rc::downgrade(&listener);
-        let listeners = Rc::downgrade(&self.event_listeners);
-        self.event_listeners.borrow_mut().add(listener);
-        move || {
-            if let Some(listeners) = listeners.upgrade() {
-                let removed = listeners.borrow_mut().remove(identity.as_ptr());
-                drop(removed);
-            }
-        }
+        Listeners::subscribe(&self.event_listeners, listener)
     }
 
     /// Calls each listener in subscription order, including ones added meanwhile.
     fn emit(&self, event: &AgentSessionEvent) {
-        let mut cursor = 0;
-        loop {
-            let next = self
-                .event_listeners
-                .borrow()
-                .next_from(cursor)
-                .map(|(next, listener)| (next, Rc::clone(listener)));
-            let Some((next, listener)) = next else {
-                break;
-            };
-            cursor = next;
+        let Ok(()) = Listeners::try_for_each_live(&self.event_listeners, |listener| {
             listener(event);
-        }
+            Ok::<(), std::convert::Infallible>(())
+        });
     }
 
     /// The agent's live state.

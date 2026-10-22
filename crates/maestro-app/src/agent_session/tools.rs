@@ -1,5 +1,5 @@
 //! Tool registry, active tools and the rebuilt system prompt.
-use super::{AgentSession, state::thrown};
+use super::{AgentSession, RefreshToolRegistryOptions, state::thrown};
 use crate::resources::system_prompt::{BuildSystemPromptOptions, build_system_prompt};
 use crate::utils::lock::{read, write};
 use indexmap::{IndexMap, IndexSet};
@@ -45,9 +45,24 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.state.borrow().tool_definitions.get(name).cloned()
     }
 
-    /// Replaces the tool registry: definitions by name in registry order, their normalized
-    /// prompt snippets and guidelines, and one executable tool per definition.
-    pub fn set_tool_definitions(&self, definitions: IndexMap<String, RegisteredTool<E>>) {
+    /// The session's tool-registry refresh: replaces the definitions by name in registry
+    /// order, their normalized prompt snippets and guidelines and one executable tool per
+    /// definition, then activates the tools `options` select and rebuilds the system prompt.
+    ///
+    /// Requested names replace the active tools, which otherwise stay active. When `options`
+    /// include every extension tool, the tools named in `extension_tool_names` are added;
+    /// otherwise, without requested names, the tools new to the registry are. Repeated
+    /// names are dropped.
+    ///
+    /// # Errors
+    /// Returns the documentation-path failure of the default prompt.
+    pub fn set_tool_definitions(
+        &self,
+        definitions: IndexMap<String, RegisteredTool<E>>,
+        extension_tool_names: &[String],
+        options: RefreshToolRegistryOptions,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let previous_active_tool_names = self.get_active_tool_names();
         let mut snippets = IndexMap::new();
         let mut guidelines = IndexMap::new();
         let mut registry = IndexMap::new();
@@ -64,10 +79,27 @@ impl<E: ExtensionExecution> AgentSession<E> {
             registry.insert(name.clone(), Rc::new(RwLock::new(wrapped)));
         }
         let mut state = self.state.borrow_mut();
+        let previous_registry = std::mem::replace(&mut state.tool_registry, registry);
         state.tool_definitions = definitions;
         state.tool_prompt_snippets = snippets;
         state.tool_prompt_guidelines = guidelines;
-        state.tool_registry = registry;
+        let requested = options.active_tool_names.is_some();
+        let mut next = options
+            .active_tool_names
+            .unwrap_or(previous_active_tool_names);
+        if options.include_all_extension_tools {
+            next.extend_from_slice(extension_tool_names);
+        } else if !requested {
+            let added = state.tool_registry.keys();
+            next.extend(
+                added
+                    .filter(|name| !previous_registry.contains_key(*name))
+                    .cloned(),
+            );
+        }
+        drop(state);
+        let next: IndexSet<String> = next.into_iter().collect();
+        self.set_active_tools_by_name(&Vec::from_iter(next))
     }
 
     /// Activates the registered tools among `tool_names`, in order, and rebuilds the system

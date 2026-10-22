@@ -1,7 +1,9 @@
 //! Identity-deduplicated callbacks traversed live in registration order.
 use std::{
+    cell::RefCell,
     collections::{BTreeMap, HashMap},
     ops::Deref,
+    rc::Rc,
 };
 
 /// Callbacks in registration order with one admission index per live identity.
@@ -44,5 +46,42 @@ impl<P: Deref> Listeners<P> {
             .range(cursor..)
             .next()
             .map(|(id, listener)| (id + 1, listener))
+    }
+}
+impl<T: ?Sized> Listeners<Rc<T>> {
+    /// Adds `listener` to the shared collection; the returned operation removes it and does
+    /// nothing once the registration or the collection is gone.
+    pub fn subscribe(listeners: &Rc<RefCell<Self>>, listener: Rc<T>) -> impl Fn() + use<T> {
+        let identity = Rc::downgrade(&listener);
+        let weak = Rc::downgrade(listeners);
+        listeners.borrow_mut().add(listener);
+        move || {
+            if let Some(listeners) = weak.upgrade() {
+                let removed = listeners.borrow_mut().remove(identity.as_ptr());
+                drop(removed);
+            }
+        }
+    }
+    /// Calls `visit` with each listener in registration order, including ones added meanwhile,
+    /// without holding the collection's borrow; stops at the first failure.
+    ///
+    /// # Errors
+    /// Returns the first failure `visit` reports.
+    pub fn try_for_each_live<F>(
+        listeners: &RefCell<Self>,
+        mut visit: impl FnMut(&T) -> Result<(), F>,
+    ) -> Result<(), F> {
+        let mut cursor = 0;
+        loop {
+            let next = listeners
+                .borrow()
+                .next_from(cursor)
+                .map(|(next, listener)| (next, Rc::clone(listener)));
+            let Some((next, listener)) = next else {
+                return Ok(());
+            };
+            cursor = next;
+            visit(&listener)?;
+        }
     }
 }

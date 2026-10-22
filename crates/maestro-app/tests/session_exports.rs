@@ -5,9 +5,15 @@ use crate::support::session_harness::{
     tool_definition, user,
 };
 use base64::Engine as _;
-use maestro_export::{ExportAsset, ExportOperations};
+use maestro_app::AgentSession;
+use maestro_app::agent_session::RefreshToolRegistryOptions;
+use maestro_app::configuration::config::get_theme_directories;
+use maestro_export::{ExportAsset, ExportOperations, NativeExportOperations};
+use maestro_models::Local;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, ThemeOptions};
+use maestro_theme::{
+    ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, ThemeOptions, ThemeState,
+};
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::{TerminalImage, components::Text, tui::ComponentHandle};
 use serde_json::{Value, json};
@@ -21,7 +27,7 @@ mod manual_runtime;
 #[test]
 fn jsonl_export_writes_header_and_linear_branch() {
     let expected = corpus("jsonl_export");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         let root = h.scratch.path().display().to_string();
         let names = build_tree(&mut h.session.session_manager().borrow_mut());
@@ -30,7 +36,7 @@ fn jsonl_export_writes_header_and_linear_branch() {
         assert_eq!(path.replace(&root, "$ROOT"), expected["returned"]);
         let text = std::fs::read_to_string(&path).unwrap();
         assert_eq!(text.ends_with('\n'), expected["endsWithNewline"]);
-        assert_eq!(text.split('\n').count() - 1, 5);
+        assert_eq!(json!(text.split('\n').count() - 1), expected["lineCount"]);
         let lines: Vec<Value> = text
             .lines()
             .map(|line| serde_json::from_str(line).unwrap())
@@ -65,7 +71,7 @@ fn jsonl_export_writes_header_and_linear_branch() {
 #[test]
 fn jsonl_export_default_name_uses_process_directory() {
     let expected = corpus("jsonl_export");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         let root = h.scratch.path().display().to_string();
         let exports = format!("{root}/exports");
@@ -127,13 +133,18 @@ fn payload(path: &str) -> Value {
     serde_json::from_slice(&bytes).unwrap()
 }
 
-/// A rendering environment with a published plain theme, as the host publishes one.
-fn environment() -> Rc<ToolRenderEnvironment> {
+/// A plain theme published as the host publishes one.
+fn published() -> LiveTheme {
     let theme = Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap();
+    LiveTheme::from_theme(Rc::new(theme))
+}
+
+/// A rendering environment over `live_theme`.
+fn environment(live_theme: LiveTheme) -> Rc<ToolRenderEnvironment> {
     Rc::new(ToolRenderEnvironment {
         runtime: Rc::new(manual_runtime::ManualRuntime::default()),
         readme_path: String::new(),
-        live_theme: LiveTheme::from_theme(Rc::new(theme)),
+        live_theme,
         highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
         terminal_image: TerminalImage::default(),
     })
@@ -146,6 +157,19 @@ fn entry_position(manager: &SessionManager, id: &Value) -> Value {
         "e{}",
         entries.iter().position(|entry| entry["id"] == *id).unwrap()
     ))
+}
+
+/// Every recorded tool as an extension tool, all of them activated.
+fn activate_sdk_tools(session: &AgentSession<Local>) {
+    let tools = sdk_tools();
+    let names: Vec<String> = tools.keys().cloned().collect();
+    let options = RefreshToolRegistryOptions {
+        active_tool_names: Some(Vec::new()),
+        include_all_extension_tools: true,
+    };
+    session
+        .set_tool_definitions(tools, &names, options)
+        .unwrap();
 }
 
 /// A file session holding a short exchange.
@@ -162,13 +186,41 @@ fn file_session(root: &str, exchange: &[Value]) -> SessionManager {
 #[test]
 fn html_export_refuses_memory_session() {
     let expected = corpus("html_export");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         let error = h
             .session
-            .export_to_html(None, &Recording::default(), environment())
+            .export_to_html(None, &Recording::default(), environment(published()))
             .unwrap_err();
         assert_eq!(json!({"error": error.message}), expected["inMemory"]);
+    });
+}
+
+/// Without a published theme, a session only in memory is still refused first, and a file
+/// session exports with no custom tool rendering.
+#[test]
+fn html_export_reads_theme_only_for_custom_rendering() {
+    let expected = corpus("html_export");
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().display().to_string();
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let unpublished = || environment(LiveTheme::default());
+        let error = h
+            .session
+            .export_to_html(None, &Recording::default(), unpublished())
+            .unwrap_err();
+        assert_eq!(json!({"error": error.message}), expected["inMemory"]);
+        let call = json!({"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}});
+        let answer = assistant("", 2, &json!({"content": [call], "stopReason": "toolUse"}));
+        let manager = file_session(&root, &[user(&json!("paint"), 1), answer]);
+        *h.session.session_manager().borrow_mut() = manager;
+        let output = format!("{root}/out.html");
+        let path = h
+            .session
+            .export_to_html(Some(&output), &Recording::default(), unpublished())
+            .unwrap();
+        assert_eq!(payload(&path).get("renderedTools"), None);
     });
 }
 
@@ -177,7 +229,7 @@ fn html_export_carries_prompt_tools_and_theme() {
     let expected = corpus("html_export");
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
-    on_task_set(async {
+    on_task_set(|_| async {
         let manager = file_session(
             &root,
             &[user(&json!("hello"), 1), assistant("hi", 2, &json!({}))],
@@ -189,7 +241,7 @@ fn html_export_carries_prompt_tools_and_theme() {
             ..HarnessOptions::default()
         })
         .await;
-        h.session.set_tool_definitions(sdk_tools());
+        activate_sdk_tools(&h.session);
         h.session
             .set_active_tools_by_name(&["gamma".into(), "alpha".into()])
             .unwrap();
@@ -198,7 +250,7 @@ fn html_export_carries_prompt_tools_and_theme() {
         let output = format!("{root}/exports/session.html");
         let path = h
             .session
-            .export_to_html(Some(&output), &operations, environment())
+            .export_to_html(Some(&output), &operations, environment(published()))
             .unwrap();
         assert_eq!(path.replace(&root, "$ROOT"), expected["returned"]);
         let data = payload(&path);
@@ -225,6 +277,68 @@ fn html_export_carries_prompt_tools_and_theme() {
         assert_eq!(observed, expected);
         let themes = operations.themes.borrow();
         assert!(!themes.is_empty() && themes.iter().all(|theme| theme.as_deref() == Some("light")));
+        drop(manager);
+        assert_eq!(native_payload(&h.session, &root), data);
+    });
+}
+
+/// The payload `session` exports through the native assets adapter over a bundle whose
+/// template is the payload alone and the shipped themes.
+fn native_payload(session: &AgentSession<Local>, root: &str) -> Value {
+    let bundle = format!("{root}/bundle");
+    std::fs::create_dir_all(format!("{bundle}/vendor")).unwrap();
+    for asset in [
+        "template.css",
+        "template.js",
+        "vendor/marked.min.js",
+        "vendor/highlight.min.js",
+    ] {
+        std::fs::write(format!("{bundle}/{asset}"), "").unwrap();
+    }
+    std::fs::write(format!("{bundle}/template.html"), "{{SESSION_DATA}}").unwrap();
+    let theme = ThemeState::new(get_theme_directories().unwrap());
+    let native = NativeExportOperations {
+        app_name: "maestro",
+        template_dir: &bundle,
+        theme: &theme,
+    };
+    let output = format!("{root}/exports/native.html");
+    let path = session
+        .export_to_html(Some(&output), &native, environment(published()))
+        .unwrap();
+    payload(&path)
+}
+
+/// Each tool description is resolved with the agent state and the history free to change.
+#[test]
+fn html_export_resolves_tool_descriptions_outside_locks() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().display().to_string();
+    on_task_set(|_| async {
+        let exchange = [user(&json!("hello"), 1), assistant("hi", 2, &json!({}))];
+        let h = harness(HarnessOptions {
+            session_manager: Some(file_session(&root, &exchange)),
+            ..HarnessOptions::default()
+        })
+        .await;
+        activate_sdk_tools(&h.session);
+        let state = Rc::clone(h.session.state());
+        let history = Rc::clone(h.session.session_manager());
+        let tool = Rc::clone(&state.read().unwrap().tools().read().unwrap()[0]);
+        tool.write().unwrap().description = Some(Rc::new(move || {
+            let free = state.try_write().is_ok() && history.try_borrow_mut().is_ok();
+            Ok(if free { "free" } else { "held" }.to_owned())
+        }));
+        let output = format!("{root}/out.html");
+        let path = h
+            .session
+            .export_to_html(
+                Some(&output),
+                &Recording::default(),
+                environment(published()),
+            )
+            .unwrap();
+        assert_eq!(payload(&path)["tools"][0]["description"], "free");
     });
 }
 
@@ -232,7 +346,7 @@ fn html_export_carries_prompt_tools_and_theme() {
 fn html_export_renders_registered_tool_calls() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
-    on_task_set(async {
+    on_task_set(|_| async {
         let call = json!({"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}});
         let answer = assistant("", 2, &json!({"content": [call], "stopReason": "toolUse"}));
         let manager = file_session(&root, &[user(&json!("paint"), 1), answer]);
@@ -247,11 +361,20 @@ fn html_export_renders_registered_tool_calls() {
         }));
         let registered = sdk_registered(painted);
         h.session
-            .set_tool_definitions([("painted".to_owned(), registered)].into_iter().collect());
+            .set_tool_definitions(
+                [("painted".to_owned(), registered)].into_iter().collect(),
+                &["painted".to_owned()],
+                RefreshToolRegistryOptions::default(),
+            )
+            .unwrap();
         let output = format!("{root}/out.html");
         let path = h
             .session
-            .export_to_html(Some(&output), &Recording::default(), environment())
+            .export_to_html(
+                Some(&output),
+                &Recording::default(),
+                environment(published()),
+            )
             .unwrap();
         let rendered = payload(&path)["renderedTools"]["call-1"].to_string();
         assert!(rendered.contains("Painted call"), "{rendered}");

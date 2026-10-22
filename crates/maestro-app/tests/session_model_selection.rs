@@ -4,7 +4,8 @@ use crate::support::session_harness::{
     Harness, HarnessOptions, case, harness, model_view, on_task_set,
 };
 use maestro_agent::QueueMode;
-use maestro_app::agent_session::{CycleDirection, ModelCycleResult};
+use maestro_app::ModelCycleResult;
+use maestro_app::agent_session::CycleDirection;
 use maestro_extensions::{ExtensionFactory, ModelSelectEvent, ThinkingLevelSelectEvent};
 use maestro_models::{DiagnosticErrorInfo, Local, ModelThinkingLevel};
 use maestro_session::session_manager::ReadonlySessionManager;
@@ -88,7 +89,7 @@ fn level_cycle_view(result: Option<ModelThinkingLevel>) -> Value {
 fn selection_case(name: &str, steps: impl AsyncFnOnce(&Harness) -> Vec<Value>) {
     let expected = case("model_selection", name);
     let log = Log::default();
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions {
             settings: expected["settings"].clone(),
             factories: vec![recorder(&log)],
@@ -424,7 +425,7 @@ fn available_cycle_follows_catalog_order() {
 #[test]
 fn available_cycle_needs_two_models() {
     let expected = case("model_selection", "available cycling needs two models");
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions {
             models: vec![("only", false)],
             ..HarnessOptions::default()
@@ -460,7 +461,7 @@ fn thinking_selection_hook_does_not_delay_the_change() {
         .unwrap();
         Box::pin(std::future::ready(Ok(())))
     });
-    on_task_set(async {
+    on_task_set(|_| async {
         let h = harness(HarnessOptions {
             models: vec![("think", true)],
             factories: vec![factory],

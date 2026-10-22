@@ -254,7 +254,7 @@ fn result_view(
                 summary_view(manager, names, &serde_json::to_value(entry).unwrap())
             });
             json!({"ok": {"editorText": result.editor_text, "cancelled": result.cancelled,
-                "aborted": result.aborted, "summaryEntry": summary}})
+                "aborted": result.aborted.then_some(true), "summaryEntry": summary}})
         }
     }
 }
@@ -315,7 +315,7 @@ fn navigate(name: &str, scenario: Scenario) -> Value {
     });
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
-    on_task_set(async {
+    on_task_set(|_| async {
         let session_manager = scenario.file.then(|| {
             let sessions = format!("{root}/sessions");
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap()

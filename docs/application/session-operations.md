@@ -8,8 +8,9 @@ extension runner and the command port that configured credentials use. It
 subscribes to nothing and builds no runtime of its own.
 
 Session state lives in one cell. No borrow of that cell, the history, the settings
-or the agent state is held while the session awaits work or calls a listener or an
-extension handler, so a handler can call back into the session.
+or the agent state is held while the session awaits work, calls a listener or an
+extension event handler, or resolves a tool description, so any of them can call
+back into the session.
 
 ## Observations and listeners
 
@@ -44,8 +45,9 @@ It always writes the agent level. Only an effective change records a
 `thinking_level_change` entry, saves the default level (except `off` on a model
 that cannot reason), emits `ThinkingLevelChanged` and starts `thinking_level_select`.
 That notification starts at once and finishes on the agent's task facility, so a
-slow handler never delays the change. An unrecognized saved level reads as `off`
-and clamps to the model's first supported level.
+slow handler never delays the change. An agent without a task facility drops a
+notification that does not finish at once. An unrecognized saved level reads as
+`off` and clamps to the model's first supported level.
 
 `cycle_thinking_level` returns `None` for a model that cannot reason and otherwise
 moves to the next supported level, wrapping. `set_steering_mode` and
@@ -53,10 +55,14 @@ moves to the next supported level, wrapping. `set_steering_mode` and
 
 ## Tools and the system prompt
 
-`set_tool_definitions` takes the registry in order. For each definition it keeps
-the prompt snippet with whitespace runs collapsed to one space (dropping blank
-snippets) and the prompt guidelines trimmed, without blanks or repeats, and wraps
-one executable tool.
+`set_tool_definitions` refreshes the tool registry. It takes the definitions in
+order and, for each one, keeps the prompt snippet with whitespace runs collapsed to
+one space (dropping blank snippets) and the prompt guidelines trimmed, without
+blanks or repeats, and wraps one executable tool. It then activates tools and
+rebuilds the system prompt. Requested names replace the active tools; without them,
+the active tools stay active. When the options include every extension tool, the
+listed extension tools are added; otherwise, when no names are requested, each
+tool new to the registry is added. Repeated names are dropped.
 
 `set_active_tools_by_name` keeps the registered names in the given order, skipping
 unknown names and keeping repeats. It sets the agent tools and rebuilds the system
@@ -105,7 +111,8 @@ blocks of the newest answer, skipping an aborted empty one, and trims the result
 `export_to_html` writes the session through the export owner with the agent's
 system prompt and tools, the saved theme name and custom tool rendering. The
 caller supplies the export assets and the rendering environment whose published
-theme the renderers use. It refuses a session that is only in memory.
+theme the renderers use. Without a published theme, tools keep their standard
+rendering. It refuses a session that is only in memory before anything else.
 
 `export_to_jsonl` writes a fresh session header followed by the current branch,
 each entry's `parentId` replaced by the previous entry's identity. Without a path

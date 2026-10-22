@@ -1,7 +1,7 @@
 //! Skill blocks a prompt carries when a skill command expands.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::corpus;
-use maestro_app::agent_session::parse_skill_block;
+use maestro_app::{ParsedSkillBlock, parse_skill_block};
 use serde_json::{Value, json};
 
 #[test]
@@ -9,7 +9,7 @@ fn recorded_skill_blocks_parse_alike() {
     let cases = corpus("skill_blocks");
     for case in cases.as_array().unwrap() {
         let input = case["input"].as_str().unwrap();
-        let parsed = parse_skill_block(input).map_or(Value::Null, |block| {
+        let parsed = parse_skill_block(input).map_or(Value::Null, |block: ParsedSkillBlock| {
             json!({
                 "name": block.name,
                 "location": block.location,
