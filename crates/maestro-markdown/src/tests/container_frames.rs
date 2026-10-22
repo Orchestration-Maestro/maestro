@@ -696,7 +696,7 @@ fn observe_reply(document: &crate::Document, lines: usize) -> usize {
 }
 
 /// Charge recognizer operands, line framing, source copies and source projections.
-fn container_work(work: &super::Work) -> usize {
+pub(super) fn container_work(work: &super::Work) -> usize {
     work.block_recognizer_bytes
         + work.definition_bytes
         + work.paragraph_bytes
@@ -813,6 +813,7 @@ fn reply_quote_retained_bytes_grow_linearly_symptom_witness() {
 #[test]
 fn resumed_list_retained_storage_grows_linearly() {
     let samples = [32, 64, 128].map(|n| {
+        super::WORK.with_borrow_mut(|work| *work = super::Work::default());
         let document = crate::parse(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n)));
         let Kind::Quote(children, _) = &document.nodes[0].kind else {
             panic!("quote")
@@ -831,9 +832,12 @@ fn resumed_list_retained_storage_grows_linearly() {
             retained.mapping_records,
             retained.nodes,
             retained.bytes,
+            super::WORK.with_borrow(|work| work.frame_bytes),
         ]
     });
-    eprintln!("unique source, mapping records, nodes, retained payload: {samples:?}");
+    eprintln!(
+        "unique source, mapping records, nodes, retained payload, list state before release: {samples:?}"
+    );
     for pair in samples.windows(2) {
         for (previous, next) in pair[0].iter().zip(pair[1]) {
             assert!(next <= 3 * previous, "{samples:?}");

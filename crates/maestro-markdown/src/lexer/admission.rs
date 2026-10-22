@@ -15,7 +15,8 @@ pub(crate) struct Child {
     operand: Option<Segmented>,
     /// Task-marker bytes removed before the operand.
     prefix: usize,
-    /// Operand offset of the first step whose grammar read the apparent end.
+    /// Operand offset of the first open step: its grammar read the apparent end, or the
+    /// content after it sits on the unterminated last line.
     open: usize,
     /// Output before that step.
     mark: Mark,
@@ -66,7 +67,8 @@ impl<E> Lexer<'_, E> {
         self.settle(source, child, open);
     }
 
-    /// Select the suffix to admit again, or none while every step is settled or code stays open.
+    /// Select the suffix to admit again from the first open step, or none when the operand is
+    /// unchanged without a caller tokenizer or open indented code still runs to its end.
     fn reopen(
         &mut self,
         source: &Segmented,

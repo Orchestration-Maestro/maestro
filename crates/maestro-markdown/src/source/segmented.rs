@@ -117,6 +117,17 @@ impl Segmented {
         false
     }
 
+    /// Charge the unique text and provenance this splice keeps alive.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        self.text.retained(retained);
+        self.projection.retained(retained, |value, retained| {
+            if let Projection::Source(source) = value {
+                source.retained(retained);
+            }
+        });
+    }
+
     /// Select logical bytes while retaining their shared projection.
     pub(crate) fn select(&self, range: Range<usize>) -> Self {
         Self {

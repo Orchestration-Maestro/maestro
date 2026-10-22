@@ -175,7 +175,6 @@ impl BlockTokens {
         self.scopes
             .insert((last.range.start, last.range.end, false), previous);
         self.tail = Tail::Visible(None);
-        self.list = None;
     }
 
     /// Borrow the trailing container's raw source for reentry.
@@ -200,8 +199,9 @@ impl<E> Lexer<'_, E> {
     }
 
     /// Append blocks while preserving the invocation's paragraph clipping state. `open`
-    /// receives the first step whose grammar read the operand's apparent end; nested
-    /// containers recurse through this frame, so the step bookkeeping has its own frames.
+    /// receives the first open step, one whose grammar read the operand's apparent end or
+    /// whose following content sits on its unterminated last line; nested containers
+    /// recurse through this frame, so the step bookkeeping has its own frames.
     pub(super) fn block_tokens(
         &mut self,
         source: &Segmented,
@@ -237,7 +237,8 @@ impl<E> Lexer<'_, E> {
         self.top = true;
     }
 
-    /// Keep the first step whose grammar, or a caller tokenizer, read the operand's end.
+    /// Keep the first open step: its grammar or a caller tokenizer read the operand's end, or
+    /// the content after it sits on the operand's unterminated last line.
     fn record(
         &self,
         open: &mut Option<(usize, Mark)>,

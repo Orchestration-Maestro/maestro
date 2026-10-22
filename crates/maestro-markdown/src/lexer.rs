@@ -23,7 +23,7 @@ use std::{
 /// Per-document grammar state; inline work begins after all definitions are known.
 pub(crate) struct Lexer<'a, E> {
     /// Optional caller block grammar, tried before built-in rules.
-    tokenizer: Option<&'a mut dyn Extension<E>>,
+    pub(crate) tokenizer: Option<&'a mut dyn Extension<E>>,
     /// First invalid extension result, propagated before inline resolution.
     error: Option<E>,
     /// Current paragraph-versus-item grammar position.
@@ -61,7 +61,7 @@ impl<'a, E> Lexer<'a, E> {
             definitions: HashMap::new(),
             scopes: HashMap::new(),
         };
-        let mut nodes = lexer.blocks(&ScopeSource::identity(&source));
+        let mut nodes = lexer.blocks(ScopeSource::identity(&source));
         if let Some(error) = lexer.error {
             return Err(error);
         }
@@ -76,9 +76,9 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Admit a document into one retained block accumulator.
-    pub(crate) fn blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
+    pub(crate) fn blocks(&mut self, source: ScopeSource) -> Vec<Node> {
         let mut output = BlockTokens::default();
-        self.block_tokens(&source.clone().into(), &mut output, false, None);
+        self.block_tokens(&source.into(), &mut output, false, None);
         self.finish_blocks(output)
     }
 
@@ -180,9 +180,8 @@ impl<'a, E> Lexer<'a, E> {
         let (end, content, kind) = if let Some(heading) = recognized.heading {
             let label = source
                 .select(heading.content.clone())
-                .materialize()
-                .text
-                .to_string();
+                .mapped()
+                .to_owned_string();
             (
                 heading.consumed,
                 heading.content,

@@ -52,7 +52,7 @@ pub(super) struct ItemLines {
     raw: Segmented,
     /// Dedented spelling selected from the same shared source.
     body: Segmented,
-    /// Raw end after the reference's final-list whitespace trim.
+    /// Raw end before trailing whitespace, which the list trims from its final item.
     raw_end: usize,
     /// Whether an admitted line has been blank.
     blank: bool,
@@ -146,7 +146,7 @@ impl ItemLines {
         let original = source.select(std::iter::once(0..end));
         if matches!(self.phase, Phase::Empty) && original.text.trim_matches([' ', '\t']).is_empty()
         {
-            self.retain(source, self.trimmed.body_end, Padding::Authored);
+            self.retain(source.clone(), self.trimmed.body_end, Padding::Authored);
             self.phase = Phase::Finished;
             return true;
         }
@@ -178,7 +178,7 @@ impl ItemLines {
         self.blank |= empty;
         self.phase = Phase::Open;
         self.retain(
-            source,
+            source.clone(),
             body_end,
             if aligned {
                 Padding::Expanded
@@ -190,7 +190,7 @@ impl ItemLines {
     }
 
     /// Retain admitted raw and its trimmed boundary without scanning the growing prefix.
-    fn retain(&mut self, source: &ScopeSource, body_end: usize, padding: Padding) {
+    fn retain(&mut self, source: ScopeSource, body_end: usize, padding: Padding) {
         let end = source.text.trim_end_matches(is_whitespace_scalar).len();
         if end > 0 {
             self.raw_end = self.raw.len() + end;
@@ -203,9 +203,20 @@ impl ItemLines {
                 padding,
             };
         }
-        self.raw.append(&source.clone().into());
         self.suffix.swap(0, 1);
         self.suffix[1] = source.clone();
+        self.raw.append(&source.into());
+    }
+
+    /// Charge the unique source this item keeps alive while its list is open.
+    #[cfg(test)]
+    pub(super) fn retained(&self, retained: &mut crate::tests::Retained) {
+        self.raw.retained(retained);
+        self.body.retained(retained);
+        self.trimmed.line.retained(retained);
+        for line in &self.suffix {
+            line.retained(retained);
+        }
     }
 
     /// Borrow dedented source for child admission.

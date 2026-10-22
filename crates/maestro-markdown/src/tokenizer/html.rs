@@ -1,4 +1,5 @@
 //! Directive boundaries over caller-escaped literal tag spans.
+use crate::rules::lines::Input;
 use maestro_text::is_whitespace_scalar;
 
 /// A raw directive's safe payload and original consumed byte count.
@@ -77,39 +78,39 @@ pub(super) struct BlockRecognizer {
 
 impl BlockRecognizer {
     /// Supply an extended prefix; return whether later bytes cannot change it.
-    pub(super) fn extend(&mut self, source: &str) -> bool {
+    pub(super) fn extend(&mut self, source: &(impl Input + ?Sized)) -> bool {
         while !self.stable {
             let Some(line) = self.lines.next(source) else {
                 break;
             };
-            self.consume(&source[..line.end]);
+            self.consume(&source.window(line.clone()), line.start);
         }
         self.stable
     }
 
     /// Settle the operand and transfer the one explicit semantic payload.
-    pub(super) fn finish(&mut self, source: &str) -> Option<Html> {
+    pub(super) fn finish(&mut self, source: &(impl Input + ?Sized)) -> Option<Html> {
         self.extend(source);
         if !self.stable
             && let Some(line) = self.lines.finish(source)
         {
-            self.consume(&source[..line.end]);
+            self.consume(&source.window(line.clone()), line.start);
         }
         self.stable = true;
         self.scanner.take()?.result()
     }
 
-    /// Advance the shared directive grammar without reparsing previous lines.
-    fn consume(&mut self, source: &str) {
+    /// Advance the shared directive grammar over one physical line starting at `start`.
+    fn consume(&mut self, line: &str, start: usize) {
         if !self.initialized {
             self.initialized = true;
-            let indent = source.bytes().take_while(|byte| *byte == b' ').count();
+            let indent = line.bytes().take_while(|byte| *byte == b' ').count();
             self.scanner = (indent <= 3)
-                .then(|| Scanner::new(source, indent, Mode::Block))
+                .then(|| Scanner::new(line, indent, Mode::Block))
                 .flatten();
         }
         if let Some(scanner) = &mut self.scanner {
-            scanner.advance(source);
+            scanner.advance(line, start);
             self.stable = scanner.phase == Phase::Done;
         } else {
             self.stable = true;
@@ -120,7 +121,7 @@ impl BlockRecognizer {
 /// Admit a closed inline directive without changing its source coordinates.
 pub(super) fn inline(source: &str) -> Option<Html> {
     let mut scanner = Scanner::new(source, 0, Mode::Inline)?;
-    scanner.advance(source);
+    scanner.advance(source, 0);
     scanner.result()
 }
 
@@ -185,10 +186,18 @@ impl Scanner {
         })
     }
 
-    /// Advance monotonically through the original bytes, never parsing an encoded copy.
-    fn advance(&mut self, source: &str) {
-        while self.cursor < source.len() && self.phase != Phase::Done {
-            let Some(scalar) = source[self.cursor..].chars().next() else {
+    /// Advance monotonically through original bytes starting at offset `base`, never parsing
+    /// an encoded copy.
+    fn advance(&mut self, source: &str, base: usize) {
+        while self.phase != Phase::Done {
+            let Some(rest) = self
+                .cursor
+                .checked_sub(base)
+                .and_then(|offset| source.get(offset..))
+            else {
+                break;
+            };
+            let Some(scalar) = rest.chars().next() else {
                 break;
             };
             crate::rules::html::charge(scalar.len_utf8());
@@ -204,14 +213,14 @@ impl Scanner {
                 self.phase = Phase::Newlines;
             } else if self.tag.is_some() {
                 self.tag_scalar(scalar);
-            } else if self.phase == Phase::Body && self.close(source) {
+            } else if self.phase == Phase::Body && self.close(rest) {
                 self.phase = match self.mode {
                     Mode::Inline => Phase::Done,
                     Mode::Block if self.directive == Directive::Comment => Phase::Tail,
                     Mode::Block => Phase::Newlines,
                 };
             } else {
-                self.literal_scalar(source, scalar);
+                self.literal_scalar(rest, scalar);
             }
         }
     }
@@ -233,9 +242,8 @@ impl Scanner {
         })
     }
 
-    /// Consume an eligible delimiter before ordinary body text.
-    fn close(&mut self, source: &str) -> bool {
-        let rest = &source[self.cursor..];
+    /// Consume an eligible delimiter at the start of `rest`, before ordinary body text.
+    fn close(&mut self, rest: &str) -> bool {
         let ending = if self.directive == Directive::Comment && self.cursor == self.body_start {
             if rest.starts_with('>') {
                 ">"
@@ -268,15 +276,15 @@ impl Scanner {
         }
     }
 
-    /// Select literal tags, closing tags and bare less-than spellings at this boundary.
-    fn literal_scalar(&mut self, source: &str, scalar: char) {
-        match literal(&source[self.cursor..]) {
+    /// Select literal tags, closing tags and bare less-than spellings at the start of `rest`.
+    fn literal_scalar(&mut self, rest: &str, scalar: char) {
+        match literal(rest) {
             Some(Literal::Opening) => {
                 self.tag = Some("<".to_owned());
                 self.cursor += 1;
             }
             Some(Literal::Closing(width)) => {
-                append_tag(&mut self.value, &source[self.cursor..self.cursor + width]);
+                append_tag(&mut self.value, &rest[..width]);
                 self.cursor += width;
             }
             Some(Literal::Bare) => {

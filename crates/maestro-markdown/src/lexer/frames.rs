@@ -53,16 +53,12 @@ impl<E> Lexer<'_, E> {
         if crate::source::strip_quote(&first.text).len() == first.text.len() {
             return None;
         }
-        let segmented = source;
-        let raw = source.materialize();
-        let source = &raw.view(0..raw.text.len());
-        #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        let matched = rules::block_blockquote(self.options)?.find(source.text)?;
-        self.undecided |= !segmented.settled_after(matched.end());
-        let limit = source.text[matched.range()].trim_end_matches('\n').len();
-        let (raw, node, _) = self.quote_frame(source.select(std::iter::once(0..limit)).into())?;
-        let consumed = source.local(&raw.native(&(0..raw.len()))?)?.end;
+        let (raw, matched) = quote_prefix(source, rules::block_blockquote(self.options)?)?;
+        self.undecided |= !source.settled_after(matched.end());
+        let view = &raw.view(0..raw.text.len());
+        let limit = view.text[matched.range()].trim_end_matches('\n').len();
+        let (quoted, node, _) = self.quote_frame(view.select(std::iter::once(0..limit)).into())?;
+        let consumed = view.local(&quoted.native(&(0..quoted.len()))?)?.end;
         Some((consumed, node))
     }
 
@@ -104,15 +100,15 @@ impl<E> Lexer<'_, E> {
             .local(&current.extent(0..current.text.len()))?
             .end;
         frame.consumed = frame.consumed.max(end);
-        let chunk = quote_source(current);
+        let chunk: Segmented = quote_source(current).into();
         if frame.text.len() != 0 {
             frame.text.newline();
         }
         let top = self.top;
         self.top = true;
-        self.block_tokens(&chunk.clone().into(), &mut frame.output, true, None);
+        self.block_tokens(&chunk, &mut frame.output, true, None);
         self.top = top;
-        frame.text.append(&chunk.into());
+        frame.text.append(&chunk);
         frame.finished = frame.pending.is_empty()
             || frame
                 .output
@@ -145,8 +141,11 @@ impl<E> Lexer<'_, E> {
             frame.finished = true;
             return Some(Resume::Quote(joined));
         }
+        let Kind::List(_, items) = old.kind else {
+            return None;
+        };
         let state = frame.output.list.take()?;
-        let (consumed, node, state) = self.resume_list(&joined, state)?;
+        let (consumed, node, state) = self.resume_list(&joined, state, items)?;
         Self::publish_resume(
             frame,
             joined.select(0..consumed),
@@ -183,6 +182,32 @@ impl<E> Lexer<'_, E> {
         frame.pending.segmented(rest);
         frame.list_separator = true;
         Some(())
+    }
+}
+
+/// Materialize the shortest line-bounded prefix on which the quote grammar decides as on
+/// the whole operand: past its match, the grammar reads at most one complete line.
+fn quote_prefix(
+    source: &Segmented,
+    rule: &regress::Regex,
+) -> Option<(ScopeSource, regress::Match)> {
+    let mut lines = rules::lines::Cursor::default();
+    let mut end = 0;
+    loop {
+        let target = (2 * end).max(1);
+        while end < target {
+            end = lines.next(source).map_or(source.len(), |line| line.end);
+            if end == source.len() {
+                break;
+            }
+        }
+        let raw = source.select(0..end).materialize();
+        #[cfg(test)]
+        crate::tests::block_operand(&raw.text);
+        let matched = rule.find(&raw.text)?;
+        if end == source.len() || raw.text[matched.end()..].contains('\n') {
+            return Some((raw, matched));
+        }
     }
 }
 

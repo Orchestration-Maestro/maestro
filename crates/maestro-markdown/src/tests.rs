@@ -52,6 +52,8 @@ pub(crate) struct Work {
     pub(crate) projections: usize,
     /// Bytes appended to existing mapped buffers.
     pub(crate) joined_bytes: usize,
+    /// Largest unique source payload a list state kept alive until its release.
+    pub(crate) frame_bytes: usize,
     /// Last reentry's mapped end before preserving already consumed chunks.
     pub(crate) reentry_end: usize,
     /// Recognized consumption before the last container reentry.

@@ -151,6 +151,14 @@ impl ListState {
 
     /// Transfer each child's single output into its final item without cloning it.
     pub(crate) fn finish(mut self, items: &mut [Node], scopes: &mut HashMap<ScopeKey, Segmented>) {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| {
+            let mut retained = crate::tests::Retained::default();
+            for item in self.completed.iter().chain([&self.item]) {
+                item.retained(&mut retained);
+            }
+            work.frame_bytes = work.frame_bytes.max(retained.bytes);
+        });
         let following = self.completed.len();
         let mut outputs = Vec::with_capacity(following + 1);
         let mut loose = false;
@@ -207,18 +215,20 @@ impl<E> Lexer<'_, E> {
             item_start: 0,
             completed: Vec::new(),
         });
-        self.list_tail(source, state, offset)
+        self.list_tail(source, state, offset, Vec::new())
     }
 
-    /// Resume the same item's source and history after its enclosing quote grows.
+    /// Resume the same item's source and history after its enclosing quote grows, keeping
+    /// the wrappers `items` already published for its completed items.
     pub(crate) fn resume_list(
         &mut self,
         source: &Segmented,
         mut state: Box<ListState>,
+        items: Vec<Node>,
     ) -> Option<(usize, Node, Box<ListState>)> {
         let start = state.item_start;
         let offset = state.item.resume(source, start);
-        self.list_tail(source, state, offset)
+        self.list_tail(source, state, offset, items)
     }
 
     /// Continue item admission without revisiting completed physical lines.
@@ -227,10 +237,14 @@ impl<E> Lexer<'_, E> {
         source: &Segmented,
         mut state: Box<ListState>,
         mut offset: usize,
+        mut items: Vec<Node>,
     ) -> Option<(usize, Node, Box<ListState>)> {
-        let mut items = Vec::with_capacity(state.completed.len() + 1);
-        for item in &mut state.completed {
-            items.push(self.list_item(item, true)?);
+        items.truncate(state.completed.len());
+        if self.tokenizer.is_some() {
+            // A caller tokenizer observes every item again, as each list call lexes them all.
+            for item in &mut state.completed {
+                self.list_item(item, true);
+            }
         }
         let mut pending = crate::source::Cursor::default();
         pending.segmented(source.select(offset..source.len()));
@@ -243,12 +257,14 @@ impl<E> Lexer<'_, E> {
             let Some(next) = marker(&line.text).filter(|next| next.follows(&state.first)) else {
                 break;
             };
-            items.push(self.list_item(&mut state.item, true)?);
+            self.list_item(&mut state.item, true);
+            items.push(wrapper(&state.item)?);
             state.item_start = offset;
             state.begin(&line, &next, self.options);
             offset += next.line;
         }
-        items.push(self.list_item(&mut state.item, false)?);
+        self.list_item(&mut state.item, false);
+        items.push(wrapper(&state.item)?);
         let end = state.item_start + state.item.raw_end();
         let raw = source.select(0..end);
         let node = Node {
@@ -259,8 +275,8 @@ impl<E> Lexer<'_, E> {
         Some((end, node, state))
     }
 
-    /// Admit the item's grown child operand and publish its provisional wrapper.
-    fn list_item(&mut self, item: &mut ItemLines, following: bool) -> Option<Node> {
+    /// Admit the item's grown child operand.
+    fn list_item(&mut self, item: &mut ItemLines, following: bool) {
         let (mut body, _) = task(item.body());
         let prefix = item.body().len() - body.len();
         if !following {
@@ -268,13 +284,17 @@ impl<E> Lexer<'_, E> {
             body.truncate(body.len().saturating_sub(trimmed));
         }
         self.item_blocks(&body, prefix, &mut item.child);
-        let raw = item.raw();
-        Some(Node {
-            authored: raw.mapped(),
-            range: raw.native(&(0..raw.len()))?,
-            kind: Kind::Item(Vec::new()),
-        })
     }
+}
+
+/// Publish an item's provisional wrapper over its recognized raw.
+fn wrapper(item: &ItemLines) -> Option<Node> {
+    let raw = item.raw();
+    Some(Node {
+        authored: raw.mapped(),
+        range: raw.native(&(0..raw.len()))?,
+        kind: Kind::Item(Vec::new()),
+    })
 }
 
 /// Task markers are consumed before the item's ordinary inline grammar.

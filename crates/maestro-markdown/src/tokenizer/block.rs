@@ -122,27 +122,18 @@ pub(crate) fn html(source: &Segmented, options: MarkedOptions) -> Option<Block> 
     if options == MarkedOptions::Export {
         return None;
     }
-    if options == (MarkedOptions::Browser { escape_html: true }) {
-        let raw = source.materialize();
-        let source = &raw.view(0..raw.text.len());
-        #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        let html = super::html::BlockRecognizer::default().finish(source.text)?;
-        return Some(Block {
-            consumed: html.consumed,
-            node: source.node(0..html.consumed, Kind::HtmlBlock(html.value)),
-            inline: None,
-        });
-    }
-    let consumed = rules::html::Recognizer::default().finish(source)?;
+    let (consumed, value) = if options == (MarkedOptions::Browser { escape_html: true }) {
+        let html = super::html::BlockRecognizer::default().finish(source)?;
+        (html.consumed, Some(html.value))
+    } else {
+        (rules::html::Recognizer::default().finish(source)?, None)
+    };
     let raw = source.select(0..consumed).materialize();
     let source = &raw.view(0..consumed);
+    let value = value.unwrap_or_else(|| super::html::block_value(source.text.to_owned()));
     Some(Block {
         consumed,
-        node: source.node(
-            0..consumed,
-            Kind::HtmlBlock(super::html::block_value(source.text[..consumed].to_owned())),
-        ),
+        node: source.node(0..consumed, Kind::HtmlBlock(value)),
         inline: None,
     })
 }
