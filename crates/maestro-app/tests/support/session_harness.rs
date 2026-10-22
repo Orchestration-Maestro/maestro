@@ -588,11 +588,7 @@ pub fn session_event_view(event: &AgentSessionEvent) -> Option<Value> {
     }
 }
 
-/// Runs `body` on a current-thread runtime inside a task set.
+/// Runs `body` on the shared current-thread test runtime inside a task set.
 pub fn on_task_set<F: std::future::Future>(body: F) -> F::Output {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, body)
+    tokio::task::LocalSet::new().block_on(&super::io_runtime(), body)
 }
