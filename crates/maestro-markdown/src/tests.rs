@@ -1,10 +1,11 @@
 //! Work and source-identity regressions at the shared inline boundary.
-use crate::{InlineAtom, InlineContext, Kind, Node, parse};
+use crate::{InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse};
 use std::cell::RefCell;
 
 mod code_progress;
 mod container_depth;
 mod container_frames;
+mod deletion_scanning;
 mod emphasis_work;
 mod html_progress;
 mod paragraph_progress;
@@ -38,6 +39,15 @@ pub(crate) fn on_stack<T: Send + 'static>(
         .join()
         .expect("worker panicked")
 }
+
+/// Every caller selection of the configured parser.
+pub(crate) const SELECTIONS: [MarkedOptions; 5] = [
+    MarkedOptions::Terminal,
+    MarkedOptions::Documentation,
+    MarkedOptions::Browser { escape_html: false },
+    MarkedOptions::Browser { escape_html: true },
+    MarkedOptions::Export,
+];
 
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
@@ -100,7 +110,9 @@ pub(crate) struct Work {
     pub(crate) operand_admissions: usize,
     /// Suffix bytes supplied to direct-link admission, including rejected links.
     pub(crate) link_bytes: usize,
-    /// Raw suffix bytes supplied to the deletion recognizer.
+    /// Suffix bytes supplied to inline code-span recognition, including unclosed openers.
+    pub(crate) inline_code_bytes: usize,
+    /// Sources a deletion preparation reads plus one per reached-opener lookup.
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
@@ -496,17 +508,26 @@ impl crate::BlockTokenizer for NoBlockHint {
     }
 }
 
+/// Parse one source through the chosen public entry route.
+pub(crate) fn parsed(
+    source: String,
+    options: crate::MarkedOptions,
+    extension: bool,
+) -> crate::Document {
+    if extension {
+        crate::parse_with_tokenizer(source, options, Some(&mut NoBlockHint)).unwrap()
+    } else {
+        crate::parse_with_options(source, options)
+    }
+}
+
 /// Compare actual shared-owner scan work through either public entry route.
 fn suffix_work(extension: bool, paragraph: &str) {
     let counts = [32, 64].map(|count| {
         WORK.with_borrow_mut(|work| *work = Work::default());
         let source = paragraph.repeat(count);
         let options = crate::MarkedOptions::Browser { escape_html: true };
-        let document = if extension {
-            crate::parse_with_tokenizer(source, options, Some(&mut NoBlockHint)).unwrap()
-        } else {
-            crate::parse_with_options(source, options)
-        };
+        let document = parsed(source, options, extension);
         assert!(!document.nodes.is_empty());
         WORK.with_borrow(|work| *work)
     });
@@ -516,12 +537,12 @@ fn suffix_work(extension: bool, paragraph: &str) {
         counts[1].operand_admissions,
         2 * counts[0].operand_admissions
     );
-    assert!(counts[1].deletion_bytes <= 4 * counts[0].deletion_bytes);
+    assert!(counts[1].deletion_bytes <= 2 * counts[0].deletion_bytes);
     assert_eq!(counts[1].mask_bytes, 2 * counts[0].mask_bytes);
 }
 
 #[test]
-fn deletion_raw_suffix_work_matches_reference_growth() {
+fn deletion_scans_bound_each_selected_scope() {
     for paragraph in [
         "~ ",
         "~~[a `b~~` c](/u)~~\n\n",
@@ -552,13 +573,7 @@ fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
 
 #[test]
 fn plain_text_merge_work_grows_linearly_with_its_pieces() {
-    for options in [
-        crate::MarkedOptions::Documentation,
-        crate::MarkedOptions::Terminal,
-        crate::MarkedOptions::Export,
-        crate::MarkedOptions::Browser { escape_html: false },
-        crate::MarkedOptions::Browser { escape_html: true },
-    ] {
+    for options in SELECTIONS {
         let merged =
             [64, 128, 256].map(|pieces| paragraph_work("a_".repeat(pieces), options).merge_bytes);
         assert!(grows_linearly(merged), "{options:?} {merged:?}");

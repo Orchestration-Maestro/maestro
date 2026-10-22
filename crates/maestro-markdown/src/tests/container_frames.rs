@@ -1,4 +1,5 @@
 //! Container lineage and stateful caller observations through complete parsing.
+use super::SELECTIONS;
 use crate::{BlockToken, BlockTokenizer, Kind, MarkedOptions, Node, parse_with_tokenizer};
 use std::{cell::RefCell, fmt::Write};
 
@@ -20,13 +21,7 @@ fn reply_quote_reentry_keeps_ancestor_body_lineage() {
 
 #[test]
 fn container_definition_lookahead_keeps_later_title_lines() {
-    let options = [
-        MarkedOptions::Terminal,
-        MarkedOptions::Documentation,
-        MarkedOptions::Browser { escape_html: false },
-        MarkedOptions::Browser { escape_html: true },
-        MarkedOptions::Export,
-    ];
+    let options = SELECTIONS;
     for ((prefix, source), options) in [
         ("", "[a]: /x\n\"title\ncontinued\"\n\n[a]"),
         ("> ", "> [a]: /x\n> \"title\n> continued\"\n>\n> [a]"),
@@ -207,13 +202,7 @@ const LEAF_CASES: [(&str, &str, &str, &str); 7] = [
 
 #[test]
 fn container_multiline_leaves_keep_later_input() {
-    let options = [
-        MarkedOptions::Terminal,
-        MarkedOptions::Documentation,
-        MarkedOptions::Browser { escape_html: false },
-        MarkedOptions::Browser { escape_html: true },
-        MarkedOptions::Export,
-    ];
+    let options = SELECTIONS;
     for ((full, partial, kind, operand), (position, options)) in
         LEAF_CASES.into_iter().flat_map(|case| {
             (0..4).flat_map(move |position| options.map(|options| (case, (position, options))))
@@ -248,16 +237,9 @@ fn container_multiline_leaves_keep_later_input() {
 fn container_paragraph_lookahead_keeps_later_setext() {
     let prefix = "alpha\nbeta\n";
     let full = "alpha\nbeta\n===\n";
-    for (position, options) in (0..4).flat_map(|position| {
-        [
-            MarkedOptions::Terminal,
-            MarkedOptions::Documentation,
-            MarkedOptions::Browser { escape_html: false },
-            MarkedOptions::Browser { escape_html: true },
-            MarkedOptions::Export,
-        ]
-        .map(|options| (position, options))
-    }) {
+    for (position, options) in
+        (0..4).flat_map(|position| SELECTIONS.map(|options| (position, options)))
+    {
         let partial = crate::parse_with_options(wrap_leaf(prefix, position), options);
         let complete = crate::parse_with_options(wrap_leaf(full, position), options);
         let control =

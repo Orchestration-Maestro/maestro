@@ -7,7 +7,7 @@ impl Tokenizer<'_> {
     /// Check left flanking before searching any right-delimiter runs.
     fn opening(&self, range: &Range<usize>, previous: Option<char>) -> Option<(usize, u8)> {
         let text = &self.source.text[range.clone()];
-        let width = self.runs.width(range)?;
+        let width = self.delimiters.width(range)?;
         let tail = &text[width - 1..];
         let left = rules::inline_em_strong_l_delim(self.options)?.find(tail)?;
         if left.group(3).is_some()
