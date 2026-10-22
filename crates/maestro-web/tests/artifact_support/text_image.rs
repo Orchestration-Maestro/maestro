@@ -60,28 +60,29 @@ pub struct Corpus {
     pub image_bytes: Vec<Case<Content, Bytes>>,
     pub image_invalid: Vec<Content>,
 }
+/// Sections the native projection owns; the browser projection rejects them.
+pub const NATIVE_SECTIONS: [&str; 6] = [
+    "textLanguage",
+    "textMime",
+    "textHeader",
+    "imageMime",
+    "imageBytes",
+    "imageInvalid",
+];
+/// Sections the browser projection owns; the native projection rejects them.
+pub const BROWSER_SECTIONS: [&str; 3] = ["textRender", "imageUrl", "imageRender"];
 /// Read the committed projection with no ignored fields.
 /// # Panics
-/// Panics if the committed source recording is malformed or admits a browser-only
-/// section.
+/// Panics if the committed source recording is malformed, admits a browser-only
+/// section, or holds a section count other than the one the source recording has.
 #[must_use]
 pub fn corpus() -> Corpus {
     use crate::support::{reject_sections, strict_record};
     use serde_json::Value;
     let source = include_str!("../fixtures/text_image_artifacts.json");
     let valid: Value = serde_json::from_str(source).unwrap();
-    reject_sections::<Corpus>(&valid, &["textRender", "imageUrl", "imageRender"]);
-    strict_record::<Corpus>(
-        &valid,
-        &[
-            "textLanguage",
-            "textMime",
-            "textHeader",
-            "imageMime",
-            "imageBytes",
-            "imageInvalid",
-        ],
-    );
+    reject_sections::<Corpus>(&valid, &BROWSER_SECTIONS);
+    strict_record::<Corpus>(&valid, &NATIVE_SECTIONS);
     strict_record::<Case<Name, Option<String>>>(&valid["textLanguage"][0], &["input"]);
     strict_record::<Name>(&valid["textLanguage"][0]["input"], &["filename"]);
     strict_record::<Case<Name, String>>(&valid["textMime"][0], &["input", "output"]);
@@ -101,7 +102,14 @@ pub fn corpus() -> Corpus {
     strict_record::<Content>(&valid["imageBytes"][0]["input"], &["content"]);
     strict_record::<Bytes>(&valid["imageBytes"][0]["output"], &["bytes"]);
     strict_record::<Content>(&valid["imageInvalid"][0], &["content"]);
-    serde_json::from_str(source).unwrap()
+    let corpus: Corpus = serde_json::from_str(source).unwrap();
+    assert_eq!(corpus.text_language.len(), 103);
+    assert_eq!(corpus.text_mime.len(), 13);
+    assert_eq!(corpus.text_header.len(), 8);
+    assert_eq!(corpus.image_mime.len(), 15);
+    assert_eq!(corpus.image_bytes.len(), 11);
+    assert_eq!(corpus.image_invalid.len(), 4);
+    corpus
 }
 #[cfg(target_arch = "wasm32")]
 #[path = "text_image_browser_records.rs"]

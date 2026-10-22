@@ -1,5 +1,5 @@
 //! Strict browser-owned source and image recording records.
-use super::{Case, File};
+use super::{BROWSER_SECTIONS, Case, File, NATIVE_SECTIONS};
 use serde::Deserialize;
 
 /// Rendered source body and the language class selected for it.
@@ -38,25 +38,16 @@ pub struct Corpus {
 
 /// Decode the committed browser recording with no ignored fields.
 /// # Panics
-/// Panics if the committed recording is malformed or admits a native-only section.
+/// Panics if the committed recording is malformed, admits a native-only section,
+/// or holds a section count other than the one the browser recording has.
 #[must_use]
 pub fn corpus() -> Corpus {
     use crate::support::{reject_sections, strict_record};
     use serde_json::Value;
     let source = include_str!("../fixtures/text_image_artifacts_browser.json");
     let valid: Value = serde_json::from_str(source).unwrap();
-    reject_sections::<Corpus>(
-        &valid,
-        &[
-            "textLanguage",
-            "textMime",
-            "textHeader",
-            "imageMime",
-            "imageBytes",
-            "imageInvalid",
-        ],
-    );
-    strict_record::<Corpus>(&valid, &["textRender", "imageUrl", "imageRender"]);
+    reject_sections::<Corpus>(&valid, &NATIVE_SECTIONS);
+    strict_record::<Corpus>(&valid, &BROWSER_SECTIONS);
     strict_record::<Case<File, Text>>(&valid["textRender"][0], &["input", "output"]);
     strict_record::<File>(&valid["textRender"][0]["input"], &["filename", "content"]);
     strict_record::<Text>(&valid["textRender"][0]["output"], &["text"]);
@@ -66,5 +57,9 @@ pub fn corpus() -> Corpus {
         &valid["imageRender"][0]["output"],
         &["src", "alt", "fallback"],
     );
-    serde_json::from_str(source).unwrap()
+    let corpus: Corpus = serde_json::from_str(source).unwrap();
+    assert_eq!(corpus.text_render.len(), 10);
+    assert_eq!(corpus.image_url.len(), 10);
+    assert_eq!(corpus.image_render.len(), 2);
+    corpus
 }
