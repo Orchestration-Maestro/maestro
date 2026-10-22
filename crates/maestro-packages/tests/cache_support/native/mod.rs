@@ -59,16 +59,9 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
 /// Refreshes a real checkout and retains it after the origin becomes unavailable.
 pub fn refresh() {
     // The temporary cache lives below the child's own temporary directory.
-    let Some(dir) = crate::resolution_support::case_in_child("refresh", |base| {
-        vec![(
-            "HOME",
-            Some(
-                native_support::under(base, "home")
-                    .to_string_lossy()
-                    .into_owned(),
-            ),
-        )]
-    }) else {
+    let Some(dir) =
+        crate::resolution_support::case_in_child("refresh", |base| vec![super::home(base)])
+    else {
         return;
     };
     let base = dir.to_string_lossy().into_owned();

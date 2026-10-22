@@ -351,20 +351,21 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
         );
     }
 }
+/// The child's `HOME`, inside its own tree.
+pub fn home(base: &str) -> (&'static str, Option<String>) {
+    (
+        "HOME",
+        Some(
+            native_support::under(base, "home")
+                .to_string_lossy()
+                .into_owned(),
+        ),
+    )
+}
 /// Compares ordered effects, surviving files, errors and complete returned trees.
 async fn replay(case: &Recorded) {
     let Some(tree) = super::resolution_support::case_in_child(&case.case, |base| {
-        vec![
-            (
-                "HOME",
-                Some(
-                    native_support::under(base, "home")
-                        .to_string_lossy()
-                        .into_owned(),
-                ),
-            ),
-            ("MAESTRO_OFFLINE", case.recipe.offline.clone()),
-        ]
+        vec![home(base), ("MAESTRO_OFFLINE", case.recipe.offline.clone())]
     }) else {
         return;
     };
