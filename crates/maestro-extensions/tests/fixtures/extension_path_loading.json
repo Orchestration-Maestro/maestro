@@ -1,0 +1,3304 @@
+[
+  {
+    "id": "load_empty_list",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/discovered.ts",
+        "command:discovered"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_only_explicit_paths",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/discovered.ts",
+        "command:discovered"
+      ],
+      [
+        "file",
+        "explicit.ts",
+        "command:explicit"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/explicit.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/explicit.ts",
+              "resolvedPath": "$ROOT/explicit.ts",
+              "sourceInfo": {
+                "path": "$ROOT/explicit.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT"
+              },
+              "commands": [
+                "explicit"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_in_given_order",
+    "tree": [
+      [
+        "file",
+        "work/a.ts",
+        "command:a"
+      ],
+      [
+        "file",
+        "work/b.ts",
+        "command:b"
+      ],
+      [
+        "file",
+        "work/c.ts",
+        "command:c"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/c.ts",
+          "$ROOT/work/a.ts",
+          "$ROOT/work/b.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/c.ts",
+              "resolvedPath": "$ROOT/work/c.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/c.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "c"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/a.ts",
+              "resolvedPath": "$ROOT/work/a.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/a.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "a"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/b.ts",
+              "resolvedPath": "$ROOT/work/b.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/b.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "b"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_without_factory",
+    "tree": [
+      [
+        "file",
+        "work/ext/none.ts",
+        "none"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "ext/none.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [
+            {
+              "path": "ext/none.ts",
+              "error": "Extension does not export a valid factory function: ext/none.ts"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_module_failure",
+    "tree": [
+      [
+        "file",
+        "work/broken.ts",
+        "fail-load:Unexpected token"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/broken.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [
+            {
+              "path": "$ROOT/work/broken.ts",
+              "error": "Failed to load extension: Unexpected token"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_factory_failure",
+    "tree": [
+      [
+        "file",
+        "work/throws.ts",
+        "fail-init:Initialization failed!"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/throws.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [
+            {
+              "path": "$ROOT/work/throws.ts",
+              "error": "Failed to load extension: Initialization failed!"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_continues_after_failures",
+    "tree": [
+      [
+        "file",
+        "work/one.ts",
+        "command:one"
+      ],
+      [
+        "file",
+        "work/bad.ts",
+        "fail-init:bad init"
+      ],
+      [
+        "file",
+        "work/two.ts",
+        "command:two"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/one.ts",
+          "$ROOT/work/bad.ts",
+          "$ROOT/work/missing.ts",
+          "$ROOT/work/two.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/one.ts",
+              "resolvedPath": "$ROOT/work/one.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/one.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "one"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/two.ts",
+              "resolvedPath": "$ROOT/work/two.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/two.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "two"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [
+            {
+              "path": "$ROOT/work/bad.ts",
+              "error": "Failed to load extension: bad init"
+            },
+            {
+              "path": "$ROOT/work/missing.ts",
+              "error": "Failed to load extension: module not found: $ROOT/work/missing.ts"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_relative_paths",
+    "tree": [
+      [
+        "file",
+        "work/ext/rel.ts",
+        "command:rel"
+      ],
+      [
+        "file",
+        "work/ext/dot.ts",
+        "command:dot"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "ext/rel.ts",
+          "./ext/../ext/dot.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "ext/rel.ts",
+              "resolvedPath": "$ROOT/work/ext/rel.ts",
+              "sourceInfo": {
+                "path": "ext/rel.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/ext"
+              },
+              "commands": [
+                "rel"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "./ext/../ext/dot.ts",
+              "resolvedPath": "$ROOT/work/ext/dot.ts",
+              "sourceInfo": {
+                "path": "./ext/../ext/dot.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/ext"
+              },
+              "commands": [
+                "dot"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_absolute_spelling_kept",
+    "tree": [
+      [
+        "file",
+        "work/ext/abs.ts",
+        "command:abs"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/./ext/../ext/abs.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/./ext/../ext/abs.ts",
+              "resolvedPath": "$ROOT/work/./ext/../ext/abs.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/./ext/../ext/abs.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/./ext/../ext"
+              },
+              "commands": [
+                "abs"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_unicode_spaces",
+    "tree": [
+      [
+        "file",
+        "work/a b c d e f g h.ts",
+        "command:spaced"
+      ],
+      [
+        "file",
+        "work/k\u200bl\u2028m\ufeffn\u1680o\u0085p\tq.ts",
+        "command:kept"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/a\u00a0b\u2000c\u2005d\u200ae\u202ff\u205fg\u3000h.ts",
+          "$ROOT/work/k\u200bl\u2028m\ufeffn\u1680o\u0085p\tq.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/a\u00a0b\u2000c\u2005d\u200ae\u202ff\u205fg\u3000h.ts",
+              "resolvedPath": "$ROOT/work/a b c d e f g h.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/a\u00a0b\u2000c\u2005d\u200ae\u202ff\u205fg\u3000h.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "spaced"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/k\u200bl\u2028m\ufeffn\u1680o\u0085p\tq.ts",
+              "resolvedPath": "$ROOT/work/k\u200bl\u2028m\ufeffn\u1680o\u0085p\tq.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/k\u200bl\u2028m\ufeffn\u1680o\u0085p\tq.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "kept"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_home_paths",
+    "tree": [
+      [
+        "file",
+        "home/h1.ts",
+        "command:h1"
+      ],
+      [
+        "file",
+        "home/h2.ts",
+        "command:h2"
+      ],
+      [
+        "file",
+        "home/h3.ts",
+        "command:h3"
+      ],
+      [
+        "file",
+        "home/h4.ts",
+        "command:h4"
+      ],
+      [
+        "file",
+        "work/a~/x.ts",
+        "command:x"
+      ],
+      [
+        "file",
+        "home/ h5.ts",
+        "command:h5"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "~/h1.ts",
+          "~h2.ts",
+          "~//h3.ts",
+          "~/sub/../h4.ts",
+          "~",
+          "~/",
+          "a~/x.ts",
+          "~\u3000h5.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "~/h1.ts",
+              "resolvedPath": "$ROOT/home/h1.ts",
+              "sourceInfo": {
+                "path": "~/h1.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "h1"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "~h2.ts",
+              "resolvedPath": "$ROOT/home/h2.ts",
+              "sourceInfo": {
+                "path": "~h2.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "h2"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "~//h3.ts",
+              "resolvedPath": "$ROOT/home/h3.ts",
+              "sourceInfo": {
+                "path": "~//h3.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "h3"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "~/sub/../h4.ts",
+              "resolvedPath": "$ROOT/home/h4.ts",
+              "sourceInfo": {
+                "path": "~/sub/../h4.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "h4"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "a~/x.ts",
+              "resolvedPath": "$ROOT/work/a~/x.ts",
+              "sourceInfo": {
+                "path": "a~/x.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/a~"
+              },
+              "commands": [
+                "x"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "~\u3000h5.ts",
+              "resolvedPath": "$ROOT/home/ h5.ts",
+              "sourceInfo": {
+                "path": "~\u3000h5.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "h5"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [
+            {
+              "path": "~",
+              "error": "Failed to load extension: module not found: $ROOT/home"
+            },
+            {
+              "path": "~/",
+              "error": "Failed to load extension: module not found: $ROOT/home"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_supplied_bus",
+    "tree": [
+      [
+        "file",
+        "work/ready.ts",
+        "emit:ready"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/ready.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "supplied",
+        "observe": "ready"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/ready.ts",
+              "resolvedPath": "$ROOT/work/ready.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/ready.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": [
+        {
+          "listener": "test",
+          "channel": "ready",
+          "data": {
+            "from": "$ROOT/work/ready.ts"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "load_shares_bus_within_call",
+    "tree": [
+      [
+        "file",
+        "work/listener.ts",
+        "listen:ping"
+      ],
+      [
+        "file",
+        "work/emitter.ts",
+        "emit:ping"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/listener.ts",
+          "$ROOT/work/emitter.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/listener.ts",
+              "resolvedPath": "$ROOT/work/listener.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/listener.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/emitter.ts",
+              "resolvedPath": "$ROOT/work/emitter.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/emitter.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": [
+        {
+          "listener": "$ROOT/work/listener.ts",
+          "channel": "ping",
+          "data": {
+            "from": "$ROOT/work/emitter.ts"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "load_fresh_bus_per_call",
+    "tree": [
+      [
+        "file",
+        "work/listener.ts",
+        "listen:ping"
+      ],
+      [
+        "file",
+        "work/emitter.ts",
+        "emit:ping"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/listener.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      },
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/emitter.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/listener.ts",
+              "resolvedPath": "$ROOT/work/listener.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/listener.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        },
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/emitter.ts",
+              "resolvedPath": "$ROOT/work/emitter.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/emitter.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "load_shares_runtime",
+    "tree": [
+      [
+        "file",
+        "work/f1.ts",
+        "flag:alpha=one"
+      ],
+      [
+        "file",
+        "work/f2.ts",
+        "flag:beta=two;flag:alpha=other"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "$ROOT/work/f1.ts",
+          "$ROOT/work/f2.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/f1.ts",
+              "resolvedPath": "$ROOT/work/f1.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/f1.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [
+                "alpha"
+              ],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/f2.ts",
+              "resolvedPath": "$ROOT/work/f2.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/f2.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [],
+              "flags": [
+                "beta",
+                "alpha"
+              ],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {
+            "alpha": "one",
+            "beta": "two"
+          }
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_direct_files",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/foo.ts",
+        "command:foo"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/bar.ts",
+        "command:bar"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/baz.js",
+        "command:baz"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/comp.wasm",
+        "command:comp"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/notes.md",
+        "command:notes"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/x.tsx",
+        "command:x"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/y.mjs",
+        "command:y"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/Z.TS",
+        "command:Z"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/types.d.ts",
+        "command:types"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/.hidden.ts",
+        "command:hidden"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/B.ts",
+        "command:B"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/.hidden.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/.hidden.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/.hidden.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "hidden"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/B.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/B.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/B.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "B"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/bar.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/bar.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/bar.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "bar"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/baz.js",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/baz.js",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/baz.js",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "baz"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/comp.wasm",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/comp.wasm",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/comp.wasm",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "comp"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/foo.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/foo.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/foo.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "foo"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/types.d.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/types.d.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/types.d.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "types"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_index_files",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/a/index.ts",
+        "command:a"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/b/index.js",
+        "command:b"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/c/index.wasm",
+        "command:c"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/d/index.ts",
+        "command:d-ts"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/d/index.js",
+        "command:d-js"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/e/index.js",
+        "command:e-js"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/e/index.wasm",
+        "command:e-wasm"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/a/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/a/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/a/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/a"
+              },
+              "commands": [
+                "a"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/b/index.js",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/b/index.js",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/b/index.js",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/b"
+              },
+              "commands": [
+                "b"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/c/index.wasm",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/c/index.wasm",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/c/index.wasm",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/c"
+              },
+              "commands": [
+                "c"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/d/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/d/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/d/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/d"
+              },
+              "commands": [
+                "d-ts"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/e/index.js",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/e/index.js",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/e/index.js",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/e"
+              },
+              "commands": [
+                "e-js"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_manifest_entries",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/p1/src/main.ts",
+        "command:p1"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p1/package.json",
+        {
+          "name": "p1",
+          "maestro": {
+            "extensions": [
+              "./src/main.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p2/e1.ts",
+        "command:e1"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p2/e2.ts",
+        "command:e2"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p2/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./e2.ts",
+              "./e1.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p3/index.ts",
+        "command:p3-index"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p3/custom.ts",
+        "command:p3-custom"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p3/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./custom.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p4/exists.ts",
+        "command:p4"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p4/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./exists.ts",
+              "./missing.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p5/index.ts",
+        "command:p5-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p5/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./missing.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p6/index.ts",
+        "command:p6-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p6/package.json",
+        {
+          "name": "p6",
+          "version": "1.0.0"
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p7/index.ts",
+        "command:p7-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p7/package.json",
+        {
+          "maestro": {
+            "extensions": []
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p8/index.ts",
+        "command:p8-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/p8/package.json",
+        {
+          "maestro": "not an object"
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/p9/index.ts",
+        "command:p9-index"
+      ],
+      [
+        "text",
+        "work/.maestro/extensions/p9/package.json",
+        "{ not json"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/q1/first.ts",
+        "command:q1-first"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/q1/last.ts",
+        "command:q1-last"
+      ],
+      [
+        "text",
+        "work/.maestro/extensions/q1/package.json",
+        "{\"maestro\":{\"extensions\":[\"./first.ts\"]},\"maestro\":{\"extensions\":[\"./last.ts\"]}}"
+      ],
+      [
+        "dir",
+        "work/.maestro/extensions/q2/folder"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/q2/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./folder"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "outside/abs.ts",
+        "command:abs"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/q3/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "$ROOT/outside/abs.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/q4/index.ts",
+        "command:q4-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/q4/package.json",
+        {
+          "maestro": {
+            "extensions": "abc"
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/q5/index.ts",
+        "command:q5-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/q5/package.json",
+        {
+          "maestro": {
+            "skills": [
+              "./s"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/r1/index.ts",
+        "command:r1-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/r1/package.json",
+        {
+          "maestro": null
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/r2/index.ts",
+        "command:r2-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/r2/package.json",
+        {
+          "maestro": {
+            "extensions": null
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/r3/index.ts",
+        "command:r3-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/r3/package.json",
+        {
+          "maestro": {
+            "extensions": {
+              "a": "./x.ts"
+            }
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/r4/index.ts",
+        "command:r4-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/r4/package.json",
+        {
+          "maestro": []
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/r5/x.ts",
+        "command:r5-x"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/r5/index.ts",
+        "command:r5-index"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/r5/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "x.ts",
+              "../r5/x.ts"
+            ]
+          }
+        }
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/p1/src/main.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p1/src/main.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p1/src/main.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p1/src"
+              },
+              "commands": [
+                "p1"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p2/e2.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p2/e2.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p2/e2.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p2"
+              },
+              "commands": [
+                "e2"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p2/e1.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p2/e1.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p2/e1.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p2"
+              },
+              "commands": [
+                "e1"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p3/custom.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p3/custom.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p3/custom.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p3"
+              },
+              "commands": [
+                "p3-custom"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p4/exists.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p4/exists.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p4/exists.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p4"
+              },
+              "commands": [
+                "p4"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p5/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p5/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p5/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p5"
+              },
+              "commands": [
+                "p5-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p6/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p6/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p6/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p6"
+              },
+              "commands": [
+                "p6-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p7/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p7/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p7/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p7"
+              },
+              "commands": [
+                "p7-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p8/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p8/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p8/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p8"
+              },
+              "commands": [
+                "p8-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/p9/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/p9/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/p9/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/p9"
+              },
+              "commands": [
+                "p9-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/q1/last.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/q1/last.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/q1/last.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/q1"
+              },
+              "commands": [
+                "q1-last"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/outside/abs.ts",
+              "resolvedPath": "$ROOT/outside/abs.ts",
+              "sourceInfo": {
+                "path": "$ROOT/outside/abs.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/outside"
+              },
+              "commands": [
+                "abs"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/q4/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/q4/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/q4/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/q4"
+              },
+              "commands": [
+                "q4-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/q5/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/q5/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/q5/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/q5"
+              },
+              "commands": [
+                "q5-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/r1/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/r1/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/r1/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/r1"
+              },
+              "commands": [
+                "r1-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/r2/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/r2/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/r2/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/r2"
+              },
+              "commands": [
+                "r2-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/r3/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/r3/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/r3/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/r3"
+              },
+              "commands": [
+                "r3-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/r4/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/r4/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/r4/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/r4"
+              },
+              "commands": [
+                "r4-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/r5/x.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/r5/x.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/r5/x.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/r5"
+              },
+              "commands": [
+                "r5-x"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/q2/folder",
+              "error": "Failed to load extension: module not found: $ROOT/work/.maestro/extensions/q2/folder"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_registers_each_kind",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/kinds.ts",
+        "command:test;tool:my-tool;renderer:my-custom-type;handler:agent_start;handler:tool_call;handler:agent_end;shortcut:ctrl+t;flag:my-flag=on"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/tool-a.ts",
+        "tool:tool-a"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/tool-b.ts",
+        "tool:tool-b"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/kinds.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/kinds.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/kinds.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "test"
+              ],
+              "flags": [
+                "my-flag"
+              ],
+              "tools": [
+                "my-tool"
+              ],
+              "handlers": [
+                "agent_start",
+                "tool_call",
+                "agent_end"
+              ],
+              "messageRenderers": [
+                "my-custom-type"
+              ],
+              "shortcuts": [
+                "ctrl+t"
+              ]
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/tool-a.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/tool-a.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/tool-a.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [
+                "tool-a"
+              ],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/tool-b.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/tool-b.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/tool-b.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [
+                "tool-b"
+              ],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {
+            "my-flag": "on"
+          }
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_ignores_plain_subdirectory",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/not-an-extension/helper.ts",
+        "command:helper"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/not-an-extension/utils.ts",
+        "command:utils"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_one_level_only",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/container/nested/index.ts",
+        "command:nested"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_mixed_entries",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/direct.ts",
+        "command:direct"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/with-index/index.ts",
+        "command:with-index"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/with-manifest/entry.ts",
+        "command:with-manifest"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/with-manifest/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./entry.ts"
+            ]
+          }
+        }
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/direct.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/direct.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/direct.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "direct"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/with-index/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/with-index/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/with-index/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/with-index"
+              },
+              "commands": [
+                "with-index"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/with-manifest/entry.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/with-manifest/entry.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/with-manifest/entry.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/with-manifest"
+              },
+              "commands": [
+                "with-manifest"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_location_order",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/zlocal.ts",
+        "command:local"
+      ],
+      [
+        "file",
+        "agent/extensions/aglobal.ts",
+        "command:global"
+      ],
+      [
+        "file",
+        "configured/mid.ts",
+        "command:configured"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "$ROOT/configured/mid.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/zlocal.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/zlocal.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/zlocal.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "local"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/agent/extensions/aglobal.ts",
+              "resolvedPath": "$ROOT/agent/extensions/aglobal.ts",
+              "sourceInfo": {
+                "path": "$ROOT/agent/extensions/aglobal.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/agent/extensions"
+              },
+              "commands": [
+                "global"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/configured/mid.ts",
+              "resolvedPath": "$ROOT/configured/mid.ts",
+              "sourceInfo": {
+                "path": "$ROOT/configured/mid.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/configured"
+              },
+              "commands": [
+                "configured"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_first_wins",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/shared.ts",
+        "command:shared"
+      ],
+      [
+        "file",
+        "agent/extensions/global.ts",
+        "command:global"
+      ],
+      [
+        "file",
+        "elsewhere/x.ts",
+        "command:x"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "$ROOT/work/.maestro/extensions/shared.ts",
+          "$ROOT/elsewhere/./x.ts",
+          "$ROOT/elsewhere/x.ts",
+          "$ROOT/agent/extensions/global.ts",
+          "$ROOT/elsewhere//x.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/shared.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/shared.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/shared.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "shared"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/agent/extensions/global.ts",
+              "resolvedPath": "$ROOT/agent/extensions/global.ts",
+              "sourceInfo": {
+                "path": "$ROOT/agent/extensions/global.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/agent/extensions"
+              },
+              "commands": [
+                "global"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/elsewhere/./x.ts",
+              "resolvedPath": "$ROOT/elsewhere/./x.ts",
+              "sourceInfo": {
+                "path": "$ROOT/elsewhere/./x.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/elsewhere/."
+              },
+              "commands": [
+                "x"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_configured_files",
+    "tree": [
+      [
+        "file",
+        "work/custom/my-ext.ts",
+        "command:my-ext"
+      ],
+      [
+        "file",
+        "home/home-ext.ts",
+        "command:home-ext"
+      ],
+      [
+        "file",
+        "work/sp ace.ts",
+        "command:space"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "custom/my-ext.ts",
+          "~/home-ext.ts",
+          "sp\u00a0ace.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/custom/my-ext.ts",
+              "resolvedPath": "$ROOT/work/custom/my-ext.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/custom/my-ext.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/custom"
+              },
+              "commands": [
+                "my-ext"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/home/home-ext.ts",
+              "resolvedPath": "$ROOT/home/home-ext.ts",
+              "sourceInfo": {
+                "path": "$ROOT/home/home-ext.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "home-ext"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/sp ace.ts",
+              "resolvedPath": "$ROOT/work/sp ace.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/sp ace.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work"
+              },
+              "commands": [
+                "space"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_configured_directories",
+    "tree": [
+      [
+        "file",
+        "cfg/man/entry.ts",
+        "command:man"
+      ],
+      [
+        "file",
+        "cfg/man/index.ts",
+        "command:man-index"
+      ],
+      [
+        "json",
+        "cfg/man/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./entry.ts"
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "cfg/idx/index.ts",
+        "command:idx"
+      ],
+      [
+        "file",
+        "cfg/idx/other.ts",
+        "command:idx-other"
+      ],
+      [
+        "file",
+        "cfg/scan/a.ts",
+        "command:scan-a"
+      ],
+      [
+        "file",
+        "cfg/scan/notes.md",
+        "command:notes"
+      ],
+      [
+        "file",
+        "cfg/scan/sub/index.js",
+        "command:scan-sub"
+      ],
+      [
+        "file",
+        "cfg/scan/deep/nested/index.ts",
+        "command:deep"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "$ROOT/cfg/man",
+          "$ROOT/cfg/idx",
+          "../cfg/scan"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/cfg/man/entry.ts",
+              "resolvedPath": "$ROOT/cfg/man/entry.ts",
+              "sourceInfo": {
+                "path": "$ROOT/cfg/man/entry.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/cfg/man"
+              },
+              "commands": [
+                "man"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/cfg/idx/index.ts",
+              "resolvedPath": "$ROOT/cfg/idx/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/cfg/idx/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/cfg/idx"
+              },
+              "commands": [
+                "idx"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/cfg/scan/a.ts",
+              "resolvedPath": "$ROOT/cfg/scan/a.ts",
+              "sourceInfo": {
+                "path": "$ROOT/cfg/scan/a.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/cfg/scan"
+              },
+              "commands": [
+                "scan-a"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/cfg/scan/sub/index.js",
+              "resolvedPath": "$ROOT/cfg/scan/sub/index.js",
+              "sourceInfo": {
+                "path": "$ROOT/cfg/scan/sub/index.js",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/cfg/scan/sub"
+              },
+              "commands": [
+                "scan-sub"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_configured_missing",
+    "tree": [],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "$ROOT/nope.ts",
+          "$ROOT/nodir/"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [
+            {
+              "path": "$ROOT/nope.ts",
+              "error": "Failed to load extension: module not found: $ROOT/nope.ts"
+            },
+            {
+              "path": "$ROOT/nodir/",
+              "error": "Failed to load extension: module not found: $ROOT/nodir/"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_symlinks",
+    "tree": [
+      [
+        "file",
+        "real/target.ts",
+        "command:target"
+      ],
+      [
+        "file",
+        "real/pkg/index.ts",
+        "command:pkg"
+      ],
+      [
+        "file",
+        "real/plain",
+        "command:plain"
+      ],
+      [
+        "dir",
+        "real/folder.ts"
+      ],
+      [
+        "dir",
+        "work/.maestro/extensions"
+      ],
+      [
+        "link",
+        "work/.maestro/extensions/link.ts",
+        "$ROOT/real/target.ts"
+      ],
+      [
+        "link",
+        "work/.maestro/extensions/linkdir",
+        "$ROOT/real/pkg"
+      ],
+      [
+        "link",
+        "work/.maestro/extensions/dead.ts",
+        "$ROOT/real/gone.ts"
+      ],
+      [
+        "link",
+        "work/.maestro/extensions/plainlink",
+        "$ROOT/real/plain"
+      ],
+      [
+        "link",
+        "work/.maestro/extensions/dirlink.ts",
+        "$ROOT/real/folder.ts"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/link.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/link.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/link.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [
+                "target"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/linkdir/index.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/linkdir/index.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/linkdir/index.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions/linkdir"
+              },
+              "commands": [
+                "pkg"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/dead.ts",
+              "error": "Failed to load extension: module not found: $ROOT/work/.maestro/extensions/dead.ts"
+            },
+            {
+              "path": "$ROOT/work/.maestro/extensions/dirlink.ts",
+              "error": "Failed to load extension: module not found: $ROOT/work/.maestro/extensions/dirlink.ts"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_missing_directories",
+    "tree": [],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_unreadable_directory",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/hidden.ts",
+        "command:hidden"
+      ],
+      [
+        "file",
+        "agent/extensions/global.ts",
+        "command:global"
+      ],
+      [
+        "mode",
+        "work/.maestro/extensions",
+        "000"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/agent/extensions/global.ts",
+              "resolvedPath": "$ROOT/agent/extensions/global.ts",
+              "sourceInfo": {
+                "path": "$ROOT/agent/extensions/global.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/agent/extensions"
+              },
+              "commands": [
+                "global"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_bad_manifest_in_subdirectory",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/a.ts",
+        "command:a"
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/bad/x.ts",
+        "command:x"
+      ],
+      [
+        "json",
+        "work/.maestro/extensions/bad/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./x.ts",
+              1
+            ]
+          }
+        }
+      ],
+      [
+        "file",
+        "work/.maestro/extensions/z.ts",
+        "command:z"
+      ],
+      [
+        "file",
+        "agent/extensions/global.ts",
+        "command:global"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/agent/extensions/global.ts",
+              "resolvedPath": "$ROOT/agent/extensions/global.ts",
+              "sourceInfo": {
+                "path": "$ROOT/agent/extensions/global.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/agent/extensions"
+              },
+              "commands": [
+                "global"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_bad_manifest_in_configured_directory",
+    "tree": [
+      [
+        "file",
+        "cfg/bad/x.ts",
+        "command:x"
+      ],
+      [
+        "json",
+        "cfg/bad/package.json",
+        {
+          "maestro": {
+            "extensions": [
+              "./x.ts",
+              null
+            ]
+          }
+        }
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "$ROOT/cfg/bad"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "rejected": true
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_unicode_space_in_discovered_name",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/x\u202fy.ts",
+        "command:narrow"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/x\u202fy.ts",
+              "error": "Failed to load extension: module not found: $ROOT/work/.maestro/extensions/x y.ts"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_supplied_bus",
+    "tree": [
+      [
+        "file",
+        "work/.maestro/extensions/ready.ts",
+        "emit:ready"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "supplied",
+        "observe": "ready"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/work/.maestro/extensions/ready.ts",
+              "resolvedPath": "$ROOT/work/.maestro/extensions/ready.ts",
+              "sourceInfo": {
+                "path": "$ROOT/work/.maestro/extensions/ready.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/work/.maestro/extensions"
+              },
+              "commands": [],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": [
+        {
+          "listener": "test",
+          "channel": "ready",
+          "data": {
+            "from": "$ROOT/work/.maestro/extensions/ready.ts"
+          }
+        }
+      ]
+    }
+  }
+]

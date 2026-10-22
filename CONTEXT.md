@@ -136,7 +136,8 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Browser message renderer:** A typed callback registered by an open message role. Registration replaces that role's current callback; already retained handles keep the prior callback. This browser replacement policy is separate from extension load order.
 - **Package:** An npm, Git or local source containing extension components or resources; consumer installation does not compile Rust code.
 - **File pattern:** A glob or ignore rule matched against relative file paths.
-- **Resource:** Discovered instruction material, such as skills, prompt templates or context files, with source/provenance data and entry-point-specific ordering.
+- **Resource:** Discovered instruction material, such as skills, prompt templates or context files, and the extension entry points a package manifest or index file declares, with source/provenance data and entry-point-specific ordering.
+- **Module loader:** The caller-supplied operation that turns a resolved extension path into a factory; the component runtime supplies it and the executable wires it.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps

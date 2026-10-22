@@ -1,5 +1,5 @@
 //! Execution-family declarations for retained extension callbacks.
-use super::registration::{ExtensionAPI, ExtensionHandler, RegisteredToolInput};
+use super::registration::{ExtensionAPI, ExtensionFactory, ExtensionHandler, RegisteredToolInput};
 use super::{ExtensionActions, ProviderConfig};
 use crate::loader::runtime::{NOT_INITIALIZED, SET_MODEL_NOT_INITIALIZED};
 use crate::{
@@ -70,6 +70,9 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
         + ?Sized;
     /// Factory callback.
     type Factory: Fn(ExtensionAPI<Self>) -> Self::Future<'static, Result<(), EventError>> + ?Sized;
+    /// Module loader callback: a resolved path to its factory, or none when the module exports none.
+    type ModuleLoader: Fn(&str) -> Self::Future<'static, Result<Option<ExtensionFactory<Self>>, EventError>>
+        + ?Sized;
     /// Retain the concrete definition without erasing its typed state or details.
     fn retain_definition<
         P: DeserializeOwned + 'static,
@@ -176,6 +179,7 @@ macro_rules! family {
             type HandlerRegistration=Box<dyn std::any::Any $($bound)*>;
             type Handler<V,R>=dyn for<'a> Fn(&'a mut V,ExtensionContext)-><Local as Execution>::Future<'a,Result<Option<R>,EventError>> $($bound)*;
             type Factory=dyn Fn(ExtensionAPI<Self>)->Self::Future<'static,Result<(),EventError>> $($bound)*;
+            type ModuleLoader=dyn Fn(&str)->Self::Future<'static,Result<Option<ExtensionFactory<Self>>,EventError>> $($bound)*;
             fn retain_definition<P:DeserializeOwned+'static,D:Serialize+'static,S:Default+'static>(input:RegisteredToolInput<P,D,S,Self>)->Self::Shared<Self::RegisteredDefinition> {
                 let definition=match input.definition { ToolDefinitionInput::Owned(x)=>Self::share(RwLock::new(x)),ToolDefinitionInput::Retained(x)=>x };
                 Self::share(super::registration::tools::Definition::<P,D,S,Self>{definition,project_renderers:input.project_renderers})

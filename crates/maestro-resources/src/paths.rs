@@ -3,6 +3,9 @@
 use crate::{frontmatter::text_whitespace, skills::real_path};
 use std::path::Path;
 
+/// The project and user configuration directory name.
+pub const CONFIG_DIR_NAME: &str = ".maestro";
+
 /// Classify local paths, excluding the known lowercase package and URL prefixes.
 pub fn is_local_path(value: &str) -> bool {
     let value = value.trim_matches(text_whitespace);

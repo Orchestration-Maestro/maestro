@@ -1,9 +1,10 @@
-//! Supplied-path instruction resources with ordered metadata.
+//! Supplied-path instruction resources, package manifests and extension entry points.
 #![doc = include_str!("../../../docs/resources/skills.md")]
 
 pub mod diagnostics;
 pub use diagnostics::{DiagnosticType, ResourceCollision, ResourceDiagnostic};
 pub mod frontmatter;
+pub mod package_manifest;
 pub mod paths;
 pub mod prompt_templates;
 pub use prompt_templates::{
