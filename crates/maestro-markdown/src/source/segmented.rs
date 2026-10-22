@@ -75,6 +75,59 @@ impl Segmented {
         self.text.chunks()
     }
 
+    /// Visit only the chunks overlapping one logical window.
+    pub(crate) fn chunks_in(&self, range: Range<usize>) -> impl Iterator<Item = &str> {
+        self.text.chunks_in(range)
+    }
+
+    /// Select the first physical line and its immediately following blank lines.
+    pub(crate) fn first_line(&self) -> ScopeSource {
+        let mut end = 0;
+        let mut boundary = None;
+        for byte in self.chunks().flat_map(str::bytes) {
+            if let Some(boundary) = boundary
+                && !matches!(byte, b' ' | b'\t' | b'\n')
+            {
+                #[cfg(test)]
+                crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += end + 1);
+                return self.select(0..boundary).materialize();
+            }
+            end += 1;
+            if byte == b'\n' {
+                boundary = Some(end);
+            }
+        }
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += end);
+        self.materialize()
+    }
+
+    /// Whether the first non-whitespace scalar from `offset` lies on a terminated line, so
+    /// grammar that stopped before it never read this operand's apparent end.
+    pub(crate) fn settled_after(&self, offset: usize) -> bool {
+        let mut content = false;
+        for scalar in self.chunks_in(offset..self.len()).flat_map(str::chars) {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += scalar.len_utf8());
+            if scalar == '\n' && content {
+                return true;
+            }
+            content |= !maestro_text::is_whitespace_scalar(scalar);
+        }
+        false
+    }
+
+    /// Charge the unique text and provenance this splice keeps alive.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        self.text.retained(retained);
+        self.projection.retained(retained, |value, retained| {
+            if let Projection::Source(source) = value {
+                source.retained(retained);
+            }
+        });
+    }
+
     /// Select logical bytes while retaining their shared projection.
     pub(crate) fn select(&self, range: Range<usize>) -> Self {
         Self {

@@ -83,6 +83,34 @@ fn measured_containers(source: String) -> super::Work {
 
 #[test]
 fn container_mapping_matches_the_reference_work_shape() {
+    let chained = [32, 64, 128]
+        .map(|n| measured_containers(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n))));
+    let visits = chained.map(|work| work.list_lines);
+    // The one retained item prepares its rules once, however often its quote resumes.
+    assert_eq!(chained.map(|work| work.list_rules), [5; 3]);
+    let copied = chained.map(|work| work.source_bytes + work.joined_bytes);
+    let built_in = chained.map(|work| {
+        work.block_recognizer_bytes
+            + work.definition_bytes
+            + work.paragraph_bytes
+            + work.table_bytes
+            + work.fence_bytes
+            + work.code_bytes
+            + work.html_bytes
+            + work.framing_bytes
+            + work.source_views
+            + work.projections
+    });
+    eprintln!(
+        "chained list visits: {visits:?}; copied bytes: {copied:?}; built-in work: {built_in:?}"
+    );
+    let admission_linear = visits.windows(2).all(|pair| pair[1] <= 3 * pair[0]);
+    let copying_linear = copied.windows(2).all(|pair| pair[1] <= 3 * pair[0]);
+    let built_in_linear = built_in.windows(2).all(|pair| pair[1] <= 3 * pair[0]);
+    assert!(
+        admission_linear && copying_linear && built_in_linear,
+        "admission linear: {admission_linear}; copying linear: {copying_linear}; built-in linear: {built_in_linear}; {chained:?}"
+    );
     for unit in [
         "> a\n> b\n\n",
         "- a\n  b\n\n",
@@ -107,6 +135,64 @@ fn container_mapping_matches_the_reference_work_shape() {
         assert_eq!(borrowed[1].source_views, 2 * borrowed[0].source_views);
         eprintln!("container {unit:?}: {counts:?}");
     }
+}
+
+#[test]
+fn resumed_list_admits_completed_items_once() {
+    let chained = |completed: usize, n: usize| {
+        super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+        let source =
+            "> - x\n".repeat(completed) + "> - a\n" + &"      p\n> [s]: /y\n".repeat(n) + "e";
+        let document = parse(source);
+        let Kind::Quote(children, _) = &document.nodes[0].kind else {
+            panic!("quote")
+        };
+        let Kind::List(_, items) = &children[0].kind else {
+            panic!("list")
+        };
+        assert_eq!(items.len(), completed + 1);
+        super::WORK.with_borrow(super::container_frames::container_work)
+    };
+    // Work the completed prefix adds beyond the same resumed item without it.
+    let added = [64, 128, 256].map(|n| chained(n, n) - chained(0, n));
+    eprintln!("work added by completed items: {added:?}");
+    assert!(
+        added.windows(2).all(|pair| pair[1] <= 3 * pair[0]),
+        "{added:?}"
+    );
+}
+
+#[test]
+fn long_item_steps_copy_only_admitted_operands() {
+    let mut superlinear = Vec::new();
+    for (unit, options) in [
+        (
+            "\n  p\n",
+            crate::MarkedOptions::Browser { escape_html: true },
+        ),
+        ("\n  > q\n", crate::MarkedOptions::Terminal),
+        (
+            "\n  > q\n",
+            crate::MarkedOptions::Browser { escape_html: true },
+        ),
+    ] {
+        let copied = [32, 64, 128].map(|n| {
+            super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+            let document = crate::parse_with_options(format!("- a\n{}", unit.repeat(n)), options);
+            let Kind::List(_, items) = &document.nodes[0].kind else {
+                panic!("list")
+            };
+            assert!(
+                matches!(&items[..], [item] if matches!(&item.kind, Kind::Item(blocks) if blocks.len() > n))
+            );
+            super::WORK.with_borrow(|work| work.source_bytes + work.joined_bytes)
+        });
+        eprintln!("{unit:?} {options:?}: copied bytes {copied:?}");
+        if copied.windows(2).any(|pair| pair[1] > 3 * pair[0]) {
+            superlinear.push(format!("{unit:?} {options:?}: {copied:?}"));
+        }
+    }
+    assert!(superlinear.is_empty(), "{superlinear:#?}");
 }
 
 /// Compare actual wrong-whole-suffix selection with the borrowed-window control.

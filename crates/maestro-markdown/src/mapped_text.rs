@@ -33,7 +33,12 @@ impl MappedText {
 
     /// Visit exact logical UTF-8 bytes in order without flattening them.
     pub fn chunks(&self) -> impl Iterator<Item = &str> {
-        let mut pending = vec![(&self.storage, 0..self.len())];
+        self.chunks_in(0..self.len())
+    }
+
+    /// Visit a logical window without walking the preceding chunks.
+    pub(crate) fn chunks_in(&self, range: Range<usize>) -> impl Iterator<Item = &str> {
+        let mut pending = vec![(&self.storage, range)];
         std::iter::from_fn(move || next_chunk(&mut pending))
     }
 
@@ -98,6 +103,11 @@ impl MappedText {
     /// Whether the authored value already ends in a semantic line separator.
     pub(crate) fn ends_with_newline(&self) -> bool {
         self.last_byte == Some(b'\n')
+    }
+
+    /// Final byte, read without visiting chunks.
+    pub(crate) fn last_byte(&self) -> Option<u8> {
+        self.last_byte
     }
 
     /// Extend authored spelling without copying the retained prefix.

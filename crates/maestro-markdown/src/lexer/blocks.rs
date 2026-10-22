@@ -1,12 +1,16 @@
 //! Retained output and ordered recursive block admission.
 use super::Lexer;
 use crate::{
-    Kind, MarkedOptions, Node, rules,
+    Kind, MappedText, MarkedOptions, Node,
+    inline::ScopeKey,
+    rules,
     source::{ScopeSource, Segmented, Source},
     tokenizer,
 };
+use std::{collections::HashMap, ops::Range};
 
 /// Effective grammar tail, including an invisible retained definition.
+#[derive(Clone)]
 enum Tail {
     /// Last visible block's own raw source when it can reenter a container.
     Visible(Option<Segmented>),
@@ -16,11 +20,15 @@ enum Tail {
 
 /// One ordered output shared across recursive quote chunks.
 #[derive(Default)]
-pub(super) struct BlockTokens {
+pub(crate) struct BlockTokens {
     /// Visible semantic nodes.
-    pub(super) nodes: Vec<Node>,
+    pub(crate) nodes: Vec<Node>,
+    /// Inline operands retained as shared source until this invocation publishes.
+    pub(crate) scopes: HashMap<ScopeKey, Segmented>,
     /// Last grammar token, independent of visible output.
     tail: Tail,
+    /// Admission history of the visible trailing list, if present.
+    pub(super) list: Option<Box<tokenizer::block::ListState>>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -28,7 +36,48 @@ impl Default for Tail {
     }
 }
 
+/// Output before a dispatch step whose admission can still change.
+#[derive(Clone, Default)]
+pub(super) struct Mark {
+    /// Visible nodes before the step.
+    nodes: usize,
+    /// Spelling, extent and inline operand of the preceding node, which the step may extend.
+    last: Option<(MappedText, Range<usize>, Option<Segmented>)>,
+    /// Grammar tail before the step.
+    tail: Tail,
+    /// Paragraph-versus-item grammar position before the step.
+    pub(super) top: bool,
+}
+
+impl Mark {
+    /// Capture the handles a following step can change, without copying their text.
+    pub(super) fn new(output: &BlockTokens, top: bool) -> Self {
+        Self {
+            nodes: output.nodes.len(),
+            last: output.nodes.last().map(|node| {
+                let key = (node.range.start, node.range.end, false);
+                let scope = output.scopes.get(&key).cloned();
+                (node.authored.clone(), node.range.clone(), scope)
+            }),
+            tail: output.tail.clone(),
+            top,
+        }
+    }
+}
+
 impl BlockTokens {
+    /// Publish the trailing list's children only when its invocation completes.
+    pub(crate) fn complete(&mut self) {
+        if let Some(list) = self.list.take()
+            && let Some(Node {
+                kind: Kind::List(_, items),
+                ..
+            }) = self.nodes.last_mut()
+        {
+            list.finish(items, &mut self.scopes);
+        }
+    }
+
     /// Current visible tail only when no invisible definition intervenes.
     pub(super) fn last(&self) -> Option<&Node> {
         match self.tail {
@@ -39,6 +88,7 @@ impl BlockTokens {
 
     /// Publish a block and retain a container's own recognized raw source.
     pub(super) fn push(&mut self, source: &Source<'_>, consumed: usize, node: Node) {
+        self.complete();
         self.tail = Tail::Visible(
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
                 .then(|| source.select(std::iter::once(0..consumed)).into()),
@@ -46,10 +96,85 @@ impl BlockTokens {
         self.nodes.push(node);
     }
 
-    /// Publish a container recognized over retained segmented input.
+    /// Publish a block recognized over retained segmented input.
     pub(super) fn push_segmented(&mut self, raw: Segmented, node: Node) {
-        self.tail = Tail::Visible(Some(raw));
+        self.complete();
+        self.tail =
+            Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
         self.nodes.push(node);
+    }
+
+    /// Drop contributions admitted after `mark`, returning the removed nodes, and restore the
+    /// preceding node that a dropped step may have extended.
+    pub(super) fn restore(&mut self, mark: Mark) -> Vec<Node> {
+        let removed: Vec<_> = self.nodes.drain(mark.nodes..).collect();
+        if !removed.is_empty() {
+            self.list = None;
+        }
+        for node in &removed {
+            super::frames::forget(&mut self.scopes, node);
+        }
+        if let (Some(node), Some((authored, range, scope))) = (self.nodes.last_mut(), mark.last) {
+            self.scopes
+                .remove(&(node.range.start, node.range.end, false));
+            if let Some(scope) = scope {
+                self.scopes.insert((range.start, range.end, false), scope);
+            }
+            node.authored = authored;
+            node.range = range;
+        }
+        self.tail = mark.tail;
+        removed
+    }
+
+    /// Merge ordinary code into eligible text using the one dedented operand.
+    pub(super) fn code(&mut self, source: &Segmented) -> Option<usize> {
+        let block = tokenizer::block::code(source)?;
+        let consumed = block.consumed;
+        if !self
+            .last()
+            .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
+        {
+            self.push_segmented(source.select(0..consumed), block.node);
+            return Some(consumed);
+        }
+        let end = code_merge_end(source, consumed);
+        let raw = source.select(0..end);
+        let range = raw.native(&(0..end))?;
+        let body = block.inline?;
+        let end_text = body.local(&range)?.end;
+        let end_text = body.text[..end_text].trim_end_matches('\n').len();
+        let body = body.select(std::iter::once(0..end_text));
+        let node = Node {
+            authored: raw.mapped(),
+            range,
+            kind: Kind::Inline(Vec::new()),
+        };
+        self.merge(&node, &body.into());
+        Some(end)
+    }
+
+    /// Extend the semantic tail and transfer its inline scope to the new extent.
+    fn merge(&mut self, node: &Node, body: &Segmented) {
+        let Some(last) = self.nodes.last_mut() else {
+            return;
+        };
+        let key = (last.range.start, last.range.end, false);
+        let Some(mut previous) = self.scopes.remove(&key) else {
+            return;
+        };
+        if !previous.mapped().ends_with_newline() {
+            previous.newline();
+        }
+        previous.append(body);
+        if !last.authored.ends_with_newline() {
+            last.authored.append(&"\n".to_owned().into());
+        }
+        last.authored.append(&node.authored);
+        last.range.end = node.range.end;
+        self.scopes
+            .insert((last.range.start, last.range.end, false), previous);
+        self.tail = Tail::Visible(None);
     }
 
     /// Borrow the trailing container's raw source for reentry.
@@ -61,82 +186,144 @@ impl BlockTokens {
     }
 }
 impl<E> Lexer<'_, E> {
-    /// Append blocks while preserving the invocation's paragraph clipping state.
+    /// Publish completed block output and materialize each inline operand once.
+    pub(super) fn finish_blocks(&mut self, mut output: BlockTokens) -> Vec<Node> {
+        output.complete();
+        self.scopes.extend(
+            output
+                .scopes
+                .into_iter()
+                .map(|(key, source)| (key, source.materialize())),
+        );
+        output.nodes
+    }
+
+    /// Append blocks while preserving the invocation's paragraph clipping state. `open`
+    /// receives the first open step, one whose grammar read the operand's apparent end or
+    /// whose following content sits on its unterminated last line; nested containers
+    /// recurse through this frame, so the step bookkeeping has its own frames.
     pub(super) fn block_tokens(
         &mut self,
-        source: &ScopeSource,
+        source: &Segmented,
         output: &mut BlockTokens,
         mut clipped: bool,
+        mut open: Option<&mut Option<(usize, Mark)>>,
     ) {
+        let callback = self.tokenizer.as_ref().map(|_| source.materialize());
+        let outer = std::mem::take(&mut self.undecided);
         let mut cursor = 0;
-        while cursor < source.text.len() && self.error.is_none() {
-            let rest = source.view(cursor..source.text.len());
-            if let Some(consumed) = self.block(&rest, output) {
-                cursor += consumed;
-                continue;
+        while cursor < source.len() && self.error.is_none() {
+            let rest = source.select(cursor..source.len());
+            let caller = callback
+                .as_ref()
+                .map(|source| source.view(cursor..source.text.len()));
+            let mark = open
+                .as_deref()
+                .is_some_and(Option::is_none)
+                .then(|| Box::new(Mark::new(output, self.top)));
+            self.undecided = false;
+            let consumed = self
+                .block(&rest, output, caller.as_ref())
+                .or_else(|| self.paragraph_step(&rest, output, caller.as_ref(), &mut clipped));
+            if let (Some(open), Some(mark)) = (open.as_deref_mut(), mark) {
+                self.record(open, (cursor, *mark), &rest, consumed);
             }
-            self.clipped = false;
-            let Some((consumed, node)) = self.paragraph(&rest) else {
+            let Some(consumed) = consumed else {
                 break;
             };
-            let inline = matches!(node.kind, Kind::Inline(_));
-            let merge = output.last().is_some_and(|last| {
-                inline && matches!(last.kind, Kind::Inline(_))
-                    || clipped
-                        && matches!(node.kind, Kind::Paragraph(_))
-                        && matches!(last.kind, Kind::Paragraph(_))
-            });
-            if merge {
-                self.merge_node(output, &node);
-            } else {
-                output.push(&rest, consumed, node);
-            }
-            clipped = self.clipped;
             cursor += consumed;
         }
+        self.undecided = outer;
         self.top = true;
     }
 
-    /// Admit everything preceding paragraph and line-text fallback.
-    fn block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        if let Some(consumed) = self.extension(source, &mut output.nodes) {
-            output.tail = Tail::Visible(None);
-            return Some(consumed);
-        }
-        if let Some(consumed) = self
-            .space_block(source, output)
-            .or_else(|| self.code_block(source, output))
+    /// Keep the first open step: its grammar or a caller tokenizer read the operand's end, or
+    /// the content after it sits on the operand's unterminated last line.
+    fn record(
+        &self,
+        open: &mut Option<(usize, Mark)>,
+        step: (usize, Mark),
+        source: &Segmented,
+        consumed: Option<usize>,
+    ) {
+        if self.tokenizer.is_some()
+            || self.undecided
+            || consumed.is_none_or(|consumed| !source.settled_after(consumed))
         {
+            *open = Some(step);
+        }
+    }
+
+    /// Admit a paragraph that may merge into the visible tail.
+    fn paragraph_step(
+        &mut self,
+        source: &Segmented,
+        output: &mut BlockTokens,
+        caller: Option<&Source<'_>>,
+        clipped: &mut bool,
+    ) -> Option<usize> {
+        self.clipped = false;
+        let (consumed, node) = self.paragraph(source, output, caller)?;
+        let inline = matches!(node.kind, Kind::Inline(_));
+        let merge = output.last().is_some_and(|last| {
+            inline && matches!(last.kind, Kind::Inline(_))
+                || *clipped
+                    && matches!(node.kind, Kind::Paragraph(_))
+                    && matches!(last.kind, Kind::Paragraph(_))
+        });
+        if merge {
+            Self::merge_node(output, &node);
+        } else {
+            output.push_segmented(source.select(0..consumed), node);
+        }
+        *clipped = self.clipped;
+        Some(consumed)
+    }
+
+    /// Admit everything preceding paragraph and line-text fallback.
+    fn block(
+        &mut self,
+        source: &Segmented,
+        output: &mut BlockTokens,
+        callback: Option<&Source<'_>>,
+    ) -> Option<usize> {
+        if let Some(consumed) = callback.and_then(|source| self.extension(source, output)) {
             return Some(consumed);
         }
-        if let Some(block) = tokenizer::block::leaf(source) {
+        let first = source.first_line();
+        let first = first.view(0..first.text.len());
+        if let Some(consumed) = Self::space_block(&first, output).or_else(|| output.code(source)) {
+            return Some(consumed);
+        }
+        if let Some(block) = tokenizer::block::leaf(source, &first) {
             if let Some(inline) = block.inline {
-                self.scopes.insert(
+                output.scopes.insert(
                     (block.node.range.start, block.node.range.end, false),
-                    inline,
+                    inline.into(),
                 );
             }
-            output.push(source, block.consumed, block.node);
+            output.push_segmented(source.select(0..block.consumed), block.node);
             return Some(block.consumed);
         }
-        if let Some((consumed, node)) = self.container(source) {
-            output.push(source, consumed, node);
+        if let Some((consumed, node, list)) = self.container(source) {
+            output.push_segmented(source.select(0..consumed), node);
+            output.list = list;
             return Some(consumed);
         }
         if let Some(block) = tokenizer::block::html(source, self.options) {
-            output.push(source, block.consumed, block.node);
+            output.push_segmented(source.select(0..block.consumed), block.node);
             return Some(block.consumed);
         }
         self.definition_block(source, output).or_else(|| {
-            self.table(source).map(|(consumed, node)| {
-                output.push(source, consumed, node);
+            self.table(source, output).map(|(consumed, node)| {
+                output.push_segmented(source.select(0..consumed), node);
                 consumed
             })
         })
     }
 
     /// Consume spacing while keeping the visible tail's raw and scope in sync.
-    fn space_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
+    fn space_block(source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
         #[cfg(test)]
         crate::tests::block_operand(source.text);
         let gap = rules::BLOCK_NEWLINE
@@ -148,13 +335,14 @@ impl<E> Lexer<'_, E> {
             return Some(gap.end());
         }
         if let Some(last) = output.nodes.last_mut() {
-            let scope = self
+            let scope = output
                 .scopes
                 .remove(&(last.range.start, last.range.end, false));
             last.authored.append(&source.authored(0..1));
             last.range.end = source.extent(0..1).end;
             if let Some(scope) = scope {
-                self.scopes
+                output
+                    .scopes
                     .insert((last.range.start, last.range.end, false), scope);
             }
         }
@@ -164,42 +352,18 @@ impl<E> Lexer<'_, E> {
         Some(gap.end())
     }
 
-    /// Merge ordinary code into eligible text using the one dedented operand.
-    fn code_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        let block = tokenizer::block::code(source)?;
-        let consumed = if output
-            .last()
-            .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
-        {
-            let end = code_merge_end(source, block.consumed);
-            let body = block.inline?;
-            let end_text = body.local(&source.extent(0..end))?.end;
-            let end_text = body.text[..end_text].trim_end_matches('\n').len();
-            self.merge_source(
-                output,
-                source,
-                end,
-                body.select(std::iter::once(0..end_text)),
-            );
-            end
-        } else {
-            let consumed = block.consumed;
-            output.push(source, consumed, block.node);
-            consumed
-        };
-        Some(consumed)
-    }
-
     /// Merge literal definitions before registering otherwise first-wins references.
-    fn definition_block(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
-        #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        let matched = rules::definition::recognize(source.text, self.options)?;
+    fn definition_block(&mut self, source: &Segmented, output: &mut BlockTokens) -> Option<usize> {
+        let (matched, undecided) = rules::definition::recognize(source, self.options);
+        self.undecided |= undecided;
+        let matched = matched?;
+        let raw = source.select(0..matched.consumed).materialize();
+        let source = &raw.view(0..raw.text.len());
         if output
             .last()
             .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_) | Kind::Inline(_)))
         {
-            self.merge_source(
+            Self::merge_source(
                 output,
                 source,
                 matched.consumed,
@@ -208,66 +372,47 @@ impl<E> Lexer<'_, E> {
         } else if self.definition(source, &matched)
             && matches!(self.options, MarkedOptions::Browser { .. })
         {
+            output.complete();
             output.tail = Tail::Definition;
         }
         Some(matched.consumed)
     }
 
     /// Join inline operands without reconstructing them from bounding node ranges.
-    fn merge_node(&mut self, output: &mut BlockTokens, node: &Node) {
-        if let Some(body) = self
+    fn merge_node(output: &mut BlockTokens, node: &Node) {
+        if let Some(body) = output
             .scopes
             .remove(&(node.range.start, node.range.end, false))
         {
-            self.merge(output, node, body);
+            output.merge(node, &body);
         }
     }
 
     /// Join a dedented or literal operand while preserving its original provenance.
     fn merge_source(
-        &mut self,
         output: &mut BlockTokens,
         source: &Source<'_>,
         consumed: usize,
         body: ScopeSource,
     ) {
         let node = source.node(0..consumed, Kind::Inline(Vec::new()));
-        self.merge(output, &node, body);
-    }
-
-    /// Extend the semantic tail and transfer its inline scope to the new extent.
-    fn merge(&mut self, output: &mut BlockTokens, node: &Node, body: ScopeSource) {
-        let Some(last) = output.nodes.last_mut() else {
-            return;
-        };
-        let key = (last.range.start, last.range.end, false);
-        let Some(mut previous) = self.scopes.remove(&key) else {
-            return;
-        };
-        if !previous.text.ends_with('\n') {
-            previous.newline();
-        }
-        previous.append(body);
-        if !last.authored.ends_with_newline() {
-            last.authored.append(&"\n".to_owned().into());
-        }
-        last.authored.append(&node.authored);
-        last.range.end = node.range.end;
-        self.scopes
-            .insert((last.range.start, last.range.end, false), previous);
-        output.tail = Tail::Visible(None);
+        output.merge(&node, &body.into());
     }
 }
 
 /// Preserve authored blank lines after merged code, not synthetic reentry seams.
-fn code_merge_end(source: &Source<'_>, consumed: usize) -> usize {
-    let raw = &source.text[..consumed];
+fn code_merge_end(source: &Segmented, consumed: usize) -> usize {
+    use crate::rules::lines::Input;
+    let raw = source.select(0..consumed);
+    let mut lines = rules::lines::Cursor::default();
     let mut end = consumed;
     let mut blank = false;
-    for range in crate::lexer::lines(raw) {
-        let line = &raw[range.clone()];
+    while let Some(range) = lines.next(&raw).or_else(|| lines.finish(&raw)) {
+        let line = raw.window(range.clone());
+        #[cfg(test)]
+        crate::tests::block_operand(&line);
         if line.trim_matches([' ', '\t', '\n']).is_empty() {
-            blank |= !source.extent(range.clone()).is_empty();
+            blank |= raw.native(&range).is_some_and(|range| !range.is_empty());
         } else {
             end = range.end - usize::from(line.ends_with('\n'));
             blank = false;
@@ -275,3 +420,6 @@ fn code_merge_end(source: &Source<'_>, consumed: usize) -> usize {
     }
     if blank { end } else { consumed }
 }
+
+#[cfg(test)]
+mod tests;

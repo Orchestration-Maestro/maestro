@@ -184,6 +184,34 @@ fn assert_tasks(document: &maestro_markdown::Document) {
 }
 
 #[test]
+fn task_markers_sit_at_the_end_of_their_item_body() {
+    for (source, expected) in [
+        ("- [ ] ", &[(6, 6)][..]),
+        ("a\n\n- [ ] \n", &[(9, 9)][..]),
+        ("1. [x] \n2. [ ] y", &[(7, 7), (16, 16)][..]),
+        ("- [ ] a", &[(7, 7)][..]),
+    ] {
+        let document = parse(source.into());
+        let markers: Vec<_> = document
+            .nodes
+            .iter()
+            .filter_map(|node| match &node.kind {
+                Kind::List(_, items) => Some(items),
+                _ => None,
+            })
+            .flatten()
+            .filter_map(|item| match &item.kind {
+                Kind::Item(children) => children.first(),
+                _ => None,
+            })
+            .filter(|marker| matches!(marker.kind, Kind::TaskListMarker(_)))
+            .map(|marker| (marker.range.start, marker.range.end))
+            .collect();
+        assert_eq!(markers.as_slice(), expected, "{source:?}");
+    }
+}
+
+#[test]
 fn mapped_links_retain_source_boundaries_before_escaped_math() {
     let document =
         parse("https://example.test/a $x$ www.example.test \\(y\\) a@example.test".into());

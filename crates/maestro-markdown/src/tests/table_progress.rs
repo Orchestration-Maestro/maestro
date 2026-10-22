@@ -76,7 +76,7 @@ fn table_row_interruptions_keep_caller_markup_policy() {
             for (start, scalar) in source.char_indices() {
                 let _ = recognizer.extend(&source[..start + scalar.len_utf8()]);
             }
-            let result = recognizer.finish(&source).unwrap();
+            let result = recognizer.finish(source.as_str()).unwrap();
             assert_eq!(
                 &source[result.body.unwrap()],
                 expected,

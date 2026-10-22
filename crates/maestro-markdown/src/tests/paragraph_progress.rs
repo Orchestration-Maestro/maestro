@@ -8,7 +8,7 @@ fn paragraph_chunks_wait_for_later_setext_without_revisiting_lines() {
     for end in 1..=source.len() {
         let _ = recognizer.extend(&source[..end]);
     }
-    let result = recognizer.finish(&source);
+    let result = recognizer.finish(source.as_str());
     let heading = result.heading.unwrap();
     assert_eq!(
         &source[heading.content],

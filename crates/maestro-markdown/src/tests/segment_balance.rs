@@ -1,5 +1,5 @@
 //! Selection and snapshot lifetimes at the retained text boundary.
-use crate::MappedText;
+use crate::{MappedText, segments::Segments};
 
 /// Conservative AVL height bound in logical bytes, including a leaf.
 pub(super) fn depth_bound(length: usize) -> usize {
@@ -98,4 +98,33 @@ fn repeated_quote_resumption_preserves_authored_and_body_values() {
     assert_eq!(body.to_owned_string(), expected);
     assert!(body.storage_depth() <= depth_bound(body.len()));
     drop(document);
+}
+
+#[test]
+fn partial_projection_inside_one_leaf_visits_one_spine() {
+    for leaves in [32_usize, 64, 128] {
+        let mut sequence = Segments::new(0, 2, 0..2);
+        for start in (2..2 * leaves).step_by(2) {
+            sequence.append(&Segments::new(start, 2, start..start + 2));
+        }
+        let depth = sequence.depth();
+        for (range, native) in [
+            (0..1, 0..1),
+            (
+                2 * leaves - 1..2 * leaves - 1,
+                2 * leaves - 1..2 * leaves - 1,
+            ),
+        ] {
+            crate::tests::WORK.with_borrow_mut(|work| work.projections = 0);
+            let projected = sequence.native(&range, |start, range| {
+                Some(start + range.start..start + range.end)
+            });
+            assert_eq!(projected, Some(native));
+            let projections = crate::tests::WORK.with_borrow(|work| work.projections);
+            assert!(
+                projections <= depth,
+                "leaves={leaves} projections={projections} depth={depth}"
+            );
+        }
+    }
 }

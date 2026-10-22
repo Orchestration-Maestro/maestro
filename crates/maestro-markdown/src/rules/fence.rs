@@ -44,7 +44,7 @@ pub(crate) struct Recognizer {
 
 impl Recognizer {
     /// Supply an extended prefix without revisiting completed lines.
-    pub(crate) fn extend(&mut self, source: &str) -> Verdict {
+    pub(crate) fn extend(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Verdict {
         while !self.stable {
             let Some(line) = self.lines.next(source) else {
                 break;
@@ -59,11 +59,13 @@ impl Recognizer {
     }
 
     /// Settle an unterminated opener, closing line or body at the final boundary.
-    pub(crate) fn finish(&mut self, source: &str) -> Option<Fence> {
+    pub(crate) fn finish(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Option<Fence> {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
-        if let Some(line) = self.lines.finish(source) {
+        let final_line = self.lines.finish(source);
+        let terminated = final_line.is_none();
+        if let Some(line) = final_line {
             self.consume(source, line);
         }
         if !self.stable
@@ -71,18 +73,18 @@ impl Recognizer {
         {
             result.consumed = source.len();
             result.body = (source.len() > self.body_start)
-                .then(|| self.body_start..source.len() - usize::from(source.ends_with('\n')));
+                .then(|| self.body_start..source.len() - usize::from(terminated));
         }
         self.stable = true;
         self.result.clone()
     }
 
     /// Admit one opener or test one complete body line for closure.
-    fn consume(&mut self, source: &str, line: Range<usize>) {
-        let text = &source[line.clone()];
+    fn consume(&mut self, source: &(impl super::lines::Input + ?Sized), line: Range<usize>) {
+        let text = source.window(line.clone());
         charge(text.len());
         let Some(delimiter) = &self.delimiter else {
-            let matched = OPEN.as_ref().and_then(|rule| rule.find(text));
+            let matched = OPEN.as_ref().and_then(|rule| rule.find(&text));
             self.result = matched.as_ref().and_then(|matched| {
                 self.delimiter = matched.group(1);
                 self.body_start = matched.end();
@@ -96,11 +98,11 @@ impl Recognizer {
             self.stable = self.result.is_none();
             return;
         };
-        let content = text.strip_suffix('\n').unwrap_or(text);
+        let content = text.strip_suffix('\n').unwrap_or(&text);
         let indent = content.bytes().take_while(|byte| *byte == b' ').count();
         let closed = indent <= 3
             && content[indent..]
-                .strip_prefix(&source[delimiter.clone()])
+                .strip_prefix(source.window(delimiter.clone()).as_ref())
                 .is_some_and(|tail| {
                     tail.trim_start_matches(['~', '`'])
                         .bytes()

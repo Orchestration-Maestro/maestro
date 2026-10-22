@@ -237,3 +237,12 @@ fn code_merges_exclude_unconsumed_indented_blank_lines() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+#[test]
+fn resumed_list_items_keep_admission_and_leaf_outcomes() {
+    observations::check(
+        "list-resumption",
+        42,
+        include_str!("fixtures/list_resumption.json"),
+    );
+}

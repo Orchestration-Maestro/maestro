@@ -1,4 +1,5 @@
 //! Document block dispatch and first-wins reference ownership.
+mod admission;
 mod blocks;
 mod frames;
 mod quote;
@@ -8,10 +9,11 @@ use crate::{
     helpers,
     inline::ScopeKey,
     rules,
-    source::{ScopeSource, Source},
+    source::{ScopeSource, Segmented, Source},
     tokenizer,
 };
-use blocks::BlockTokens;
+pub(crate) use admission::Child;
+pub(crate) use blocks::BlockTokens;
 use maestro_text::is_whitespace_scalar;
 use std::{
     collections::{HashMap, hash_map::Entry},
@@ -21,13 +23,15 @@ use std::{
 /// Per-document grammar state; inline work begins after all definitions are known.
 pub(crate) struct Lexer<'a, E> {
     /// Optional caller block grammar, tried before built-in rules.
-    tokenizer: Option<&'a mut dyn Extension<E>>,
+    pub(crate) tokenizer: Option<&'a mut dyn Extension<E>>,
     /// First invalid extension result, propagated before inline resolution.
     error: Option<E>,
     /// Current paragraph-versus-item grammar position.
     top: bool,
     /// Whether the preceding paragraph was clipped at an extension hint.
     clipped: bool,
+    /// Whether the current dispatch step's grammar read its operand's apparent end.
+    undecided: bool,
     /// Link context retained across the document's queued inline bodies.
     context: tokenizer::inline::LinkContext,
     /// Immutable caller grammar.
@@ -51,12 +55,13 @@ impl<'a, E> Lexer<'a, E> {
             error: None,
             top: true,
             clipped: false,
+            undecided: false,
             context: tokenizer::inline::LinkContext::new(false),
             options,
             definitions: HashMap::new(),
             scopes: HashMap::new(),
         };
-        let mut nodes = lexer.blocks(&ScopeSource::identity(&source));
+        let mut nodes = lexer.blocks(ScopeSource::identity(&source));
         if let Some(error) = lexer.error {
             return Err(error);
         }
@@ -71,20 +76,14 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Admit a document into one retained block accumulator.
-    pub(crate) fn blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
+    pub(crate) fn blocks(&mut self, source: ScopeSource) -> Vec<Node> {
         let mut output = BlockTokens::default();
-        self.block_tokens(source, &mut output, false);
-        output.nodes
-    }
-
-    /// Begin item grammar; completion intentionally returns to top level.
-    pub(crate) fn item_blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
-        self.top = false;
-        self.blocks(source)
+        self.block_tokens(&source.into(), &mut output, false, None);
+        self.finish_blocks(output)
     }
 
     /// Try a validated caller block extension before built-in tokenizers.
-    fn extension(&mut self, source: &Source<'_>, output: &mut Vec<Node>) -> Option<usize> {
+    fn extension(&mut self, source: &Source<'_>, output: &mut BlockTokens) -> Option<usize> {
         let token = match self.tokenizer.as_mut()?.tokenize(source.text) {
             Ok(token) => token?,
             Err(error) => {
@@ -94,7 +93,11 @@ impl<'a, E> Lexer<'a, E> {
         };
         let BlockToken { raw, kind, text } = token;
         let consumed = raw.len();
-        output.push(source.node(0..consumed, Kind::CustomBlock(kind, text)));
+        output.push(
+            source,
+            consumed,
+            source.node(0..consumed, Kind::CustomBlock(kind, text)),
+        );
         Some(consumed)
     }
 
@@ -121,8 +124,16 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Recognize quote/list containers before definitions and ordinary paragraphs.
-    fn container(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        self.quote(source).or_else(|| self.list(source))
+    fn container(
+        &mut self,
+        source: &Segmented,
+    ) -> Option<(usize, Node, Option<Box<tokenizer::block::ListState>>)> {
+        self.quote(source)
+            .map(|(end, node)| (end, node, None))
+            .or_else(|| {
+                self.list(source)
+                    .map(|(end, node, state)| (end, node, Some(state)))
+            })
     }
 
     /// Register a recognized definition only once, reporting whether it is new.
@@ -149,47 +160,69 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Capture setext headings before selecting top-level paragraphs or item text.
-    fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        let recognized = rules::paragraph::Recognizer::new(self.options).finish(source.text);
+    fn paragraph(
+        &mut self,
+        source: &Segmented,
+        output: &mut BlockTokens,
+        callback: Option<&Source<'_>>,
+    ) -> Option<(usize, Node)> {
+        let mut paragraph = rules::paragraph::Recognizer::new(self.options);
+        self.undecided |= matches!(
+            paragraph.extend(source),
+            rules::paragraph::Verdict::NeedMore
+        );
+        let recognized = paragraph.finish(source);
         let limit = if recognized.heading.is_none() {
-            self.extension_start(source)
+            callback.map_or(source.len(), |source| self.extension_start(source))
         } else {
-            source.text.len()
+            source.len()
         };
         let (end, content, kind) = if let Some(heading) = recognized.heading {
-            let label = source.text[heading.content.clone()].to_owned();
+            let label = source
+                .select(heading.content.clone())
+                .mapped()
+                .to_owned_string();
             (
                 heading.consumed,
                 heading.content,
                 Kind::Heading(heading.level, Vec::new(), label),
             )
         } else if self.top {
-            let end = if limit == source.text.len() {
+            let end = if limit == source.len() {
                 recognized.paragraph?
             } else {
                 rules::paragraph::Recognizer::new(self.options)
-                    .finish(&source.text[..limit])
+                    .finish(&source.select(0..limit))
                     .paragraph?
             };
             (end, 0..end, Kind::Paragraph(Vec::new()))
         } else {
-            let end = source.text.find('\n').unwrap_or(source.text.len());
+            let first = source.first_line();
+            let end = first.text.find('\n').unwrap_or(first.text.len());
             (end, 0..end, Kind::Inline(Vec::new()))
         };
-        let node = source.node(0..end, kind);
-        self.scopes.insert(
+        let raw = source.select(0..end);
+        let range = raw.native(&(0..end))?;
+        let node = Node {
+            authored: raw.mapped(),
+            range,
+            kind,
+        };
+        output.scopes.insert(
             (node.range.start, node.range.end, false),
-            source.select(std::iter::once(content)),
+            source.select(content),
         );
         Some((end, node))
     }
 
     /// Select a table only when header and delimiter column counts agree.
-    fn table(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+    fn table(&mut self, source: &Segmented, output: &mut BlockTokens) -> Option<(usize, Node)> {
         if self.options == MarkedOptions::Documentation {
             return None;
         }
-        let matched = rules::table::Recognizer::new(self.options).finish(source.text)?;
+        let matched = rules::table::Recognizer::new(self.options).finish(source)?;
+        let raw = source.select(0..matched.consumed).materialize();
+        let source = &raw.view(0..raw.text.len());
         let delimiter = &source.text[matched.delimiter];
         if !delimiter.contains(['|', ':']) {
             return None;
@@ -208,7 +241,7 @@ impl<'a, E> Lexer<'a, E> {
             return None;
         }
         let count = headers.len();
-        let header = self.cells(source, matched.header, count);
+        let header = Self::cells(source, matched.header, count, output);
         let rows = matched
             .body
             .into_iter()
@@ -221,7 +254,7 @@ impl<'a, E> Lexer<'a, E> {
                     .trim_matches(is_whitespace_scalar)
                     .is_empty()
             })
-            .map(|range| self.cells(source, range, count))
+            .map(|range| Self::cells(source, range, count, output))
             .collect();
         let table = Table {
             header,
@@ -236,7 +269,12 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Retain padded authored cell scopes but interpret their trimmed content.
-    fn cells(&mut self, source: &Source<'_>, row: Range<usize>, count: usize) -> Vec<Cell> {
+    fn cells(
+        source: &Source<'_>,
+        row: Range<usize>,
+        count: usize,
+        output: &mut BlockTokens,
+    ) -> Vec<Cell> {
         let ranges = helpers::cell_ranges(source.text[row.clone()].trim_end_matches('\n'));
         (0..count)
             .map(|index| {
@@ -245,7 +283,9 @@ impl<'a, E> Lexer<'a, E> {
                 });
                 let input = source.select(std::iter::once(range.clone())).pipes();
                 let range = source.extent(range);
-                self.scopes.insert((range.start, range.end, false), input);
+                output
+                    .scopes
+                    .insert((range.start, range.end, false), input.into());
                 Cell {
                     children: Vec::new(),
                     range,

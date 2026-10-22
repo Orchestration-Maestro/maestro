@@ -91,7 +91,7 @@ impl Recognizer {
     }
 
     /// Supply an extended prefix without revisiting completed physical lines.
-    pub(crate) fn extend(&mut self, source: &str) -> Verdict {
+    pub(crate) fn extend(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Verdict {
         while self.phase != Phase::Stable {
             let Some(line) = self.lines.next(source) else {
                 break;
@@ -106,7 +106,7 @@ impl Recognizer {
     }
 
     /// Settle the final unterminated line or delimiter at the caller's boundary.
-    pub(crate) fn finish(&mut self, source: &str) -> Option<Table> {
+    pub(crate) fn finish(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Option<Table> {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
@@ -118,15 +118,15 @@ impl Recognizer {
     }
 
     /// Dispatch one complete line to the header, body or trailing-newline phase.
-    fn consume(&mut self, source: &str, line: Range<usize>) {
+    fn consume(&mut self, source: &(impl super::lines::Input + ?Sized), line: Range<usize>) {
         if self.phase == Phase::Header {
             self.phase = Phase::Delimiter;
         } else if self.phase == Phase::Delimiter {
-            let header = &source[..line.end];
+            let header = source.window(0..line.end);
             charge(header.len());
             self.result = HEADER
                 .as_ref()
-                .and_then(|rule| rule.find(header))
+                .and_then(|rule| rule.find(&header))
                 .and_then(|matched| {
                     Some(Table {
                         header: matched.group(1)?,
@@ -146,11 +146,11 @@ impl Recognizer {
     }
 
     /// Preserve the body capture separately from greedily consumed empty lines.
-    fn body_line(&mut self, source: &str, line: Range<usize>) {
-        let text = &source[line.clone()];
+    fn body_line(&mut self, source: &(impl super::lines::Input + ?Sized), line: Range<usize>) {
+        let text = source.window(line.clone());
         charge(text.len());
         let admitted =
-            self.phase == Phase::Body && self.row.is_some_and(|rule| rule.find(text).is_some());
+            self.phase == Phase::Body && self.row.is_some_and(|rule| rule.find(&text).is_some());
         let Some(result) = &mut self.result else {
             return;
         };

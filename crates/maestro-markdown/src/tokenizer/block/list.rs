@@ -1,13 +1,16 @@
 //! List admission and item continuation framing.
 use crate::{
     Kind, MarkedOptions, Node,
-    lexer::{Lexer, lines},
+    inline::ScopeKey,
+    lexer::Lexer,
     rules,
-    source::{ScopeSource, Source},
-    tokenizer::{capture, node},
+    source::{ScopeSource, Segmented},
+    tokenizer::capture,
 };
-use maestro_text::{is_whitespace_scalar, truncate_utf16};
-use std::ops::Range;
+use maestro_text::is_whitespace_scalar;
+use std::collections::HashMap;
+mod state;
+use state::ItemLines;
 
 /// Marker identity and indentation at the start of one list item.
 struct Marker {
@@ -126,40 +129,48 @@ impl ItemRules {
     }
 }
 
-impl<E> Lexer<'_, E> {
-    /// Capture each item's source before recursively admitting its blocks.
-    pub(crate) fn list(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+/// Retained list identity and trailing item's admission history.
+pub(crate) struct ListState {
+    /// The first marker fixes orderedness and delimiter identity.
+    first: Marker,
+    /// Framing and source of the final item, retained until the next boundary.
+    item: ItemLines,
+    /// Logical start of the final item within its list operand.
+    item_start: usize,
+    /// Completed item admission states, preserving callback replay order.
+    completed: Vec<ItemLines>,
+}
+
+impl ListState {
+    /// Complete the trailing item and admit the next marker's first line; nested items
+    /// recurse through the list driver, so the replaced states stay out of its frame.
+    fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
+        let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
+        self.completed.push(previous);
+    }
+
+    /// Transfer each child's single output into its final item without cloning it.
+    pub(crate) fn finish(mut self, items: &mut [Node], scopes: &mut HashMap<ScopeKey, Segmented>) {
         #[cfg(test)]
-        crate::tests::block_operand(source.text);
-        rules::BLOCK_LIST.as_ref()?.find(source.text)?;
-        let first = marker(source.text)?;
-        let mut cursor = 0;
-        let mut items = Vec::new();
+        crate::tests::WORK.with_borrow_mut(|work| {
+            let mut retained = crate::tests::Retained::default();
+            for item in self.completed.iter().chain([&self.item]) {
+                item.retained(&mut retained);
+            }
+            work.frame_bytes = work.frame_bytes.max(retained.bytes);
+        });
+        let following = self.completed.len();
+        let mut outputs = Vec::with_capacity(following + 1);
         let mut loose = false;
-        while let Some(current) = marker(&source.text[cursor..]) {
-            if !current.follows(&first) {
-                break;
-            }
-            let view = source.suffix(cursor);
-            let (consumed, body) = item_lines(&view, &current, self.options);
-            let (mut body, task) = task(body);
-            let following =
-                marker(&source.text[cursor + consumed..]).is_some_and(|next| next.follows(&first));
-            if !following {
-                body.truncate(body.text.trim_end_matches(is_whitespace_scalar).len());
-            }
-            let mut children = self.item_blocks(&body);
-            if let Some(checked) = task {
-                let task_node = node(&body, 0..0, Kind::TaskListMarker(checked));
-                children.insert(0, task_node);
-            }
-            let raw = &source.text[cursor..cursor + consumed];
-            loose |= rules::LIST_BLANK_END.as_ref().is_some_and(|rule| {
-                #[cfg(test)]
-                crate::tests::block_operand(raw);
-                rule.find(raw).is_some()
-            }) && following
-                || children.iter().any(|node| {
+        for (index, item) in self
+            .completed
+            .iter_mut()
+            .chain(std::iter::once(&mut self.item))
+            .enumerate()
+        {
+            let output = item.child.finish(task(item.body()).1);
+            loose |= index < following && item.blank_end()
+                || output.nodes.iter().any(|node| {
                     matches!(node.kind, Kind::Gap)
                         && node
                             .authored
@@ -169,143 +180,141 @@ impl<E> Lexer<'_, E> {
                             .count()
                             > 1
                 });
-            items.push(source.node(cursor..cursor + consumed, Kind::Item(children)));
-            cursor += consumed;
-            if cursor == source.text.len() {
-                break;
+            outputs.push(output);
+        }
+        for (output, node) in outputs.into_iter().zip(items) {
+            scopes.extend(output.scopes);
+            if let Kind::Item(children) = &mut node.kind {
+                *children = output.nodes;
+            }
+            if loose {
+                loosen(node);
             }
         }
-        if items.is_empty() {
-            return None;
-        }
-        let end = source.text[..cursor]
-            .trim_end_matches(is_whitespace_scalar)
-            .len();
-        if loose {
-            items.iter_mut().for_each(loosen);
-        }
-        Some((end, source.node(0..end, Kind::List(first.start, items))))
     }
 }
 
-/// Retained item framing, independent of emitted text and recursive block state.
-struct ItemLines {
-    /// Emitted spelling with its original source pieces.
-    body: ScopeSource,
-    /// Recognized raw prefix through the last admitted physical line.
-    consumed: usize,
-    /// Whether an admitted line has been blank.
-    blank: bool,
-    /// Whether the previous line prevents another lazy continuation.
-    previous_stops: bool,
-}
-impl ItemLines {
-    /// Append one eligible line using measured indentation and previous-line history.
-    fn append(
-        &mut self,
-        source: &Source<'_>,
-        range: Range<usize>,
-        indent: usize,
-        rules: &ItemRules,
-    ) -> bool {
+impl<E> Lexer<'_, E> {
+    /// Admit a list using bounded physical-line operands.
+    pub(crate) fn list(&mut self, source: &Segmented) -> Option<(usize, Node, Box<ListState>)> {
+        let first = source.first_line();
+        let first_line = first.text.split_inclusive('\n').next()?;
         #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.list_lines += 1);
-        let raw = &source.text[range.clone()];
-        if rules.interrupts(raw) {
-            return false;
+        crate::tests::block_operand(first_line);
+        rules::BLOCK_LIST.as_ref()?.find(first_line)?;
+        let first = marker(first_line)?;
+        let item = ItemLines::new(
+            &source.select(0..first.line).materialize(),
+            &first,
+            self.options,
+        );
+        let offset = first.line;
+        let state = Box::new(ListState {
+            first,
+            item,
+            item_start: 0,
+            completed: Vec::new(),
+        });
+        self.list_tail(source, state, offset, Vec::new())
+    }
+
+    /// Resume the same item's source and history after its enclosing quote grows, keeping
+    /// the wrappers `items` already published for its completed items.
+    pub(crate) fn resume_list(
+        &mut self,
+        source: &Segmented,
+        mut state: Box<ListState>,
+        items: Vec<Node>,
+    ) -> Option<(usize, Node, Box<ListState>)> {
+        let start = state.item_start;
+        let offset = state.item.resume(source, start);
+        self.list_tail(source, state, offset, items)
+    }
+
+    /// Continue item admission without revisiting completed physical lines.
+    fn list_tail(
+        &mut self,
+        source: &Segmented,
+        mut state: Box<ListState>,
+        mut offset: usize,
+        mut items: Vec<Node>,
+    ) -> Option<(usize, Node, Box<ListState>)> {
+        items.truncate(state.completed.len());
+        if self.tokenizer.is_some() {
+            // A caller tokenizer observes every item again, as each list call lexes them all.
+            for item in &mut state.completed {
+                self.list_item(item, true);
+            }
         }
-        let end = range.end - usize::from(raw.ends_with('\n'));
-        let original = source.select(std::iter::once(range.start..end));
-        let measured = original.replace("\t", "    ");
-        let spaces = measured
-            .text
-            .bytes()
-            .take_while(|byte| *byte == b' ')
-            .count();
-        let empty = original.text.trim_matches(is_whitespace_scalar).is_empty();
-        let aligned = spaces >= indent || empty;
-        if !aligned && (self.blank || self.previous_stops) {
-            return false;
+        let mut pending = crate::source::Cursor::default();
+        pending.segmented(source.select(offset..source.len()));
+        while let Some(line) = pending.line() {
+            let line = line.materialize();
+            if state.item.append(&line) {
+                offset += line.text.len();
+                continue;
+            }
+            let Some(next) = marker(&line.text).filter(|next| next.follows(&state.first)) else {
+                break;
+            };
+            self.list_item(&mut state.item, true);
+            items.push(wrapper(&state.item)?);
+            state.item_start = offset;
+            state.begin(&line, &next, self.options);
+            offset += next.line;
         }
-        let start = truncate_utf16(&measured.text, indent).len();
-        self.body
-            .append(source.select(std::iter::once(range.start - 1..range.start)));
-        if aligned {
-            self.body
-                .append(measured.select(std::iter::once(start..measured.text.len())));
-        } else {
-            self.body.append(original);
+        self.list_item(&mut state.item, false);
+        items.push(wrapper(&state.item)?);
+        let end = state.item_start + state.item.raw_end();
+        let raw = source.select(0..end);
+        let node = Node {
+            range: raw.native(&(0..end))?,
+            authored: raw.mapped(),
+            kind: Kind::List(state.first.start, items),
+        };
+        Some((end, node, state))
+    }
+
+    /// Admit the item's grown child operand.
+    fn list_item(&mut self, item: &mut ItemLines, following: bool) {
+        let (mut body, _) = task(item.body());
+        let prefix = item.body().len() - body.len();
+        if !following {
+            let trimmed = item.body().len() - item.body_end();
+            body.truncate(body.len().saturating_sub(trimmed));
         }
-        self.previous_stops = rules.ends_lazy(&measured.text[start..]);
-        self.blank |= empty;
-        self.consumed = range.end;
-        true
+        self.item_blocks(&body, prefix, &mut item.child);
     }
 }
 
-/// Frame the first line before collecting continuations and their stopping history.
-fn item_lines(
-    source: &Source<'_>,
-    marker: &Marker,
-    options: MarkedOptions,
-) -> (usize, ScopeSource) {
-    let end = marker.line - usize::from(source.text[..marker.line].ends_with('\n'));
-    let mut first = source.select(std::iter::once(marker.prefix..end));
-    if marker.tabs > 0 {
-        first = first.replace_prefix(marker.tabs, &"   ".repeat(marker.tabs));
-    }
-    let blank = first.text.trim_matches(is_whitespace_scalar).is_empty();
-    let start = if blank {
-        first.text.len()
-    } else {
-        marker.indent - marker.prefix
-    };
-    let body = first.select(std::iter::once(start..first.text.len()));
-    if blank {
-        let Some(next) = lines(&source.text[marker.line..]).next() else {
-            return (marker.line, body);
-        };
-        let text = source.text[marker.line..marker.line + next.end].trim_end_matches('\n');
-        if text.trim_matches([' ', '\t']).is_empty() {
-            return (marker.line + next.end, body);
-        }
-    }
-    let rules = ItemRules::new(marker.indent, options);
-    let mut item = ItemLines {
-        body,
-        consumed: marker.line,
-        blank,
-        previous_stops: rules.ends_lazy(&first.text),
-    };
-    for range in lines(&source.text[marker.line..]) {
-        let range = marker.line + range.start..marker.line + range.end;
-        if !item.append(source, range, marker.indent, &rules) {
-            break;
-        }
-    }
-    (item.consumed, item.body)
+/// Publish an item's provisional wrapper over its recognized raw.
+fn wrapper(item: &ItemLines) -> Option<Node> {
+    let raw = item.raw();
+    Some(Node {
+        authored: raw.mapped(),
+        range: raw.native(&(0..raw.len()))?,
+        kind: Kind::Item(Vec::new()),
+    })
 }
 
 /// Task markers are consumed before the item's ordinary inline grammar.
-fn task(source: ScopeSource) -> (ScopeSource, Option<bool>) {
-    let bytes = source.text.as_bytes();
+fn task(source: &Segmented) -> (Segmented, Option<bool>) {
+    let first = source.first_line();
+    let bytes = first.text.as_bytes();
     if bytes.len() >= 4
         && bytes[0] == b'['
         && bytes[2] == b']'
         && bytes[3] == b' '
         && matches!(bytes[1], b' ' | b'x' | b'X')
     {
-        let end = 3 + source.text[3..]
+        let end = 3 + first.text[3..]
             .bytes()
             .take_while(|byte| *byte == b' ')
             .count();
         let checked = bytes[1] != b' ';
-        (
-            source.select(std::iter::once(end..source.text.len())),
-            Some(checked),
-        )
+        (source.select(end..source.len()), Some(checked))
     } else {
-        (source, None)
+        (source.clone(), None)
     }
 }
 

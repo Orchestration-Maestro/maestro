@@ -63,8 +63,12 @@ fn container_definition_lookahead_keeps_later_title_lines() {
     }
     let prefix = "[a]: /x\n\"title\n";
     let full = "[a]: /x\n\"title\ncontinued\"\n\n[a]";
-    let partial = crate::rules::definition::recognize(prefix, MarkedOptions::Terminal).unwrap();
-    let complete = crate::rules::definition::recognize(full, MarkedOptions::Terminal).unwrap();
+    let partial = crate::rules::definition::recognize(prefix, MarkedOptions::Terminal)
+        .0
+        .unwrap();
+    let complete = crate::rules::definition::recognize(full, MarkedOptions::Terminal)
+        .0
+        .unwrap();
     assert!(partial.consumed < prefix.len());
     assert_ne!(partial.consumed, complete.consumed);
     for source in ["[a]: /x\nplain\n", "[a]: /x\nplain\ncontinued\n\n[a]"] {
@@ -298,13 +302,41 @@ fn wrap_leaf(source: &str, position: usize) -> String {
     }
 }
 
+/// Which `!x` calls a transcript observer admits, and how much each admission consumes.
+#[derive(Clone, Copy, Default)]
+enum Admission {
+    /// Admit every call, consuming the marker and its line ending.
+    #[default]
+    Marker,
+    /// Refuse every second call.
+    Alternate,
+    /// Consume the whole remaining operand.
+    Whole,
+    /// Return a token that is not an input prefix on this call.
+    Invalid(usize),
+}
+
 /// An ordered callback transcript with distinguishable repeated admissions.
 #[derive(Default)]
 struct Observed {
     /// Callback kind and exact operand, including repeated occurrences.
     events: RefCell<Vec<(&'static str, String)>>,
-    /// Monotonically increasing payload identity assigned on admission.
+    /// Calls whose operand starts with the marker; the payload identity of their tokens.
+    calls: usize,
+    /// Tokens returned, including an invalid one.
     admitted: usize,
+    /// Admission and consumption policy.
+    admission: Admission,
+}
+
+impl Observed {
+    /// An observer with one admission policy.
+    fn new(admission: Admission) -> Self {
+        Self {
+            admission,
+            ..Self::default()
+        }
+    }
 }
 
 impl BlockTokenizer for Observed {
@@ -316,18 +348,31 @@ impl BlockTokenizer for Observed {
     fn tokenize(&mut self, source: &str) -> Option<BlockToken> {
         self.events.get_mut().push(("tokenize", source.to_owned()));
         source.strip_prefix("!x")?;
+        self.calls += 1;
+        let raw = match self.admission {
+            Admission::Alternate if self.calls.is_multiple_of(2) => return None,
+            Admission::Whole => source,
+            Admission::Invalid(call) if call == self.calls => "?",
+            _ if source.starts_with("!x\n") => "!x\n",
+            _ => "!x",
+        };
         self.admitted += 1;
         Some(BlockToken {
-            raw: if source.starts_with("!x\n") {
-                "!x\n"
-            } else {
-                "!x"
-            }
-            .to_owned(),
+            raw: raw.to_owned(),
             kind: "observed".to_owned(),
-            text: self.admitted.to_string(),
+            text: self.calls.to_string(),
         })
     }
+}
+
+/// Compare an observer's complete ordered transcript with an independently recorded one.
+fn assert_transcript(observer: &Observed, expected: &[(&str, &str)]) {
+    let transcript = observer.events.borrow();
+    let transcript: Vec<_> = transcript
+        .iter()
+        .map(|(kind, text)| (*kind, text.as_str()))
+        .collect();
+    assert_eq!(transcript, expected, "callback transcript");
 }
 
 /// Retained callback payloads in semantic document order, without deduplication.
@@ -413,6 +458,62 @@ const CALLBACK_CASES: &[CallbackCase] = &[
         &["3"],
     ),
     (
+        "> - !x\n      p\n> [s]: /y\n      p\n> [s]: /y\ne",
+        &[
+            (
+                "tokenize",
+                "> - !x\n      p\n> [s]: /y\n      p\n> [s]: /y\ne",
+            ),
+            ("tokenize", "- !x"),
+            ("tokenize", "!x"),
+            ("tokenize", "!x\n    p"),
+            ("tokenize", "    p"),
+            ("tokenize", "\n[s]: /y"),
+            ("tokenize", "[s]: /y"),
+            ("tokenize", "!x\n    p\n\n    p"),
+            ("tokenize", "    p\n\n    p"),
+            ("tokenize", "\n[s]: /y"),
+            ("tokenize", "[s]: /y"),
+            ("tokenize", "!x\n    p\n\n    p"),
+            ("tokenize", "    p\n\n    p"),
+            ("tokenize", "\n\ne"),
+            ("tokenize", "e"),
+            ("start", ""),
+        ],
+        4,
+        &["4"],
+    ),
+    (
+        "> - !x\n      p\n> [s]: /y\n      p\n> [s]: /y\n      p\n> [s]: /y\ne",
+        &[
+            (
+                "tokenize",
+                "> - !x\n      p\n> [s]: /y\n      p\n> [s]: /y\n      p\n> [s]: /y\ne",
+            ),
+            ("tokenize", "- !x"),
+            ("tokenize", "!x"),
+            ("tokenize", "!x\n    p"),
+            ("tokenize", "    p"),
+            ("tokenize", "\n[s]: /y"),
+            ("tokenize", "[s]: /y"),
+            ("tokenize", "!x\n    p\n\n    p"),
+            ("tokenize", "    p\n\n    p"),
+            ("tokenize", "\n[s]: /y"),
+            ("tokenize", "[s]: /y"),
+            ("tokenize", "!x\n    p\n\n    p\n\n    p"),
+            ("tokenize", "    p\n\n    p\n\n    p"),
+            ("tokenize", "\n[s]: /y"),
+            ("tokenize", "[s]: /y"),
+            ("tokenize", "!x\n    p\n\n    p\n\n    p"),
+            ("tokenize", "    p\n\n    p\n\n    p"),
+            ("tokenize", "\n\ne"),
+            ("tokenize", "e"),
+            ("start", ""),
+        ],
+        5,
+        &["5"],
+    ),
+    (
         "!x\n\nplain",
         &[
             ("tokenize", "!x\n\nplain"),
@@ -435,14 +536,114 @@ fn container_resume_preserves_caller_tokenizer_observations() {
             Some(&mut observer),
         )
         .unwrap();
-        let transcript = observer.events.borrow();
-        let transcript: Vec<_> = transcript
-            .iter()
-            .map(|(kind, text)| (*kind, text.as_str()))
-            .collect();
-        assert_eq!(transcript, expected, "callback transcript");
+        assert_transcript(&observer, expected);
         assert_eq!(observer.admitted, admissions);
         assert_eq!(payloads(&document.nodes), retained);
+    }
+}
+
+/// The chained list with two quote resumptions.
+const TWO_RESUMPTIONS: &str = "> - !x\n      p\n> [s]: /y\n      p\n> [s]: /y\ne";
+
+#[test]
+fn resumed_items_replay_changing_caller_decisions() {
+    let alternate: &[(&str, &str)] = &[
+        ("tokenize", TWO_RESUMPTIONS),
+        ("tokenize", "- !x"),
+        ("tokenize", "!x"),
+        ("tokenize", "!x\n    p"),
+        ("start", "x\n    p"),
+        ("tokenize", "\n    p"),
+        ("tokenize", "    p"),
+        ("tokenize", "\n[s]: /y"),
+        ("tokenize", "[s]: /y"),
+        ("tokenize", "!x\n    p\n\n    p"),
+        ("tokenize", "    p\n\n    p"),
+        ("tokenize", "\n[s]: /y"),
+        ("tokenize", "[s]: /y"),
+        ("tokenize", "!x\n    p\n\n    p"),
+        ("start", "x\n    p\n\n    p"),
+        ("tokenize", "\n    p\n\n    p"),
+        ("tokenize", "    p\n\n    p"),
+        ("tokenize", "\n\ne"),
+        ("tokenize", "e"),
+        ("start", ""),
+    ];
+    let whole: &[(&str, &str)] = &[
+        ("tokenize", TWO_RESUMPTIONS),
+        ("tokenize", "- !x"),
+        ("tokenize", "!x"),
+        ("tokenize", "!x\n    p"),
+        ("tokenize", "\n[s]: /y"),
+        ("tokenize", "[s]: /y"),
+        ("tokenize", "!x\n    p\n\n    p"),
+        ("tokenize", "\n[s]: /y"),
+        ("tokenize", "[s]: /y"),
+        ("tokenize", "!x\n    p\n\n    p"),
+        ("tokenize", "\n\ne"),
+        ("tokenize", "e"),
+        ("start", ""),
+    ];
+    for (admission, expected, admitted, retained) in [
+        (Admission::Alternate, alternate, 2, &[][..]),
+        (Admission::Whole, whole, 4, &["4"][..]),
+    ] {
+        let mut observer = Observed::new(admission);
+        let document = parse_with_tokenizer(
+            TWO_RESUMPTIONS.to_owned(),
+            MarkedOptions::Terminal,
+            Some(&mut observer),
+        )
+        .unwrap();
+        assert_transcript(&observer, expected);
+        assert_eq!((observer.calls, observer.admitted), (4, admitted));
+        assert_eq!(payloads(&document.nodes), retained);
+    }
+}
+
+#[test]
+fn resumed_item_validation_stops_at_the_first_invalid_token() {
+    let mut observer = Observed::new(Admission::Invalid(3));
+    let result = parse_with_tokenizer(
+        TWO_RESUMPTIONS.to_owned(),
+        MarkedOptions::Terminal,
+        Some(&mut observer),
+    );
+    assert!(matches!(result, Err(crate::InvalidBlockToken)));
+    let (_, recorded, _, _) = CALLBACK_CASES[3];
+    assert_eq!(recorded[0].1, TWO_RESUMPTIONS);
+    assert_transcript(&observer, &recorded[..8]);
+    assert_eq!(observer.calls, 3);
+}
+
+#[test]
+fn resumed_item_definitions_register_before_later_quote_definitions() {
+    let source = "> - [s]: /first\n      p\n> [s]: /outside\ne";
+    let expected: &[(&str, &str)] = &[
+        ("tokenize", source),
+        ("tokenize", "- [s]: /first"),
+        ("tokenize", "[s]: /first"),
+        ("tokenize", "[s]: /first\n    p"),
+        ("tokenize", "    p"),
+        ("tokenize", "\n[s]: /outside"),
+        ("tokenize", "[s]: /outside"),
+        ("tokenize", "[s]: /first\n    p"),
+        ("tokenize", "    p"),
+        ("tokenize", "\n\ne"),
+        ("tokenize", "e"),
+        ("start", ""),
+    ];
+    let mut observer = Observed::default();
+    let with_tokenizer = parse_with_tokenizer(
+        source.to_owned(),
+        MarkedOptions::Terminal,
+        Some(&mut observer),
+    )
+    .unwrap();
+    assert_transcript(&observer, expected);
+    for document in [with_tokenizer, crate::parse(source.to_owned())] {
+        assert_eq!(document.definitions.len(), 1);
+        assert_eq!(document.definitions["s"].destination, "/first");
     }
 }
 
@@ -495,7 +696,7 @@ fn observe_reply(document: &crate::Document, lines: usize) -> usize {
 }
 
 /// Charge recognizer operands, line framing, source copies and source projections.
-fn container_work(work: &super::Work) -> usize {
+pub(super) fn container_work(work: &super::Work) -> usize {
     work.block_recognizer_bytes
         + work.definition_bytes
         + work.paragraph_bytes
@@ -533,14 +734,10 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
     }
 }
 
-/// Account for all capacities reachable in the reply document, not overlapping view lengths.
-fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
+/// Charge every allocation reachable from a parsed document once, not overlapping view lengths.
+fn retained_document(document: &crate::Document) -> super::Retained {
     use std::mem::size_of;
-    let document = crate::parse(reply_source(lines, cycle));
-    let nodes = observe_reply(&document, lines);
-    assert!(document.definitions.is_empty());
     let mut retained = super::Retained::default();
-    retained.nodes = nodes;
     retained.bytes += document.source.capacity()
         + document.scopes.capacity()
             * size_of::<(crate::inline::ScopeKey, crate::source::ScopeSource)>();
@@ -551,20 +748,39 @@ fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
     while let Some(nodes) = pending.pop() {
         retained.bytes += nodes.capacity() * size_of::<Node>();
         for node in nodes {
+            retained.nodes += 1;
             node.authored.retained(&mut retained);
             match &node.kind {
                 Kind::Quote(children, body) => {
                     body.retained(&mut retained);
                     pending.push(children);
                 }
-                Kind::Paragraph(children) => pending.push(children),
+                Kind::Paragraph(children)
+                | Kind::Inline(children)
+                | Kind::List(_, children)
+                | Kind::Item(children) => pending.push(children),
                 Kind::Text(text) => {
                     retained.bytes += text.authored.capacity() + text.decoded.capacity();
                 }
-                _ => panic!("unexpected reply payload"),
+                Kind::CodeBlock(body, language) => {
+                    retained.bytes +=
+                        body.capacity() + language.as_ref().map_or(0, String::capacity);
+                }
+                _ => {}
             }
         }
     }
+    retained
+}
+
+/// Account for the reply document within its affine storage bound.
+fn retained_reply(lines: usize, cycle: usize) -> super::Retained {
+    use std::mem::size_of;
+    let document = crate::parse(reply_source(lines, cycle));
+    let nodes = observe_reply(&document, lines);
+    assert!(document.definitions.is_empty());
+    let retained = retained_document(&document);
+    assert_eq!(retained.nodes, nodes);
     // Source/semantic copies use eight input-byte slots. Geometric capacities
     // reserve four node/scope slots and four view/provenance slots per record.
     let bound = 8 * document.source.len()
@@ -595,11 +811,68 @@ fn reply_quote_retained_bytes_grow_linearly_symptom_witness() {
 }
 
 #[test]
+fn resumed_list_retained_storage_grows_linearly() {
+    let samples = [32, 64, 128].map(|n| {
+        super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+        let document = crate::parse(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n)));
+        let Kind::Quote(children, _) = &document.nodes[0].kind else {
+            panic!("quote")
+        };
+        let Kind::List(_, items) = &children[0].kind else {
+            panic!("list")
+        };
+        let Kind::Item(blocks) = &items[0].kind else {
+            panic!("item")
+        };
+        let key = (blocks[0].range.start, blocks[0].range.end, false);
+        assert_eq!(document.scopes[&key].text.matches('p').count(), n);
+        let retained = retained_document(&document);
+        [
+            retained.source_bytes,
+            retained.mapping_records,
+            retained.nodes,
+            retained.bytes,
+            super::WORK.with_borrow(|work| work.frame_bytes),
+        ]
+    });
+    eprintln!(
+        "unique source, mapping records, nodes, retained payload, list state before release: {samples:?}"
+    );
+    for pair in samples.windows(2) {
+        for (previous, next) in pair[0].iter().zip(pair[1]) {
+            assert!(next <= 3 * previous, "{samples:?}");
+        }
+    }
+}
+
+#[test]
 fn uniform_quote_control_grows_linearly() {
     let samples = [120, 240, 480].map(|lines| measured_reply(lines, 1));
     let work = samples.each_ref().map(container_work);
     let bytes = [120, 240, 480].map(|lines| retained_reply(lines, 1).bytes);
     eprintln!("uniform work={work:?} retained payload={bytes:?} samples={samples:?}");
+}
+
+#[test]
+fn callback_admission_work_stays_within_requested_operands() {
+    for n in [16, 32, 64, 128] {
+        let source = "> - !x\n".to_owned() + &"      p\n> [s]: /y\n".repeat(n) + "e";
+        super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+        let mut observer = Observed::default();
+        let length = source.len();
+        parse_with_tokenizer(source, MarkedOptions::Terminal, Some(&mut observer)).unwrap();
+        let work = super::WORK.with_borrow(container_work);
+        let requested: usize = observer
+            .events
+            .into_inner()
+            .iter()
+            .map(|(_, operand)| operand.len())
+            .sum();
+        eprintln!("n={n} parser work={work} requested={requested} input={length}");
+        // Each requested operand byte is admitted again through logarithmic source views.
+        let views = usize::try_from(length.ilog2()).unwrap();
+        assert!(work <= 5 * requested * views, "n={n}");
+    }
 }
 
 #[test]

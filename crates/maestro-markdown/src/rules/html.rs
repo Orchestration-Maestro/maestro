@@ -68,7 +68,7 @@ impl Default for Recognizer {
 
 impl Recognizer {
     /// Advance over complete physical lines, each once.
-    pub(crate) fn extend(&mut self, source: &str) -> Verdict {
+    pub(crate) fn extend(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Verdict {
         while !matches!(self.phase, Phase::Done) {
             let Some(line) = self.lines.next(source) else {
                 break;
@@ -83,7 +83,7 @@ impl Recognizer {
     }
 
     /// Resolve an unterminated final line at the operand's final boundary.
-    pub(crate) fn finish(&mut self, source: &str) -> Option<usize> {
+    pub(crate) fn finish(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Option<usize> {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
@@ -98,11 +98,11 @@ impl Recognizer {
     }
 
     /// Inspect one line for an opener or the selected family's boundary.
-    fn consume(&mut self, source: &str, line: Range<usize>) {
-        let text = &source[line.clone()];
+    fn consume(&mut self, source: &(impl super::lines::Input + ?Sized), line: Range<usize>) {
+        let text = source.window(line.clone());
         charge(text.len());
         if matches!(self.phase, Phase::Open) {
-            self.open(text);
+            self.open(&text);
         }
         match &self.phase {
             Phase::Open | Phase::Done => {}
@@ -127,7 +127,7 @@ impl Recognizer {
             }
             Phase::Delimiter(delimiter, tail) => {
                 self.consumed = Some(line.end);
-                if let Some((end, phase)) = delimiter_end(text, &line, delimiter, *tail) {
+                if let Some((end, phase)) = delimiter_end(&text, &line, delimiter, *tail) {
                     self.consumed = Some(end);
                     self.phase = phase;
                 }

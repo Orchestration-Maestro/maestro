@@ -750,13 +750,19 @@ are not a format. `to_owned_string() -> String` explicitly materializes them.
 implicit contiguous accessor, `Deref<str>` or per-node flattened cache.
 
 Reply-quote work and retained storage grow linearly in input bytes, admitted
-nodes and mapping records, excluding requested output bytes. List-item admission
-still restarts when its enclosing quote resumes. Caller block tokenizers
+nodes and mapping records, excluding requested output bytes. A list item keeps
+its admission state and block output across quote resumption over the same
+shared source handles. Admission resumes at the first open block: one whose
+grammar read the item's current end, or whose following content sits on the
+item's unterminated last line. Open indented code continues from the line it
+reached. A caller block tokenizer reads the whole remaining item, so when one
+is present every resumption admits the item again. Caller block tokenizers
 receive the same contiguous operands in the same order, including repeated
 admissions. Materializing those operands is caller-requested output work,
 charged separately from parser work; contiguous source operands are borrowed.
 Quote resumption transfers retained source handles rather than flattening the
 remaining tail.
+
 The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.

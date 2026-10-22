@@ -148,7 +148,7 @@ impl Recognizer {
     }
 
     /// Supply an extended prefix; previously framed bytes are never searched again.
-    pub(crate) fn extend(&mut self, source: &str) -> Verdict {
+    pub(crate) fn extend(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Verdict {
         if self.settled() {
             return Verdict::Stable(self.result.clone());
         }
@@ -165,7 +165,7 @@ impl Recognizer {
     }
 
     /// Resolve the caller-owned final boundary, including an unterminated last line.
-    pub(crate) fn finish(&mut self, source: &str) -> Recognized {
+    pub(crate) fn finish(&mut self, source: &(impl super::lines::Input + ?Sized)) -> Recognized {
         if let Verdict::Stable(result) = self.extend(source) {
             return result;
         }
@@ -187,18 +187,18 @@ impl Recognizer {
     }
 
     /// Admit one line with the next line available only as grammar lookahead.
-    fn consume(&mut self, source: &str) {
+    fn consume(&mut self, source: &(impl super::lines::Input + ?Sized)) {
         let Some(line) = self.lines.pop_front() else {
             return;
         };
         let end = self.lines.front().map_or(line.end, |next| next.end);
-        let window = &source[line.start..end];
-        let text = &source[line.clone()];
-        self.heading_line(text, window, &line);
+        let window = source.window(line.start..end);
+        let text = source.window(line.clone());
+        self.heading_line(&text, &window, &line);
         if self.paragraph_open {
-            let content = text.strip_suffix('\n').unwrap_or(text);
+            let content = text.strip_suffix('\n').unwrap_or(&text);
             if content.is_empty()
-                || line.start != 0 && matches(self.grammar.paragraph.as_ref(), window)
+                || line.start != 0 && matches(self.grammar.paragraph.as_ref(), &window)
             {
                 self.paragraph_open = false;
             } else {
