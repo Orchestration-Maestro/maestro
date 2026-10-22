@@ -247,9 +247,11 @@ whose Unicode spaces stand for plain spaces still finds its file.
 `resolve_existing_path`, which the write, edit and search routes use, applies the
 same preference to directories: a directory the file system holds keeps the
 spelling it was written with even when the file below it is new, and only a part of
-the path with no such directory takes the space-replaced spelling. A new file is
-created inside the directory named with one of those spaces, not in a space-replaced
-twin beside it.
+the path with no such directory takes the space-replaced spelling. The whole path
+takes that spelling whenever it exists, so a file the file system holds only under its
+plain name is still found beside a directory of the written one. A new file is created
+inside the directory named with one of those spaces, not in a space-replaced twin
+beside it.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a

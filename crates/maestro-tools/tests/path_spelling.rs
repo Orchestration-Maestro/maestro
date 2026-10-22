@@ -13,7 +13,7 @@ use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolInput, WriteToolOptions,
     create_edit_tool_definition, create_read_tool_definition, create_write_tool_definition,
     edit_diff::{Edit, compute_edits_diff},
-    path_utils::{resolve_existing_path, resolve_existing_spelling},
+    path_utils::{resolve_existing_path, resolve_existing_spelling, resolve_to_cwd},
 };
 use serde_json::json;
 #[cfg(unix)]
@@ -65,17 +65,22 @@ fn edit_and_preview_reach_a_file_named_with_a_unicode_space() {
     assert_eq!(std::fs::read(&written).unwrap(), b"gamma\nbeta\n");
 }
 
+/// Write `content` to `path` through the write tool rooted at `dir`.
+fn write_through_tool(dir: &Scratch, path: &str, content: &str) {
+    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
+    let arguments = WriteToolInput {
+        path: path.into(),
+        content: content.into(),
+    };
+    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+}
+
 /// Rewriting a file named with a no-break space changes that file and creates no neighbour.
 #[test]
 fn write_rewrites_a_file_named_with_a_unicode_space() {
     let dir = Scratch::new().unwrap();
     let written = dir.file("x\u{a0}y.txt", b"before");
-    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
-    let arguments = WriteToolInput {
-        path: "x\u{a0}y.txt".into(),
-        content: "after".into(),
-    };
-    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+    write_through_tool(&dir, "x\u{a0}y.txt", "after");
     assert_eq!(std::fs::read(&written).unwrap(), b"after");
     assert!(!dir.path().join("x y.txt").exists());
 }
@@ -168,12 +173,7 @@ fn grep_reaches_a_directory_named_with_a_unicode_space() {
 fn write_creates_a_new_file_inside_a_directory_named_with_a_unicode_space() {
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
-    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
-    let arguments = WriteToolInput {
-        path: "s\u{a0}dir/new.txt".into(),
-        content: "body".into(),
-    };
-    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+    write_through_tool(&dir, "s\u{a0}dir/new.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("s\u{a0}dir/new.txt")).unwrap(),
         b"body"
@@ -187,12 +187,7 @@ fn write_leaves_the_plain_neighbour_directory_untouched() {
     let dir = Scratch::new().unwrap();
     std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
     std::fs::create_dir(dir.path().join("s dir")).unwrap();
-    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
-    let arguments = WriteToolInput {
-        path: "s\u{a0}dir/new.txt".into(),
-        content: "body".into(),
-    };
-    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+    write_through_tool(&dir, "s\u{a0}dir/new.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("s\u{a0}dir/new.txt")).unwrap(),
         b"body"
@@ -288,15 +283,51 @@ fn path_resolution_normalizes_only_the_part_without_a_counterpart() {
 #[test]
 fn write_creates_the_space_replaced_name() {
     let dir = Scratch::new().unwrap();
-    let tool = create_write_tool_definition::<()>(dir.text(), WriteToolOptions::default());
-    let arguments = WriteToolInput {
-        path: "new\u{a0}file.txt".into(),
-        content: "body".into(),
-    };
-    run((tool.execute)("call".into(), arguments, None, None, None)).unwrap();
+    write_through_tool(&dir, "new\u{a0}file.txt", "body");
     assert_eq!(
         std::fs::read(dir.path().join("new file.txt")).unwrap(),
         b"body"
     );
     assert!(!dir.path().join("new\u{a0}file.txt").exists());
+}
+
+/// A file only its plain spelling holds is read and edited under the written directory.
+#[test]
+fn existing_plain_space_file_is_reached_beside_a_written_directory() {
+    let dir = Scratch::new().unwrap();
+    std::fs::create_dir(dir.path().join("s\u{a0}dir")).unwrap();
+    std::fs::create_dir(dir.path().join("s dir")).unwrap();
+    let plain = dir.file("s dir/x.txt", b"alpha\nbeta\n");
+    let read = create_read_tool_definition::<()>(dir.text(), ReadToolOptions::default());
+    let opened = call(&read, input("s\u{a0}dir/x.txt", None, None), None, None).unwrap();
+    assert_eq!(only_text(&opened), "alpha\nbeta\n");
+    let edit = create_edit_tool_definition::<()>(dir.text(), EditToolOptions::default());
+    let arguments = edit_support::input("s\u{a0}dir/x.txt", "beta", "gamma");
+    run((edit.execute)("call".into(), arguments, None, None, None)).unwrap();
+    assert_eq!(std::fs::read(&plain).unwrap(), b"alpha\ngamma\n");
+    assert!(!dir.path().join("s\u{a0}dir/x.txt").exists());
+}
+
+/// A path nothing on disk holds resolves exactly as the space-replaced whole path does.
+#[test]
+fn unmatched_paths_keep_the_space_replaced_text() {
+    let dir = Scratch::new().unwrap();
+    let cwd = dir.text();
+    let absolute = format!("{cwd}/x\u{a0}y");
+    let mismatched: Vec<_> = [
+        absolute.clone(),
+        format!("{absolute}/"),
+        format!("{cwd}/x\u{a0}y//deep/new.txt"),
+        format!("{cwd}/./x\u{a0}y/new.txt"),
+        "~/h\u{a0}d/new.txt".to_owned(),
+        "x\u{a0}y/".to_owned(),
+    ]
+    .into_iter()
+    .filter_map(|ask| {
+        let written = resolve_existing_path(&ask, &cwd).unwrap();
+        let normalized = resolve_to_cwd(&ask, &cwd).unwrap();
+        (written != normalized).then_some((ask, normalized, written))
+    })
+    .collect();
+    assert!(mismatched.is_empty(), "{mismatched:?}");
 }

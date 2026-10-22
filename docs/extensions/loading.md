@@ -72,7 +72,8 @@ Two calls with two fresh buses share nothing.
 Discovery compares paths by their lexically resolved form. The first spelling
 wins and discovery drops later duplicates. A found path that names an existing
 file loads under its real spelling; a broken link is treated as missing and
-resolved again with plain spaces.
+resolved again, keeping the spelling of every directory that exists and using plain
+spaces only where nothing on disk has the written one.
 
 A scan reads one directory level in name order, hidden names included. It adds
 the extension files and links, and the declared entries of other directories and

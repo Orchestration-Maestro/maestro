@@ -122,17 +122,19 @@ fn narrow_space_before_meridiem(path: &str) -> String {
     out
 }
 
-/// Resolve a path under the spelling it was written with, keeping that spelling for
-/// every directory the file system has and replacing Unicode spaces only in the part
-/// nothing on disk has.
+/// Resolve a path under the spelling it was written with.
+///
+/// The written spelling is returned when the file system holds that path, and the
+/// space-replaced spelling when it holds that one instead. Otherwise every directory
+/// the file system holds keeps its written spelling and the remaining components take
+/// the space-replaced spelling, or the whole path does when no such directory exists.
 ///
 /// `resolve` turns one authored spelling into a resolved path and must keep the
 /// spelling it is given; the home and working directories are read exactly as it
 /// reads them.
 ///
 /// # Errors
-/// Returns the error of `resolve` for the spelling it was finally called with, or a
-/// path that is not valid UTF-8.
+/// Returns the error of `resolve` for the spelling it was finally called with.
 pub fn resolve_existing_spelling<F>(file_path: &str, resolve: F) -> io::Result<String>
 where
     F: Fn(&str) -> io::Result<String>,
@@ -143,35 +145,38 @@ where
         return Ok(as_written);
     }
     let normalized = resolve(&normalized_spelling)?;
-    utf8(
-        keep_written_directories(Path::new(&as_written), Path::new(&normalized)),
-        "resolved path",
-    )
+    if Path::new(&normalized).exists() {
+        return Ok(normalized);
+    }
+    Ok(match existing_written_directory(&as_written) {
+        Some(directory) => {
+            directory.to_owned() + &normalize_unicode_spaces(&as_written[directory.len()..])
+        }
+        None => normalized,
+    })
 }
 
-/// Keep `written`'s spelling for the existing directories, and take the rest from `normalized`.
+/// The deepest ancestor of `written` that is an existing directory, spelled as given.
 ///
-/// A relative `written` path with no existing directory of any ancestor keeps nothing,
-/// because only a directory the file system has may supply a spelling.
-fn keep_written_directories(written: &Path, normalized: &Path) -> PathBuf {
-    let Some(kept) = written
+/// Only a directory the file system has may supply a spelling; every other component
+/// takes the normalized one.
+fn existing_written_directory(written: &str) -> Option<&str> {
+    Path::new(written)
         .ancestors()
         .skip(1)
         .find(|ancestor| ancestor.is_dir())
-    else {
-        return normalized.to_path_buf();
-    };
-    let mut result = kept.to_path_buf();
-    result.extend(normalized.components().skip(kept.components().count()));
-    result
+        .and_then(Path::to_str)
 }
 
-/// Resolve an authored path against `cwd` under its written spelling when a path
-/// has it, and otherwise under its Unicode-space normalization.
+/// Resolve an authored path against `cwd` under the spelling it was written with.
+///
+/// An existing file or directory keeps the spelling it was written with. Below that,
+/// only a directory the file system holds keeps its spelling, and a part with no such
+/// directory takes the space-replaced spelling.
 ///
 /// # Errors
-/// Returns the home-directory, working-directory or invalid-UTF-8 error of the
-/// spelling the path was finally resolved with.
+/// Returns the home-directory or working-directory error of the spelling the path was
+/// finally resolved with.
 pub fn resolve_existing_path(file_path: &str, cwd: &str) -> io::Result<String> {
     resolve_existing_spelling(file_path, |path| resolve_written_path(path, cwd))
 }
