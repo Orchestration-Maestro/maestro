@@ -42,11 +42,14 @@ package and the walk starts at that workspace root, which holds `README.md` and
 `config::get_docs_path` and `config::get_examples_path` resolve their paths in
 that package directory. The workspace has no `examples/` folder yet, so the
 examples path does not exist in a source run. `config::get_theme_directories`
-pairs its shipped theme directory with the custom theme directory of the native
-agent directory; see [application resources](resources.md#theme-directories).
+probes the layout without the executable, and locates the executable only when
+no override applies. It pairs its shipped theme directory with the custom theme
+directory of the native agent directory; see
+[application resources](resources.md#theme-directories).
 
 Standalone assets use adjacent `theme`, `export-html` and `assets` directories.
-Package assets use `src` when that child exists, otherwise `dist`. Missing assets
+Package themes use `crates/maestro-theme/assets/theme`; the other package assets
+use `src` when that child exists, otherwise `dist`. Missing assets
 still produce paths. README, documentation, examples and changelog queries use
 [`maestro-path`](../../crates/maestro-path/src/lib.rs) lexical resolution with
 the process directories; they read the working directory only when they need it,

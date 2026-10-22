@@ -9,7 +9,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/src/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/src/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -38,7 +38,7 @@
     },
     "expected": {
       "getPackageDir": "/package",
-      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getThemesDir": "/package/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/package/dist/core/export-html",
       "getReadmePath": "/package/README.md",
       "getDocsPath": "/package/docs",
@@ -101,7 +101,7 @@
     },
     "expected": {
       "getPackageDir": "./pkg/../assets",
-      "getThemesDir": "assets/dist/modes/interactive/theme",
+      "getThemesDir": "assets/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "assets/dist/core/export-html",
       "getReadmePath": "/work/assets/README.md",
       "getDocsPath": "/work/assets/docs",
@@ -132,7 +132,7 @@
     },
     "expected": {
       "getPackageDir": "/missing",
-      "getThemesDir": "/missing/dist/modes/interactive/theme",
+      "getThemesDir": "/missing/crates/maestro-theme/assets/theme",
       "getExportTemplateDir": "/missing/dist/core/export-html",
       "getReadmePath": "/missing/README.md",
       "getDocsPath": "/missing/docs",
@@ -164,7 +164,7 @@
     },
     "expected": {
       "getPackageDir": "C:\\package",
-      "getThemesDir": "C:\\package\\src\\modes\\interactive\\theme",
+      "getThemesDir": "C:\\package\\crates\\maestro-theme\\assets\\theme",
       "getExportTemplateDir": "C:\\package\\src\\core\\export-html",
       "getReadmePath": "C:\\package\\README.md",
       "getDocsPath": "C:\\package\\docs",
@@ -192,7 +192,7 @@
     },
     "expected": {
       "getPackageDir": "C:\\package",
-      "getThemesDir": "C:\\package\\dist\\modes\\interactive\\theme",
+      "getThemesDir": "C:\\package\\crates\\maestro-theme\\assets\\theme",
       "getExportTemplateDir": "C:\\package\\dist\\core\\export-html",
       "getReadmePath": "C:\\package\\README.md",
       "getDocsPath": "C:\\package\\docs",
@@ -224,7 +224,7 @@
     },
     "expected": {
       "getPackageDir": ".\\assets",
-      "getThemesDir": "assets\\dist\\modes\\interactive\\theme",
+      "getThemesDir": "assets\\crates\\maestro-theme\\assets\\theme",
       "getExportTemplateDir": "assets\\dist\\core\\export-html",
       "getReadmePath": "C:\\work\\assets\\README.md",
       "getDocsPath": "C:\\work\\assets\\docs",

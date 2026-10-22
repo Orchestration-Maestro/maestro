@@ -87,19 +87,16 @@ fn asset_dir(
     parts.extend_from_slice(packaged);
     join(&parts)
 }
-/// Get the built-in theme directory.
-pub fn get_themes_dir(
-    package_dir: &str,
-    layout: PackageLayout,
-    exists: impl Fn(&str) -> bool,
-) -> String {
-    asset_dir(
-        package_dir,
-        layout,
-        &["modes", "interactive", "theme"],
-        "theme",
-        exists,
-    )
+/// Get the built-in theme directory: the theme crate's assets in a source workspace, or
+/// the `theme` directory of a standalone package directory.
+#[must_use]
+pub fn get_themes_dir(package_dir: &str, layout: PackageLayout) -> String {
+    match layout {
+        PackageLayout::Package => {
+            join(&[package_dir, "crates", "maestro-theme", "assets", "theme"])
+        }
+        PackageLayout::Standalone => join(&[package_dir, "theme"]),
+    }
 }
 /// Get the export template directory.
 pub fn get_export_template_dir(

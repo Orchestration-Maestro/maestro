@@ -273,7 +273,7 @@ fn observe_paths(input: &PathInput) -> Paths {
         paths::get_interactive_assets_dir(&package, installation.layout, |p| input.exists(p));
     Paths {
         package_dir: package.clone(),
-        themes_dir: paths::get_themes_dir(&package, installation.layout, |p| input.exists(p)),
+        themes_dir: paths::get_themes_dir(&package, installation.layout),
         export_template_dir: paths::get_export_template_dir(&package, installation.layout, |p| {
             input.exists(p)
         }),

@@ -120,5 +120,5 @@ the package directory (`MAESTRO_PACKAGE_DIR`, else the running installation's)
 and the custom theme directory from the environment-selected agent directory. A
 run from a source checkout reads the shipped themes from
 `crates/maestro-theme/assets/theme` in that package directory; a standalone
-executable reads them from the `theme` directory beside it. See
+executable reads them from the `theme` folder in the package directory. See
 [application configuration](configuration.md#installation-paths).

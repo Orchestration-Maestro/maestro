@@ -51,18 +51,27 @@ pub fn get_agent_dir() -> std::io::Result<String> {
 /// locating the running executable.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_package_dir() -> std::io::Result<String> {
-    package_dir(installation::Installation::current)
+    package_dir(
+        installation::Installation::current,
+        package_dir_override().as_deref(),
+    )
+}
+
+/// The `MAESTRO_PACKAGE_DIR` override of the running process.
+#[cfg(not(target_arch = "wasm32"))]
+fn package_dir_override() -> Option<String> {
+    std::env::var(format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase())).ok()
 }
 
 /// Select the package directory from the override or the lazily observed installation.
 #[cfg(not(target_arch = "wasm32"))]
 fn package_dir(
     installation: impl FnOnce() -> std::io::Result<installation::Installation>,
+    override_dir: Option<&str>,
 ) -> std::io::Result<String> {
-    let value = std::env::var(format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase())).ok();
     paths::get_package_dir(
         installation,
-        value.as_deref(),
+        override_dir,
         || maestro_tools::expand_path("~"),
         exists,
     )
@@ -104,29 +113,39 @@ pub fn get_examples_path() -> std::io::Result<String> {
 /// Select the shipped theme directory of the running process and the custom theme
 /// directory of the environment-selected agent directory.
 ///
-/// A run from a source checkout reads the shipped themes from the theme crate's assets;
-/// a standalone executable reads them beside itself.
+/// A run from a source checkout reads the shipped themes from the theme crate's assets
+/// in the package directory; a standalone executable reads them from the `theme` folder
+/// in the package directory. The running executable is located only when no package
+/// override applies.
 ///
 /// # Errors
 /// Returns package-directory or agent-directory failures.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_theme_directories() -> std::io::Result<maestro_theme::ThemeDirectories> {
-    let installation = installation::Installation::current()?;
-    let layout = installation.layout;
-    let package_dir = package_dir(|| Ok(installation))?;
-    let themes_dir = match layout {
-        installation::PackageLayout::Package => {
-            maestro_path::join(&[&package_dir, "crates", "maestro-theme", "assets", "theme"])
-        }
-        installation::PackageLayout::Standalone => {
-            paths::get_themes_dir(&package_dir, layout, exists)
-        }
-    };
+    theme_directories(package_dir_override().as_deref(), std::env::current_exe)
+}
+
+/// Select the theme directories from the override or the installation `executable`
+/// completes, probing the layout once.
+#[cfg(not(target_arch = "wasm32"))]
+fn theme_directories(
+    override_dir: Option<&str>,
+    executable: impl FnOnce() -> std::io::Result<std::path::PathBuf>,
+) -> std::io::Result<maestro_theme::ThemeDirectories> {
+    let (module_dir, layout) = installation::probe_layout();
+    let package_dir = package_dir(
+        || installation::Installation::locate(module_dir, layout, executable),
+        override_dir,
+    )?;
     Ok(maestro_theme::ThemeDirectories {
-        themes_dir,
+        themes_dir: paths::get_themes_dir(&package_dir, layout),
         custom_themes_dir: paths::get_custom_themes_dir(&get_agent_dir()?),
     })
 }
+
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+mod tests;
 
 /// Join an enabled hosted-service origin with its literal path.
 pub(super) fn service_endpoint(service_origin: &str, path: &str) -> Option<String> {

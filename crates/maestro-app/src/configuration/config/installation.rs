@@ -20,30 +20,41 @@ pub struct Installation {
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl Installation {
-    /// The running process and its executable.
-    ///
-    /// A build whose compile-time crate directory still sits below its source workspace
-    /// runs from that checkout, so the walk starts at the workspace root, which holds the
-    /// shipped documentation; any other build is a standalone executable whose assets sit
-    /// beside it.
+    /// The running process and its executable, with the probed build layout.
     ///
     /// # Errors
     /// Returns the error of locating the running executable.
     pub fn current() -> std::io::Result<Self> {
-        let executable = std::env::current_exe()?.to_string_lossy().into_owned();
-        let crate_dir = env!("CARGO_MANIFEST_DIR");
-        Ok(match workspace_root(crate_dir) {
-            Some(module_dir) => Self {
-                module_dir,
-                executable,
-                layout: PackageLayout::Package,
-            },
-            None => Self {
-                module_dir: crate_dir.to_owned(),
-                executable,
-                layout: PackageLayout::Standalone,
-            },
+        let (module_dir, layout) = probe_layout();
+        Self::locate(module_dir, layout, std::env::current_exe)
+    }
+
+    /// Complete a probed walk start and layout with the path `executable` locates.
+    pub(super) fn locate(
+        module_dir: String,
+        layout: PackageLayout,
+        executable: impl FnOnce() -> std::io::Result<std::path::PathBuf>,
+    ) -> std::io::Result<Self> {
+        Ok(Self {
+            module_dir,
+            executable: executable()?.to_string_lossy().into_owned(),
+            layout,
         })
+    }
+}
+/// The package-directory walk start and asset layout of this build, observed without
+/// the running executable.
+///
+/// A build whose compile-time crate directory still sits below its source workspace
+/// runs from that checkout, so the walk starts at the workspace root, which holds the
+/// shipped documentation; any other build is a standalone executable whose assets sit
+/// beside it.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn probe_layout() -> (String, PackageLayout) {
+    let crate_dir = env!("CARGO_MANIFEST_DIR");
+    match workspace_root(crate_dir) {
+        Some(root) => (root, PackageLayout::Package),
+        None => (crate_dir.to_owned(), PackageLayout::Standalone),
     }
 }
 /// The nearest directory from `start` upward whose `Cargo.toml` declares `[workspace]`.
