@@ -53,8 +53,15 @@ fn replacement_handles_relative_and_extensionless_paths() {
     );
     #[cfg(unix)]
     {
-        use std::os::unix::ffi::OsStringExt;
-        let path = dir.0.join(std::ffi::OsString::from_vec(vec![b'n', 255]));
+        use std::os::unix::ffi::{OsStrExt, OsStringExt};
+        let name = std::ffi::OsString::from_vec(vec![b'n', 255]);
+        let path = dir.0.join(&name);
+        // A host may refuse names that are not valid UTF-8; the observations above stay
+        // unconditional.
+        if fs::write(&path, b"probe").is_err() {
+            eprintln!("host refuses the name bytes {:?}", name.as_bytes());
+            return;
+        }
         replace(
             &path,
             b"native",

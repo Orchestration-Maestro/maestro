@@ -7,6 +7,7 @@ use maestro_theme::{
 };
 use std::cell::RefCell;
 use std::error::Error;
+use std::ffi::OsStr;
 use std::fs;
 use std::io;
 use std::rc::Rc;
@@ -292,13 +293,12 @@ fn theme_lists_json_names_with_ordinal_order() {
     let scratch = Scratch::new();
     for file in [
         "z.json",
-        "A.json",
+        "Z.json",
         "a.json",
         ".json",
         "ignored.JSON",
         "ignore.json.bak",
         "é.json",
-        "e\u{301}.json",
         "\u{10000}.json",
         "\u{E000}.json",
         "dark.json",
@@ -316,12 +316,11 @@ fn theme_lists_json_names_with_ordinal_order() {
         state.get_available_themes().unwrap(),
         [
             "",
-            "A",
+            "Z",
             "a",
             "custom-only",
             "dark",
             "directory",
-            "e\u{301}",
             "light",
             "registered-only",
             "z",
@@ -372,19 +371,38 @@ fn theme_path_inventory_keeps_first_owner_and_sorted_names() {
 #[test]
 fn theme_path_inventory_orders_canonically_equal_names_by_directory_byte_order() {
     let scratch = Scratch::new();
-    scratch.write("custom/\u{e9}.json", "x");
-    scratch.write("custom/e\u{301}.json", "x");
+    for (pair, names) in [
+        ("A.json/a.json", ["A.json", "a.json"]),
+        (
+            "\u{e9}.json/e\u{301}.json",
+            ["\u{e9}.json", "e\u{301}.json"],
+        ),
+    ] {
+        if !scratch.keeps_distinct(&[OsStr::new(names[0]), OsStr::new(names[1])]) {
+            eprintln!("host folds {pair} into one entry");
+            return;
+        }
+    }
+    for file in ["A.json", "a.json", "\u{e9}.json", "e\u{301}.json"] {
+        scratch.write(&format!("custom/{file}"), "x");
+    }
     let custom = scratch.path("custom");
     let listed = make(&custom).get_available_themes_with_paths().unwrap();
-    let composed = format!("{custom}/\u{e9}.json");
-    let decomposed = format!("{custom}/e\u{301}.json");
     let tied: Vec<_> = names(&listed)
         .into_iter()
-        .filter(|(name, _)| name.contains('\u{e9}') || name.contains('\u{301}'))
+        .filter(|(name, _)| ["A", "a", "\u{e9}", "e\u{301}"].contains(name))
         .collect();
+    let upper = format!("{custom}/A.json");
+    let lower = format!("{custom}/a.json");
+    let composed = format!("{custom}/\u{e9}.json");
+    let decomposed = format!("{custom}/e\u{301}.json");
+    // The collator orders the case pair; only the canonically equal pair falls back to the
+    // order the directory reports.
     assert_eq!(
         tied,
         [
+            ("a", Some(lower.as_str())),
+            ("A", Some(upper.as_str())),
             ("e\u{301}", Some(decomposed.as_str())),
             ("\u{e9}", Some(composed.as_str())),
         ]

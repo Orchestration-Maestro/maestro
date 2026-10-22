@@ -5,7 +5,9 @@ use crate::support;
 use maestro_resources::{DiagnosticType, LoadSkillsFromDirOptions, load_skills_from_dir};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
+use std::ffi::OsStr;
 use std::io::Write;
+use std::path::Path;
 use support::{Directory, text};
 
 /// Native filesystem recipe and complete expected discovery.
@@ -78,6 +80,30 @@ struct ExpectedDiagnostic {
     /// Associated instruction path.
     path: String,
 }
+/// The authored leaf names this host does not keep apart inside their own directory.
+fn folded_names(dir: &Directory, recipe: &Recipe) -> Vec<String> {
+    let mut groups: BTreeMap<&Path, Vec<&OsStr>> = BTreeMap::new();
+    for name in recipe
+        .files
+        .keys()
+        .chain(&recipe.directories)
+        .chain(recipe.links.keys())
+    {
+        let path = Path::new(name);
+        if let Some(leaf) = path.file_name() {
+            groups
+                .entry(path.parent().unwrap_or(Path::new("")))
+                .or_default()
+                .push(leaf);
+        }
+    }
+    groups
+        .into_iter()
+        .filter(|(_, leaves)| !dir.0.keeps_distinct(leaves).unwrap())
+        .map(|(_, leaves)| format!("{leaves:?}"))
+        .collect()
+}
+
 /// Execute one group, rejecting repeated input recipes and comparing complete ordered trees.
 fn check_group(group: &str) {
     let groups: BTreeMap<String, Vec<Recipe>> =
@@ -94,6 +120,11 @@ fn check_group(group: &str) {
             "duplicate recipe {index}"
         );
         let dir = Directory::new();
+        let folded = folded_names(&dir, recipe);
+        if !folded.is_empty() {
+            eprintln!("{group} recipe {index} needs leaf names this host keeps apart: {folded:?}");
+            continue;
+        }
         let root = dir.0.path().join("skills");
         std::fs::create_dir(&root).unwrap();
         for directory in &recipe.directories {

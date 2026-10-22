@@ -4,6 +4,7 @@ use maestro_app::configuration::migrations::{MigrationStyle, run_migrations};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
+    ffi::OsStr,
     fs, io,
     os::unix::fs::{PermissionsExt, symlink},
     path::Path,
@@ -239,7 +240,9 @@ fn operation() {
     );
 }
 fn replay(name: &str, case: Case<Input, Expected>) {
-    let scratch = child::Scratch::new();
+    let Some(scratch) = admitted_scenario(name) else {
+        return;
+    };
     setup(scratch.0.path(), &case.input);
     let authored = case.input.root.as_deref().unwrap_or("agent");
     let agent = if case.input.relative_root {
@@ -297,6 +300,18 @@ fn replay(name: &str, case: Case<Input, Expected>) {
             fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
         }
     }
+}
+
+/// A scratch directory for a scenario this host can author: the migration finds a managed
+/// binary by the spelling the host resolves, so both case spellings of one must stay apart.
+fn admitted_scenario(name: &str) -> Option<child::Scratch> {
+    let scratch = child::Scratch::new();
+    let pair = [OsStr::new("rg.exe"), OsStr::new("RG.EXE")];
+    if scratch.0.keeps_distinct(&pair).unwrap() {
+        return Some(scratch);
+    }
+    eprintln!("{name}: host folds rg.exe and RG.EXE");
+    None
 }
 
 pub fn run(name: &str) {

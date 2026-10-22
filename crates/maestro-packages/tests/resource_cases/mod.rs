@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 #[cfg(unix)]
 use std::io;
-use std::{collections::BTreeMap, rc::Rc};
+use std::{collections::BTreeMap, ffi::OsStr, path::Path, rc::Rc};
 /// One recorded recipe and its independently observed output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -37,11 +37,9 @@ pub async fn cases(names: &[&str]) {
         serde_json::from_str(include_str!("../fixtures/resource_resolution.json")).unwrap();
     for name in names {
         let case = cases.iter().find(|c| c.case == *name).unwrap();
-        let dir = Scratch::new().unwrap();
-        #[cfg(not(unix))]
-        if !case.denied.is_empty() {
+        let Some(dir) = admit(case) else {
             continue;
-        }
+        };
         setup(case, &dir);
         // A privileged run reads denied entries anyway, so such a case has nothing to check.
         #[cfg(unix)]
@@ -89,6 +87,44 @@ pub async fn cases(names: &[&str]) {
         assert_eq!(effects.spawns.get(), 0);
         assert_calls(case, &effects);
     }
+}
+
+/// A fixture directory for one recipe, or `None` when this host cannot store the names the
+/// recipe authors, with the folded names reported.
+fn admit(case: &Recipe) -> Option<Scratch> {
+    #[cfg(not(unix))]
+    if !case.denied.is_empty() {
+        return None;
+    }
+    let dir = Scratch::new().unwrap();
+    let folded = folded_names(&dir, case);
+    if folded.is_empty() {
+        return Some(dir);
+    }
+    eprintln!(
+        "{} needs leaf names this host keeps apart: {folded:?}",
+        case.case
+    );
+    None
+}
+
+/// The authored leaf names this host does not keep apart inside their own directory.
+fn folded_names(dir: &Scratch, case: &Recipe) -> Vec<String> {
+    let mut groups: BTreeMap<&Path, Vec<&OsStr>> = BTreeMap::new();
+    for name in case.files.keys().chain(&case.dirs).chain(case.links.keys()) {
+        let path = Path::new(name);
+        if let Some(leaf) = path.file_name() {
+            groups
+                .entry(path.parent().unwrap_or(Path::new("")))
+                .or_default()
+                .push(leaf);
+        }
+    }
+    groups
+        .into_iter()
+        .filter(|(_, leaves)| !dir.keeps_distinct(leaves).unwrap())
+        .map(|(_, leaves)| format!("{leaves:?}"))
+        .collect()
 }
 
 /// Creates only the filesystem inputs selected by the recipe.

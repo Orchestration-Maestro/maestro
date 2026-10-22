@@ -307,10 +307,15 @@ fn assert_vertex_cache(directory: &Directory) -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
 fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
-    use std::os::unix::ffi::OsStringExt;
-    let home = directory
-        .path()
-        .join(std::ffi::OsString::from_vec(b"native-\xff".to_vec()));
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+    let name = std::ffi::OsString::from_vec(b"native-\xff".to_vec());
+    // A host may refuse names that are not valid UTF-8; every UTF-8 subcase stays
+    // unconditional.
+    if !directory.keeps_distinct(&[name.as_os_str()])? {
+        eprintln!("host refuses the name bytes {:?}", name.as_bytes());
+        return Ok(());
+    }
+    let home = directory.path().join(&name);
     let path = home.join(".config/gcloud/application_default_credentials.json");
     std::fs::create_dir_all(path.parent().ok_or("missing parent")?)?;
     std::fs::write(&path, b"not JSON")?;

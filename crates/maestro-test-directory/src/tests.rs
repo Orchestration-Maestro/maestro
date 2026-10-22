@@ -1,6 +1,7 @@
-//! Collision and creation-failure observations at the allocator.
+//! Collision, creation-failure and name-admission observations at the owner.
 use super::{Scratch, allocate};
 use std::{
+    ffi::OsStr,
     fs,
     sync::atomic::{AtomicU64, Ordering},
 };
@@ -38,4 +39,38 @@ fn existing_candidates_survive_exclusive_allocation() {
             assert_eq!(fs::read_to_string(file).unwrap(), "original");
         }
     }
+}
+
+/// A host that folds case answers the same question the independent probe does.
+#[test]
+fn folded_spellings_report_the_host_answer() {
+    let scratch = Scratch::new().unwrap();
+    let probe = scratch.path().join("independent");
+    fs::create_dir(&probe).unwrap();
+    fs::write(probe.join("A.readme"), "").unwrap();
+    let folded = probe.join("a.readme").exists();
+    assert_eq!(
+        scratch
+            .keeps_distinct(&[OsStr::new("A.readme"), OsStr::new("a.readme")])
+            .unwrap(),
+        !folded,
+        "folded case spellings"
+    );
+}
+
+/// A host that refuses native name bytes answers the same question the write does.
+#[cfg(unix)]
+#[test]
+fn refused_names_report_the_host_answer() {
+    use std::os::unix::ffi::OsStrExt as _;
+    let scratch = Scratch::new().unwrap();
+    let probe = scratch.path().join("independent");
+    fs::create_dir(&probe).unwrap();
+    let name = OsStr::from_bytes(b"n\xff");
+    let stored = fs::write(probe.join(name), "").is_ok();
+    assert_eq!(
+        scratch.keeps_distinct(&[name]).unwrap(),
+        stored,
+        "refused name bytes"
+    );
 }

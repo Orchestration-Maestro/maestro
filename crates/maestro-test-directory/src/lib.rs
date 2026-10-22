@@ -2,6 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::{
+    ffi::OsStr,
     fs, io,
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
@@ -40,6 +41,29 @@ impl Scratch {
     #[must_use]
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// Create `names` together in a new directory below this owner and report whether the
+    /// running host stored that many distinct entries. A name the host folded onto an earlier
+    /// one, or refused to store, reports `false`. Callers pass leaf names, so a `false` answer
+    /// states a premise the host cannot exercise; like `deny` and `enter_unreadable`, the
+    /// answer describes the host rather than an expectation.
+    ///
+    /// # Errors
+    /// Returns a creation or removal failure that is not the host's answer about a name.
+    pub fn keeps_distinct(&self, names: &[&OsStr]) -> io::Result<bool> {
+        let probe = self.path.join("name-admission");
+        fs::create_dir(&probe)?;
+        let stored = names.iter().try_fold(0_usize, |stored, name| {
+            match fs::File::create_new(probe.join(name)) {
+                Ok(_) => Ok(stored + 1),
+                Err(error) if name_refused(&probe, &error) => Ok(stored),
+                Err(error) => Err(error),
+            }
+        });
+        let removed = fs::remove_dir_all(&probe);
+        let stored = stored?;
+        removed.map(|()| stored == names.len())
     }
 
     /// Create `name` in this directory, make it the process working directory and remove it.
@@ -138,6 +162,14 @@ impl Drop for Restore {
     fn drop(&mut self) {
         let _ = fs::set_permissions(&self.0, self.1.clone());
     }
+}
+
+/// Whether a failed creation means the running host did not store the name: it folded the
+/// name onto an earlier entry, or it refused this name while a control name in the same
+/// directory was stored.
+fn name_refused(directory: &Path, error: &io::Error) -> bool {
+    error.kind() == io::ErrorKind::AlreadyExists
+        || fs::write(directory.join("control"), "control").is_ok()
 }
 
 /// Retry only existing candidate names, retaining every pre-existing entry.
