@@ -267,25 +267,29 @@ Preparation selects the first element, ignoring preceding whitespace, comments,
 processing instructions and CDATA. A property with no value element fails.
 Selection and decoding follow the [XML reader](#word-package-reader).
 
-`CommentsPart` reuses the [owned body parser](#owned-word-element-tree) for each
-comment's content, retaining raw author, initials, date and identifier.
+`CommentsPart` reuses the [owned body parser](#owned-word-element-tree) and its
+width policy for each comment's content, retaining raw author, initials, date
+and identifier.
 `CommentsExtendedPart` retains paragraph/parent links and nullable exact-token
 completion flags. Both expose source-order lists and last-key-wins maps sharing
 `Arc<RwLock<_>>` records. Missing IDs use the key `null`; numeric keys enumerate
 first in ascending order. Editing a record does not update its snapshot lookup
 key, and external handles survive removal or document release.
 
-`WordDocument::load` prepares these records even without rendering. It admits
-relationships first, XML second and semantic data third, before traversing that
-part's descendants. Semantic failures return `DocxError::Xml` with the part path;
-no partial document is returned. The four named property/comment accessors borrow
-the latest designated data. Custom properties are available through `parts()`
-and `PartData::CustomProps`; unsupported semantic kinds retain `data: None`.
+`WordDocument::load` prepares these records even without rendering; comment
+bodies keep their cell widths. It admits relationships first, XML second and
+semantic data third, before traversing that part's descendants. Semantic failures return
+`DocxError::Xml` with the part path; no partial document is returned. The four
+named property/comment accessors borrow the latest designated data. Custom
+properties are available through `parts()` and `PartData::CustomProps`;
+unsupported semantic kinds retain `data: None`.
 
 ## Owned Word element tree
 
 `maestro_app::browser::docx_preview::{parse_body_elements, parse_paragraph,
 parse_run}` parse an `OwnedXmlElement` selection into an `OpenXmlElementTree`.
+Their `ignore_width` flag suppresses cell widths in every property group; table
+widths remain.
 Ordered arena positions preserve separate runs and their paragraph or simple-field
 parents, including hidden paragraphs used by content controls and change wrappers.
 Text, breaks, tabs, symbols, note references and field metadata remain typed;
@@ -312,9 +316,18 @@ whole earlier group; later paragraph property groups without a section retain th
 existing section. Package-level section composition, pagination, inheritance and
 rendering remain separate work.
 
-Recognized foreign branches retain shared complete XML source with selected byte
-ranges, preserving ancestor namespaces. Tables, links and smart tags remain
-uninterpreted here. Comment references and range markers retain typed nullable
+Tables keep their rows, the last grid's column widths and separate table and
+cell style maps from their last property group. Style references, look classes
+and band sizes survive later groups. Centered and right-aligned tables use
+automatic margins, floating positions add their text distances to any existing
+margin, and hidden tables are not displayed. Rows keep conditional classes,
+nullable header flags and grid offsets. Cells keep nested paragraphs and tables,
+spans, merge markers (a missing value continues the merge), conditional classes
+and text directions, which apply after the cell's other properties.
+
+Hyperlinks keep nullable relationship identifiers and anchors; smart tags keep
+nonempty URIs and element names. Both own their immediate runs, and those runs
+point back to them. Comment references and range markers retain typed nullable
 identifiers in inline order; comment rendering remains separate work.
 
 Bookmarks retain nullable identifiers, names and independent column numbers in
@@ -379,7 +392,8 @@ neither operation renders a preview.
 `maestro_app::browser::docx_preview` exposes `StylesPart`, `ThemePart`,
 `HeaderPart`, `FooterPart`, `FootnotesPart`, `EndnotesPart` and `SettingsPart`.
 Their `parse_xml` factories prepare owned records separately from package
-loading; headers, footers and notes reuse the ordinary body parser.
+loading; headers, footers and notes reuse the ordinary body parser with the
+caller's width policy.
 
 Styles retain ordered named/default definitions, repeated identifiers,
 relationships and CSS declarations without resolving inheritance. Each style

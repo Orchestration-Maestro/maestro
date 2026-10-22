@@ -1,6 +1,7 @@
 //! Border shorthand values.
 use super::super::{LengthUsage, VerticalAlign, XmlElement, XmlParser};
 use super::xml_util::color_attr;
+use num_traits::ToPrimitive;
 
 /// Render one border, leaving absent components to CSS defaults.
 pub(super) fn value_of_border<'doc, 'input: 'doc>(
@@ -144,6 +145,36 @@ pub(super) fn class_name_of_cnf_style(xml: &XmlParser<'_>, element: XmlElement<'
         .map(|(_, (class, _))| *class)
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+/// Join two nullable sizes, keeping a lone value unchanged.
+pub(super) fn add_size(a: Option<String>, b: Option<String>) -> Option<String> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(format!("calc({a} + {b})")),
+        (a, b) => a.or(b),
+    }
+}
+
+/// Select table-look classes from each flag or its bit in the hexadecimal mask.
+pub(super) fn class_name_of_tbl_look(xml: &XmlParser<'_>, element: XmlElement<'_, '_>) -> String {
+    // Bit tests wrap the parsed integer modulo 2^32; NaN selects no bits.
+    let mask = xml
+        .hex_attr(element, "val", Some(0.0))
+        .and_then(|value| value.rem_euclid(4_294_967_296.0).to_u32())
+        .unwrap_or(0);
+    [
+        ("firstRow", 0x0020, "first-row"),
+        ("lastRow", 0x0040, "last-row"),
+        ("firstColumn", 0x0080, "first-col"),
+        ("lastColumn", 0x0100, "last-col"),
+        ("noHBand", 0x0200, "no-hband"),
+        ("noVBand", 0x0400, "no-vband"),
+    ]
+    .into_iter()
+    .filter(|&(flag, bit, _)| xml.bool_attr(element, flag, None) == Some(true) || mask & bit != 0)
+    .map(|(_, _, class)| class)
+    .collect::<Vec<_>>()
+    .join(" ")
 }
 
 /// Select the supported run alignment tag, leaving other values null.

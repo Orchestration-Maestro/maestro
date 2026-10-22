@@ -67,6 +67,7 @@ impl Default for Options {
 mod document_parser;
 pub use document::dom::{
     DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData, OpenXmlElementTree,
+    WmlHyperlink, WmlSmartTag, WmlTable, WmlTableCell, WmlTableColumn, WmlTableRow,
 };
 pub use document_parser::{
     DefaultPropertiesOptions, TableStyle, parse_background, parse_body_elements,

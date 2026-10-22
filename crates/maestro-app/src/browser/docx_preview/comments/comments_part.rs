@@ -15,11 +15,12 @@ pub struct CommentsPart {
 }
 impl CommentsPart {
     /// Prepare comments and last-key-wins lookups sharing the source list records.
+    /// `ignore_width` suppresses cell widths in comment bodies.
     ///
     /// # Errors
     /// Propagates XML admission, selection or body failures.
-    pub fn parse_xml(input: &OwnedXmlElement) -> Result<Self, DocxError> {
-        let comments: Vec<_> = parse_comments(input)?
+    pub fn parse_xml(input: &OwnedXmlElement, ignore_width: bool) -> Result<Self, DocxError> {
+        let comments: Vec<_> = parse_comments(input, ignore_width)?
             .into_iter()
             .map(|c| Arc::new(RwLock::new(c)))
             .collect();

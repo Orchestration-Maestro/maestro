@@ -1,31 +1,10 @@
 //! Lossless observations of owned Word trees.
 #![cfg(test)]
 use maestro_app::browser::docx_preview::{
-    FooterHeaderReference, OpenXmlElementData as Data, OpenXmlElementTree, OwnedXmlElement,
+    FooterHeaderReference, OpenXmlElementData as Data, OpenXmlElementTree,
 };
 use serde_json::{Value, json};
 
-/// Observe the retained XML selection, including mixed element/text order.
-///
-/// # Panics
-/// Panics if the retained source cannot be reparsed or its range is missing.
-#[must_use]
-pub fn raw(input: &OwnedXmlElement) -> Value {
-    let parser = roxmltree::Document::parse(input.source()).unwrap();
-    let element = parser
-        .descendants()
-        .find(|n| n.is_element() && n.range() == input.source_range())
-        .unwrap();
-    xml(element)
-}
-/// Project one XML element without discarding text or namespace identity.
-fn xml(element: roxmltree::Node<'_, '_>) -> Value {
-    json!({
-        "local_name": element.tag_name().name(), "namespace": element.tag_name().namespace(),
-        "attributes": element.attributes().map(|a| json!({"local_name": a.name(), "namespace": a.namespace(), "value": a.value()})).collect::<Vec<_>>(),
-        "children": element.children().filter_map(|n| if n.is_element() { Some(xml(n)) } else { n.text().map(|t| json!(t)) }).collect::<Vec<_>>()
-    })
-}
 /// Scalar payload observation; common links are observed separately.
 fn payload(data: &Data) -> Value {
     match data {
@@ -47,6 +26,13 @@ fn payload(data: &Data) -> Value {
         Data::CommentRangeStart(c) => json!({"id":c.id,"children":[],"cssStyle":[]}),
         Data::CommentRangeEnd(c) => json!({"id":c.id,"children":[],"cssStyle":[]}),
         Data::BookmarkEnd { id } => json!({"id":id}),
+        Data::Hyperlink(link) => json!({"id":link.id,"anchor":link.anchor}),
+        Data::SmartTag(tag) => {
+            let mut value = json!({});
+            member(&mut value, "uri", tag.uri.as_ref(), |v| json!(v));
+            member(&mut value, "element", tag.element.as_ref(), |v| json!(v));
+            value
+        }
         Data::Break { r#break } => json!({"break":r#break}),
         Data::Symbol { font, char } => json!({"font":font,"char":char}),
         Data::FootnoteReference { id } | Data::EndnoteReference { id } | Data::AltChunk { id } => {
@@ -104,12 +90,20 @@ fn visit(
             | Data::Math { .. }
             | Data::VmlPicture
             | Data::VmlElement(_)
+            | Data::Table(_)
+            | Data::Row(_)
+            | Data::Cell(_)
+            | Data::Hyperlink(_)
+            | Data::SmartTag(_)
     ) {
         value["children"] = json!(children);
     } else {
         assert!(children.is_empty());
     }
-    if matches!(node.data, Data::Run { .. }) {
+    if matches!(
+        node.data,
+        Data::Run { .. } | Data::Hyperlink(_) | Data::SmartTag(_)
+    ) {
         value["parent"] = json!(parent);
     } else {
         assert!(parent.is_none());
@@ -139,15 +133,6 @@ fn project(tree: &OpenXmlElementTree, observe: fn(&Data, &mut Value)) -> Value {
         .collect();
     json!({"roots":roots,"nodes":nodes})
 }
-/// Observe every foreign slot with its actual kind and complete retained XML.
-#[must_use]
-pub fn foreign(tree: &OpenXmlElementTree, context: &str) -> Value {
-    json!(tree.nodes.iter().filter_map(|node| if let Data::Unparsed { element, .. } = &node.data {
-        let xml = raw(element);
-        Some(json!({"context":context,"name":xml["local_name"],"kind":node.dom_type().as_str(),"xml":xml}))
-    } else { None }).collect::<Vec<_>>())
-}
-
 /// Add an encountered member without conflating absent and null.
 pub(super) fn member<T>(
     out: &mut Value,
@@ -209,6 +194,7 @@ pub(super) fn formatting(data: &Data, out: &mut Value) {
         }),
         Data::VmlElement(v) => vml(v, out),
         Data::Drawing { css_style } => styles(Some(css_style), out),
+        Data::Table(_) | Data::Row(_) | Data::Cell(_) => table_part(data, out),
         Data::Run { properties: p, .. } => {
             styles(p.css_style.as_ref(), out);
             member(out, "styleName", p.style_name.as_ref(), |v| json!(v));
@@ -227,6 +213,47 @@ fn styles(style: Option<&indexmap::IndexMap<String, Option<String>>>, out: &mut 
     member(out, "cssStyle", style, |v| {
         json!(v.iter().collect::<Vec<_>>())
     });
+}
+
+/// Observe table, row and cell styles with their encountered metadata.
+fn table_part(data: &Data, out: &mut Value) {
+    let nullable = |v: Option<f64>| v.map_or(Value::Null, number);
+    match data {
+        Data::Table(t) => {
+            member(out, "columns", t.columns.as_ref(), |columns| {
+                json!(
+                    columns
+                        .iter()
+                        .map(|c| json!({"width":c.width}))
+                        .collect::<Vec<_>>()
+                )
+            });
+            styles(t.css_style.as_ref(), out);
+            member(out, "cellStyle", t.cell_style.as_ref(), |v| {
+                json!(v.iter().collect::<Vec<_>>())
+            });
+            member(out, "styleName", t.style_name.as_ref(), |v| json!(v));
+            member(out, "className", t.class_name.as_ref(), |v| json!(v));
+            member(out, "colBandSize", t.col_band_size, nullable);
+            member(out, "rowBandSize", t.row_band_size, nullable);
+        }
+        Data::Row(r) => {
+            styles(r.css_style.as_ref(), out);
+            member(out, "className", r.class_name.as_ref(), |v| json!(v));
+            member(out, "isHeader", r.is_header, |v| json!(v));
+            member(out, "gridBefore", r.grid_before, nullable);
+            member(out, "gridAfter", r.grid_after, nullable);
+        }
+        Data::Cell(c) => {
+            styles(c.css_style.as_ref(), out);
+            member(out, "className", c.class_name.as_ref(), |v| json!(v));
+            member(out, "span", c.span, nullable);
+            member(out, "verticalMerge", c.vertical_merge.as_ref(), |v| {
+                json!(v)
+            });
+        }
+        _ => {}
+    }
 }
 
 /// Observe paragraph metadata through the same graph projection.

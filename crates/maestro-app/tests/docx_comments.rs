@@ -13,7 +13,7 @@ fn comments_preserve_metadata_order_and_duplicate_ids() {
     ) {
         assert_eq!(case.input.operation, "comments");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
-        let part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root())).unwrap();
+        let part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root()), false).unwrap();
         assert_eq!(metadata::comments(&part), case.expected);
     }
 }
@@ -23,7 +23,7 @@ fn check_comments(name: &str) {
     for case in cases::<XmlInput>(include_str!("fixtures/docx/comments.json"), name) {
         assert_eq!(case.input.operation, "comments");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
-        let part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root())).unwrap();
+        let part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root()), false).unwrap();
         assert_eq!(metadata::comments(&part), case.expected);
     }
 }
@@ -45,7 +45,7 @@ fn comment_parts_keep_source_after_input_release() {
         let part = {
             let xml = parse_xml_string(&case.input.xml, true).unwrap();
             let input = OwnedXmlElement::new(xml.root());
-            CommentsPart::parse_xml(&input).unwrap()
+            CommentsPart::parse_xml(&input, false).unwrap()
         };
         drop(case.input);
         assert_eq!(metadata::comments(&part), case.expected);
@@ -59,7 +59,7 @@ fn comment_lookup_shares_records_with_source_list() {
     ) {
         assert_eq!(case.input.operation, "comment_alias");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
-        let mut part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root())).unwrap();
+        let mut part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root()), false).unwrap();
         let handle = std::sync::Arc::clone(&part.comment_map["2"]);
         let same = std::sync::Arc::ptr_eq(&handle, &part.comments[2]);
         {
@@ -148,7 +148,7 @@ fn comment_body_errors_fail_the_enclosing_part() {
         assert_eq!(case.input.operation, "comments");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
         assert!(matches!(
-            CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root())),
+            CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root()), false),
             Err(maestro_app::browser::docx_preview::DocxError::Xml { .. })
         ));
         assert_eq!(
