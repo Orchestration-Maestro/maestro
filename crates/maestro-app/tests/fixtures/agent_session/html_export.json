@@ -1,0 +1,46 @@
+{
+  "inMemory": {
+    "error": "Cannot export in-memory session to HTML"
+  },
+  "returned": "$ROOT/exports/session.html",
+  "dataKeys": [
+    "header",
+    "entries",
+    "leafId",
+    "systemPrompt",
+    "tools"
+  ],
+  "systemPromptIsAgentPrompt": true,
+  "tools": [
+    {
+      "name": "gamma",
+      "description": "gamma tool",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "alpha",
+      "description": "alpha tool",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "entries": [
+    {
+      "id": "e0",
+      "type": "message"
+    },
+    {
+      "id": "e1",
+      "type": "message"
+    }
+  ],
+  "leafId": "e1",
+  "headerIsSessionHeader": true,
+  "hasRenderedTools": false,
+  "themeName": "light"
+}

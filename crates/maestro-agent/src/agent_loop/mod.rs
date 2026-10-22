@@ -15,6 +15,7 @@ pub type AgentEventSink<C = crate::NoCustomMessages, E = Threaded> =
     <E as maestro_models::Execution>::Shared<<E as AgentExecution>::Sink<C>>;
 /// Request and assistant-event handling.
 mod assistant;
+pub use assistant::tool_definitions;
 /// Concurrent settlement of admitted tool progress.
 pub(crate) mod progress;
 /// Tool execution.

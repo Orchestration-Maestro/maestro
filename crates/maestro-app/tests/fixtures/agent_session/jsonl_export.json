@@ -1,0 +1,67 @@
+{
+  "returned": "$ROOT/exports/deep/branch.jsonl",
+  "endsWithNewline": true,
+  "lineCount": 5,
+  "header": {
+    "type": "session",
+    "version": 3,
+    "id": "$SESSION",
+    "timestamp": "$ISO",
+    "cwd": "$ROOT/project",
+    "keys": [
+      "type",
+      "version",
+      "id",
+      "timestamp",
+      "cwd"
+    ]
+  },
+  "entries": [
+    {
+      "id": "u1",
+      "parentId": null,
+      "keys": [
+        "type",
+        "id",
+        "parentId",
+        "timestamp",
+        "message"
+      ]
+    },
+    {
+      "id": "a1",
+      "parentId": "u1",
+      "keys": [
+        "type",
+        "id",
+        "parentId",
+        "timestamp",
+        "message"
+      ]
+    },
+    {
+      "id": "u3",
+      "parentId": "a1",
+      "keys": [
+        "type",
+        "id",
+        "parentId",
+        "timestamp",
+        "message"
+      ]
+    },
+    {
+      "id": "a3",
+      "parentId": "u3",
+      "keys": [
+        "type",
+        "id",
+        "parentId",
+        "timestamp",
+        "message"
+      ]
+    }
+  ],
+  "defaultName": "$ROOT/exports/session-$STAMP.jsonl",
+  "defaultExists": true
+}

@@ -1,0 +1,617 @@
+[
+  {
+    "name": "supplied order filters unknown names",
+    "registry": [
+      {
+        "name": "alpha",
+        "description": "alpha tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:alpha>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "beta",
+        "description": "beta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:beta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "gamma",
+        "description": "gamma tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:gamma>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "delta",
+        "description": "delta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:delta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    ],
+    "definitions": {
+      "alpha": "alpha",
+      "missing": null
+    },
+    "steps": [
+      {
+        "refresh": {
+          "tools": [
+            {
+              "name": "alpha",
+              "promptSnippet": "  Read\n  files\r\n quickly  ",
+              "promptGuidelines": [
+                "  Prefer read ",
+                "",
+                "Prefer read",
+                " Keep it short",
+                "\t"
+              ]
+            },
+            {
+              "name": "beta",
+              "promptSnippet": "   ",
+              "promptGuidelines": null
+            },
+            {
+              "name": "gamma",
+              "promptSnippet": "﻿xy",
+              "promptGuidelines": [
+                "Use gamma"
+              ]
+            },
+            {
+              "name": "delta",
+              "promptSnippet": null,
+              "promptGuidelines": []
+            }
+          ],
+          "activeToolNames": [],
+          "includeAllExtensionTools": true
+        },
+        "activeToolNames": [
+          "alpha",
+          "beta",
+          "gamma",
+          "delta"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "alpha",
+            "beta",
+            "gamma",
+            "delta"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly",
+            "gamma": "xy"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "select": [
+          "delta",
+          "missing",
+          "alpha"
+        ],
+        "activeToolNames": [
+          "delta",
+          "alpha"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "delta",
+            "alpha"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "select": [
+          "gamma",
+          "alpha",
+          "gamma"
+        ],
+        "activeToolNames": [
+          "gamma",
+          "alpha",
+          "gamma"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "gamma",
+            "alpha",
+            "gamma"
+          ],
+          "toolSnippets": {
+            "gamma": "xy",
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Use gamma",
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "select": [],
+        "activeToolNames": [],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [],
+          "toolSnippets": {},
+          "promptGuidelines": []
+        },
+        "systemPromptIsBase": true
+      }
+    ]
+  },
+  {
+    "name": "loader prompt and appended sections join",
+    "registry": [
+      {
+        "name": "alpha",
+        "description": "alpha tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:alpha>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "beta",
+        "description": "beta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:beta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "gamma",
+        "description": "gamma tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:gamma>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "delta",
+        "description": "delta tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:delta>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    ],
+    "definitions": {
+      "alpha": "alpha",
+      "missing": null
+    },
+    "steps": [
+      {
+        "refresh": {
+          "tools": [
+            {
+              "name": "alpha",
+              "promptSnippet": "  Read\n  files\r\n quickly  ",
+              "promptGuidelines": [
+                "  Prefer read ",
+                "",
+                "Prefer read",
+                " Keep it short",
+                "\t"
+              ]
+            },
+            {
+              "name": "beta",
+              "promptSnippet": "   ",
+              "promptGuidelines": null
+            },
+            {
+              "name": "gamma",
+              "promptSnippet": "﻿xy",
+              "promptGuidelines": [
+                "Use gamma"
+              ]
+            },
+            {
+              "name": "delta",
+              "promptSnippet": null,
+              "promptGuidelines": []
+            }
+          ],
+          "activeToolNames": [],
+          "includeAllExtensionTools": true
+        },
+        "activeToolNames": [
+          "alpha",
+          "beta",
+          "gamma",
+          "delta"
+        ],
+        "options": {
+          "customPrompt": "Custom base",
+          "appendSystemPrompt": "one\n\ntwo",
+          "selectedTools": [
+            "alpha",
+            "beta",
+            "gamma",
+            "delta"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly",
+            "gamma": "xy"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "select": [
+          "beta",
+          "alpha"
+        ],
+        "activeToolNames": [
+          "beta",
+          "alpha"
+        ],
+        "options": {
+          "customPrompt": "Custom base",
+          "appendSystemPrompt": "one\n\ntwo",
+          "selectedTools": [
+            "beta",
+            "alpha"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short"
+          ]
+        },
+        "systemPromptIsBase": true
+      }
+    ]
+  },
+  {
+    "name": "a later refresh reactivates tools and rebuilds the prompt",
+    "registry": [
+      {
+        "name": "alpha",
+        "description": "alpha tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:alpha>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      },
+      {
+        "name": "epsilon",
+        "description": "epsilon tool",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "sourceInfo": {
+          "path": "<sdk:epsilon>",
+          "source": "sdk",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    ],
+    "definitions": {
+      "alpha": "alpha",
+      "missing": null
+    },
+    "steps": [
+      {
+        "refresh": {
+          "tools": [
+            {
+              "name": "alpha",
+              "promptSnippet": "  Read\n  files\r\n quickly  ",
+              "promptGuidelines": [
+                "  Prefer read ",
+                "",
+                "Prefer read",
+                " Keep it short",
+                "\t"
+              ]
+            },
+            {
+              "name": "beta",
+              "promptSnippet": "   ",
+              "promptGuidelines": null
+            },
+            {
+              "name": "gamma",
+              "promptSnippet": "﻿xy",
+              "promptGuidelines": [
+                "Use gamma"
+              ]
+            },
+            {
+              "name": "delta",
+              "promptSnippet": null,
+              "promptGuidelines": []
+            }
+          ],
+          "activeToolNames": [],
+          "includeAllExtensionTools": true
+        },
+        "activeToolNames": [
+          "alpha",
+          "beta",
+          "gamma",
+          "delta"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "alpha",
+            "beta",
+            "gamma",
+            "delta"
+          ],
+          "toolSnippets": {
+            "alpha": "Read files quickly",
+            "gamma": "xy"
+          },
+          "promptGuidelines": [
+            "Prefer read",
+            "Keep it short",
+            "Use gamma"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "select": [
+          "gamma",
+          "alpha"
+        ],
+        "activeToolNames": [
+          "gamma",
+          "alpha"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "gamma",
+            "alpha"
+          ],
+          "toolSnippets": {
+            "gamma": "xy",
+            "alpha": "Read files quickly"
+          },
+          "promptGuidelines": [
+            "Use gamma",
+            "Prefer read",
+            "Keep it short"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "refresh": {
+          "tools": [
+            {
+              "name": "alpha",
+              "promptSnippet": "Fresh alpha",
+              "promptGuidelines": [
+                "Fresh rule"
+              ]
+            },
+            {
+              "name": "epsilon",
+              "promptSnippet": " Epsilon  tool ",
+              "promptGuidelines": [
+                "Use epsilon",
+                "Use epsilon"
+              ]
+            }
+          ],
+          "activeToolNames": null,
+          "includeAllExtensionTools": false
+        },
+        "activeToolNames": [
+          "alpha",
+          "epsilon"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "alpha",
+            "epsilon"
+          ],
+          "toolSnippets": {
+            "alpha": "Fresh alpha",
+            "epsilon": "Epsilon tool"
+          },
+          "promptGuidelines": [
+            "Fresh rule",
+            "Use epsilon"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "refresh": {
+          "tools": [
+            {
+              "name": "alpha",
+              "promptSnippet": "Fresh alpha",
+              "promptGuidelines": [
+                "Fresh rule"
+              ]
+            },
+            {
+              "name": "epsilon",
+              "promptSnippet": " Epsilon  tool ",
+              "promptGuidelines": [
+                "Use epsilon",
+                "Use epsilon"
+              ]
+            }
+          ],
+          "activeToolNames": [
+            "epsilon",
+            "missing"
+          ],
+          "includeAllExtensionTools": false
+        },
+        "activeToolNames": [
+          "epsilon"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "epsilon"
+          ],
+          "toolSnippets": {
+            "epsilon": "Epsilon tool"
+          },
+          "promptGuidelines": [
+            "Use epsilon"
+          ]
+        },
+        "systemPromptIsBase": true
+      },
+      {
+        "refresh": {
+          "tools": [
+            {
+              "name": "alpha",
+              "promptSnippet": "Fresh alpha",
+              "promptGuidelines": [
+                "Fresh rule"
+              ]
+            },
+            {
+              "name": "epsilon",
+              "promptSnippet": " Epsilon  tool ",
+              "promptGuidelines": [
+                "Use epsilon",
+                "Use epsilon"
+              ]
+            }
+          ],
+          "activeToolNames": null,
+          "includeAllExtensionTools": true
+        },
+        "activeToolNames": [
+          "epsilon",
+          "alpha"
+        ],
+        "options": {
+          "customPrompt": null,
+          "appendSystemPrompt": null,
+          "selectedTools": [
+            "epsilon",
+            "alpha"
+          ],
+          "toolSnippets": {
+            "epsilon": "Epsilon tool",
+            "alpha": "Fresh alpha"
+          },
+          "promptGuidelines": [
+            "Use epsilon",
+            "Fresh rule"
+          ]
+        },
+        "systemPromptIsBase": true
+      }
+    ]
+  }
+]

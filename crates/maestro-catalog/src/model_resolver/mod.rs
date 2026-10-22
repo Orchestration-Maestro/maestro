@@ -112,6 +112,7 @@ pub use restoration::{
     RestoreModelFromSessionOptions, RestoreModelFromSessionResult, restore_model_from_session,
 };
 /// A shared descriptor with an optional explicit thinking choice.
+#[derive(Clone)]
 pub struct ScopedModel {
     /// Shared catalog descriptor.
     pub model: Arc<RwLock<Model>>,

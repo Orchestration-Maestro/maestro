@@ -1,0 +1,337 @@
+[
+  {
+    "name": "counts roles, tool calls, tokens and cost",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 2,
+      "assistantMessages": 2,
+      "toolCalls": 2,
+      "toolResults": 2,
+      "totalMessages": 7,
+      "tokens": {
+        "input": 300,
+        "output": 60,
+        "cacheRead": 15,
+        "cacheWrite": 9,
+        "total": 384
+      },
+      "cost": 0.75,
+      "contextUsage": {
+        "tokens": 257,
+        "contextWindow": 128000,
+        "percent": 0.20078125
+      }
+    },
+    "contextUsage": {
+      "tokens": 257,
+      "contextWindow": 128000,
+      "percent": 0.20078125
+    },
+    "lastAssistantText": "done"
+  },
+  {
+    "name": "no context window means no usage",
+    "contextWindow": 0,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 2,
+      "assistantMessages": 2,
+      "toolCalls": 2,
+      "toolResults": 2,
+      "totalMessages": 7,
+      "tokens": {
+        "input": 300,
+        "output": 60,
+        "cacheRead": 15,
+        "cacheWrite": 9,
+        "total": 384
+      },
+      "cost": 0.75,
+      "contextUsage": "missing"
+    },
+    "contextUsage": {
+      "undefined": true
+    },
+    "lastAssistantText": "done"
+  },
+  {
+    "name": "usage after the latest compaction is unknown until an answer",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 1,
+      "assistantMessages": 1,
+      "toolCalls": 2,
+      "toolResults": 0,
+      "totalMessages": 2,
+      "tokens": {
+        "input": 100,
+        "output": 20,
+        "cacheRead": 5,
+        "cacheWrite": 3,
+        "total": 128
+      },
+      "cost": 0.25,
+      "contextUsage": {
+        "tokens": null,
+        "contextWindow": 128000,
+        "percent": null
+      }
+    },
+    "contextUsage": {
+      "tokens": null,
+      "contextWindow": 128000,
+      "percent": null
+    },
+    "lastAssistantText": "calling"
+  },
+  {
+    "name": "an answer after the compaction gives usage",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 2,
+      "assistantMessages": 2,
+      "toolCalls": 2,
+      "toolResults": 0,
+      "totalMessages": 4,
+      "tokens": {
+        "input": 130,
+        "output": 25,
+        "cacheRead": 5,
+        "cacheWrite": 3,
+        "total": 163
+      },
+      "cost": 0.35,
+      "contextUsage": {
+        "tokens": 35,
+        "contextWindow": 128000,
+        "percent": 0.027343750000000003
+      }
+    },
+    "contextUsage": {
+      "tokens": 35,
+      "contextWindow": 128000,
+      "percent": 0.027343750000000003
+    },
+    "lastAssistantText": "fresh"
+  },
+  {
+    "name": "aborted and failed answers after a compaction are skipped",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 1,
+      "assistantMessages": 1,
+      "toolCalls": 2,
+      "toolResults": 0,
+      "totalMessages": 2,
+      "tokens": {
+        "input": 100,
+        "output": 20,
+        "cacheRead": 5,
+        "cacheWrite": 3,
+        "total": 128
+      },
+      "cost": 0.25,
+      "contextUsage": {
+        "tokens": null,
+        "contextWindow": 128000,
+        "percent": null
+      }
+    },
+    "contextUsage": {
+      "tokens": null,
+      "contextWindow": 128000,
+      "percent": null
+    },
+    "lastAssistantText": "calling"
+  },
+  {
+    "name": "a zero-usage newest answer after a compaction leaves usage unknown",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 1,
+      "assistantMessages": 1,
+      "toolCalls": 2,
+      "toolResults": 0,
+      "totalMessages": 2,
+      "tokens": {
+        "input": 100,
+        "output": 20,
+        "cacheRead": 5,
+        "cacheWrite": 3,
+        "total": 128
+      },
+      "cost": 0.25,
+      "contextUsage": {
+        "tokens": null,
+        "contextWindow": 128000,
+        "percent": null
+      }
+    },
+    "contextUsage": {
+      "tokens": null,
+      "contextWindow": 128000,
+      "percent": null
+    },
+    "lastAssistantText": "calling"
+  },
+  {
+    "name": "no assistant message has no last text",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 1,
+      "assistantMessages": 0,
+      "toolCalls": 0,
+      "toolResults": 0,
+      "totalMessages": 1,
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0
+      },
+      "cost": 0,
+      "contextUsage": {
+        "tokens": 1,
+        "contextWindow": 128000,
+        "percent": 0.00078125
+      }
+    },
+    "contextUsage": {
+      "tokens": 1,
+      "contextWindow": 128000,
+      "percent": 0.00078125
+    },
+    "lastAssistantText": null
+  },
+  {
+    "name": "an empty aborted answer is skipped for last text",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 0,
+      "assistantMessages": 2,
+      "toolCalls": 0,
+      "toolResults": 0,
+      "totalMessages": 2,
+      "tokens": {
+        "input": 2,
+        "output": 2,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 4
+      },
+      "cost": 0,
+      "contextUsage": {
+        "tokens": 2,
+        "contextWindow": 128000,
+        "percent": 0.0015625
+      }
+    },
+    "contextUsage": {
+      "tokens": 2,
+      "contextWindow": 128000,
+      "percent": 0.0015625
+    },
+    "lastAssistantText": "kept"
+  },
+  {
+    "name": "an aborted answer with content gives last text",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 0,
+      "assistantMessages": 2,
+      "toolCalls": 0,
+      "toolResults": 0,
+      "totalMessages": 2,
+      "tokens": {
+        "input": 2,
+        "output": 2,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 4
+      },
+      "cost": 0,
+      "contextUsage": {
+        "tokens": 4,
+        "contextWindow": 128000,
+        "percent": 0.003125
+      }
+    },
+    "contextUsage": {
+      "tokens": 4,
+      "contextWindow": 128000,
+      "percent": 0.003125
+    },
+    "lastAssistantText": "partial"
+  },
+  {
+    "name": "blank answer text has no last text",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 0,
+      "assistantMessages": 1,
+      "toolCalls": 0,
+      "toolResults": 0,
+      "totalMessages": 1,
+      "tokens": {
+        "input": 1,
+        "output": 1,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 2
+      },
+      "cost": 0,
+      "contextUsage": {
+        "tokens": 2,
+        "contextWindow": 128000,
+        "percent": 0.0015625
+      }
+    },
+    "contextUsage": {
+      "tokens": 2,
+      "contextWindow": 128000,
+      "percent": 0.0015625
+    },
+    "lastAssistantText": null
+  },
+  {
+    "name": "only text blocks join into the last text",
+    "contextWindow": null,
+    "stats": {
+      "sessionId": "$ID",
+      "userMessages": 0,
+      "assistantMessages": 1,
+      "toolCalls": 1,
+      "toolResults": 0,
+      "totalMessages": 1,
+      "tokens": {
+        "input": 1,
+        "output": 1,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 2
+      },
+      "cost": 0,
+      "contextUsage": {
+        "tokens": 2,
+        "contextWindow": 128000,
+        "percent": 0.0015625
+      }
+    },
+    "contextUsage": {
+      "tokens": 2,
+      "contextWindow": 128000,
+      "percent": 0.0015625
+    },
+    "lastAssistantText": "onetwo"
+  }
+]

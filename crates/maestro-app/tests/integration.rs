@@ -98,8 +98,14 @@ mod self_update_selection;
 #[path = "support/service_observations.rs"]
 mod service_observations;
 mod service_releases;
+mod session_exports;
 mod session_facade;
+mod session_model_selection;
 mod session_services;
+mod session_skill_blocks;
+mod session_statistics;
+mod session_tool_selection;
+mod session_tree_navigation;
 mod settings_manager_bug_checks;
 mod settings_manager_checks;
 mod share_links;
@@ -132,6 +138,7 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
     pub mod pdf;
+    pub mod session_harness;
     mod shared_operands;
     pub mod spreadsheet;
 }

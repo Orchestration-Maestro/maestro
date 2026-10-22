@@ -488,9 +488,11 @@ target at `tests/integration.rs`.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
 its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
-and extension error delivery reuse it; dispatch and lifecycle policy remain with
-their callers. The collection returns removed ownership for release outside guards.
+belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
+session listeners and extension error delivery reuse it. For shared `Rc` callbacks
+it also owns subscribing, which returns the removal operation, and the live walk in
+registration order. What each listener receives and when it runs remain with the
+caller. The collection returns removed ownership for release outside guards.
 
 
 Shared extension event/result schemas and assembled prompt records belong to
