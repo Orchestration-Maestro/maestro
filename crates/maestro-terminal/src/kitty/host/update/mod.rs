@@ -5,8 +5,8 @@ pub(super) mod layers;
 pub(super) mod terminal;
 
 use super::{
-    HostGraphicsCache, HostPlacement, HostSourceKey, KITTY_CHUNK_BYTES,
-    encode::encode_delete_image, host_placement_id,
+    HostGraphicsCache, HostPlacement, HostSourceKey, encode::KITTY_CHUNK_BYTES,
+    encode::encode_delete_image, host_image_id, host_placement_id,
 };
 
 /// Whether one transmission of the placement fits the transport budget.
@@ -20,13 +20,17 @@ pub(super) fn image_transaction_fits(placement: &HostPlacement, budget: Option<u
     encoded.saturating_add(command_overhead) <= budget
 }
 
+/// Host image identity a placement reserves, or the hash of its pixels.
+pub(super) fn host_image_of(placement: &HostPlacement) -> u32 {
+    placement
+        .host_image_id
+        .unwrap_or_else(|| host_image_id(placement.pane_id, &placement.placement))
+}
+
 /// Host image and placement identity the cache keys an entry by.
 pub(super) fn host_identity(placement: &HostPlacement) -> (u32, u32) {
-    let host_id = placement
-        .host_image_id
-        .unwrap_or_else(|| super::host_image_id(placement.pane_id, &placement.placement));
     (
-        host_id,
+        host_image_of(placement),
         host_placement_id(&placement.source_key, &placement.placement),
     )
 }

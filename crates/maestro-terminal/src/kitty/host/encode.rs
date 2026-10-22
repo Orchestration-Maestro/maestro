@@ -1,8 +1,8 @@
 //! Kitty graphics commands the host terminal receives.
 //!
-//! Every command here is written as the reference transcript has it: control
-//! keys in the same order, base64 payloads chunked the same way, and the quiet
-//! level each command needs.
+//! Every command writes its control keys in a fixed order after `a=`, encodes
+//! its payload in base64 chunks of raw payload bytes, and carries the quiet level
+//! it needs.
 
 use std::fmt::Write as _;
 use std::io::Write as _;
@@ -14,10 +14,10 @@ use super::{
 };
 
 /// Raw payload bytes carried by one Kitty transmission chunk.
-pub const KITTY_CHUNK_BYTES: usize = 3072;
+pub(super) const KITTY_CHUNK_BYTES: usize = 3072;
 
 /// Command that transmits and displays a file without sending its bytes.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectFileCommand {
     /// Cursor movement written before the command.
     pub leading: Vec<u8>,

@@ -13,14 +13,17 @@ use super::super::{
         encode_delete_image, encode_delete_placement, encode_display_placement,
         encode_transmit_and_display, encode_upload_image,
     },
-    host_image_id, host_placement_id,
+    host_placement_id,
     identity::{image_signature, placement_signature},
     kitty_format_code,
 };
-use super::{host_identity, image_transaction_fits, placement_identity, release_source};
+use super::{
+    host_identity, host_image_of, image_transaction_fits, placement_identity, release_source,
+};
 
 impl HostGraphicsCache {
     /// Commands that bring the host in line with the visible pane placements.
+    #[must_use]
     pub fn update_layers(
         &mut self,
         placements: &[HostPlacement],
@@ -50,27 +53,12 @@ impl HostGraphicsCache {
         pass.encoded(false)
     }
 
-    /// Run updates until the whole frame is on the host.
-    pub fn drain_layers(
-        &mut self,
-        placements: &[HostPlacement],
-        live_pane_sources: &HashSet<HostSourceKey>,
-    ) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        loop {
-            let encoded = self.update_layers(placements, live_pane_sources, None);
-            bytes.extend(encoded.bytes);
-            if !encoded.incomplete {
-                return bytes;
-            }
-        }
-    }
-
-    /// Commands that make the host show one placement, or none when it already does.
-    pub fn encode_placement_update(&mut self, placement: &HostPlacement) -> Option<Vec<u8>> {
+    /// Commands that make the host show one placement, or none when it already
+    /// shows it, when it is fully clipped away or when it carries no pixels.
+    #[must_use]
+    fn encode_placement_update(&mut self, placement: &HostPlacement) -> Option<Vec<u8>> {
         let (clipped, format_code) = clipped_placement(placement)?;
-        let key = host_identity(placement);
-        let (host_id, placement_id) = key;
+        let key @ (host_id, placement_id) = host_identity(placement);
         let image = image_signature(placement, format_code);
         let shown =
             placement_signature(clipped, placement.placement.z, placement.scrollback_offset);
@@ -87,7 +75,7 @@ impl HostGraphicsCache {
         let mut bytes = Vec::new();
         let mut displayed = false;
         if !image_current {
-            displayed = self.transmit(&mut bytes, placement, host_id, clipped)?;
+            displayed = self.transmit(&mut bytes, placement, key, clipped)?;
             self.images.insert(host_id, image);
         }
         release_source(&mut bytes, self, placement.source_key.clone(), host_id);
@@ -112,13 +100,13 @@ impl HostGraphicsCache {
         &mut self,
         bytes: &mut Vec<u8>,
         placement: &HostPlacement,
-        host_id: u32,
+        key: (u32, u32),
         clipped: ClippedPlacement,
     ) -> Option<bool> {
+        let (host_id, placement_id) = key;
         let format_code = kitty_format_code(placement.placement.format);
         if self.images.contains_key(&host_id) {
             if matches!(placement.source_key, HostSourceKey::PaneLayer { .. }) {
-                let placement_id = host_placement_id(&placement.source_key, &placement.placement);
                 return encode_transmit_and_display(
                     bytes,
                     placement,
@@ -142,7 +130,10 @@ impl HostGraphicsCache {
             .and_then(|(source, id, _)| {
                 placements
                     .iter()
-                    .position(|placement| placement_identity(placement) == (source.clone(), *id))
+                    .position(|placement| {
+                        placement.source_key == *source
+                            && host_placement_id(&placement.source_key, &placement.placement) == *id
+                    })
                     .map(|index| index + 1)
             })
             .or_else(|| self.continuation.as_ref().map(|cursor| cursor.2))
@@ -153,7 +144,7 @@ impl HostGraphicsCache {
     fn retain_desired(
         &mut self,
         live_pane_sources: &HashSet<HostSourceKey>,
-        desired: &HashSet<HostSourceKey>,
+        desired: &HashSet<&HostSourceKey>,
     ) {
         self.sources.retain(|source, _| {
             matches!(source, HostSourceKey::PaneLayer { .. }) || desired.contains(source)
@@ -164,19 +155,19 @@ impl HostGraphicsCache {
 }
 
 /// Sources and placements one frame asks the host to show.
-struct Desired {
+struct Desired<'a> {
     /// Every source the visible placements belong to.
-    sources: HashSet<HostSourceKey>,
+    sources: HashSet<&'a HostSourceKey>,
     /// Every host image and placement identity the visible placements use.
     placements: HashSet<(u32, u32)>,
 }
 
-impl Desired {
+impl<'a> Desired<'a> {
     /// Collect the identities one frame is expected to show.
-    fn new(placements: &[HostPlacement]) -> Self {
+    fn new(placements: &'a [HostPlacement]) -> Self {
         let sources = placements
             .iter()
-            .map(|placement| placement.source_key.clone())
+            .map(|placement| &placement.source_key)
             .collect();
         let placements = placements
             .iter()
@@ -280,9 +271,7 @@ impl Pass<'_> {
                 continue;
             }
             self.cache.oversized.remove(&placement.source_key);
-            let host_id = placement
-                .host_image_id
-                .unwrap_or_else(|| host_image_id(placement.pane_id, &placement.placement));
+            let host_id = host_image_of(placement);
             if self.cache.images.get(&host_id) != Some(&signature)
                 && !image_transaction_fits(placement, transaction_budget)
             {

@@ -22,8 +22,7 @@ struct Destination {
 
 /// Clipped geometry of a placement, or none when no cell of it is visible.
 ///
-/// The returned format code is the Kitty code of the placement's pixel
-/// encoding, so callers derive it once instead of passing it around.
+/// The format code is the Kitty code of the placement's pixel encoding.
 #[must_use]
 pub fn clipped_placement(placement: &HostPlacement) -> Option<(ClippedPlacement, u32)> {
     let destination = destination(placement.area, placement.placement.render)?;

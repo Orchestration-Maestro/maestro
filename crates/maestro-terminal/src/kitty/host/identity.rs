@@ -1,8 +1,9 @@
 //! Host image and placement identities.
 //!
-//! Every identity hashes only the raw pane identity and the payload or
-//! placement signature, so the same pixels keep their host image across frames
-//! and a changed payload maps to a fresh identity.
+//! A host image identity hashes the raw pane identity with the payload
+//! signature, so the same pixels keep their host image across frames and a
+//! changed payload maps to a fresh identity. A host placement identity hashes
+//! the source with the protocol image and placement identities.
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -11,7 +12,7 @@ use super::{ClippedPlacement, HostPlacement, HostSourceKey, ImageSignature, Plac
 use crate::kitty::graphics::placements::{KittyImageFormat, KittyImagePlacement};
 
 /// Lowest identity minted for an uploaded payload.
-pub const HOST_IMAGE_ID_BASE: u32 = 10_000;
+const HOST_IMAGE_ID_BASE: u32 = 10_000;
 
 /// Host image identity of a placement's pixels.
 #[must_use]

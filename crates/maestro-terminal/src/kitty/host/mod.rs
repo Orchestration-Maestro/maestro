@@ -1,24 +1,25 @@
 //! Host terminal graphics cache and its wire encoding.
 //!
 //! The host cache remembers which images the host terminal already holds and
-//! where they are shown, so a frame re-sends only what changed. Identities hash
-//! the raw 32-bit pane id and the payload signature, and every rectangle here is
-//! a cell rectangle the caller fills in: nothing in this module reads a
-//! workspace, an application or a rendering library.
+//! where they are shown. A host image identity hashes the raw 32-bit pane id with
+//! the payload signature; a host placement identity hashes the source with the
+//! protocol image and placement ids. Every rectangle here is a cell rectangle the
+//! caller fills in: nothing in this module reads a workspace, an application or a
+//! rendering library.
 
 use crate::kitty::graphics::placements::KittyImagePlacement;
 
-pub mod cache;
+mod cache;
 
-pub mod cell_size;
+mod cell_size;
 
-pub mod clip;
+mod clip;
 
-pub mod encode;
+mod encode;
 
-pub mod identity;
+mod identity;
 
-pub(crate) mod update;
+mod update;
 
 #[cfg(test)]
 mod tests;
@@ -29,14 +30,13 @@ pub use cell_size::{HostCellSize, WindowSize};
 
 pub use clip::clipped_placement;
 
-pub use encode::{DirectFileCommand, KITTY_CHUNK_BYTES, direct_file_command};
+pub use encode::{DirectFileCommand, direct_file_command};
 
 #[cfg(unix)]
 pub use encode::encode_kitty_regular_file;
 
 pub use identity::{
-    HOST_IMAGE_ID_BASE, host_image_id, host_image_id_for_signature, host_placement_id,
-    kitty_format_code,
+    host_image_id, host_image_id_for_signature, host_placement_id, kitty_format_code,
 };
 
 /// Cell rectangle in the terminal grid.
@@ -98,8 +98,7 @@ pub enum HostSourceKey {
 
 impl HostSourceKey {
     /// Sort key that keeps terminal sources ahead of pane layers within a pane.
-    #[must_use]
-    pub fn order(&self) -> (u32, &str) {
+    fn order(&self) -> (u32, &str) {
         match self {
             Self::Terminal { pane_id, .. } => (*pane_id, ""),
             Self::PaneLayer { pane_id, layer_id } => (*pane_id, layer_id.as_str()),
@@ -127,7 +126,7 @@ pub struct HostPlacement {
 }
 
 /// Uploaded pixel identity: what the host must already hold for a source.
-#[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct ImageSignature {
     /// Image width in pixels.
     pub image_width: u32,
@@ -174,25 +173,25 @@ pub struct PlacementSignature {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ClippedPlacement {
     /// First shown column.
-    pub x: u16,
+    x: u16,
     /// First shown row.
-    pub y: u16,
+    y: u16,
     /// Shown columns.
-    pub cols: u32,
+    cols: u32,
     /// Shown rows.
-    pub rows: u32,
+    rows: u32,
     /// Source left pixel.
-    pub source_x: u32,
+    source_x: u32,
     /// Source top pixel.
-    pub source_y: u32,
+    source_y: u32,
     /// Source width in pixels.
-    pub source_width: u32,
+    source_width: u32,
     /// Source height in pixels.
-    pub source_height: u32,
+    source_height: u32,
     /// Horizontal in-cell destination offset.
-    pub x_offset: u32,
+    x_offset: u32,
     /// Vertical in-cell destination offset.
-    pub y_offset: u32,
+    y_offset: u32,
 }
 
 /// Wire bytes of one update, and whether more updates remain.

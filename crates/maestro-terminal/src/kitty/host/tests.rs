@@ -72,7 +72,8 @@ fn pane_layer_placement(viewport_col: i64, viewport_row: i64) -> HostPlacement {
     placement
 }
 
-/// One frame through the same dispatch the paint owner uses.
+/// One frame through the cache: the terminal path without pane layers, the
+/// pane-layer path with them.
 fn update(cache: &mut HostGraphicsCache, placements: &[HostPlacement], replay: bool) -> Vec<u8> {
     let mut live = cache
         .sources
@@ -92,7 +93,23 @@ fn update(cache: &mut HostGraphicsCache, placements: &[HostPlacement], replay: b
         if replay {
             cache.request_placement_replay();
         }
-        cache.drain_layers(placements, &live)
+        drain(cache, placements, &live)
+    }
+}
+
+/// Run layer updates until the whole frame is on the host.
+fn drain(
+    cache: &mut HostGraphicsCache,
+    placements: &[HostPlacement],
+    live: &HashSet<HostSourceKey>,
+) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    loop {
+        let encoded = cache.update_layers(placements, live, None);
+        bytes.extend(encoded.bytes);
+        if !encoded.incomplete {
+            return bytes;
+        }
     }
 }
 
@@ -109,7 +126,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     })
 }
 
-/// Whether the bytes carry a command with the given prefix.
+/// Whether the bytes carry a command with the given fragment.
 fn shows(bytes: &[u8], fragment: &str) -> bool {
     String::from_utf8_lossy(bytes).contains(fragment)
 }
@@ -124,44 +141,46 @@ fn empty_areas_have_no_fallback_cell_geometry() {
         }
     );
     assert!(!HostCellSize::fallback_for_area(Rect::default()).is_known());
+}
+
+#[test]
+fn window_dimensions_divide_into_cells() {
+    let area = Rect::new(0, 0, 80, 24);
+    let window = |columns, rows, width, height| WindowSize {
+        columns,
+        rows,
+        width,
+        height,
+    };
+
     assert_eq!(
-        HostCellSize::from_window(
-            WindowSize {
-                columns: 80,
-                rows: 24,
-                width: 800,
-                height: 480,
-            },
-            Rect::new(0, 0, 80, 24),
-        ),
+        HostCellSize::from_window(window(80, 24, 800, 480), area),
         Some(HostCellSize {
             width_px: 10,
             height_px: 20,
         })
     );
     assert_eq!(
-        HostCellSize::from_window(
-            WindowSize {
-                columns: 0,
-                rows: 24,
-                width: 800,
-                height: 480,
-            },
-            Rect::new(0, 0, 80, 24),
-        ),
-        None
+        HostCellSize::from_window(window(200, 24, 100, 480), area),
+        Some(HostCellSize {
+            width_px: 1,
+            height_px: 20,
+        }),
+        "a window narrower than its columns keeps one pixel per cell"
     );
-    assert_eq!(
-        HostCellSize::from_window(
-            WindowSize {
-                columns: 80,
-                rows: 24,
-                width: 800,
-                height: 480,
-            },
-            Rect::default(),
-        ),
-        Some(HostCellSize::default())
+    for unusable in [
+        window(0, 24, 800, 480),
+        window(80, 0, 800, 480),
+        window(80, 24, 0, 480),
+        window(80, 24, 800, 0),
+    ] {
+        assert_eq!(HostCellSize::from_window(unusable, area), None);
+    }
+    assert!(
+        !HostCellSize::from_window(window(80, 24, 800, 480), Rect::default())
+            .expect("a reported window")
+            .is_known(),
+        "an empty area has no usable cell size"
     );
 }
 
@@ -247,7 +266,7 @@ fn file_commands_encode_paths_and_request_replies() {
 fn clipped_file_images_transmit_at_the_final_cursor_position() {
     let mut placement = pane_layer_placement(-1, 2);
     placement.area = Rect::new(10, 4, 8, 6);
-    let command = direct_file_command(&placement, (1 << 31) | 9).unwrap();
+    let command = direct_file_command(&placement, PANE_GRAPHICS_IMAGE_ID_BIT | 9).unwrap();
 
     assert_eq!(command.leading, b"\x1b[7;11H");
     assert_eq!(
@@ -282,7 +301,9 @@ fn positive_viewport_offsets_keep_visible_image_geometry() {
 
 #[test]
 fn negative_viewport_offsets_crop_image_pixels() {
-    let placement = test_placement(-1, -1);
+    let mut placement = test_placement(-1, -1);
+    placement.placement.x_offset = 3;
+    placement.placement.y_offset = 4;
     let (clipped, _) = clipped_placement(&placement).expect("partially visible placement");
 
     assert_eq!(
@@ -297,6 +318,11 @@ fn negative_viewport_offsets_crop_image_pixels() {
             clipped.source_height
         ),
         (10, 10, 20, 20)
+    );
+    assert_eq!(
+        (clipped.x_offset, clipped.y_offset),
+        (0, 0),
+        "a cropped side drops its in-cell offset"
     );
 }
 
@@ -386,25 +412,24 @@ fn identical_pixels_share_one_host_upload() {
 fn replacing_a_layer_never_paints_an_empty_intermediate_frame() {
     let mut cache = HostGraphicsCache::default();
     let mut first = pane_layer_placement(0, 0);
-    first.host_image_id = Some((1 << 31) | 7);
+    first.host_image_id = Some(PANE_GRAPHICS_IMAGE_ID_BIT | 7);
     update(&mut cache, &[first], false);
 
     let mut changed = pane_layer_placement(0, 0);
-    changed.host_image_id = Some((1 << 31) | 7);
+    changed.host_image_id = Some(PANE_GRAPHICS_IMAGE_ID_BIT | 7);
     changed.placement.data_fingerprint += 1;
+    changed.placement.data_len = 3;
+    changed.placement.data = vec![0xff, 0x00, 0x41];
+    changed.placement.render.source_y = 5;
+    changed.placement.x_offset = 3;
+    changed.placement.y_offset = 4;
     let replacement = update(&mut cache, &[changed], false);
 
-    assert!(
-        shows(&replacement, "a=T,t=d"),
-        "one command replaces the layer"
-    );
-    assert!(
-        shows(&replacement, ",C=1,q=2"),
-        "the placement is displayed"
-    );
-    assert!(
-        !shows(&replacement, "a=d"),
-        "no intermediate frame deletes the layer"
+    assert_eq!(
+        String::from_utf8(replacement).expect("utf-8 commands"),
+        "\x1b[1;1H\x1b_Ga=T,t=d,f=32,s=30,v=30,i=2147483655,p=773910,c=3,r=3,z=0,C=1,q=2,\
+         y=5,w=30,h=25,X=3,Y=4,m=0;/wBB\x1b\\",
+        "one transmit-and-display replaces the layer, with no delete to a blank frame"
     );
 }
 
@@ -425,6 +450,34 @@ fn changed_pixels_release_the_replaced_host_image() {
         "the superseded host image is deleted"
     );
     assert_eq!(cache.images.len(), 1);
+    assert_eq!(cache.placements.len(), 1);
+}
+
+#[test]
+fn colliding_image_identity_keeps_the_placement_it_replaces() {
+    let mut first = test_placement(0, 0);
+    first.placement.data_fingerprint = 335;
+    let mut changed = test_placement(0, 0);
+    changed.placement.data_fingerprint = 336;
+    assert_eq!(
+        host_image_id(first.pane_id, &first.placement),
+        host_image_id(changed.pane_id, &changed.placement),
+        "the two payloads share one host image identity"
+    );
+
+    let mut cache = HostGraphicsCache::default();
+    update(&mut cache, &[first], false);
+    let bytes = update(&mut cache, &[changed], false);
+
+    assert!(
+        shows(&bytes, "a=t"),
+        "the colliding payload is uploaded again"
+    );
+    assert!(shows(&bytes, "a=p"), "the placement is shown again");
+    assert!(
+        !shows(&bytes, "a=d,d=i"),
+        "the placement it just showed stays"
+    );
     assert_eq!(cache.placements.len(), 1);
 }
 
@@ -509,7 +562,7 @@ fn removing_a_layer_releases_its_unshared_image() {
     update(&mut cache, &[pane_layer_placement(0, 0)], false);
     let host_id = *cache.images.keys().next().expect("uploaded pane layer");
 
-    let bytes = cache.drain_layers(&[], &HashSet::new());
+    let bytes = drain(&mut cache, &[], &HashSet::new());
 
     assert!(shows(&bytes, &format!("a=d,d=I,i={host_id}")));
     assert!(cache.images.is_empty());
@@ -564,7 +617,7 @@ fn removing_a_layer_keeps_a_terminal_shared_upload() {
     );
     assert_eq!(cache.images.len(), 1);
 
-    let mut bytes = cache.drain_layers(&[], &HashSet::new());
+    let mut bytes = drain(&mut cache, &[], &HashSet::new());
     bytes.extend(update(&mut cache, &[test_placement(4, 0)], false));
 
     assert!(!shows(&bytes, "a=d,d=I"), "the shared upload survives");
@@ -653,7 +706,17 @@ fn large_images_are_local_only() {
 #[test]
 fn view_identity_reports_a_change_and_clears_the_continuation() {
     let mut cache = HostGraphicsCache::default();
+    drain(&mut cache, &[pane_layer_placement(0, 0)], &HashSet::new());
+    assert!(
+        cache.continuation.is_some(),
+        "a frame leaves a resume cursor"
+    );
+
     assert!(cache.update_view(Some(HostView::new(1))));
+    assert!(
+        cache.continuation.is_none(),
+        "a view change drops the resume cursor"
+    );
     assert!(!cache.update_view(Some(HostView::new(1))));
     assert!(cache.update_view(Some(HostView::new(2))));
     assert!(cache.update_view(None));

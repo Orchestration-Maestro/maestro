@@ -47,10 +47,11 @@ impl HostGraphicsCache {
     }
 
     /// Commands that delete every retained image, leaving no state behind.
+    #[must_use]
     pub fn clear_bytes(&mut self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        for id in self.images.keys().copied().collect::<Vec<_>>() {
-            encode_delete_image(&mut bytes, id);
+        for id in self.images.keys() {
+            encode_delete_image(&mut bytes, *id);
         }
         self.images.clear();
         self.placements.clear();

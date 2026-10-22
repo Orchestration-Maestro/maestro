@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use super::super::{
-    ClippedPlacement, HostGraphicsCache, HostPlacement, HostSourceKey,
+    HostGraphicsCache, HostPlacement, HostSourceKey,
     clip::clipped_placement,
     encode::{
         encode_delete_image, encode_delete_placement, encode_display_placement, encode_upload_image,
@@ -14,11 +14,12 @@ use super::super::{
 
 impl HostGraphicsCache {
     /// Commands that bring the host in line with a screen of terminal images.
+    #[must_use]
     pub fn update_terminal(&mut self, placements: &[HostPlacement], view_changed: bool) -> Vec<u8> {
         let current_sources = placements
             .iter()
             .filter(|placement| matches!(placement.source_key, HostSourceKey::Terminal { .. }))
-            .map(|placement| placement.source_key.clone())
+            .map(|placement| &placement.source_key)
             .collect::<HashSet<_>>();
         self.sources
             .retain(|source, _| current_sources.contains(source));
@@ -77,29 +78,9 @@ fn update_placement(
     }
 
     release_source(bytes, cache, placement.source_key.clone(), host_id);
-    show_placement(bytes, cache, placement, clipped, view_changed);
-}
-
-/// Display a placement unless the host already shows it unchanged.
-fn show_placement(
-    bytes: &mut Vec<u8>,
-    cache: &mut HostGraphicsCache,
-    placement: &HostPlacement,
-    clipped: ClippedPlacement,
-    view_changed: bool,
-) {
-    let signature =
-        placement_signature(clipped, placement.placement.z, placement.scrollback_offset);
-    let key = host_identity(placement);
-    match cache.placements.get_mut(&key) {
-        Some(existing) if !view_changed && *existing == signature => {}
-        Some(existing) => {
-            encode_display_placement(bytes, clipped, key.0, key.1, placement.placement.z);
-            *existing = signature;
-        }
-        None => {
-            encode_display_placement(bytes, clipped, key.0, key.1, placement.placement.z);
-            cache.placements.insert(key, signature);
-        }
+    let shown = placement_signature(clipped, placement.placement.z, placement.scrollback_offset);
+    if view_changed || cache.placements.get(&key) != Some(&shown) {
+        encode_display_placement(bytes, clipped, host_id, key.1, placement.placement.z);
     }
+    cache.placements.insert(key, shown);
 }
