@@ -63,7 +63,7 @@ pub(super) struct ItemLines {
     phase: Phase,
     /// Continuation indentation selected by the marker.
     indent: usize,
-    /// Lookahead predicates shared by every item at this depth and grammar.
+    /// Lookahead predicates shared by every item at this indentation and grammar.
     rules: &'static ItemStops,
     /// History restored when trimmed raw is resumed.
     trimmed: History,

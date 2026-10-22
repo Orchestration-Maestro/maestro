@@ -86,7 +86,7 @@ fn container_mapping_matches_the_reference_work_shape() {
     let chained = [32, 64, 128]
         .map(|n| measured_containers(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n))));
     let visits = chained.map(|work| work.list_lines);
-    // The shared rule sets compile at most twice per cold key, however often its quote resumes.
+    // A cold key compiles both rule sets once, however often the block quote resumes.
     let prepared = chained.map(|work| work.list_rules);
     assert!(prepared[0] <= 2, "{prepared:?}");
     assert_eq!(&prepared[1..], &[0, 0], "{prepared:?}");

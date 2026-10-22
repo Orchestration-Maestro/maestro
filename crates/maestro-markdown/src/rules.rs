@@ -110,10 +110,10 @@ const FENCES_BEGIN: &str = "(?:```|~~~)";
 /// Reference heading test that stops a list item before its line is dedented.
 const HEADING_BEGIN: &str = "#";
 
-/// Reference HTML test for the default caller grammar: a type 6 tag or a comment.
+/// Reference HTML test for the default caller grammar: a tag opener or a comment.
 const HTML_BEGIN: &str = r"<(?:[a-z].*>|!--)";
 
-/// Reference neighbour-marker test that starts a second item instead of continuing one.
+/// Reference neighbor-marker test that ends the item at another list's marker.
 const NEXT_BULLET: &str = r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))";
 
 /// Reference thematic-break test that stops a list item before its line is dedented.
