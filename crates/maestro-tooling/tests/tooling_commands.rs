@@ -526,12 +526,9 @@ fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).unwrap()
 }
 
-/// The operating system's own message for a program it cannot start.
-fn missing_program_message() -> String {
-    Command::new("maestro-missing-program")
-        .output()
-        .unwrap_err()
-        .to_string()
+/// The operating system's own message for the program `program` it cannot start.
+fn missing_program_message(program: impl AsRef<std::ffi::OsStr>) -> String {
+    Command::new(program).output().unwrap_err().to_string()
 }
 
 const OFFLINE_KEYS: &[&str] = &[
@@ -1778,10 +1775,11 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
         output.stderr,
         format!("Browser smoke check failed. See {}\n", log.display()).as_bytes()
     );
+    let logged = fs::read_to_string(&log).unwrap();
+    let expected = missing_program_message(&fixture.child);
     assert!(
-        fs::read_to_string(log)
-            .unwrap()
-            .contains(&missing_program_message())
+        logged.contains(&expected),
+        "log {logged:?} does not hold {expected:?}"
     );
 }
 
@@ -1818,7 +1816,8 @@ fn maestro_hook_missing_tool_announces_failed_step() {
         assert!(stdout(&output).ends_with(message), "{}", stdout(&output));
         assert!(!stdout(&output).contains("All pre-commit checks passed"));
         assert!(
-            String::from_utf8_lossy(&output.stderr).contains(&missing_program_message()),
+            String::from_utf8_lossy(&output.stderr)
+                .contains(&missing_program_message("missing-tool")),
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
