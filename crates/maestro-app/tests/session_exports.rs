@@ -1,8 +1,8 @@
 //! JSONL and HTML exports of the session.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    HarnessOptions, assistant, build_tree, corpus, harness, on_task_set, sdk_registered, sdk_tools,
-    tool_definition, user,
+    Harness, HarnessOptions, assistant, build_tree, corpus, harness, on_task_set, sdk_registered,
+    sdk_tools, tool_definition, user,
 };
 use base64::Engine as _;
 use maestro_app::AgentSession;
@@ -133,6 +133,45 @@ fn payload(path: &str) -> Value {
     serde_json::from_slice(&bytes).unwrap()
 }
 
+/// The payload of `session` exported to `out.html` below `root` with recorded assets.
+fn exported_payload(session: &AgentSession<Local>, root: &str, live_theme: LiveTheme) -> Value {
+    let output = format!("{root}/out.html");
+    let path = session
+        .export_to_html(
+            Some(&output),
+            &Recording::default(),
+            environment(live_theme),
+        )
+        .unwrap();
+    payload(&path)
+}
+
+/// A session over a file whose answer calls `painted`, a registered tool with a custom
+/// call rendering.
+async fn painted_harness(root: &str) -> Harness {
+    let call = json!({"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}});
+    let answer = assistant("", 2, &json!({"content": [call], "stopReason": "toolUse"}));
+    let h = harness(HarnessOptions {
+        session_manager: Some(file_session(root, &[user(&json!("paint"), 1), answer])),
+        ..HarnessOptions::default()
+    })
+    .await;
+    let mut painted = tool_definition("painted", None, None);
+    painted.render_call = Some(Rc::new(|_, _, _| {
+        Ok(Rc::new(Text::new("Painted call".into(), 0, 0, None)) as ComponentHandle)
+    }));
+    h.session
+        .set_tool_definitions(
+            [("painted".to_owned(), sdk_registered(painted))]
+                .into_iter()
+                .collect(),
+            &["painted".to_owned()],
+            RefreshToolRegistryOptions::default(),
+        )
+        .unwrap();
+    h
+}
+
 /// A plain theme published as the host publishes one.
 fn published() -> LiveTheme {
     let theme = Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap();
@@ -204,23 +243,19 @@ fn html_export_reads_theme_only_for_custom_rendering() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
-        let unpublished = || environment(LiveTheme::default());
-        let error = h
+        let memory = harness(HarnessOptions::default()).await;
+        let error = memory
             .session
-            .export_to_html(None, &Recording::default(), unpublished())
+            .export_to_html(
+                None,
+                &Recording::default(),
+                environment(LiveTheme::default()),
+            )
             .unwrap_err();
         assert_eq!(json!({"error": error.message}), expected["inMemory"]);
-        let call = json!({"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}});
-        let answer = assistant("", 2, &json!({"content": [call], "stopReason": "toolUse"}));
-        let manager = file_session(&root, &[user(&json!("paint"), 1), answer]);
-        *h.session.session_manager().borrow_mut() = manager;
-        let output = format!("{root}/out.html");
-        let path = h
-            .session
-            .export_to_html(Some(&output), &Recording::default(), unpublished())
-            .unwrap();
-        assert_eq!(payload(&path).get("renderedTools"), None);
+        let h = painted_harness(&root).await;
+        let data = exported_payload(&h.session, &root, LiveTheme::default());
+        assert_eq!(data.get("renderedTools"), None);
     });
 }
 
@@ -329,16 +364,8 @@ fn html_export_resolves_tool_descriptions_outside_locks() {
             let free = state.try_write().is_ok() && history.try_borrow_mut().is_ok();
             Ok(if free { "free" } else { "held" }.to_owned())
         }));
-        let output = format!("{root}/out.html");
-        let path = h
-            .session
-            .export_to_html(
-                Some(&output),
-                &Recording::default(),
-                environment(published()),
-            )
-            .unwrap();
-        assert_eq!(payload(&path)["tools"][0]["description"], "free");
+        let data = exported_payload(&h.session, &root, published());
+        assert_eq!(data["tools"][0]["description"], "free");
     });
 }
 
@@ -347,36 +374,9 @@ fn html_export_renders_registered_tool_calls() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
-        let call = json!({"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}});
-        let answer = assistant("", 2, &json!({"content": [call], "stopReason": "toolUse"}));
-        let manager = file_session(&root, &[user(&json!("paint"), 1), answer]);
-        let h = harness(HarnessOptions {
-            session_manager: Some(manager),
-            ..HarnessOptions::default()
-        })
-        .await;
-        let mut painted = tool_definition("painted", None, None);
-        painted.render_call = Some(Rc::new(|_, _, _| {
-            Ok(Rc::new(Text::new("Painted call".into(), 0, 0, None)) as ComponentHandle)
-        }));
-        let registered = sdk_registered(painted);
-        h.session
-            .set_tool_definitions(
-                [("painted".to_owned(), registered)].into_iter().collect(),
-                &["painted".to_owned()],
-                RefreshToolRegistryOptions::default(),
-            )
-            .unwrap();
-        let output = format!("{root}/out.html");
-        let path = h
-            .session
-            .export_to_html(
-                Some(&output),
-                &Recording::default(),
-                environment(published()),
-            )
-            .unwrap();
-        let rendered = payload(&path)["renderedTools"]["call-1"].to_string();
+        let h = painted_harness(&root).await;
+        let data = exported_payload(&h.session, &root, published());
+        let rendered = data["renderedTools"]["call-1"].to_string();
         assert!(rendered.contains("Painted call"), "{rendered}");
     });
 }
