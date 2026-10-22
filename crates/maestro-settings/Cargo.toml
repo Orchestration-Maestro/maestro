@@ -19,6 +19,7 @@ wasm-bindgen-futures = "=0.4.79"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-lock = { path = "../maestro-lock" }
+maestro-resources = { path = "../maestro-resources" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true

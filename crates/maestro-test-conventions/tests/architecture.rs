@@ -2358,13 +2358,19 @@ const TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestr
 /// Independently declared native directory consumers.
 const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
+    "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
     "maestro-daemon",
+    "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-ipc",
+    "maestro-listing",
+    "maestro-lock",
     "maestro-models",
     "maestro-packages",
+    "maestro-process",
     "maestro-resources",
     "maestro-session",
     "maestro-settings",
@@ -2374,7 +2380,10 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
+    "maestro-tui",
     "maestro-tui-crossterm",
+    "maestro-watch",
+    "maestro-workspace",
 ];
 
 #[test]

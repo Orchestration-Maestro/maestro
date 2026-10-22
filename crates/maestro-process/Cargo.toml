@@ -15,6 +15,7 @@ process-wrap = { version = "=10.0.1", default-features = false, features = ["tok
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["net", "sync", "test-util"] }
 
