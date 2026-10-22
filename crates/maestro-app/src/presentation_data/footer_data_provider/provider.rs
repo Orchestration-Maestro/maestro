@@ -51,7 +51,7 @@ impl State {
 pub struct FooterDataProvider {
     /// Watch lifecycle shared by provider and unsubscribe aliases.
     watch: Rc<super::watch::Watching>,
-    /// The supplied file-system and process effects.
+    /// The supplied watch registration, timer scheduling, polling and Git process effects.
     operations: Rc<dyn FooterOperations>,
     /// The working directory, repository and cached branch.
     state: Rc<RefCell<State>>,

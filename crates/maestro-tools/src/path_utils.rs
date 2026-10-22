@@ -79,6 +79,9 @@ fn resolve_written_path(file_path: &str, cwd: &str) -> io::Result<String> {
 
 /// Resolve an authored path lexically against `cwd`, leaving absolute spellings unchanged.
 ///
+/// The spaces [`normalize_unicode_spaces`] names are replaced by plain spaces first, so
+/// the resolved spelling may differ from the authored one.
+///
 /// On Windows the per-drive directories (`=X:` variables) are an operand of
 /// resolution, and the process working directory is read only when `cwd` and
 /// those directories cannot anchor a relative result; elsewhere it is read only

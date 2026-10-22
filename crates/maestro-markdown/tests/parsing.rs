@@ -184,7 +184,7 @@ fn assert_tasks(document: &maestro_markdown::Document) {
 }
 
 #[test]
-fn task_markers_sit_at_the_end_of_their_item_body() {
+fn task_markers_map_to_the_item_body_end() {
     for (source, expected) in [
         ("- [ ] ", &[(6, 6)][..]),
         ("a\n\n- [ ] \n", &[(9, 9)][..]),

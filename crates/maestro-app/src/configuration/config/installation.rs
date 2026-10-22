@@ -3,7 +3,7 @@
 /// How an installation ships its assets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PackageLayout {
-    /// A package tree with source or distribution directories.
+    /// A source workspace run from its own checkout.
     Package,
     /// Assets beside a standalone executable.
     Standalone,

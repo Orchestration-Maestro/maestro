@@ -1,4 +1,5 @@
-//! Border shorthand values.
+//! Word value conversions: border shorthands, alignments, sizes, margins, table layout,
+//! theme fonts, vertical alignment, conditional styles and table looks.
 use super::super::{LengthUsage, VerticalAlign, XmlElement, XmlParser};
 use super::xml_util::color_attr;
 use num_traits::ToPrimitive;

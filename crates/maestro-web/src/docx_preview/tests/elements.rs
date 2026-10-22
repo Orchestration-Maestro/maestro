@@ -86,6 +86,10 @@ fn style_inheritance_follows_each_base_and_keeps_last_duplicates() {
 <w:style w:type="paragraph" w:styleId="Twin"><w:pPr><w:numPr><w:numId w:val="1"/></w:numPr></w:pPr></w:style>
 <w:style w:type="paragraph" w:styleId="Twin"><w:pPr><w:numPr><w:numId w:val="2"/></w:numPr></w:pPr></w:style>
 <w:style w:type="paragraph" w:styleId="Orphan"><w:basedOn w:val="Missing"/><w:pPr><w:numPr><w:numId w:val="3"/></w:numPr></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="PageOff"><w:basedOn w:val="Middle"/><w:pPr><w:pageBreakBefore w:val="0"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="Inherits"><w:basedOn w:val="Base"/></w:style>
+<w:style w:type="paragraph" w:styleId="LevelOnly"><w:basedOn w:val="NumberOnly"/><w:pPr><w:numPr><w:ilvl w:val="4"/></w:numPr></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="NumberOnly"><w:pPr><w:numPr><w:numId w:val="9"/></w:numPr></w:pPr></w:style>
 </w:styles>"#;
     let xml = parse_xml_string(source, false).unwrap();
     let parsed = StylesPart::parse_xml(&xml, xml.root(), false).unwrap();
@@ -97,8 +101,17 @@ fn style_inheritance_follows_each_base_and_keeps_last_duplicates() {
     };
     assert!(styles.find_style(Some("Child")).unwrap().page_break_before);
     assert!(!styles.find_style(Some("Base")).unwrap().page_break_before);
+    assert!(
+        !styles
+            .find_style(Some("PageOff"))
+            .unwrap()
+            .page_break_before
+    );
     assert_eq!(numbering("Child"), (Some("7".into()), Some(2.0)));
+    assert_eq!(numbering("Inherits"), (Some("7".into()), Some(2.0)));
     assert_eq!(numbering("Twin"), (Some("2".into()), None));
     assert_eq!(numbering("Orphan"), (Some("3".into()), None));
+    assert_eq!(numbering("LevelOnly"), (Some("9".into()), Some(4.0)));
+    assert_eq!(numbering("NumberOnly"), (Some("9".into()), None));
     assert!(styles.find_style(Some("")).is_none() && styles.find_style(None).is_none());
 }

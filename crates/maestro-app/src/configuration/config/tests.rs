@@ -1,6 +1,8 @@
 //! Package-override precedence over the executable lookup of the native getters.
 
-use super::{installation, package_dir, theme_directories};
+#[cfg(unix)]
+use super::theme_directories;
+use super::{installation, package_dir};
 use std::io;
 
 /// An executable lookup that fails, as when the running executable cannot be located.
@@ -19,6 +21,8 @@ fn package_override_skips_the_executable_lookup() {
     assert_eq!(error.to_string(), "executable not found");
 }
 
+// The asserted theme path carries Unix separators.
+#[cfg(unix)]
 #[test]
 fn theme_override_skips_the_executable_lookup() {
     let directories = theme_directories(Some("/pkg"), missing_executable).unwrap();

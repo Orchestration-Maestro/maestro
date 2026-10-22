@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
-use crate::read_support::Fixture;
+use crate::read_support::Fixture as _;
 use futures_util::FutureExt;
 use maestro_agent::{AgentToolResult, ToolExecutionMode};
 use maestro_models::{Cancellation, Tool};
