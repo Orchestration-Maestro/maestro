@@ -110,6 +110,35 @@ fn tool_enumeration_and_lookup_preserve_their_distinct_winner_rules() {
 }
 
 #[test]
+fn registered_tools_expose_metadata_and_renderers_to_generic_callers() {
+    let bus = support::LocalBus::new();
+    let loaded = support::loaded("owner", bus.controller.for_extension());
+    let mut framed = definition("framed", "Framed");
+    framed.prompt_snippet = Some("Frame text".into());
+    framed.render_shell = Some(maestro_tools::ToolRenderShell::SelfRendered);
+    loaded.api.register_tool(framed).unwrap();
+    let tools = support::runner(&loaded.owners).get_all_registered_tools();
+    let metadata = metadata_of(&tools[0]);
+    assert_eq!(
+        (metadata.label.as_str(), metadata.prompt_snippet.as_deref()),
+        ("Framed", Some("Frame text"))
+    );
+    let binding = tools[0].renderer_binding().unwrap();
+    assert_eq!(
+        binding.render_shell,
+        Some(maestro_tools::ToolRenderShell::SelfRendered)
+    );
+    assert!(binding.render_call.is_none() && binding.render_result.is_none());
+}
+
+/// Reads metadata where only the execution bound is known.
+fn metadata_of<E: ExtensionExecution>(
+    tool: &RegisteredTool<E>,
+) -> maestro_extensions::ToolDefinitionMetadata {
+    tool.metadata()
+}
+
+#[test]
 fn registered_tools_forward_preparation_context_progress_and_errors() {
     support::local(async {
         check_suspended_context_rebinding().await;

@@ -198,6 +198,7 @@ impl<E: ExtensionExecution> Clone for ExtensionAPI<E> {
 
 /// Retained tool projections.
 pub(crate) mod tools;
+pub use tools::ToolDefinitionMetadata;
 
 /// Extension-owned typed definition. Callback ownership and invocation are independent.
 type Definition<P = Value, D = Value, S = Value, E = Threaded> =
@@ -283,6 +284,22 @@ pub struct RegisteredTool<E: ExtensionExecution = Threaded> {
     pub definition: E::Shared<E::RegisteredDefinition>,
     /// The source info owner.
     pub source_info: Arc<RwLock<SourceInfo>>,
+}
+impl<E: ExtensionExecution> RegisteredTool<E> {
+    /// The definition's current model-facing declaration, label, prompt text and options.
+    #[must_use]
+    pub fn metadata(&self) -> ToolDefinitionMetadata {
+        tools::RetainedDefinition::metadata(&*self.definition)
+    }
+    /// The definition's renderers, bound for row rendering.
+    ///
+    /// # Errors
+    /// Returns the lower binding diagnostic for a typed result slot on the raw route.
+    pub fn renderer_binding(
+        &self,
+    ) -> Result<ToolRendererBinding, maestro_models::DiagnosticErrorInfo> {
+        tools::RetainedDefinition::renderer_binding(&*self.definition)
+    }
 }
 impl<E: ExtensionExecution> Clone for RegisteredTool<E> {
     fn clone(&self) -> Self {
