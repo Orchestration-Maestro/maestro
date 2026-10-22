@@ -200,7 +200,28 @@ async function inspectSandbox({page}, id, action, phase) {
   if (action === 'click') {
     phase(`waiting for pointer-done ${id}; frame ${selected.url()}`);
     await selected.evaluate(() => { window.pointerDone = null; });
-    await selected.locator('#target').click();
+
+    let session;
+    try { session = await page.context().newCDPSession(selected); }
+    catch (error) {
+      if (!error.message.includes('does not have a separate CDP session')) throw error;
+    }
+    if (!session) await selected.locator('#target').click();
+    else {
+      try {
+        const target = selected.locator('#target');
+        const point = await target.evaluate(node => {
+          node.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
+          const box = node.getBoundingClientRect();
+          return {x: box.x + box.width / 2, y: box.y + box.height / 2};
+        });
+        for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) {
+          await session.send('Input.dispatchMouseEvent', {type, ...point,
+            button: type === 'mouseMoved' ? 'none' : 'left',
+            buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1});
+        }
+      } finally { await session.detach(); }
+    }
     const delivered = await selected.evaluate(() => window.pointerDone);
     if (!delivered?.trusted || !delivered.atTarget) {
       throw new Error('native click did not reach mounted target ' + id);
