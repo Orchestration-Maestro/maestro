@@ -21,7 +21,8 @@ pub enum Layout<'a> {
 /// Copy assets in group order, preserving completed groups on error.
 ///
 /// # Errors
-/// Returns missing-input and native filesystem failures.
+/// Returns filesystem failures; a failed input copy names the input path, and
+/// groups copied before the failure remain on disk.
 pub fn copy(source: &Path, destination: &Path, layout: Layout<'_>) -> io::Result<()> {
     match layout {
         Layout::Library => copy_library(source, destination),
@@ -48,9 +49,9 @@ fn copy_library(source: &Path, destination: &Path) -> io::Result<()> {
     let export = destination.join("core/export-html");
     fs::create_dir_all(&export)?;
     for name in ["template.html", "template.css", "template.js"] {
-        fs::copy(
-            source.join("src/core/export-html").join(name),
-            export.join(name),
+        copy_file(
+            &source.join("src/core/export-html").join(name),
+            &export.join(name),
         )?;
     }
     copy_matches(
@@ -69,9 +70,9 @@ fn copy_standalone(
     package: &Path,
 ) -> io::Result<()> {
     fs::create_dir_all(destination)?;
-    fs::copy(metadata, destination.join("Cargo.toml"))?;
+    copy_file(metadata, &destination.join("Cargo.toml"))?;
     for name in ["README.md", "CHANGELOG.md"] {
-        fs::copy(package.join(name), destination.join(name))?;
+        copy_file(&package.join(name), &destination.join(name))?;
     }
     copy_matches(
         &source.join("src/modes/interactive/theme"),
@@ -99,9 +100,11 @@ fn copy_standalone(
 /// Copy visible files matching an extension in stable filename order.
 fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<()> {
     fs::create_dir_all(destination)?;
-    let mut matches = fs::read_dir(source)?
+    let mut matches = fs::read_dir(source)
+        .map_err(|error| input_error(source, &error))?
         .map(|entry| entry.map(|entry| entry.path()))
-        .collect::<io::Result<Vec<_>>>()?;
+        .collect::<io::Result<Vec<_>>>()
+        .map_err(|error| input_error(source, &error))?;
     matches.retain(|path| {
         path.file_name()
             .is_some_and(|name| !name.as_encoded_bytes().starts_with(b"."))
@@ -120,13 +123,18 @@ fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<(
         let name = path
             .file_name()
             .ok_or_else(|| io::Error::other("missing asset filename"))?;
-        fs::copy(&path, destination.join(name))?;
+        copy_file(&path, &destination.join(name))?;
     }
     Ok(())
 }
 
-/// Copy a directory recursively while preserving symbolic links.
+/// Copy an input tree, naming its root when the copy fails.
 fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
+    copy_tree_into(source, destination).map_err(|error| input_error(source, &error))
+}
+
+/// Copy a directory tree while preserving symbolic links.
+fn copy_tree_into(source: &Path, destination: &Path) -> io::Result<()> {
     let metadata = fs::symlink_metadata(source)?;
     if metadata.is_symlink() {
         return copy_link(source, destination);
@@ -139,8 +147,22 @@ fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
     let mut entries = fs::read_dir(source)?.collect::<io::Result<Vec<_>>>()?;
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
-        copy_tree(&entry.path(), &destination.join(entry.file_name()))?;
+        copy_tree_into(&entry.path(), &destination.join(entry.file_name()))?;
     }
+    Ok(())
+}
+
+/// Name an input path in a filesystem failure, keeping the operating system's error kind.
+fn input_error(source: &Path, error: &io::Error) -> io::Error {
+    io::Error::new(
+        error.kind(),
+        format!("cannot copy {}: {error}", source.display()),
+    )
+}
+
+/// Copy one input file, naming its source when the copy fails.
+fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
+    fs::copy(source, destination).map_err(|error| input_error(source, &error))?;
     Ok(())
 }
 

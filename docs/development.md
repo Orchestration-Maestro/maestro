@@ -343,8 +343,9 @@ release-generated history, themes, images, the supplied viewer, docs and example
 Themes and images come from `SOURCE`, the `export-html` directory from `VIEWER`,
 and the README, history, documentation and examples from the package directory
 `PACKAGE`, which defaults to the justfile directory.
-These commands do not generate a viewer or regenerate assets. Missing inputs fail;
-already copied groups and unrelated destination files remain. `app-build` compiles
+These commands do not generate a viewer or regenerate assets. A missing input fails
+with a message that names the path it could not read; already copied groups and
+unrelated destination files remain. `app-build` compiles
 before library copying. `build-binary` compiles toolkit, models, agent, application
 and executable in that order before standalone copying. The browser's bundle
 build is owned by #113; [session serialization](export.md) accepts a supplied

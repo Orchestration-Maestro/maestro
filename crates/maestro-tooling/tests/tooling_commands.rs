@@ -4,6 +4,7 @@ use crate::recipe_support::write_input;
 use crate::toolchain_support;
 
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -1043,9 +1044,7 @@ fn asset_inputs(fixture: &Fixture) -> PathBuf {
         ("src/core/export-html/template.js", "runtime"),
         ("src/core/export-html/vendor/highlight.js", "vendor"),
     ] {
-        let path = source.join(path);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, bytes).unwrap();
+        write_input(&source, path, bytes);
     }
     source
 }
@@ -1285,6 +1284,137 @@ fn maestro_missing_package_input_keeps_completed_groups() {
     );
     assert_eq!(fs::read(destination.join("README.md")).unwrap(), b"readme");
     assert!(!destination.join("examples").exists());
+}
+
+/// Remove one input file or directory, whichever the path names.
+fn remove_input(path: &Path) {
+    if path.is_dir() {
+        fs::remove_dir_all(path).unwrap();
+    } else {
+        fs::remove_file(path).unwrap();
+    }
+}
+
+/// Assert that a failed copy names the input it could not read.
+fn assert_names_input(error: &io::Error, input: &Path) {
+    assert!(
+        error.to_string().contains(&input.display().to_string()),
+        "{error} does not name {}",
+        input.display()
+    );
+    assert_eq!(error.kind(), io::ErrorKind::NotFound, "{error}");
+}
+
+#[test]
+fn maestro_missing_package_input_names_the_absent_path() {
+    for name in ["README.md", "CHANGELOG.md", "docs", "examples"] {
+        let fixture = Fixture::new();
+        let (source, package, metadata, viewer) = split_inputs(&fixture);
+        let input = package.join(name);
+        remove_input(&input);
+        let destination = fixture.root.join("incomplete");
+        let error = tooling::copy_assets::copy(
+            &source,
+            &destination,
+            tooling::copy_assets::Layout::Standalone {
+                metadata: &metadata,
+                viewer: &viewer,
+                package: &package,
+            },
+        )
+        .unwrap_err();
+        assert_names_input(&error, &input);
+        assert_eq!(
+            error.to_string().matches("cannot copy").count(),
+            1,
+            "{error}"
+        );
+        assert!(destination.join("Cargo.toml").is_file());
+    }
+}
+
+#[test]
+fn maestro_missing_crate_input_names_the_absent_path() {
+    for name in [
+        "src/modes/interactive/theme",
+        "src/modes/interactive/assets",
+        "src/core/export-html/template.css",
+    ] {
+        let fixture = Fixture::new();
+        let source = asset_inputs(&fixture);
+        let input = source.join(name);
+        remove_input(&input);
+        let error = tooling::copy_assets::copy(
+            &source,
+            &fixture.root.join("dist"),
+            tooling::copy_assets::Layout::Library,
+        )
+        .unwrap_err();
+        assert_names_input(&error, &input);
+    }
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let input = source.join("src/modes/interactive/theme");
+    remove_input(&input);
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_names_input(&error, &input);
+}
+
+#[test]
+fn maestro_missing_metadata_names_the_absent_path() {
+    let fixture = Fixture::new();
+    let (source, package, _, viewer) = split_inputs(&fixture);
+    let metadata = fixture.root.join("absent/Cargo.toml");
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_names_input(&error, &metadata);
+}
+
+#[test]
+fn maestro_viewer_error_keeps_its_message() {
+    let fixture = Fixture::new();
+    let source = asset_inputs(&fixture);
+    let package = fixture.root.join("package");
+    standalone_inputs(&source, &package);
+    let metadata = source.join("Cargo.toml");
+    let empty = fixture.root.join("empty-viewer");
+    fs::create_dir(&empty).unwrap();
+    for viewer in [fixture.root.join("absent-viewer"), empty] {
+        let error = tooling::copy_assets::copy(
+            &source,
+            &fixture.root.join("standalone"),
+            tooling::copy_assets::Layout::Standalone {
+                metadata: &metadata,
+                viewer: &viewer,
+                package: &package,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "viewer parameter must name a nonempty directory: {}",
+                viewer.display()
+            )
+        );
+    }
 }
 
 fn assert_asset_match_order() {
