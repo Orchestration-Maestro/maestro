@@ -881,9 +881,10 @@ fn container_frames_follow_configured_grammar() {
 /// Worker stack well below the main thread's, so nesting cannot lean on it.
 const WORKER_STACK: usize = 2 * 1024 * 1024;
 
-/// Render Markdown at `width` on a worker thread of the witness stack size.
+/// Render Markdown at `width` on a worker thread of the witness stack size, resuming a
+/// worker failure instead of reporting empty rows.
 fn render_on_small_stack(text: String, width: usize) -> Vec<String> {
-    let Ok(worker) = std::thread::Builder::new()
+    match std::thread::Builder::new()
         .stack_size(WORKER_STACK)
         .spawn(move || {
             Markdown::new(
@@ -899,10 +900,12 @@ fn render_on_small_stack(text: String, width: usize) -> Vec<String> {
             )
             .render(width)
         })
-    else {
-        return Vec::new();
-    };
-    worker.join().unwrap_or_default()
+        .map(std::thread::JoinHandle::join)
+    {
+        Ok(Ok(rows)) => rows,
+        Ok(Err(failure)) => std::panic::resume_unwind(failure),
+        Err(error) => std::panic::resume_unwind(Box::new(error)),
+    }
 }
 
 #[test]

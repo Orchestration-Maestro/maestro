@@ -140,14 +140,21 @@ pub(crate) struct ListState {
 }
 
 impl ListState {
-    /// Complete the trailing item and admit the next marker's first line; nested items
-    /// recurse through the list driver, so the replaced states stay out of its frame.
+    /// Complete the trailing item and admit the next marker's first line.
     fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
         let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
         self.completed.push(previous);
     }
 
-    /// Transfer each child's single output into its final item without cloning it.
+    /// The item this level admits, from a replayed position or the trailing item.
+    fn item_mut(&mut self, replay: Option<usize>) -> Option<&mut ItemLines> {
+        match replay {
+            Some(index) => self.completed.get_mut(index),
+            None => Some(&mut self.item),
+        }
+    }
+
+    /// Produce each item's output and whether the list is loose.
     pub(crate) fn outputs(mut self) -> (Vec<crate::lexer::BlockTokens>, bool) {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| {
@@ -218,8 +225,6 @@ pub(crate) struct ListFrame {
     target: ListTarget,
     /// Next action of this level.
     phase: ListPhase,
-    /// Operand of the item whose body a child level admits.
-    awaiting: Option<Segmented>,
 }
 
 /// Next action of one list level.
@@ -234,6 +239,8 @@ enum ListPhase {
         next: Option<Next>,
         /// Completed item being replayed for a caller tokenizer.
         replay: Option<usize>,
+        /// Operand of the item whose body a child level admits.
+        awaiting: Option<Segmented>,
     },
     /// The list cannot be published.
     Reject,
@@ -284,7 +291,6 @@ impl ListFrame {
             pending: Cursor::default(),
             target,
             phase: ListPhase::Replay(0),
-            awaiting: None,
         }
     }
 
@@ -338,20 +344,20 @@ impl ListFrame {
         let Done::Blocks(output, open) = done else {
             return None;
         };
-        let body = self.awaiting.take()?;
-        let ListPhase::Item { replay, .. } = self.phase else {
+        let ListPhase::Item {
+            replay, awaiting, ..
+        } = &mut self.phase
+        else {
             return None;
         };
+        let body = awaiting.take()?;
+        let replay = *replay;
         let state = self.state.as_deref_mut()?;
-        let item = match replay {
-            Some(index) => state.completed.get_mut(index),
-            None => Some(&mut state.item),
-        };
-        if let Some(item) = item {
+        if let Some(item) = state.item_mut(replay) {
             item.child.restore_output(output);
             lexer.settle(&body, &mut item.child, open);
         }
-        self.item_finished(lexer, replay);
+        self.item_finished(lexer);
         None
     }
 
@@ -363,41 +369,43 @@ impl ListFrame {
         next: Option<Next>,
         replay: Option<usize>,
     ) -> Step {
-        self.phase = ListPhase::Item { next, replay };
         let Some(state) = self.state.as_deref_mut() else {
             self.phase = ListPhase::Reject;
             return Step::Done(Done::Rejected);
         };
-        let item = match replay {
-            Some(index) => state.completed.get_mut(index),
-            None => Some(&mut state.item),
-        };
-        let Some(item) = item else {
+        let Some(item) = state.item_mut(replay) else {
             self.phase = ListPhase::Reject;
             return Step::Done(Done::Rejected);
         };
         let (body, prefix) = operand(item, following);
         let Some(rest) = lexer.reopen(&body, prefix, &mut item.child) else {
             lexer.top = true;
-            self.item_finished(lexer, replay);
+            self.phase = ListPhase::Item {
+                next,
+                replay,
+                awaiting: None,
+            };
+            self.item_finished(lexer);
             return Step::Again;
         };
         lexer.top = item.child.enter_top();
         let output = item.child.take_output();
-        self.awaiting = Some(body);
+        self.phase = ListPhase::Item {
+            next,
+            replay,
+            awaiting: Some(body),
+        };
         Step::Push(Frame::Run(lexer.block_run(rest, output, Level::Item)))
     }
 
     /// Run the actions that follow one item's admission.
-    fn item_finished<E>(&mut self, lexer: &Lexer<'_, E>, replay: Option<usize>) {
-        let ListPhase::Item {
-            next,
-            replay: named,
-        } = std::mem::replace(&mut self.phase, ListPhase::Reject)
+    fn item_finished<E>(&mut self, lexer: &Lexer<'_, E>) {
+        let ListPhase::Item { next, replay, .. } =
+            std::mem::replace(&mut self.phase, ListPhase::Reject)
         else {
             return;
         };
-        if let Some(index) = replay.or(named) {
+        if let Some(index) = replay {
             self.phase = ListPhase::Replay(index + 1);
             return;
         }

@@ -8,14 +8,7 @@ use super::{
 /// One pending step of a block walk, innermost last.
 enum Step<'a> {
     /// Format the remaining nodes of one sibling run.
-    Nodes {
-        /// Siblings still to format.
-        nodes: &'a [Node],
-        /// Available width at this quote depth.
-        width: usize,
-        /// Whether the run is inside a quote.
-        quoted: bool,
-    },
+    Nodes(Run<'a>),
     /// Style and border the rows a quote's children produced.
     Quote {
         /// First row belonging to the quote's children.
@@ -29,47 +22,30 @@ enum Step<'a> {
 
 /// One sibling run's formatting inputs.
 #[derive(Clone, Copy)]
-struct Block<'a, 's> {
+struct Run<'a> {
     /// Siblings still to format.
     nodes: &'a [Node],
     /// Available width at this quote depth.
     width: usize,
     /// Whether the run is inside a quote.
     quoted: bool,
-    /// Caller's parent style for ordinary blocks.
-    style: Style<'s>,
-    /// Retained quote prefix restoring parent decoration.
-    prefix: &'s str,
 }
 
 impl Renderer<'_> {
     /// Formats blocks with sibling-sensitive spacing.
-    pub(super) fn blocks(&self, nodes: &[Node], width: usize, style: Style<'_>) -> Vec<String> {
+    pub(super) fn blocks(&self, nodes: &[Node], width: usize) -> Vec<String> {
         let prefix = self.extract_prefix(Style::Quote(""));
         let mut rows = Vec::new();
-        let mut pending = vec![Step::Nodes {
+        let mut pending = vec![Step::Nodes(Run {
             nodes,
             width,
-            quoted: matches!(style, Style::Quote(_)),
-        }];
+            quoted: false,
+        })];
         while let Some(step) = pending.pop() {
             match step {
                 Step::Separation => rows.push(String::new()),
                 Step::Quote { start, width } => self.quote(&mut rows, start, width, &prefix),
-                Step::Nodes {
-                    nodes,
-                    width,
-                    quoted,
-                } => {
-                    let block = Block {
-                        nodes,
-                        width,
-                        quoted,
-                        style,
-                        prefix: &prefix,
-                    };
-                    self.next_block(block, &mut rows, &mut pending);
-                }
+                Step::Nodes(run) => self.next_block(run, &prefix, &mut rows, &mut pending),
             }
         }
         rows
@@ -77,19 +53,16 @@ impl Renderer<'_> {
     /// Emit one block and queue the steps that follow it.
     fn next_block<'a>(
         &self,
-        block: Block<'a, '_>,
+        run: Run<'a>,
+        prefix: &str,
         rows: &mut Vec<String>,
         pending: &mut Vec<Step<'a>>,
     ) {
-        let Some((node, rest)) = block.nodes.split_first() else {
+        let Some((node, rest)) = run.nodes.split_first() else {
             return;
         };
         if !rest.is_empty() {
-            pending.push(Step::Nodes {
-                nodes: rest,
-                width: block.width,
-                quoted: block.quoted,
-            });
+            pending.push(Step::Nodes(Run { nodes: rest, ..run }));
         }
         if rest
             .first()
@@ -97,10 +70,10 @@ impl Renderer<'_> {
         {
             pending.push(Step::Separation);
         }
-        let style = if block.quoted {
-            Style::Quote(block.prefix)
+        let style = if run.quoted {
+            Style::Quote(prefix)
         } else {
-            block.style
+            Style::Default
         };
         match &node.kind {
             Kind::Paragraph(children) => rows.push(self.inline(children, style)),
@@ -113,17 +86,17 @@ impl Renderer<'_> {
             Kind::Quote(children, _) => {
                 pending.push(Step::Quote {
                     start: rows.len(),
-                    width: block.width,
+                    width: run.width,
                 });
-                pending.push(Step::Nodes {
+                pending.push(Step::Nodes(Run {
                     nodes: children,
-                    width: quote_width(block.width),
+                    width: quote_width(run.width),
                     quoted: true,
-                });
+                }));
             }
-            Kind::Rule => rows.push((self.theme.hr)(&"─".repeat(block.width.min(80)))),
-            Kind::List(start, items) => rows.extend(self.list(*start, items, 0, style)),
-            Kind::Table(table) => rows.extend(self.table(table, block.width, style)),
+            Kind::Rule => rows.push((self.theme.hr)(&"─".repeat(run.width.min(80)))),
+            Kind::List(start, items) => rows.extend(self.list(*start, items, style)),
+            Kind::Table(table) => rows.extend(self.table(table, run.width, style)),
             Kind::Gap => rows.push(String::new()),
             _ => {}
         }

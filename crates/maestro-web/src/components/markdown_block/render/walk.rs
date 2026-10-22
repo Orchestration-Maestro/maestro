@@ -17,7 +17,7 @@ impl Writer<'_, '_> {
         self.drain(&mut pending, out);
     }
     /// Write queued steps until none remain.
-    pub(super) fn drain(&mut self, pending: &mut Vec<Step<'_, '_>>, out: &mut String) {
+    fn drain(&mut self, pending: &mut Vec<Step<'_, '_>>, out: &mut String) {
         while let Some(step) = pending.pop() {
             self.step(step, pending, out);
         }
@@ -41,7 +41,7 @@ impl Writer<'_, '_> {
         }
     }
     /// Write one block node and queue the steps that follow it.
-    pub(super) fn block<'a, 'b>(
+    fn block<'a, 'b>(
         &mut self,
         node: &'a Node,
         atoms: Atoms<'a, 'b>,

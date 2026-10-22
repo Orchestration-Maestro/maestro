@@ -25,7 +25,7 @@ pub(crate) struct Child {
 }
 
 impl Child {
-    /// Publish undecided code, nested lists and the task marker once.
+    /// Publish undecided code and the task marker once.
     pub(crate) fn finish(&mut self, task: Option<bool>) -> BlockTokens {
         let mut output = std::mem::take(&mut self.output);
         let Some(operand) = self.operand.take() else {

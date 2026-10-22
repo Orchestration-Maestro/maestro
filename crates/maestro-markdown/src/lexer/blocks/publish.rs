@@ -2,17 +2,6 @@
 use super::BlockTokens;
 use crate::{Kind, Node, tokenizer::block::loosen};
 
-/// One pending step of a publication, innermost last.
-enum Frame {
-    /// A list whose item nodes are filled in order.
-    Listing(Box<Listing>),
-    /// A published child output returning into its parent item slot.
-    Child {
-        /// Item slot awaiting the child.
-        index: usize,
-    },
-}
-
 /// One list whose item nodes are being filled.
 struct Listing {
     /// Output owning the list node whose items are being filled.
@@ -27,56 +16,26 @@ struct Listing {
     loose: bool,
 }
 
-/// Next action of one listing.
-enum Progress {
-    /// An item output whose own trailing list is published first.
-    Nested {
-        /// Item slot that output belongs to.
-        index: usize,
-        /// Output awaiting its nested publication.
-        output: BlockTokens,
-    },
-    /// Every item output is placed.
-    Done,
-}
-
 impl BlockTokens {
     /// Publish the trailing list's items once no later step can change them.
     pub(crate) fn complete(&mut self) {
         if self.list.is_none() {
             return;
         }
-        let mut frames = vec![Frame::Listing(Box::new(Listing::start(std::mem::take(
-            self,
-        ))))];
-        let mut published = None;
-        while let Some(frame) = frames.pop() {
-            match frame {
-                Frame::Child { index } => place_child(&mut frames, &mut published, index),
-                Frame::Listing(listing) => step(listing, &mut frames, &mut published),
+        let mut listing = Listing::start(std::mem::take(self));
+        let mut parents: Vec<(Listing, usize)> = Vec::new();
+        loop {
+            if let Some((index, output)) = listing.next() {
+                parents.push((listing, index));
+                listing = Listing::start(output);
+                continue;
             }
-        }
-        *self = published.unwrap_or_default();
-    }
-}
-
-/// Hand a finished child output to its parent listing.
-fn place_child(frames: &mut [Frame], published: &mut Option<BlockTokens>, index: usize) {
-    let (Some(child), Some(Frame::Listing(parent))) = (published.take(), frames.last_mut()) else {
-        return;
-    };
-    parent.place(index, child);
-}
-
-/// Advance one listing, queueing a nested publication when an item needs one.
-fn step(listing: Box<Listing>, frames: &mut Vec<Frame>, published: &mut Option<BlockTokens>) {
-    let mut listing = listing;
-    match listing.next() {
-        Progress::Done => *published = Some((*listing).finish()),
-        Progress::Nested { index, output } => {
-            frames.push(Frame::Listing(listing));
-            frames.push(Frame::Child { index });
-            frames.push(Frame::Listing(Box::new(Listing::start(output))));
+            let Some((mut parent, index)) = parents.pop() else {
+                *self = listing.finish();
+                return;
+            };
+            parent.place(index, listing.finish());
+            listing = parent;
         }
     }
 }
@@ -105,16 +64,16 @@ impl Listing {
     }
 
     /// Place item outputs until one needs its own nested publication.
-    fn next(&mut self) -> Progress {
+    fn next(&mut self) -> Option<(usize, BlockTokens)> {
         while let Some(output) = self.outputs.next() {
             let index = self.next;
             self.next += 1;
             if output.list.is_some() {
-                return Progress::Nested { index, output };
+                return Some((index, output));
             }
             self.place(index, output);
         }
-        Progress::Done
+        None
     }
 
     /// Fill one item slot and merge the output's retained inline operands.

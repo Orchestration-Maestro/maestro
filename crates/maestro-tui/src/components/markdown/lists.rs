@@ -53,18 +53,12 @@ enum Level<'a> {
 
 impl Renderer<'_> {
     /// Renders markers and semantic nested rows in item order.
-    pub(super) fn list(
-        &self,
-        start: Option<u64>,
-        items: &[Node],
-        depth: usize,
-        style: Style<'_>,
-    ) -> Vec<String> {
+    pub(super) fn list(&self, start: Option<u64>, items: &[Node], style: Style<'_>) -> Vec<String> {
         let mut levels = vec![Level::List(Listing {
             items: items.iter(),
             start,
             index: 0,
-            depth,
+            depth: 0,
             lines: Vec::new(),
         })];
         let mut done = None;

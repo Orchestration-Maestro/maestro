@@ -300,47 +300,25 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Resolve inline bodies after nested containers supply their definitions.
-    fn resolve(&mut self, nodes: &mut Vec<Node>) {
-        let mut levels: Vec<(Vec<Node>, usize)> = Vec::new();
-        let mut level = std::mem::take(nodes);
-        let mut index = 0;
-        loop {
-            if index < level.len() {
-                index = self.level_step(&mut level, index, &mut levels);
+    fn resolve(&mut self, nodes: &mut [Node]) {
+        let mut levels = vec![nodes.iter_mut()];
+        while let Some(level) = levels.last_mut() {
+            let Some(node) = level.next() else {
+                levels.pop();
                 continue;
+            };
+            match &mut node.kind {
+                Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
+                    levels.push(children.iter_mut());
+                }
+                Kind::Paragraph(children)
+                | Kind::Inline(children)
+                | Kind::Heading(_, children, _) => {
+                    self.resolve_body(&node.range, children, false);
+                }
+                Kind::Table(table) => self.resolve_table(table),
+                _ => {}
             }
-            match ascend(&mut levels, &mut level) {
-                Some(resumed) => index = resumed,
-                None => break,
-            }
-        }
-        *nodes = level;
-    }
-
-    /// Resolve one node, or take a container's children for their own level.
-    fn level_step(
-        &mut self,
-        level: &mut Vec<Node>,
-        index: usize,
-        levels: &mut Vec<(Vec<Node>, usize)>,
-    ) -> usize {
-        let node = &mut level[index];
-        let Some(children) = released(&mut node.kind) else {
-            self.resolve_node(node);
-            return index + 1;
-        };
-        levels.push((std::mem::replace(level, children), index));
-        0
-    }
-
-    /// Resolve one retained node that needs no further descent.
-    fn resolve_node(&mut self, node: &mut Node) {
-        match &mut node.kind {
-            Kind::Paragraph(children) | Kind::Inline(children) | Kind::Heading(_, children, _) => {
-                self.resolve_body(&node.range, children, false);
-            }
-            Kind::Table(table) => self.resolve_table(table),
-            _ => {}
         }
     }
 
@@ -383,34 +361,6 @@ impl<'a, E> Lexer<'a, E> {
         let nodes = tokenizer.parse(&[], None);
         self.context = tokenizer.context;
         nodes
-    }
-}
-
-/// Return to the enclosing level with this level's resolved children attached.
-fn ascend(levels: &mut Vec<(Vec<Node>, usize)>, level: &mut Vec<Node>) -> Option<usize> {
-    let (parent, resumed) = levels.pop()?;
-    let done = std::mem::replace(level, parent);
-    contain(&mut level[resumed].kind, done);
-    Some(resumed + 1)
-}
-
-/// Take a container's children for their own resolution level.
-fn released(kind: &mut Kind) -> Option<Vec<Node>> {
-    match kind {
-        Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
-            Some(std::mem::take(children))
-        }
-        _ => None,
-    }
-}
-
-/// Restore a resolved level into the container that owns it.
-fn contain(kind: &mut Kind, resolved: Vec<Node>) {
-    match kind {
-        Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => {
-            *children = resolved;
-        }
-        _ => {}
     }
 }
 

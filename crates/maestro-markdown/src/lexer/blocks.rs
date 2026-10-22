@@ -22,7 +22,7 @@ enum Tail {
     Definition,
 }
 
-/// One ordered output shared across recursive quote chunks.
+/// One ordered output carried across a quote's chunk levels.
 #[derive(Default)]
 pub(crate) struct BlockTokens {
     /// Visible semantic nodes.

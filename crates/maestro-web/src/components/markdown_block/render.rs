@@ -280,9 +280,7 @@ impl Writer<'_, '_> {
             if let Kind::Paragraph(c) = &node.kind {
                 self.inline(c, Some(&run.atoms), &mut body);
             } else {
-                let mut pending = Vec::new();
-                self.block(node, Some(&run.atoms), &mut body, &mut pending);
-                self.drain(&mut pending, &mut body);
+                self.blocks(std::slice::from_ref(node), Some(&run.atoms), &mut body);
             }
         }
         wrapped(&body, wrap && inline, out);

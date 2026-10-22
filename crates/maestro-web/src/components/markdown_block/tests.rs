@@ -960,15 +960,36 @@ fn transcript_formula_containers_keep_display_boundaries() {
     }
 }
 
-#[test]
-fn deep_quote_blocks_export_on_a_small_stack() {
-    let html = std::thread::Builder::new()
+/// Run one export of `source` through the standalone viewer writer on a small stack.
+fn export_on_small_stack(source: String) -> String {
+    std::thread::Builder::new()
         .stack_size(2 * 1024 * 1024)
-        .spawn(|| prepare(&format!("{}deepest", ">".repeat(3_000)), false).html)
+        .spawn(move || {
+            let highlighter = maestro_theme::SyntectHighlighter::new().expect("highlighter");
+            super::prepare_export(&source, &highlighter)
+        })
         .expect("worker thread")
         .join()
-        .expect("worker panicked");
+        .expect("worker panicked")
+}
+
+#[test]
+fn deep_quote_blocks_export_on_a_small_stack() {
+    let html = export_on_small_stack(format!("{}deepest", ">".repeat(3_000)));
     assert_eq!(html.matches("<blockquote>").count(), 3_000);
     assert_eq!(html.matches("</blockquote>").count(), 3_000);
     assert!(html.contains("deepest"));
+}
+
+#[test]
+fn deep_nested_items_render_on_a_small_stack() {
+    let html = std::thread::Builder::new()
+        .stack_size(2 * 1024 * 1024)
+        .spawn(|| prepare(&format!("{}x", "- ".repeat(1_000)), false).html)
+        .expect("worker thread")
+        .join()
+        .expect("worker panicked");
+    assert_eq!(html.matches("<ul>").count(), 1_000);
+    assert_eq!(html.matches("<li>").count(), 1_000);
+    assert!(html.contains('x'));
 }

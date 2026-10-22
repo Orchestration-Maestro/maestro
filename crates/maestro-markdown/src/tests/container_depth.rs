@@ -13,10 +13,19 @@ const OPTIONS: [MarkedOptions; 5] = [
 /// Worker stack well below the main thread's, so depth cannot lean on it.
 const WORKER_STACK: usize = 2 * 1024 * 1024;
 
+/// Worker stack that makes one native frame per container observable at a depth
+/// debug can afford.
+const REDUCED_STACK: usize = 128 * 1024;
+
 /// Run one case on a worker thread of the witness stack size.
 fn on_small_stack<T: Send + 'static>(case: impl FnOnce() -> T + Send + 'static) -> T {
+    on_stack(WORKER_STACK, case)
+}
+
+/// Run one case on a worker thread of the selected witness stack size.
+fn on_stack<T: Send + 'static>(stack: usize, case: impl FnOnce() -> T + Send + 'static) -> T {
     std::thread::Builder::new()
-        .stack_size(WORKER_STACK)
+        .stack_size(stack)
         .spawn(case)
         .expect("worker thread")
         .join()
@@ -112,42 +121,59 @@ fn leaf(kind: &Kind) -> String {
     }
 }
 
-/// One line per node, indented by depth, naming kind, extent and leaf spelling.
+/// One line per node, indented by depth, naming kind, extent, authored spelling and leaves,
+/// followed by one line per retained inline scope.
 fn recorded(document: &Document) -> String {
     let mut lines = Vec::new();
     let mut pending: Vec<(usize, &Node)> =
         document.nodes.iter().rev().map(|node| (0, node)).collect();
     while let Some((depth, node)) = pending.pop() {
         lines.push(format!(
-            "{}{} {}..{}{}",
+            "{}{} {}..{} {:?}{}{}",
             "  ".repeat(depth),
             tag(&node.kind),
             node.range.start,
             node.range.end,
+            node.authored.to_owned_string(),
+            container(&node.kind),
             leaf(&node.kind)
         ));
         let kids: Vec<&Node> = children(&node.kind).collect();
         pending.extend(kids.into_iter().rev().map(|child| (depth + 1, child)));
     }
+    let mut scopes: Vec<_> = document.scopes.iter().collect();
+    scopes.sort_by(|left, right| left.0.cmp(right.0));
+    for (key, source) in scopes {
+        lines.push(format!("scope {}..{} {:?}", key.0, key.1, source.text));
+    }
     lines.join("\n")
 }
 
+/// Quote body and ordered start that a container owns beyond its children.
+fn container(kind: &Kind) -> String {
+    match kind {
+        Kind::Quote(_, body) => format!(" body={:?}", body.to_owned_string()),
+        Kind::List(Some(start), _) => format!(" start={start}"),
+        _ => String::new(),
+    }
+}
+
 /// Assert one marker shape's container depth and node count for every grammar.
-fn depth_rows(source: fn() -> String, expected: (usize, usize)) {
+fn depth_rows(stack: usize, source: fn() -> String, expected: (usize, usize)) {
     for options in OPTIONS {
-        let measured = on_small_stack(move || shape(&parse_with_options(source(), options)));
+        let measured = on_stack(stack, move || shape(&parse_with_options(source(), options)));
         assert_eq!(measured, expected, "{options:?}");
     }
 }
 
 #[test]
 fn deep_quote_markers_parse_on_a_small_stack() {
-    depth_rows(|| ">".repeat(3_000), (3_000, 3_000));
+    depth_rows(WORKER_STACK, || ">".repeat(3_000), (3_000, 3_000));
 }
 
 #[test]
 fn deep_quote_list_markers_parse_on_a_small_stack() {
-    depth_rows(|| "> - ".repeat(500), (1_500, 1_500));
+    depth_rows(WORKER_STACK, || "> - ".repeat(500), (1_500, 1_500));
 }
 
 #[test]
@@ -174,17 +200,28 @@ fn deep_dash_markers_stay_one_thematic_break() {
     assert_eq!(nested, (4, 4));
 }
 
+/// Container depth and node count of the repeated resumption message.
+fn resumption(repeats: usize, options: MarkedOptions) -> (usize, usize) {
+    let case = move || {
+        let mut source = String::from("> intro\nlazy\n");
+        for _ in 0..repeats {
+            source.push_str("> - a\n    cont\n> \n> para\n> \n");
+        }
+        shape(&parse_with_options(source, options))
+    };
+    on_small_stack(case)
+}
+
 #[test]
 fn repeated_quote_list_resumption_keeps_reference_depth() {
+    // Every grammar resumes to the same container depth; each keeps its own node count.
+    for options in OPTIONS {
+        let measured = resumption(64, options);
+        assert_eq!(measured.0, 193, "{options:?} at 64");
+    }
     for (repeats, expected) in [(64, (193, 578)), (128, (385, 1_154)), (256, (769, 2_306))] {
-        let case = move || {
-            let mut source = String::from("> intro\nlazy\n");
-            for _ in 0..repeats {
-                source.push_str("> - a\n    cont\n> \n> para\n> \n");
-            }
-            shape(&parse_with_options(source, MarkedOptions::Terminal))
-        };
-        assert_eq!(on_small_stack(case), expected, "repeats {repeats}");
+        let measured = resumption(repeats, MarkedOptions::Terminal);
+        assert_eq!(measured, expected, "repeats {repeats}");
     }
 }
 
@@ -312,15 +349,62 @@ fn indented(levels: usize, prefix: &str) -> String {
 
 #[test]
 fn deep_list_items_parse_on_a_small_stack() {
-    depth_rows(|| format!("{}x", "- ".repeat(1_000)), (2_000, 2_002));
+    depth_rows(
+        WORKER_STACK,
+        || format!("{}x", "- ".repeat(1_000)),
+        (2_000, 2_002),
+    );
 }
 
 #[test]
 fn deep_indented_list_parses_on_a_small_stack() {
-    depth_rows(|| indented(300, ""), (600, 1_200));
+    depth_rows(REDUCED_STACK, || indented(300, ""), (600, 1_200));
 }
 
 #[test]
 fn deep_reply_list_parses_on_a_small_stack() {
-    depth_rows(|| indented(300, "> "), (601, 1_201));
+    depth_rows(REDUCED_STACK, || indented(300, "> "), (601, 1_201));
+}
+
+/// Depth rows' parser work, measured over one fresh run.
+fn work_of(source: String, options: MarkedOptions) -> (usize, usize) {
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = parse_with_options(source, options);
+    let depth = shape(&document).0;
+    let work = super::WORK.with_borrow(|work| (work.quote_lines, work.list_lines));
+    (depth, work.0 + work.1)
+}
+
+#[test]
+fn deep_quote_work_grows_linearly_with_depth() {
+    let samples = [250, 500, 1_000].map(|depth| {
+        let (measured, lines) = work_of(">".repeat(depth), MarkedOptions::Terminal);
+        assert_eq!(measured, depth);
+        lines
+    });
+    eprintln!("quote depth line visits={samples:?}");
+    assert!(super::grows_linearly(samples), "{samples:?}");
+}
+
+#[test]
+fn deep_list_work_grows_linearly_with_depth() {
+    let samples = [500, 1_000, 2_000].map(|depth| {
+        let (measured, lines) =
+            work_of(format!("{}x", "- ".repeat(depth)), MarkedOptions::Terminal);
+        assert_eq!(measured, 2 * depth);
+        lines
+    });
+    eprintln!("list depth line visits={samples:?}");
+    assert!(super::grows_linearly(samples), "{samples:?}");
+}
+
+#[test]
+fn deep_quote_resolution_completes_on_a_reduced_stack() {
+    let measured = on_stack(REDUCED_STACK, || {
+        shape(&parse_with_options(
+            ">".repeat(2_000),
+            MarkedOptions::Terminal,
+        ))
+    });
+    assert_eq!(measured, (2_000, 2_000));
 }

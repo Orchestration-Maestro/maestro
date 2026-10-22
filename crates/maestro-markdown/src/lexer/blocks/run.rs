@@ -127,16 +127,7 @@ impl BlockRun {
                 });
                 return Step::Push(lexer.admit(pending));
             }
-            if let Some(consumed) = lexer.block_tail(&rest, &mut self.output) {
-                self.admitted(lexer, &rest, (start, mark), consumed);
-                continue;
-            }
-            let consumed =
-                lexer.paragraph_step(&rest, &mut self.output, caller.as_ref(), &mut self.clipped);
-            if let Some(consumed) = consumed {
-                self.admitted(lexer, &rest, (start, mark), consumed);
-            } else {
-                self.record(lexer, &rest, (start, mark), None);
+            if !self.tail(lexer, &rest, (start, mark)) {
                 self.stopped = true;
             }
         }
@@ -167,8 +158,7 @@ impl BlockRun {
                     .push_segmented(self.source.select(start..start + consumed), node);
                 self.output.list = list;
                 let rest = self.source.select(start..self.source.len());
-                self.record(lexer, &rest, (start, awaiting.mark), Some(consumed));
-                self.cursor = start + consumed;
+                self.admitted(lexer, &rest, (start, awaiting.mark), consumed);
                 None
             }
             Done::Rejected => self.declined(lexer, awaiting),
@@ -194,19 +184,33 @@ impl BlockRun {
             });
             return Some(lexer.admit(Pending::List(entry)));
         }
+        if !self.tail(lexer, &rest, (cursor, mark)) {
+            self.stopped = true;
+        }
+        None
+    }
+
+    /// Admit the tail grammars at one position, reporting whether one consumed bytes.
+    fn tail<E>(
+        &mut self,
+        lexer: &mut Lexer<'_, E>,
+        rest: &Segmented,
+        step: (usize, Option<Box<Mark>>),
+    ) -> bool {
         let caller = self
             .callback
             .as_ref()
-            .map(|source| source.view(cursor..source.text.len()));
-        let consumed = lexer.block_tail(&rest, &mut self.output).or_else(|| {
-            lexer.paragraph_step(&rest, &mut self.output, caller.as_ref(), &mut self.clipped)
+            .map(|source| source.view(step.0..source.text.len()));
+        let consumed = lexer.block_tail(rest, &mut self.output).or_else(|| {
+            lexer.paragraph_step(rest, &mut self.output, caller.as_ref(), &mut self.clipped)
         });
-        self.record(lexer, &rest, (cursor, mark), consumed);
-        match consumed {
-            Some(consumed) => self.cursor = cursor + consumed,
-            None => self.stopped = true,
+        if let Some(consumed) = consumed {
+            self.admitted(lexer, rest, step, consumed);
+            true
+        } else {
+            self.record(lexer, rest, step, None);
+            false
         }
-        None
     }
 
     /// Keep this level's position after one dispatch step admitted `consumed` bytes.

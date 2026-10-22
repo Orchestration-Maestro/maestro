@@ -103,8 +103,6 @@ pub(crate) struct Quote {
     top: bool,
     /// Next action of this level.
     phase: QuotePhase,
-    /// Transform of the chunk whose block level is running.
-    chunk: Option<Segmented>,
 }
 
 /// Retained quote invocation state across nested block admission.
@@ -186,7 +184,6 @@ impl Quote {
             target: QuoteTarget::Container(entry.raw),
             top,
             phase: QuotePhase::Chunk,
-            chunk: None,
         }
     }
 
@@ -197,7 +194,6 @@ impl Quote {
             target: QuoteTarget::Nested,
             top,
             phase: QuotePhase::Chunk,
-            chunk: None,
         }
     }
 
@@ -207,7 +203,6 @@ impl Quote {
             QuotePhase::Chunk => match self.chunk(lexer) {
                 Next::Run(chunk) => {
                     let output = std::mem::take(&mut self.frame.output);
-                    self.chunk = Some(chunk.clone());
                     self.top = lexer.top;
                     lexer.top = true;
                     let level = Level::Chunk;
@@ -263,6 +258,7 @@ impl Quote {
         if self.frame.text.len() != 0 {
             self.frame.text.newline();
         }
+        self.frame.text.append(&chunk);
         Next::Run(chunk)
     }
 
@@ -270,9 +266,7 @@ impl Quote {
     fn resumed<E>(&mut self, lexer: &mut Lexer<'_, E>, done: Done) -> Option<Frame> {
         match done {
             Done::Blocks(output, _) => {
-                let chunk = self.chunk.take()?;
                 self.frame.output = output;
-                self.frame.text.append(&chunk);
                 self.frame.finished = self.frame.pending.is_empty()
                     || self
                         .frame
@@ -586,3 +580,6 @@ impl QuoteFrame {
             .is_some_and(|matched| matched.end() > 4)
     }
 }
+
+#[cfg(test)]
+mod tests;

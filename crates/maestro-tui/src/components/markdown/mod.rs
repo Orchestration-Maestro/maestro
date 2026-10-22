@@ -178,11 +178,7 @@ impl Markdown {
             default_prefix: std::cell::OnceCell::new(),
         };
         let content: Vec<String> = renderer
-            .blocks(
-                &parse(text, self.options.clean_content),
-                content_width,
-                inline::Style::Default,
-            )
+            .blocks(&parse(text, self.options.clean_content), content_width)
             .into_iter()
             .flat_map(|line| {
                 if crate::is_image_line(&line) {
