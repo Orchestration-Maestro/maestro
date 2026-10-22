@@ -8,7 +8,7 @@ use crate::write_support;
 use edit_support::*;
 use maestro_agent::AgentToolUpdateCallback;
 use maestro_tools::{EditOperations, EditToolOptions, create_edit_tool_definition};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -20,7 +20,7 @@ fn native_cases(test: &str) {
         let args: FileInput = serde_json::from_value(row.input).unwrap();
         assert!(args.mode.is_none());
         let expected: FileExpected = serde_json::from_value(row.expected).unwrap();
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let absolute = maestro_tools::resolve_to_cwd(&args.path, &dir.text()).unwrap();
         std::fs::OpenOptions::new()
             .create_new(true)
@@ -150,7 +150,7 @@ fn edit_execution_requires_read_and_write_access() {
     for row in rows("edit_execution_requires_read_and_write_access") {
         let args: FileInput = serde_json::from_value(row.input).unwrap();
         let expected: FileExpected = serde_json::from_value(row.expected).unwrap();
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         let path = dir.file(&args.path, &args.bytes);
         let mode = args.mode.unwrap();
         // A privileged run reads and writes anyway, so there is nothing to check.
@@ -232,9 +232,9 @@ fn edit_native_failures_do_not_create_targets() {
         let args: Args = serde_json::from_value(row.input).unwrap();
         let expected: Failed = serde_json::from_value(row.expected).unwrap();
         assert!(!expected.ok && expected.calls.is_none() && expected.events.is_none());
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         if args.path == "directory" {
-            std::fs::create_dir(dir.0.join(&args.path)).unwrap();
+            std::fs::create_dir(dir.path().join(&args.path)).unwrap();
         }
         let tool: Tool = create_edit_tool_definition(dir.text(), EditToolOptions::default());
         let error = run(start(&tool, input(&args.path, "hello", "world"), None))
@@ -243,14 +243,14 @@ fn edit_native_failures_do_not_create_targets() {
         if args.path == "directory" {
             assert!(!error.message.starts_with("Could not edit file:"));
         } else {
-            assert!(!dir.0.join(args.path).exists());
+            assert!(!dir.path().join(args.path).exists());
             assert!(error.message.starts_with("Could not edit file:"));
         }
     }
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let tool: Tool = create_edit_tool_definition(dir.text(), EditToolOptions::default());
     assert!(run(start(&tool, input("missing/file", "hello", "world"), None)).is_err());
-    assert!(!dir.0.join("missing").exists());
+    assert!(!dir.path().join("missing").exists());
 }
 
 #[test]
@@ -389,14 +389,14 @@ fn edit_execution_binds_expanded_paths_before_polling() {
 
 /// Compare both constructors against a cwd decoy after invocation.
 fn cwd_binding() {
-    let original = TempDir::new();
-    let decoy = TempDir::new();
+    let original = Scratch::new().unwrap();
+    let decoy = Scratch::new().unwrap();
     original.file("file", b"hello");
     decoy.file("file", b"decoy");
-    std::env::set_current_dir(&original.0).unwrap();
+    std::env::set_current_dir(original.path()).unwrap();
     for wrapped in [false, true] {
         let ops = Arc::new(Operations::new(b"hello"));
-        let absolute = original.0.join("file").to_str().unwrap().to_owned();
+        let absolute = original.path().join("file").to_str().unwrap().to_owned();
         if wrapped {
             let tool = agent_tool(&ops, ".");
             let future = (tool.execute)(
@@ -405,15 +405,15 @@ fn cwd_binding() {
                 None,
                 None,
             );
-            std::env::set_current_dir(&decoy.0).unwrap();
+            std::env::set_current_dir(decoy.path()).unwrap();
             run(future).unwrap();
         } else {
             let future = start(&tool(&ops, "."), input("file", "hello", "world"), None);
-            std::env::set_current_dir(&decoy.0).unwrap();
+            std::env::set_current_dir(decoy.path()).unwrap();
             run(future).unwrap();
         }
         assert!(ops.script.calls().iter().all(|call| call[1] == absolute));
-        std::env::set_current_dir(&original.0).unwrap();
+        std::env::set_current_dir(original.path()).unwrap();
     }
     std::env::set_current_dir(std::env::temp_dir()).unwrap();
 }
@@ -482,7 +482,7 @@ fn edit_parallel_calls_preserve_both_changes() {
     let row = rows("edit_parallel_calls_preserve_both_changes").remove(0);
     assert_eq!(row.input, json!({}));
     let expected: Expected = serde_json::from_value(row.expected).unwrap();
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = dir.file("queued.txt", b"alpha\nbeta\n");
     let (ops, gate) = GatedNative::new();
     let tool = tool(&ops, &dir.text());
@@ -513,7 +513,7 @@ fn edit_and_write_use_one_queue() {
     for row in rows("edit_and_write_use_one_queue") {
         let args: Args = serde_json::from_value(row.input).unwrap();
         let expected: Expected = serde_json::from_value(row.expected).unwrap();
-        let dir = TempDir::new();
+        let dir = Scratch::new().unwrap();
         dir.file("mixed.txt", b"hello\n");
         let (ops, gate) = GatedNative::new();
         let edit = tool(&ops, &dir.text());
@@ -553,7 +553,7 @@ fn edit_and_write_use_one_queue() {
             run(c).unwrap();
         }
         assert_eq!(
-            std::fs::read(dir.0.join("mixed.txt")).unwrap(),
+            std::fs::read(dir.path().join("mixed.txt")).unwrap(),
             expected.bytes
         );
     }
@@ -614,7 +614,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
 
 #[test]
 fn edit_definition_and_wrapper_share_operations() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     for wrapped in [false, true] {
         let ops = Arc::new(Operations::new(b"supplied"));
         if wrapped {
@@ -657,11 +657,11 @@ fn edit_definition_and_wrapper_share_operations() {
 }
 
 /// Check the default adapter's symlink and literal filename routes.
-fn native_adapter_routes(dir: &TempDir) {
+fn native_adapter_routes(dir: &Scratch) {
     let path = dir.file("target", b"hello");
     #[cfg(unix)]
     let selected = {
-        std::os::unix::fs::symlink("target", dir.0.join("alias")).unwrap();
+        std::os::unix::fs::symlink("target", dir.path().join("alias")).unwrap();
         "alias"
     };
     #[cfg(not(unix))]
@@ -677,7 +677,7 @@ fn native_adapter_routes(dir: &TempDir) {
     assert_eq!(std::fs::read(path).unwrap(), b"world");
     #[cfg(unix)]
     assert!(
-        std::fs::symlink_metadata(dir.0.join("alias"))
+        std::fs::symlink_metadata(dir.path().join("alias"))
             .unwrap()
             .is_symlink()
     );
@@ -692,14 +692,14 @@ fn native_adapter_routes(dir: &TempDir) {
         .is_err()
     );
     assert_eq!(
-        std::fs::read(dir.0.join("cafe\u{301}.txt")).unwrap(),
+        std::fs::read(dir.path().join("cafe\u{301}.txt")).unwrap(),
         b"hello"
     );
 }
 
 #[test]
 fn edit_preview_and_execution_share_details() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let bytes = "\u{feff}“hello”  \r\nnext\r\n".as_bytes();
     let path = dir.file("file", bytes);
     let args = maestro_tools::EditToolInput {
@@ -733,7 +733,7 @@ fn edit_preview_and_execution_share_details() {
 
 #[test]
 fn edit_queued_abort_waits_for_predecessor() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = dir.file("file", b"hello");
     let (ops, release) = GatedNative::new();
     let first = tool(&ops, &dir.text());
@@ -769,10 +769,10 @@ fn edit_queued_abort_waits_for_predecessor() {
 #[cfg(unix)]
 #[test]
 fn edit_queue_preserves_aliases_and_independent_files() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let path = dir.file("file", b"hello");
     dir.file("other", b"hello");
-    std::os::unix::fs::symlink("file", dir.0.join("alias")).unwrap();
+    std::os::unix::fs::symlink("file", dir.path().join("alias")).unwrap();
     let (ops, release) = GatedNative::new();
     let tool = tool(&ops, &dir.text());
     let mut a = start(&tool, input("file", "hello", "world"), None);
@@ -781,7 +781,10 @@ fn edit_queue_preserves_aliases_and_independent_files() {
     assert!(poll_once(&mut b).is_pending());
     let mut other = start(&tool, input("other", "hello", "independent"), None);
     ready(&mut other).unwrap();
-    assert_eq!(std::fs::read(dir.0.join("other")).unwrap(), b"independent");
+    assert_eq!(
+        std::fs::read(dir.path().join("other")).unwrap(),
+        b"independent"
+    );
     release.open();
     ready(&mut a).unwrap();
     ready(&mut b).unwrap();
@@ -798,7 +801,7 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
     ) {
         return;
     }
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let gone = maestro_test_directory::Scratch::new().unwrap();
     let absolute = dir.file("file", b"hello");
     gone.enter_removed("removed").unwrap();

@@ -90,8 +90,8 @@ impl io::Write for ObserveFiles<'_> {
 }
 #[test]
 fn catalog_command_fetches_sequentially_and_reports_after_writes() {
-    let scratch = Scratch::new();
-    let destination = scratch.0.join("generated");
+    let scratch = Scratch::new().unwrap();
+    let destination = scratch.path().join("generated");
     let (release_dev, dev) = tokio::sync::oneshot::channel();
     let (release_router, router) = tokio::sync::oneshot::channel();
     let (fetch, events) = controlled_with_bodies(None, vec![dev, router]);
@@ -155,13 +155,13 @@ fn observe_pending_bodies(
 #[test]
 fn catalog_command_preserves_feed_failure_fallbacks() {
     for source in 0..3 {
-        let scratch = Scratch::new();
+        let scratch = Scratch::new().unwrap();
         let (fetch, events) = controlled(Some(source));
         let mut output = Vec::new();
         let mut errors = Vec::new();
         run(
             &fetch,
-            &scratch.0.join("generated"),
+            &scratch.path().join("generated"),
             &mut output,
             &mut errors,
         )
@@ -182,8 +182,8 @@ fn catalog_command_preserves_feed_failure_fallbacks() {
 
 #[test]
 fn catalog_command_returns_write_and_output_errors() {
-    let scratch = Scratch::new();
-    let destination = scratch.0.join("generated");
+    let scratch = Scratch::new().unwrap();
+    let destination = scratch.path().join("generated");
     let (fetch, _) = controlled(None);
     let mut complete = Vec::new();
     run(&fetch, &destination, &mut complete, &mut Vec::new()).unwrap();
@@ -275,8 +275,8 @@ fn snapshot(directory: &std::path::Path) -> std::collections::BTreeMap<String, V
 }
 #[test]
 fn catalog_files_have_one_owner_and_repeat_deterministically() {
-    let scratch = Scratch::new();
-    let destination = scratch.0.join("generated");
+    let scratch = Scratch::new().unwrap();
+    let destination = scratch.path().join("generated");
     let fetch = custom_fetch("extra-identity");
     run(&fetch, &destination, &mut Vec::new(), &mut Vec::new()).unwrap();
     fs::write(
@@ -306,8 +306,8 @@ fn catalog_files_have_one_owner_and_repeat_deterministically() {
 
 #[test]
 fn emitted_model_sequence_follows_utf16_order() {
-    let scratch = Scratch::new();
-    let destination = scratch.0.join("generated");
+    let scratch = Scratch::new().unwrap();
+    let destination = scratch.path().join("generated");
     let ids = ["\u{e000}", "10", "😀", "2", "01"];
     run(
         &custom_fetch_ids(&ids),
@@ -326,8 +326,8 @@ fn emitted_model_sequence_follows_utf16_order() {
 
 #[test]
 fn generated_catalog_source_compiles_and_reconstructs_descriptors() {
-    let scratch = Scratch::new();
-    let destination = scratch.0.join("generated");
+    let scratch = Scratch::new().unwrap();
+    let destination = scratch.path().join("generated");
     let identity = "boundary/\"\\\n\u{0}😀";
     let fetch = custom_fetch(identity);
     run(&fetch, &destination, &mut Vec::new(), &mut Vec::new()).unwrap();
@@ -379,10 +379,10 @@ fn completed_body(
 /// Exercise native write failures without emitting a generation report.
 fn assert_filesystem_errors(fetch: &Fetch) {
     for boundary in ["parent", "directory", "provider", "registry"] {
-        let scratch = Scratch::new();
-        let destination = scratch.0.join("generated");
+        let scratch = Scratch::new().unwrap();
+        let destination = scratch.path().join("generated");
         let destination = match boundary {
-            "parent" => scratch.0.join("missing/generated"),
+            "parent" => scratch.path().join("missing/generated"),
             "directory" => {
                 fs::write(&destination, "not a directory").unwrap();
                 destination

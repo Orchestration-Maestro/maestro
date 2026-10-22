@@ -1,6 +1,6 @@
 //! First settings writes retain independent edits under native exclusion.
 
-use crate::support::{self, TempDir, block_on, file_storage};
+use crate::support::{self, Scratch, block_on, file_storage};
 use maestro_settings::{
     FileSettingsStorage, InMemorySettingsStorage, SettingsListEntry, SettingsManager,
     SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate,
@@ -28,7 +28,7 @@ fn exclusion_is_held(file: &Path) -> bool {
 }
 
 fn root_exclusion(scope: SettingsScope) {
-    let tree = TempDir::new();
+    let tree = Scratch::new().unwrap();
     let mut calls = 0;
     file_storage(tree.path())
         .with_write_lock(scope, &mut |current| {
@@ -101,7 +101,7 @@ impl Observed {
     }
 }
 
-fn observed(tree: &TempDir, scope: SettingsScope) -> Arc<Observed> {
+fn observed(tree: &Scratch, scope: SettingsScope) -> Arc<Observed> {
     Arc::new(Observed {
         native: file_storage(tree.path()),
         file: support::settings_file(tree.path(), scope),
@@ -114,7 +114,7 @@ fn read(file: &Path) -> Value {
     serde_json::from_str(&fs::read_to_string(file).unwrap()).unwrap()
 }
 fn manager_edits(scope: SettingsScope) {
-    let tree = TempDir::new();
+    let tree = Scratch::new().unwrap();
     let storage = observed(&tree, scope);
     let first = SettingsManager::from_storage(storage.clone());
     let second = SettingsManager::from_storage(storage.clone());
@@ -243,7 +243,7 @@ fn two_processes(test: &str, scope: SettingsScope, kind: &str) {
     if maestro_test_process::run_alone(test).unwrap() {
         return;
     }
-    let root = support::TempDir::new();
+    let root = support::Scratch::new().unwrap();
     let mut children = Vec::new();
     for key in ["first", "second"] {
         let mut child = support::child_command(test, "write")
@@ -368,7 +368,7 @@ fn supplied_adapter_default_keeps_its_callback_contract() {
 #[test]
 fn write_intent_no_write_and_error_release_exclusion() {
     for scope in [SettingsScope::Global, SettingsScope::Project] {
-        let root = support::TempDir::new();
+        let root = support::Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let file = support::settings_file(root.path(), scope);
         let mut calls = 0;
@@ -412,7 +412,7 @@ fn write_intent_no_write_and_error_release_exclusion() {
 }
 
 fn native_removal_preserves_siblings() {
-    let root = support::TempDir::new();
+    let root = support::Scratch::new().unwrap();
     let storage = Arc::new(file_storage(root.path()));
     storage
         .with_write_lock(SettingsScope::Global, &mut |_| {
@@ -444,7 +444,7 @@ fn legacy_missing_callbacks_stay_noncreating() {
 }
 
 fn legacy_missing_callback(scope: SettingsScope, fails: bool) {
-    let root = support::TempDir::new();
+    let root = support::Scratch::new().unwrap();
     let storage = file_storage(root.path());
     let target = support::settings_file(root.path(), scope);
     let mut calls = 0;
@@ -472,7 +472,7 @@ fn legacy_missing_callback(scope: SettingsScope, fails: bool) {
 #[test]
 fn write_intent_io_failures_skip_or_release_callback() {
     for scope in [SettingsScope::Global, SettingsScope::Project] {
-        let root = support::TempDir::new();
+        let root = support::Scratch::new().unwrap();
         let storage = file_storage(root.path());
         let target = support::settings_file(root.path(), scope);
         let mut sidecar = target.as_os_str().to_owned();

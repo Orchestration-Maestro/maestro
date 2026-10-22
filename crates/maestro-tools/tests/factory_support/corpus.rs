@@ -1,6 +1,7 @@
 //! Consumption of the recorded factory corpus without source metadata.
 #![cfg(test)]
 use super::{execution, factories, select};
+use crate::read_support::Fixture;
 use crate::runtime;
 use crate::{loop_support, read_support};
 use maestro_tools::*;
@@ -302,7 +303,7 @@ fn metadata<C, P, D, S>(tool: &ToolDefinition<C, P, D, S>) -> Value {
 pub fn check_preparation() {
     for row in corpus().cases.into_iter().filter(|r| r.op == "prepare") {
         for factory in factories("edit") {
-            let root = read_support::TempDir::new();
+            let root = read_support::Scratch::new().unwrap();
             root.file("f", b"a c");
             let manager = execution::manager(&root);
             let tools = select(
@@ -328,7 +329,7 @@ pub fn check_preparation() {
                 .is_some_and(|a| !a.is_empty());
             assert_eq!(turn.results[0]["isError"], !valid);
             assert_eq!(
-                std::fs::read(root.0.join("f")).unwrap(),
+                std::fs::read(root.path().join("f")).unwrap(),
                 if !valid {
                     b"a c"
                 } else if row.expected["edits"].as_array().unwrap().len() == 2 {
@@ -373,7 +374,7 @@ fn image_options_and_context() {
     for resize in [false, true] {
         for prefix in ["", "distinct-prefix"] {
             for factory in factories("read") {
-                let root = read_support::TempDir::new();
+                let root = read_support::Scratch::new().unwrap();
                 let tool = select(
                     factory,
                     "read",
@@ -412,7 +413,7 @@ fn image_options(image: &[u8], resize: bool, prefix: &str) -> ToolsOptions {
 fn image_context(image: &[u8], resize: bool, prefix: &str) {
     use maestro_models::ModelInput;
     use std::sync::atomic::{AtomicUsize, Ordering};
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     let options = image_options(image, resize, prefix);
     let definition = create_tool_definition::<read_support::SharedModel>(
         "read",

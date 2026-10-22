@@ -12,53 +12,31 @@ use maestro_tools::{
     create_read_tool_definition,
 };
 use serde_json::{Value, json};
-use std::{
-    path::PathBuf,
-    sync::{
-        Arc, Mutex, RwLock,
-        atomic::{AtomicUsize, Ordering},
-    },
+use std::sync::{
+    Arc, Mutex, RwLock,
+    atomic::{AtomicUsize, Ordering},
 };
 
-/// A directory removed when dropped.
-pub struct TempDir(pub PathBuf);
+pub use maestro_test_directory::Scratch;
 
-impl TempDir {
-    /// Create an empty directory unique to this process and call.
-    pub fn new() -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let stem = format!("maestro-read-{}", std::process::id());
-        Self::create_in(&std::env::temp_dir(), &stem, &NEXT)
-    }
-
-    /// Create the first `stem-N` below `parent` that does not exist yet; existing entries stay untouched.
-    pub fn create_in(parent: &std::path::Path, stem: &str, next: &AtomicUsize) -> Self {
-        loop {
-            let path = parent.join(format!("{stem}-{}", next.fetch_add(1, Ordering::Relaxed)));
-            match std::fs::create_dir(&path) {
-                Ok(()) => return Self(path),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => panic!("cannot create {}: {error}", path.display()),
-            }
-        }
-    }
-
+/// Native fixture spellings callers need on top of the shared directory owner.
+pub trait Fixture {
     /// The directory as text.
-    pub fn text(&self) -> String {
-        self.0.to_str().unwrap().to_owned()
-    }
+    fn text(&self) -> String;
 
     /// Write `bytes` at `name` below the directory and return its text path.
-    pub fn file(&self, name: &str, bytes: &[u8]) -> String {
-        let path = self.0.join(name);
-        std::fs::write(&path, bytes).unwrap();
-        path.to_str().unwrap().to_owned()
-    }
+    fn file(&self, name: &str, bytes: &[u8]) -> String;
 }
 
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+impl Fixture for Scratch {
+    fn text(&self) -> String {
+        self.path().to_str().unwrap().to_owned()
+    }
+
+    fn file(&self, name: &str, bytes: &[u8]) -> String {
+        let path = self.path().join(name);
+        std::fs::write(&path, bytes).unwrap();
+        path.to_str().unwrap().to_owned()
     }
 }
 
@@ -401,16 +379,38 @@ pub fn isolated_os_output(
     mode: &str,
     envs: &[(&str, Option<&std::ffi::OsStr>)],
 ) -> std::process::Output {
-    let mut command = maestro_test_process::TestProcess::current(test)
-        .unwrap()
-        .nocapture()
-        .case(mode);
-    for (key, value) in envs {
-        command = match value {
-            Some(value) => command.env(key, value),
-            None => command.env_remove(key),
-        };
+    isolated_output(test, mode, |mut command| {
+        for (key, value) in envs {
+            command = match value {
+                Some(value) => command.env(key, value),
+                None => command.env_remove(key),
+            };
+        }
+        command
+    })
+}
+
+/// Run [`isolated_os`] with the child's temporary directory below `root`.
+pub fn isolated_temp_dir(test: &str, mode: &str, root: &std::path::Path) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return maestro_test_process::selection().runs_case(mode);
     }
+    isolated_output(test, mode, |command| command.temp_dir(root));
+    false
+}
+
+/// Run a passing isolated child configured by `configure` and retain its output.
+fn isolated_output(
+    test: &str,
+    mode: &str,
+    configure: impl FnOnce(maestro_test_process::TestProcess) -> maestro_test_process::TestProcess,
+) -> std::process::Output {
+    let command = configure(
+        maestro_test_process::TestProcess::current(test)
+            .unwrap()
+            .nocapture()
+            .case(mode),
+    );
     let output = command.output().unwrap();
     assert!(
         output.status.success(),

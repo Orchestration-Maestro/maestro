@@ -1,6 +1,7 @@
 //! Observable native environment, progress and pending-operation consumption.
 #![cfg(test)]
 use super::{execution, factories, select};
+use crate::read_support::Fixture;
 use crate::runtime;
 use crate::{agent_shell_support, read_support, write_support};
 use maestro_models::Cancellation;
@@ -19,7 +20,7 @@ pub fn check() {
                 "output_aborted",
             ],
             &|bash| {
-                let root = read_support::TempDir::new();
+                let root = read_support::Scratch::new().unwrap();
                 select(
                     factory,
                     "bash",
@@ -45,7 +46,7 @@ pub fn check() {
 /// Cancellation drops an admitted pending operation after its first poll.
 fn pending_read() {
     for factory in factories("read") {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         let ops = Arc::new(read_support::ScriptedOps::new(b"unreachable").at(
             read_support::Stage::Read,
             read_support::Behavior::Pend,
@@ -91,9 +92,9 @@ fn pending_read() {
 #[cfg(unix)]
 fn native_shell_configuration() {
     use crate::find_support;
-    let root = read_support::TempDir::new();
-    let search = read_support::TempDir::new();
-    let shell = root.0.join("chosen-shell");
+    let root = read_support::Scratch::new().unwrap();
+    let search = read_support::Scratch::new().unwrap();
+    let shell = root.path().join("chosen-shell");
     find_support::executable(
         &root,
         "chosen-shell",

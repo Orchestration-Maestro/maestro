@@ -1,6 +1,7 @@
 //! Recorded assembly and metadata behavior.
 use crate::Model;
 use indexmap::IndexMap;
+use maestro_test_directory::Scratch;
 use serde::Deserialize;
 /// A unique controlled query.
 #[derive(Deserialize)]
@@ -214,26 +215,6 @@ fn unconditional_additions_are_first_wins_not_replacements() {
     assembly_cases("unconditional_additions_are_first_wins_not_replacements");
 }
 
-/// Own a native temporary generated directory.
-struct Scratch(std::path::PathBuf);
-impl Scratch {
-    /// Allocate an isolated directory with a process-local unique identity.
-    fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-catalog-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
-    }
-}
 #[test]
 fn source_emission_sorts_utf16_keys() {
     assembly_cases("source_emission_sorts_utf16_keys");
@@ -243,11 +224,11 @@ fn source_emission_sorts_utf16_keys() {
         .find(|case| case.test == "source_emission_sorts_utf16_keys")
         .unwrap();
     let catalog = super::assemble(serde_json::from_value(case.input).unwrap());
-    let scratch = Scratch::new();
-    super::emit::write_catalog(&catalog, &scratch.0.join("generated")).unwrap();
-    let registry = std::fs::read_to_string(scratch.0.join("generated/mod.rs")).unwrap();
+    let scratch = Scratch::new().unwrap();
+    super::emit::write_catalog(&catalog, &scratch.path().join("generated")).unwrap();
+    let registry = std::fs::read_to_string(scratch.path().join("generated/mod.rs")).unwrap();
     assert!(registry.find("😀").unwrap() < registry.find("\\u{e000}").unwrap());
-    let provider = std::fs::read_to_string(scratch.0.join("generated/provider_a.rs")).unwrap();
+    let provider = std::fs::read_to_string(scratch.path().join("generated/provider_a.rs")).unwrap();
     for (left, right) in [("01", "10"), ("10", "2"), ("2", "😀"), ("😀", "\u{e000}")] {
         assert!(
             provider.find(&format!("({left:?},")).unwrap()

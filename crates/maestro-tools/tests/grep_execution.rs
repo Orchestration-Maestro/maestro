@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
+use crate::read_support::Fixture;
 use crate::runtime;
 use maestro_tools::{GrepToolOptions, ToolsManager, create_grep_tool_definition};
 use std::sync::Arc;
@@ -125,7 +126,7 @@ fn grep_count_byte_and_clip_notices_keep_order() {
 fn grep_failures_keep_acquisition_path_and_exit_precedence() {
     use crate::{grep_support as g, read_support};
     if maestro_test_process::selection().is_child() {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         let case = g::cases("grep_failures_keep_acquisition_path_and_exit_precedence")
             .into_iter()
             .find(|c| c.id == "unavailable")
@@ -159,12 +160,12 @@ fn grep_failures_keep_acquisition_path_and_exit_precedence() {
     {
         g::controlled(&case);
     }
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     assert!(!read_support::isolated_os(
         "grep_failures_keep_acquisition_path_and_exit_precedence",
         "unavailable",
         &[
-            ("PATH", Some(root.0.as_os_str())),
+            ("PATH", Some(root.path().as_os_str())),
             ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new("1")))
         ]
     ));
@@ -197,7 +198,7 @@ fn grep_flag_like_pattern_never_runs_commands() {
         "payload.sh",
         &format!(
             "#!/bin/sh\necho executed > '{}'\ncat \"$1\"\n",
-            root.0.join("injection-marker").display()
+            root.path().join("injection-marker").display()
         ),
     );
     for c in crate::grep_support::cases("grep_flag_like_pattern_never_runs_commands") {
@@ -277,7 +278,7 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
             assert!(
                 std::process::Command::new("git")
                     .args(["init", "-q"])
-                    .arg(&root.0)
+                    .arg(root.path())
                     .status()
                     .unwrap()
                     .success()
@@ -334,7 +335,7 @@ fn grep_cancellation_drops_pending_operations() {
         return;
     }
     for read in [false, true] {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         g::producer(&root, &g::Input::default());
         let operations = Arc::new(g::PendingOperations {
             read,
@@ -367,12 +368,12 @@ fn grep_cancellation_drops_pending_operations() {
             assert!(operations.dropped.is_aborted());
         });
     }
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     assert!(!read_support::isolated_os(
         "grep_cancellation_drops_pending_operations",
         "acquisition",
         &[
-            ("PATH", Some(root.0.as_os_str())),
+            ("PATH", Some(root.path().as_os_str())),
             ("MAESTRO_OFFLINE", None)
         ]
     ));
@@ -386,9 +387,9 @@ fn grep_cancellation_stops_live_child() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     runtime::run(async {
         for limited in [false, true] {
-            let root = read_support::TempDir::new();
+            let root = read_support::Scratch::new().unwrap();
             root.file("file.txt", b"hit\n");
-            let event=serde_json::json!({"type":"match","data":{"path":{"text":root.0.join("file.txt").to_str().unwrap()},"line_number":1,"lines":{"text":"hit\n"}}}).to_string()+"\n";
+            let event=serde_json::json!({"type":"match","data":{"path":{"text":root.path().join("file.txt").to_str().unwrap()},"line_number":1,"lines":{"text":"hit\n"}}}).to_string()+"\n";
             let listener = g::session(
                 &root,
                 &format!(
@@ -434,9 +435,9 @@ fn grep_limit_terminates_before_later_results() {
     use crate::{grep_support as g, read_support};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     runtime::run(async {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         root.file("first", b"hit\nafter\n");
-        let event=serde_json::json!({"type":"match","data":{"path":{"text":root.0.join("first").to_str().unwrap()},"line_number":1}}).to_string()+"\n";
+        let event=serde_json::json!({"type":"match","data":{"path":{"text":root.path().join("first").to_str().unwrap()},"line_number":1}}).to_string()+"\n";
         let listener = g::session(
             &root,
             &format!(
@@ -478,8 +479,8 @@ fn grep_stdout_framing_ignores_stderr() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     runtime::run(async {
         for code in [0, 2] {
-            let root = read_support::TempDir::new();
-            let event=serde_json::json!({"type":"match","data":{"path":{"text":root.0.join("file.txt").to_str().unwrap()},"line_number":1,"lines":{"text":"é\n"}}}).to_string();
+            let root = read_support::Scratch::new().unwrap();
+            let event=serde_json::json!({"type":"match","data":{"path":{"text":root.path().join("file.txt").to_str().unwrap()},"line_number":1,"lines":{"text":"é\n"}}}).to_string();
             let split = event.as_bytes().iter().position(|b| *b == 0xc3).unwrap() + 1;
             let stderr_event=b"{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"wrong\"},\"line_number\":9,\"lines\":{\"text\":\"wrong\"}}}\n";
             let chunks = if code == 0 {
@@ -551,7 +552,7 @@ fn cancel_pending_acquisition() {
             std::future::pending::<Result<_, FetchError>>().await
         })
     });
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     let manager = Arc::new(ToolsManager::new(root.text(), Some(fetch)));
     runtime::run(async {
         let signal = Cancellation::new();

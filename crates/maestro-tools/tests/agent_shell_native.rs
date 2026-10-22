@@ -9,7 +9,7 @@ use crate::runtime;
 use crate::runtime::run;
 use agent_shell_support::{Immediate, result_value};
 use maestro_tools::{BashExecResult, BashSpawnContext, BashToolOptions, create_bash_tool};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use serde_json::json;
 use std::sync::{Arc, Mutex};
 
@@ -25,14 +25,19 @@ async fn invoke(
 
 #[test]
 fn bash_native_uses_factory_shell_path_and_override_precedence() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         let error = invoke(dir.text(), "exit 7", shell_path("/bin/false".into()))
             .await
             .err()
             .unwrap();
         assert_eq!(error.message, "(no output)\n\nCommand exited with code 1");
-        let missing = dir.0.join("missing-shell").to_str().unwrap().to_owned();
+        let missing = dir
+            .path()
+            .join("missing-shell")
+            .to_str()
+            .unwrap()
+            .to_owned();
         assert!(
             invoke(dir.text(), "printf wrong", shell_path(missing.clone()))
                 .await
@@ -119,7 +124,7 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
 
 #[test]
 fn bash_native_combines_prefix_output_and_environment_hook() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         native_prefix(&dir).await;
         let tool = create_bash_tool(
@@ -197,7 +202,7 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
 
 #[test]
 fn bash_native_returns_raw_success_and_chatty_failure() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         for (command, expected) in [
             ("printf hello", "hello"),
@@ -272,7 +277,7 @@ async fn native_cancel(cwd: String, timeout: Option<f64>) {
 
 #[test]
 fn bash_native_timeout_and_abort_report_output_after_cleanup() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         for timeout in [None, Some(1.5)] {
             native_cancel(dir.text(), timeout).await;
@@ -284,7 +289,7 @@ fn bash_native_timeout_and_abort_report_output_after_cleanup() {
 #[cfg(target_os = "linux")]
 fn bash_tool_finishes_after_inherited_pipe_grace() {
     use tokio::io::AsyncWriteExt;
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     run(async {
         let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
             .await
@@ -366,8 +371,8 @@ impl maestro_tools::BashOperations for ArtifactPending {
 #[test]
 fn bash_artifact_creation_failure_is_reported() {
     if !maestro_test_process::selection().is_child() {
-        let dir = TempDir::new();
-        let missing = dir.0.join("missing");
+        let dir = Scratch::new().unwrap();
+        let missing = dir.path().join("missing");
         let output = maestro_test_process::TestProcess::current(
             "bash_artifact_creation_failure_is_reported",
         )
@@ -418,7 +423,7 @@ fn bash_artifact_creation_failure_is_reported() {
 }
 
 /// Exercise absent and present prefix through native execution.
-async fn native_prefix(dir: &TempDir) {
+async fn native_prefix(dir: &Scratch) {
     for prefix in [None, Some("printf prefix".into())] {
         let expected = if prefix.is_some() {
             "prefixcommand"

@@ -1,5 +1,6 @@
 //! Selected definitions retain the producing owner's typed render callbacks.
 #![cfg(test)]
+use crate::read_support::Fixture;
 use crate::runtime;
 use crate::{display_support, read_support};
 use maestro_models::DiagnosticErrorInfo;
@@ -64,7 +65,7 @@ fn compare<P, D: serde::Serialize, S>(
 /// Compare each typed variant through every applicable definition preset.
 pub fn check() {
     for factory in ["single", "coding", "readonly", "all"] {
-        let root = read_support::TempDir::new();
+        let root = read_support::Scratch::new().unwrap();
         let manager = Arc::new(ToolsManager::new(root.text(), None));
         let definitions = definitions(factory, &root, &manager);
         for definition in definitions {
@@ -118,7 +119,7 @@ pub fn check() {
 /// Obtain each definition preset without conflating its typed rendering state.
 fn definitions(
     factory: &str,
-    root: &read_support::TempDir,
+    root: &read_support::Scratch,
     manager: &Arc<ToolsManager>,
 ) -> Vec<ToolDef> {
     match factory {
@@ -161,7 +162,7 @@ fn definitions(
 
 /// A context error precedes the selected read's supplied operations.
 fn context_error() {
-    let root = read_support::TempDir::new();
+    let root = read_support::Scratch::new().unwrap();
     let probes = super::execution::Probes::new(false);
     let before = probes.logs();
     let definition = create_tool_definition::<()>(

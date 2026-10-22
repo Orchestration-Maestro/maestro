@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::display_support::{Env, Setup, context};
+use crate::read_support::Fixture;
 use maestro_tools::{
     ToolRenderResult, ToolRenderResultOptions, output::render_utils::ToolRenderResultLike,
 };
@@ -420,7 +421,7 @@ fn renderer_binding_drop_releases_captures_and_row_state() {
 #[test]
 fn renderer_binding_can_wrap_a_builtin_callback() {
     crate::runtime::run(async {
-        let dir = crate::read_support::TempDir::new();
+        let dir = crate::read_support::Scratch::new().unwrap();
         dir.file("file", b"alpha\n");
         let env = Env::with(
             Rc::new(crate::edit_render_support::palette(0)),
@@ -473,7 +474,7 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         .unwrap();
         assert!(Rc::ptr_eq(&call, &reused));
         assert_eq!(env.runtime.futures(), 0);
-        assert_eq!(std::fs::read(dir.0.join("file")).unwrap(), b"alpha\n");
+        assert_eq!(std::fs::read(dir.path().join("file")).unwrap(), b"alpha\n");
     });
 }
 /// An unchanged identity keeps the captured title; a different fraction rebuilds it.

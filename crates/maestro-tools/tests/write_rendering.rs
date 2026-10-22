@@ -17,7 +17,7 @@ use maestro_tools::{
     create_write_tool_definition, key_hint, output::render_utils::strip_ansi,
 };
 use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
-use read_support::TempDir;
+use read_support::{Fixture, Scratch};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{any::Any, rc::Rc, sync::Arc};
@@ -391,7 +391,7 @@ fn write_renderers_reuse_call_and_result_components() {
 
 #[test]
 fn write_preview_callbacks_never_mutate_files() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     let existing = dir.file("existing.txt", b"original");
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
     let tool: Tool = create_write_tool_definition(
@@ -434,7 +434,7 @@ fn write_preview_callbacks_never_mutate_files() {
     )
     .unwrap();
     assert_eq!(
-        std::fs::read(dir.0.join("existing.txt")).unwrap(),
+        std::fs::read(dir.path().join("existing.txt")).unwrap(),
         b"original"
     );
     assert!(ops.calls().is_empty());

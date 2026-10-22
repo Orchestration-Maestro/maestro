@@ -6,11 +6,12 @@ use std::error::Error;
 use std::fmt;
 use std::fs::{self, OpenOptions};
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::runtime_support::{is_child, rerun, run_set};
+use maestro_test_directory::Scratch;
 use maestro_tui::tui::{LogContext, RenderCallback, TuiRuntime};
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use tokio::sync::mpsc::error::TryRecvError;
@@ -30,31 +31,6 @@ async fn drained<T>(channel: &mut UnboundedReceiver<T>) -> Vec<T> {
 /// Whether nothing has been sent yet although a sender is still alive.
 fn is_waiting<T>(receiver: &mut UnboundedReceiver<T>) -> bool {
     matches!(receiver.try_recv(), Err(TryRecvError::Empty))
-}
-
-/// A directory that is removed, ignoring failure, with everything below it when dropped.
-struct Scratch(PathBuf);
-
-impl Scratch {
-    /// Creates the directory `name` below the system temporary directory.
-    fn new(name: &str) -> Self {
-        let path =
-            std::env::temp_dir().join(format!("maestro-runtime-{}-{name}", std::process::id()));
-        let _ = fs::remove_dir_all(&path);
-        fs::create_dir_all(&path).expect("scratch directory created");
-        Self(path)
-    }
-
-    /// A path below the directory.
-    fn path(&self, relative: &str) -> PathBuf {
-        self.0.join(relative)
-    }
-}
-
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
 }
 
 /// An error with an optional cause that signals when it is dropped, after its report.
@@ -510,17 +486,17 @@ fn file_host() -> ProcessTuiRuntime {
 #[test]
 fn append_log_preserves_bytes_without_creating_parents() {
     run_set(true, |_| async {
-        let scratch = Scratch::new("append");
+        let scratch = Scratch::new().unwrap();
         let host = file_host();
-        let missing = scratch.path("absent/out.log");
+        let missing = scratch.path().join("absent/out.log");
         let error = host.append_log(&missing, "x").unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::NotFound);
         assert!(
-            !scratch.path("absent").exists(),
+            !scratch.path().join("absent").exists(),
             "the parent is not created"
         );
 
-        let file = scratch.path("out.log");
+        let file = scratch.path().join("out.log");
         host.append_log(&file, "first\r\n").unwrap();
         host.append_log(&file, "é\n").unwrap();
         assert_eq!(fs::read(&file).unwrap(), "first\r\né\n".as_bytes());
@@ -532,7 +508,7 @@ fn append_log_preserves_bytes_without_creating_parents() {
             "an empty append keeps the seeded contents"
         );
 
-        let empty = scratch.path("empty.log");
+        let empty = scratch.path().join("empty.log");
         host.append_log(&empty, "").unwrap();
         assert_eq!(fs::read(&empty).unwrap(), b"");
     });
@@ -541,9 +517,9 @@ fn append_log_preserves_bytes_without_creating_parents() {
 #[test]
 fn write_log_creates_parents_and_replaces_bytes() {
     run_set(true, |_| async {
-        let scratch = Scratch::new("write");
+        let scratch = Scratch::new().unwrap();
         let host = file_host();
-        let nested = scratch.path("a/b/out.log");
+        let nested = scratch.path().join("a/b/out.log");
         host.write_log(&nested, "old content\r\n").unwrap();
         host.write_log(&nested, "new").unwrap();
         assert_eq!(fs::read(&nested).unwrap(), b"new");
@@ -577,9 +553,9 @@ fn native_append_error(path: &Path) -> io::Error {
 #[test]
 fn log_failures_keep_native_errors_and_failure_order() {
     run_set(true, |_| async {
-        let scratch = Scratch::new("failures");
+        let scratch = Scratch::new().unwrap();
         let host = file_host();
-        let directory = scratch.path("dir");
+        let directory = scratch.path().join("dir");
         fs::create_dir(&directory).unwrap();
         assert_native(
             &host.append_log(&directory, "x").unwrap_err(),
@@ -590,7 +566,7 @@ fn log_failures_keep_native_errors_and_failure_order() {
             &fs::write(&directory, "x").unwrap_err(),
         );
 
-        let blocker = scratch.path("blocker");
+        let blocker = scratch.path().join("blocker");
         fs::write(&blocker, "decoy").unwrap();
         let below = blocker.join("sub/out.log");
         assert_native(
@@ -615,20 +591,24 @@ fn log_failures_keep_native_errors_and_failure_order() {
 #[test]
 fn authored_log_paths_preserve_symlink_traversal() {
     run_set(true, |_| async {
-        let scratch = Scratch::new("symlink");
+        let scratch = Scratch::new().unwrap();
         let host = file_host();
-        fs::create_dir_all(scratch.path("real/sub")).unwrap();
-        std::os::unix::fs::symlink(scratch.path("real/sub"), scratch.path("link")).unwrap();
-        let through = scratch.path("link/../out.log");
+        fs::create_dir_all(scratch.path().join("real/sub")).unwrap();
+        std::os::unix::fs::symlink(scratch.path().join("real/sub"), scratch.path().join("link"))
+            .unwrap();
+        let through = scratch.path().join("link/../out.log");
         host.write_log(&through, "written").unwrap();
-        assert_eq!(fs::read(scratch.path("real/out.log")).unwrap(), b"written");
+        assert_eq!(
+            fs::read(scratch.path().join("real/out.log")).unwrap(),
+            b"written"
+        );
         host.append_log(&through, "+appended").unwrap();
         assert_eq!(
-            fs::read(scratch.path("real/out.log")).unwrap(),
+            fs::read(scratch.path().join("real/out.log")).unwrap(),
             b"written+appended"
         );
         assert!(
-            !scratch.path("out.log").exists(),
+            !scratch.path().join("out.log").exists(),
             "no lexically normalized decoy"
         );
     });

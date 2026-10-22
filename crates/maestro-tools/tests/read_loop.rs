@@ -31,7 +31,7 @@ fn read_through(
 
 #[test]
 fn native_and_supplied_reads_share_the_caller() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("rel.txt", b"native bytes");
     let native = read_through(ReadToolOptions::default(), &dir.text(), "rel.txt").unwrap();
     assert_eq!(
@@ -99,14 +99,14 @@ fn null_details_tool() -> AgentTool {
 }
 
 /// Run one turn of read and null-details calls and return the tool-result messages as the model receives them.
-fn tool_results(dir: &TempDir, calls: &[(&str, &str, Value)]) -> Vec<Value> {
+fn tool_results(dir: &Scratch, calls: &[(&str, &str, Value)]) -> Vec<Value> {
     let read = create_read_tool(dir.text(), ReadToolOptions::default());
     run_turn(vec![read, null_details_tool()], calls).results
 }
 
 #[test]
 fn wrapped_read_runs_through_raw_agent_loop() {
-    let dir = TempDir::new();
+    let dir = Scratch::new().unwrap();
     dir.file("small.txt", b"Hello, world!\nLine 2");
     dir.file("long.txt", vec!["ab"; 2500].join("\n").as_bytes());
     dir.file("pixel", &base64_png());

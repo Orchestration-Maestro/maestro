@@ -6,10 +6,10 @@ use crate::support;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, parse_session_entries};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::fs;
 use support::native::broken_history;
-use support::scratch::Scratch;
 
 /// Message record with a fixed timestamp.
 fn message(id: &str, parent: Option<&str>, role: &str) -> Value {
@@ -32,7 +32,7 @@ fn label(
 /// Write a history file below a fixed header and open it natively.
 fn open(scratch: &Scratch, name: &str, records: &[Value]) -> SessionManager {
     let path = write(scratch, name, records);
-    SessionManager::open(&path, Some(scratch.text()), Some("/work")).unwrap()
+    SessionManager::open(&path, Some(scratch.path().to_str().unwrap()), Some("/work")).unwrap()
 }
 
 /// Write a history file under the given header and return its path.
@@ -41,7 +41,7 @@ fn legacy(scratch: &Scratch, name: &str, header: &Value, lines: &[Value]) -> Str
         .chain(lines)
         .map(|record| record.to_string() + "\n")
         .collect();
-    let path = format!("{}/{name}", scratch.text());
+    let path = format!("{}/{name}", scratch.path().to_str().unwrap());
     fs::write(&path, text).unwrap();
     path
 }
@@ -94,10 +94,13 @@ fn extract_middle_of_fresh_memory() {
 
 #[test]
 fn extraction_selects_only_the_requested_ancestry() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let mut manager = SessionManager::in_memory(Some("/work")).unwrap();
     manager
-        .set_session_file(&format!("{}/absent.jsonl", scratch.text()))
+        .set_session_file(&format!(
+            "{}/absent.jsonl",
+            scratch.path().to_str().unwrap()
+        ))
         .unwrap();
     let a = manager
         .append_message(json!({"role": "user", "content": "a", "timestamp": 1}))
@@ -133,7 +136,7 @@ fn extraction_selects_only_the_requested_ancestry() {
 
 #[test]
 fn unknown_extraction_leaf_preserves_the_owner() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let blank = message("", None, "user");
     let mut native = open(&scratch, "blank.jsonl", &[blank]);
     assert!(native.get_branch(Some("")).unwrap().is_empty());
@@ -160,7 +163,7 @@ fn unknown_extraction_leaf_preserves_the_owner() {
 
 #[test]
 fn extraction_keeps_unknown_records_and_unreached_fields() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let records = [
         json!({"type": "weird", "id": "w", "parentId": "ghost", "extra": [1, 1, null], "n": null}),
         json!({"type": "message", "id": "m", "parentId": "w", "timestamp": "t",
@@ -227,7 +230,7 @@ fn extracted_context_reuses_local_timestamp_conversion() {
     } else {
         1_735_711_200_000_f64
     };
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     for (time, millis) in [
         ("2025-01-01T01:00:00", local_millis),
         ("2025-01-01T01:00:00+02:00", 1_735_686_000_000.0),
@@ -297,7 +300,7 @@ fn recreated(manager: &SessionManager) -> Vec<(String, Value, Value)> {
 
 #[test]
 fn extraction_preserves_label_order_and_last_timestamp() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let local = "2025-01-01T01:00:00";
     let base = [message("a", None, "user"), message("b", Some("a"), "user")];
     let replaced = [
@@ -338,7 +341,7 @@ fn extraction_preserves_label_order_and_last_timestamp() {
 
 #[test]
 fn extraction_omits_cleared_labels() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     for clear in [json!(""), Value::Null, json!(false), json!(0)] {
         let records = [
             message("a", None, "user"),
@@ -354,7 +357,7 @@ fn extraction_omits_cleared_labels() {
 
 #[test]
 fn extraction_omits_a_missing_label_timestamp_but_keeps_null() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let base = [message("a", None, "user")];
     let first = label("l1", Some("a"), "a", json!("A1"), "t1");
     let missing = json!({"type": "label", "id": "l2", "parentId": "l1", "targetId": "a",
@@ -378,7 +381,7 @@ fn extraction_omits_a_missing_label_timestamp_but_keeps_null() {
 
 #[test]
 fn label_only_extraction_produces_an_empty_history() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let only = label("l1", None, "ghost", json!("L"), "t1");
     let mut manager = open(&scratch, "only.jsonl", &[only]);
     let path = manager.create_branched_session("l1").unwrap().unwrap();
@@ -395,7 +398,7 @@ fn label_only_extraction_produces_an_empty_history() {
 
 #[test]
 fn extraction_recreates_labels_after_the_retained_leaf() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let mut old = label("l1", Some("b"), "a", json!("A"), "t1");
     old["note"] = json!(1);
     let records = [
@@ -425,7 +428,7 @@ fn extraction_recreates_labels_after_the_retained_leaf() {
 
 #[test]
 fn extraction_reconnects_removed_labels_without_mutating_old_copies() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let cases: [Vec<Value>; 3] = [
         vec![
             message("u1", None, "user"),
@@ -448,7 +451,8 @@ fn extraction_reconnects_removed_labels_without_mutating_old_copies() {
         let name = format!("gap{index}.jsonl");
         let source = write(&scratch, &name, history);
         let before = fs::read(&source).unwrap();
-        let mut manager = SessionManager::open(&source, Some(scratch.text()), None).unwrap();
+        let mut manager =
+            SessionManager::open(&source, Some(scratch.path().to_str().unwrap()), None).unwrap();
         let target = if index == 2 { "u1" } else { "u2" };
         let old = manager.get_entry(target).cloned().unwrap();
         let path = manager.create_branched_session("u2").unwrap().unwrap();
@@ -490,9 +494,9 @@ fn observe(manager: &SessionManager, target: &str) -> Observed {
 
 #[test]
 fn populated_memory_rejects_extraction_without_losing_history() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let mut manager = SessionManager::in_memory(Some("/work")).unwrap();
-    let selected = format!("{}/absent.jsonl", scratch.text());
+    let selected = format!("{}/absent.jsonl", scratch.path().to_str().unwrap());
     manager.set_session_file(&selected).unwrap();
     let user = manager
         .append_message(json!({"role": "user", "content": "question", "timestamp": 1}))
@@ -526,8 +530,9 @@ fn populated_memory_rejects_extraction_without_losing_history() {
 
 #[test]
 fn user_only_extraction_publishes_once_when_assistant_arrives() {
-    let scratch = Scratch::new();
-    let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+    let scratch = Scratch::new().unwrap();
+    let mut manager =
+        SessionManager::create("/work", Some(scratch.path().to_str().unwrap()), "unused").unwrap();
     let mut first = None;
     for (index, role) in ["user", "assistant", "user", "assistant"]
         .into_iter()
@@ -578,8 +583,9 @@ fn user_only_extraction_publishes_once_when_assistant_arrives() {
 
 #[test]
 fn assistant_extraction_publishes_before_returning() {
-    let scratch = Scratch::new();
-    let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+    let scratch = Scratch::new().unwrap();
+    let mut manager =
+        SessionManager::create("/work", Some(scratch.path().to_str().unwrap()), "unused").unwrap();
     let previous = manager.get_session_file().unwrap().to_owned();
     manager
         .append_message(json!({"role": "user", "content": "u", "timestamp": 1}))
@@ -611,7 +617,7 @@ fn assistant_extraction_publishes_before_returning() {
 
 #[test]
 fn extraction_uses_resolved_labels_after_failed_label_publication() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let (mut manager, first) = broken_history(&scratch);
     let leaf = manager.get_leaf_id().unwrap().to_owned();
     let file = manager.get_session_file().unwrap().to_owned();
@@ -636,7 +642,7 @@ fn extraction_uses_resolved_labels_after_failed_label_publication() {
 
 #[test]
 fn extraction_defers_role_reads_to_native_publication() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let null_message = json!({"type": "message", "id": "n", "parentId": null, "timestamp": "t",
         "message": null});
     let mut before = open(
@@ -664,7 +670,7 @@ fn extraction_defers_role_reads_to_native_publication() {
 
 /// Fork into the scratch directory.
 fn fork(scratch: &Scratch, source: &str) -> SessionManager {
-    let target = format!("{}/target", scratch.text());
+    let target = format!("{}/target", scratch.path().to_str().unwrap());
     SessionManager::fork_from(source, "/target-cwd", Some(&target), "unused").unwrap()
 }
 
@@ -676,7 +682,7 @@ fn plain(role: &str, text: &str) -> Value {
 
 #[test]
 fn legacy_fork_converts_before_stamping_the_current_header() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let lines = [plain("user", "first"), plain("assistant", "last")];
     let headers = [
         json!({"type": "session", "id": "s", "version": 1, "cwd": "/src", "timestamp": "t"}),
@@ -718,7 +724,7 @@ fn legacy_fork_converts_before_stamping_the_current_header() {
 
 #[test]
 fn fork_preserves_current_and_future_nonheader_records() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let second =
         json!({"type": "session", "version": 1, "id": "again", "cwd": "/x", "timestamp": "t"});
     let body = [
@@ -749,7 +755,7 @@ fn fork_preserves_current_and_future_nonheader_records() {
 
 #[test]
 fn fork_writes_header_only_and_user_only_histories_immediately() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let header =
         json!({"type": "session", "id": "s", "version": 3, "cwd": "/src", "timestamp": "t"});
     for (index, lines) in [vec![], vec![message("u", None, "user")]]
@@ -769,12 +775,12 @@ fn fork_writes_header_only_and_user_only_histories_immediately() {
 
 #[test]
 fn fork_uses_target_cwd_and_explicit_or_default_directory() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let header =
         json!({"type": "session", "id": "s", "version": 3, "cwd": "/src", "timestamp": "t"});
     let source = legacy(&scratch, "s.jsonl", &header, &[message("u", None, "user")]);
-    let agent = format!("{}/agent", scratch.text());
-    let explicit = format!("{}/explicit", scratch.text());
+    let agent = format!("{}/agent", scratch.path().to_str().unwrap());
+    let explicit = format!("{}/explicit", scratch.path().to_str().unwrap());
     let manager =
         SessionManager::fork_from(&source, "/work/target", Some(&explicit), &agent).unwrap();
     assert_eq!(manager.get_session_dir(), explicit);
@@ -800,20 +806,20 @@ fn fork_uses_target_cwd_and_explicit_or_default_directory() {
 
 #[test]
 fn fork_preserves_authored_source_parent_spelling() {
-    let scratch = Scratch::new();
-    fs::create_dir(format!("{}/sub", scratch.text())).unwrap();
+    let scratch = Scratch::new().unwrap();
+    fs::create_dir(format!("{}/sub", scratch.path().to_str().unwrap())).unwrap();
     let header =
         json!({"type": "session", "id": "s", "version": 3, "cwd": "/src", "timestamp": "t"});
     legacy(&scratch, "s.jsonl", &header, &[]);
-    let source = format!("{}/sub/../s.jsonl", scratch.text());
+    let source = format!("{}/sub/../s.jsonl", scratch.path().to_str().unwrap());
     let manager = fork(&scratch, &source);
     assert_eq!(manager.get_header().unwrap()["parentSession"], source);
 }
 
 #[test]
 fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
-    let scratch = Scratch::new();
-    let target = format!("{}/never", scratch.text());
+    let scratch = Scratch::new().unwrap();
+    let target = format!("{}/never", scratch.path().to_str().unwrap());
     let header = r#"{"type":"session","id":"s","version":3,"cwd":"/src","timestamp":"t"}"#;
     let user = message("u", None, "user").to_string();
     let invalid = [
@@ -824,7 +830,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         ("null-first", Some(format!("null\n{header}\n"))),
     ];
     for (name, text) in invalid {
-        let source = format!("{}/{name}.jsonl", scratch.text());
+        let source = format!("{}/{name}.jsonl", scratch.path().to_str().unwrap());
         if let Some(text) = text {
             fs::write(&source, text).unwrap();
         }
@@ -844,7 +850,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         ("bom", format!("\u{feff}{header}\n")),
     ];
     for (name, text) in tolerant {
-        let source = format!("{}/{name}.jsonl", scratch.text());
+        let source = format!("{}/{name}.jsonl", scratch.path().to_str().unwrap());
         fs::write(&source, &text).unwrap();
         let manager = SessionManager::fork_from(&source, "/t", Some(&target), "unused").unwrap();
         assert_eq!(
@@ -857,14 +863,14 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
 
 #[test]
 fn fork_uses_existing_compact_json_number_spelling() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let header = r#"{"type":"session","id":"s","version":3,"cwd":"/src","timestamp":"t"}"#;
     let record = concat!(
         r#"{"type":"custom","id":"n","parentId":null,"customType":"k","#,
         r#""data":[1.0,-0.0,1e-7,1e-6,1e20,1e21,0.125],"text":"a\nb \u00e9 \"q\"","dup":1,"dup":2,"#,
         r#""list":[{"x":1},{"x":1}]}"#
     );
-    let source = format!("{}/numbers.jsonl", scratch.text());
+    let source = format!("{}/numbers.jsonl", scratch.path().to_str().unwrap());
     fs::write(&source, format!("{header}\n{record}\n")).unwrap();
     let manager = fork(&scratch, &source);
     let text = fs::read_to_string(manager.get_session_file().unwrap()).unwrap();
@@ -882,7 +888,7 @@ fn fork_uses_existing_compact_json_number_spelling() {
 
 #[test]
 fn extraction_reuses_the_cycle_safe_ancestry_walk() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let records = [
         message("a", None, "user"),
         message("b", Some("a"), "user"),
@@ -906,7 +912,7 @@ fn extraction_reuses_the_cycle_safe_ancestry_walk() {
 
 #[test]
 fn fork_into_an_empty_session_directory_fails_without_writing() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::new().unwrap();
     let source = write(&scratch, "empty-dir.jsonl", &[message("a", None, "user")]);
     let listing = || {
         let mut names: Vec<_> = fs::read_dir(".")

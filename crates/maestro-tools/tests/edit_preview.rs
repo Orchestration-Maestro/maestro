@@ -4,7 +4,7 @@
 use crate::read_support;
 use crate::runtime::run;
 use maestro_tools::edit_diff::{Edit, EditDiffResult, compute_edit_diff, compute_edits_diff};
-use read_support::{TempDir, isolated};
+use read_support::{Fixture, Scratch, isolated};
 use serde::Deserialize;
 use std::{
     collections::{BTreeMap, HashSet},
@@ -59,8 +59,8 @@ fn create(path: &std::path::Path, bytes: &[u8]) {
         .unwrap();
 }
 /// Materialize a case below the scratch root.
-fn setup(root: &TempDir, case: &Case) -> Option<Vec<u8>> {
-    let file = root.0.join(&case.file);
+fn setup(root: &Scratch, case: &Case) -> Option<Vec<u8>> {
+    let file = root.path().join(&case.file);
     assert!(!(case.content.is_some() && case.bytes.is_some()));
     let bytes = case
         .bytes
@@ -73,7 +73,7 @@ fn setup(root: &TempDir, case: &Case) -> Option<Vec<u8>> {
         None => {}
         Some("directory") => fs::create_dir(&file).unwrap(),
         Some("parentFile") => create(file.parent().unwrap(), b"parent"),
-        Some("decomposedSibling") => create(&root.0.join("cafe\u{301}.txt"), b"hello\n"),
+        Some("decomposedSibling") => create(&root.path().join("cafe\u{301}.txt"), b"hello\n"),
         #[cfg(unix)]
         Some("readonly" | "unreadable") => {
             use std::os::unix::fs::PermissionsExt;
@@ -114,7 +114,7 @@ fn access_error(path: &std::path::Path, code: &str) -> io::Error {
 }
 /// Whether a privileged run ignores the case's denied modes, leaving nothing to check.
 #[cfg(unix)]
-fn denial_ignored(root: &TempDir, case: &Case) -> bool {
+fn denial_ignored(root: &Scratch, case: &Case) -> bool {
     matches!(case.setup.as_deref(), Some("readonly" | "unreadable"))
         && maestro_test_directory::deny(root.text(), 0o0)
             .unwrap()
@@ -122,7 +122,7 @@ fn denial_ignored(root: &TempDir, case: &Case) -> bool {
 }
 /// Compare the public result against one recorded native case.
 fn check_case(case: &Case) {
-    let root = TempDir::new();
+    let root = Scratch::new().unwrap();
     #[cfg(unix)]
     if denial_ignored(&root, case) {
         return;
@@ -181,20 +181,23 @@ fn check_case(case: &Case) {
     assert_retained(&root, case, bytes);
 }
 /// Read the same target after completion to prove no stored bytes changed.
-fn assert_retained(root: &TempDir, case: &Case, bytes: Option<Vec<u8>>) {
+fn assert_retained(root: &Scratch, case: &Case, bytes: Option<Vec<u8>>) {
     if let Some(bytes) = bytes {
         #[cfg(unix)]
         if case.setup.as_deref() == Some("unreadable") {
             use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(root.0.join(&case.file), fs::Permissions::from_mode(0o600))
-                .unwrap();
+            fs::set_permissions(
+                root.path().join(&case.file),
+                fs::Permissions::from_mode(0o600),
+            )
+            .unwrap();
         }
-        assert_eq!(fs::read(root.0.join(&case.file)).unwrap(), bytes);
+        assert_eq!(fs::read(root.path().join(&case.file)).unwrap(), bytes);
     }
 }
 /// Native failures retain their phase and native diagnostics.
 #[cfg(unix)]
-fn check_native_failure(root: &TempDir, case: &Case, path: &str, actual: &str) {
+fn check_native_failure(root: &Scratch, case: &Case, path: &str, actual: &str) {
     let resolved = maestro_tools::path_utils::resolve_to_cwd(path, &root.text()).unwrap();
     if let Some(code) = &case.expected.access_code {
         let native = access_error(std::path::Path::new(&resolved), code);
@@ -215,7 +218,7 @@ fn check_native_failure(root: &TempDir, case: &Case, path: &str, actual: &str) {
 }
 /// Native classification rows run only on Unix.
 #[cfg(not(unix))]
-fn check_native_failure(_: &TempDir, _: &Case, _: &str, _: &str) {
+fn check_native_failure(_: &Scratch, _: &Case, _: &str, _: &str) {
     panic!("Unix fixture invoked on another platform");
 }
 /// Assert a nonempty group, with no unrecognized group or repeated invocation.
@@ -362,14 +365,14 @@ fn preview_binds_relative_cwd_before_polling() {
         return;
     }
     let saved = std::env::current_dir().unwrap();
-    let original = TempDir::new();
-    let decoy = TempDir::new();
+    let original = Scratch::new().unwrap();
+    let decoy = Scratch::new().unwrap();
     original.file("target.txt", b"left\nright\n");
     decoy.file("target.txt", b"left\nright\nwrong\n");
     for single in [false, true] {
-        std::env::set_current_dir(&original.0).unwrap();
+        std::env::set_current_dir(original.path()).unwrap();
         let future = binding_preview(single, "target.txt", ".").unwrap();
-        std::env::set_current_dir(&decoy.0).unwrap();
+        std::env::set_current_dir(decoy.path()).unwrap();
         assert_original(&run(future).unwrap());
     }
     std::env::set_current_dir(saved).unwrap();
@@ -385,7 +388,7 @@ fn preview_reads_ambient_cwd_only_when_required() {
         return;
     }
     let saved = std::env::current_dir().unwrap();
-    let original = TempDir::new();
+    let original = Scratch::new().unwrap();
     let removed = maestro_test_directory::Scratch::new().unwrap();
     let target = original.file("target.txt", b"left\nright\n");
     removed.enter_removed("removed").unwrap();

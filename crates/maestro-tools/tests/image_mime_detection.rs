@@ -1,6 +1,7 @@
 //! Native file sampling through the supported-image MIME operation.
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::read_support::Scratch;
 use crate::support;
 use support::TestResult;
 
@@ -9,40 +10,9 @@ use maestro_tools::utils::mime::detect_supported_image_mime_type_from_file;
 use serde::Deserialize;
 use serde_json::json;
 use std::{
-    fs::{self, File, OpenOptions},
+    fs::{File, OpenOptions},
     io::{Read, Write},
-    path::PathBuf,
-    sync::atomic::{AtomicUsize, Ordering},
 };
-
-/// Unique directory sequence.
-static NEXT_DIRECTORY: AtomicUsize = AtomicUsize::new(0);
-
-/// Disposable directory opened exclusively.
-struct Scratch(PathBuf);
-
-impl Scratch {
-    /// Create a directory without modifying existing paths.
-    fn new() -> TestResult<Self> {
-        loop {
-            let next = NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed);
-            let path =
-                std::env::temp_dir().join(format!("maestro-image-{}-{next}", std::process::id()));
-            match fs::create_dir(&path) {
-                Ok(()) => return Ok(Self(path)),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => return Err(error.into()),
-            }
-        }
-    }
-}
-
-impl Drop for Scratch {
-    /// Remove only this test's owned directory.
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
 
 /// File content query.
 #[derive(Deserialize)]
@@ -59,7 +29,7 @@ fn check(name: &str) -> TestResult {
         let input: Input = serde_json::from_value(case.input)?;
         let bytes = STANDARD.decode(input.bytes)?;
         let directory = Scratch::new()?;
-        let path = directory.0.join("misleading.txt");
+        let path = directory.path().join("misleading.txt");
         OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -122,11 +92,17 @@ fn file_sniff_errors_keep_native_io_identity() -> TestResult {
         let (path, kind) = match input.path.as_str() {
             "directory" => {
                 assert_eq!(expected.code, "EISDIR");
-                (directory.0.clone(), std::io::ErrorKind::IsADirectory)
+                (
+                    directory.path().to_path_buf(),
+                    std::io::ErrorKind::IsADirectory,
+                )
             }
             "nonexistent-file" => {
                 assert_eq!(expected.code, "ENOENT");
-                (directory.0.join("absent"), std::io::ErrorKind::NotFound)
+                (
+                    directory.path().join("absent"),
+                    std::io::ErrorKind::NotFound,
+                )
             }
             _ => return Err("unknown error path".into()),
         };

@@ -70,8 +70,8 @@ pub fn group(name: &str) {
 }
 /// Load real history and compare borrowed collection identities and retained state.
 fn collect(row: &Row) {
-    let scratch = super::scratch::Scratch::new();
-    let path = format!("{}/history.jsonl", scratch.text());
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/history.jsonl", scratch.path().to_str().unwrap());
     let mut lines = vec![json!({"type":"session","version":3,"id":"branch-fixture","cwd":"/fixture","timestamp":"2024-03-09T16:00:00.000Z"}).to_string()];
     lines.extend(
         row.args["entries"]

@@ -1,5 +1,6 @@
 //! Observe normalized calls separately from execution arguments through the loop.
 #![cfg(test)]
+use crate::read_support::Fixture;
 use crate::runtime;
 use crate::{loop_support, read_support};
 use maestro_agent::{AgentContext, AgentEvent, ToolExecutionMode, run_agent_loop};
@@ -13,7 +14,7 @@ pub fn observe(mode: ToolExecutionMode) {
         json!({"path":"file","edits":"[{\"oldText\":\"hello\",\"newText\":\"world\"}]"}),
         json!({"path":"file","oldText":"hello","newText":"world"}),
     ] {
-        let dir = read_support::TempDir::new();
+        let dir = read_support::Scratch::new().unwrap();
         let path = dir.file("file", b"hello");
         let mut normalized = input.clone();
         if input.get("edits").is_some() {

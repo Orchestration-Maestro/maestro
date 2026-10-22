@@ -15,9 +15,9 @@ use maestro_tools::{
     LsToolDetails, LsToolInput, LsToolOptions, create_ls_tool_definition,
     output::truncate::{TruncationBy, TruncationResult},
 };
-#[cfg(unix)]
-use read_support::TempDir;
 use read_support::isolated;
+#[cfg(unix)]
+use read_support::{Fixture, Scratch};
 use serde_json::json;
 use std::{collections::BTreeSet, sync::Arc};
 
@@ -167,10 +167,10 @@ fn ls_cancellation_rejects_before_and_during_operations() {
 
 /// A temporary directory with the entries the native listing cases name.
 #[cfg(unix)]
-fn native_root() -> TempDir {
-    let root = TempDir::new();
+fn native_root() -> Scratch {
+    let root = Scratch::new().unwrap();
     for dir in [".git", ".hidden-dir"] {
-        std::fs::create_dir(root.0.join(dir)).unwrap();
+        std::fs::create_dir(root.path().join(dir)).unwrap();
     }
     for file in [
         ".gitignore",
@@ -184,8 +184,8 @@ fn native_root() -> TempDir {
         root.file(file, b"");
     }
     root.file(".gitignore", b"ignored\n");
-    std::os::unix::fs::symlink(".git", root.0.join("linked-dir")).unwrap();
-    std::os::unix::fs::symlink("missing-target", root.0.join("dangling")).unwrap();
+    std::os::unix::fs::symlink(".git", root.path().join("linked-dir")).unwrap();
+    std::os::unix::fs::symlink("missing-target", root.path().join("dangling")).unwrap();
     root
 }
 
@@ -211,8 +211,8 @@ fn ls_native_missing_and_file_paths_fail() {
 #[test]
 fn ls_native_non_utf8_names_follow_stat_filtering() {
     use std::os::unix::ffi::OsStrExt;
-    let root = TempDir::new();
-    let invalid = root.0.join("invalid");
+    let root = Scratch::new().unwrap();
+    let invalid = root.path().join("invalid");
     std::fs::create_dir(&invalid).unwrap();
     std::fs::write(invalid.join("ok"), b"").unwrap();
     std::fs::write(invalid.join(std::ffi::OsStr::from_bytes(b"bad-\xff")), b"").unwrap();

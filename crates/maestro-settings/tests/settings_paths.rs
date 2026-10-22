@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 #[test]
 fn independent_nested_writers_preserve_fresh_sibling_changes() {
-    let root = crate::support::TempDir::new();
+    let root = crate::support::Scratch::new().unwrap();
     let stores: [maestro_settings::SettingsStorageHandle; 2] = [
         Arc::new(InMemorySettingsStorage::new()),
         Arc::new(crate::support::file_storage(root.path())),

@@ -13,14 +13,22 @@ use std::path::PathBuf;
 
 #[test]
 fn temporary_paths_require_canonical_containment() {
-    let scratch = Scratch::new();
-    let root = scratch.0.join("selected");
-    let sibling = scratch.0.join("selected-sibling");
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path().join("selected");
+    let sibling = scratch.path().join("selected-sibling");
     fs::create_dir(&root).unwrap();
     fs::create_dir(&sibling).unwrap();
     let roots = vec![fs::canonicalize(&root).unwrap()];
-    let outside = scratch.file("selected-sibling/tty-graphics-protocol-outside.rgb", b"ABC");
-    let inside = scratch.file("selected/tty-graphics-protocol-inside.rgb", b"ABC");
+    let outside = fixture_file(
+        &scratch,
+        "selected-sibling/tty-graphics-protocol-outside.rgb",
+        b"ABC",
+    );
+    let inside = fixture_file(
+        &scratch,
+        "selected/tty-graphics-protocol-inside.rgb",
+        b"ABC",
+    );
     let outside = fs::canonicalize(outside).unwrap();
     let inside = fs::canonicalize(inside).unwrap();
     assert!(!is_path_in_temp_dir(&outside, &roots));
@@ -38,7 +46,7 @@ fn temporary_paths_require_canonical_containment() {
     assert!(!inside.exists());
     #[cfg(unix)]
     {
-        let alias = scratch.0.join("alias");
+        let alias = scratch.path().join("alias");
         std::os::unix::fs::symlink(&root, &alias).unwrap();
         let roots = vec![fs::canonicalize(alias).unwrap()];
         let spelled = root
