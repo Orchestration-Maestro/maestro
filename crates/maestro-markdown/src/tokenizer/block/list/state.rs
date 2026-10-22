@@ -217,6 +217,7 @@ impl ItemLines {
         for line in &self.suffix {
             line.retained(retained);
         }
+        self.child.retained(retained);
     }
 
     /// Borrow dedented source for child admission.

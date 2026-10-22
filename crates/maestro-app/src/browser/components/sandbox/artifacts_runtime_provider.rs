@@ -6,12 +6,13 @@ use super::sandbox_runtime_provider::{
 use crate::browser::components::messages::{ArtifactAction, ArtifactMessage, CustomAgentMessages};
 use crate::browser::tools::artifacts::{
     ArtifactCommand, ArtifactPresentation, Artifacts, ArtifactsPanel, ArtifactsPanelState,
-    ArtifactsParams, Options, SharedArtifactPresentation, read, write,
+    ArtifactsParams, Options, SharedArtifactPresentation,
 };
 use crate::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
 };
 use crate::browser::utils::attachment_utils::Attachment;
+use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::agent::Native;
 use maestro_agent::{

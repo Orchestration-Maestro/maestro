@@ -31,9 +31,9 @@ local.block_on(&runtime, async { provider.dispose(); });
 
 ## Branch
 
-`FooterOperations` supplies the file and process effects, so native and
-controlled adapters are interchangeable; `NativeFooterOperations` (Unix) is the
-native adapter and other targets pass their own. Paths stay authored strings;
+`FooterOperations` supplies the watch registration, polling and Git lookups, so
+native and controlled adapters are interchangeable; `NativeFooterOperations` (Unix)
+is the native adapter and other targets pass their own. Paths stay authored strings;
 their lexical rules are those of [`maestro-path`](../../crates/maestro-path/src/lib.rs).
 
 Construction walks from the working directory towards the root for the nearest

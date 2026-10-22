@@ -19,6 +19,8 @@ fn package_override_skips_the_executable_lookup() {
     assert_eq!(error.to_string(), "executable not found");
 }
 
+// The asserted theme path carries Unix separators.
+#[cfg(unix)]
 #[test]
 fn theme_override_skips_the_executable_lookup() {
     let directories = theme_directories(Some("/pkg"), missing_executable).unwrap();

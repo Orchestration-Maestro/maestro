@@ -8,7 +8,7 @@ use super::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
     artifacts_tool_description,
 };
-pub(crate) use crate::utils::lock::{read, write};
+use crate::utils::lock::{read, write};
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};

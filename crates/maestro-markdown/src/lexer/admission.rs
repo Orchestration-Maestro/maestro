@@ -50,6 +50,21 @@ impl Child {
         }
         output
     }
+
+    /// Charge settled tokens and the latest operand; the undecided code recognizer keeps
+    /// offsets only.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        for node in &self.output.nodes {
+            node.authored.retained(retained);
+        }
+        for scope in self.output.scopes.values() {
+            scope.retained(retained);
+        }
+        if let Some(operand) = &self.operand {
+            operand.retained(retained);
+        }
+    }
 }
 
 impl<E> Lexer<'_, E> {

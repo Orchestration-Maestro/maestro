@@ -143,10 +143,6 @@ fn theme_directories(
     })
 }
 
-#[cfg(test)]
-#[cfg(not(target_arch = "wasm32"))]
-mod tests;
-
 /// Join an enabled hosted-service origin with its literal path.
 pub(super) fn service_endpoint(service_origin: &str, path: &str) -> Option<String> {
     (!service_origin.is_empty()).then(|| format!("{service_origin}{path}"))
@@ -157,3 +153,7 @@ pub(super) fn service_endpoint(service_origin: &str, path: &str) -> Option<Strin
 pub fn get_share_viewer_url(gist_id: &str, service_origin: &str) -> Option<String> {
     service_endpoint(service_origin, "/session/").map(|url| format!("{url}#{gist_id}"))
 }
+
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+mod tests;

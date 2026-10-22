@@ -185,8 +185,8 @@ impl<E> Lexer<'_, E> {
     }
 }
 
-/// Materialize the shortest line-bounded prefix on which the quote grammar decides as on
-/// the whole operand: past its match, the grammar reads at most one complete line.
+/// Materialize line-bounded prefixes whose length doubles until a complete line follows
+/// the grammar's match or the operand ends; there the match equals the whole operand's.
 fn quote_prefix(
     source: &Segmented,
     rule: &regress::Regex,
