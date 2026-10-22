@@ -255,8 +255,8 @@ fn prepare_tree(input: &Input, tree: &Path) {
         }
         Input::Batch { existing: true, .. } => {
             let root = support::below(tree, "/fixture/cwd/.maestro/npm");
-            native_support::write(&format!("{root}/package.json"), "existing manifest");
-            native_support::write(&format!("{root}/.gitignore"), "existing ignore");
+            native_support::write(format!("{root}/package.json"), "existing manifest");
+            native_support::write(format!("{root}/.gitignore"), "existing ignore");
         }
         Input::Git(git) => {
             let checkout = support::below(tree, "/fixture/agent/git/github.com/acme/tool");
@@ -264,7 +264,7 @@ fn prepare_tree(input: &Input, tree: &Path) {
                 std::fs::create_dir_all(&checkout).unwrap();
             }
             if git.manifest {
-                native_support::write(&format!("{checkout}/package.json"), "{}");
+                native_support::write(format!("{checkout}/package.json"), "{}");
             }
         }
         _ => {}

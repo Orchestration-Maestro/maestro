@@ -38,7 +38,7 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
         r#"{"maestro":{"extensions":["entry.ts"]}}"#,
     )
     .unwrap();
-    native_support::write(seed.join("entry.ts").to_str().unwrap(), "first");
+    native_support::write(seed.join("entry.ts"), "first");
     native_git_command::git(&seed, &["add", "package.json", "entry.ts"]);
     native_git_command::git(&seed, &["commit", "-m", "first"]);
     native_git_command::git(
@@ -60,7 +60,14 @@ fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
 pub fn refresh() {
     // The temporary cache lives below the child's own temporary directory.
     let Some(dir) = crate::resolution_support::case_in_child("refresh", |base| {
-        vec![("HOME", Some(format!("{base}/home")))]
+        vec![(
+            "HOME",
+            Some(
+                native_support::under(base, "home")
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+        )]
     }) else {
         return;
     };
@@ -104,7 +111,9 @@ pub fn refresh() {
     let manager = DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: base.clone(),
-            agent_dir: format!("{base}/user"),
+            agent_dir: native_support::under(&base, "user")
+                .to_string_lossy()
+                .into_owned(),
             settings_manager: settings,
         },
         support::Controlled(effects),

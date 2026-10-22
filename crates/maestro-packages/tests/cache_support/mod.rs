@@ -1,6 +1,6 @@
 //! Recorded cache recipes replayed through the public resolver.
 #![cfg(test)]
-use super::{resource_output, support};
+use super::{native_support, resource_output, support};
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -99,6 +99,12 @@ struct Recipe {
     /// Explicit source sequence, including an empty sequence.
     multiple: Option<Vec<String>>,
 }
+/// Places a recorded `$ROOT`-anchored path in `base`, joining its remainder by components.
+fn recorded(base: &str, recorded: &str) -> String {
+    native_support::under(base, recorded.trim_start_matches("$ROOT"))
+        .to_string_lossy()
+        .into_owned()
+}
 /// Creates package contents with distinct before/after markers.
 fn package(target: &str, version: &str, marker: &str, bad: bool) {
     let manifest = if bad {
@@ -153,10 +159,10 @@ fn files(root: &Path, dir: &Path, out: &mut BTreeMap<String, String>) {
         }
     }
 }
-/// Replaces only the owning disposable root in observations.
+/// Replaces only the owning disposable root in observations, then folds native separators.
 fn normalize(value: Value, root: &str) -> Value {
     match value {
-        Value::String(s) => s.replace(root, "$ROOT").into(),
+        Value::String(s) => s.replace(root, "$ROOT").replace('\\', "/").into(),
         Value::Array(a) => a.into_iter().map(|v| normalize(v, root)).collect(),
         Value::Object(o) => o
             .into_iter()
@@ -179,7 +185,9 @@ fn manager(
     DefaultPackageManager::new(
         PackageManagerOptions {
             cwd: cwd.into(),
-            agent_dir: format!("{base}/user"),
+            agent_dir: native_support::under(base, "user")
+                .to_string_lossy()
+                .into_owned(),
             settings_manager: settings,
         },
         support::Controlled(Rc::clone(effects)),
@@ -201,7 +209,7 @@ fn setup(case: &Recorded, base: &str) {
         put(base, "local.ts", "fixture");
     }
     if r.existing == Some(true) {
-        let target = case.target.as_ref().unwrap().replace("$ROOT", base);
+        let target = recorded(base, case.target.as_ref().unwrap());
         package(
             &target,
             r.version.as_deref().unwrap_or("1.0.0"),
@@ -222,7 +230,9 @@ fn setup(case: &Recorded, base: &str) {
         }
     }
     if r.existing_root == Some(true) {
-        let root = format!("{base}/temp/maestro-extensions/npm/f35b2129");
+        let root = native_support::under(base, "temp/maestro-extensions/npm/f35b2129")
+            .to_string_lossy()
+            .into_owned();
         put(&root, ".gitignore", "keep-ignore\n");
         put(&root, "package.json", "{\"keep\":true}\n");
     }
@@ -320,10 +330,14 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
     });
     let name = suffix.map_or(spec.as_str(), |i| &spec[..i]);
     let version = suffix.map_or("1.0.0", |i| &spec[i + 1..]);
-    let prefix = args
-        .iter()
-        .position(|a| a == "--prefix")
-        .map_or_else(|| format!("{root}/global"), |i| args[i + 1].clone());
+    let prefix = args.iter().position(|a| a == "--prefix").map_or_else(
+        || {
+            native_support::under(root, "global")
+                .to_string_lossy()
+                .into_owned()
+        },
+        |i| args[i + 1].clone(),
+    );
     let target = maestro_path::join(&[&prefix, "node_modules", name]);
     if r.manifest_mode.as_deref() == Some("directory") {
         std::fs::remove_dir(Path::new(&target).join("package.json")).unwrap();
@@ -341,7 +355,14 @@ fn install(r: &Recipe, root: &str, args: &[String], index: usize) {
 async fn replay(case: &Recorded) {
     let Some(tree) = super::resolution_support::case_in_child(&case.case, |base| {
         vec![
-            ("HOME", Some(format!("{base}/home"))),
+            (
+                "HOME",
+                Some(
+                    native_support::under(base, "home")
+                        .to_string_lossy()
+                        .into_owned(),
+                ),
+            ),
             ("MAESTRO_OFFLINE", case.recipe.offline.clone()),
         ]
     }) else {
@@ -376,7 +397,7 @@ fn configure(
             Err(io::Error::other("root lookup failed"))
         } else {
             Ok(support::output(
-                &format!("{base}/global/node_modules"),
+                &native_support::under(base, "global/node_modules").to_string_lossy(),
                 "",
                 Some(0),
             ))
@@ -424,7 +445,7 @@ async fn replay_ready(
             drop(m);
             let next = manager(
                 base,
-                &format!("{base}/other-cwd"),
+                &native_support::under(base, "other-cwd").to_string_lossy(),
                 Rc::clone(&settings),
                 &effects,
             );

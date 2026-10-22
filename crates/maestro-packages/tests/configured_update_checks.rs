@@ -734,8 +734,8 @@ fn project_batch_preparation_keeps_existing_files() {
         let cwd = scratch.path().to_string_lossy().into_owned();
         let root = format!("{cwd}/.maestro/npm");
         if existing {
-            native_support::write(&format!("{root}/package.json"), "existing manifest");
-            native_support::write(&format!("{root}/.gitignore"), "existing ignore");
+            native_support::write(format!("{root}/package.json"), "existing manifest");
+            native_support::write(format!("{root}/.gitignore"), "existing ignore");
         }
         let settings = Rc::new(RefCell::new(
             SettingsManager::in_memory(Settings::default()),

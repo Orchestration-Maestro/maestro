@@ -236,7 +236,7 @@ pub fn installed(user: &Value, project: &Value) -> Configured {
                 .filter(|&at| at > 0)
                 .map_or(spec, |at| &spec[..at]);
             super::native_support::write(
-                &format!("{}/{name}/package.json", npm_root(tree, user)),
+                format!("{}/{name}/package.json", npm_root(tree, user)),
                 "{\"version\":\"1\"}",
             );
         } else if let Some(git) = maestro_packages::parse_git_url(source) {

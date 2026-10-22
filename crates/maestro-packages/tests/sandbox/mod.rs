@@ -1,5 +1,6 @@
 //! A disposable native directory with scripted child processes.
 #![cfg(test)]
+use crate::native_support;
 use maestro_packages::{
     CommandOutput, DefaultPackageManager, NativePackageOperations, PackageFuture,
     PackageManagerOptions, PackageOperations, ProgressCallback, ProgressEvent,
@@ -10,6 +11,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
     io,
+    path::Path,
     rc::Rc,
     task::{Context, Poll, Waker},
 };
@@ -160,7 +162,7 @@ impl Fixture {
     /// and the ambient working directory is unavailable.
     pub fn over(settings: SettingsManager, cwd: Option<&str>, relative_agent: bool) -> Self {
         let scratch = Scratch::new().unwrap();
-        let root = scratch.path().to_string_lossy().into_owned();
+        let root = scratch.path().to_path_buf();
         let settings = Rc::new(RefCell::new(settings));
         let script = Rc::new(Script::default());
         let local = Rc::new(tokio::task::LocalSet::new());
@@ -170,7 +172,14 @@ impl Fixture {
         };
         let manager = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {
-                cwd: cwd.map_or_else(|| format!("{root}/project"), str::to_owned),
+                cwd: cwd.map_or_else(
+                    || {
+                        native_support::under(&root, "project")
+                            .to_string_lossy()
+                            .into_owned()
+                    },
+                    str::to_owned,
+                ),
                 agent_dir: if relative_agent {
                     let ambient = std::env::current_dir()
                         .unwrap()
@@ -178,14 +187,16 @@ impl Fixture {
                         .into_owned();
                     maestro_path::relative(
                         &ambient,
-                        &format!("{root}/agent"),
+                        &native_support::under(&root, "agent").to_string_lossy(),
                         &maestro_path::Cwd {
                             current: "",
                             drive_directories: &[],
                         },
                     )
                 } else {
-                    format!("{root}/agent")
+                    native_support::under(&root, "agent")
+                        .to_string_lossy()
+                        .into_owned()
                 },
                 settings_manager: settings.clone(),
             },
@@ -214,7 +225,9 @@ impl Fixture {
     /// An absolute path below the disposable root.
     #[must_use]
     pub fn path(&self, relative: &str) -> String {
-        format!("{}/{relative}", self.scratch.path().to_string_lossy())
+        native_support::under(self.scratch.path(), relative)
+            .to_string_lossy()
+            .into_owned()
     }
     /// The project input base.
     #[must_use]
@@ -279,6 +292,6 @@ pub fn poll_once<T>(future: &mut PackageFuture<'_, T>) -> Option<io::Result<T>> 
 /// # Panics
 /// Panics if the file cannot be read as UTF-8.
 #[must_use]
-pub fn read(path: &str) -> String {
+pub fn read(path: impl AsRef<Path>) -> String {
     std::fs::read_to_string(path).unwrap()
 }

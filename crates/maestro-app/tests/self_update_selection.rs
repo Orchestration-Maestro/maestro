@@ -137,6 +137,9 @@ fn selector_reads_observations_only_on_reachable_branches() {
     );
 }
 
+/// The owned update record outlives its selection inputs; the recorded install tree of this
+/// case is POSIX, so it runs everywhere but Windows.
+#[cfg(not(windows))]
 #[test]
 fn self_update_records_outlive_selection_inputs() {
     support::run_owned(include_str!(

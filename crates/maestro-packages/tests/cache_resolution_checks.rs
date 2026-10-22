@@ -116,7 +116,13 @@ fn installed_versions_are_not_trimmed() {
 #[test]
 fn source_spec_boundaries_reuse_shared_parser() {
     crate::runtime::run(async {
-        cache_support::cases(&["spec_40", "spec_41", "spec_42", "spec_43"]).await;
+        let mut cases = vec!["spec_40", "spec_41", "spec_42"];
+        // The recorded newline in this case's cache directory name is a forbidden file name
+        // on Windows, where the same boundary is covered by the other cases.
+        if !cfg!(windows) {
+            cases.push("spec_43");
+        }
+        cache_support::cases(&cases).await;
     });
 }
 
