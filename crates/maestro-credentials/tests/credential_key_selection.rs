@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests {
     use crate::oauth_support::{ControlledProvider, Unregister};
-    use crate::support::{SERIAL, TempDir, block_on, is_child, run_child};
+    use crate::support::{CASE_ENV, SERIAL, block_on, is_child, run_isolated};
     use maestro_credentials::{
         AuthStorage, AuthStorageBackend, ConfigValueOperations, InMemoryAuthStorageBackend,
         ProcessConfigValueOperations, clear_config_value_cache,
@@ -142,15 +142,8 @@ mod tests {
     #[test]
     fn stored_key_values_keep_resolution_semantics() {
         if !is_child() {
-            let root = TempDir::new("stored-key-values");
-            return run_child(
-                maestro_test_process::TestProcess::named(
-                    "credential_key_selection::tests::stored_key_values_keep_resolution_semantics",
-                )
-                .unwrap()
-                .env_clear()
-                .case("*"),
-                root.root(),
+            return run_isolated(
+                "credential_key_selection::tests::stored_key_values_keep_resolution_semantics",
                 &K2_ENVIRONMENT,
             );
         }
@@ -164,21 +157,14 @@ mod tests {
     #[test]
     fn stored_helper_cache_spans_stores_and_clear() {
         if is_child() {
-            let expected = std::env::var("MAESTRO_K3_EXPECTED").unwrap();
+            let expected = std::env::var(CASE_ENV).unwrap();
             let key = block_on(key_of(&storing("K3_ENV"), &Operations::default()));
             return assert_eq!(key, Some(expected));
         }
-        let dir = TempDir::new("k3-environment");
         for value in ["one", "two"] {
-            run_child(
-                maestro_test_process::TestProcess::named(
-                    "credential_key_selection::tests::stored_helper_cache_spans_stores_and_clear",
-                )
-                .unwrap()
-                .env_clear()
-                .case("*"),
-                dir.root(),
-                &[("K3_ENV", value), ("MAESTRO_K3_EXPECTED", value)],
+            run_isolated(
+                "credential_key_selection::tests::stored_helper_cache_spans_stores_and_clear",
+                &[("K3_ENV", value), (CASE_ENV, value)],
             );
         }
         let _serial = SERIAL.lock().unwrap();
@@ -285,7 +271,7 @@ mod tests {
 
     /// Name of the child scenario, empty in the parent.
     fn scenario() -> String {
-        std::env::var("MAESTRO_AUTH_SCENARIO").unwrap_or_default()
+        std::env::var(CASE_ENV).unwrap_or_default()
     }
 
     /// Storage with a fallback resolver returning `fallback`.
@@ -340,22 +326,15 @@ mod tests {
         if is_child() {
             return block_on(environment_scenario());
         }
-        let dir = TempDir::new("key-environment");
         for (name, variables) in [
             ("populated", vec![("OPENAI_API_KEY", "env-key")]),
             ("empty", vec![("OPENAI_API_KEY", "")]),
             ("absent", vec![]),
         ] {
             let mut envs = variables;
-            envs.push(("MAESTRO_AUTH_SCENARIO", name));
-            run_child(
-                maestro_test_process::TestProcess::named(
-                    "credential_key_selection::tests::environment_precedes_optional_fallback",
-                )
-                .unwrap()
-                .env_clear()
-                .case("*"),
-                dir.root(),
+            envs.push((CASE_ENV, name));
+            run_isolated(
+                "credential_key_selection::tests::environment_precedes_optional_fallback",
                 &envs,
             );
         }
@@ -405,10 +384,8 @@ mod tests {
         if is_child() {
             return block_on(failing_helpers_end_lookup());
         }
-        let dir = TempDir::new("helper-failure");
-        run_child(
-            maestro_test_process::TestProcess::named("credential_key_selection::tests::stored_helper_failure_does_not_consult_ambient_sources").unwrap().env_clear().case("*"),
-            std::path::Path::new(&dir.path("")),
+        run_isolated(
+            "credential_key_selection::tests::stored_helper_failure_does_not_consult_ambient_sources",
             &[("OPENAI_API_KEY", "ambient")],
         );
     }
@@ -416,62 +393,49 @@ mod tests {
     #[test]
     fn fallback_keys_and_presence_keep_result_domains() {
         if !is_child() {
-            let dir = TempDir::new("fallback_keys_and_presence_keep_result_domains");
-            return run_child(
-                maestro_test_process::TestProcess::named("credential_key_selection::tests::fallback_keys_and_presence_keep_result_domains").unwrap().env_clear().case("*"),
-                dir.root(),
+            return run_isolated(
+                "credential_key_selection::tests::fallback_keys_and_presence_keep_result_domains",
                 &[],
             );
         }
         block_on(crate::fallback_support::replay(
             "fallback_keys_and_presence_keep_result_domains",
+            &scenario(),
         ));
     }
 
     #[test]
     fn earlier_sources_skip_failing_fallback() {
         if !is_child() {
-            let dir = TempDir::new("earlier_sources_skip_failing_fallback");
             for (scenario, key) in [
                 ("environment", "environment"),
                 ("environment-empty", ""),
                 ("environment-whitespace", " \t"),
             ] {
-                run_child(
-                    maestro_test_process::TestProcess::named(
-                        "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
-                    )
-                    .unwrap()
-                    .env_clear()
-                    .case("*"),
-                    dir.root(),
-                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                run_isolated(
+                    "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
+                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
         block_on(crate::fallback_support::replay(
             "earlier_sources_skip_failing_fallback",
+            &scenario(),
         ));
     }
 
     #[test]
     fn fallback_option_false_avoids_callback() {
         if !is_child() {
-            let dir = TempDir::new("fallback_option_false_avoids_callback");
-            return run_child(
-                maestro_test_process::TestProcess::named(
-                    "credential_key_selection::tests::fallback_option_false_avoids_callback",
-                )
-                .unwrap()
-                .env_clear()
-                .case("*"),
-                dir.root(),
+            return run_isolated(
+                "credential_key_selection::tests::fallback_option_false_avoids_callback",
                 &[],
             );
         }
         block_on(crate::fallback_support::replay(
             "fallback_option_false_avoids_callback",
+            &scenario(),
         ));
     }
 }

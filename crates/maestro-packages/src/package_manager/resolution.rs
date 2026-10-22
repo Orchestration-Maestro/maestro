@@ -1,5 +1,5 @@
 //! Explicit source resolution with resource provenance.
-use maestro_resources::PathMetadata;
+use maestro_resources::{PathMetadata, paths::CONFIG_DIR_NAME};
 /// One discovered resource with its original path and provenance.
 pub struct ResolvedResource {
     /// The authored resource path.
@@ -87,7 +87,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if let Source::Local(path) = parsed {
             let base = match scope {
                 SourceScope::User => std::borrow::Cow::Borrowed(self.options.agent_dir.as_str()),
-                SourceScope::Project => join(&[&self.options.cwd, ".maestro"]).into(),
+                SourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
             let path = super::paths::resolve_local(path, &base)?;

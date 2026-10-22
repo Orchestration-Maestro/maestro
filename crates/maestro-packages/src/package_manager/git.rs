@@ -3,7 +3,7 @@ use super::acquisition::SourceAcquisition;
 use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations, npm::GITIGNORE};
 use crate::GitSource;
 use maestro_path::{Cwd, SEP, dirname, is_absolute, join, relative};
-use maestro_resources::SourceScope;
+use maestro_resources::{SourceScope, paths::CONFIG_DIR_NAME};
 use std::{io, path::Path};
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
@@ -11,7 +11,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     fn git_locations(&self, git: &GitSource, scope: SourceScope) -> (Option<String>, String) {
         let root = match scope {
             SourceScope::User => Some(join(&[&self.options.agent_dir, "git"])),
-            SourceScope::Project => Some(join(&[&self.options.cwd, ".maestro", "git"])),
+            SourceScope::Project => Some(join(&[&self.options.cwd, CONFIG_DIR_NAME, "git"])),
             SourceScope::Temporary => None,
         };
         let target = self.git_path(git, scope);

@@ -4,7 +4,7 @@ use super::{
     sources::{self, Source},
 };
 use maestro_path::{Cwd, dirname, join, relative, resolve_with};
-use maestro_resources::SourceScope;
+use maestro_resources::{SourceScope, paths::CONFIG_DIR_NAME};
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
 impl<O: PackageOperations> DefaultPackageManager<O> {
@@ -48,7 +48,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if scope == SourceScope::Temporary {
             temporary_dir("npm", "")
         } else {
-            join(&[&self.options.cwd, ".maestro", "npm"])
+            join(&[&self.options.cwd, CONFIG_DIR_NAME, "npm"])
         }
     }
     /// Selects the Git checkout, excluding refs from cache identity.
@@ -56,16 +56,20 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         match scope {
             SourceScope::Temporary => temporary_dir(&format!("git-{}", git.host), &git.path),
             SourceScope::User => join(&[&self.options.agent_dir, "git", &git.host, &git.path]),
-            SourceScope::Project => {
-                join(&[&self.options.cwd, ".maestro", "git", &git.host, &git.path])
-            }
+            SourceScope::Project => join(&[
+                &self.options.cwd,
+                CONFIG_DIR_NAME,
+                "git",
+                &git.host,
+                &git.path,
+            ]),
         }
     }
     /// The authored settings base for one scope.
     pub(super) fn base(&self, scope: InstalledSourceScope) -> std::borrow::Cow<'_, str> {
         match scope {
             InstalledSourceScope::User => self.options.agent_dir.as_str().into(),
-            InstalledSourceScope::Project => join(&[&self.options.cwd, ".maestro"]).into(),
+            InstalledSourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
         }
     }
     /// Normalizes local input for storage, leaving nonlocal spelling intact.

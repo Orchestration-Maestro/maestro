@@ -67,21 +67,26 @@ fn availability_walk_reloads_slots_after_callbacks() {
 #[test]
 fn metadata_preserves_sources_without_helper_or_refresh_effects() {
     use maestro_credentials::{AuthSource, AuthStatus};
-    use request_support::Operations;
     if !maestro_test_process::selection().is_child() {
         let test = "metadata_preserves_sources_without_helper_or_refresh_effects";
         let process = maestro_test_process::TestProcess::current(test).unwrap();
         let environment = [
             ("ENV", Some("value")),
             ("EMPTY_ENV", Some("")),
+            ("literal", None),
             ("OPENAI_API_KEY", Some("ambient-key")),
         ];
         return crate::subprocess::run_child(process.case("*"), &environment);
     }
-    let operations = Operations::default();
+    let marker = std::env::temp_dir().join(format!(
+        "maestro-catalog-auth-marker-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&marker);
+    let helper = format!("!touch '{}'", marker.display());
     for (field, source, label) in [
         ("literal", AuthSource::ModelsJsonKey, None),
-        ("!helper", AuthSource::ModelsJsonCommand, None),
+        (helper.as_str(), AuthSource::ModelsJsonCommand, None),
         ("ENV", AuthSource::Environment, Some("ENV")),
     ] {
         let registry = support::registry(&request_support::document(
@@ -112,9 +117,12 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         );
         lower_layer_status(&registry);
     }
+    assert!(
+        !marker.exists(),
+        "auth metadata ran the configured helper command"
+    );
     metadata_fallback();
     metadata_empty_environment_and_oauth();
-    assert!(operations.calls.lock().unwrap().is_empty());
 }
 /// Observe absent and fallback-only provider metadata through the public registry.
 fn metadata_fallback() {

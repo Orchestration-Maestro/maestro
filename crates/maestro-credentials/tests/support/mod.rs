@@ -83,6 +83,16 @@ pub fn run_child(process: maestro_test_process::TestProcess, cwd: &Path, envs: &
     );
 }
 
+/// Run the named test again in a clean child with only the supplied environment.
+pub fn run_isolated(test: &str, envs: &[(&str, &str)]) {
+    let dir = TempDir::new(test);
+    let process = maestro_test_process::TestProcess::named(test).unwrap();
+    run_child(process.env_clear().case("*"), dir.root(), envs);
+}
+
+/// Environment name carrying the selected case into a child test.
+pub const CASE_ENV: &str = "MAESTRO_CASE";
+
 /// Stored API key credential.
 pub fn api_key(key: &str) -> AuthCredential {
     AuthCredential::ApiKey(ApiKeyCredential {

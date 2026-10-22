@@ -5,7 +5,7 @@ mod tests {
     use crate::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials, error,
     };
-    use crate::support::{TempDir, api_key, block_on, is_child, run_child};
+    use crate::support::{TempDir, api_key, block_on, is_child, run_isolated};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
         AuthStorageFuture, ConfigValueOperations, FileAuthStorageBackend,
@@ -18,7 +18,7 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex, Weak};
 
-    /// Environment-free configuration operations.
+    /// Configuration operations that resolve no command.
     struct NoOperations;
 
     impl ConfigValueOperations for NoOperations {
@@ -382,15 +382,8 @@ mod tests {
         if is_child() {
             return block_on(refresh_failures_block_ambient_sources());
         }
-        let dir = TempDir::new("refresh-failures");
-        run_child(
-            maestro_test_process::TestProcess::named(
-                "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
-            )
-            .unwrap()
-            .env_clear()
-            .case("*"),
-            dir.root(),
+        run_isolated(
+            "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
             &[("OPENAI_API_KEY", "env-key")],
         );
     }

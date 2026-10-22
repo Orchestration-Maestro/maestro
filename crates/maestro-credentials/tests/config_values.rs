@@ -5,7 +5,9 @@ mod tests {
     use std::cell::RefCell;
     use std::sync::Mutex;
 
-    use crate::support::{SERIAL, TempDir, is_child, run_child};
+    use crate::support::{CASE_ENV, SERIAL, is_child, run_isolated};
+    #[cfg(unix)]
+    use crate::support::{TempDir, run_child};
     /// Controlled outputs and executed commands.
     #[derive(Default)]
     struct Operations {
@@ -20,13 +22,6 @@ mod tests {
             self.output.borrow().clone()
         }
     }
-    /// Run the named test again in a child with only `envs` in its environment.
-    fn in_environment(test: &str, envs: &[(&str, &str)]) {
-        let dir = TempDir::new(test);
-        let process =
-            maestro_test_process::TestProcess::named(format!("config_values::tests::{test}"));
-        run_child(process.unwrap().env_clear().case("*"), dir.root(), envs);
-    }
     /// Values of `KEY`, one child each; `None` leaves it unset.
     const KEY_VALUES: [Option<&str>; 5] =
         [None, Some("first"), Some("second"), Some(""), Some(" \n ")];
@@ -35,13 +30,16 @@ mod tests {
         if !is_child() {
             for (index, value) in KEY_VALUES.into_iter().enumerate() {
                 let index = index.to_string();
-                let mut envs = vec![("MAESTRO_CONFIG_CASE", index.as_str())];
+                let mut envs = vec![(CASE_ENV, index.as_str())];
                 envs.extend(value.map(|value| ("KEY", value)));
-                in_environment("config_values_choose_exact_environment_or_literal", &envs);
+                run_isolated(
+                    "config_values::tests::config_values_choose_exact_environment_or_literal",
+                    &envs,
+                );
             }
             return;
         }
-        let case = std::env::var("MAESTRO_CONFIG_CASE").unwrap();
+        let case = std::env::var(CASE_ENV).unwrap();
         let value = KEY_VALUES[case.parse::<usize>().unwrap()].filter(|value| !value.is_empty());
         let operations = Operations::default();
         for resolve in [resolve_config_value, resolve_config_value_uncached] {
@@ -61,8 +59,8 @@ mod tests {
     #[test]
     fn config_prefix_removes_only_one_bang() {
         if !is_child() {
-            return in_environment(
-                "config_prefix_removes_only_one_bang",
+            return run_isolated(
+                "config_values::tests::config_prefix_removes_only_one_bang",
                 &[("!!command", "wrong")],
             );
         }
@@ -401,8 +399,7 @@ mod tests {
     #[test]
     fn native_helpers_support_pipes_and_multiline_output() {
         if !maestro_test_process::selection().is_child() {
-            let root = Directory::new("native_helpers_support_pipes_and_multiline_output");
-            return child_test("native_helpers_support_pipes_and_multiline_output", &root.0);
+            return child_test_in_fresh_dir("native_helpers_support_pipes_and_multiline_output");
         }
         let operations =
             ProcessConfigValueOperations::new(|| unreachable!("Unix must avoid selection"));
@@ -421,8 +418,7 @@ mod tests {
     #[test]
     fn command_empty_or_failed_output_returns_absence() {
         if !maestro_test_process::selection().is_child() {
-            let root = Directory::new("command_empty_or_failed_output_returns_absence");
-            return child_test("command_empty_or_failed_output_returns_absence", &root.0);
+            return child_test_in_fresh_dir("command_empty_or_failed_output_returns_absence");
         }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         for command in [
@@ -443,8 +439,7 @@ mod tests {
     #[test]
     fn native_helpers_decode_invalid_utf8_lossily() {
         if !maestro_test_process::selection().is_child() {
-            let root = Directory::new("native_helpers_decode_invalid_utf8_lossily");
-            return child_test("native_helpers_decode_invalid_utf8_lossily", &root.0);
+            return child_test_in_fresh_dir("native_helpers_decode_invalid_utf8_lossily");
         }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         assert_eq!(
@@ -464,8 +459,7 @@ mod tests {
     #[test]
     fn native_helpers_work_inside_running_runtime() {
         if !maestro_test_process::selection().is_child() {
-            let root = Directory::new("native_helpers_work_inside_running_runtime");
-            return child_test("native_helpers_work_inside_running_runtime", &root.0);
+            return child_test_in_fresh_dir("native_helpers_work_inside_running_runtime");
         }
         crate::support::block_on(async {
             let operations = ProcessConfigValueOperations::new(|| unreachable!());
@@ -475,7 +469,15 @@ mod tests {
             );
         });
     }
-    /// Reinvoke one test with isolated environment and working directory.
+    /// Reinvoke one test in a child process that inherits the environment, with an empty
+    /// working directory.
+    #[cfg(unix)]
+    fn child_test_in_fresh_dir(name: &str) {
+        let root = TempDir::new(name);
+        child_test(name, root.root());
+    }
+    /// Reinvoke one test in a child process that inherits the environment, with the supplied
+    /// working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
         let process = maestro_test_process::TestProcess::current(name).unwrap();
@@ -484,25 +486,6 @@ mod tests {
             root,
             &[("MAESTRO_CONFIG_VALUE", "inherited-value")],
         );
-    }
-    /// Disposable fixture directory whose contents belong to this test.
-    #[cfg(unix)]
-    struct Directory(std::path::PathBuf);
-    #[cfg(unix)]
-    impl Directory {
-        /// Create a distinct test directory.
-        fn new(name: &str) -> Self {
-            let path =
-                std::env::temp_dir().join(format!("maestro-config-{name}-{}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self(path)
-        }
-    }
-    #[cfg(unix)]
-    impl Drop for Directory {
-        fn drop(&mut self) {
-            std::fs::remove_dir_all(&self.0).unwrap();
-        }
     }
     #[cfg(unix)]
     #[test]
@@ -519,9 +502,9 @@ mod tests {
             );
             return;
         }
-        let root = Directory::new("inherit");
-        std::fs::write(root.0.join("relative-key"), "-relative").unwrap();
-        child_test("native_helpers_inherit_environment_and_cwd", &root.0);
+        let root = TempDir::new("inherit");
+        std::fs::write(root.root().join("relative-key"), "-relative").unwrap();
+        child_test("native_helpers_inherit_environment_and_cwd", root.root());
     }
     #[cfg(unix)]
     #[test]
@@ -551,22 +534,21 @@ mod tests {
             );
             return;
         }
-        let root = Directory::new("cwd");
+        let root = TempDir::new("cwd");
         for (directory, value) in [("a", "from-a"), ("b", "from-b")] {
-            std::fs::create_dir(root.0.join(directory)).unwrap();
-            std::fs::write(root.0.join(directory).join("key"), value).unwrap();
+            std::fs::create_dir(root.root().join(directory)).unwrap();
+            std::fs::write(root.root().join(directory).join("key"), value).unwrap();
         }
-        child_test("config_cache_survives_adapter_and_cwd_changes", &root.0);
+        child_test("config_cache_survives_adapter_and_cwd_changes", root.root());
     }
     #[cfg(unix)]
     #[test]
     fn native_helpers_timeout_without_fallback() {
         if !maestro_test_process::selection().is_child() {
-            let root = Directory::new("native_helpers_timeout_without_fallback");
-            return child_test("native_helpers_timeout_without_fallback", &root.0);
+            return child_test_in_fresh_dir("native_helpers_timeout_without_fallback");
         }
-        let root = Directory::new("timeout");
-        let ready = root.0.join("ready");
+        let root = TempDir::new("timeout");
+        let ready = root.root().join("ready");
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         let command = format!(
             "!printf ready > '{}'; printf secret; exec sleep 11",
