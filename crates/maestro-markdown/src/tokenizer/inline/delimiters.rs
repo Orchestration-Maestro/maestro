@@ -1,5 +1,7 @@
 //! Source-local delimiter observations shared by recursive inline windows.
+pub(super) mod code_spans;
 pub(super) mod deletion;
+pub(super) mod label_closers;
 use crate::MarkedOptions;
 use std::ops::Range;
 
@@ -9,10 +11,14 @@ pub(crate) struct Delimiters {
     ends: Vec<usize>,
     /// Caller-selected raw deletion closers, absent where the grammar cannot delete.
     tildes: Option<deletion::DeletionEnds>,
+    /// Closing runs of the caller's code-span grammar, absent without backticks.
+    backticks: Option<code_spans::CodeEnds>,
+    /// Closing pairs the caller's label scan can reach.
+    labels: label_closers::LabelClosers,
 }
 
 impl Delimiters {
-    /// Retain each homogeneous delimiter run beside the deletion closers of one source.
+    /// Retain each homogeneous delimiter run beside the closers of one source.
     pub(crate) fn new(source: &str, options: MarkedOptions) -> Self {
         let mut ends = vec![0; source.len()];
         let mut runs = source.bytes().enumerate().peekable();
@@ -33,6 +39,8 @@ impl Delimiters {
         Self {
             ends,
             tildes: deletion::DeletionEnds::prepare(source, options),
+            backticks: code_spans::CodeEnds::prepare(source),
+            labels: label_closers::LabelClosers::prepare(source),
         }
     }
 
@@ -49,5 +57,21 @@ impl Delimiters {
         range: &Range<usize>,
     ) -> Option<(usize, Range<usize>)> {
         self.tildes.as_ref()?.find(text, range)
+    }
+
+    /// Select the first closing backtick run of the opener's width in the window.
+    pub(crate) fn code_span(
+        &self,
+        text: &str,
+        range: &Range<usize>,
+    ) -> Option<(usize, Range<usize>)> {
+        self.backticks.as_ref()?.find(text, range)
+    }
+
+    /// Select the closing pair an authored link label reaches inside the window.
+    pub(crate) fn link_closer(&self, text: &str, range: &Range<usize>) -> Option<usize> {
+        let bang = usize::from(text.starts_with('!'));
+        (text.as_bytes().get(bang)? == &b'[').then_some(())?;
+        self.labels.reachable(range.start + bang + 1, range.end)
     }
 }

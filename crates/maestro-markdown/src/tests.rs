@@ -3,11 +3,14 @@ use crate::{InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse};
 use std::cell::RefCell;
 
 mod code_progress;
+mod code_span_windows;
 mod container_depth;
 mod container_frames;
 mod deletion_scanning;
 mod emphasis_work;
 mod html_progress;
+mod link_windows;
+mod opener_work;
 mod paragraph_progress;
 mod segment_balance;
 mod shared_text;
@@ -108,9 +111,9 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
-    /// Suffix bytes supplied to direct-link admission, including rejected links.
+    /// Sources a link-closer preparation reads, plus one per label query and per rule attempt.
     pub(crate) link_bytes: usize,
-    /// Suffix bytes supplied to inline code-span recognition, including unclosed openers.
+    /// Sources a code-span preparation reads plus one per reached-opener lookup.
     pub(crate) inline_code_bytes: usize,
     /// Sources a deletion preparation reads plus one per reached-opener lookup.
     pub(crate) deletion_bytes: usize,

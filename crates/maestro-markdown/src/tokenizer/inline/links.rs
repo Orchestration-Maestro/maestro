@@ -29,7 +29,9 @@ impl Tokenizer<'_> {
         admission: Option<&mut crate::inline::InlineAdmission<'_>>,
     ) -> Option<(usize, Kind)> {
         let text = &self.source.text[range.clone()];
-        let link = self.inline_link(text).or_else(|| self.reference(text))?;
+        let link = self
+            .inline_link(text, &range)
+            .or_else(|| self.reference(text))?;
         let label = range.start + link.label.start..range.start + link.label.end;
         let label_source = self.source.select(std::iter::once(label.clone()));
         let source = label_source.brackets();
@@ -103,7 +105,8 @@ impl Tokenizer<'_> {
     }
 
     /// Balance a direct destination and retain the selected title boundary.
-    fn inline_link(&self, text: &str) -> Option<Link> {
+    fn inline_link(&self, text: &str, range: &Range<usize>) -> Option<Link> {
+        self.delimiters.link_closer(text, range)?;
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.link_bytes += text.len());
         let matched = rules::inline_link(self.options)?.find(text)?;

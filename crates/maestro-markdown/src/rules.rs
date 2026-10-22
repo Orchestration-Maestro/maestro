@@ -253,13 +253,6 @@ pub(crate) static INLINE_BLOCK_SKIP: LazyLock<Option<Regex>> = LazyLock::new(|| 
     Regex::with_flags(r"\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)|(?<!`)()(?<b>`+)[^`]+\k<b>(?!`)|<(?! )[^<>]*?>", "").ok()
 });
 
-/// Reference spelling of inline code syntax.
-pub(crate) const INLINE_CODE_SOURCE: &str = r"^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)";
-
-/// Recognize inline code syntax without a mutable match cursor.
-pub(crate) static INLINE_CODE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| stepwise(INLINE_CODE_SOURCE, ""));
-
 /// Recognize inline br syntax without a mutable match cursor.
 pub(crate) static INLINE_BR: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^( {2,}|\\)\n(?!\s*$)", "").ok());
