@@ -206,6 +206,8 @@ impl<'a> Tokenizer<'a> {
 
     /// Code normalizes newlines and trims exactly one pair of edge spaces.
     fn code(text: &str) -> Option<(usize, Kind)> {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.inline_code_bytes += text.len());
         let matched = rules::INLINE_CODE.as_ref()?.find(text)?;
         let body = capture(text, &matched, 2).replace('\n', " ");
         let trim =

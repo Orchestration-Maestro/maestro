@@ -1,5 +1,5 @@
 //! Deletion opener cost at the shared owner and through both public entries.
-use super::{NoBlockHint, SELECTIONS, WORK, Work};
+use super::{SELECTIONS, WORK, Work, grows_linearly, parsed};
 use crate::{Kind, MarkedOptions, Node, tokenizer::inline::delimiters::Delimiters};
 use serde::Deserialize;
 
@@ -26,30 +26,6 @@ fn strict_selections() -> [MarkedOptions; 2] {
     [MarkedOptions::Terminal, MarkedOptions::Export]
 }
 
-/// Whether work at N, 2N and 4N units grows by at most the same amount per unit.
-fn bounded([small, medium, large]: [usize; 3]) -> bool {
-    large - medium <= 2 * (medium - small)
-}
-
-/// Bytes a per-opener suffix rescan supplies, which is the removed shape.
-fn suffix_rescan_work(piece: &str) -> [usize; 3] {
-    [32, 64, 128].map(|count| {
-        let source = piece.repeat(count);
-        source
-            .match_indices('~')
-            .map(|(start, _)| source.len() - start)
-            .sum()
-    })
-}
-
-/// Bytes one preparation plus one lookup per reached opener visits.
-fn indexed_work(piece: &str) -> [usize; 3] {
-    [32, 64, 128].map(|count| {
-        let source = piece.repeat(count);
-        source.len() + source.matches('~').count()
-    })
-}
-
 /// Bytes the shared inline owner visits while preparing and answering openers.
 fn root_work(piece: &str, options: MarkedOptions) -> [usize; 3] {
     [32, 64, 128].map(|count| {
@@ -69,11 +45,7 @@ fn unclosed_deletion_root_work_is_linear() {
         let counts = root_work(piece, options);
         eprintln!("{options:?} {piece:?} N/2N/4N {counts:?}");
         assert!(counts[0] > 0, "{options:?} {piece:?}");
-        assert!(bounded(counts), "{options:?} {piece:?}: {counts:?}");
-    }
-    for (piece, _) in workloads() {
-        assert!(!bounded(suffix_rescan_work(piece)), "{piece:?}");
-        assert!(bounded(indexed_work(piece)), "{piece:?}");
+        assert!(grows_linearly(counts), "{options:?} {piece:?}: {counts:?}");
     }
 }
 
@@ -102,12 +74,7 @@ fn entry_work(piece: &str, options: MarkedOptions, extension: bool) -> [usize; 3
     [32, 64, 128].map(|count| {
         let source = piece.repeat(count);
         WORK.with_borrow_mut(|state| *state = Work::default());
-        let document = if extension {
-            let mut extension = NoBlockHint;
-            crate::parse_with_tokenizer(source.clone(), options, Some(&mut extension)).unwrap()
-        } else {
-            crate::parse_with_options(source.clone(), options)
-        };
+        let document = parsed(source.clone(), options, extension);
         let Kind::Paragraph(children) = &document.nodes[0].kind else {
             panic!("{options:?} {piece:?}");
         };
@@ -121,7 +88,7 @@ fn assert_linear_through_parse(piece: &str, options: MarkedOptions, extension: b
     let counts = entry_work(piece, options, extension);
     eprintln!("{options:?} {piece:?} extension={extension} N/2N/4N {counts:?}");
     assert!(
-        bounded(counts),
+        grows_linearly(counts),
         "{options:?} {piece:?} extension={extension}: {counts:?}"
     );
     if options == MarkedOptions::Documentation {
@@ -200,4 +167,5 @@ fn deletion_lookup_matches_selected_raw_windows() {
         );
     }
     eprintln!("WINDOWS {} selections {selections}", rows.len());
+    assert_eq!(selections, 627);
 }

@@ -21,13 +21,7 @@ fn reply_quote_reentry_keeps_ancestor_body_lineage() {
 
 #[test]
 fn container_definition_lookahead_keeps_later_title_lines() {
-    let options = [
-        MarkedOptions::Terminal,
-        MarkedOptions::Documentation,
-        MarkedOptions::Browser { escape_html: false },
-        MarkedOptions::Browser { escape_html: true },
-        MarkedOptions::Export,
-    ];
+    let options = SELECTIONS;
     for ((prefix, source), options) in [
         ("", "[a]: /x\n\"title\ncontinued\"\n\n[a]"),
         ("> ", "> [a]: /x\n> \"title\n> continued\"\n>\n> [a]"),

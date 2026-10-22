@@ -1,5 +1,5 @@
 //! Stepwise-spelled recognizers match exactly as their reference spellings do.
-use crate::{MarkedOptions, rules};
+use crate::rules;
 use regress::Regex;
 
 /// Pieces that reach every text alternative: stops, hard breaks, mail runs, links and wide text.
@@ -62,13 +62,7 @@ fn assert_same_matches(compiled: &Regex, reference: &Regex, pieces: &[&str], lab
 
 #[test]
 fn inline_text_rules_match_their_reference_spellings() {
-    for options in [
-        MarkedOptions::Documentation,
-        MarkedOptions::Terminal,
-        MarkedOptions::Export,
-        MarkedOptions::Browser { escape_html: false },
-        MarkedOptions::Browser { escape_html: true },
-    ] {
+    for options in super::SELECTIONS {
         let reference = Regex::with_flags(rules::inline_text_source(options), "").unwrap();
         let compiled = rules::inline_text(options).unwrap();
         assert_same_matches(compiled, &reference, &TEXT_PIECES, &format!("{options:?}"));

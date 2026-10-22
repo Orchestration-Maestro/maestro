@@ -10,10 +10,8 @@ pub(super) struct DeletionEnds {
     stop: Vec<usize>,
     /// Whether an admitted content unit ends at a byte boundary.
     tail: Vec<bool>,
-    /// Bytes an escape unit consumed; they cannot begin a closing pair.
-    escaped: Vec<bool>,
-    /// Caller grammar, which fixes the escape unit and the admitted opener width.
-    options: MarkedOptions,
+    /// Whether the caller's escape unit excludes line terminators.
+    strict: bool,
 }
 
 impl DeletionEnds {
@@ -27,22 +25,13 @@ impl DeletionEnds {
             next: vec![[absent; 2]; absent],
             stop: vec![absent; absent],
             tail: vec![false; absent],
-            escaped: vec![false; absent],
-            options,
+            strict: matches!(options, MarkedOptions::Terminal | MarkedOptions::Export),
         };
         ends.fill_units(text);
         ends.fill_closers(text);
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.deletion_bytes += text.len());
         Some(ends)
-    }
-
-    /// Whether the caller's escape unit excludes line terminators.
-    fn strict(&self) -> bool {
-        matches!(
-            self.options,
-            MarkedOptions::Terminal | MarkedOptions::Export
-        )
     }
 
     /// Record content-unit boundaries and the escape the strict grammar refuses.
@@ -57,9 +46,8 @@ impl DeletionEnds {
             let Some((escaped, inner)) = scalars.next() else {
                 break;
             };
-            self.escaped[escaped] = true;
             self.tail[escaped + inner.len_utf8()] = true;
-            if self.strict() && matches!(inner, '\r' | '\n' | '\u{2028}' | '\u{2029}') {
+            if self.strict && matches!(inner, '\r' | '\n' | '\u{2028}' | '\u{2029}') {
                 self.stop[offset] = offset;
             }
         }
@@ -90,8 +78,7 @@ impl DeletionEnds {
 
     /// Whether an admitted content unit ends before an unescaped tilde run of this width.
     fn admits(&self, text: &str, start: usize, width: usize) -> bool {
-        self.tail.get(start) == Some(&true)
-            && self.escaped.get(start) == Some(&false)
+        matches!(self.tail.get(start), Some(true))
             && text
                 .as_bytes()
                 .get(start..start + width)
@@ -104,7 +91,7 @@ impl DeletionEnds {
         let width = if rest.starts_with('~') { 2 } else { 1 };
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.deletion_bytes += 1);
-        if width == 1 && self.strict() {
+        if width == 1 && self.strict {
             return None;
         }
         let body = range.start + width;
@@ -125,7 +112,7 @@ impl DeletionEnds {
         if window_end >= first_end && self.admits(text, window_end, width) {
             closer = closer.min(window_end);
         }
-        if closer + width > range.end || self.stop.get(body)? < &closer {
+        if closer + width > range.end || *self.stop.get(body)? < closer {
             return None;
         }
         Some((closer + width - range.start, body..closer))

@@ -110,7 +110,9 @@ pub(crate) struct Work {
     pub(crate) operand_admissions: usize,
     /// Suffix bytes supplied to direct-link admission, including rejected links.
     pub(crate) link_bytes: usize,
-    /// Bytes visited by deletion preparation and reached-opener lookups.
+    /// Suffix bytes supplied to inline code-span recognition, including unclosed openers.
+    pub(crate) inline_code_bytes: usize,
+    /// Sources a deletion preparation reads plus one per reached-opener lookup.
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
@@ -506,17 +508,26 @@ impl crate::BlockTokenizer for NoBlockHint {
     }
 }
 
+/// Parse one source through the chosen public entry route.
+pub(crate) fn parsed(
+    source: String,
+    options: crate::MarkedOptions,
+    extension: bool,
+) -> crate::Document {
+    if extension {
+        crate::parse_with_tokenizer(source, options, Some(&mut NoBlockHint)).unwrap()
+    } else {
+        crate::parse_with_options(source, options)
+    }
+}
+
 /// Compare actual shared-owner scan work through either public entry route.
 fn suffix_work(extension: bool, paragraph: &str) {
     let counts = [32, 64].map(|count| {
         WORK.with_borrow_mut(|work| *work = Work::default());
         let source = paragraph.repeat(count);
         let options = crate::MarkedOptions::Browser { escape_html: true };
-        let document = if extension {
-            crate::parse_with_tokenizer(source, options, Some(&mut NoBlockHint)).unwrap()
-        } else {
-            crate::parse_with_options(source, options)
-        };
+        let document = parsed(source, options, extension);
         assert!(!document.nodes.is_empty());
         WORK.with_borrow(|work| *work)
     });
@@ -562,13 +573,7 @@ fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
 
 #[test]
 fn plain_text_merge_work_grows_linearly_with_its_pieces() {
-    for options in [
-        crate::MarkedOptions::Documentation,
-        crate::MarkedOptions::Terminal,
-        crate::MarkedOptions::Export,
-        crate::MarkedOptions::Browser { escape_html: false },
-        crate::MarkedOptions::Browser { escape_html: true },
-    ] {
+    for options in SELECTIONS {
         let merged =
             [64, 128, 256].map(|pieces| paragraph_work("a_".repeat(pieces), options).merge_bytes);
         assert!(grows_linearly(merged), "{options:?} {merged:?}");
