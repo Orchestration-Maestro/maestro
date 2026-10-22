@@ -51,11 +51,12 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
 /// Permission failures stay native I/O errors, not a missing-source category.
 #[cfg(unix)]
 async fn permission_failure(path: &std::path::Path, uri: &url::Url, fetch: &crate::Fetch) {
-    use std::os::unix::fs::PermissionsExt;
-    let permissions = std::fs::metadata(path).unwrap().permissions();
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o0)).unwrap();
+    // A privileged run reads the file anyway, so there is no failure to check.
+    let Some(restore) = maestro_test_directory::deny(path, 0o0).unwrap() else {
+        return;
+    };
     let result = get_uri::load(uri, None, fetch).await;
-    std::fs::set_permissions(path, permissions).unwrap();
+    drop(restore);
     let error = result.unwrap_err();
     assert!(!error.is::<NotFound>());
     assert_eq!(

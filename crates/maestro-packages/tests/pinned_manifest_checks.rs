@@ -28,8 +28,12 @@ fn matching_pin_selects_last_version_after_deep_duplicate() {
 
 /// Resolves installed resources and observes the completed command boundary.
 fn check_matching_pin(offline: bool, member: &str) {
-    let environment = |_: &str| vec![("MAESTRO_OFFLINE", Some("1".into()))];
-    if offline && crate::resolution_support::case_in_child(member, environment).is_none() {
+    let (case, environment) = if offline {
+        ("offline", vec![("MAESTRO_OFFLINE", Some("1".into()))])
+    } else {
+        ("online", Vec::new())
+    };
+    if crate::resolution_support::case_in_child(case, |_| environment).is_none() {
         return;
     }
     let scratch = scratch::Scratch::new().unwrap();

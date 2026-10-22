@@ -407,6 +407,9 @@ fn stopped_native_runtime_rejects_spawn_without_a_cycle() {
     use maestro_packages::{DefaultPackageManager, PackageManagerOptions};
     use maestro_settings::{Settings, SettingsManager};
     use std::cell::RefCell;
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let local = Rc::new(tokio::task::LocalSet::new());
     let weak = Rc::downgrade(&local);
     let operations = NativePackageOperations::new(Rc::new(|| false), &local);

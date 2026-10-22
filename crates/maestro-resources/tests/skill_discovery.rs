@@ -1243,39 +1243,28 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
     assert_eq!(result.skills[0].description, "Replaced \u{fffd} byte");
 }
 
-/// Native and controlled operations share one loading interface and conformance.
+/// Skills of a custom directory carry its source metadata, in name order.
 #[test]
-fn maestro_skills_share_native_and_controlled_operations() {
+fn custom_skill_directories_keep_source_metadata_and_name_order() {
     let dir = Directory::new();
     let second = dir.file("second/SKILL.md", "---\ndescription: Second\n---");
     let first = dir.file("first/SKILL.md", "---\ndescription: First\n---");
-    {
-        let result = load_skills_from_dir(LoadSkillsFromDirOptions {
-            cwd: support::text(&std::env::temp_dir()),
-            dir: support::text(dir.0.path()),
-            source: "custom",
-        });
-        assert_eq!(result.skills.len(), 2);
-        assert!(result.diagnostics.is_empty());
-        assert!(
-            result
-                .skills
-                .iter()
-                .all(|s| s.source_info.source == "custom"
-                    && s.source_info.scope == SourceScope::Temporary
-                    && s.source_info.origin == SourceOrigin::TopLevel
-                    && s.source_info.path == s.file_path
-                    && s.source_info.base_dir.as_ref() == Some(&s.base_dir))
-        );
-        for path in [&first, &second] {
-            assert!(result.skills.iter().any(|s| &s.file_path == path));
-        }
-    }
     let result = load_skills_from_dir(LoadSkillsFromDirOptions {
         cwd: support::text(&std::env::temp_dir()),
         dir: support::text(dir.0.path()),
         source: "custom",
     });
+    assert!(result.diagnostics.is_empty());
+    assert!(
+        result
+            .skills
+            .iter()
+            .all(|s| s.source_info.source == "custom"
+                && s.source_info.scope == SourceScope::Temporary
+                && s.source_info.origin == SourceOrigin::TopLevel
+                && s.source_info.path == s.file_path
+                && s.source_info.base_dir.as_ref() == Some(&s.base_dir))
+    );
     assert_eq!(
         result
             .skills

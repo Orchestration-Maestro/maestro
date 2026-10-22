@@ -35,28 +35,26 @@ pub fn unreadable_cwd(
     test: &str,
 ) -> Option<(
     maestro_test_directory::Scratch,
-    maestro_test_directory::Unlock,
+    maestro_test_directory::Restore,
     std::path::PathBuf,
 )> {
     if maestro_test_process::run_alone(test).unwrap() {
         return None;
     }
     let tree = maestro_test_directory::Scratch::new().unwrap();
-    let (process, unlock) = tree.enter_unreadable("process").unwrap();
-    if std::env::current_dir().is_ok() {
-        drop(unlock);
-        return None;
-    }
-    Some((tree, unlock, process))
+    let (process, restore) = tree.enter_unreadable("process").unwrap()?;
+    Some((tree, restore, process))
 }
 
 /// The variable naming the tree a child builds its case in.
 const TREE: &str = "MAESTRO_TEST_TREE";
 
 /// Runs `case` of the calling test in a child process over a fresh tree this process owns.
-/// `environment` gives the child's variables for that tree: a value sets one, `None` removes
-/// it. Returns the tree in the child selected for `case`; `None` in the caller once the child
-/// passed, and in a child selected for another case.
+/// The child starts online, without an inherited `MAESTRO_OFFLINE`, and its temporary
+/// directory is `temp` in the tree. `environment` gives the child's other variables for that
+/// tree: a value sets one, `None` removes it. Returns the tree in the child selected for
+/// `case`; `None` in the caller once the child passed, and in a child selected for another
+/// case.
 pub fn case_in_child(
     case: &str,
     environment: impl FnOnce(&str) -> Vec<(&'static str, Option<String>)>,
@@ -69,11 +67,15 @@ pub fn case_in_child(
     }
     let tree = super::scratch::Scratch::new().unwrap();
     let base = tree.path().to_str().unwrap();
+    let temp = tree.path().join("temp");
+    std::fs::create_dir(&temp).unwrap();
     let mut child =
         maestro_test_process::TestProcess::current(std::thread::current().name().unwrap())
             .unwrap()
             .case(case)
-            .env(TREE, base);
+            .env(TREE, base)
+            .env_remove("MAESTRO_OFFLINE")
+            .temp_dir(temp);
     for (name, value) in environment(base) {
         child = match value {
             Some(value) => child.env(name, value),

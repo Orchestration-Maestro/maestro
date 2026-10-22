@@ -88,10 +88,11 @@ async fn run_recipe(row: Recipe) {
         &std::path::Path::new(&root).join("package.json"),
         &json!({"maestro":manifest}).to_string(),
     );
-    if row.denied {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(scene.path().join("denied"), fs::Permissions::from_mode(0o0)).unwrap();
-        assert!(fs::read_dir(scene.path().join("denied")).is_err());
+    let denied = row
+        .denied
+        .then(|| maestro_test_directory::deny(scene.path().join("denied"), 0o0).unwrap());
+    if matches!(denied, Some(None)) {
+        return;
     }
     let (manager, _) = resolution_support::manager(&root);
     let sources: Vec<_> = row
@@ -106,14 +107,7 @@ async fn run_recipe(row: Recipe) {
     let actual = resolution_support::output(result, &base)
         .to_string()
         .replace("$BASE", "$SCENE");
-    if row.denied {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(
-            scene.path().join("denied"),
-            fs::Permissions::from_mode(0o755),
-        )
-        .unwrap();
-    }
+    drop(denied);
     assert_eq!(
         serde_json::from_str::<serde_json::Value>(&actual).unwrap(),
         row.expected,

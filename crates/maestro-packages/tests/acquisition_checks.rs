@@ -185,9 +185,11 @@ fn project_creation_failure_keeps_prior_effects() {
         let result = locked(&fixture.project(".maestro"), || {
             block_on(fixture.manager.install("npm:pkg", Some(Project)))
         });
-        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
-        assert!(fixture.calls().is_empty());
-        assert!(!std::path::Path::new(&root(&fixture)).exists());
+        if let Some(result) = result {
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+            assert!(fixture.calls().is_empty());
+            assert!(!std::path::Path::new(&root(&fixture)).exists());
+        }
     }
 
     let fixture = Fixture::new(&json!({}));
@@ -463,15 +465,13 @@ fn git_project_paths_preserve_parent_and_ignore_files() {
     );
 }
 
-/// Runs `operation` while the directory `path`, created when missing, refuses writes.
+/// Runs `operation` while the directory `path`, created when missing, refuses writes;
+/// `None` when this process is not refused, as in a privileged run.
 #[cfg(unix)]
-fn locked<T>(path: &str, operation: impl FnOnce() -> T) -> T {
-    use std::os::unix::fs::PermissionsExt;
+fn locked<T>(path: &str, operation: impl FnOnce() -> T) -> Option<T> {
     std::fs::create_dir_all(path).unwrap();
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o555)).unwrap();
-    let result = operation();
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
-    result
+    let _restore = maestro_test_directory::deny(path, 0o555).unwrap()?;
+    Some(operation())
 }
 
 #[cfg(unix)]
@@ -487,9 +487,11 @@ fn git_preparation_failures_keep_exactly_the_completed_effects() {
     ];
     for (suffix, (root, ignore, parent)) in failures {
         let fixture = Fixture::new(&json!({}));
-        let result = locked(&fixture.agent(suffix), || {
+        let Some(result) = locked(&fixture.agent(suffix), || {
             block_on(fixture.manager.install(source, None))
-        });
+        }) else {
+            return;
+        };
         assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
         assert!(fixture.calls().is_empty(), "case {suffix}");
         let exists = |path: &str| std::path::Path::new(&fixture.agent(path)).exists();
@@ -672,7 +674,7 @@ fn git_removal_prunes_only_empty_parents_inside_root() {
 
 #[cfg(unix)]
 #[test]
-fn git_removal_handles_links_and_vanished_parents() {
+fn git_removal_keeps_dangling_links_and_link_referents() {
     use std::os::unix::fs::symlink;
     let source = "https://github.com/user/repo";
     let fixture = Fixture::new(&json!({}));
@@ -695,7 +697,6 @@ fn git_removal_handles_links_and_vanished_parents() {
 #[cfg(unix)]
 #[test]
 fn git_pruning_distinguishes_read_and_remove_failures() {
-    use std::os::unix::fs::PermissionsExt;
     let source = "https://github.com/user/repo";
     let build = || {
         let fixture = Fixture::new(&json!({}));
@@ -703,9 +704,11 @@ fn git_pruning_distinguishes_read_and_remove_failures() {
         fixture
     };
     let fixture = build();
-    let result = locked(&fixture.agent("git/github.com/user/repo"), || {
+    let Some(result) = locked(&fixture.agent("git/github.com/user/repo"), || {
         block_on(fixture.manager.remove(source, None))
-    });
+    }) else {
+        return;
+    };
     assert!(result.is_err());
     assert!(std::path::Path::new(&fixture.agent("git/github.com/user/repo/file")).exists());
     assert_eq!(fixture.phases().last().unwrap().0, Phase::Error);
@@ -713,18 +716,22 @@ fn git_pruning_distinguishes_read_and_remove_failures() {
     let fixture = build();
     let parent = fixture.agent("git/github.com/user");
     // Write and search permission without read: the checkout goes, the listing fails.
-    std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o300)).unwrap();
+    let Some(restore) = maestro_test_directory::deny(&parent, 0o300).unwrap() else {
+        return;
+    };
     let result = block_on(fixture.manager.remove(source, None));
-    std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o755)).unwrap();
+    drop(restore);
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
     assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
     assert!(std::path::Path::new(&parent).exists());
 
     let fixture = build();
-    locked(&fixture.agent("git/github.com"), || {
+    let Some(result) = locked(&fixture.agent("git/github.com"), || {
         block_on(fixture.manager.remove(source, None))
-    })
-    .unwrap();
+    }) else {
+        return;
+    };
+    result.unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
     assert!(std::path::Path::new(&fixture.agent("git/github.com/user")).exists());
     assert!(std::path::Path::new(&fixture.agent("git/github.com")).exists());

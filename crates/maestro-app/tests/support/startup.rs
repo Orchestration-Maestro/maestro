@@ -341,8 +341,12 @@ pub fn run(name: &str) {
         serde_json::from_str(include_str!("../fixtures/startup_conversions.json")).unwrap();
     assert_eq!(corpus.len(), 29);
     assert_eq!(corpus.values().map(Vec::len).sum::<usize>(), 125);
+    // A privileged run ignores the cases' modes, so those cases have nothing to check.
+    let denials = crate::native::denials();
     for (index, case) in corpus.remove(name).unwrap().into_iter().enumerate() {
-        replay(name, index, &case);
+        if denials || (case.input.file_modes.is_empty() && case.input.root_mode.is_none()) {
+            replay(name, index, &case);
+        }
     }
 }
 

@@ -450,8 +450,28 @@ fn installed_matches(row: &Install, bin: &str, result: Option<&String>) {
     assert!(!Path::new(bin).parent().unwrap().join("outside").exists());
 }
 
+/// Runs the calling test again in a child without `MAESTRO_OFFLINE`, so an offline flag in
+/// the developer's shell never reaches the install. True in that child; false in the caller
+/// once the child passed.
+fn online(test: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return true;
+    }
+    let child = maestro_test_process::TestProcess::current(test).unwrap();
+    let output = child
+        .case("*")
+        .env_remove("MAESTRO_OFFLINE")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    false
+}
+
 /// Run the named installation group on its chosen hosts.
 async fn installs(name: &str) {
+    if !online(name) {
+        return;
+    }
     for row in cases::<Install>(name) {
         let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
         let bin = maestro_path::join(&[
@@ -625,6 +645,9 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
 
 #[test]
 fn lookup_and_download_deadlines_cover_the_whole_body() {
+    if !online("lookup_and_download_deadlines_cover_the_whole_body") {
+        return;
+    }
     run_paused(async {
         for phase in 0..3 {
             let scratch =
@@ -669,6 +692,9 @@ fn lookup_and_download_deadlines_cover_the_whole_body() {
 
 #[test]
 fn concurrent_installs_stage_in_separate_directories() {
+    if !online("concurrent_installs_stage_in_separate_directories") {
+        return;
+    }
     run(async {
         let scratch =
             Staging::create(std::env::temp_dir().to_str().unwrap(), "concurrent").unwrap();

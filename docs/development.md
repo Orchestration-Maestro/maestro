@@ -465,12 +465,15 @@ status checks.
 Cases that read process variables go through `run_per_environment(test, cases,
 environment)`. It groups the cases by the variables `environment` returns and
 reruns the test once per group, in a child that holds exactly those variables
-after `env_clear()`. In the parent it returns `None` once every child
+after `env_clear()`, plus the parent's temporary directory unless the case sets
+one. In the parent, `run_per_environment` returns `None` once every child
 passes; in a child it returns that group's cases in their original order, and the
 test checks them. Cases that share variables therefore share one child and one
 fixture parse, so don't spawn a child per case yourself. A case that needs a fresh
 process for other state, such as a process-wide counter or files created per
-case, keeps its own child. Use `TestProcess::case(id)` to select that case.
+case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set a
+child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
+variables each platform reads, never `TMPDIR` alone.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
@@ -479,6 +482,13 @@ children and environment-group children of that test. Case children do not run
 groups, and group children do not run individually selected cases.
 Use case identifiers for suite roles and nested stages; keep fixture data separate
 from selection, and call `env_clear()` before `case(id)` when clearing is needed.
+
+A test that denies access through mode bits calls
+`maestro_test_directory::deny(path, mode)` and skips the denial when it returns
+`None`: a privileged run, such as root in a container, is not refused. Package
+tests that reach the offline flag run in the package suite's `case_in_child`,
+which starts every case online and gives it its own temporary directory, so the
+flag in the developer's shell never reaches them.
 
 Credential tests acquire `SERIAL` before `PROCESS_CREATION` when both are needed.
 Configure the builder first, hold the creation guard only around checked `spawn`,

@@ -377,6 +377,9 @@ fn missing_callback_admission_waits_before_next_source() {
 }
 #[test]
 fn missing_callback_borrow_ends_with_operation() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     configured_resolution_support::borrowed_callback();
 }
 

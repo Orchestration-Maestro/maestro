@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 /// A truecolor terminal, so theme loads without an explicit mode emit RGB.
 pub const TRUECOLOR: &[(&str, &str)] = &[("COLORTERM", "truecolor")];
 
-/// Run cases through [`maestro_test_process::run_per_environment`], retaining temporary
-/// directory variables unless explicitly supplied. Checked-child selection and
+/// Run cases through [`maestro_test_process::run_per_environment`], which keeps the
+/// temporary directory unless a case supplies one. Checked-child selection and
 /// instrumentation variables are also supplied. Return this child's cases, or `None`
 /// in the calling process once every child passed.
 ///
@@ -17,17 +17,10 @@ pub fn per_environment<C>(
     environment: impl Fn(&C) -> &[(&'static str, &'static str)],
 ) -> Option<Vec<C>> {
     maestro_test_process::run_per_environment(test, cases, |case| {
-        let mut env: BTreeMap<String, String> = environment(case)
+        environment(case)
             .iter()
             .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
-            .collect();
-        // The temporary root stays, so a child can still create scratch directories.
-        for name in ["TMPDIR", "TMP", "TEMP"] {
-            if let Ok(value) = std::env::var(name) {
-                env.entry(name.to_owned()).or_insert(value);
-            }
-        }
-        env
+            .collect::<BTreeMap<String, String>>()
     })
     .unwrap()
 }

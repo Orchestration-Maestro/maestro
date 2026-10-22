@@ -43,9 +43,7 @@ fn direct_spill_io_errors_are_returned() {
     let child = maestro_test_process::TestProcess::current("direct_spill_io_errors_are_returned")
         .unwrap()
         .env("MAESTRO_DIRECT_MISSING_TEMP", "1")
-        .env("TMPDIR", &missing)
-        .env("TMP", &missing)
-        .env("TEMP", &missing)
+        .temp_dir(&missing)
         .status()
         .unwrap();
     assert!(child.success());

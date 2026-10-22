@@ -64,7 +64,6 @@ fn setup(root: &Path, setup: Setup) {
 /// Every direct observation retains its ordered path identities.
 #[test]
 fn synchronous_walk_matches_native_filesystem_cases() {
-    use std::os::unix::fs::PermissionsExt;
     let inputs: Setup = serde_json::from_str(include_str!(
         "../../../tests/fixtures/glob_native_setup.json"
     ))
@@ -79,18 +78,18 @@ fn synchronous_walk_matches_native_filesystem_cases() {
     setup(&scene.0, inputs);
     let base = scene.0.to_string_lossy();
     for row in rows {
-        if row.case == "denied_read" {
-            fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o0)).unwrap();
-            assert!(fs::read_dir(scene.0.join("denied")).is_err());
+        let denied = (row.case == "denied_read")
+            .then(|| maestro_test_directory::deny(scene.0.join("denied"), 0o0).unwrap());
+        // A privileged run reads the denied directory anyway.
+        if matches!(denied, Some(None)) {
+            continue;
         }
         let actual = glob_sync(
             &row.pattern.replace("$SCENE", &base),
             &row.cwd.replace("$SCENE", &base),
         )
         .unwrap();
-        if row.case == "denied_read" {
-            fs::set_permissions(scene.0.join("denied"), fs::Permissions::from_mode(0o755)).unwrap();
-        }
+        drop(denied);
         let actual: Vec<_> = actual
             .iter()
             .map(|s| s.replace(base.as_ref(), "$SCENE"))

@@ -16,6 +16,9 @@ use worker_support::{Gates, driver, gated_npm_checks};
 
 #[test]
 fn updates_selected_unpinned_source_beside_pin() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, settings, effects, tree) =
         installed(&json!([]), &json!(["npm:example@1", "npm:example"]));
     let entries = settings.borrow().get_project_settings().0["packages"].clone();
@@ -94,6 +97,9 @@ fn update(
 
 #[test]
 fn empty_input_updates_all_configured_scopes_in_order() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for source in [None, Some("")] {
         let (manager, _, effects, tree) =
             configured(&json!(["npm:b", "npm:a", "npm:b"]), &json!(["npm:c"]));
@@ -135,6 +141,9 @@ fn empty_input_updates_all_configured_scopes_in_order() {
 
 #[test]
 fn named_updates_preserve_both_scopes_and_duplicate_registrations() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, settings, effects, tree) = configured(
         &json!(["npm:a@1", "npm:a", "npm:a"]),
         &json!(["npm:a@next", "npm:a"]),
@@ -170,6 +179,9 @@ fn named_updates_preserve_both_scopes_and_duplicate_registrations() {
 
 #[test]
 fn clone_transport_aliases_select_one_git_identity() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = installed(
         &json!(["git:github.com/acme/tool@main"]),
         &json!([
@@ -351,6 +363,9 @@ const SUGGESTIONS: &[(&str, &[&str], &str)] = &[
 
 #[test]
 fn unknown_versions_and_failed_lookups_trigger_updates() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (manifest, latest) in [
         (None, Ok("\"2\"")),
         (Some("{"), Ok("\"2\"")),
@@ -383,6 +398,9 @@ fn unknown_versions_and_failed_lookups_trigger_updates() {
 
 #[test]
 fn matching_version_strings_skip_only_current_candidates() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for (manifest, latest, changed) in [
         ("{\"version\":\"1\"}", "\"1\"", false),
         ("{\"version\":\" \"}", "\" \"", false),
@@ -413,6 +431,9 @@ fn matching_version_strings_skip_only_current_candidates() {
 #[test]
 fn scoped_batches_preserve_spec_order_and_grouped_progress() {
     use maestro_packages::{ProgressAction, ProgressEventType};
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, tree) = configured(
         &json!(["npm:z", "npm:a", "npm:z", "npm:b"]),
         &json!(["npm:z"]),
@@ -473,6 +494,9 @@ fn scoped_batches_preserve_spec_order_and_grouped_progress() {
 
 #[test]
 fn update_preserves_filtered_settings_and_live_command_selection() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let entry = json!({"source":"npm:a", "extensions":null, "unknown":{"retained":9}});
     let (manager, settings, effects, tree) = configured(&json!([]), &json!([entry]));
     let weak = Rc::downgrade(&settings);
@@ -560,6 +584,9 @@ fn relative(
 
 #[test]
 fn four_update_workers_preserve_order_across_independent_calls() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for count in [0, 1, 4, 7] {
         let sources: Vec<_> = (0..count).map(|i| format!("npm:p{i}")).collect();
         let (manager, _, effects, _tree) = installed(&json!([]), &json!(sources));
@@ -620,6 +647,9 @@ fn independent_calls() {
 #[test]
 fn update_progress_uses_live_callback_and_preserves_error_precedence() {
     use maestro_packages::ProgressEventType as Phase;
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for phase in [Phase::Start, Phase::Complete, Phase::Error] {
         let (manager, _, effects, _tree) = configured(&json!([]), &json!(["npm:a"]));
         let events = Rc::new(RefCell::new(Vec::new()));
@@ -696,6 +726,9 @@ fn replacement_callback(
 
 #[test]
 fn project_batch_preparation_keeps_existing_files() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     for existing in [false, true] {
         let scratch = scratch::Scratch::new().unwrap();
         let cwd = scratch.path().to_string_lossy().into_owned();
@@ -749,6 +782,9 @@ fn project_batch_preparation_keeps_existing_files() {
 
 #[test]
 fn runtime_admission_errors_keep_accepted_work() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = installed(&json!([]), &json!(["npm:a", "npm:b"]));
     effects.fail_spawn_at.set(Some(1));
     let (runtime, local) = driver(&effects);
@@ -792,6 +828,9 @@ fn runtime_admission_errors_keep_accepted_work() {
 
 #[test]
 fn npm_checks_finish_before_parallel_npm_and_git_groups() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = installed(
         &json!(["npm:p0", "npm:p1"]),
         &json!([
@@ -910,6 +949,9 @@ fn failed_execution(failure: &'static str) -> (Vec<String>, bool, bool) {
 
 #[test]
 fn first_update_error_keeps_siblings_claiming_work() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, _tree) = installed(
         &json!([
             "npm:p0", "npm:p1", "npm:p2", "npm:p3", "npm:p4", "npm:p5", "npm:p6"
@@ -952,6 +994,9 @@ fn first_update_error_keeps_siblings_claiming_work() {
 
 #[test]
 fn updates_release_manager_after_surviving_work_finishes() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (_, retained, released) = failed_execution("g0");
     assert!(
         retained,
@@ -965,11 +1010,12 @@ fn updates_release_manager_after_surviving_work_finishes() {
 
 /// Preparation errors emit grouped failure without executing the npm child.
 fn project_preparation_failure() {
-    use std::os::unix::fs::PermissionsExt;
     let (manager, _, effects, tree) = configured(&json!([]), &json!(["npm:z", "npm:a"]));
     let root = support::below(tree.path(), "/work/project/.maestro/npm");
     std::fs::create_dir_all(&root).unwrap();
-    std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let Some(restore) = maestro_test_directory::deny(&root, 0o555).unwrap() else {
+        return;
+    };
     let events = Rc::new(RefCell::new(Vec::new()));
     let observed = events.clone();
     manager.set_progress_callback(Some(Rc::new(move |event| {
@@ -977,7 +1023,7 @@ fn project_preparation_failure() {
         Ok(())
     })));
     let error = update(manager, &effects, None).unwrap_err();
-    std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+    drop(restore);
     assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
     assert!(effects.calls.borrow().is_empty());
     let events = events.borrow();
@@ -1055,6 +1101,9 @@ fn failing_group_hook(
 
 #[test]
 fn mixed_pinned_current_and_outdated_candidates_install_only_outdated() {
+    if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
+        return;
+    }
     let (manager, _, effects, tree) = installed(
         &json!([]),
         &json!(["npm:pinned@1", "npm:current", "npm:outdated"]),

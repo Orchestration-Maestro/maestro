@@ -6,9 +6,9 @@ use super::{resolution_support::output, scratch::Scratch, support};
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, rc::Rc};
 #[cfg(unix)]
-use std::{io, path::PathBuf};
+use std::io;
+use std::{collections::BTreeMap, rc::Rc};
 /// One recorded recipe and its independently observed output.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -43,12 +43,16 @@ pub async fn cases(names: &[&str]) {
             continue;
         }
         setup(case, &dir);
+        // A privileged run reads denied entries anyway, so such a case has nothing to check.
         #[cfg(unix)]
-        let _denied: Vec<_> = case
+        let Some(_denied) = case
             .denied
             .iter()
-            .map(|path| Denied::new(dir.path().join(path)))
-            .collect();
+            .map(|path| maestro_test_directory::deny(dir.path().join(path), 0o0).unwrap())
+            .collect::<Option<Vec<_>>>()
+        else {
+            continue;
+        };
         let base = dir.path().to_string_lossy().into_owned();
         let (_, settings, _) = support::manager(&json!({}));
         let effects = Rc::new(support::Effects::default());
@@ -105,34 +109,6 @@ fn setup(case: &Recipe, dir: &Scratch) {
     }
     #[cfg(not(unix))]
     assert!(case.links.is_empty());
-}
-
-/// Restores a native permission fixture before its directory is dropped.
-#[cfg(unix)]
-pub struct Denied(PathBuf);
-#[cfg(unix)]
-impl Denied {
-    /// Removes all access to a file or directory and independently observes the native
-    /// failure.
-    pub fn new(path: PathBuf) -> Self {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o0)).unwrap();
-        let guard = Self(path);
-        let error = if guard.0.is_dir() {
-            std::fs::read_dir(&guard.0).err()
-        } else {
-            std::fs::read(&guard.0).err()
-        };
-        assert_eq!(error.unwrap().kind(), io::ErrorKind::PermissionDenied);
-        guard
-    }
-}
-#[cfg(unix)]
-impl Drop for Denied {
-    fn drop(&mut self) {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&self.0, std::fs::Permissions::from_mode(0o755)).unwrap();
-    }
 }
 
 /// Only user npm lookup consumes the already-owned root command.

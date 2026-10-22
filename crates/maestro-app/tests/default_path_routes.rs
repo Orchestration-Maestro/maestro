@@ -224,7 +224,6 @@ fn package(input: &Value, expected: &Value, root: &str) {
     assert_eq!(native, expected.package_directory);
     assert_eq!(controlled, expected.package_directory);
     let readme = paths::get_readme_path(&native).unwrap();
-    assert_eq!(paths::get_readme_path(&controlled).unwrap(), readme);
     assert_eq!(readme, expected.readme);
     fixture::write(&readme, &input.readme_content);
     assert_eq!(

@@ -304,8 +304,12 @@ pub fn run(name: &str) {
         operation();
         return;
     }
+    // A privileged run ignores the cases' modes, so those cases have nothing to check.
+    let denials = crate::native::denials();
     for case in cases::<Input, Expected>(name) {
-        replay(name, case);
+        if denials || (case.input.permissions.is_empty() && case.input.unreadable.is_empty()) {
+            replay(name, case);
+        }
     }
 }
 

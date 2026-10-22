@@ -374,9 +374,7 @@ fn bash_artifact_creation_failure_is_reported() {
         .unwrap()
         .nocapture()
         .case("*")
-        .env("TMPDIR", &missing)
-        .env("TMP", &missing)
-        .env("TEMP", &missing)
+        .temp_dir(&missing)
         .output()
         .unwrap();
         assert!(output.status.success());

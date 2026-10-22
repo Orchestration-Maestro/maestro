@@ -598,7 +598,10 @@ its cursor at zero, so earlier bytes cannot prove that the selected test started
 to a caller-owned invoker without claiming startup. Such callers observe the
 one-test prologue through their own transport, followed by product readiness and
 completion. `output_with` uses this same selection operation and additionally
-checks its returned output's prologue.
+checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
+variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
+`TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
+temporary directory unless its case sets one.
 
 ### Test directory owner
 
@@ -626,9 +629,13 @@ reading the working directory fails with `NotFound`. `enter_unreadable(name)`
 enters a directory deeper than the kernel path limit below `name` and takes read
 permission from `name`, so reading the working directory fails with
 `PermissionDenied` while relative paths still work; it returns the guard that
-restores `name`. Both change process-wide state, so only a process that runs one
-test calls them. The leaf owns no caller policy, process launcher, timer, retry
-limit or ownership-transfer API.
+restores `name`, or `None` when the process still reads it. Both change
+process-wide state, so only a process that runs one test calls them.
+`deny(path, mode)` sets a Unix mode and checks that the process is now refused
+what the mode takes from the owner. It returns the guard that restores the earlier
+permissions, or `None`, with them already restored, when the process is not
+refused, as in a privileged run; callers then skip the denial. The leaf owns no
+caller policy, process launcher, timer, retry limit or ownership-transfer API.
 
 ### Test tracing owner
 
