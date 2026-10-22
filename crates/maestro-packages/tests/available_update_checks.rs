@@ -27,7 +27,7 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
     let scratch = scratch::Scratch::new().unwrap();
     let cwd = scratch.path().to_string_lossy().into_owned();
     native_support::write(
-        &format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
+        format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
         "{\"version\":\"1\"}",
     );
     let native_settings = Rc::new(RefCell::new(

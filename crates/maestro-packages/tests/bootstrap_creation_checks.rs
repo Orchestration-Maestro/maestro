@@ -29,20 +29,22 @@ fn texts() -> BootstrapFiles {
 /// Installs one deterministic extension fixture into a package directory.
 fn extension(base: &str) -> String {
     native_support::write(
-        &format!("{base}/package.json"),
+        native_support::under(base, "package.json"),
         "{\"maestro\":{\"extensions\":[\"entry.ts\"]}}",
     );
-    let entry = format!("{base}/entry.ts");
+    let entry = native_support::under(base, "entry.ts");
     native_support::write(&entry, "export default () => {};\n");
-    entry
+    entry.to_string_lossy().into_owned()
 }
 /// Installs one deterministic extension fixture from an npm child invocation.
 fn install_resource(call: &sandbox::Call) -> String {
-    extension(&format!(
-        "{}/node_modules/{}",
-        call.args.last().unwrap(),
-        call.args[1]
-    ))
+    extension(
+        &native_support::under(
+            call.args.last().unwrap(),
+            &format!("node_modules/{}", call.args[1]),
+        )
+        .to_string_lossy(),
+    )
 }
 /// Checks the resource and provenance returned by one public resolution.
 fn resolve_source(fixture: &Fixture, source: &str, scope: SourceScope) -> io::Result<String> {
@@ -75,10 +77,9 @@ fn npm_bootstrap_files(
     let fixture = Fixture::new(&serde_json::json!({}));
     let root = match scope {
         SourceScope::Project => fixture.project(".maestro/npm"),
-        _ => format!(
-            "{}/maestro-extensions/npm/f35b2129",
-            std::env::temp_dir().to_str().unwrap()
-        ),
+        _ => native_support::under(std::env::temp_dir(), "maestro-extensions/npm/f35b2129")
+            .to_string_lossy()
+            .into_owned(),
     };
     if existing_root {
         std::fs::create_dir_all(&root).unwrap();
@@ -91,16 +92,19 @@ fn npm_bootstrap_files(
             install_resource(call);
         }));
     let entry = resolve_source(&fixture, "npm:fresh", scope).unwrap();
-    assert_eq!(entry, format!("{root}/node_modules/fresh/entry.ts"));
+    assert_eq!(
+        std::path::Path::new(&entry),
+        native_support::under(&root, "node_modules/fresh/entry.ts")
+    );
     if scope == SourceScope::Temporary {
-        assert!(std::path::Path::new(&root).starts_with(tree), "{root}");
+        assert!(native_support::under(&root, "").starts_with(tree), "{root}");
     }
     assert_eq!(
-        sandbox::read(&format!("{root}/.gitignore")),
+        sandbox::read(native_support::under(&root, ".gitignore")),
         expected.gitignore
     );
     assert_eq!(
-        sandbox::read(&format!("{root}/package.json")),
+        sandbox::read(native_support::under(&root, "package.json")),
         expected.package_json
     );
 }
@@ -135,12 +139,15 @@ fn resolution_creates_exact_bootstrap_files() {
                 extension(call.args.last().unwrap());
             }));
         let entry = resolve_source(&fixture, "https://github.com/team/repo", scope).unwrap();
-        assert_eq!(entry, format!("{root}/github.com/team/repo/entry.ts"));
         assert_eq!(
-            sandbox::read(&format!("{root}/.gitignore")),
+            std::path::Path::new(&entry),
+            native_support::under(&root, "github.com/team/repo/entry.ts")
+        );
+        assert_eq!(
+            sandbox::read(native_support::under(&root, ".gitignore")),
             expected.gitignore
         );
-        assert!(!std::path::Path::new(&format!("{root}/package.json")).exists());
+        assert!(!native_support::under(&root, "package.json").exists());
     }
 }
 
@@ -232,7 +239,9 @@ fn resolution_preserves_existing_bootstrap_entries() {
         for kind in entries() {
             let fixture = Fixture::new(&serde_json::json!({}));
             let root = fixture.project(".maestro/npm");
-            let selected = format!("{root}/{filename}");
+            let selected = native_support::under(&root, filename)
+                .to_string_lossy()
+                .into_owned();
             let original = occupied(&selected, kind);
             fixture
                 .script
@@ -242,14 +251,17 @@ fn resolution_preserves_existing_bootstrap_entries() {
                     install_resource(call);
                 }));
             let entry = resolve_source(&fixture, "npm:preserved", SourceScope::Project).unwrap();
-            assert_eq!(entry, format!("{root}/node_modules/preserved/entry.ts"));
+            assert_eq!(
+                std::path::Path::new(&entry),
+                native_support::under(&root, "node_modules/preserved/entry.ts")
+            );
             preserved(&selected, kind, &original);
             let (sibling, text) = if filename == ".gitignore" {
                 ("package.json", &expected.package_json)
             } else {
                 (".gitignore", &expected.gitignore)
             };
-            assert_eq!(sandbox::read(&format!("{root}/{sibling}")), *text);
+            assert_eq!(sandbox::read(native_support::under(&root, sibling)), *text);
         }
     }
     let fixture = Fixture::new(&serde_json::json!({}));
@@ -291,7 +303,7 @@ fn failing_resolution(boundary: Boundary) {
     let Some(restore) = maestro_test_directory::deny(&locked, 0o555).unwrap() else {
         return;
     };
-    let expected = std::fs::create_dir(format!("{locked}/probe")).unwrap_err();
+    let expected = std::fs::create_dir(native_support::under(&locked, "probe")).unwrap_err();
     let error = resolve_source(&fixture, "npm:failure", SourceScope::Project).unwrap_err();
     drop(restore);
     assert_eq!(error.raw_os_error(), expected.raw_os_error());
@@ -318,7 +330,7 @@ fn resolution_propagates_original_bootstrap_failures() {
     let fixture = Fixture::new(&serde_json::json!({"npmCommand":[""]}));
     let root = fixture.project(".maestro/npm");
     native_support::write(&root, "root is a file");
-    let expected = std::fs::write(format!("{root}/.gitignore"), "probe").unwrap_err();
+    let expected = std::fs::write(native_support::under(&root, ".gitignore"), "probe").unwrap_err();
     assert!(expected.raw_os_error().is_some());
     let error = resolve_source(&fixture, "npm:failure", SourceScope::Project).unwrap_err();
     assert_eq!(error.raw_os_error(), expected.raw_os_error());

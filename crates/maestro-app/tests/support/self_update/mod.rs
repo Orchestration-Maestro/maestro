@@ -337,7 +337,9 @@ pub fn run(fixture: &str, compose_root: bool) {
     }
 }
 
-/// Assert the owned record only after destroying every selection input.
+/// Assert the owned record only after destroying every selection input; the recorded install
+/// trees of these cases are POSIX, so the row runs everywhere but Windows.
+#[cfg(not(windows))]
 pub fn run_owned(fixture: &str) {
     if maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap() {
         return;
