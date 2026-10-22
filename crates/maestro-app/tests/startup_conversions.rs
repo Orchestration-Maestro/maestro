@@ -5,7 +5,7 @@
 use crate::child;
 #[cfg(unix)]
 #[path = "support/startup.rs"]
-pub mod startup;
+mod startup;
 
 #[test]
 #[cfg(unix)]

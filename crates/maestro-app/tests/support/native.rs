@@ -36,3 +36,12 @@ pub fn install_executable(source: &Path, target: &Path) {
         .expect("install starts");
     assert!(status.success(), "install failed");
 }
+
+#[cfg(unix)]
+/// Whether this process is refused access that a mode takes away; a privileged run is not.
+pub fn denials() -> bool {
+    let probe = maestro_test_directory::Scratch::new().unwrap();
+    maestro_test_directory::deny(probe.path(), 0o0)
+        .unwrap()
+        .is_some()
+}
