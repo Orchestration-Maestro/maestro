@@ -1302,8 +1302,8 @@ fn grouped_cleanup_keeps_drive_observation_policy() {
         maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
     let fixture = Fixture::over(settings, Some(&format!("{letter}:{relative}")), false);
     let git = format!("{root}/project/.maestro/git/github.com");
-    native_support::write(&format!("{git}/user/repo/file"), "x");
-    native_support::write(&format!("{git}/other/keep"), "x");
+    native_support::write(format!("{git}/user/repo/file"), "x");
+    native_support::write(format!("{git}/other/keep"), "x");
     block_on(
         fixture
             .manager
