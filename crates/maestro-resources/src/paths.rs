@@ -81,8 +81,7 @@ pub fn expand_tilde_text(
 /// absolute result and resolve any other result against `cwd`.
 ///
 /// # Errors
-/// Returns the error of `home` when the path needs the home directory, or the working-directory
-/// error of a resolution that needed it.
+/// Returns the working-directory error of a resolution that needed it.
 pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
     let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
