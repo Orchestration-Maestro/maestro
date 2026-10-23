@@ -24,7 +24,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [
       {
         "type": "queue_update",
@@ -63,7 +62,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [],
     "errorEvents": []
@@ -94,7 +92,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [
       {
         "type": "queue_update",
@@ -162,7 +159,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [
       {
         "type": "queue_update",

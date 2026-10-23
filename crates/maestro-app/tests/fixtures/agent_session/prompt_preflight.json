@@ -44,33 +44,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "first",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -122,47 +95,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "timestamp": 1792696429492
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -207,7 +140,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [
       {
@@ -261,37 +193,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "transformed original"
-              },
-              {
-                "type": "image",
-                "mimeType": "image/png"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -351,52 +252,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "transformed original"
-              },
-              {
-                "type": "image",
-                "data": "AAAA",
-                "mimeType": "image/png"
-              }
-            ],
-            "timestamp": 1792696429617
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -453,33 +309,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>\n\nplease look at main.rs"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -531,47 +360,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>\n\nplease look at main.rs"
-              }
-            ],
-            "timestamp": 1792696429624
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -628,33 +417,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -706,47 +468,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>"
-              }
-            ],
-            "timestamp": 1792696429626
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -803,33 +525,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "/skill:unknown keep me"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -881,47 +576,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "/skill:unknown keep me"
-              }
-            ],
-            "timestamp": 1792696429640
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -978,33 +633,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "/skill:gone keep me"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -1056,47 +684,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "/skill:gone keep me"
-              }
-            ],
-            "timestamp": 1792696429641
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -1116,8 +704,7 @@
     "errorEvents": [
       {
         "extensionPath": "$ROOT/project/skills/review/missing.md",
-        "event": "skill_expansion",
-        "error": "ENOENT: no such file or directory, open '$ROOT/project/skills/review/missing.md'"
+        "event": "skill_expansion"
       }
     ],
     "contexts": {
@@ -1159,33 +746,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "Plan for alpha with beta"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -1237,47 +797,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "Plan for alpha with beta"
-              }
-            ],
-            "timestamp": 1792696429642
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -1338,33 +858,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "first",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -1416,47 +909,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "timestamp": 1792696429642
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -1505,13 +958,6 @@
         }
       }
     ],
-    "queue": {
-      "steering": [],
-      "followUp": [],
-      "pendingMessageCount": 0,
-      "isStreaming": false,
-      "systemPrompt": "$BASE"
-    },
     "messages": [
       {
         "role": "user",
@@ -1546,58 +992,6 @@
         "text": "second",
         "stopReason": "stop",
         "errorMessage": null
-      }
-    ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "first",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      },
-      {
-        "type": "message",
-        "id": "e2",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "later"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e3",
-        "message": {
-          "role": "assistant",
-          "text": "second",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
       }
     ],
     "sessionEvents": [
@@ -1658,11 +1052,6 @@
         }
       },
       {
-        "type": "queue_update",
-        "steering": [],
-        "followUp": []
-      },
-      {
         "type": "message_start",
         "message": {
           "role": "user",
@@ -1709,85 +1098,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "timestamp": 1792696429763
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          },
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "later"
-              }
-            ],
-            "timestamp": 1792696429769
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "second"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -1836,13 +1147,6 @@
         }
       }
     ],
-    "queue": {
-      "steering": [],
-      "followUp": [],
-      "pendingMessageCount": 0,
-      "isStreaming": false,
-      "systemPrompt": "$BASE"
-    },
     "messages": [
       {
         "role": "user",
@@ -1881,62 +1185,6 @@
         "text": "second",
         "stopReason": "stop",
         "errorMessage": null
-      }
-    ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "first",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      },
-      {
-        "type": "message",
-        "id": "e2",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "look"
-              },
-              {
-                "type": "image",
-                "mimeType": "image/png"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e3",
-        "message": {
-          "role": "assistant",
-          "text": "second",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
       }
     ],
     "sessionEvents": [
@@ -1997,11 +1245,6 @@
         }
       },
       {
-        "type": "queue_update",
-        "steering": [],
-        "followUp": []
-      },
-      {
         "type": "message_start",
         "message": {
           "role": "user",
@@ -2056,90 +1299,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "timestamp": 1792696429924
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          },
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "look"
-              },
-              {
-                "type": "image",
-                "data": "AAAA",
-                "mimeType": "image/png"
-              }
-            ],
-            "timestamp": 1792696429930
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "second"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -2229,57 +1389,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "question"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "custom_message",
-        "id": "e1",
-        "customType": "note",
-        "content": {
-          "text": "next turn"
-        },
-        "display": true,
-        "details": {
-          "a": 1
-        }
-      },
-      {
-        "type": "custom_message",
-        "id": "e2",
-        "customType": "aside",
-        "content": {
-          "text": "hook text"
-        },
-        "display": true,
-        "details": {
-          "from": "hook"
-        }
-      },
-      {
-        "type": "message",
-        "id": "e3",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -2387,67 +1496,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "question"
-              }
-            ],
-            "timestamp": 1792696430157
-          },
-          {
-            "role": "custom",
-            "customType": "note",
-            "content": "next turn",
-            "display": true,
-            "details": {
-              "a": 1
-            },
-            "timestamp": 1792696430157
-          },
-          {
-            "role": "custom",
-            "customType": "aside",
-            "content": "hook text",
-            "display": true,
-            "details": {
-              "from": "hook"
-            },
-            "timestamp": 1792696430157
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -2534,58 +1583,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "replace"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "first",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      },
-      {
-        "type": "message",
-        "id": "e2",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "plain"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e3",
-        "message": {
-          "role": "assistant",
-          "text": "second",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -2637,47 +1634,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "replace"
-              }
-            ],
-            "timestamp": 1792696430158
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       },
       {
         "type": "agent_start"
@@ -2729,47 +1686,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "plain"
-              }
-            ],
-            "timestamp": 1792696430158
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "second"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -2824,7 +1741,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [
       {
@@ -2880,33 +1796,6 @@
         "errorMessage": null
       }
     ],
-    "entries": [
-      {
-        "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "hi"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "reply",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      }
-    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -2958,47 +1847,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "hi"
-              }
-            ],
-            "timestamp": 1792696430175
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "reply"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [
@@ -3049,7 +1898,6 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
-    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [],
     "errorEvents": [
@@ -3160,32 +2008,6 @@
     "entries": [
       {
         "type": "message",
-        "id": "e0",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e1",
-        "message": {
-          "role": "assistant",
-          "text": "first",
-          "stopReason": "stop",
-          "errorMessage": null
-        }
-      },
-      {
-        "type": "message",
-        "id": "e2",
         "message": {
           "role": "bashExecution",
           "command": "echo waiting",
@@ -3195,31 +2017,6 @@
           "truncated": false,
           "fullOutputPath": null,
           "excludeFromContext": null
-        }
-      },
-      {
-        "type": "message",
-        "id": "e3",
-        "message": {
-          "role": "user",
-          "content": {
-            "blocks": [
-              {
-                "type": "text",
-                "text": "second"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "type": "message",
-        "id": "e4",
-        "message": {
-          "role": "assistant",
-          "text": "second",
-          "stopReason": "stop",
-          "errorMessage": null
         }
       }
     ],
@@ -3274,47 +2071,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "timestamp": 1792696430176
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "first"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       },
       {
         "type": "agent_start"
@@ -3366,47 +2123,7 @@
         }
       },
       {
-        "type": "agent_end",
-        "messages": [
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "text",
-                "text": "second"
-              }
-            ],
-            "timestamp": 1792696430337
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "second"
-              }
-            ],
-            "api": "faux",
-            "provider": "faux",
-            "model": "plain",
-            "usage": {
-              "input": 1,
-              "output": 1,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "totalTokens": 2,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "timestamp": 1
-          }
-        ]
+        "type": "agent_end"
       }
     ],
     "extensionEvents": [

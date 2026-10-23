@@ -44,17 +44,17 @@ fn user_delivery(deliver_as: Option<UserMessageDelivery>) -> SendUserMessageOpti
     SendUserMessageOptions { deliver_as }
 }
 
-/// Asserts the transcript, the final queue and the queue updates against `case`; the turn
-/// messages are stored by the agent-event persistence, which also removes delivered texts
-/// from the mirrors, so only the session's own first announcements are compared.
+/// Asserts the transcript, the queue updates and, when nothing was queued, the final queue
+/// against `case`; the turn messages are stored by the agent-event persistence, which also
+/// removes delivered texts from the mirrors, so the recording keeps only the session's own
+/// first announcements.
 fn assert_message_case(h: &Harness, t: &Transcript, case: &Value) {
     assert_transcript(h, t, case);
     let updates = t.events_of(&["queue_update"]);
     let recorded = of_kinds(case["sessionEvents"].as_array().unwrap(), &["queue_update"]);
-    assert_eq!(updates, recorded[..updates.len()]);
+    assert_eq!(updates, recorded);
     if updates.is_empty() {
         assert_eq!(queue_view(h, t), case["queue"]);
-        assert_eq!(recorded, Vec::<Value>::new());
     }
 }
 
