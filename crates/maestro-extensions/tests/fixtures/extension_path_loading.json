@@ -3429,5 +3429,116 @@
       ],
       "received": []
     }
+  },
+  {
+    "id": "load_tilde_unicode_space_keeps_written_name",
+    "tree": [
+      [
+        "file",
+        "home/p\u00a0q.ts",
+        "command:written"
+      ],
+      [
+        "file",
+        "home/p q.ts",
+        "command:decoy"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "~/p\u00a0q.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "~/p\u00a0q.ts",
+              "resolvedPath": "$ROOT/home/p\u00a0q.ts",
+              "sourceInfo": {
+                "path": "~/p\u00a0q.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "written"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
+  },
+  {
+    "id": "discover_configured_tilde_unicode_space_keeps_written_name",
+    "tree": [
+      [
+        "file",
+        "home/p\u00a0q.ts",
+        "command:written"
+      ],
+      [
+        "file",
+        "home/p q.ts",
+        "command:decoy"
+      ]
+    ],
+    "calls": [
+      {
+        "op": "discover",
+        "configured": [
+          "~/p\u00a0q.ts"
+        ],
+        "cwd": "$ROOT/work",
+        "agentDir": "$ROOT/agent",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [
+            {
+              "path": "$ROOT/home/p\u00a0q.ts",
+              "resolvedPath": "$ROOT/home/p\u00a0q.ts",
+              "sourceInfo": {
+                "path": "$ROOT/home/p\u00a0q.ts",
+                "source": "local",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": "$ROOT/home"
+              },
+              "commands": [
+                "written"
+              ],
+              "flags": [],
+              "tools": [],
+              "handlers": [],
+              "messageRenderers": [],
+              "shortcuts": []
+            }
+          ],
+          "errors": [],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
   }
 ]

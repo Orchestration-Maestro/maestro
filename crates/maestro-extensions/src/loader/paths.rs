@@ -5,7 +5,7 @@ use crate::{
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
 use maestro_resources::paths::{home_directory, resolve};
-use maestro_tools::path_utils::{normalize_unicode_spaces, resolve_existing_spelling};
+use maestro_tools::path_utils::resolve_existing_spelling;
 use std::io;
 
 /// Joins the rest of a leading `~` below the home directory through `home`, then keeps an
@@ -22,10 +22,12 @@ fn anchor_path(
     resolve(&[cwd, &expanded])
 }
 
-/// Replace the Unicode spaces of a `~` path, then join its rest below the home directory.
+/// Join the rest of a leading `~` below the home directory through `home`.
 ///
 /// The rest is always joined, an empty one included, so a home spelling that ends in `/` or `/.`
-/// is normalized. Any other path is returned as written without reading the home directory.
+/// is normalized. Characters stay as written, so the selector still sees the written candidate
+/// before it falls back to the space-replaced one. Any other path is returned as written without
+/// reading the home directory.
 fn expand_extension_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
@@ -33,7 +35,6 @@ fn expand_extension_path(
     if !path.starts_with('~') {
         return Ok(path.to_owned());
     }
-    let path = normalize_unicode_spaces(path);
     let rest = path.strip_prefix('~').unwrap_or_default();
     let rest = rest.strip_prefix('/').unwrap_or(rest);
     Ok(maestro_path::join(&[&home()?, rest]))

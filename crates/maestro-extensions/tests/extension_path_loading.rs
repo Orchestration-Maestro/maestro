@@ -193,3 +193,14 @@ fn existing_files_keep_their_real_spelling() {
         "discover_unicode_space_in_discovered_name",
     ]);
 }
+
+#[test]
+fn tilde_paths_keep_the_written_file_name() {
+    check_with_home(
+        "tilde_paths_keep_the_written_file_name",
+        &[
+            "load_tilde_unicode_space_keeps_written_name",
+            "discover_configured_tilde_unicode_space_keeps_written_name",
+        ],
+    );
+}
