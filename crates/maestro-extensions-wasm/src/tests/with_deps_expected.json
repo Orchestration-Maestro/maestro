@@ -1,0 +1,981 @@
+{
+  "metadata": {
+    "name": "parse_duration",
+    "label": "Parse Duration",
+    "description": "Parse a human-readable duration string (e.g., '2 days', '1h', '5m') to milliseconds",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "duration"
+      ],
+      "properties": {
+        "duration": {
+          "type": "string",
+          "description": "Duration string like '2 days', '1h', '5m'"
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "group": "authored",
+      "duration": "2 days",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 days = 172800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "authored",
+      "duration": "1h",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1h = 3600000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "authored",
+      "duration": "5m",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5m = 300000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 milliseconds",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 milliseconds = 2 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 millisecond",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 millisecond = 2 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 msecs",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 msecs = 2 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 msec",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 msec = 2 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 ms = 2 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 seconds",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 seconds = 2000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 second",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 second = 2000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 secs",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 secs = 2000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 sec",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 sec = 2000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 s",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 s = 2000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 minutes",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 minutes = 120000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 minute",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 minute = 120000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 mins",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 mins = 120000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 min",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 min = 120000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 m",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 m = 120000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 hours",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 hours = 7200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 hour",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 hour = 7200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 hrs",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 hrs = 7200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 hr",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 hr = 7200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 h",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 h = 7200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "3 days",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 days = 259200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 day",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 day = 172800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 d",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 d = 172800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 weeks",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 weeks = 1209600000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 week",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 week = 1209600000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 w",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 w = 1209600000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 years",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 years = 63115200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 year",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 year = 63115200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 yrs",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 yrs = 63115200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 yr",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 yr = 63115200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "unit_aliases",
+      "duration": "2 y",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 y = 63115200000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "0ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "0ms = 0 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "-0ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "-0ms = 0 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "1.5s",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1.5s = 1500 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "-1.5s",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "-1.5s = -1500 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": ".5h",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": ".5h = 1800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "-.5h",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "-.5h = -1800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "1",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 = 1 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "1 ",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1  = 1 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "2  days",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2  days = 172800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "2 DAYS",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 DAYS = 172800000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "0.0000001ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "0.0000001ms = 1e-7 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "0.0000000000001ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "0.0000000000001ms = 1e-13 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "0.000001ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "0.000001ms = 0.000001 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "0.000001s",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "0.000001s = 0.001 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "123456789012345678901ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "123456789012345678901ms = 123456789012345680000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 = 1e+99 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 = 1e+100 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+      "outcome": "error",
+      "error": "Invalid duration: \"99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999\""
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "1000000000000000000000ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1000000000000000000000ms = 1e+21 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "numeric_boundaries",
+      "duration": "-0.0000000000001ms",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "-0.0000000000001ms = -1e-13 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "",
+      "outcome": "error",
+      "error": "val is not a non-empty string or a valid number. val=\"\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": " ",
+      "outcome": "error",
+      "error": "Invalid duration: \" \""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "abc",
+      "outcome": "error",
+      "error": "Invalid duration: \"abc\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1fortnight",
+      "outcome": "error",
+      "error": "Invalid duration: \"1fortnight\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1mth",
+      "outcome": "error",
+      "error": "Invalid duration: \"1mth\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "+1h",
+      "outcome": "error",
+      "error": "Invalid duration: \"+1h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "--1h",
+      "outcome": "error",
+      "error": "Invalid duration: \"--1h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1e3ms",
+      "outcome": "error",
+      "error": "Invalid duration: \"1e3ms\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1.h",
+      "outcome": "error",
+      "error": "Invalid duration: \"1.h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1..5s",
+      "outcome": "error",
+      "error": "Invalid duration: \"1..5s\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": " 1h",
+      "outcome": "error",
+      "error": "Invalid duration: \" 1h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h ",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h \""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1\th",
+      "outcome": "error",
+      "error": "Invalid duration: \"1\th\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1\nh",
+      "outcome": "error",
+      "error": "Invalid duration: \"1\nh\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1\u00a0h",
+      "outcome": "error",
+      "error": "Invalid duration: \"1\u00a0h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1\ufeffh",
+      "outcome": "error",
+      "error": "Invalid duration: \"1\ufeffh\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1\u0085h",
+      "outcome": "error",
+      "error": "Invalid duration: \"1\u0085h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h\n",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h\n\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h\r",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h\r\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h\r\n",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h\r\n\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h\u2028",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h\u2028\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h\u2029",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h\u2029\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "2 wee\u212as",
+      "outcome": "error",
+      "error": "Invalid duration: \"2 wee\u212as\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "2 \u017f",
+      "outcome": "error",
+      "error": "Invalid duration: \"2 \u017f\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "\uff11h",
+      "outcome": "error",
+      "error": "Invalid duration: \"\uff11h\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h30m",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h30m\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1 h 30 m",
+      "outcome": "error",
+      "error": "Invalid duration: \"1 h 30 m\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1 month",
+      "outcome": "error",
+      "error": "Invalid duration: \"1 month\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1\u00b5s",
+      "outcome": "error",
+      "error": "Invalid duration: \"1\u00b5s\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1ns",
+      "outcome": "error",
+      "error": "Invalid duration: \"1ns\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1us",
+      "outcome": "error",
+      "error": "Invalid duration: \"1us\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1h, 30m",
+      "outcome": "error",
+      "error": "Invalid duration: \"1h, 30m\""
+    },
+    {
+      "group": "rejection_or_native_extension",
+      "duration": "1 hour ago",
+      "outcome": "error",
+      "error": "Invalid duration: \"1 hour ago\""
+    },
+    {
+      "group": "unused_member",
+      "duration": "3s",
+      "outcome": "ok",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3s = 3000 milliseconds"
+          }
+        ],
+        "details": {}
+      }
+    }
+  ]
+}

@@ -1193,7 +1193,7 @@ fn standalone_inputs(source: &Path, package: &Path) {
 }
 
 /// The shipped examples and their index page, as authors write them.
-fn shipped_examples() -> [(&'static str, &'static str); 4] {
+fn shipped_examples() -> [(&'static str, &'static str); 5] {
     [
         (
             "examples/extensions/hello.rs",
@@ -1206,6 +1206,10 @@ fn shipped_examples() -> [(&'static str, &'static str); 4] {
         (
             "examples/extensions/prompt_customizer.rs",
             include_str!("../../../examples/extensions/prompt_customizer.rs"),
+        ),
+        (
+            "examples/extensions/with-deps/main.rs",
+            include_str!("../../../examples/extensions/with-deps/main.rs"),
         ),
         (
             "examples/extensions/README.md",
