@@ -4,4 +4,4 @@ pub use maestro_settings::{
     DoubleEscapeAction, MessageDeliveryMode, TransportSetting, TreeFilterMode, WarningSettings,
 };
 
-pub use maestro_settings::{PackageSource, SettingsListEntry, SettingsManager};
+pub use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};

@@ -120,9 +120,5 @@ fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<
 }
 /// Bind the live nonempty home observation only when formatting a path.
 fn shorten_path(path: &str, runtime: &dyn TuiRuntime) -> String {
-    let home = runtime
-        .environment("HOME")
-        .filter(|s| !s.is_empty())
-        .or_else(|| runtime.environment("USERPROFILE").filter(|s| !s.is_empty()));
-    super::super::shorten_home_path(path, home.as_deref())
+    super::super::shorten_path_with_home(path, &|variable| runtime.environment(variable))
 }

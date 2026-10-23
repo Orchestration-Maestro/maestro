@@ -16,6 +16,8 @@ pub use maestro_models::{
 /// Agent reasoning levels, including disabled reasoning.
 pub use maestro_agent::ThinkingLevel;
 
+pub use maestro_models::{Local, Threaded};
+
 pub use maestro_models::Transport;
 
 pub use maestro_catalog::{
