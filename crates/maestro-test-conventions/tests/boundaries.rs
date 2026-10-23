@@ -1414,3 +1414,39 @@ fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
         "{detail}"
     );
 }
+
+#[test]
+fn cli_configuration_wrapper_does_not_own_chat_widgets() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-cli"]);
+    source(
+        &workspace,
+        "maestro-chat",
+        "src/components/mod.rs",
+        "mod config_selector;",
+    );
+    source(
+        &workspace,
+        "maestro-cli",
+        "src/input/mod.rs",
+        "mod config_selector;",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (path, contents) in [
+        (
+            "src/input/config_selector.rs",
+            "pub struct ConfigSelectorComponent;",
+        ),
+        ("src/other/mod.rs", "mod config_selector;"),
+        ("src/input/session_picker.rs", "mod config_selector;"),
+    ] {
+        source(&workspace, "maestro-cli", path, contents);
+        assert!(
+            check_workspace(workspace.root.path())
+                .unwrap_err()
+                .contains("belongs to maestro-chat"),
+            "{path}"
+        );
+        source(&workspace, "maestro-cli", path, "");
+    }
+}

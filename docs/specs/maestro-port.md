@@ -371,6 +371,12 @@ from the optional foundation utility described below.
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
+`maestro-cli` is a command-line frontend, not an interactive view. Its `config_selector`
+module is only the wrapper that runs a chat-owned configuration view through a
+supplied presenter; every selector widget class stays chat-owned. The conventions
+check accepts that one module declaration at `src/input/mod.rs` and rejects widget
+declarations or the same module anywhere else in the crate.
+
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
 
 `maestro-cancellation` owns cooperative cancellation below layer 0, with no
@@ -601,7 +607,7 @@ native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
@@ -629,13 +635,14 @@ exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
-`maestro-catalog`, `maestro-chat`, `maestro-credentials`, `maestro-daemon`,
-`maestro-detection`, `maestro-export`, `maestro-extensions`, `maestro-ipc`,
-`maestro-listing`, `maestro-lock`, `maestro-models`, `maestro-packages`,
-`maestro-process`, `maestro-resources`, `maestro-session`, `maestro-settings`,
-`maestro-terminal`, `maestro-test-conventions`, `maestro-test-process`,
-`maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`,
-`maestro-tui-crossterm`, `maestro-watch` and `maestro-workspace`; a caller
+`maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
+`maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
+`maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
+`maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-session`,
+`maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
+`maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
+`maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
+`maestro-workspace`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.

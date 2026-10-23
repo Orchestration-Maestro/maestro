@@ -229,6 +229,14 @@ fn selector(name: &str) -> bool {
     )
 }
 
+/// Recognize the command-line wrapper module that carries no widget declarations.
+fn cli_configuration_wrapper(member: &Member, source: &Source, name: &str, kind: &str) -> bool {
+    name == "config_selector"
+        && kind == "mod"
+        && member.name == "maestro-cli"
+        && source.path == member.directory.join("src/input/mod.rs")
+}
+
 /// Reject declarations outside their owning crate or duplicate tool contracts.
 fn check_declarations(
     member: &Member,
@@ -273,7 +281,8 @@ fn check_declarations(
             && kind == "type"
             && member.name == "maestro-extensions"
             && source.path == member.directory.join("src/types/registration.rs");
-        if member.name != owner && !guest_tool && !guest_metadata && !extension_tool {
+        let wrapper = cli_configuration_wrapper(member, source, name, kind);
+        if member.name != owner && !guest_tool && !guest_metadata && !extension_tool && !wrapper {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",
                 source.path.display(),
