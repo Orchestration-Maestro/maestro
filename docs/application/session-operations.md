@@ -41,7 +41,9 @@ compaction keeps agent events from the session until it ends.
 The getters read the supplied owners live: the agent state, model, thinking level,
 streaming flag and system prompt, the steering and follow-up modes, the session
 file, identity and name, the scoped models and the loaded prompt templates.
-`messages()` returns the agent's live history handle, not a copy.
+`messages()` returns the agent's live history handle, not a copy, and
+`resource_loader()` returns the loader the session was given, so a caller reads
+its skills, prompt templates, extensions and context files from the same object.
 
 `subscribe` adds a listener and returns the operation that removes it; removing
 twice does nothing. Listeners run in subscription order, including ones added
