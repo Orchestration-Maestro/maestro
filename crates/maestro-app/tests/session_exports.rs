@@ -148,10 +148,13 @@ fn exported_payload(session: &AgentSession<Local>, root: &str, live_theme: LiveT
 }
 
 /// A session over a file whose answer calls `painted`, a registered tool with a custom
-/// call rendering.
+/// call rendering that never reads the theme, and `reader`, whose call rendering does.
 async fn painted_harness(root: &str) -> Harness {
-    let call = json!({"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}});
-    let answer = assistant("", 2, &json!({"content": [call], "stopReason": "toolUse"}));
+    let calls = json!([
+        {"type": "toolCall", "id": "call-1", "name": "painted", "arguments": {}},
+        {"type": "toolCall", "id": "call-2", "name": "reader", "arguments": {}},
+    ]);
+    let answer = assistant("", 2, &json!({"content": calls, "stopReason": "toolUse"}));
     let h = harness(HarnessOptions {
         session_manager: Some(file_session(root, &[user(&json!("paint"), 1), answer])),
         ..HarnessOptions::default()
@@ -161,16 +164,32 @@ async fn painted_harness(root: &str) -> Harness {
     painted.render_call = Some(Rc::new(|_, _, _| {
         Ok(Rc::new(Text::new("Painted call".into(), 0, 0, None)) as ComponentHandle)
     }));
+    let mut reader = tool_definition("reader", None, None);
+    reader.render_call = Some(Rc::new(|_, theme, _| {
+        let theme = theme.get().map_err(|error| themed(&error))?;
+        let text = theme
+            .fg(&maestro_theme::ThemeColor::ToolTitle, "Read call")
+            .map_err(|error| themed(&error))?;
+        Ok(Rc::new(Text::new(text, 0, 0, None)) as ComponentHandle)
+    }));
     h.session
         .refresh_tool_registry(
-            [("painted".to_owned(), sdk_registered(painted))]
-                .into_iter()
-                .collect(),
-            &["painted".to_owned()],
+            [
+                ("painted".to_owned(), sdk_registered(painted)),
+                ("reader".to_owned(), sdk_registered(reader)),
+            ]
+            .into_iter()
+            .collect(),
+            &["painted".to_owned(), "reader".to_owned()],
             RefreshToolRegistryOptions::default(),
         )
         .unwrap();
     h
+}
+
+/// The diagnostic a theme failure becomes at a renderer boundary.
+fn themed(error: &maestro_theme::ThemeError) -> maestro_models::DiagnosticErrorInfo {
+    maestro_models::DiagnosticErrorInfo::error(error.to_string())
 }
 
 /// A plain theme published as the host publishes one.
@@ -237,7 +256,8 @@ fn html_export_refuses_memory_session() {
 }
 
 /// Without a published theme, a session only in memory is still refused first, and a file
-/// session exports with no custom tool rendering.
+/// session renders the custom tools that ignore the theme while one that reads it keeps its
+/// standard rendering.
 #[test]
 fn html_export_reads_theme_only_for_custom_rendering() {
     let expected = corpus("html_export");
@@ -256,7 +276,11 @@ fn html_export_reads_theme_only_for_custom_rendering() {
         assert_eq!(json!({"error": error.message}), expected["inMemory"]);
         let h = painted_harness(&root).await;
         let data = exported_payload(&h.session, &root, LiveTheme::default());
-        assert_eq!(data.get("renderedTools"), None);
+        let painted = format!("<div class=\"ansi-line\">{:<100}</div>", "Painted call");
+        assert_eq!(
+            data["renderedTools"],
+            json!({"call-1": {"callHtml": painted}})
+        );
     });
 }
 

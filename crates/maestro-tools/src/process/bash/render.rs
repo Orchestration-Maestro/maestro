@@ -31,7 +31,7 @@ pub struct BashRenderState {
 /// Draw authored arguments with the published theme.
 pub(super) fn render_call(
     args: Option<&Value>,
-    _theme: &Theme,
+    _theme: &LiveTheme,
     context: &ToolRenderContext<'_, BashRenderState>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let args = render_args(args);
@@ -113,7 +113,7 @@ fn timing(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    _theme: &Theme,
+    _theme: &LiveTheme,
     context: &ToolRenderContext<'_, BashRenderState>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let elapsed = timing(options, context);

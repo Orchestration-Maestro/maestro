@@ -12,7 +12,7 @@ use crate::{
     utils::diagnostics::diagnostic,
 };
 use maestro_models::DiagnosticErrorInfo;
-use maestro_theme::{Theme, ThemeColor};
+use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
 
@@ -45,9 +45,11 @@ fn format_ls_call(args: &Value, theme: &Theme) -> Rendered<String> {
 /// Returns a theme or home failure; the previous component is left unchanged.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let resolved = themed(theme.get())?;
+    let theme = &*resolved;
     let args = render_args(args);
     let text = format_ls_call(args, theme)?;
     Ok(into_text(context.last_component.as_ref(), text))
@@ -60,7 +62,7 @@ pub(super) fn render_call(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
     let text = render_listing(

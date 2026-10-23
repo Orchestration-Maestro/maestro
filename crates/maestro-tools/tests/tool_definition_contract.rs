@@ -11,7 +11,7 @@ use maestro_agent::{
     ToolExecutionMode,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
-use maestro_theme::{ColorMode, Theme, ThemeDirectories, ThemeOptions, ThemeState};
+use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeDirectories, ThemeOptions, ThemeState};
 use maestro_tools::{
     ToolContextFactory, ToolDefinition, ToolRenderContext, ToolRenderPhase,
     ToolRenderResultOptions, ToolRenderShell, create_tool_definition_from_agent_tool, define_tool,
@@ -488,7 +488,7 @@ fn row_context<'a>(
 /// A failing call reports its error, and typed execution takes its own parameter type.
 fn assert_failure_and_typed_execution(
     tool: &ToolDefinition<(), CallArgs, Value, u32>,
-    theme: &Theme,
+    theme: &LiveTheme,
     invalidations: &Rc<RefCell<u32>>,
 ) {
     let failing = json!({"fail": true});
@@ -512,13 +512,15 @@ fn assert_failure_and_typed_execution(
 fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
     let observed = Arc::new(Mutex::new(Vec::new()));
     let tool = define_tool(render_definition(&observed));
-    let theme = Theme::new(
-        Vec::new(),
-        Vec::new(),
-        ColorMode::Truecolor,
-        ThemeOptions::default(),
-    )
-    .unwrap();
+    let theme = LiveTheme::from_theme(Rc::new(
+        Theme::new(
+            Vec::new(),
+            Vec::new(),
+            ColorMode::Truecolor,
+            ThemeOptions::default(),
+        )
+        .unwrap(),
+    ));
     let empty = AgentToolResult {
         content: Vec::new(),
         details: None,
@@ -589,7 +591,7 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
     };
     let mut context = display_support::context::<Value>(&args, &setup, &env, None);
     let expected = Rc::clone(&context.environment);
-    let selected = Rc::clone(&env.theme);
+    let selected = env.live.get().unwrap();
     let observations = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&observations);
     let callback: maestro_tools::ToolRenderCall<Value> = Rc::new(move |args, _, context| {
@@ -617,9 +619,9 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
         Ok(Rc::new(Row))
     });
     assert!(context.args.is_some_and(Value::is_null));
-    callback(Some(&args), &env.theme, &context).unwrap();
+    callback(Some(&args), &env.live, &context).unwrap();
     context.args = None;
-    callback(None, &env.theme, &context).unwrap();
+    callback(None, &env.live, &context).unwrap();
     assert_eq!(*observations.borrow(), [(true, true), (false, false)]);
     assert_eq!(
         env.terminal.get_capabilities().images,

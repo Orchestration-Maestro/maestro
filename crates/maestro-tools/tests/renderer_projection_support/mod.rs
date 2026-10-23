@@ -105,7 +105,7 @@ pub fn render(input: &Input, env: &Env) -> Vec<String> {
                 expanded: input.options.expanded,
                 is_partial: input.options.is_partial,
             },
-            &env.theme,
+            &env.live,
             &row,
         )
         .unwrap()

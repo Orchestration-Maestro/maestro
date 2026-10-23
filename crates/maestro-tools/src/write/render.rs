@@ -4,7 +4,7 @@ use crate::output::render_utils::{ToolRenderResultLike, render_args};
 use super::highlight::{HighlightCache, language_of, rebuild, rows, update};
 use crate::{
     output::{
-        render_parts::{downcast, expand_hint, into_text, paint},
+        render_parts::{downcast, expand_hint, into_text, paint, themed},
         render_utils::{
             PREVIEW_LINES, normalize_display_text, path_display, replace_tabs, selected_path, str,
             without_trailing_empty,
@@ -13,7 +13,7 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
-use maestro_theme::{Theme, ThemeColor};
+use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
 use serde_json::Value;
 use std::{borrow::Cow, cell::RefCell, rc::Rc};
@@ -55,21 +55,21 @@ fn preview_rows<'a>(
     raw_path: &str,
     cache: Option<&'a HighlightCache>,
     context: &ToolRenderContext<'_>,
-) -> Cow<'a, [String]> {
-    match (language_of(raw_path), cache) {
+) -> Rendered<Cow<'a, [String]>> {
+    Ok(match (language_of(raw_path), cache) {
         (Some(_), Some(cache)) => Cow::Borrowed(&cache.highlighted_lines),
         (Some(language), None) => Cow::Owned(rows(
             context,
             &replace_tabs(&normalize_display_text(body)),
             language,
-        )),
+        )?),
         (None, _) => Cow::Owned(
             normalize_display_text(body)
                 .split('\n')
                 .map(str::to_owned)
                 .collect(),
         ),
-    }
+    })
 }
 
 /// The content preview: the first rows, then how many more there are and how to expand.
@@ -80,7 +80,7 @@ fn format_preview(
     (theme, context): (&Theme, &ToolRenderContext<'_>),
 ) -> Rendered<String> {
     let highlighted = language_of(raw_path).is_some();
-    let rendered = preview_rows(body, raw_path, cache, context);
+    let rendered = preview_rows(body, raw_path, cache, context)?;
     let lines = without_trailing_empty(&rendered);
     let limit = if context.expanded {
         lines.len()
@@ -143,7 +143,7 @@ fn format_call(
 /// Returns a theme or home failure; the highlighting stays updated.
 pub(super) fn render_call(
     args: Option<&Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
     let args = render_args(args);
@@ -151,12 +151,17 @@ pub(super) fn render_call(
     let raw_path = str(selected_path(args)).unwrap_or_default();
     let previous = component.cache.take();
     let cache = match str(args.get("content")) {
-        None => None,
+        None => Ok(None),
         Some(body) if context.phase.args_complete => rebuild(raw_path, body, context),
         Some(body) => update(previous, raw_path, body, context),
-    };
+    }?;
     component.cache.replace(cache);
-    let text = format_call(args, component.cache.borrow().as_ref(), (theme, context))?;
+    let resolved = themed(theme.get())?;
+    let text = format_call(
+        args,
+        component.cache.borrow().as_ref(),
+        (&resolved, context),
+    )?;
     component.text.set_text(text);
     Ok(component)
 }
@@ -168,12 +173,13 @@ pub(super) fn render_call(
 pub(super) fn render_result(
     result: &ToolRenderResultLike<'_, Value>,
     _options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
     let output = UserBlock::text_output(result.content);
     if context.is_error && !output.is_empty() {
-        let error = paint(theme, &ThemeColor::Error, &output)?;
+        let resolved = themed(theme.get())?;
+        let error = paint(&resolved, &ThemeColor::Error, &output)?;
         return Ok(into_text(
             context.last_component.as_ref(),
             format!("\n{error}"),

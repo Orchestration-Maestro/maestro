@@ -139,7 +139,7 @@ fn result_cases(name: &str) {
                     &crate::output::render_utils::ToolRenderResultLike::from(&result(
                         &case.input["result"]
                     )),
-                    &theme,
+                    &live(Rc::clone(&theme)),
                     &ctx
                 )
                 .unwrap()

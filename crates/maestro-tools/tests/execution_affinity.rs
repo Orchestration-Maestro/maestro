@@ -638,8 +638,8 @@ fn local_renderer_binding_drops_executable_owners() {
     let _bindings = crate::display_support::bind(&setup.bindings);
     let args = json!({});
     let row = crate::display_support::context::<ToolRendererState>(&args, &setup, &env, None);
-    check_custom_projection(&env.theme, &row);
-    check_builtin_projection(&env.theme, &row);
+    check_custom_projection(&env.live, &row);
+    check_builtin_projection(&env.live, &row);
 }
 
 #[test]
@@ -987,7 +987,7 @@ fn selected_spawn_hook(
 
 /// Retain custom renderers without retaining executable captures.
 fn check_custom_projection(
-    theme: &maestro_theme::Theme,
+    theme: &maestro_theme::LiveTheme,
     row: &maestro_tools::ToolRenderContext<'_, maestro_tools::ToolRendererState>,
 ) {
     let mut definition = custom("rendered");
@@ -1023,7 +1023,7 @@ fn check_custom_projection(
 
 /// Retain builtin renderers without retaining executable captures.
 fn check_builtin_projection(
-    theme: &maestro_theme::Theme,
+    theme: &maestro_theme::LiveTheme,
     row: &maestro_tools::ToolRenderContext<'_, maestro_tools::ToolRendererState>,
 ) {
     let manager = Arc::new(maestro_tools::ToolsManager::new(

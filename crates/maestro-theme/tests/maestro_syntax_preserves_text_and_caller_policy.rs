@@ -63,7 +63,7 @@ fn live() -> (ThemeState, LiveTheme) {
 
 /// Terminal rows of `code` for `lang` through the production highlighter.
 fn native_rows(live: &LiveTheme, code: &str, lang: &str) -> Vec<String> {
-    highlight_code(live, native(), code, Some(lang))
+    highlight_code(live, native(), code, Some(lang)).unwrap()
 }
 
 /// Fixture cases of the fallback rows for unlabeled and unknown languages.
@@ -98,8 +98,14 @@ fn terminal_without_language_uses_colored_split_lines() {
     let cases = fallback_cases(None);
     assert_eq!(cases.len(), 32);
     for (text, expected) in cases {
-        assert_eq!(highlight_code(&live, &engine, &text, None), expected);
-        assert_eq!(highlight_code(&live, &engine, &text, Some("")), expected);
+        assert_eq!(
+            highlight_code(&live, &engine, &text, None).unwrap(),
+            expected
+        );
+        assert_eq!(
+            highlight_code(&live, &engine, &text, Some("")).unwrap(),
+            expected
+        );
     }
     assert_eq!(engine.calls(), Vec::<String>::new());
 }
@@ -112,7 +118,7 @@ fn terminal_unknown_language_is_silent_and_explicit_only() {
     assert_eq!(cases.len(), 32);
     for (text, expected) in &cases {
         assert_eq!(
-            highlight_code(&live, &engine, text, Some("unknown-syntax")),
+            highlight_code(&live, &engine, text, Some("unknown-syntax")).unwrap(),
             *expected
         );
     }
@@ -124,7 +130,7 @@ fn terminal_unknown_language_is_silent_and_explicit_only() {
         "java script",
     ] {
         assert_eq!(
-            highlight_code(&live, native(), text, Some(label)),
+            highlight_code(&live, native(), text, Some(label)).unwrap(),
             *expected,
             "{label:?}"
         );
@@ -146,7 +152,8 @@ fn direct_highlight_failure_returns_raw_split_lines() {
         &engine,
         "const x = \"<&>\";\r\n\n\u{96ea}\n",
         Some("javascript"),
-    );
+    )
+    .unwrap();
     assert_eq!(rows, ["const x = \"<&>\";\r", "", "\u{96ea}", ""]);
     assert_eq!(
         engine.calls(),
@@ -194,7 +201,7 @@ fn highlighting_reads_the_replaced_live_theme() {
     spans.push(span(9..10, None));
     let engine = Scripted::new(&["javascript"], Ok(spans));
     let (state, live) = live();
-    let render = || highlight_code(&live, &engine, "0123456789", Some("javascript"));
+    let render = || highlight_code(&live, &engine, "0123456789", Some("javascript")).unwrap();
     let palette = [
         COMMENT,
         KEYWORD,
@@ -492,7 +499,7 @@ fn native_and_controlled_highlighters_share_public_operations() {
     ];
     for (adapter, index, class) in adapters {
         assert_eq!(
-            highlight_code(&live, adapter, "42", Some("javascript")),
+            highlight_code(&live, adapter, "42", Some("javascript")).unwrap(),
             [color(index, "42")]
         );
         let html = highlight_html(adapter, "42", Some("javascript"))
@@ -501,7 +508,7 @@ fn native_and_controlled_highlighters_share_public_operations() {
         assert_eq!(html, format!("<span class=\"{class}\">42</span>"));
     }
     assert_eq!(
-        highlight_code(&live, &failing, "42", Some("javascript")),
+        highlight_code(&live, &failing, "42", Some("javascript")).unwrap(),
         ["42"]
     );
     assert!(highlight_html(&failing, "42", Some("javascript")).is_err());
@@ -528,4 +535,43 @@ fn highlight_css_uses_shared_syntax_roles() {
             "{class}"
         );
     }
+}
+
+/// A label the registry does not admit is painted as code, which needs the theme; an admitted
+/// label reaches the engine, whose errors are recovered without the theme.
+#[test]
+fn unadmitted_labels_need_a_published_theme() {
+    let unpublished = LiveTheme::default();
+    let error = highlight_code(&unpublished, native(), "echo hello", Some("fish")).unwrap_err();
+    assert!(
+        error.to_string().contains("Theme not initialized"),
+        "{error}"
+    );
+    assert_eq!(
+        highlight_code(&unpublished, native(), "fn main() {}", Some("rust")).unwrap(),
+        ["fn main() {}"]
+    );
+    let (_state, live) = live();
+    assert_eq!(
+        highlight_code(&live, native(), "echo hello", Some("fish")).unwrap(),
+        [color(CODE, "echo hello")]
+    );
+}
+
+/// A fence labelled with an unadmitted language paints code rows instead of handing the label
+/// to the engine, which would paint them with another grammar.
+#[test]
+fn unadmitted_fence_labels_paint_code_rows_without_consulting_the_engine() {
+    let (_state, live) = live();
+    let engine = Rc::new(Scripted::new(
+        &["fish"],
+        Ok(vec![span(0..4, Some(ThemeColor::SyntaxKeyword))]),
+    ));
+    let markdown = get_markdown_theme(live, Rc::clone(&engine) as Rc<dyn SyntaxHighlighter>, true);
+    let highlight = markdown.highlight_code.as_ref().unwrap();
+    assert_eq!(
+        highlight("echo hello", Some("fish")),
+        [color(CODE, "echo hello")]
+    );
+    assert_eq!(engine.calls(), Vec::<String>::new());
 }

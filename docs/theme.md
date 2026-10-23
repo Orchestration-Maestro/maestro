@@ -188,11 +188,15 @@ prefix, and the innermost scope with a color wins:
 | `syntaxType` | `storage.type`, `entity.name.type`, `entity.name.class`, `support.class` |
 | `syntaxPunctuation` | `punctuation` |
 
-`highlight_code` splits the code at every LF, keeping CR. A missing, empty or unsupported
-label never reaches the engine and colors every row with `mdCodeBlock`. Text the engine
-leaves unclassified, such as explicit `plaintext`, is returned unchanged. An engine failure
-returns the rows unstyled. Classified runs are styled from the theme published when the call
-runs, once per nonempty row piece.
+`highlight_code` splits the code at every LF, keeping CR. It admits only labels its language
+table names, aliases included, and leaves every other label to the code color: a missing,
+empty or unnamed label never reaches the engine and colors every row with `mdCodeBlock`, so
+that call fails when no theme is published. A named label whose grammar the engine lacks
+colors the rows with `mdCodeBlock` through the published theme; with no theme published it
+returns them unstyled and does not fail. Text the engine leaves unclassified,
+such as explicit `plaintext`, is returned unchanged. An engine failure returns
+the rows unstyled. Classified runs are styled from the theme published when the call runs,
+once per nonempty row piece.
 `get_markdown_theme`'s code callback colors the rows with `mdCodeBlock` after a failure
 instead.
 

@@ -6,7 +6,7 @@ use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Threaded, Tool};
-use maestro_theme::{LiveTheme, SyntaxHighlighter, Theme};
+use maestro_theme::{LiveTheme, SyntaxHighlighter};
 use maestro_tui::{TerminalImage, tui::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
@@ -46,7 +46,7 @@ pub struct ToolRenderEnvironment {
     pub runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
     /// Absolute path of the documentation README, supplied by the application.
     pub readme_path: String,
-    /// The published theme, read when a renderer styles text outside its `Theme` argument.
+    /// The published theme, read on every use by renderers, key hints and images.
     pub live_theme: LiveTheme,
     /// Classifies code for explicit highlighting.
     pub highlighter: Rc<dyn SyntaxHighlighter>,
@@ -124,17 +124,23 @@ pub trait ToolExecution: maestro_agent::AgentExecution {
         ) -> I::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>>
         + ?Sized;
     /// The retained call renderer follows storage affinity, not invocation.
+    ///
+    /// The theme operand is resolved by the renderer itself, so a renderer that never
+    /// reads it still draws when no theme is published.
     type RenderCall<S>: Fn(
             Option<&Value>,
-            &Theme,
+            &LiveTheme,
             &ToolRenderContext<'_, S>,
         ) -> Result<ComponentHandle, DiagnosticErrorInfo>
         + ?Sized;
     /// The retained result renderer follows storage affinity.
+    ///
+    /// The theme operand is resolved by the renderer itself, so a renderer that never
+    /// reads it still draws when no theme is published.
     type RenderResult<D, S>: Fn(
             &crate::output::render_utils::ToolRenderResultLike<'_, D>,
             ToolRenderResultOptions,
-            &Theme,
+            &LiveTheme,
             &ToolRenderContext<'_, S>,
         ) -> Result<ComponentHandle, DiagnosticErrorInfo>
         + ?Sized;
@@ -148,8 +154,8 @@ macro_rules! family {
     ($mode:ty, [$($bound:tt)*], $local:expr) => {
         impl ToolExecution for $mode {
             type Definition<C, P, D, I: maestro_agent::AgentExecution> = dyn Fn(String, P, Option<Cancellation>, Option<AgentToolUpdateCallback<D, I>>, Option<C>) -> I::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>> $($bound)*;
-            type RenderCall<S> = dyn Fn(Option<&Value>, &Theme, &ToolRenderContext<'_, S>) -> Result<ComponentHandle, DiagnosticErrorInfo> $($bound)*;
-            type RenderResult<D,S> = dyn Fn(&crate::output::render_utils::ToolRenderResultLike<'_, D>, ToolRenderResultOptions, &Theme, &ToolRenderContext<'_, S>) -> Result<ComponentHandle, DiagnosticErrorInfo> $($bound)*;
+            type RenderCall<S> = dyn Fn(Option<&Value>, &LiveTheme, &ToolRenderContext<'_, S>) -> Result<ComponentHandle, DiagnosticErrorInfo> $($bound)*;
+            type RenderResult<D,S> = dyn Fn(&crate::output::render_utils::ToolRenderResultLike<'_, D>, ToolRenderResultOptions, &LiveTheme, &ToolRenderContext<'_, S>) -> Result<ComponentHandle, DiagnosticErrorInfo> $($bound)*;
             fn local_prepare(prepare: PrepareArguments<Self>) -> PrepareArguments<Local> { ($local)(prepare) }
             type ContextFactory<C> = dyn Fn() -> Result<C, DiagnosticErrorInfo> $($bound)*;
         }

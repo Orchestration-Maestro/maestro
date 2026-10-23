@@ -8,7 +8,8 @@ use maestro_export::{
 };
 use maestro_models::{DiagnosticErrorInfo, Tool};
 use maestro_theme::{
-    ColorMode, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories, ThemeOptions, ThemeState,
+    ColorMode, LiveTheme, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories, ThemeOptions,
+    ThemeState,
 };
 use maestro_tools::types::local::ToolDefinition;
 use maestro_tools::{ToolRenderContext, ToolRenderEnvironment};
@@ -41,7 +42,7 @@ struct Config {
     reenter: bool,
     steps: Vec<Value>,
 }
-struct NoLanguages;
+pub struct NoLanguages;
 impl SyntaxHighlighter for NoLanguages {
     fn supports_language(&self, _: &str) -> bool {
         false
@@ -58,6 +59,9 @@ pub fn theme() -> Theme {
     Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap()
 }
 pub fn environment() -> Rc<ToolRenderEnvironment> {
+    environment_with(Rc::new(NoLanguages))
+}
+pub fn environment_with(highlighter: Rc<dyn SyntaxHighlighter>) -> Rc<ToolRenderEnvironment> {
     let state = ThemeState::new(ThemeDirectories {
         themes_dir: String::new(),
         custom_themes_dir: String::new(),
@@ -66,7 +70,7 @@ pub fn environment() -> Rc<ToolRenderEnvironment> {
         runtime: Rc::new(manual_runtime::ManualRuntime::default()),
         readme_path: "/opt/maestro/README.md".into(),
         live_theme: state.theme(),
-        highlighter: Rc::new(NoLanguages),
+        highlighter,
         terminal_image: TerminalImage::default(),
     })
 }
@@ -247,7 +251,7 @@ fn observe(config: &Config) -> Value {
     let renderer: Rc<dyn ToolHtmlRenderer + '_> =
         Rc::new(create_tool_html_renderer(ToolHtmlRendererDeps {
             get_tool_definition: lookup,
-            theme: &theme,
+            theme: LiveTheme::from_theme(Rc::clone(&theme)),
             cwd: config.cwd.as_deref().unwrap_or("/work"),
             width: config.width,
             environment: environment(),
@@ -275,7 +279,11 @@ fn observed_tool(observations: &Rc<Observations>, theme: &Rc<Theme>) -> Rc<ToolD
     tool.render_call = Some(Rc::new(move |args, theme, ctx| {
         let mut event = context(&seen, ctx, "call_callback");
         event["direct_args"] = presence(args);
-        event["same_theme"] = json!(std::ptr::eq(theme, Rc::as_ptr(&supplied)));
+        event["same_theme"] = json!(
+            theme
+                .get()
+                .is_ok_and(|resolved| Rc::ptr_eq(&resolved, &supplied))
+        );
         seen.events.borrow_mut().push(event);
         if seen.step.borrow()["fail"] == "call_callback" {
             return Err(failure());
@@ -298,7 +306,11 @@ fn observed_tool(observations: &Rc<Observations>, theme: &Rc<Theme>) -> Rc<ToolD
                 event["result_error"] = json!(result.is_error.unwrap());
                 event["options"] =
                     json!({"expanded":options.expanded,"isPartial":options.is_partial});
-                event["same_theme"] = json!(std::ptr::eq(theme, Rc::as_ptr(&supplied)));
+                event["same_theme"] = json!(
+                    theme
+                        .get()
+                        .is_ok_and(|resolved| Rc::ptr_eq(&resolved, &supplied))
+                );
                 seen.events.borrow_mut().push(event);
                 if seen.step.borrow()["fail"] == format!("{phase}_callback") {
                     return Err(failure());

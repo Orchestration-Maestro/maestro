@@ -53,7 +53,7 @@ type LocalResultCallback = Rc<
     dyn Fn(
         &crate::output::render_utils::ToolRenderResultLike<'_, Value>,
         crate::ToolRenderResultOptions,
-        &maestro_theme::Theme,
+        &maestro_theme::LiveTheme,
         &ToolRenderContext<'_, ToolRendererState>,
     ) -> Result<maestro_tui::tui::ComponentHandle, DiagnosticErrorInfo>,
 >;
@@ -147,7 +147,7 @@ impl ToolRendererBinding {
                 let callback = callback.clone();
                 Rc::new(
                     move |args: Option<&Value>,
-                          theme: &maestro_theme::Theme,
+                          theme: &maestro_theme::LiveTheme,
                           row: &ToolRenderContext<'_, ToolRendererState>| {
                         let owner = row.state.borrow().clone();
                         callback(args, theme, &context::<S>(row, &owner))

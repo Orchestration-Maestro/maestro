@@ -396,8 +396,6 @@ pub struct Env {
     pub state: Rc<ThemeState>,
     /// The published theme's handle.
     pub live: LiveTheme,
-    /// The theme the renderers are given.
-    pub theme: Rc<Theme>,
     /// Classifies code.
     pub highlighter: Rc<dyn SyntaxHighlighter>,
     /// Image support of the terminal.
@@ -421,12 +419,11 @@ impl Env {
             themes_dir: String::new(),
             custom_themes_dir: String::new(),
         }));
-        state.set_theme_instance(Rc::clone(&theme)).unwrap();
+        state.set_theme_instance(theme).unwrap();
         let live = state.theme();
         Self {
             state,
             live,
-            theme,
             highlighter,
             terminal: TerminalImage::new(|_| None, || 1),
             runtime: Rc::new(manual_runtime::ManualRuntime::default()),
@@ -434,10 +431,9 @@ impl Env {
     }
 
     /// Publish a palette shifted by `shift` and make it the renderers' theme.
-    pub fn republish(&mut self, shift: u8) {
-        self.theme = Rc::new(palette(shift));
+    pub fn republish(&self, shift: u8) {
         self.state
-            .set_theme_instance(Rc::clone(&self.theme))
+            .set_theme_instance(Rc::new(palette(shift)))
             .unwrap();
     }
 }
@@ -615,7 +611,7 @@ pub fn render_case(case: &Case) -> Vec<String> {
     let args = &case.input["args"];
     let ctx = context(args, &setup, &env, None);
     let row = if case.op == "call" {
-        (tool.render_call.as_ref().unwrap())(Some(args), &env.theme, &ctx)
+        (tool.render_call.as_ref().unwrap())(Some(args), &env.live, &ctx)
     } else {
         let result = read_result(&case.input["result"]);
         let options = options(&case.input["options"]);
@@ -623,7 +619,7 @@ pub fn render_case(case: &Case) -> Vec<String> {
             tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result),
             options,
-            &env.theme,
+            &env.live,
             &ctx,
         )
     };
@@ -692,7 +688,7 @@ pub fn native<D: serde::Serialize, S, E: maestro_tools::ToolExecution>(
     callback: &maestro_tools::ToolRenderResult<D, S, E>,
     result: &maestro_tools::output::render_utils::ToolRenderResultLike<'_, D>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, S>,
 ) -> Result<ComponentHandle, maestro_models::DiagnosticErrorInfo> {
     callback.invoke_native((result, options), theme, context, |details| {

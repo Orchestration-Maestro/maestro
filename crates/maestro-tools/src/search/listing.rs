@@ -2,7 +2,7 @@
 use crate::output::render_utils::ToolRenderResultLike;
 use crate::{
     output::{
-        render_parts::{expand_hint, float, num, paint},
+        render_parts::{expand_hint, float, num, paint, themed},
         render_utils::{TruncationView, get_text_output},
         truncate::{
             DEFAULT_MAX_BYTES, TruncationOptions, TruncationResult, format_size, truncate_head,
@@ -12,7 +12,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_text::is_whitespace_scalar;
-use maestro_theme::{Theme, ThemeColor};
+use maestro_theme::{LiveTheme, ThemeColor};
 /// Result of a rendering operation.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
 /// Borrowed limits of a listing result.
@@ -60,7 +60,7 @@ pub(super) fn select_listing(
     (output, truncation)
 }
 /// Entry-limit, byte-limit or trailing notices, including clipping-only warnings.
-fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
+fn limit_warning(view: ListingView<'_>, theme: &LiveTheme) -> Rendered<String> {
     let entries = view.count.filter(|limit| *limit != 0.0 && !limit.is_nan());
     let bytes = view.truncation;
     if entries.is_none() && bytes.is_none() && view.trailing_warning.is_none() {
@@ -73,9 +73,10 @@ fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
         .chain(view.trailing_warning.map(str::to_owned))
         .collect();
     let notice = format!("[Truncated: {}]", warnings.join(", "));
+    let resolved = themed(theme.get())?;
     Ok(format!(
         "\n{}",
-        paint(theme, &ThemeColor::Warning, &notice)?
+        paint(&resolved, &ThemeColor::Warning, &notice)?
     ))
 }
 
@@ -83,7 +84,7 @@ fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
 pub(super) fn render_listing<D>(
     result: &ToolRenderResultLike<'_, D>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
     view: ListingView<'_>,
 ) -> Rendered<String> {
@@ -95,6 +96,7 @@ pub(super) fn render_listing<D>(
     let output = output.trim_matches(is_whitespace_scalar);
     let mut text = String::new();
     if !output.is_empty() {
+        let theme = &*themed(theme.get())?;
         let lines: Vec<&str> = output.split('\n').collect();
         let shown = if options.expanded {
             lines.len()
