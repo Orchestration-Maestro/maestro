@@ -139,7 +139,7 @@ fn edit_matching_failures_leave_original_bytes() {
             }
         );
         assert_eq!(*ops.bytes.lock().unwrap(), expected.bytes);
-        assert_eq!(error.name.as_deref(), Some("ThrownValue"));
+        assert_eq!(error.name.as_deref(), Some("Error"));
     }
 }
 

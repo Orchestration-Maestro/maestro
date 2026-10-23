@@ -3,9 +3,7 @@
 
 use crate::runtime::run_paused;
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
-use maestro_models::{
-    Cancellation, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
-};
+use maestro_models::{Cancellation, DiagnosticErrorInfo};
 use maestro_tools::{
     BashError, BashExecOptions, BashExecResult, BashOperations, BashSpawnContext, BashToolDetails,
     BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition,
@@ -229,10 +227,6 @@ pub fn result_value<D: Serialize>(result: AgentToolResult<D>) -> Value {
     }
     value
 }
-/// Build an error through the existing diagnostic boundary.
-pub fn failure(message: &str) -> DiagnosticErrorInfo {
-    extract_diagnostic_error(DiagnosticInput::Text(message))
-}
 /// Read and validate the fixture once per selected test.
 pub fn fixture() -> Fixture {
     let fixture: Fixture =
@@ -415,7 +409,7 @@ fn hook(input: &Arc<Input>, log: &Log) -> Option<maestro_tools::BashSpawnHook> {
         assert_eq!(context.command, expected);
         assert_eq!(context.cwd, "/work");
         if let Some(error) = &input.hook_error {
-            return Err(failure(error));
+            return Err(DiagnosticErrorInfo::error(error));
         }
         let hook = input.hook.as_ref().unwrap();
         Ok(BashSpawnContext {
@@ -530,7 +524,7 @@ pub fn hook_sequence() {
     let hook = Arc::new(move |context| {
         hook_phases.lock().unwrap().push("hook");
         if hook_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
-            Err(failure("hook rejected"))
+            Err(DiagnosticErrorInfo::error("hook rejected"))
         } else {
             Ok(context)
         }
