@@ -419,6 +419,7 @@ fn bash_artifact_creation_failure_is_reported() {
             .expect_err("artifact I/O failure must not become success");
         assert!(settled.load(std::sync::atomic::Ordering::SeqCst));
         assert!(error.code.is_some(), "original native I/O code survives");
+        assert_eq!(error.name.as_deref(), Some("Error"));
     });
 }
 
