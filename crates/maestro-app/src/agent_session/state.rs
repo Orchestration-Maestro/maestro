@@ -1,9 +1,12 @@
 //! The one session state, and the bridge between typed agent messages and stored records.
 use indexmap::IndexMap;
+use maestro_agent::AgentMessage;
 use maestro_agent::SharedAgentTool;
 use maestro_catalog::ScopedModel;
-use maestro_extensions::{ExtensionExecution, NativeAgentMessage, RegisteredTool};
-use maestro_models::{Cancellation, DiagnosticErrorInfo, Local};
+use maestro_extensions::{
+    BuildSystemPromptOptions, ExtensionExecution, NativeAgentMessage, RegisteredTool,
+};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, SharedAssistantMessage};
 use serde_json::Value;
 
 /// A retry that every observer sees released once.
@@ -37,6 +40,20 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     pub(super) retry_gate: Option<RetryGate>,
     /// Opens the release once.
     pub(super) retry_open: Option<tokio::sync::oneshot::Sender<()>>,
+    /// The system prompt built for the active tools, before any extension replaces it.
+    pub(super) base_system_prompt: String,
+    /// The options that built the base system prompt.
+    pub(super) base_system_prompt_options: Option<BuildSystemPromptOptions>,
+    /// Pending steering texts, as the agent's steering queue holds them.
+    pub(super) steering_messages: Vec<String>,
+    /// Pending follow-up texts, as the agent's follow-up queue holds them.
+    pub(super) follow_up_messages: Vec<String>,
+    /// Custom messages sent with the next prompt.
+    pub(super) pending_next_turn_messages: Vec<NativeAgentMessage>,
+    /// Shell results recorded while a response streamed, appended before the next prompt.
+    pub(super) pending_bash_messages: Vec<NativeAgentMessage>,
+    /// Stops the direct shell command now running.
+    pub(super) bash_signal: Option<Cancellation>,
 }
 
 impl<E: ExtensionExecution> AgentSessionState<E> {
@@ -56,6 +73,13 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             retry_attempt: 0,
             retry_gate: None,
             retry_open: None,
+            base_system_prompt: String::new(),
+            base_system_prompt_options: None,
+            steering_messages: Vec::new(),
+            follow_up_messages: Vec::new(),
+            pending_next_turn_messages: Vec::new(),
+            pending_bash_messages: Vec::new(),
+            bash_signal: None,
         }
     }
 }
@@ -93,6 +117,16 @@ pub(super) fn content_text(content: Option<&Value>) -> String {
             .collect(),
         _ => String::new(),
     }
+}
+
+/// The newest response in `messages`, aborted ones included.
+pub(super) fn last_assistant_message(
+    messages: &[NativeAgentMessage],
+) -> Option<SharedAssistantMessage> {
+    messages.iter().rev().find_map(|message| match message {
+        AgentMessage::Assistant(response) => Some(std::sync::Arc::clone(response)),
+        _ => None,
+    })
 }
 
 /// The thrown form of a lower failure.

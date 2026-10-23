@@ -99,9 +99,13 @@ mod self_update_selection;
 #[path = "support/service_observations.rs"]
 mod service_observations;
 mod service_releases;
+mod session_bash;
 mod session_exports;
 mod session_facade;
+mod session_messages;
 mod session_model_selection;
+mod session_prompt_preflight;
+mod session_queues;
 mod session_recovery;
 mod session_services;
 mod session_skill_blocks;

@@ -13,7 +13,8 @@ use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, Sc
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData, ConfigValueOperations};
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
-    ExtensionContext, ExtensionExecution, ExtensionFactory, ExtensionRunner, LoadExtensionsResult,
+    BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionContext, ExtensionExecution,
+    ExtensionFactory, ExtensionRunner, InputEvent, InputEventResult, LoadExtensionsResult,
     RegisteredTool, RegisteredToolInput, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory, runner::ExtensionRunnerSession,
 };
@@ -94,6 +95,12 @@ pub struct HarnessOptions {
     pub append_system_prompt: Vec<String>,
     /// The agent's own task facility; the session supplies its default when absent.
     pub spawn: Option<maestro_agent::AgentSpawner<Local>>,
+    /// The loaded skills.
+    pub skills: Vec<maestro_resources::Skill>,
+    /// The loaded prompt templates.
+    pub prompts: Vec<maestro_resources::PromptTemplate>,
+    /// The disposable root holding the project; a fresh one when absent.
+    pub scratch: Option<maestro_test_directory::Scratch>,
 }
 
 impl Default for HarnessOptions {
@@ -108,6 +115,9 @@ impl Default for HarnessOptions {
             system_prompt: None,
             append_system_prompt: Vec::new(),
             spawn: None,
+            skills: Vec::new(),
+            prompts: Vec::new(),
+            scratch: None,
         }
     }
 }
@@ -120,6 +130,8 @@ pub struct Harness {
     pub session: Rc<AgentSession<Local>>,
     /// The catalog the session was given.
     pub registry: Arc<ModelRegistry>,
+    /// The extensions' runner the session was given.
+    pub runner: Rc<ExtensionRunner<Local>>,
     /// Thinking and name events the session announced.
     pub events: Rc<RefCell<Vec<Value>>>,
     /// The session working directory, below the scratch root.
@@ -189,6 +201,10 @@ pub struct TestResourceLoader {
     pub system_prompt: Option<Rc<str>>,
     /// The appended prompt texts.
     pub append_system_prompt: Rc<[String]>,
+    /// The loaded skills.
+    pub skills: Rc<LoadSkillsResult>,
+    /// The loaded prompt templates.
+    pub prompts: Rc<LoadPromptsResult>,
 }
 
 /// A loader returning `extensions` and empty resources.
@@ -204,6 +220,8 @@ pub fn create_test_resource_loader(
         extensions: Rc::new(extensions),
         system_prompt: None,
         append_system_prompt: Rc::from(Vec::new()),
+        skills: Rc::default(),
+        prompts: Rc::default(),
     }
 }
 
@@ -212,10 +230,10 @@ impl ResourceLoader<Local> for TestResourceLoader {
         Rc::clone(&self.extensions)
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
-        Rc::default()
+        Rc::clone(&self.skills)
     }
     fn get_prompts(&self) -> Rc<LoadPromptsResult> {
-        Rc::default()
+        Rc::clone(&self.prompts)
     }
     fn get_themes(&self) -> Rc<LoadThemesResult> {
         Rc::default()
@@ -525,14 +543,11 @@ fn runner(
     ))
 }
 
-/// A session over the scripted provider as `options` describe it.
-pub async fn harness(options: HarnessOptions) -> Harness {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let cwd = format!("{}/project", scratch.path().display());
-    let faux = register_faux_provider(RegisterFauxProviderOptions {
+/// The scripted provider serving `models` as identity and reasoning support.
+fn scripted_provider(models: &[(&'static str, bool)]) -> FauxProviderRegistration {
+    register_faux_provider(RegisterFauxProviderOptions {
         models: Some(
-            options
-                .models
+            models
                 .iter()
                 .map(|&(id, reasoning)| FauxModelDefinition {
                     id: id.into(),
@@ -542,7 +557,16 @@ pub async fn harness(options: HarnessOptions) -> Harness {
                 .collect(),
         ),
         ..RegisterFauxProviderOptions::default()
-    });
+    })
+}
+
+/// A session over the scripted provider as `options` describe it.
+pub async fn harness(options: HarnessOptions) -> Harness {
+    let scratch = options
+        .scratch
+        .unwrap_or_else(|| maestro_test_directory::Scratch::new().unwrap());
+    let cwd = format!("{}/project", scratch.path().display());
+    let faux = scripted_provider(&options.models);
     let registry = Arc::new(catalog(&faux, options.auth, options.context_window));
     let agent = agent(&faux.models[0], options.context_window, options.spawn);
     let session_manager =
@@ -551,22 +575,46 @@ pub async fn harness(options: HarnessOptions) -> Harness {
         })));
     let extensions = create_test_extensions_result(options.factories, &cwd).await;
     let runner = runner(&extensions, &cwd, &session_manager, &registry);
+    let loader = TestResourceLoader {
+        system_prompt: options.system_prompt.map(Rc::from),
+        append_system_prompt: Rc::from(options.append_system_prompt),
+        skills: Rc::new(LoadSkillsResult {
+            skills: options.skills,
+            ..LoadSkillsResult::default()
+        }),
+        prompts: Rc::new(LoadPromptsResult {
+            prompts: options.prompts,
+            ..LoadPromptsResult::default()
+        }),
+        ..create_test_resource_loader(Some(extensions))
+    };
     let settings: maestro_settings::Settings = serde_json::from_value(options.settings).unwrap();
     let session = Rc::new(AgentSession::new(AgentSessionConfig {
         agent,
         session_manager,
         settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
         cwd: cwd.clone(),
+        bin_dir: format!("{}/bin", scratch.path().display()),
         scoped_models: Vec::new(),
-        resource_loader: Rc::new(TestResourceLoader {
-            system_prompt: options.system_prompt.map(Rc::from),
-            append_system_prompt: Rc::from(options.append_system_prompt),
-            ..create_test_resource_loader(Some(extensions))
-        }),
+        resource_loader: Rc::new(loader),
         model_registry: Arc::clone(&registry),
-        extension_runner: runner,
+        extension_runner: Rc::clone(&runner),
         config_value_operations: Arc::new(FailingCommands),
     }));
+    let events = recorded_session_events(&session);
+    Harness {
+        faux,
+        session,
+        registry,
+        runner,
+        events,
+        cwd,
+        scratch,
+    }
+}
+
+/// The session events of `session` the scripts assert, in their recorded form.
+fn recorded_session_events(session: &AgentSession<Local>) -> Rc<RefCell<Vec<Value>>> {
     let events = Rc::new(RefCell::new(Vec::new()));
     let recorded = Rc::clone(&events);
     let _unsubscribe = session.subscribe(Rc::new(move |event| {
@@ -574,14 +622,7 @@ pub async fn harness(options: HarnessOptions) -> Harness {
             recorded.borrow_mut().push(view);
         }
     }));
-    Harness {
-        faux,
-        session,
-        registry,
-        events,
-        cwd,
-        scratch,
-    }
+    events
 }
 
 /// The recorded form of a session event the scripts assert.
@@ -831,4 +872,581 @@ pub fn on_task_set<F: std::future::Future>(
 /// A spawner running each task on the current task set.
 fn spawn_local() -> maestro_agent::AgentSpawner<Local> {
     Rc::new(|task| drop(tokio::task::spawn_local(task)))
+}
+
+/// What the prompt, queue, message and shell cases record beside the session.
+#[derive(Clone, Default)]
+pub struct Transcript {
+    /// Input and before-agent-start events as the recording extension saw them.
+    pub extension: Rc<RefCell<Vec<Value>>>,
+    /// Failures reported to the extension error listeners.
+    pub errors: Rc<RefCell<Vec<Value>>>,
+    /// Agent run and message events, and the session's own message and queue
+    /// announcements, in arrival order.
+    pub events: Rc<RefCell<Vec<Value>>>,
+    /// The base system prompt, recorded as `$BASE`.
+    pub base: Rc<RefCell<String>>,
+}
+
+impl Transcript {
+    /// The recorded events of `kind`, in order.
+    pub fn events_of(&self, kinds: &[&str]) -> Vec<Value> {
+        of_kinds(&self.events.borrow(), kinds)
+    }
+}
+
+/// The values whose `type` is one of `kinds`, in order.
+pub fn of_kinds(values: &[Value], kinds: &[&str]) -> Vec<Value> {
+    values
+        .iter()
+        .filter(|value| kinds.iter().any(|kind| value["type"] == *kind))
+        .cloned()
+        .collect()
+}
+
+/// The extension that records input and before-agent-start events into `transcript`,
+/// loaded before the case's own extensions.
+pub fn recording_extension(transcript: &Transcript) -> ExtensionFactory<Local> {
+    let transcript = transcript.clone();
+    Rc::new(move |api| {
+        let inputs = Rc::clone(&transcript.extension);
+        let starts = Rc::clone(&transcript.extension);
+        let base = Rc::clone(&transcript.base);
+        let input = api.on::<InputEvent, InputEventResult>(
+            "input".into(),
+            Rc::new(move |event, _| {
+                inputs.borrow_mut().push(json!({
+                    "type": "input", "text": event.text, "images": image_count(&event.images),
+                    "source": event.source,
+                }));
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        let start = api.on::<BeforeAgentStartEvent, BeforeAgentStartEventResult>(
+            "before_agent_start".into(),
+            Rc::new(move |event, _| {
+                let prompt = if event.system_prompt == *base.borrow() {
+                    "$BASE".to_owned()
+                } else {
+                    event.system_prompt.clone()
+                };
+                starts.borrow_mut().push(json!({
+                    "type": "before_agent_start", "prompt": event.prompt,
+                    "images": image_count(&event.images), "systemPrompt": prompt,
+                }));
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        let registered = input.and(start).map(drop);
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// The number of supplied images, or null when none were supplied.
+fn image_count(images: &Presence<Vec<maestro_models::ImageContent>>) -> Value {
+    match images {
+        Presence::Present(images) => json!(images.len()),
+        _ => Value::Null,
+    }
+}
+
+/// A session over `options` with the recording extension loaded first, the base system
+/// prompt built for no tools, and its errors, agent events and session announcements
+/// recorded.
+pub async fn transcribed(options: HarnessOptions) -> (Harness, Transcript) {
+    let transcript = Transcript::default();
+    let mut factories = vec![recording_extension(&transcript)];
+    factories.extend(options.factories);
+    let h = harness(HarnessOptions {
+        factories,
+        ..options
+    })
+    .await;
+    h.session.set_active_tools_by_name(&[]).unwrap();
+    *transcript.base.borrow_mut() = h.session.system_prompt();
+    let errors = Rc::clone(&transcript.errors);
+    let _unsubscribe = h.runner.on_error(Rc::new(move |error| {
+        errors.borrow_mut().push(json!({
+            "extensionPath": error.extension_path, "event": error.event, "error": error.error,
+        }));
+        Ok(())
+    }));
+    let events = Rc::clone(&transcript.events);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        events
+            .borrow_mut()
+            .push(agent_event_view(&event.read().unwrap()));
+        Box::pin(std::future::ready(Ok(())))
+    })));
+    let events = Rc::clone(&transcript.events);
+    let _unsubscribe = h.session.subscribe(Rc::new(move |event| match event {
+        AgentSessionEvent::QueueUpdate {
+            steering,
+            follow_up,
+        } => events.borrow_mut().push(json!({
+            "type": "queue_update", "steering": steering, "followUp": follow_up,
+        })),
+        AgentSessionEvent::Agent(event) => {
+            events
+                .borrow_mut()
+                .push(agent_event_view(&event.read().unwrap()));
+        }
+        _ => {}
+    }));
+    (h, transcript)
+}
+
+/// The recorded form of an agent event: run boundaries by type, message events with the
+/// message.
+fn agent_event_view(event: &maestro_agent::AgentEvent<CustomAgentMessages>) -> Value {
+    use maestro_agent::AgentEvent;
+    match event {
+        AgentEvent::AgentStart => json!({"type": "agent_start"}),
+        AgentEvent::AgentEnd { .. } => json!({"type": "agent_end"}),
+        AgentEvent::MessageStart { message } => {
+            json!({"type": "message_start", "message": message_view(&serde_json::to_value(message).unwrap())})
+        }
+        AgentEvent::MessageEnd { message } => {
+            json!({"type": "message_end", "message": message_view(&serde_json::to_value(message).unwrap())})
+        }
+        _ => json!({"type": "other"}),
+    }
+}
+
+/// The recorded form of message content: plain text, or blocks with text or image type.
+fn content_view(content: &Value) -> Value {
+    match content {
+        Value::String(text) => json!({"text": text}),
+        Value::Array(blocks) => {
+            json!({"blocks": blocks.iter().map(|block| if block["type"] == "text" {
+            json!({"type": "text", "text": block["text"]})
+        } else {
+            json!({"type": block["type"], "mimeType": block["mimeType"]})
+        }).collect::<Vec<_>>()})
+        }
+        _ => json!({"absent": true}),
+    }
+}
+
+/// A recorded field: the value, or null when absent.
+fn or_null(record: &Value, field: &str) -> Value {
+    record.get(field).cloned().unwrap_or(Value::Null)
+}
+
+/// The recorded form of a message record.
+pub fn message_view(record: &Value) -> Value {
+    match record["role"].as_str() {
+        Some("user") => json!({"role": "user", "content": content_view(&record["content"])}),
+        Some("assistant") => json!({
+            "role": "assistant", "text": message_text(record), "stopReason": record["stopReason"],
+            "errorMessage": or_null(record, "errorMessage"),
+        }),
+        Some("custom") => json!({
+            "role": "custom", "customType": record["customType"],
+            "content": content_view(&record["content"]), "display": record["display"],
+            "details": or_null(record, "details"),
+        }),
+        Some("bashExecution") => json!({
+            "role": "bashExecution", "command": record["command"], "output": record["output"],
+            "exitCode": record["exitCode"].as_f64().map_or(Value::Null, recorded_number),
+            "cancelled": record["cancelled"],
+            "truncated": record["truncated"],
+            "fullOutputPath": record.get("fullOutputPath").map(|_| json!({"present": true})),
+            "excludeFromContext": or_null(record, "excludeFromContext"),
+        }),
+        _ => json!({"role": record["role"], "summary": or_null(record, "summary")}),
+    }
+}
+
+/// The agent history in its recorded form.
+pub fn messages_view(h: &Harness) -> Vec<Value> {
+    let messages = h.session.messages();
+    let messages = messages.read().unwrap();
+    messages
+        .iter()
+        .map(|message| message_view(&serde_json::to_value(message).unwrap()))
+        .collect()
+}
+
+/// The stored session entries in their recorded form, numbered by position.
+pub fn entries_view(h: &Harness) -> Vec<Value> {
+    use maestro_session::session_manager::ReadonlySessionManager;
+    let manager = h.session.session_manager().borrow();
+    manager
+        .get_entries()
+        .into_iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let mut view = json!({"type": entry["type"], "id": format!("e{index}")});
+            if entry["type"] == "message" {
+                view["message"] = message_view(&entry["message"]);
+            } else if entry["type"] == "custom_message" {
+                view["customType"] = entry["customType"].clone();
+                view["content"] = content_view(&entry["content"]);
+                view["display"] = entry["display"].clone();
+                view["details"] = or_null(entry, "details");
+            }
+            view
+        })
+        .collect()
+}
+
+/// The queue mirrors, streaming flag and system prompt in their recorded form.
+pub fn queue_view(h: &Harness, transcript: &Transcript) -> Value {
+    let prompt = h.session.system_prompt();
+    json!({
+        "steering": h.session.get_steering_messages(),
+        "followUp": h.session.get_follow_up_messages(),
+        "pendingMessageCount": h.session.pending_message_count(),
+        "isStreaming": h.session.is_streaming(),
+        "systemPrompt": if prompt == *transcript.base.borrow() { "$BASE".to_owned() } else { prompt },
+    })
+}
+
+/// A scripted answer that reports its request on `requested` and answers once `release`
+/// is notified, so the response streams until the test releases it.
+pub struct HeldAnswer {
+    /// Notified when the provider is asked.
+    pub requested: Arc<tokio::sync::Notify>,
+    /// Releases the answer.
+    pub release: Arc<tokio::sync::Notify>,
+    /// The answer.
+    pub response: AssistantMessage,
+}
+
+impl HeldAnswer {
+    /// Reports the request, then answers once released.
+    fn respond(
+        &self,
+    ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>> + Send + 'static
+    {
+        self.requested.notify_one();
+        let release = Arc::clone(&self.release);
+        let response = self.response.clone();
+        async move {
+            release.notified().await;
+            Ok(response)
+        }
+    }
+}
+
+impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for HeldAnswer {
+    type Return = <Local as maestro_models::Execution>::Future<
+        'static,
+        Result<AssistantMessage, DiagnosticErrorInfo>,
+    >;
+    fn invoke(&self, _: FauxResponseInput<Local>) -> Self::Return {
+        Box::pin(self.respond())
+    }
+}
+
+impl maestro_models::Invoke<Threaded, FauxResponseInput<Threaded>> for HeldAnswer {
+    type Return = <Threaded as maestro_models::Execution>::Future<
+        'static,
+        Result<AssistantMessage, DiagnosticErrorInfo>,
+    >;
+    fn invoke(&self, _: FauxResponseInput<Threaded>) -> Self::Return {
+        Box::pin(self.respond())
+    }
+}
+
+/// The scripted steps: a held first answer `first`, then ordinary answers `rest`; returns
+/// the request and release notifiers of the first.
+pub fn hold_first_answer(
+    h: &Harness,
+    first: &str,
+    rest: &[&str],
+) -> (Arc<tokio::sync::Notify>, Arc<tokio::sync::Notify>) {
+    let held = HeldAnswer {
+        requested: Arc::default(),
+        release: Arc::default(),
+        response: answer(first, None, None),
+    };
+    let notifiers = (Arc::clone(&held.requested), Arc::clone(&held.release));
+    let mut steps = vec![FauxResponseStep::Factory(Arc::new(held))];
+    steps.extend(
+        rest.iter()
+            .map(|text| FauxResponseStep::Message(Box::new(answer(text, None, None)))),
+    );
+    h.faux.set_responses(steps);
+    notifiers
+}
+
+/// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
+pub fn with_placeholders(value: Value, h: &Harness) -> Value {
+    let root = h.scratch.path().display().to_string();
+    match value {
+        Value::String(text) => json!(text.replace(&root, "$ROOT")),
+        Value::Array(items) => items
+            .into_iter()
+            .map(|item| with_placeholders(item, h))
+            .collect(),
+        Value::Object(fields) => Value::Object(
+            fields
+                .into_iter()
+                .map(|(key, item)| (key, with_placeholders(item, h)))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// The agent run and message events, as the session's listeners would see them.
+pub const MESSAGE_EVENTS: [&str; 4] = ["agent_start", "message_start", "message_end", "agent_end"];
+
+/// Asserts what the session produced against `case`: the history, the run and message
+/// events, the extension events, the reported errors and the number of provider requests.
+pub fn assert_transcript(h: &Harness, t: &Transcript, case: &Value) {
+    assert_eq!(
+        with_placeholders(json!(messages_view(h)), h),
+        case["messages"]
+    );
+    // A run end's messages are compared through the history, since their timestamps are
+    // the clock's.
+    let recorded = of_kinds(case["sessionEvents"].as_array().unwrap(), &MESSAGE_EVENTS)
+        .into_iter()
+        .map(|event| match event["type"].as_str() {
+            Some("agent_end") => json!({"type": "agent_end"}),
+            _ => event,
+        });
+    assert_eq!(
+        with_placeholders(json!(t.events_of(&MESSAGE_EVENTS)), h),
+        json!(recorded.collect::<Vec<_>>())
+    );
+    assert_eq!(
+        with_placeholders(json!(*t.extension.borrow()), h),
+        case["extensionEvents"]
+    );
+    assert_eq!(
+        with_placeholders(json!(*t.errors.borrow()), h),
+        case["errorEvents"]
+    );
+    assert_eq!(json!(h.faux.state.call_count()), case["contexts"]["calls"]);
+}
+
+/// The recorded project files: the `review` skill with frontmatter and a padded body, and
+/// a `gone` skill whose file is missing.
+pub fn recorded_skills(scratch: &maestro_test_directory::Scratch) -> Vec<maestro_resources::Skill> {
+    let dir = scratch.path().join("project/skills/review");
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("SKILL.md");
+    std::fs::write(
+        &file,
+        "---\ndescription: Review\n---\n\n  Check the diff.  \n",
+    )
+    .unwrap();
+    let base_dir = dir.display().to_string();
+    let skill = |name: &str, file_path: String| maestro_resources::Skill {
+        name: name.into(),
+        description: "Review".into(),
+        source_info: create_synthetic_source_info(
+            file_path.clone(),
+            SyntheticSourceOptions {
+                source: "local".into(),
+                scope: None,
+                origin: None,
+                base_dir: None,
+            },
+        ),
+        file_path,
+        base_dir: base_dir.clone(),
+        disable_model_invocation: false,
+    };
+    vec![
+        skill("review", file.display().to_string()),
+        skill("gone", dir.join("missing.md").display().to_string()),
+    ]
+}
+
+/// A prompt template named `name` with `content`.
+pub fn template(name: &str, content: &str) -> maestro_resources::PromptTemplate {
+    maestro_resources::PromptTemplate {
+        name: name.into(),
+        description: String::new(),
+        argument_hint: None,
+        content: content.into(),
+        source_info: create_synthetic_source_info(
+            "plan.md".into(),
+            SyntheticSourceOptions {
+                source: "local".into(),
+                scope: None,
+                origin: None,
+                base_dir: None,
+            },
+        ),
+        file_path: "plan.md".into(),
+    }
+}
+
+/// The recorded form of an operation's outcome.
+pub fn outcome(result: Result<(), DiagnosticErrorInfo>) -> Value {
+    match result {
+        Ok(()) => json!({"ok": {"undefined": true}}),
+        Err(error) => json!({"error": error.message}),
+    }
+}
+
+/// The stored shell records of `entries` without their position, which also counts the
+/// turn messages the agent-event persistence stores.
+pub fn shell_entries(entries: &[Value]) -> Vec<Value> {
+    entries
+        .iter()
+        .filter(|entry| entry["message"]["role"] == "bashExecution")
+        .map(|entry| json!({"type": entry["type"], "message": entry["message"]}))
+        .collect()
+}
+
+/// A labelled recorded observation.
+pub fn labelled(label: &str, value: impl serde::Serialize) -> Value {
+    json!({"label": label, "value": value})
+}
+
+/// Starts `text` as a prompt on the current task set.
+pub fn start_prompt(
+    h: &Harness,
+    text: &'static str,
+) -> tokio::task::JoinHandle<Result<(), DiagnosticErrorInfo>> {
+    let session = Rc::clone(&h.session);
+    tokio::task::spawn_local(async move {
+        session
+            .prompt(text, maestro_app::agent_session::PromptOptions::default())
+            .await
+    })
+}
+
+/// Prompt options whose preflight outcomes are collected in the returned list.
+pub fn observed_preflight() -> (
+    Rc<RefCell<Vec<bool>>>,
+    maestro_app::agent_session::PromptOptions,
+) {
+    let accepted = Rc::new(RefCell::new(Vec::new()));
+    let record = Rc::clone(&accepted);
+    let options = maestro_app::agent_session::PromptOptions {
+        preflight_result: Some(Rc::new(move |ok| record.borrow_mut().push(ok))),
+        ..maestro_app::agent_session::PromptOptions::default()
+    };
+    (accepted, options)
+}
+
+/// The extension registering the command `name`, whose handler records its arguments in
+/// `heard` and then fails with `failure` when one is given.
+pub fn command_extension(
+    name: &'static str,
+    heard: Rc<RefCell<Option<String>>>,
+    failure: Option<&'static str>,
+) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let heard = Rc::clone(&heard);
+        let handler: maestro_extensions::types::CommandHandler<Local> =
+            Rc::new(move |arguments, _| {
+                *heard.borrow_mut() = Some(arguments);
+                Box::pin(std::future::ready(
+                    failure.map_or(Ok(()), |text| Err(text.into())),
+                ))
+            });
+        let options = maestro_extensions::types::RegisteredCommandOptions {
+            description: Some(name.into()),
+            get_argument_completions: None,
+            handler,
+        };
+        Box::pin(std::future::ready(
+            api.register_command(name.into(), options),
+        ))
+    })
+}
+
+/// Shell operations that record each execution, write the scripted chunks, then wait for
+/// `release` when holding, and settle with the scripted exit status.
+pub struct ScriptedShell {
+    /// Each execution's command and directory, in order.
+    pub executed: Mutex<Vec<Value>>,
+    /// Notified once the chunks are written.
+    pub started: Arc<tokio::sync::Notify>,
+    /// Lets a holding execution settle.
+    pub release: Arc<tokio::sync::Notify>,
+    /// The output chunks.
+    chunks: Vec<String>,
+    /// The exit status.
+    exit_code: Option<f64>,
+    /// Whether the execution waits for `release`.
+    hold: bool,
+}
+
+impl ScriptedShell {
+    /// Operations writing `chunks` and settling with `exit_code` at once.
+    pub fn chunks(chunks: Vec<String>, exit_code: Option<f64>) -> Self {
+        Self {
+            executed: Mutex::default(),
+            started: Arc::default(),
+            release: Arc::default(),
+            chunks,
+            exit_code,
+            hold: false,
+        }
+    }
+
+    /// Operations writing `text`, or nothing when it is empty, and settling at once.
+    pub fn output(text: &str, exit_code: Option<f64>) -> Self {
+        let chunks = if text.is_empty() {
+            Vec::new()
+        } else {
+            vec![text.to_owned()]
+        };
+        Self::chunks(chunks, exit_code)
+    }
+
+    /// Operations writing `chunks` that settle with `exit_code` only once released.
+    pub fn held(chunks: Vec<String>, exit_code: Option<f64>) -> Self {
+        Self {
+            hold: true,
+            ..Self::chunks(chunks, exit_code)
+        }
+    }
+}
+
+impl maestro_tools::BashOperations for ScriptedShell {
+    fn exec<'a>(
+        &'a self,
+        command: &'a str,
+        cwd: &'a str,
+        options: maestro_tools::BashExecOptions<'a>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<
+                    Output = Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
+                > + Send
+                + 'a,
+        >,
+    > {
+        Box::pin(async move {
+            self.executed
+                .lock()
+                .unwrap()
+                .push(json!({"command": command, "cwd": cwd}));
+            for chunk in &self.chunks {
+                (options.on_data)(chunk.as_bytes());
+            }
+            self.started.notify_one();
+            if self.hold {
+                self.release.notified().await;
+            }
+            Ok(maestro_tools::BashExecResult {
+                exit_code: self.exit_code,
+            })
+        })
+    }
+}
+
+/// The recorded form of a shell result, with an artifact spelled `$ARTIFACT`.
+pub fn bash_result_view(result: &maestro_tools::BashResult) -> Value {
+    let mut view = json!({
+        "output": result.output, "cancelled": result.cancelled, "truncated": result.truncated,
+    });
+    if let Some(code) = result.exit_code {
+        view["exitCode"] = recorded_number(code);
+    }
+    if result.full_output_path.is_some() {
+        view["fullOutputPath"] = json!("$ARTIFACT");
+    }
+    view
 }

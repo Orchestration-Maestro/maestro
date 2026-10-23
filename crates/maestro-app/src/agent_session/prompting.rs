@@ -1,0 +1,295 @@
+//! Sending a prompt: registered commands, input handlers, skill and template expansion,
+//! streaming admission, the credential check and delivery to the agent.
+use super::state::{last_assistant_message, thrown};
+use super::{AgentSession, PromptOptions};
+use crate::configuration::config::get_docs_path;
+use crate::utils::lock::{read, write};
+use maestro_agent::{AgentMessage, PromptInput};
+use maestro_credentials::format_no_api_key_found_message;
+use maestro_extensions::{
+    ExtensionError, ExtensionExecution, InputEventResult, InputSource, NativeAgentMessage,
+};
+use maestro_models::{
+    DiagnosticErrorInfo, ImageContent, TextContent, UserBlock, UserContent, UserMessage,
+    timestamp_now,
+};
+use maestro_resources::{expand_prompt_template, skills::read_text, strip_frontmatter};
+use maestro_session::Presence;
+use maestro_session::messages::{
+    CustomAgentMessages, CustomMessage, CustomMessageInput, UserMessageDelivery,
+};
+use std::rc::Rc;
+use std::sync::{Arc, RwLock};
+
+impl<E: ExtensionExecution> AgentSession<E> {
+    /// Sends a prompt. A registered command runs at once, even while a response streams;
+    /// otherwise the input handlers, then skill and template expansion, then streaming
+    /// admission, the deferred shell results, the credential check and the pre-prompt
+    /// compaction run before the user message, the next-turn messages and the extension
+    /// messages are sent. Returns after the agent and any retry settle.
+    ///
+    /// `options.preflight_result` hears once whether the prompt was accepted, before the
+    /// agent is prompted.
+    ///
+    /// # Errors
+    /// Returns the refusal of a prompt that arrives while a response streams without a queue
+    /// choice, the missing-credentials message, and failures of the extensions, the
+    /// compaction check, the session history and the agent.
+    pub async fn prompt(
+        self: &Rc<Self>,
+        text: &str,
+        mut options: PromptOptions,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let preflight_result = options.preflight_result.take();
+        let notify = |accepted| {
+            if let Some(observer) = &preflight_result {
+                observer(accepted);
+            }
+        };
+        let messages = match self.prepare_prompt(text, options).await {
+            Ok(messages) => messages,
+            Err(error) => {
+                notify(false);
+                return Err(error);
+            }
+        };
+        notify(true);
+        let Some(messages) = messages else {
+            return Ok(());
+        };
+        self.agent.prompt(PromptInput::Messages(messages)).await?;
+        self.wait_for_retry().await;
+        Ok(())
+    }
+
+    /// Runs every step before the agent is prompted; absent when the prompt ends without
+    /// sending anything.
+    async fn prepare_prompt(
+        self: &Rc<Self>,
+        text: &str,
+        options: PromptOptions,
+    ) -> Result<Option<Vec<NativeAgentMessage>>, DiagnosticErrorInfo> {
+        let expand = options.expand_prompt_templates.unwrap_or(true);
+        if expand && text.starts_with('/') && self.try_execute_extension_command(text).await? {
+            return Ok(None);
+        }
+        let source = options.source.unwrap_or(InputSource::Interactive);
+        let Some((mut text, images)) = self.emit_input(text, options.images, source).await? else {
+            return Ok(None);
+        };
+        if expand {
+            text = self.expand_text(&text)?;
+        }
+        if self.is_streaming() {
+            let Some(behavior) = options.streaming_behavior else {
+                return Err(DiagnosticErrorInfo::error(
+                    "Agent is already processing. Specify streamingBehavior ('steer' or \
+                     'followUp') to queue the message.",
+                ));
+            };
+            match behavior {
+                UserMessageDelivery::FollowUp => self.queue_follow_up(text, &images),
+                UserMessageDelivery::Steer => self.queue_steer(text, &images),
+            }
+            return Ok(None);
+        }
+        self.flush_pending_bash_messages()?;
+        self.require_credentials()?;
+        let last = last_assistant_message(&read(&self.messages()));
+        if let Some(last) = last {
+            let last = read(&last).clone();
+            self.check_compaction(&last, false).await?;
+        }
+        self.assemble_messages(text, images).await.map(Some)
+    }
+
+    /// The input handlers' text and images; absent when a handler handled the input.
+    async fn emit_input(
+        &self,
+        text: &str,
+        images: Vec<ImageContent>,
+        source: InputSource,
+    ) -> Result<Option<(String, Vec<ImageContent>)>, DiagnosticErrorInfo> {
+        if !self.extension_runner.has_handlers("input") {
+            return Ok(Some((text.to_owned(), images)));
+        }
+        let mut current = image_presence(images);
+        let result = self
+            .extension_runner
+            .emit_input(text, &mut current, source)
+            .await
+            .map_err(thrown)?;
+        let images = match current {
+            Presence::Present(images) => images,
+            _ => Vec::new(),
+        };
+        Ok(match result {
+            InputEventResult::Handled => None,
+            InputEventResult::Transform(transform) => Some((transform.text, images)),
+            InputEventResult::Continue => Some((text.to_owned(), images)),
+        })
+    }
+
+    /// Refuses a prompt for a model without configured credentials.
+    fn require_credentials(&self) -> Result<(), DiagnosticErrorInfo> {
+        let model = self.model();
+        if self
+            .model_registry
+            .has_configured_auth(&model)
+            .map_err(thrown)?
+        {
+            return Ok(());
+        }
+        let provider = read(&model).provider.clone();
+        let docs = get_docs_path().map_err(thrown)?;
+        Err(DiagnosticErrorInfo::error(format_no_api_key_found_message(
+            &provider, &docs,
+        )))
+    }
+
+    /// The user message, then the next-turn messages, then the extensions' messages; the
+    /// extensions' system prompt replaces the base prompt, which is otherwise restored.
+    async fn assemble_messages(
+        &self,
+        text: String,
+        images: Vec<ImageContent>,
+    ) -> Result<Vec<NativeAgentMessage>, DiagnosticErrorInfo> {
+        let mut messages = vec![user_message(text.clone(), &images)];
+        let mut images = image_presence(images);
+        messages.append(&mut self.state.borrow_mut().pending_next_turn_messages);
+        let (base, base_options) = {
+            let state = self.state.borrow();
+            let options = state.base_system_prompt_options.clone();
+            (state.base_system_prompt.clone(), options)
+        };
+        // Before the first rebuild, the options of the active tools stand in.
+        let base_options = base_options
+            .unwrap_or_else(|| self.system_prompt_options(&self.get_active_tool_names()));
+        let result = self
+            .extension_runner
+            .emit_before_agent_start(text, &mut images, base.clone(), base_options)
+            .await
+            .map_err(thrown)?;
+        let (added, prompt) = result.map_or((None, None), |result| {
+            (result.messages, result.system_prompt)
+        });
+        messages.extend(added.into_iter().flatten().map(custom_message));
+        let prompt = prompt.filter(|prompt| !prompt.is_empty());
+        write(self.agent.state()).system_prompt = prompt.unwrap_or(base);
+        Ok(messages)
+    }
+
+    /// Runs the registered command `text` names; a failing handler is reported to the error
+    /// listeners and still counts as run.
+    async fn try_execute_extension_command(&self, text: &str) -> Result<bool, DiagnosticErrorInfo> {
+        let (name, arguments) = split_command(text);
+        let Some(command) = self.extension_runner.get_command(name) else {
+            return Ok(false);
+        };
+        let context = self.extension_runner.create_command_context();
+        if let Err(error) = (command.command.handler)(arguments.to_owned(), context).await {
+            self.extension_runner
+                .emit_error(&ExtensionError {
+                    extension_path: format!("command:{name}"),
+                    event: "command".into(),
+                    error: error.to_string(),
+                    stack: None,
+                })
+                .map_err(thrown)?;
+        }
+        Ok(true)
+    }
+
+    /// Expands a `/skill:<name>` command into the skill's block followed by its arguments;
+    /// other text, unknown skills and unreadable skill files keep the text.
+    ///
+    /// # Errors
+    /// Returns an error listener's failure.
+    fn expand_skill_command(&self, text: &str) -> Result<String, DiagnosticErrorInfo> {
+        let Some(command) = text.strip_prefix("/skill:") else {
+            return Ok(text.to_owned());
+        };
+        let (name, arguments) = command.split_once(' ').unwrap_or((command, ""));
+        let arguments = arguments.trim_matches(maestro_text::is_whitespace_scalar);
+        let skills = self.resource_loader.get_skills();
+        let Some(skill) = skills.skills.iter().find(|skill| skill.name == name) else {
+            return Ok(text.to_owned());
+        };
+        let body = read_text(std::path::Path::new(&skill.file_path))
+            .map_err(|error| error.to_string())
+            .and_then(|content| strip_frontmatter(&content).map_err(|error| error.to_string()));
+        let body = match body {
+            Ok(body) => body,
+            Err(error) => {
+                self.extension_runner
+                    .emit_error(&ExtensionError {
+                        extension_path: skill.file_path.clone(),
+                        event: "skill_expansion".into(),
+                        error,
+                        stack: None,
+                    })
+                    .map_err(thrown)?;
+                return Ok(text.to_owned());
+            }
+        };
+        let block = format!(
+            "<skill name=\"{}\" location=\"{}\">\nReferences are relative to {}.\n\n{}\n</skill>",
+            skill.name,
+            skill.file_path,
+            skill.base_dir,
+            body.trim_matches(maestro_text::is_whitespace_scalar)
+        );
+        Ok(if arguments.is_empty() {
+            block
+        } else {
+            format!("{block}\n\n{arguments}")
+        })
+    }
+
+    /// Expands a skill command, then a prompt template.
+    pub(super) fn expand_text(&self, text: &str) -> Result<String, DiagnosticErrorInfo> {
+        let text = self.expand_skill_command(text)?;
+        Ok(expand_prompt_template(
+            &text,
+            &self.prompt_templates().prompts,
+        ))
+    }
+}
+
+/// The command name and arguments of `/<name> <arguments>`, split at the first space.
+pub(super) fn split_command(text: &str) -> (&str, &str) {
+    let command = text.strip_prefix('/').unwrap_or(text);
+    command.split_once(' ').unwrap_or((command, ""))
+}
+
+/// Images as an extension event carries them: absent when there are none.
+fn image_presence(images: Vec<ImageContent>) -> Presence<Vec<ImageContent>> {
+    if images.is_empty() {
+        Presence::Missing
+    } else {
+        Presence::Present(images)
+    }
+}
+
+/// A user message of one text block followed by the images.
+pub(super) fn user_message(text: String, images: &[ImageContent]) -> NativeAgentMessage {
+    let mut blocks = vec![UserBlock::Text(TextContent::new(text))];
+    blocks.extend(images.iter().cloned().map(UserBlock::Image));
+    AgentMessage::User(Arc::new(RwLock::new(UserMessage {
+        content: UserContent::Blocks(blocks),
+        timestamp: timestamp_now(),
+    })))
+}
+
+/// A custom message stamped now.
+pub(super) fn custom_message(message: CustomMessageInput) -> NativeAgentMessage {
+    AgentMessage::Custom(Arc::new(RwLock::new(CustomAgentMessages::Custom(
+        CustomMessage {
+            custom_type: message.custom_type,
+            content: message.content,
+            display: message.display,
+            details: message.details,
+            timestamp: timestamp_now(),
+        },
+    ))))
+}

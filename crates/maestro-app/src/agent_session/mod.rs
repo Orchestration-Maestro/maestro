@@ -1,8 +1,12 @@
 //! The session that frontends share: agent state, model and thinking selection, tool
-//! selection, history navigation, statistics and exports.
+//! selection, history navigation, statistics, exports, prompts, queues and direct shell
+//! commands.
+mod bash;
 mod compaction;
 mod export;
 mod navigation;
+mod prompting;
+mod queues;
 mod retry;
 mod selection;
 mod skill_block;
@@ -53,6 +57,8 @@ pub struct AgentSession<E: ExtensionExecution = Threaded> {
     config_value_operations: Arc<dyn ConfigValueOperations>,
     /// The session working directory.
     cwd: String,
+    /// The directory of the tool binaries that shell commands find first.
+    bin_dir: String,
     /// Session listeners in subscription order.
     event_listeners: Rc<RefCell<Listeners<AgentSessionEventListener>>>,
     /// Scoped models and the tool registry.
@@ -80,6 +86,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             extension_runner: config.extension_runner,
             config_value_operations: config.config_value_operations,
             cwd: config.cwd,
+            bin_dir: config.bin_dir,
             event_listeners: Rc::default(),
             state: RefCell::new(AgentSessionState::new(config.scoped_models)),
         }
