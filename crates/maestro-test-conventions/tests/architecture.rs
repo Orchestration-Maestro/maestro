@@ -2929,107 +2929,6 @@ fn assert_tracked_delegation(sources: &[(String, String)]) {
         assert!(
             source.is_some_and(|source| delegates_directly(source, function)),
             "{path}: {function}"
-
-/// The owner module that defines the session directory encoder.
-const ENCODER_OWNER: &str = "pub fn encode_session_dir(cwd: &str) -> String {\n    cwd.to_owned()\n}\n\npub fn default_dir(cwd: &str) -> String {\n    format!(\"{}/{}\", cwd, encode_session_dir(cwd))\n}\n";
-/// A caller that names the owner directly.
-const CALLER: &str =
-    "pub fn directory(cwd: &str) -> String {\n    maestro_session::encode_session_dir(cwd)\n}\n";
-/// A caller that reaches the owner through a renamed module import.
-const RENAMED_CALLER: &str = "use maestro_session as session;\n\npub fn directory(cwd: &str) -> String {\n    session::encode_session_dir(cwd)\n}\n";
-/// A caller that spells the directory name itself beside its companion call.
-const COPIED: &str = "pub fn directory(cwd: &str) -> String {\n    let _ = maestro_session::encode_session_dir(cwd);\n    format!(\"--{}--\", cwd.replace('/', \"-\"))\n}\n";
-
-/// Write `source` as the crate file at `relative`.
-fn source(workspace: &Workspace, member: &str, relative: &str, source: &str) {
-    let path = workspace
-        .root
-        .path()
-        .join("crates")
-        .join(member)
-        .join(relative);
-    std::fs::create_dir_all(path.parent().expect("a source directory")).unwrap();
-    std::fs::write(path, source).unwrap();
-}
-
-/// The reported path of `relative` inside `member`.
-fn crate_path(workspace: &Workspace, member: &str, relative: &str) -> String {
-    workspace
-        .root
-        .path()
-        .join("crates")
-        .join(member)
-        .join(relative)
-        .display()
-        .to_string()
-}
-
-/// A workspace holding the encoder owner and the three native selectors.
-fn encoder_workspace() -> Workspace {
-    let workspace = Workspace::new();
-    workspace.member("maestro-session", "maestro-session", "");
-    workspace.member("maestro-app", "maestro-app", "");
-    workspace.list(&[("maestro-app", "core"), ("maestro-session", "core")]);
-    source(
-        &workspace,
-        "maestro-session",
-        "src/session_manager/files.rs",
-        ENCODER_OWNER,
-    );
-    for file in SELECTORS {
-        source(&workspace, "maestro-app", file, CALLER);
-    }
-    workspace
-}
-
-/// The production files that must reach the encoder.
-const SELECTORS: [&str; 3] = [
-    "src/developer_tools/cost.rs",
-    "src/developer_tools/stats.rs",
-    "src/developer_tools/session_transcripts/mod.rs",
-];
-
-#[test]
-fn session_directory_encoding_has_one_owner() {
-    assert_eq!(check_workspace(encoder_workspace().root.path()), Ok(()));
-    assert_second_definition_is_rejected();
-    assert_copies_are_rejected();
-    assert_missing_selector_is_reported();
-    assert_unreached_owner_is_reported();
-    assert_renamed_import_is_accepted();
-}
-
-/// A second definition in the owner module is rejected.
-fn assert_second_definition_is_rejected() {
-    let workspace = encoder_workspace();
-    source(
-        &workspace,
-        "maestro-session",
-        "src/session_manager/files.rs",
-        &format!("{ENCODER_OWNER}\n{ENCODER_OWNER}"),
-    );
-    assert_eq!(
-        check_workspace(workspace.root.path()),
-        Err("maestro-session::encode_session_dir must have exactly one definition, found 2".into())
-    );
-}
-
-/// A local copy is rejected inside a selector, a sibling module and another owner.
-fn assert_copies_are_rejected() {
-    for (member, relative) in [
-        ("maestro-app", "src/developer_tools/cost.rs"),
-        ("maestro-app", "src/developer_tools/formatting.rs"),
-        ("maestro-session", "src/session_manager/mod.rs"),
-    ] {
-        let workspace = encoder_workspace();
-        source(&workspace, member, relative, COPIED);
-        assert_eq!(
-            check_workspace(workspace.root.path()),
-            Err(format!(
-                "{}:3: session directory encoding belongs to maestro-session::encode_session_dir",
-                crate_path(&workspace, member, relative)
-            )),
-            "{relative}"
         );
     }
 }
@@ -3193,6 +3092,111 @@ fn explicit_instruction_paths_share_their_resolver() {
     );
     assert_forwarding_controls();
     assert_tracked_delegation(&sources);
+}
+
+/// The owner module that defines the session directory encoder.
+const ENCODER_OWNER: &str = "pub fn encode_session_dir(cwd: &str) -> String {\n    cwd.to_owned()\n}\n\npub fn default_dir(cwd: &str) -> String {\n    format!(\"{}/{}\", cwd, encode_session_dir(cwd))\n}\n";
+/// A caller that names the owner directly.
+const CALLER: &str =
+    "pub fn directory(cwd: &str) -> String {\n    maestro_session::encode_session_dir(cwd)\n}\n";
+/// A caller that reaches the owner through a renamed module import.
+const RENAMED_CALLER: &str = "use maestro_session as session;\n\npub fn directory(cwd: &str) -> String {\n    session::encode_session_dir(cwd)\n}\n";
+/// A caller that spells the directory name itself beside its companion call.
+const COPIED: &str = "pub fn directory(cwd: &str) -> String {\n    let _ = maestro_session::encode_session_dir(cwd);\n    format!(\"--{}--\", cwd.replace('/', \"-\"))\n}\n";
+
+/// Write `source` as the crate file at `relative`.
+fn source(workspace: &Workspace, member: &str, relative: &str, source: &str) {
+    let path = workspace
+        .root
+        .path()
+        .join("crates")
+        .join(member)
+        .join(relative);
+    std::fs::create_dir_all(path.parent().expect("a source directory")).unwrap();
+    std::fs::write(path, source).unwrap();
+}
+
+/// The reported path of `relative` inside `member`.
+fn crate_path(workspace: &Workspace, member: &str, relative: &str) -> String {
+    workspace
+        .root
+        .path()
+        .join("crates")
+        .join(member)
+        .join(relative)
+        .display()
+        .to_string()
+}
+
+/// A workspace holding the encoder owner and the three native selectors.
+fn encoder_workspace() -> Workspace {
+    let workspace = Workspace::new();
+    workspace.member("maestro-session", "maestro-session", "");
+    workspace.member("maestro-app", "maestro-app", "");
+    workspace.list(&[("maestro-app", "core"), ("maestro-session", "core")]);
+    source(
+        &workspace,
+        "maestro-session",
+        "src/session_manager/files.rs",
+        ENCODER_OWNER,
+    );
+    for file in SELECTORS {
+        source(&workspace, "maestro-app", file, CALLER);
+    }
+    workspace
+}
+
+/// The production files that must reach the encoder.
+const SELECTORS: [&str; 3] = [
+    "src/developer_tools/cost.rs",
+    "src/developer_tools/stats.rs",
+    "src/developer_tools/session_transcripts/mod.rs",
+];
+
+#[test]
+fn session_directory_encoding_has_one_owner() {
+    assert_eq!(check_workspace(encoder_workspace().root.path()), Ok(()));
+    assert_second_definition_is_rejected();
+    assert_copies_are_rejected();
+    assert_missing_selector_is_reported();
+    assert_unreached_owner_is_reported();
+    assert_renamed_import_is_accepted();
+}
+
+/// A second definition in the owner module is rejected.
+fn assert_second_definition_is_rejected() {
+    let workspace = encoder_workspace();
+    source(
+        &workspace,
+        "maestro-session",
+        "src/session_manager/files.rs",
+        &format!("{ENCODER_OWNER}\n{ENCODER_OWNER}"),
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-session::encode_session_dir must have exactly one definition, found 2".into())
+    );
+}
+
+/// A local copy is rejected inside a selector, a sibling module and another owner.
+fn assert_copies_are_rejected() {
+    for (member, relative) in [
+        ("maestro-app", "src/developer_tools/cost.rs"),
+        ("maestro-app", "src/developer_tools/formatting.rs"),
+        ("maestro-session", "src/session_manager/mod.rs"),
+    ] {
+        let workspace = encoder_workspace();
+        source(&workspace, member, relative, COPIED);
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(format!(
+                "{}:3: session directory encoding belongs to maestro-session::encode_session_dir",
+                crate_path(&workspace, member, relative)
+            )),
+            "{relative}"
+        );
+    }
+}
 
 /// A selector that is absent from its own file is reported.
 fn assert_missing_selector_is_reported() {

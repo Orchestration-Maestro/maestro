@@ -2,8 +2,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::analysis_fixtures::run_transcripts;
-use crate::isolated_home::{with_environment, with_isolated_home};
+#[cfg(unix)]
+use crate::isolated_home::with_environment;
+use crate::isolated_home::with_isolated_home;
 use serde_json::Value;
+#[cfg(unix)]
 use std::fmt::Write;
 use std::path::Path;
 
@@ -402,6 +405,7 @@ fn installer() -> String {
 }
 
 /// A prepared project with one session and a selected output directory.
+#[cfg(unix)]
 fn prepared(base: &str) -> (String, String) {
     let project = format!("{base}/project");
     std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
