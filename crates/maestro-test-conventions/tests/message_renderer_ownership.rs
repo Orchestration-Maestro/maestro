@@ -103,6 +103,42 @@ const BYPASSES: &[Bypass] = &[
     ),
 ];
 
+/// Chat sources that must be accepted: file name and contents.
+const ACCEPTED: &[(&str, &str)] = &[
+    (
+        "projected.rs",
+        "//! Projected.\nuse maestro_app::{MessageRendererCall, MessageRenderOptions};\n/// Item.\npub fn call(call: &MessageRendererCall) {\n    let _ = (call, MessageRenderOptions { expanded: false });\n}\n",
+    ),
+    (
+        "lookup.rs",
+        "//! Lookup.\n/// Item.\npub fn lookup(runner: &maestro_app::ExtensionRunner) {\n    let _ = runner.get_message_renderer_call::<u8>(\"note\");\n}\n",
+    ),
+    (
+        "decoy.rs",
+        "//! Decoy.\n/// Item.\npub const TEXT: &str = \"MessageRenderer EventBus invoke_callback\";\n// MessageRenderer in an ordinary comment.\n",
+    ),
+    (
+        "nested_allowed.rs",
+        "//! Nested allowed.\nuse maestro_app::{renderers::{MessageRendererCall, MessageRenderOptions}};\n/// Item.\npub struct Holder(MessageRendererCall, MessageRenderOptions);\n",
+    ),
+    (
+        "tests.rs",
+        "//! Test scope.\nuse maestro_app::MessageRenderer;\n/// Helper.\npub fn helper() -> Option<MessageRenderer> {\n    None\n}\n",
+    ),
+    (
+        "gated.rs",
+        "//! Gated.\n#[cfg(test)]\nmod tests {\n    use maestro_app::EventBus;\n    /// Helper.\n    pub fn helper(_bus: &EventBus) {}\n}\n",
+    ),
+    (
+        "grouped_test_self.rs",
+        "//! Grouped test self.\n#[cfg(test)]\nuse maestro_app::MessageRenderer::{self};\n\n/// Entry.\npub fn render() -> u8 {\n    self::helper()\n}\n\n/// Helper.\npub fn helper() -> u8 {\n    0\n}\n",
+    ),
+    (
+        "test_alias.rs",
+        "//! Test alias.\nuse crate::local::Renderer;\n\n#[cfg(test)]\nmod tests {\n    use maestro_app::MessageRenderer as Renderer;\n\n    /// Helper.\n    pub fn helper(_value: &Renderer) {}\n}\n\n/// Entry.\npub fn render(value: &Renderer) -> u8 {\n    let _ = value;\n    0\n}\n",
+    ),
+];
+
 #[test]
 fn message_renderer_owner_rejects_raw_chat_bypasses() {
     let workspace = workspace();
@@ -184,33 +220,7 @@ fn message_renderer_owner_requires_one_declaration_in_its_owner_file() {
 #[test]
 fn message_renderer_owner_accepts_projected_calls_and_test_scopes() {
     let workspace = workspace();
-    let accepted: &[(&str, &str)] = &[
-        (
-            "projected.rs",
-            "//! Projected.\nuse maestro_app::{MessageRendererCall, MessageRenderOptions};\n/// Item.\npub fn call(call: &MessageRendererCall) {\n    let _ = (call, MessageRenderOptions { expanded: false });\n}\n",
-        ),
-        (
-            "lookup.rs",
-            "//! Lookup.\n/// Item.\npub fn lookup(runner: &maestro_app::ExtensionRunner) {\n    let _ = runner.get_message_renderer_call::<u8>(\"note\");\n}\n",
-        ),
-        (
-            "decoy.rs",
-            "//! Decoy.\n/// Item.\npub const TEXT: &str = \"MessageRenderer EventBus invoke_callback\";\n// MessageRenderer in an ordinary comment.\n",
-        ),
-        (
-            "nested_allowed.rs",
-            "//! Nested allowed.\nuse maestro_app::{renderers::{MessageRendererCall, MessageRenderOptions}};\n/// Item.\npub struct Holder(MessageRendererCall, MessageRenderOptions);\n",
-        ),
-        (
-            "tests.rs",
-            "//! Test scope.\nuse maestro_app::MessageRenderer;\n/// Helper.\npub fn helper() -> Option<MessageRenderer> {\n    None\n}\n",
-        ),
-        (
-            "gated.rs",
-            "//! Gated.\n#[cfg(test)]\nmod tests {\n    use maestro_app::EventBus;\n    /// Helper.\n    pub fn helper(_bus: &EventBus) {}\n}\n",
-        ),
-    ];
-    for (name, contents) in accepted {
+    for (name, contents) in ACCEPTED {
         let path = chat_source(&workspace, name, contents);
         assert_eq!(
             check_workspace(workspace.root.path()),

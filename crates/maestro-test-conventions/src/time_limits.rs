@@ -4,7 +4,7 @@ use syn::{
     ext::IdentExt, parse::Parser, parse::discouraged::Speculative, spanned::Spanned, visit::Visit,
 };
 
-use crate::source::{Member, cfg_test, inherit_test_context, test_layout};
+use crate::source::{Member, inherit_test_context, test_scope};
 
 /// Reject recognized optional polling macros, timer calls and scoped tracing captures in
 /// test-owned parsed sources; only the test tracing owner may capture directly.
@@ -18,9 +18,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             let mut aliases = Aliases::default();
             aliases.visit_file(syntax);
             let mut calls = Calls {
-                testing: member.name.starts_with("maestro-test-")
-                    || test_layout(&source.path, &member.directory)
-                    || cfg_test(&syntax.attrs),
+                testing: test_scope(member, source),
                 tracing_owner: member.name == crate::graph::TEST_TRACING,
                 found: Vec::new(),
                 imports: aliases.0,

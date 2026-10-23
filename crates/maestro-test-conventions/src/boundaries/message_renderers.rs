@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 
 use syn::{ext::IdentExt, visit::Visit};
 
-use crate::source::{Member, Source, cfg_test, inherit_test_context, test_layout};
+use crate::source::{Member, Source, inherit_test_context, test_scope};
 
 /// Crate that owns the projected call and the callbacks it retains.
 const OWNER: &str = "maestro-extensions";
@@ -31,15 +31,17 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             let Some(syntax) = &source.syntax else {
                 continue;
             };
-            let mut aliases = Aliases::default();
+            let testing = test_scope(member, source);
+            let mut aliases = Aliases {
+                testing,
+                found: BTreeMap::new(),
+            };
             aliases.visit_file(syntax);
             let mut guard = Guard {
                 member: &member.name,
                 source,
-                testing: member.name.starts_with("maestro-test-")
-                    || test_layout(&source.path, &member.directory)
-                    || cfg_test(&syntax.attrs),
-                aliases: aliases.0,
+                testing,
+                aliases: aliases.found,
                 owner_file: source
                     .path
                     .strip_prefix(&member.directory)
@@ -65,79 +67,109 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
 }
 
 /// One item a use tree imports.
-struct Import {
+struct Import<'a> {
     /// Path segments as written, ending with the imported item.
-    path: Vec<syn::Ident>,
+    path: Vec<&'a syn::Ident>,
     /// Local name the import binds, absent for a glob.
-    binding: Option<syn::Ident>,
+    binding: Option<&'a syn::Ident>,
 }
 
-impl Import {
+impl Import<'_> {
     /// Name of the item the import binds, where `self` names the module above it.
-    fn item(&self) -> Option<String> {
+    fn item(&self) -> Option<&syn::Ident> {
         let (last, above) = self.path.split_last()?;
-        let name = if last == "self" { above.last()? } else { last };
-        Some(name.unraw().to_string())
+        if **last == "self" {
+            above.last().copied()
+        } else {
+            Some(last)
+        }
     }
 }
 
 /// Every item one use tree imports, whatever nesting or aliasing it writes.
-fn flatten(tree: &syn::UseTree) -> Vec<Import> {
+fn flatten(tree: &syn::UseTree) -> Vec<Import<'_>> {
     let mut imports = Vec::new();
-    collect(tree, &[], &mut imports);
+    collect(tree, &mut Vec::new(), &mut imports);
     imports
 }
 
 /// Appends the items of one use tree below the segments already written.
-fn collect(tree: &syn::UseTree, above: &[syn::Ident], imports: &mut Vec<Import>) {
+fn collect<'a>(
+    tree: &'a syn::UseTree,
+    above: &mut Vec<&'a syn::Ident>,
+    imports: &mut Vec<Import<'a>>,
+) {
     match tree {
         syn::UseTree::Path(path) => {
-            let mut prefix = above.to_vec();
-            prefix.push(path.ident.clone());
-            collect(&path.tree, &prefix, imports);
+            above.push(&path.ident);
+            collect(&path.tree, above, imports);
+            above.pop();
         }
-        syn::UseTree::Name(name) => imports.push(Import {
-            path: beneath(above, &name.ident),
-            binding: Some(name.ident.clone()),
-        }),
-        syn::UseTree::Rename(rename) => imports.push(Import {
-            path: beneath(above, &rename.ident),
-            binding: Some(rename.rename.clone()),
-        }),
+        syn::UseTree::Name(name) => {
+            let bound = if name.ident == "self" {
+                above.last().copied()
+            } else {
+                Some(&name.ident)
+            };
+            above.push(&name.ident);
+            imports.push(Import {
+                path: above.clone(),
+                binding: bound,
+            });
+            above.pop();
+        }
+        syn::UseTree::Rename(rename) => {
+            above.push(&rename.ident);
+            imports.push(Import {
+                path: above.clone(),
+                binding: Some(&rename.rename),
+            });
+            above.pop();
+        }
         syn::UseTree::Group(group) => {
             for tree in &group.items {
                 collect(tree, above, imports);
             }
         }
         syn::UseTree::Glob(_) => imports.push(Import {
-            path: above.to_vec(),
+            path: above.clone(),
             binding: None,
         }),
     }
 }
 
-/// The segments of the path that names one imported item.
-fn beneath(above: &[syn::Ident], item: &syn::Ident) -> Vec<syn::Ident> {
-    let mut path = above.to_vec();
-    path.push(item.clone());
-    path
+/// Restricted name an identifier spells, ignoring a raw prefix.
+fn restricted(name: &syn::Ident) -> Option<&'static str> {
+    let spelling = name.to_string();
+    let spelling = spelling.strip_prefix("r#").unwrap_or(&spelling);
+    RAW.iter().copied().find(|raw| *raw == spelling)
 }
 
-/// Known raw aliases collected across one parsed file.
-#[derive(Default)]
-struct Aliases(BTreeMap<String, String>);
+/// Restricted names imported under another local name across one parsed file.
+struct Aliases {
+    /// Whether the current syntax belongs to tests.
+    testing: bool,
+    /// Local name to the restricted name it stands for.
+    found: BTreeMap<String, &'static str>,
+}
 
 impl<'ast> Visit<'ast> for Aliases {
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
+        if self.testing {
+            return;
+        }
         for import in flatten(&item.tree) {
-            let Some(binding) = &import.binding else {
+            let (Some(binding), Some(raw)) = (import.binding, import.item().and_then(restricted))
+            else {
                 continue;
             };
-            if let Some(name) = import.item().filter(|name| RAW.contains(&name.as_str())) {
-                self.0.insert(binding.unraw().to_string(), name);
-            }
+            self.found.insert(binding.unraw().to_string(), raw);
         }
     }
+
+    inherit_test_context!(visit_item, Item, item_attributes);
+    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
+    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
 }
 
 /// Located rule violations for one source.
@@ -149,7 +181,7 @@ struct Guard<'a> {
     /// Whether the current syntax belongs to tests.
     testing: bool,
     /// Raw identifiers imported under another local name.
-    aliases: BTreeMap<String, String>,
+    aliases: BTreeMap<String, &'static str>,
     /// Whether this source is the file that must hold the single declaration.
     owner_file: bool,
     /// Production declarations of the projected record seen in this source.
@@ -167,8 +199,8 @@ impl Guard<'_> {
         let Some(raw) = self
             .aliases
             .get(written)
-            .cloned()
-            .or_else(|| RAW.contains(&written).then(|| written.to_owned()))
+            .copied()
+            .or_else(|| RAW.iter().copied().find(|raw| *raw == written))
         else {
             return;
         };
