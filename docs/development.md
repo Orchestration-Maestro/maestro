@@ -23,6 +23,15 @@ x64 hosts, independently of the compilation target. A successful `mise lock` can
 still skip unresolved hosts; check its platform inventory. Follow the
 [repository setup guidance](../AGENTS.md#checks) when installing pinned tools.
 
+The commit hook formats and re-stages the staged files, announces `Selected
+crates: ...`, then verifies the staged crates and every workspace crate that
+depends on them. A staged workspace-wide input runs the full workspace check
+instead: a manifest, the lockfile, `.cargo/`, the toolchain, the justfile, Clippy
+or mise settings, the hook configuration, the workspace inventory, CI files, root
+documentation or assets, or the conventions crate. `_check` is the private recipe
+that receives either `--workspace` or repeated `-p <package>` arguments, so the
+hook and `check` share one command list; `check` passes `--workspace`.
+
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
 Cargo's dependency graph. See [catalog generation](models/generation.md). `check`

@@ -56,8 +56,7 @@ fn child_toolchain_uses_declared_pin() {
     check_declared_children(&fixture);
     let declaration = include_str!("../../../rust-toolchain.toml");
     assert!(
-        toolchain_support::declare_toolchain(&fixture.root.path().join("missing"), declaration)
-            .is_err()
+        toolchain_support::declare_toolchain(fixture.root.path().join("missing"), declaration).is_err()
     );
     assert!(toolchain_support::declare_toolchain(&fixture.child, declaration).is_err());
     assert!(
@@ -340,6 +339,66 @@ fn assert_profile_counters(profile: &Path) {
     }));
 }
 
+/// Controlled tool recording its arguments, environment and phases.
+const FIXTURE_CHILD: &str = r#"
+use std::{env, fs, io::Write, path::PathBuf};
+fn main() {
+    let root = PathBuf::from(env::var_os("MAESTRO_RECEIPT").unwrap());
+    fs::create_dir_all(root.join("args")).unwrap();
+    for (i, arg) in env::args_os().skip(1).enumerate() {
+        fs::write(root.join("args").join(i.to_string()), arg.as_encoded_bytes()).unwrap();
+    }
+    let mut invocations = fs::OpenOptions::new().create(true).append(true).open(root.join("invocations")).unwrap();
+    writeln!(invocations, "{}", env::args().skip(1).collect::<Vec<_>>().join("|")).unwrap();
+    let env_root = root.join("env");
+    fs::create_dir_all(&env_root).unwrap();
+    let recorded = env_root.join(fs::read_dir(&env_root).unwrap().count().to_string());
+    fs::create_dir(&recorded).unwrap();
+    for (key, value) in env::vars_os() {
+        fs::write(recorded.join(key), value.as_encoded_bytes()).unwrap();
+    }
+    if env::args().nth(1).as_deref() == Some("metadata") {
+        if let Some(path) = env::var_os("MAESTRO_METADATA") {
+            match env::var("MAESTRO_METADATA_MODE").as_deref() {
+                Ok("garbage") => println!("not metadata"),
+                _ => println!("{}", fs::read_to_string(path).unwrap()),
+            }
+            if let Ok(code) = env::var("MAESTRO_METADATA_EXIT") {
+                std::process::exit(code.parse().unwrap());
+            }
+            std::process::exit(0);
+        }
+    }
+    fs::write(root.join("cwd"), env::current_dir().unwrap().as_os_str().as_encoded_bytes()).unwrap();
+    let auth = PathBuf::from(env::var_os("HOME").unwrap()).join(".maestro/agent/auth.json");
+    fs::write(root.join("auth-present"), if auth.is_file() { "yes" } else { "no" }).unwrap();
+    if let Some(phase) = env::args().nth(1) {
+        use std::io::Write;
+        let mut log = fs::OpenOptions::new().create(true).append(true).open(root.join("phases")).unwrap();
+        writeln!(log, "{phase}").unwrap();
+        if env::var("MAESTRO_FAIL_PHASE").ok().as_deref() == Some(&phase) { std::process::exit(17); }
+    }
+    if env::args().nth(1).as_deref() != Some("format") {
+        if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
+            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
+                let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
+                assert!(output.status.success());
+                assert_eq!(output.stdout, b"formatted");
+            }
+        }
+    }
+    if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
+        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+            fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
+        }
+    }
+    if let Some(path) = env::var_os("MAESTRO_ARTIFACT") { fs::write(path, "compiled artifact").unwrap(); }
+    if let Some(path) = env::var_os("MAESTRO_BLOCK_RESTORE") { fs::create_dir_all(PathBuf::from(path).join("auth.json.bak")).unwrap(); }
+    if let Ok(message) = env::var("MAESTRO_DIAGNOSTIC") { eprint!("{message}"); }
+    std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
+}
+"#;
+
 struct Fixture {
     root: maestro_test_directory::Scratch,
     child: PathBuf,
@@ -361,45 +420,7 @@ impl Fixture {
         fs::create_dir(root.path().join("receipt")).unwrap();
         fs::create_dir_all(root.path().join(".maestro/agent")).unwrap();
         let source = root.path().join("child.rs");
-        fs::write(&source, r#"
-use std::{env, fs, path::PathBuf};
-fn main() {
-    let root = PathBuf::from(env::var_os("MAESTRO_RECEIPT").unwrap());
-    fs::create_dir_all(root.join("args")).unwrap();
-    for (i, arg) in env::args_os().skip(1).enumerate() {
-        fs::write(root.join("args").join(i.to_string()), arg.as_encoded_bytes()).unwrap();
-    }
-    fs::create_dir_all(root.join("env")).unwrap();
-    for (key, value) in env::vars_os() {
-        fs::write(root.join("env").join(key), value.as_encoded_bytes()).unwrap();
-    }
-    fs::write(root.join("cwd"), env::current_dir().unwrap().as_os_str().as_encoded_bytes()).unwrap();
-    let auth = PathBuf::from(env::var_os("HOME").unwrap()).join(".maestro/agent/auth.json");
-    fs::write(root.join("auth-present"), if auth.is_file() { "yes" } else { "no" }).unwrap();
-    if let Some(phase) = env::args().nth(1) {
-        use std::io::Write;
-        let mut log = fs::OpenOptions::new().create(true).append(true).open(root.join("phases")).unwrap();
-        writeln!(log, "{phase}").unwrap();
-        if env::var("MAESTRO_FAIL_PHASE").ok().as_deref() == Some(&phase) { std::process::exit(17); }
-    }
-    if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
-            let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
-            assert!(output.status.success());
-            assert_eq!(output.stdout, b"formatted");
-        }
-    }
-    if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
-            fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
-        }
-    }
-    if let Some(path) = env::var_os("MAESTRO_ARTIFACT") { fs::write(path, "compiled artifact").unwrap(); }
-    if let Some(path) = env::var_os("MAESTRO_BLOCK_RESTORE") { fs::create_dir_all(PathBuf::from(path).join("auth.json.bak")).unwrap(); }
-    if let Ok(message) = env::var("MAESTRO_DIAGNOSTIC") { eprint!("{message}"); }
-    std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
-}
-"#).unwrap();
+        fs::write(&source, FIXTURE_CHILD).unwrap();
         let child = root
             .path()
             .join(format!("just{}", std::env::consts::EXE_SUFFIX));
@@ -465,6 +486,24 @@ fn compile_fixture(root: &Path, source: &Path, child: &Path) {
     );
 }
 
+/// Environment the controlled tool recorded for its latest invocation.
+fn recorded_environment(fixture: &Fixture) -> PathBuf {
+    let root = fixture.root.path().join("receipt/env");
+    let latest = fs::read_dir(&root)
+        .unwrap()
+        .map(|entry| {
+            entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .parse::<usize>()
+                .unwrap()
+        })
+        .max()
+        .unwrap();
+    root.join(latest.to_string())
+}
+
 /// Reject a stale fixture identity before a zero-test child can report success.
 #[test]
 fn checked_fixture_rejects_missing_identity() {
@@ -478,6 +517,20 @@ fn checked_fixture_rejects_missing_identity() {
     );
 }
 
+/// Keep only the fixture's own environment for a controlled tool command.
+fn isolated(mut command: Command) -> Command {
+    command.env_clear();
+    for (key, value) in std::env::vars_os() {
+        let keep = ["PATH", "HOME", "TMPDIR", "SYSTEMROOT", "WINDIR"]
+            .iter()
+            .any(|name| key == *name);
+        if keep || key.to_string_lossy().starts_with("MAESTRO_") {
+            command.env(key, value);
+        }
+    }
+    command
+}
+
 fn drive() {
     let Some(operation) = std::env::var_os("MAESTRO_DRIVER") else {
         return;
@@ -487,27 +540,41 @@ fn drive() {
     let cargo = std::env::var_os("MAESTRO_FIXTURE_CARGO").unwrap();
     let root = std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap();
     let result = if args[0] == "hook" {
-        let mut format = Command::new(&cargo);
+        let mut format = isolated(Command::new(&cargo));
         format.arg("format");
-        let mut check = Command::new(&cargo);
-        check.arg("check");
-        let mut conventions = Command::new(&cargo);
+        let mut conventions = isolated(Command::new(&cargo));
         conventions.arg("conventions");
-        let mut smoke = Command::new(&cargo);
+        let mut smoke = isolated(Command::new(&cargo));
         smoke.arg("smoke");
         match std::env::var("MAESTRO_MISSING_PHASE").as_deref() {
             Ok("format") => format = Command::new("missing-tool"),
-            Ok("check") => check = Command::new("missing-tool"),
             Ok("conventions") => conventions = Command::new("missing-tool"),
             Ok("smoke") => smoke = Command::new("missing-tool"),
             _ => {}
         }
+        let tool = if std::env::var_os("MAESTRO_MISSING_METADATA_TOOL").is_some() {
+            Path::new("missing-tool")
+        } else {
+            Path::new(&cargo)
+        };
         tooling::pre_commit::run(
             Path::new(&root),
+            tool,
             &mut format,
-            &mut check,
             &mut conventions,
             (std::env::var("MAESTRO_ACTIVE_SMOKE").as_deref() == Ok("true")).then_some(&mut smoke),
+        )
+    } else if args[0] == "consumer-hook" {
+        let mut format = Command::new(&cargo);
+        format.current_dir(&root).args(["fmt", "--all"]);
+        let mut conventions = Command::new(&cargo);
+        conventions.current_dir(&root).arg("test");
+        tooling::pre_commit::run(
+            Path::new(&root),
+            Path::new(&cargo),
+            &mut format,
+            &mut conventions,
+            None,
         )
     } else {
         tooling::run(&args, Path::new(&cargo), Path::new(&root))
@@ -603,10 +670,7 @@ fn maestro_offline_removes_only_listed_credentials() {
             String::from_utf8_lossy(&output.stderr)
         );
         for key in OFFLINE_KEYS {
-            assert!(
-                !fixture.root.path().join("receipt/env").join(key).exists(),
-                "{key}"
-            );
+            assert!(!recorded_environment(&fixture).join(key).exists(), "{key}");
         }
         for key in [
             "AZURE_OPENAI_API_KEY",
@@ -615,11 +679,17 @@ fn maestro_offline_removes_only_listed_credentials() {
             "XDG_CONFIG_HOME",
             "MAESTRO_AGENT_DIR",
         ] {
-            assert_eq!(fixture.receipt(&format!("env/{key}")), b"kept");
+            assert_eq!(
+                fs::read(recorded_environment(&fixture).join(key)).unwrap(),
+                b"kept"
+            );
         }
-        assert_eq!(fixture.receipt("env/MAESTRO_NO_LOCAL_LLM"), b"1");
         assert_eq!(
-            fixture.receipt("env/HOME"),
+            fs::read(recorded_environment(&fixture).join("MAESTRO_NO_LOCAL_LLM")).unwrap(),
+            b"1"
+        );
+        assert_eq!(
+            fs::read(recorded_environment(&fixture).join("HOME")).unwrap(),
             fixture.root.path().as_os_str().as_encoded_bytes()
         );
         assert!(stdout(&output).contains("Running tests without API keys...\n"));
@@ -910,24 +980,28 @@ fn maestro_source_launchers_clear_the_same_credentials() {
                 .iter()
                 .filter(|key| **key != "BEDROCK_EXTENSIVE_MODEL_TEST")
             {
-                assert!(
-                    !fixture.root.path().join("receipt/env").join(key).exists(),
-                    "{key}"
-                );
+                assert!(!recorded_environment(&fixture).join(key).exists(), "{key}");
             }
             for key in [
                 "AZURE_OPENAI_API_KEY",
                 "AZURE_OPENAI_BASE_URL",
                 "AZURE_OPENAI_RESOURCE_NAME",
             ] {
-                assert!(!fixture.root.path().join("receipt/env").join(key).exists());
+                assert!(!recorded_environment(&fixture).join(key).exists());
             }
             assert_eq!(
-                fixture.receipt("env/BEDROCK_EXTENSIVE_MODEL_TEST"),
+                fs::read(recorded_environment(&fixture).join("BEDROCK_EXTENSIVE_MODEL_TEST"))
+                    .unwrap(),
                 value.as_bytes()
             );
-            assert_eq!(fixture.receipt("env/MAESTRO_NO_LOCAL_LLM"), b"kept");
-            assert_eq!(fixture.receipt("env/MAESTRO_CANARY"), b"kept");
+            assert_eq!(
+                fs::read(recorded_environment(&fixture).join("MAESTRO_NO_LOCAL_LLM")).unwrap(),
+                b"kept"
+            );
+            assert_eq!(
+                fs::read(recorded_environment(&fixture).join("MAESTRO_CANARY")).unwrap(),
+                b"kept"
+            );
             assert_eq!(
                 stdout(&output)
                     .matches("Running without API keys...\n")
@@ -965,8 +1039,15 @@ fn maestro_source_keeps_switch_rules_and_literal_arguments() {
         let mut expected: Vec<_> = ["run", "--quiet", "--manifest-path"]
             .map(|arg| arg.as_bytes().to_vec())
             .into();
-        let manifest = fixture.root.path().join("Cargo.toml");
-        expected.push(manifest.as_os_str().as_encoded_bytes().to_vec());
+        expected.push(
+            fixture
+                .root
+                .path()
+                .join("Cargo.toml")
+                .as_os_str()
+                .as_encoded_bytes()
+                .to_vec(),
+        );
         expected.extend(["-p", "maestro", "--"].map(|arg| arg.as_bytes().to_vec()));
         let remaining: &[&str] = if operation == "run-source-windows" {
             &["", "a b", "'quoted'", "--", "é\u{feff}\u{85}\u{2003}"]
@@ -1027,9 +1108,15 @@ fn maestro_source_without_switch_preserves_environment() {
     let output = command.output().unwrap();
     assert!(output.status.success());
     for key in OFFLINE_KEYS {
-        assert_eq!(fixture.receipt(&format!("env/{key}")), b"kept");
+        assert_eq!(
+            fs::read(recorded_environment(&fixture).join(key)).unwrap(),
+            b"kept"
+        );
     }
-    assert_eq!(fixture.receipt("env/MAESTRO_NO_LOCAL_LLM"), b"kept");
+    assert_eq!(
+        fs::read(recorded_environment(&fixture).join("MAESTRO_NO_LOCAL_LLM")).unwrap(),
+        b"kept"
+    );
     assert_eq!(fixture.receipt("auth-present"), b"yes");
     assert_eq!(fs::read(fixture.auth()).unwrap(), b"auth");
     assert!(!stdout(&output).contains("Running without API keys"));
@@ -1230,11 +1317,7 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     let package = fixture.root.path().join("package");
     package_inputs(&package);
     let metadata = fixture.root.path().join("binary/Cargo.toml");
-    write_input(
-        &fixture.root.path().join("binary"),
-        "Cargo.toml",
-        "manifest",
-    );
+    write_input(fixture.root.path().join("binary"), "Cargo.toml", "manifest");
     let viewer = fixture.root.path().join("viewer");
     write_input(&viewer, "index.html", "viewer");
     (source, package, metadata, viewer)
@@ -1380,7 +1463,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
         remove_input(&input);
         let error = tooling::copy_assets::copy(
             &source,
-            &fixture.root.path().join("dist"),
+            fixture.root.path().join("dist"),
             tooling::copy_assets::Layout::Library,
         )
         .unwrap_err();
@@ -1392,7 +1475,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
     remove_input(&input);
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.path().join("standalone"),
+        fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1410,7 +1493,7 @@ fn maestro_missing_metadata_names_the_absent_path() {
     let metadata = fixture.root.path().join("absent/Cargo.toml");
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.path().join("standalone"),
+        fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1432,7 +1515,7 @@ fn maestro_unreadable_viewer_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.path().join("standalone"),
+        fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1462,7 +1545,7 @@ fn maestro_unreadable_source_file_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.path().join("standalone"),
+        fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1493,7 +1576,7 @@ fn maestro_unreadable_tree_entry_names_that_entry() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.path().join("standalone"),
+        fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1851,9 +1934,129 @@ fn stage_deleted_path(root: &Path) {
     git(root, &["add", "--", "deleted.rs"]);
 }
 
+/// The committed metadata document the hook fixture selects from.
+fn selection_metadata() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/selection-metadata.json")
+}
+
+/// Fixture member names in metadata order.
+const MEMBERS: &str = "a, f, b, c, d, e, g, alone, nested, maestro-test-conventions-old, \
+external-reader, shared, maestro-models, maestro-web";
+
+/// Stage the supplied checkout paths in the fixture repository.
+fn stage_paths(root: &Path, paths: &[&str]) {
+    for path in paths {
+        let file = root.join(path);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "captured").unwrap();
+        git(root, &["add", "--", path]);
+    }
+}
+
+/// Write the fixture metadata in the single-line form Cargo emits.
+///
+/// The controlled tool serves the file verbatim, so the hook's metadata reader sees a
+/// document shaped like the native producer's; parsed equality proves the reformat loses
+/// no field.
+fn compact_metadata(path: &Path) -> PathBuf {
+    let document: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(selection_metadata()).unwrap()).unwrap();
+    fs::write(path, serde_json::to_string(&document).unwrap()).unwrap();
+    let served: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
+    assert_eq!(served, document, "compacted metadata keeps every field");
+    path.to_owned()
+}
+
+/// Invoke the hook driver for `test` against the fixture metadata.
+///
+/// The fixture root leads `PATH`, so `just` resolves to the controlled tool while the
+/// hook still finds its native Git.
+fn run_hook(fixture: &Fixture, test: &str) -> TestProcess {
+    let metadata = compact_metadata(fixture.root.path().join("metadata.json"));
+    fixture
+        .invoke(test, "hook", &[])
+        .env("MAESTRO_METADATA", metadata)
+        .env("PATH", fixture_path(fixture))
+}
+
+/// The fixture's controlled tool directory ahead of this process's `PATH`.
+fn fixture_path(fixture: &Fixture) -> String {
+    format!(
+        "{}:{}",
+        fixture.root.path().display(),
+        std::env::var("PATH").unwrap()
+    )
+}
+
+/// Resolve an executable through this process's `PATH`.
+#[cfg(unix)]
+fn resolve(program: &str) -> PathBuf {
+    std::env::split_paths(&std::env::var_os("PATH").unwrap())
+        .map(|directory| directory.join(program))
+        .find(|path| path.is_file())
+        .unwrap_or_else(|| panic!("{program} is not on PATH"))
+}
+
+/// Commands the controlled tools ran, in order.
+fn invocations(fixture: &Fixture) -> Vec<String> {
+    fs::read_to_string(fixture.root.path().join("receipt/invocations"))
+        .unwrap_or_default()
+        .lines()
+        .map(str::to_owned)
+        .collect()
+}
+
+/// Assert the canary reached no recorded command environment, metadata included.
+fn assert_commands_exclude_canary(fixture: &Fixture) {
+    let listed = invocations(fixture);
+    let recorded: Vec<_> = fs::read_dir(fixture.root.path().join("receipt/env"))
+        .unwrap()
+        .map(|entry| entry.unwrap())
+        .collect();
+    assert_eq!(
+        recorded.len(),
+        listed.len(),
+        "every command records its environment: {listed:?}"
+    );
+    for entry in recorded {
+        let index: usize = entry.file_name().to_string_lossy().parse().unwrap();
+        let values: Vec<Vec<u8>> = fs::read_dir(entry.path())
+            .unwrap()
+            .map(|file| fs::read(file.unwrap().path()).unwrap())
+            .collect();
+        assert!(
+            !values.iter().any(|value| value == b"secret-value"),
+            "{} received the canary",
+            listed[index]
+        );
+    }
+    assert!(
+        listed.iter().any(|line| line.starts_with("metadata|")),
+        "metadata environment is recorded: {listed:?}"
+    );
+}
+
+/// The check recipe invocation, or an empty string when the hook never reached it.
+fn check_invocation(fixture: &Fixture) -> String {
+    invocations(fixture)
+        .into_iter()
+        .find(|line| line.starts_with("_check|"))
+        .unwrap_or_default()
+}
+
+/// How many browser smoke commands the hook ran.
+fn smoke_runs(fixture: &Fixture) -> usize {
+    invocations(fixture)
+        .iter()
+        .filter(|line| *line == "smoke" || line.starts_with("check-browser-smoke"))
+        .count()
+}
+
 #[test]
 fn maestro_hook_restages_only_captured_paths() {
-    assert_hook_restages_only_captured_paths();
+    drive();
+    assert_hook_restages_only_captured_paths("maestro_hook_restages_only_captured_paths");
 }
 
 #[test]
@@ -1887,65 +2090,58 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
         std::env::var("SYNTHETIC_TEST_API_KEY").unwrap(),
         "secret-value"
     );
-    assert_hook_restages_only_captured_paths();
+    assert_hook_restages_only_captured_paths("maestro_hook_restages_only_captured_paths");
 }
 
-/// A fixture child command cleared down to one inherited variable and one home.
-fn fixture_command(child: &std::path::Path, root: &std::path::Path) -> Command {
-    let mut command = Command::new(child);
-    command
-        .env_clear()
-        .env("PATH", std::env::var_os("PATH").unwrap())
-        .env("TMPDIR", root)
-        .env("MAESTRO_RECEIPT", root.join("receipt"))
-        .env("HOME", root);
-    command
-}
-
-/// Stage the three captured paths whose names need protection.
-fn stage_captured(root: &std::path::Path) {
+/// Stage formatted and deleted paths, then assert the hook restages only the captured ones.
+fn assert_hook_restages_only_captured_paths(driver: &str) {
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
+        fs::write(fixture.root.path().join(name), "old").unwrap();
+    }
     git(
-        root,
+        fixture.root.path(),
         &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
     );
-}
-
-fn assert_hook_restages_only_captured_paths() {
-    let fixture = Fixture::new();
-    let root = fixture.root.path().to_path_buf();
-    git(&root, &["init", "--quiet"]);
-    for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
-        fs::write(root.join(name), "old").unwrap();
-    }
-    stage_captured(&root);
-    stage_deleted_path(&root);
+    stage_deleted_path(fixture.root.path());
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
-        fs::write(root.join(name), "staged").unwrap();
+        fs::write(fixture.root.path().join(name), "staged").unwrap();
     }
-    stage_captured(&root);
-    let mut format = fixture_command(&fixture.child, &root);
-    format.env("MAESTRO_FORMAT_ROOT", &root);
-    let mut check = fixture_command(&fixture.child, &root);
-    check.env("MAESTRO_CHECK_INDEX", &root);
-    let mut unused = Command::new("missing-tool");
-    tooling::pre_commit::run(&root, &mut format, &mut check, &mut unused, None).unwrap();
-    for entry in fs::read_dir(root.join("receipt/env")).unwrap() {
-        assert_ne!(fs::read(entry.unwrap().path()).unwrap(), b"secret-value");
-    }
+    git(
+        fixture.root.path(),
+        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
+    );
+    let output = run_hook(&fixture, driver)
+        .env("MAESTRO_ACTIVE_SMOKE", "true")
+        .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
+        .env("MAESTRO_CHECK_INDEX", fixture.root.path())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_commands_exclude_canary(&fixture);
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
-        let output = git(&root, &["show", &format!(":{name}")]);
+        let output = git(fixture.root.path(), &["show", &format!(":{name}")]);
         assert_eq!(output.stdout, b"formatted");
     }
-    assert_eq!(fs::read(root.join("unrelated.rs")).unwrap(), b"formatted");
+    assert_eq!(
+        fs::read(fixture.root.path().join("unrelated.rs")).unwrap(),
+        b"formatted"
+    );
     assert!(
-        !git(&root, &["diff", "--cached", "--name-only"])
+        !git(fixture.root.path(), &["diff", "--cached", "--name-only"])
             .stdout
             .windows(12)
             .any(|part| part == b"unrelated.rs")
     );
     assert_eq!(
         git(
-            &root,
+            fixture.root.path(),
             &["diff", "--cached", "--diff-filter=D", "--name-only"]
         )
         .stdout,
@@ -1955,22 +2151,24 @@ fn assert_hook_restages_only_captured_paths() {
 
 fn assert_hook_phase(phase: &str) {
     let fixture = Fixture::new();
-    let root = fixture.root.path().to_path_buf();
-    git(&root, &["init", "--quiet"]);
-    fs::write(root.join("Cargo.toml"), "manifest").unwrap();
-    let checker = root.join("crates/maestro-test-conventions/src/lib.rs");
-    fs::create_dir_all(checker.parent().unwrap()).unwrap();
-    fs::write(checker, "checker").unwrap();
-    git(&root, &["add", "Cargo.toml", "crates"]);
-    let output = fixture
-        .invoke("maestro_hook_messages_follow_phase_results", "hook", &[])
-        .env("PATH", std::env::var_os("PATH").unwrap())
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(
+        fixture.root.path(),
+        &["Cargo.toml", "crates/maestro-test-conventions/src/lib.rs"],
+    );
+    let output = run_hook(&fixture, "maestro_hook_messages_follow_phase_results")
         .env("MAESTRO_FAIL_PHASE", phase)
         .env("MAESTRO_ACTIVE_SMOKE", "true")
         .output()
         .unwrap();
     let text = stdout(&output);
     assert!(text.contains("Running formatting, linting, and type checking...\n"));
+    let selected = format!("Selected crates: {MEMBERS}\n");
+    assert_eq!(
+        text.contains(&selected),
+        phase != "format",
+        "{phase}: {text}"
+    );
     assert_eq!(
         text.contains("Running the full conventions suite...\n"),
         matches!(phase, "conventions" | "smoke" | "success")
@@ -1984,8 +2182,21 @@ fn assert_hook_phase(phase: &str) {
         phase == "success"
     );
     assert!(output.stderr.is_empty());
+    assert_eq!(output.status.success(), phase == "success");
+    assert_hook_failure_lines(phase, &text);
+    assert_hook_phases_reached(&fixture, phase);
+    if phase != "format" {
+        assert!(
+            text.find(&selected).unwrap() < text.find("✅").unwrap_or(text.len()),
+            "{phase}: {text}"
+        );
+    }
+}
+
+/// Assert the announcement and failure line a failing phase prints.
+fn assert_hook_failure_lines(phase: &str, text: &str) {
     let (announcement, failure) = match phase {
-        "format" | "check" => (
+        "format" | "_check" => (
             "Running formatting, linting, and type checking...\n",
             "❌ Checks failed. Please fix the errors before committing.\n",
         ),
@@ -1997,28 +2208,31 @@ fn assert_hook_phase(phase: &str) {
             "Running browser smoke check...\n",
             "❌ Browser smoke check failed.\n",
         ),
-        _ => ("", ""),
+        _ => return,
     };
-    if !failure.is_empty() {
-        assert!(text.ends_with(failure), "{text}");
-        assert!(text.find(announcement).unwrap() < text.find(failure).unwrap());
+    assert!(text.ends_with(failure), "{text}");
+    assert!(text.find(announcement).unwrap() < text.find(failure).unwrap());
+}
+
+/// Assert the hook stopped after the failing phase.
+fn assert_hook_phases_reached(fixture: &Fixture, phase: &str) {
+    let reached: &[&str] = match phase {
+        "format" => &["format"],
+        "_check" => &["format", "metadata", "_check"],
+        "conventions" => &["format", "metadata", "_check", "conventions"],
+        _ => &["format", "metadata", "_check", "conventions", "smoke"],
+    };
+    let ran = invocations(fixture);
+    assert_eq!(ran.len(), reached.len(), "{phase}: {ran:?}");
+    for (line, expected) in ran.iter().zip(reached) {
+        assert!(line.starts_with(expected), "{phase}: {line}");
     }
-    assert_eq!(output.status.success(), phase == "success");
-    assert_eq!(
-        fixture.receipt("phases"),
-        match phase {
-            "format" => b"format\n".as_slice(),
-            "check" => b"format\ncheck\n",
-            "conventions" => b"format\ncheck\nconventions\n",
-            _ => b"format\ncheck\nconventions\nsmoke\n",
-        }
-    );
 }
 
 #[test]
 fn maestro_hook_messages_follow_phase_results() {
     drive();
-    for phase in ["format", "check", "conventions", "smoke", "success"] {
+    for phase in ["format", "_check", "conventions", "smoke", "success"] {
         assert_hook_phase(phase);
     }
 
@@ -2031,13 +2245,10 @@ fn maestro_hook_messages_follow_phase_results() {
             &[],
         )
         .env(
-            "PATH",
-            format!(
-                "{}:{}",
-                fixture.root.path().display(),
-                std::env::var("PATH").unwrap()
-            ),
+            "MAESTRO_METADATA",
+            compact_metadata(fixture.root.path().join("metadata.json")),
         )
+        .env("PATH", fixture_path(&fixture))
         .output()
         .unwrap();
     assert!(
@@ -2046,7 +2257,7 @@ fn maestro_hook_messages_follow_phase_results() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(stdout(&output).contains("✅ All pre-commit checks passed!\n"));
-    assert_eq!(fixture.receipt("phases"), b"fmt\ncheck\n");
+    assert_eq!(fixture.receipt("phases"), b"fmt\n_check\n");
 }
 
 #[test]
@@ -2054,16 +2265,14 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
     drive();
     for (name, active, expected) in [
         ("crates/maestro-models/src/lib.rs", true, "smoke\n"),
-        ("crates/maestro-web/src/lib.rs", true, "smoke\n"),
+        ("crates/shared/src/lib.rs", true, "smoke\n"),
         ("Cargo.toml", true, "smoke\n"),
-        ("Cargo.lock", true, "smoke\n"),
-        ("crates/maestro-agent/src/lib.rs", true, ""),
-        ("crates/maestro-models-old/src/lib.rs", true, ""),
-        ("Cargo.toml", false, ""),
+        ("crates/alone/src/lib.rs", true, ""),
+        ("crates/maestro-models/src/lib.rs", false, ""),
         (
             "crates/maestro-test-conventions/src/lib.rs",
             true,
-            "conventions\n",
+            "conventions\nsmoke\n",
         ),
         (
             "crates/maestro-test-conventions/tests/integration.rs",
@@ -2079,17 +2288,14 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
         fs::write(&path, "captured").unwrap();
         git(fixture.root.path(), &["add", "--", name]);
         fs::remove_file(&path).unwrap();
-        let output = fixture
-            .invoke(
-                "maestro_hook_selects_extra_steps_from_original_paths",
-                "hook",
-                &[],
-            )
-            .env("PATH", std::env::var_os("PATH").unwrap())
-            .env("MAESTRO_ACTIVE_SMOKE", active.to_string())
-            .output()
-            .unwrap();
-        assert!(output.status.success());
+        let output = run_hook(
+            &fixture,
+            "maestro_hook_selects_extra_steps_from_original_paths",
+        )
+        .env("MAESTRO_ACTIVE_SMOKE", active.to_string())
+        .output()
+        .unwrap();
+        assert!(output.status.success(), "{name}");
         let text = stdout(&output);
         assert_eq!(
             text.contains("Running the full conventions suite...\n"),
@@ -2097,14 +2303,418 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
             "{name}"
         );
         assert_eq!(
-            text.contains("Running browser smoke check...\n"),
-            expected.contains("smoke"),
+            smoke_runs(&fixture),
+            usize::from(expected.contains("smoke")),
             "{name}"
         );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_hook_checks_only_selected_packages() {
+    drive();
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let leaf = workspace.join("leaf/src/lib.rs");
+    fs::write(&leaf, LEAF_SOURCE.replace("    7", "    8")).unwrap();
+    git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let output = run_consumer_hook("maestro_hook_checks_only_selected_packages", &workspace);
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let text = stdout(&output);
+    assert!(text.contains("Selected crates: leaf, caller\n"), "{text}");
+    assert!(text.ends_with("✅ All pre-commit checks passed!\n"));
+    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
+    let commands: Vec<&str> = log.lines().collect();
+    let ran = |prefix: &str| {
+        commands
+            .iter()
+            .filter(|line| line.starts_with(prefix))
+            .count()
+    };
+    assert_eq!(ran("fmt "), 1, "{log}");
+    assert_eq!(ran("hakari "), 1, "{log}");
+    assert_eq!(
+        commands
+            .iter()
+            .find(|line| line.starts_with("clippy "))
+            .copied(),
+        Some("clippy -p leaf -p caller --all-targets --locked -- -D warnings"),
+        "{log}"
+    );
+    assert_eq!(
+        commands
+            .iter()
+            .find(|line| line.starts_with("doc "))
+            .copied(),
+        Some("doc -p leaf -p caller --no-deps --locked"),
+        "{log}"
+    );
+    assert_eq!(
+        commands
+            .iter()
+            .filter(|line| line.starts_with("test "))
+            .copied()
+            .collect::<Vec<_>>(),
+        [
+            "test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean"
+        ],
+        "{log}"
+    );
+    assert!(!log.contains("--workspace"), "{log}");
+}
+
+#[test]
+fn maestro_hook_workspace_inputs_keep_the_full_gate() {
+    drive();
+    for path in [
+        "Cargo.toml",
+        "Cargo.lock",
+        ".cargo/config.toml",
+        "rust-toolchain.toml",
+        "justfile",
+        "clippy.toml",
+        ".pre-commit-config.yaml",
+        "docs/development.md",
+        "crates/maestro-test-conventions/src/lib.rs",
+    ] {
+        let fixture = Fixture::new();
+        git(fixture.root.path(), &["init", "--quiet"]);
+        stage_paths(fixture.root.path(), &[path]);
+        let output = run_hook(&fixture, "maestro_hook_workspace_inputs_keep_the_full_gate")
+            .env("MAESTRO_ACTIVE_SMOKE", "true")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{path}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            stdout(&output).contains(&format!("Selected crates: {MEMBERS}\n")),
+            "{path}"
+        );
+        assert_eq!(check_invocation(&fixture), "_check|--workspace", "{path}");
+        assert_eq!(smoke_runs(&fixture), 1, "{path}");
+        let conventions = path.starts_with("crates/maestro-test-conventions/");
         assert_eq!(
-            fixture.receipt("phases"),
-            format!("format\ncheck\n{expected}").as_bytes(),
-            "{name}"
+            invocations(&fixture)
+                .iter()
+                .any(|line| line == "conventions"),
+            conventions,
+            "{path}"
+        );
+    }
+
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(fixture.root.path(), &["Cargo.toml", "crates/a/src/lib.rs"]);
+    let output = run_hook(&fixture, "maestro_hook_workspace_inputs_keep_the_full_gate")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(check_invocation(&fixture), "_check|--workspace");
+}
+
+#[test]
+fn maestro_hook_renames_check_both_previous_and_new_owners() {
+    drive();
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(fixture.root.path(), &["crates/a/src/moved.rs"]);
+    git(
+        fixture.root.path(),
+        &[
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+    );
+    fs::create_dir_all(fixture.root.path().join("crates/b/src")).unwrap();
+    git(
+        fixture.root.path(),
+        &["mv", "crates/a/src/moved.rs", "crates/b/src/moved.rs"],
+    );
+    let output = run_hook(
+        &fixture,
+        "maestro_hook_renames_check_both_previous_and_new_owners",
+    )
+    .output()
+    .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        check_invocation(&fixture),
+        "_check|-p|a|-p|f|-p|b|-p|c|-p|d|-p|e|-p|g"
+    );
+    assert!(!fixture.root.path().join("crates/a/src/moved.rs").exists());
+    let listed = String::from_utf8(git(fixture.root.path(), &["ls-files"]).stdout).unwrap();
+    assert!(!listed.contains("crates/a/src/moved.rs"), "{listed}");
+    assert!(listed.contains("crates/b/src/moved.rs"), "{listed}");
+}
+
+#[test]
+fn maestro_hook_reports_metadata_errors_before_running_checks() {
+    drive();
+    for (case, environment) in [
+        ("garbage", vec![("MAESTRO_METADATA_MODE", "garbage")]),
+        ("status", vec![("MAESTRO_METADATA_EXIT", "17")]),
+        ("launch", vec![("MAESTRO_MISSING_METADATA_TOOL", "1")]),
+    ] {
+        let fixture = Fixture::new();
+        git(fixture.root.path(), &["init", "--quiet"]);
+        stage_paths(fixture.root.path(), &["crates/a/src/lib.rs"]);
+        let mut command = run_hook(
+            &fixture,
+            "maestro_hook_reports_metadata_errors_before_running_checks",
+        );
+        for (key, value) in environment {
+            command = command.env(key, value);
+        }
+        let output = command.output().unwrap();
+        assert_eq!(output.status.code(), Some(1), "{case}");
+        assert!(
+            stdout(&output)
+                .ends_with("❌ Checks failed. Please fix the errors before committing.\n"),
+            "{case}: {}",
+            stdout(&output)
+        );
+        assert!(!stdout(&output).contains("All pre-commit checks passed"));
+        assert!(!output.stderr.is_empty(), "{case}");
+        let ran = invocations(&fixture);
+        assert!(
+            !ran.iter().any(|line| line.starts_with("_check|")
+                || line == "conventions"
+                || line == "smoke"),
+            "{case}: {ran:?}"
+        );
+    }
+
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(fixture.root.path(), &["crates/a/src/lib.rs"]);
+    let output = run_hook(
+        &fixture,
+        "maestro_hook_reports_metadata_errors_before_running_checks",
+    )
+    .env("MAESTRO_FAIL_PHASE", "format")
+    .output()
+    .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(invocations(&fixture), ["format"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_hook_missing_check_tool_reports_failure() {
+    use std::os::unix::fs::symlink;
+
+    drive();
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(fixture.root.path(), &["crates/a/src/lib.rs"]);
+    let tools = fixture.root.path().join("tools");
+    fs::create_dir_all(&tools).unwrap();
+    symlink(resolve("git"), tools.join("git")).unwrap();
+    let output = run_hook(&fixture, "maestro_hook_missing_check_tool_reports_failure")
+        .env("PATH", &tools)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    let text = stdout(&output);
+    assert!(
+        text.ends_with("❌ Checks failed. Please fix the errors before committing.\n"),
+        "{text}"
+    );
+    assert!(!text.contains("All pre-commit checks passed"));
+    let unavailable = Command::new("maestro-missing-check-tool-probe")
+        .output()
+        .unwrap_err()
+        .to_string();
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains(&unavailable),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// Fail one recipe phase and assert the later phases never run.
+#[cfg(unix)]
+fn assert_recipe_phase_failure(phase: &str, expected: &[&str]) {
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    fs::write(
+        workspace.join("leaf/src/lib.rs"),
+        LEAF_SOURCE.replace("    7", "    8"),
+    )
+    .unwrap();
+    git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let output =
+        consumer_hook_command("maestro_hook_scoped_failures_stop_later_phases", &workspace)
+            .env("MAESTRO_FAIL_PHASE", phase)
+            .output()
+            .unwrap();
+    assert_eq!(output.status.code(), Some(1), "{phase}");
+    let text = stdout(&output);
+    assert!(
+        text.ends_with("❌ Checks failed. Please fix the errors before committing.\n"),
+        "{phase}: {text}"
+    );
+    assert!(!text.contains("All pre-commit checks passed"), "{phase}");
+    assert!(
+        !text.contains("Running the full conventions suite...\n"),
+        "{phase}: {text}"
+    );
+    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
+    let ran: Vec<&str> = log
+        .lines()
+        .map(|line| line.split(' ').next().unwrap_or_default())
+        .filter(|name| *name != "metadata")
+        .collect();
+    assert_eq!(ran, expected, "{phase}: {log}");
+}
+
+#[test]
+fn maestro_hook_scoped_failures_stop_later_phases() {
+    drive();
+    for (phase, reached) in [("format", 1usize), ("conventions", 4), ("smoke", 5)] {
+        let fixture = Fixture::new();
+        git(fixture.root.path(), &["init", "--quiet"]);
+        stage_paths(
+            fixture.root.path(),
+            &[
+                "Cargo.toml",
+                "a space.rs",
+                "crates/maestro-test-conventions/src/lib.rs",
+            ],
+        );
+        let output = run_hook(&fixture, "maestro_hook_scoped_failures_stop_later_phases")
+            .env("MAESTRO_FAIL_PHASE", phase)
+            .env("MAESTRO_ACTIVE_SMOKE", "true")
+            .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1), "{phase}");
+        assert!(
+            !stdout(&output).contains("All pre-commit checks passed"),
+            "{phase}"
+        );
+        assert_eq!(invocations(&fixture).len(), reached, "{phase}");
+    }
+
+    #[cfg(unix)]
+    for (phase, expected) in [
+        ("hakari", &["fmt", "hakari"][..]),
+        ("clippy", &["fmt", "hakari", "clippy"][..]),
+        ("doc", &["fmt", "hakari", "clippy", "doc"][..]),
+    ] {
+        assert_recipe_phase_failure(phase, expected);
+    }
+
+    let fixture = Fixture::new();
+    let output = run_hook(&fixture, "maestro_hook_scoped_failures_stop_later_phases")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(!output.stderr.is_empty());
+    assert!(invocations(&fixture).is_empty());
+
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(fixture.root.path(), &["crates/a/src/lib.rs"]);
+    fs::write(fixture.root.path().join(".git/index.lock"), "").unwrap();
+    let output = run_hook(&fixture, "maestro_hook_scoped_failures_stop_later_phases")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(invocations(&fixture), ["format"]);
+}
+
+#[test]
+fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
+    drive();
+    for (paths, active, expected) in [
+        (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
+        (vec!["crates/shared/src/lib.rs"], true, 1),
+        (vec!["Cargo.toml"], true, 1),
+        (vec!["crates/alone/src/lib.rs"], true, 0),
+        (vec!["crates/maestro-models/src/lib.rs"], false, 0),
+    ] {
+        let fixture = Fixture::new();
+        git(fixture.root.path(), &["init", "--quiet"]);
+        stage_paths(fixture.root.path(), &paths);
+        let output = run_hook(
+            &fixture,
+            "maestro_hook_browser_smoke_runs_once_for_reached_inputs",
+        )
+        .env("MAESTRO_ACTIVE_SMOKE", active.to_string())
+        .output()
+        .unwrap();
+        assert!(output.status.success(), "{paths:?}");
+        assert_eq!(smoke_runs(&fixture), expected, "{paths:?}");
+    }
+
+    assert_dispatcher_routes_delivered_smoke();
+
+    let fixture = Fixture::new();
+    git(fixture.root.path(), &["init", "--quiet"]);
+    stage_paths(fixture.root.path(), &["crates/maestro-models/src/lib.rs"]);
+    let output = run_hook(
+        &fixture,
+        "maestro_hook_browser_smoke_runs_once_for_reached_inputs",
+    )
+    .env("MAESTRO_ACTIVE_SMOKE", "true")
+    .env("MAESTRO_FAIL_PHASE", "smoke")
+    .output()
+    .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stdout(&output).ends_with("❌ Browser smoke check failed.\n"));
+    assert_eq!(smoke_runs(&fixture), 1);
+}
+
+/// Assert the dispatcher schedules smoke only for a delivered browser entry.
+fn assert_dispatcher_routes_delivered_smoke() {
+    let entry = "crates/maestro-models/examples/browser_import_check.rs";
+    for delivered in [false, true] {
+        let fixture = Fixture::new();
+        git(fixture.root.path(), &["init", "--quiet"]);
+        stage_paths(fixture.root.path(), &["crates/maestro-models/src/lib.rs"]);
+        if delivered {
+            stage_paths(fixture.root.path(), &[entry]);
+        }
+        let output = fixture
+            .invoke(
+                "maestro_hook_browser_smoke_runs_once_for_reached_inputs",
+                "pre-commit",
+                &[],
+            )
+            .env(
+                "MAESTRO_METADATA",
+                compact_metadata(fixture.root.path().join("metadata.json")),
+            )
+            .env("PATH", fixture_path(&fixture))
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{delivered}");
+        assert_eq!(
+            stdout(&output).contains("Running browser smoke check...\n"),
+            delivered,
+            "the dispatcher routes smoke only for a delivered entry"
         );
     }
 }
@@ -2172,34 +2782,26 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
 #[test]
 fn maestro_hook_missing_tool_announces_failed_step() {
     drive();
-    for phase in ["format", "check", "conventions", "smoke"] {
+    for (phase, message) in [
+        (
+            "format",
+            "❌ Checks failed. Please fix the errors before committing.\n",
+        ),
+        ("conventions", "❌ Conventions suite failed.\n"),
+        ("smoke", "❌ Browser smoke check failed.\n"),
+    ] {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
-        fs::write(fixture.root.path().join("Cargo.toml"), "manifest").unwrap();
-        let checker = fixture
-            .root
-            .path()
-            .join("crates/maestro-test-conventions/src/lib.rs");
-        fs::create_dir_all(checker.parent().unwrap()).unwrap();
-        fs::write(checker, "checker").unwrap();
-        git(fixture.root.path(), &["add", "Cargo.toml", "crates"]);
-        let output = fixture
-            .invoke(
-                "maestro_hook_missing_tool_announces_failed_step",
-                "hook",
-                &[],
-            )
-            .env("PATH", std::env::var_os("PATH").unwrap())
+        stage_paths(
+            fixture.root.path(),
+            &["Cargo.toml", "crates/maestro-test-conventions/src/lib.rs"],
+        );
+        let output = run_hook(&fixture, "maestro_hook_missing_tool_announces_failed_step")
             .env("MAESTRO_MISSING_PHASE", phase)
             .env("MAESTRO_ACTIVE_SMOKE", "true")
             .output()
             .unwrap();
-        assert_eq!(output.status.code(), Some(1));
-        let message = match phase {
-            "conventions" => "❌ Conventions suite failed.\n",
-            "smoke" => "❌ Browser smoke check failed.\n",
-            _ => "❌ Checks failed. Please fix the errors before committing.\n",
-        };
+        assert_eq!(output.status.code(), Some(1), "{phase}");
         assert!(stdout(&output).ends_with(message), "{}", stdout(&output));
         assert!(!stdout(&output).contains("All pre-commit checks passed"));
         assert!(
@@ -2209,6 +2811,290 @@ fn maestro_hook_missing_tool_announces_failed_step() {
             String::from_utf8_lossy(&output.stderr)
         );
     }
+}
+
+/// Create a disposable native workspace whose caller compiles the leaf crate.
+#[cfg(unix)]
+fn consumer_workspace(root: &Path) -> PathBuf {
+    let workspace = root.join("checkout");
+    write_consumer_tool(&workspace);
+    write_consumer_crates(&workspace);
+    fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../justfile"),
+        workspace.join("justfile"),
+    )
+    .unwrap();
+    let lock = toolchain_support::command("cargo")
+        .current_dir(&workspace)
+        .args(["generate-lockfile", "--offline"])
+        .output()
+        .unwrap();
+    assert!(
+        lock.status.success(),
+        "{}",
+        String::from_utf8_lossy(&lock.stderr)
+    );
+    commit_fixture(&workspace);
+    workspace
+}
+
+/// Write the Cargo shim that records calls and forwards to the real compiler.
+#[cfg(unix)]
+fn write_consumer_tool(workspace: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+
+    fs::create_dir_all(workspace.join("bin")).unwrap();
+    let cargo = env!("CARGO");
+    fs::write(
+        workspace.join("bin/cargo"),
+        format!(
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$(dirname \"$0\")/../cargo-log\"\nif [ -n \"${{MAESTRO_FAIL_PHASE:-}}\" ] && [ \"$1\" = \"$MAESTRO_FAIL_PHASE\" ]; then exit 17; fi\ncase \"$1\" in\n  hakari|test) exit 0 ;;\nesac\nexec '{cargo}' \"$@\"\n"
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(
+        workspace.join("bin/cargo"),
+        fs::Permissions::from_mode(0o755),
+    )
+    .unwrap();
+}
+
+/// Write the leaf and caller crates of the consumer workspace.
+#[cfg(unix)]
+fn write_consumer_crates(workspace: &Path) {
+    fs::write(
+        workspace.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"leaf\", \"caller\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
+    for (name, dependency) in [("leaf", ""), ("caller", "leaf = { path = \"../leaf\" }\n")] {
+        fs::create_dir_all(workspace.join(name).join("src")).unwrap();
+        fs::write(
+            workspace.join(name).join("Cargo.toml"),
+            format!(
+                "[package]\nname = \"{name}\"\nversion = \"0.0.0\"\nedition = \"2024\"\npublish = false\n\n[dependencies]\n{dependency}"
+            ),
+        )
+        .unwrap();
+    }
+    fs::write(workspace.join("leaf/src/lib.rs"), LEAF_SOURCE).unwrap();
+    fs::write(workspace.join("caller/src/lib.rs"), CALLER_SOURCE).unwrap();
+}
+
+/// Commit the fixture inputs so only a test's own edit is staged later.
+#[cfg(unix)]
+fn commit_fixture(workspace: &Path) {
+    git(workspace, &["init", "--quiet"]);
+    git(
+        workspace,
+        &[
+            "add",
+            "--",
+            "Cargo.toml",
+            "Cargo.lock",
+            "justfile",
+            "leaf",
+            "caller",
+        ],
+    );
+    git(
+        workspace,
+        &[
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+    );
+}
+
+/// Documented leaf crate the consumer workspace starts from.
+#[cfg(unix)]
+const LEAF_SOURCE: &str =
+    "//! Leaf crate.\n\n/// Returns the fixture value.\npub fn value() -> u32 {\n    7\n}\n";
+
+/// Initial caller source in the consumer workspace.
+#[cfg(unix)]
+const CALLER_SOURCE: &str = "//! Caller crate.\n\n/// Doubles the leaf value.\npub fn doubled() -> u32 {\n    leaf::value() * 2\n}\n";
+
+/// Run the hook against a native workspace with its recorded tool shim.
+#[cfg(unix)]
+fn run_consumer_hook(test: &str, workspace: &Path) -> Output {
+    consumer_hook_command(test, workspace).output().unwrap()
+}
+
+/// Prepare the hook driver for a native workspace with its recorded tool shim.
+#[cfg(unix)]
+fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
+    let mut command = TestProcess::named(format!("tooling_commands::{test}"))
+        .unwrap()
+        .nocapture()
+        .current_dir(workspace)
+        .env("MAESTRO_DRIVER", "consumer-hook")
+        .env("MAESTRO_FIXTURE_ROOT", workspace)
+        .env("MAESTRO_FIXTURE_CARGO", workspace.join("bin/cargo"))
+        .env("MAESTRO_RECEIPT", workspace.join("receipt"))
+        .env("CARGO_TARGET_DIR", workspace.join("target"))
+        .env(
+            "PATH",
+            format!(
+                "{}:{}",
+                workspace.join("bin").display(),
+                std::env::var("PATH").unwrap()
+            ),
+        );
+    if let Some(channel) = toolchain_support::channel() {
+        command = command.env("RUSTUP_TOOLCHAIN", channel);
+    }
+    command
+}
+
+/// Run one native Cargo command inside the consumer workspace.
+#[cfg(unix)]
+fn consumer_cargo(workspace: &Path, args: &[&str]) -> Output {
+    toolchain_support::command("cargo")
+        .current_dir(workspace)
+        .env("CARGO_TARGET_DIR", workspace.join("target"))
+        .args(args)
+        .output()
+        .unwrap()
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_hook_reverse_dependent_lint_is_not_skipped() {
+    drive();
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let leaf = workspace.join("leaf/src/lib.rs");
+    fs::write(
+        &leaf,
+        "//! Leaf crate.\n\n/// Returns the fixture value.\n#[deprecated(note = \"use the next value\")]\npub fn value() -> u32 {\n    7\n}\n",
+    )
+    .unwrap();
+    git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let control = consumer_cargo(
+        &workspace,
+        &[
+            "clippy",
+            "-p",
+            "leaf",
+            "--all-targets",
+            "--locked",
+            "--",
+            "-D",
+            "warnings",
+        ],
+    );
+    assert!(
+        control.status.success(),
+        "leaf-only control: {}",
+        String::from_utf8_lossy(&control.stderr)
+    );
+    let output = run_consumer_hook(
+        "maestro_hook_reverse_dependent_lint_is_not_skipped",
+        &workspace,
+    );
+    assert_eq!(output.status.code(), Some(1), "{}", stdout(&output));
+    let text = format!(
+        "{}{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(text.contains("caller/src/lib.rs"), "{text}");
+    assert!(text.contains("deprecated"), "{text}");
+    assert_reverse_dependent_arguments(&workspace);
+
+    fs::write(&leaf, LEAF_SOURCE).unwrap();
+    git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let output = run_consumer_hook(
+        "maestro_hook_reverse_dependent_lint_is_not_skipped",
+        &workspace,
+    );
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// Assert the hook's Clippy invocation names the leaf and its caller.
+#[cfg(unix)]
+fn assert_reverse_dependent_arguments(workspace: &Path) {
+    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
+    let clippy = log
+        .lines()
+        .rfind(|line| line.starts_with("clippy "))
+        .unwrap_or_default();
+    assert!(
+        clippy.contains("-p leaf") && clippy.contains("-p caller"),
+        "{log}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
+    drive();
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let caller = workspace.join("caller/src/lib.rs");
+    fs::write(
+        &caller,
+        "pub fn doubled() -> u32 {\n    leaf::value() * 2\n}\n",
+    )
+    .unwrap();
+    git(&workspace, &["add", "--", "caller/src/lib.rs"]);
+    let control = toolchain_support::command("cargo")
+        .current_dir(&workspace)
+        .env("CARGO_TARGET_DIR", workspace.join("target"))
+        .env("RUSTDOCFLAGS", "-D warnings -D missing_docs")
+        .args(["doc", "-p", "leaf", "--no-deps", "--locked"])
+        .output()
+        .unwrap();
+    assert!(
+        control.status.success(),
+        "leaf-only control: {}",
+        String::from_utf8_lossy(&control.stderr)
+    );
+    let output = run_consumer_hook(
+        "maestro_hook_scoped_docs_still_deny_missing_documentation",
+        &workspace,
+    );
+    assert_eq!(output.status.code(), Some(1), "{}", stdout(&output));
+    let text = format!(
+        "{}{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(text.contains("missing documentation"), "{text}");
+    assert!(text.contains("caller"), "{text}");
+    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
+    let doc = log
+        .lines()
+        .find(|line| line.starts_with("doc "))
+        .unwrap_or_default();
+    assert!(doc.contains("-p caller"), "{log}");
+
+    fs::write(&caller, CALLER_SOURCE).unwrap();
+    git(&workspace, &["add", "--", "caller/src/lib.rs"]);
+    let output = run_consumer_hook(
+        "maestro_hook_scoped_docs_still_deny_missing_documentation",
+        &workspace,
+    );
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 /// Run the test build's author preparation only while it is newer than its sources.

@@ -156,12 +156,11 @@ fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> 
         .into_std_path_buf())
 }
 
-/// Wire formatting, checks and the delivered browser smoke command into the hook.
+/// Wire formatting, the shared check recipe and the delivered browser smoke
+/// command into the hook.
 fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut format = Command::new(cargo);
     format.current_dir(checkout).args(["fmt", "--all"]);
-    let mut check = Command::new("just");
-    check.current_dir(checkout).arg("check");
     let mut conventions = Command::new(cargo);
     conventions
         .current_dir(checkout)
@@ -173,8 +172,8 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         .is_file();
     pre_commit::run(
         checkout,
+        cargo,
         &mut format,
-        &mut check,
         &mut conventions,
         active.then_some(&mut smoke),
     )

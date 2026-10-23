@@ -3,21 +3,27 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
+use selection::Scope;
+
+mod selection;
+
 /// Failure message printed when formatting or verification fails.
 const CHECK_FAILURE: &str = "❌ Checks failed. Please fix the errors before committing.";
 
-/// Format captured index paths, restage surviving files and run checks.
+/// Format captured index paths, restage surviving files and verify their crates.
 ///
-/// The full conventions suite runs only when a captured path belongs to the
-/// conventions checker, and the browser smoke check only when one affects
-/// browser compilation.
+/// Verification covers the staged crates and every workspace crate that depends
+/// on them, or the whole workspace when a staged path changes a workspace-wide
+/// input. The full conventions suite runs only when a captured path belongs to
+/// the conventions checker, and the browser smoke check only when the selection
+/// compiles the delivered browser entry.
 ///
 /// # Errors
 /// Returns native process and filesystem failures.
 pub fn run(
     root: &Path,
+    cargo: &Path,
     format: &mut Command,
-    check: &mut Command,
     conventions: &mut Command,
     smoke: Option<&mut Command>,
 ) -> io::Result<ExitCode> {
@@ -27,21 +33,15 @@ pub fn run(
         println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
-    let surviving: Vec<_> = paths
-        .iter()
-        .filter(|path| root.join(path).is_file())
-        .collect();
-    if !surviving.is_empty() {
-        let status = Command::new("git")
-            .current_dir(root)
-            .args(["add", "--"])
-            .args(surviving)
-            .status()?;
-        if !status.success() {
-            return Ok(ExitCode::FAILURE);
-        }
+    if !restage(root, &paths)? {
+        return Ok(ExitCode::FAILURE);
     }
-    if !passed(check) {
+    let Some(scope) = selected(root, cargo, &paths) else {
+        println!("{CHECK_FAILURE}");
+        return Ok(ExitCode::FAILURE);
+    };
+    println!("Selected crates: {}", scope.names().join(", "));
+    if !passed(&mut check(root, &scope)) {
         println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
@@ -54,7 +54,7 @@ pub fn run(
     {
         return Ok(ExitCode::FAILURE);
     }
-    if let Some(smoke) = smoke.filter(|_| needs_smoke(&paths))
+    if let Some(smoke) = smoke.filter(|_| scope.reaches_browser())
         && !step(
             "Running browser smoke check...",
             smoke,
@@ -65,6 +65,48 @@ pub fn run(
     }
     println!("✅ All pre-commit checks passed!");
     Ok(ExitCode::SUCCESS)
+}
+
+/// Read locked metadata and select the crates the captured paths require.
+fn selected(root: &Path, cargo: &Path, paths: &[OsString]) -> Option<Scope> {
+    crate::locked_metadata(cargo, root)
+        .map(|metadata| selection::select(&metadata, paths))
+        .inspect_err(|error| eprintln!("{error}"))
+        .ok()
+}
+
+/// Build the shared check recipe for the selected scope.
+fn check(root: &Path, scope: &Scope) -> Command {
+    let mut command = Command::new("just");
+    command.current_dir(root).arg("_check");
+    match scope {
+        Scope::Workspace(_) => {
+            command.arg("--workspace");
+        }
+        Scope::Packages(names) => {
+            for name in names {
+                command.args(["-p", name]);
+            }
+        }
+    }
+    command
+}
+
+/// Stage the captured paths that formatting left on disk.
+fn restage(root: &Path, captured: &[OsString]) -> io::Result<bool> {
+    let surviving: Vec<_> = captured
+        .iter()
+        .filter(|path| root.join(path).is_file())
+        .collect();
+    if surviving.is_empty() {
+        return Ok(true);
+    }
+    let status = Command::new("git")
+        .current_dir(root)
+        .args(["add", "--"])
+        .args(surviving)
+        .status()?;
+    Ok(status.success())
 }
 
 /// Run a step, reporting a launch failure, and tell whether it succeeded.
@@ -92,22 +134,11 @@ fn needs_conventions(paths: &[OsString]) -> bool {
         .any(|path| Path::new(path).starts_with("crates/maestro-test-conventions"))
 }
 
-/// Check whether captured paths affect browser compilation.
-fn needs_smoke(paths: &[OsString]) -> bool {
-    paths.iter().any(|path| {
-        let path = Path::new(path);
-        path == Path::new("Cargo.toml")
-            || path == Path::new("Cargo.lock")
-            || path.starts_with("crates/maestro-models")
-            || path.starts_with("crates/maestro-web")
-    })
-}
-
-/// Capture staged paths without losing native filename bytes.
+/// Capture staged paths without losing native filename bytes or move sources.
 fn capture(root: &Path) -> io::Result<Vec<OsString>> {
     let captured = Command::new("git")
         .current_dir(root)
-        .args(["diff", "--cached", "--name-only", "-z"])
+        .args(["diff", "--cached", "--name-only", "--no-renames", "-z"])
         .output()?;
     if !captured.status.success() {
         return Err(io::Error::other(
