@@ -22,6 +22,10 @@ type Candidate = (Arc<RwLock<Model>>, Option<ModelThinkingLevel>);
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Selects `model`, records it in the session and the settings and re-clamps thinking.
     ///
+    /// The `model_select` notification starts at once and finishes on the session's task
+    /// facility, so a caller that stops waiting does not cancel it, while a caller that
+    /// keeps waiting returns after the handlers finish.
+    ///
     /// # Errors
     /// Returns `No API key for <provider>/<id>` without changes when the model has no
     /// configured credentials, or a credential, recording or listener failure.
@@ -67,6 +71,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
 
     /// Selects the next or previous scoped model, or else the next or previous available
     /// model; `None` when fewer than two are candidates.
+    ///
+    /// The `model_select` notification runs as [`set_model`](Self::set_model)'s does.
     ///
     /// # Errors
     /// Returns a credential, recording or listener failure.
@@ -226,11 +232,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
             previous_model: Presence::Present(previous),
             source,
         };
-        self.extension_runner
-            .emit(&mut event)
-            .await
-            .map_err(thrown)?;
-        Ok(())
+        let runner = Rc::clone(&self.extension_runner);
+        self.start_operation(
+            async move { runner.emit(&mut event).await.map_err(thrown).map(|_| ()) },
+        )
+        .await
+        .map_err(thrown)?
     }
 
     /// Starts the selection notification now and lets it finish on the session's task

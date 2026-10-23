@@ -35,6 +35,10 @@ applies the level and tells extensions through `model_select` unless provider an
 identity are unchanged. It writes the entry and the saved default even when the same
 model is selected again.
 
+The `model_select` notification starts at once and finishes on the session's task
+facility, so a caller that stops waiting does not cancel it and a caller that keeps
+waiting returns after the handlers finish. `cycle_model` notifies the same way.
+
 `cycle_model` moves forward or backward through the scoped models that have
 credentials, or through every available model when none are scoped. Fewer than
 two candidates return `None`. A current model that is not listed starts from the
