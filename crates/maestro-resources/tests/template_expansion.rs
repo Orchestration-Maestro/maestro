@@ -3408,3 +3408,29 @@ fn native_prompt_discovery_uses_ordered_directory_entries() {
         ]
     );
 }
+
+/// An empty home spelling resolves `~/` inside the working directory.
+#[cfg(unix)]
+#[test]
+fn empty_home_resolves_an_explicit_prompt_directory_in_the_working_directory() {
+    let dir = support::Directory::new();
+    let template = dir.file("note.md", "body from the working directory");
+    let paths = vec!["~/".to_owned()];
+    let result = load_prompt_templates(LoadPromptTemplatesOptions {
+        cwd: support::text(dir.0.path()),
+        home: "",
+        agent_dir: "",
+        config_dir_name: ".maestro",
+        prompt_paths: &paths,
+        include_defaults: false,
+    })
+    .unwrap();
+    assert_eq!(
+        result
+            .iter()
+            .map(|p| (p.name.as_str(), p.content.as_str()))
+            .collect::<Vec<_>>(),
+        [("note", "body from the working directory")],
+        "{template:?}"
+    );
+}

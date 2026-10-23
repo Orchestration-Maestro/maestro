@@ -10,15 +10,17 @@ use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_
 use std::{io, path::PathBuf};
 
 /// Expands only an exact `~` or a leading `~/` (`~\` on Windows), joining the rest as a
-/// native path and keeping every other spelling.
+/// native path and keeping every other spelling without reading the home directory.
 fn expand_home_path(path: &str) -> PathBuf {
-    let home = || {
-        std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
+    let Some(rest) = path.strip_prefix('~') else {
+        return path.into();
     };
-    let Ok(Some((home, rest))) =
-        maestro_resources::paths::tilde_parts(std::path::Path::new(path), home)
+    if !rest.is_empty() && !rest.starts_with(std::path::is_separator) {
+        return path.into();
+    }
+    let Ok(home) = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     else {
         return path.into();
     };

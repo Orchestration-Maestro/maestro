@@ -1,8 +1,5 @@
 use crate::support;
-use maestro_resources::{
-    canonicalize_path, is_local_path,
-    paths::{expand_tilde, expand_tilde_text},
-};
+use maestro_resources::{canonicalize_path, is_local_path, paths::expand_tilde_text};
 use support::text;
 
 /// Classify only the six exact lowercase source prefixes.
@@ -299,26 +296,13 @@ fn native_directory_entries_follow_platform_order() {
     assert_eq!(names, ["C.md", "_x.md", "a.md", "b.md"]);
 }
 
-/// A leading `~` keeps every segment its author wrote below the home directory.
+/// A leading `~` joins below the home directory and normalizes the written segments.
 #[test]
-fn maestro_tilde_expansion_keeps_the_written_segments() {
-    let home = || Ok(std::path::PathBuf::from("/home/sample"));
-    let expanded = |path| expand_tilde(std::path::Path::new(path), home).unwrap();
-    for (written, expected) in [
-        ("~/link/../f", "/home/sample/link/../f"),
-        ("~", "/home/sample"),
-        ("~/", "/home/sample/"),
-        ("~//note", "/home/sample//note"),
-        ("~/a/../f", "/home/sample/a/../f"),
-        ("~//x", "/home/sample//x"),
-        ("~child", "~child"),
-        ("plain", "plain"),
-    ] {
-        assert_eq!(expanded(written).to_string_lossy(), expected, "{written:?}");
-    }
+fn text_tilde_expansion_joins_below_the_home_directory() {
     let text = || Ok("/home/sample".to_owned());
     for (written, expected) in [
         ("~/link/../f", "/home/sample/f"),
+        ("~", "/home/sample"),
         ("~/", "/home/sample"),
         ("~//note", "/home/sample/note"),
         ("~child", "/home/sample/child"),
@@ -335,13 +319,13 @@ fn maestro_tilde_expansion_keeps_the_written_segments() {
     );
 }
 
-/// An empty home spelling keeps the written rest, its separator included.
+/// An empty home spelling joins lexically, so `~/` keeps the working directory.
 #[test]
-fn shared_expander_keeps_an_empty_home_spelling() {
-    assert_eq!(
-        expand_tilde(std::path::Path::new("~/"), || Ok(std::path::PathBuf::new())).unwrap(),
-        std::path::Path::new("/")
-    );
-    assert_eq!(expand_tilde_text("~/", || Ok(String::new())).unwrap(), "/");
+fn text_expansion_joins_an_empty_home_lexically() {
+    assert_eq!(expand_tilde_text("~/", || Ok(String::new())).unwrap(), ".");
     assert_eq!(expand_tilde_text("~", || Ok(String::new())).unwrap(), "");
+    assert_eq!(
+        expand_tilde_text("~child", || Ok(String::new())).unwrap(),
+        "child"
+    );
 }

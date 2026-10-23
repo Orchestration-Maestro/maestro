@@ -3,11 +3,7 @@
 use crate::{
     current_directory, drive_directories, frontmatter::text_whitespace, skills::real_path,
 };
-use std::{
-    ffi::OsString,
-    io,
-    path::{Path, PathBuf},
-};
+use std::{io, path::Path};
 
 /// The project and user configuration directory name.
 pub const CONFIG_DIR_NAME: &str = ".maestro";
@@ -56,55 +52,11 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
     resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
-/// The home directory and the rest written after a leading `~` of `path`, reading `home` only
-/// for a path that starts with `~`; `None` for any other path.
+/// Join a leading `~` of `path` below the home directory as text: the rest drops the separator
+/// that introduced it and is normalized lexically, so `.`, `..` and repeated separators resolve.
 ///
-/// The rest has to be text, so a path whose bytes text cannot hold is not a home path.
-///
-/// # Errors
-/// Returns the error of `home`.
-pub fn tilde_parts(
-    path: &Path,
-    home: impl FnOnce() -> io::Result<PathBuf>,
-) -> io::Result<Option<(PathBuf, &str)>> {
-    match path
-        .as_os_str()
-        .to_str()
-        .and_then(|text| text.strip_prefix('~'))
-    {
-        Some(rest) => Ok(Some((home()?, rest))),
-        None => Ok(None),
-    }
-}
-
-/// Join the rest of a leading `~` of `path` to the home directory exactly as written: an exact
-/// `~` gives the home directory, and a `~/` rest gives the home followed by every byte it was
-/// written with, separators and parent segments included.
-///
-/// Any other path, a `~` followed by text included, is returned as written.
-///
-/// # Errors
-/// Returns the error of `home`.
-pub fn expand_tilde(
-    path: &Path,
-    home: impl FnOnce() -> io::Result<PathBuf>,
-) -> io::Result<PathBuf> {
-    match tilde_parts(path, home)? {
-        Some((home, rest)) if rest.is_empty() || rest.starts_with('/') => {
-            let mut expanded = OsString::from(home);
-            expanded.push(rest);
-            Ok(PathBuf::from(expanded))
-        }
-        _ => Ok(path.to_owned()),
-    }
-}
-
-/// Join the rest of a leading `~` of `path` to the home directory as text: the rest drops the
-/// separator that introduced it, joins below the home, and the result is normalized lexically,
-/// so `.`, `..` and repeated separators resolve.
-///
-/// An empty home spelling keeps the written rest, its separator included; any other path is
-/// returned as written.
+/// An exact `~` is the home directory, and any other path is returned as written without reading
+/// the home directory.
 ///
 /// # Errors
 /// Returns the error of `home`.
@@ -112,15 +64,14 @@ pub fn expand_tilde_text(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    let Some((home, rest)) = tilde_parts(Path::new(path), || home().map(PathBuf::from))? else {
+    let Some(rest) = path.strip_prefix('~') else {
         return Ok(path.to_owned());
     };
-    let home = home.to_string_lossy();
-    if home.is_empty() {
-        return Ok(rest.to_owned());
+    if rest.is_empty() {
+        return home();
     }
     let rest = rest.strip_prefix('/').unwrap_or(rest);
-    Ok(maestro_path::join(&[home.as_ref(), rest]))
+    Ok(maestro_path::join(&[&home()?, rest]))
 }
 
 /// Compare preserved target spelling against a root resolved from the process

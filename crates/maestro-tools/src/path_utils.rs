@@ -2,7 +2,7 @@
 
 use icu_normalizer::DecomposingNormalizer;
 use maestro_path::{homedir, is_absolute};
-use maestro_resources::paths::{expand_tilde, resolve_groups_with};
+use maestro_resources::paths::resolve_groups_with;
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -36,14 +36,38 @@ pub fn normalize_unicode_spaces(text: &str) -> String {
 
 /// Strip one leading `@` and expand a bare `~` or `~/`, keeping every other spelling.
 ///
-/// The home directory is read only for those two forms: on Unix `HOME` as set, even
-/// empty, otherwise [`std::env::home_dir`].
-///
 /// # Errors
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
 fn expand_written_path(file_path: &str) -> io::Result<String> {
+    expand_written_path_with(file_path, home_directory)
+}
+
+/// Expand the two home forms this resolver accepts: an exact `~` gives the home directory, and
+/// a `~/` prefix gives the home followed by the rest exactly as written, separators and parent
+/// segments included.
+///
+/// Any other spelling, a `~` followed by other text included, is returned as written and reads
+/// no home directory.
+///
+/// # Errors
+/// Returns the error `home` returns for an accepted form.
+fn expand_written_path_with(
+    file_path: &str,
+    home: impl FnOnce() -> io::Result<PathBuf>,
+) -> io::Result<String> {
     let file_path = file_path.strip_prefix('@').unwrap_or(file_path);
-    expand_tilde(Path::new(file_path), home_directory).and_then(|path| utf8(path, "home directory"))
+    let Some(rest) = file_path
+        .strip_prefix('~')
+        .filter(|rest| rest.is_empty() || rest.starts_with('/'))
+    else {
+        return Ok(file_path.to_owned());
+    };
+    let home = utf8(home()?, "home directory")?;
+    Ok(if rest.is_empty() {
+        home
+    } else {
+        format!("{home}{rest}")
+    })
 }
 
 /// Read the home directory as native bytes.
@@ -236,3 +260,6 @@ pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
     }
     Ok(spelling)
 }
+
+#[cfg(test)]
+mod tests;
