@@ -62,6 +62,11 @@ pub mod assistant_message;
 
 pub mod branch_summary_message;
 
+pub mod custom_message;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod skill_invocation_message;
+
 pub mod compaction_summary_message;
 
 /// Shared constructor inputs and Markdown composition for transcript widgets.

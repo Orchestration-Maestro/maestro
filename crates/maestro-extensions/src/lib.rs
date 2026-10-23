@@ -54,8 +54,8 @@ pub use types::{
     ExtensionAPI, ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
     ExtensionContextActions, ExtensionExecution, ExtensionFlag, ExtensionShortcut,
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, ForkHandler,
-    MessageRenderOptions, MessageRenderer, NavigateTreeHandler, NewSessionHandler,
-    RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
+    MessageRenderOptions, MessageRenderer, MessageRendererCall, NavigateTreeHandler,
+    NewSessionHandler, RegisteredCommand, ReplacedSessionContext, ResolvedCommand, ShutdownHandler,
     SwitchSessionHandler, TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.

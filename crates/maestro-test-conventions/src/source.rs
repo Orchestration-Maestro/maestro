@@ -142,6 +142,16 @@ pub(crate) fn test_layout(path: &Path, directory: &Path) -> bool {
         })
 }
 
+/// Recognize a source that belongs to tests: a test-only crate, a test layout or a test gate.
+pub(crate) fn test_scope(member: &Member, source: &Source) -> bool {
+    member.name.starts_with("maestro-test-")
+        || test_layout(&source.path, &member.directory)
+        || source
+            .syntax
+            .as_ref()
+            .is_some_and(|syntax| cfg_test(&syntax.attrs))
+}
+
 /// Access attributes on supported Rust item variants.
 pub(crate) fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
     match item {

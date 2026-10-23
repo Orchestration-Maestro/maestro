@@ -10,6 +10,7 @@ mod development_guidance;
 mod duplicates;
 mod integration_tests;
 mod json_dependencies;
+mod message_renderer_ownership;
 mod quality;
 mod repetition;
 mod support;

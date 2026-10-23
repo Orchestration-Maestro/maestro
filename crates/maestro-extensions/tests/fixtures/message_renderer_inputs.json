@@ -1,0 +1,152 @@
+[
+  {
+    "kind": "missing",
+    "input": {
+      "negative_zero": false
+    },
+    "expected": {
+      "present": false,
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "null",
+    "input": {
+      "details": null,
+      "negative_zero": false
+    },
+    "expected": {
+      "present": true,
+      "details": null,
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "string",
+    "input": {
+      "details": "text",
+      "negative_zero": false
+    },
+    "expected": {
+      "present": true,
+      "details": "text",
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "number",
+    "input": {
+      "details": 1.5,
+      "negative_zero": false
+    },
+    "expected": {
+      "present": true,
+      "details": 1.5,
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "negative_zero",
+    "input": {
+      "details": 0,
+      "negative_zero": true
+    },
+    "expected": {
+      "present": true,
+      "details": 0,
+      "negative_zero": true,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "boolean",
+    "input": {
+      "details": false,
+      "negative_zero": false
+    },
+    "expected": {
+      "present": true,
+      "details": false,
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "object",
+    "input": {
+      "details": {
+        "nested": [
+          7
+        ]
+      },
+      "negative_zero": false
+    },
+    "expected": {
+      "present": true,
+      "details": {
+        "nested": [
+          7
+        ]
+      },
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  },
+  {
+    "kind": "array",
+    "input": {
+      "details": [
+        1,
+        "two",
+        null
+      ],
+      "negative_zero": false
+    },
+    "expected": {
+      "present": true,
+      "details": [
+        1,
+        "two",
+        null
+      ],
+      "negative_zero": false,
+      "custom_type": "note",
+      "display": false,
+      "timestamp": 1.5,
+      "expanded": false,
+      "theme_color": "\u001b[38;2;62;79;111msample\u001b[39m"
+    }
+  }
+]

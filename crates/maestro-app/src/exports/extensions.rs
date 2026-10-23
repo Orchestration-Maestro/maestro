@@ -18,3 +18,11 @@ pub use maestro_extensions::{
 pub use maestro_models::system_prompt::{BuildSystemPromptOptions, ContextFile};
 
 pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode};
+
+pub use maestro_extensions::MessageRendererCall;
+
+/// Creates an empty shared event bus whose default callbacks use the thread-safe family.
+///
+/// A frontend binds an inline native renderer to this bus through
+/// [`MessageRendererCall::new`] and then retains the projected call.
+pub use maestro_extensions::create_event_bus;
