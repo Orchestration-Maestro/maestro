@@ -12,7 +12,13 @@ use maestro_extensions::{
 };
 use maestro_models::{Local, ModelThinkingLevel};
 use serde_json::{Value, json};
-use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc, task::Poll};
+use std::{
+    cell::RefCell,
+    future::Future,
+    pin::Pin,
+    rc::{Rc, Weak},
+    task::Poll,
+};
 use tokio::sync::{Notify, oneshot};
 
 /// What a parked handler records when it starts.
@@ -36,8 +42,9 @@ type Steps = Rc<RefCell<Vec<String>>>;
 /// Work the session submitted to its task facility.
 type Tasks = Rc<RefCell<Vec<Pin<Box<dyn Future<Output = ()>>>>>>;
 
-/// The session a handler reaches to change the thinking level.
-type SharedSession = Rc<RefCell<Option<Rc<AgentSession<Local>>>>>;
+/// The session a handler reaches to change the thinking level, held weakly because the
+/// session owns the handler.
+type SharedSession = Rc<RefCell<Weak<AgentSession<Local>>>>;
 
 /// A waiting handler's release signal.
 type Waiting = Rc<RefCell<Option<oneshot::Receiver<()>>>>;
@@ -283,8 +290,10 @@ fn observed_case(route: &str, observe: bool) {
             .await;
         scope(route, &h);
         let mut operation = Some(selection(&h, route));
-        assert!(
-            poll_once(operation.as_mut().expect("the selection is observed")).is_pending(),
+        let first = poll_once(operation.as_mut().expect("the selection is observed"));
+        assert_eq!(
+            json!(first.is_ready()),
+            expected["before"]["settled"],
             "the caller waits for the first handler"
         );
         assert_eq!(parked.steps(), expected["before"]["log"]);
@@ -412,7 +421,7 @@ fn flat_handlers(log: &Log, session: &SharedSession, handler: Handler) -> Extens
             "model_select".into(),
             Rc::new(move |_, _| {
                 let target = if changing {
-                    level_session.borrow().clone()
+                    level_session.borrow().upgrade()
                 } else {
                     None
                 };
@@ -462,7 +471,7 @@ impl Flat {
             &self.tasks,
         )
         .await;
-        *self.session.borrow_mut() = Some(Rc::clone(&h.session));
+        *self.session.borrow_mut() = Rc::downgrade(&h.session);
         if !case.scoped.is_empty() {
             h.session.set_scoped_models(
                 case.scoped
@@ -527,6 +536,9 @@ fn recorded_case(route: &str, case: &Case, handler: Handler) {
             flat.tasks.borrow().is_empty(),
             "the case starts no notification work"
         );
+        let session = Rc::downgrade(&h.session);
+        drop((h, flat));
+        assert!(session.upgrade().is_none(), "the case releases its session");
     });
 }
 
