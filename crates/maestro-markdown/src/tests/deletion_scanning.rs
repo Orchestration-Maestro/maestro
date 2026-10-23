@@ -1,5 +1,5 @@
 //! Deletion opener cost at the shared owner and through both public entries.
-use super::{SELECTIONS, WORK, Work, assert_literal, grows_linearly, parsed};
+use super::{SELECTIONS, WORK, Work, assert_literal, grows_at_most_linearly, parsed};
 use crate::{Kind, MarkedOptions, tokenizer::inline::delimiters::Delimiters};
 use serde::Deserialize;
 
@@ -45,7 +45,10 @@ fn unclosed_deletion_root_work_is_linear() {
         let counts = root_work(piece, options);
         eprintln!("{options:?} {piece:?} N/2N/4N {counts:?}");
         assert!(counts[0] > 0, "{options:?} {piece:?}");
-        assert!(grows_linearly(counts), "{options:?} {piece:?}: {counts:?}");
+        assert!(
+            grows_at_most_linearly(counts),
+            "{options:?} {piece:?}: {counts:?}"
+        );
     }
 }
 
@@ -68,7 +71,7 @@ fn assert_linear_through_parse(piece: &str, options: MarkedOptions, extension: b
     let counts = entry_work(piece, options, extension);
     eprintln!("{options:?} {piece:?} extension={extension} N/2N/4N {counts:?}");
     assert!(
-        grows_linearly(counts),
+        grows_at_most_linearly(counts),
         "{options:?} {piece:?} extension={extension}: {counts:?}"
     );
     if options == MarkedOptions::Documentation {

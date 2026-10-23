@@ -5,7 +5,7 @@ const ABSENT: usize = usize::MAX;
 
 /// Nearest closing `](` each label offset can reach.
 pub(super) struct LabelClosers {
-    /// Byte offset rules can reach a closing pair, or [`ABSENT`].
+    /// Nearest closing-pair byte offset each label offset can reach, or [`ABSENT`].
     reach: Vec<usize>,
 }
 
