@@ -45,10 +45,11 @@ impl HtmlRenderer<'_> {
         self.preview.document.load_alt_chunk(part, id).ok()?
     }
 
-    /// Name loaded bytes by data URL or, when the options ask for object URLs, by an object
-    /// URL the rendering keeps.
+    /// Name loaded bytes by data URL or, when the package was read with base64 URLs, by an
+    /// object URL the rendering keeps. The URL kind follows the options the package was read
+    /// with, which the resource loader keeps, never the options of a later rendering.
     fn blob_to_url(&mut self, bytes: &[u8]) -> Option<String> {
-        if self.options.resources.use_base64_url {
+        if self.preview.options.resources.use_base64_url {
             return Some(format!(
                 "data:application/octet-stream;base64,{}",
                 STANDARD.encode(bytes)

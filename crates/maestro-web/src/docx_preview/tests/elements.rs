@@ -16,7 +16,7 @@ fn hostile_text_and_attribute_values_stay_literal() {
 }
 
 #[test]
-fn text_and_attribute_values_are_escaped() {
+fn text_and_attribute_values_stay_literal_and_declarations_are_contained() {
     let mut element = HtmlElement::new("span");
     element.set_attribute("title", "x\" onmouseover=\"alert(1)");
     element.set_style("font-family", Some("'Times \"New\" Roman'"));
@@ -33,6 +33,14 @@ fn text_and_attribute_values_are_escaped() {
     let mut child = HtmlElement::new("br");
     child.set_attribute("id", "<br>");
     element.push_element(child);
+    assert_eq!(
+        element.declarations().collect::<Vec<_>>(),
+        [("font-family", "'Times \"New\" Roman'")]
+    );
+    assert_eq!(
+        element.attributes().collect::<Vec<_>>(),
+        [("title", "x\" onmouseover=\"alert(1)")]
+    );
     assert_eq!(
         markup(&element),
         "<span title=\"x&quot; onmouseover=&quot;alert(1)\" \
@@ -114,28 +122,4 @@ fn style_inheritance_follows_each_base_and_keeps_last_duplicates() {
     assert_eq!(numbering("LevelOnly"), (Some("9".into()), Some(4.0)));
     assert_eq!(numbering("NumberOnly"), (Some("9".into()), None));
     assert!(styles.find_style(Some("")).is_none() && styles.find_style(None).is_none());
-}
-
-/// A declaration value that would leave its own declaration is dropped, and text and
-/// attribute values stay literal.
-#[test]
-fn declarations_that_leave_their_own_declaration_are_dropped() {
-    let mut element = HtmlElement::new("span");
-    element.set_attribute("title", "x\" onmouseover=\"alert(1)");
-    element.set_style("font-family", Some("'Times \"New\" Roman'"));
-    element.set_style("color", Some("red;position:fixed"));
-    element.set_style("width", Some("1pt/*"));
-    element.set_style("height", Some("1pt}"));
-    element.set_style("margin-left", Some("1pt !important"));
-    element.set_style("margin-top", Some("calc(1pt"));
-    element.set_style("margin-right", Some("'1pt"));
-    element.set_style("margin-bottom", Some("\"1pt\\\""));
-    element.set_style("font-style", Some("\"a\nb\""));
-    element.set_style("font-weight", Some("1pt)"));
-    let declarations: Vec<(&str, &str)> = element.declarations().collect();
-    assert_eq!(declarations, [("font-family", "'Times \"New\" Roman'")]);
-    assert_eq!(
-        element.attributes().collect::<Vec<_>>(),
-        [("title", "x\" onmouseover=\"alert(1)")]
-    );
 }

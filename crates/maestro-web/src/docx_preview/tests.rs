@@ -110,6 +110,7 @@ fn render(name: &str) -> Vec<HtmlElement> {
     parse_async(&package(name), case(name).options.options())
         .unwrap()
         .render_sections()
+        .pages
 }
 
 /// Write one element's declarations as the recording observed them: sorted, numbers in their

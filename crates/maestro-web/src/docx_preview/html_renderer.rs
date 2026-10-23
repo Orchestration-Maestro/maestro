@@ -1,7 +1,7 @@
 //! Rendering state, the composition of one rendering, style lookup and the element dispatch.
 use super::html_element::{HtmlContent, HtmlElement, Namespace};
 use super::utils::escape_class_name;
-use super::{Options, Rendering, WordPreview};
+use super::{Options, Rendering, Sections, WordPreview};
 use indexmap::IndexMap;
 use maestro_app::browser::docx_preview::{
     DomType, OpenXmlElementData as Data, OpenXmlElementTree, Part,
@@ -24,6 +24,8 @@ use notes::NoteMap;
 use pages::Slice;
 use styles::ParagraphStyle;
 pub(crate) use styles::Styles;
+#[cfg(test)]
+pub(crate) use styles::steps_taken;
 
 /// Ordered declarations as the document parser produces them.
 pub(crate) type CssStyle = IndexMap<String, Option<String>>;
@@ -128,9 +130,20 @@ impl<'a> HtmlRenderer<'a> {
         Rendering {
             styles,
             body,
+            #[cfg(any(target_arch = "wasm32", test))]
             resource_styles: self.resource_styles,
             #[cfg(target_arch = "wasm32")]
             object_urls: self.object_urls,
+        }
+    }
+
+    /// Render the pages, keeping the object URLs they name with them.
+    pub(crate) fn into_sections(mut self) -> Sections {
+        let pages = self.render_sections();
+        Sections {
+            pages,
+            #[cfg(target_arch = "wasm32")]
+            _urls: self.object_urls,
         }
     }
 

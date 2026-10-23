@@ -2,7 +2,9 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 #[path = "../src/docx_preview/tests/corrections.rs"]
 mod corrections;
-use maestro_web::docx_preview::{Options, parse_async, render_async, render_document};
+use maestro_web::docx_preview::{
+    HtmlContent, HtmlElement, Options, parse_async, render_async, render_document,
+};
 use serde::Deserialize;
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
@@ -230,6 +232,36 @@ pub async fn dropping_the_rendered_document_revokes_its_object_urls() {
         fetch_bytes(&source).await.is_empty(),
         "a dropped rendering revokes {source}"
     );
+}
+
+/// Pages returned without a mount keep the object URLs their images name.
+#[wasm_bindgen]
+pub async fn section_pages_keep_the_object_urls_they_name() {
+    let preview = parse_async(package("image-inline"), Options::default()).unwrap();
+    let sections = preview.render_sections();
+    let source = image_source(&sections.pages).expect("image source");
+    assert!(source.starts_with("blob:"), "{source}");
+    assert!(
+        !fetch_bytes(&source).await.is_empty(),
+        "returned sections keep {source}"
+    );
+}
+
+/// The source of the first image among rendered elements.
+fn image_source(elements: &[HtmlElement]) -> Option<String> {
+    fn find(element: &HtmlElement) -> Option<String> {
+        if element.tag() == "img" {
+            return element
+                .attributes()
+                .find(|(name, _)| *name == "src")
+                .map(|(_, value)| value.to_owned());
+        }
+        element.children().iter().find_map(|child| match child {
+            HtmlContent::Element(child) => find(child),
+            HtmlContent::Text(_) => None,
+        })
+    }
+    elements.iter().find_map(find)
 }
 
 /// After an alternate chunk's frame loads, the content it shows has run no script.

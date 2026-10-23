@@ -452,11 +452,13 @@ not create browser URLs, load fonts into a browser or render a preview.
 above and prepares its body, styles, theme, numbering, fonts, notes, headers and
 footers. A malformed part fails the load with `DocxError`, so rendering itself
 cannot fail. `WordPreview::render` returns the styles, the pages and the resource
-styles one rendering composes; `render_sections` returns the pages alone.
+styles one rendering composes; `render_sections` returns the pages alone, with the
+object URLs their nodes name.
 `docx_preview::Options` defaults to the `docx` class namespace, XML declaration
 trimming, page-break detection, ignored last-rendered page breaks, kept page
 sizes, rendered headers, footers and note lists, the page wrapper, loaded fonts,
-object URLs and rendered alternate chunks.
+object URLs and rendered alternate chunks. The reading options decide the URL
+kind; a later rendering cannot change it.
 
 A paragraph's section properties end a section after that paragraph, and the
 body's own section properties apply to the sections after the last such
@@ -527,36 +529,39 @@ they name, and the alternate format chunks. `WordPreview::render` returns them a
 a `Rendering`: `styles` holds the style elements in the order the library mounts
 them, `body` holds the page wrapper or the pages themselves, and `resource_styles`
 holds the picture-bullet variables and font faces that follow the body. A mount
-writes `styles`, then `body`, then `resource_styles` into the style container,
-which is the body container unless one is given.
+writes `styles` and then `resource_styles` into the style container, which is the
+body container unless one is given, and `body` into the body container, so a
+shared container shows the picture bullets and font faces after the pages.
 
-The style order is the library stylesheet, the theme, the document styles, the
-list styles, the body, the picture-bullet variables and the font faces. The
-library stylesheet declares the page frame, the page box, the page content, the
-tables and the inline defaults under the class namespace; the two wrapper rules
-sit inside `@media not print` when the wrapper is hidden on print. The theme
+The style container holds the library stylesheet, the theme, the document styles,
+the list styles, the picture-bullet variables and the font faces, in that order.
+The library stylesheet declares the page frame, the page box, the page content,
+the tables and the inline defaults under the class namespace; the two wrapper
+rules sit inside `@media not print` when the wrapper is hidden on print. The theme
 declares `--docx-majorHAnsi-font`, `--docx-minorHAnsi-font` and one
-`--docx-<slot>-color` per colour slot, spelling a missing value `null`. Document
-styles emit their own resolved substyles, then their linked style's, with the
-last default definition of a target also matching that target anywhere in the
-document. List styles emit a marker, a counter set per level and a
+`--docx-<slot>-color` per colour slot, writing `null` for a missing typeface or
+colour value and `undefined` for an absent font entry. Document styles emit their
+own resolved substyles, then their linked style's, with the last default
+definition of a target also matching that target anywhere in the document. List styles emit a marker, a counter set per level and a
 `counter-reset` on the page wrapper, or on the document root when the pages are
 unwrapped. Font faces name their embedded bytes once de-obfuscated and add
 `font-weight` and `font-style` by face kind.
 
 Images, picture bullets, fonts and alternate chunks load against the part whose
 relationships name them: the document part by default, and each header, footer
-and note part for its own content. Their bytes become a data URL, or an object
-URL when the options ask for object URLs. A drawing becomes an inline block
-holding its content, a picture carries its crop and rotation as a transform and a
-clip path, shapes become SVG, equations become MathML, and a chunk becomes a
-frame that shows its text and runs no script.
+and note part for its own content. Their bytes become a data URL when the package
+was read with base64 URLs, and an object URL otherwise; the rendering keeps that
+object URL until it is dropped. A drawing becomes an inline block holding its content, a
+picture carries its crop and rotation as a transform and a clip path, shapes
+become SVG, equations become MathML, and a chunk becomes a frame whose `srcdoc`
+holds the chunk's text and which runs no script.
 
 `render_document` clears the containers and mounts a rendering as nodes built with
 `createElementNS` in each element's namespace, assigning attributes in order. One
 frame later it sizes each shape image to its shape's bounding box.
-`render_async` parses and mounts in one call. Both return a `RenderedDocument`,
-which cancels pending shape sizing and revokes its object URLs when it is dropped.
+`render_async` parses and mounts in one call, returning the parsed preview beside
+the mounted document. The `RenderedDocument` it returns cancels pending shape
+sizing and revokes its object URLs when it is dropped.
 The attachment mount belongs to
 [the attachment DOM switch](https://github.com/Orchestration-Maestro/maestro/issues/1761).
 

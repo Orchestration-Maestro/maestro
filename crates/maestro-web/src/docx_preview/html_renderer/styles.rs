@@ -3,6 +3,19 @@
 use maestro_app::browser::docx_preview::{IDomNumbering, IDomStyle, IDomSubStyle, Numbering};
 use std::collections::{HashMap, HashSet};
 
+// Base-chain steps this thread's resolver took, counted by the tests that prove one resolution
+// per definition; per thread, so concurrently running tests cannot count each other's steps.
+#[cfg(test)]
+thread_local! {
+    static STEPS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Report and clear the base-chain steps this thread has taken.
+#[cfg(test)]
+pub(crate) fn steps_taken() -> usize {
+    STEPS.with(|steps| steps.replace(0))
+}
+
 /// Every style definition in document order, each resolved through its base chain.
 #[derive(Default)]
 pub(crate) struct Styles {
@@ -117,6 +130,8 @@ impl Styles {
 impl Inherited {
     /// Take the values a definition sets itself.
     fn own(style: &IDomStyle) -> Self {
+        #[cfg(test)]
+        STEPS.with(|steps| steps.set(steps.get() + 1));
         let props = style.paragraph_props.as_ref();
         Self {
             substyles: style.styles.clone(),

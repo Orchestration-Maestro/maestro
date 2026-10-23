@@ -95,7 +95,8 @@ pub struct WrapperOptions {
 pub struct ResourceOptions {
     /// Leave embedded fonts unloaded.
     pub ignore_fonts: bool,
-    /// Name images and fonts by data URL instead of object URL.
+    /// Name images, picture bullets and fonts by data URL instead of object URL. The options
+    /// the package was read with decide, and a later rendering keeps that choice.
     pub use_base64_url: bool,
     /// Render alternate format chunks in frames.
     pub render_alt_chunks: bool,
@@ -172,11 +173,24 @@ pub struct Rendering {
     pub styles: Vec<HtmlElement>,
     /// The page wrapper, or the pages when no wrapper is requested.
     pub body: Vec<HtmlElement>,
-    /// Picture-bullet images and font faces; in a shared container they follow the body.
+    /// Picture-bullet images and font faces; in a shared container they follow the body. A
+    /// browser mount and the native tests that record one are their only readers.
+    #[cfg(any(target_arch = "wasm32", test))]
     pub resource_styles: Vec<HtmlElement>,
     /// Object URLs the elements name, revoked when dropped.
     #[cfg(target_arch = "wasm32")]
     object_urls: Vec<crate::utils::download::ObjectUrl>,
+}
+
+/// Pages of one rendering, with the object URLs their nodes name.
+///
+/// Dropping it revokes those URLs, so keep it while the pages are shown.
+pub struct Sections {
+    /// Page elements in document order.
+    pub pages: Vec<HtmlElement>,
+    /// Object URLs the pages name: never read, kept so that dropping the record revokes them.
+    #[cfg(target_arch = "wasm32")]
+    _urls: Vec<crate::utils::download::ObjectUrl>,
 }
 
 /// Parts the rendering uses besides the body.
@@ -250,11 +264,10 @@ impl WordPreview {
     }
 
     /// Render the body as page elements in document order, with the options the package was
-    /// read with. Object URLs the pages name are revoked when this returns; a [`Rendering`]
-    /// keeps them.
+    /// read with. The returned [`Sections`] keeps the object URLs the pages name.
     #[must_use]
-    pub fn render_sections(&self) -> Vec<HtmlElement> {
-        HtmlRenderer::new(self, &self.options).render_sections()
+    pub fn render_sections(&self) -> Sections {
+        HtmlRenderer::new(self, &self.options).into_sections()
     }
 
     /// Borrow the header or footer part a document relationship names, with its content.

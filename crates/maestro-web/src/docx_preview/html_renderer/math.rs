@@ -83,12 +83,12 @@ impl<'a> HtmlRenderer<'a> {
         index: usize,
         props: Option<&MathProperties>,
     ) -> HtmlElement {
-        let begin = props.and_then(|props| props.begin_char.clone().flatten());
-        let end = props.and_then(|props| props.end_char.clone().flatten());
+        let begin = props.and_then(|props| props.begin_char.as_ref().and_then(Option::as_deref));
+        let end = props.and_then(|props| props.end_char.as_ref().and_then(Option::as_deref));
         let mut result = mathml("mrow");
-        result.push_element(operator(begin.as_deref().unwrap_or("(")));
+        result.push_element(operator(begin.unwrap_or("(")));
         result.append(self.render_elements(tree, &tree.nodes[index].base.children));
-        result.push_element(operator(end.as_deref().unwrap_or(")")));
+        result.push_element(operator(end.unwrap_or(")")));
         result
     }
 
@@ -102,8 +102,8 @@ impl<'a> HtmlRenderer<'a> {
     ) -> HtmlElement {
         let sup = self.render_script(tree, index, DomType::MmlSuperArgument);
         let sub = self.render_script(tree, index, DomType::MmlSubArgument);
-        let char = props.and_then(|props| props.char.clone().flatten());
-        let char = operator(char.as_deref().unwrap_or("\u{222B}"));
+        let char = props.and_then(|props| props.char.as_ref().and_then(Option::as_deref));
+        let char = operator(char.unwrap_or("\u{222B}"));
         let mut result = mathml("mrow");
         result.push_element(match (sub, sup) {
             (Some(sub), Some(sup)) => mathml_from("munderover", [char, sub, sup]),
@@ -143,16 +143,21 @@ impl<'a> HtmlRenderer<'a> {
         index: usize,
         props: Option<&MathProperties>,
     ) -> HtmlElement {
-        let bottom = props.and_then(|props| props.vertical_justification.clone().flatten());
-        let tag = if bottom.as_deref() == Some("bot") {
+        let bottom = props.and_then(|props| {
+            props
+                .vertical_justification
+                .as_ref()
+                .and_then(Option::as_deref)
+        });
+        let tag = if bottom == Some("bot") {
             "mover"
         } else {
             "munder"
         };
         let mut result = self.render_container_ns(tree, index, Namespace::MathMl, tag);
-        let char = props.and_then(|props| props.char.clone().flatten());
+        let char = props.and_then(|props| props.char.as_ref().and_then(Option::as_deref));
         if let Some(char) = char.filter(|char| !char.is_empty()) {
-            result.push_element(operator(&char));
+            result.push_element(operator(char));
         }
         result
     }
@@ -165,8 +170,8 @@ impl<'a> HtmlRenderer<'a> {
         props: Option<&MathProperties>,
     ) -> HtmlElement {
         let mut result = self.render_container_ns(tree, index, Namespace::MathMl, "mrow");
-        let position = props.and_then(|props| props.position.clone().flatten());
-        match position.as_deref() {
+        let position = props.and_then(|props| props.position.as_ref().and_then(Option::as_deref));
+        match position {
             Some("top") => result.set_style("text-decoration", Some("overline")),
             Some("bottom" | "bot") => result.set_style("text-decoration", Some("underline")),
             _ => {}

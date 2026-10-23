@@ -3962,55 +3962,6 @@
     ]
   },
   {
-    "name": "math-nary-single-script",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
-    "name": "math-nary-without-base",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
-    "name": "math-presubsup-single-script",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
-    "name": "math-groupchr-without-properties",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
-    "name": "math-bar-without-properties",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
-    "name": "math-delimiter-without-properties",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
-    "name": "math-radical-without-degree",
-    "options": {
-      "ignoreWidth": true
-    },
-    "outcome": "error"
-  },
-  {
     "name": "alt-chunk",
     "options": {
       "ignoreWidth": true
