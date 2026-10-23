@@ -4,6 +4,11 @@ use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_test_directory::Scratch;
 use serde_json::json;
 
+/// `name` joined below `root` as the stored string spelling.
+pub fn below(root: &std::path::Path, name: &str) -> String {
+    root.join(name).to_str().unwrap().to_owned()
+}
+
 /// A published history whose session file was replaced by a directory, so every
 /// further append fails natively; returns the manager and its first entry identity.
 pub fn broken_history(scratch: &Scratch) -> (SessionManager, String) {
