@@ -1,13 +1,13 @@
 use std::path::Path;
 
-use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use ra_ap_rustc_lexer::TokenKind;
 use syn::{spanned::Spanned, visit::Visit};
 
 use crate::generated;
 use crate::graph::UNIFIER;
 use crate::source::{
     Member, Source, cfg_test, exclude_test_item, impl_item_attributes, item_attributes,
-    read_manifest, test_layout, trait_item_attributes,
+    read_manifest, test_layout, tokens, trait_item_attributes,
 };
 
 /// Verify protected lint settings and production source size for every member.
@@ -79,11 +79,11 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
 /// Locates documentation tokens in the Unicode coordinates used by syntax spans.
 fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
     let mut spans = Vec::new();
-    let mut offset = ra_ap_rustc_lexer::strip_shebang(contents).unwrap_or(0);
-    let mut position = (1, contents[..offset].chars().count());
-    for token in ra_ap_rustc_lexer::tokenize(&contents[offset..], FrontmatterAllowed::No) {
-        let end = offset + token.len as usize;
-        let next = contents[offset..end]
+    let mut lexed = tokens(contents).peekable();
+    let shebang = lexed.peek().map_or(0, |(_, range)| range.start);
+    let mut position = (1, contents[..shebang].chars().count());
+    for (kind, range) in lexed {
+        let next = contents[range]
             .chars()
             .fold(position, |(line, column), character| {
                 if character == '\n' {
@@ -93,7 +93,7 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
                 }
             });
         if matches!(
-            token.kind,
+            kind,
             TokenKind::LineComment { doc_style: Some(_) }
                 | TokenKind::BlockComment {
                     doc_style: Some(_),
@@ -102,7 +102,6 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
         ) {
             spans.push(position..next);
         }
-        offset = end;
         position = next;
     }
     spans

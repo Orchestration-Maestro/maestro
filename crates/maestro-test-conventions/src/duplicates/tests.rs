@@ -1,3 +1,5 @@
+use ra_ap_rustc_lexer::FrontmatterAllowed;
+
 use super::*;
 
 /// Independent flat lexer vector for identity and count comparisons.
