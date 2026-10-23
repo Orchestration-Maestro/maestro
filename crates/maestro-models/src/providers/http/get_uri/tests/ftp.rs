@@ -1,9 +1,13 @@
 //! FTP source login, modification checks, listing fallback, transfer and teardown.
 
-use super::super::ftp::{instant_millis, port};
+use super::super::ftp::{INACTIVITY, instant_millis, payload, port};
 use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
 use crate::providers::http::{Route, configured_fetch};
-use crate::tests::ftp_server::{self, Features, Listing, Modification, Peer, Scenario, Transfer};
+use crate::tests::ftp_server::{
+    self, Features, Listing, Modification, Passive, Peer, Scenario, Silence, Transfer,
+};
+use std::net::Ipv4Addr;
+use std::time::Duration;
 
 /// A source URL naming `peer`, with optional user info and a path.
 fn source(peer: &Peer, userinfo: &str, path: &str) -> String {
@@ -17,6 +21,45 @@ async fn load(
 ) -> Result<get_uri::Source, get_uri::Failure> {
     let fetch = configured_fetch(Route::default());
     get_uri::load(&url::Url::parse(uri).unwrap(), cache, &fetch).await
+}
+
+/// A `FEAT` reply that advertises no machine listing.
+const TEXT_FEATURES: Features = Features("211-Features:\r\n MDTM\r\n211 End");
+
+/// The single-line `FEAT` reply of a server without optional features.
+const ABSENT_FEATURES: Features = Features("211 no features");
+
+/// A refused `FEAT`.
+const REFUSED_FEATURES: Features = Features("500 unknown command");
+
+/// A refused `MDTM`, which sends the loader to the directory listing.
+const UNSUPPORTED: Modification = Modification::Reply("500 unknown command");
+
+/// The scripted peer for a server that leaves one kind of command unanswered.
+fn silent(silence: Silence) -> Peer {
+    ftp_server::serve(vec![Scenario {
+        silence,
+        ..Scenario::default()
+    }])
+    .unwrap()
+}
+
+/// A `LIST`-only answer whose data connection carries these lines.
+fn listing(lines: Vec<String>) -> Listing {
+    Listing {
+        lines,
+        refusal: None,
+    }
+}
+
+/// A Unix text-listing entry, which carries no comparable modification stamp.
+fn unix(name: &str) -> Vec<String> {
+    vec![format!("-rw-r--r-- 1 user group 4 Nov 5 13:46 {name}")]
+}
+
+/// A DOS text-listing entry, which carries no comparable modification stamp.
+fn dos(name: &str) -> Vec<String> {
+    vec![format!("11-05-20  01:46PM                  4 {name}")]
 }
 
 #[test]
@@ -105,7 +148,7 @@ fn ftp_transfers_bytes_in_binary_mode() {
     crate::tests::runtime::run(async {
         let body = b"a\r\nb\x00c\xc3\xa9".to_vec();
         let peer = ftp_server::serve(vec![Scenario {
-            transfer: Transfer::Body(body.clone()),
+            transfer: Transfer::body(body.clone()),
             ..Scenario::default()
         }])
         .unwrap();
@@ -118,6 +161,7 @@ fn ftp_transfers_bytes_in_binary_mode() {
             .position(|line| line == "RETR /script.pac")
             .unwrap();
         assert!(typed < transferred, "{commands:?}");
+
         let closed = peer.finish().unwrap();
         assert!(closed.control && closed.data);
     });
@@ -127,7 +171,7 @@ fn ftp_transfers_bytes_in_binary_mode() {
 fn ftp_reports_not_found_when_the_server_refuses_the_file() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
-            modification: Modification::Missing,
+            modification: Modification::MISSING,
             ..Scenario::default()
         }])
         .unwrap();
@@ -159,9 +203,9 @@ fn ftp_machine_listing_supplies_the_modification_instant() {
         let mut lines = ftp_server::machine("script.pac", Some("20240101120000"));
         lines.push("total 2".to_owned());
         let peer = ftp_server::serve(vec![Scenario {
-            features: Features::Machine,
-            modification: Modification::Unsupported,
-            listing: Listing::Lines(lines),
+            features: Features::MACHINE,
+            modification: UNSUPPORTED,
+            listing: listing(lines),
             ..Scenario::default()
         }])
         .unwrap();
@@ -185,19 +229,63 @@ fn ftp_machine_listing_supplies_the_modification_instant() {
 }
 
 #[test]
+fn ftp_machine_listing_keeps_every_accepted_entry() {
+    // A machine listing the reference accepts, whose entry the native parser would refuse or
+    // rewrite: a fractional stamp, a symbolic-link type, a semicolon in the name, and a name that
+    // starts with a space.
+    crate::tests::runtime::run(async {
+        for (facts, path, instant) in [
+            (
+                "type=file;modify=20240101120000.500; script.pac",
+                "/script.pac",
+                1_704_110_400_500,
+            ),
+            (
+                "type=OS.unix=symlink;modify=20240101120000; script.pac",
+                "/script.pac",
+                1_704_110_400_000,
+            ),
+            (
+                "type=file;modify=20240101120000; sc;ript.pac",
+                "/sc;ript.pac",
+                1_704_110_400_000,
+            ),
+            (
+                "type=file;modify=20240101120000;  leading.pac",
+                "/%20leading.pac",
+                1_704_110_400_000,
+            ),
+        ] {
+            let peer = ftp_server::serve(vec![Scenario {
+                modification: UNSUPPORTED,
+                listing: listing(vec![facts.to_owned()]),
+                ..Scenario::default()
+            }])
+            .unwrap();
+            let loaded = load(&source(&peer, "", path), None).await.unwrap();
+            assert!(
+                matches!(loaded.cache, get_uri::Cache::Ftp(Some(found)) if found == instant),
+                "{facts}"
+            );
+            peer.finish().unwrap();
+        }
+    });
+}
+
+#[test]
 fn ftp_text_listing_supplies_no_modification_instant() {
     crate::tests::runtime::run(async {
         for (announced, lines) in [
-            (Features::Text, ftp_server::unix("script.pac")),
-            (Features::Absent, ftp_server::unix("script.pac")),
-            (Features::Refused, ftp_server::unix("script.pac")),
-            (Features::Text, ftp_server::dos("script.pac")),
-            (Features::Absent, ftp_server::dos("script.pac")),
+            (TEXT_FEATURES, unix("script.pac")),
+            (ABSENT_FEATURES, unix("script.pac")),
+            (REFUSED_FEATURES, unix("script.pac")),
+            (TEXT_FEATURES, dos("script.pac")),
+            (ABSENT_FEATURES, dos("script.pac")),
         ] {
             let peer = ftp_server::serve(vec![Scenario {
                 features: announced,
-                modification: Modification::Unsupported,
-                listing: Listing::Lines(lines),
+                modification: UNSUPPORTED,
+                listing: listing(lines),
                 ..Scenario::default()
             }])
             .unwrap();
@@ -224,8 +312,8 @@ fn ftp_text_listing_supplies_no_modification_instant() {
 fn ftp_listing_without_the_named_entry_reports_not_found() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
-            modification: Modification::Unsupported,
-            listing: Listing::Lines(ftp_server::machine("other.pac", Some("20240101120000"))),
+            modification: UNSUPPORTED,
+            listing: listing(ftp_server::machine("other.pac", Some("20240101120000"))),
             ..Scenario::default()
         }])
         .unwrap();
@@ -241,8 +329,8 @@ fn ftp_listing_without_the_named_entry_reports_not_found() {
 fn ftp_unparsable_listing_reports_its_own_error() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
-            modification: Modification::Unsupported,
-            listing: Listing::Lines(vec!["readable nonsense".to_owned()]),
+            modification: UNSUPPORTED,
+            listing: listing(vec!["readable nonsense".to_owned()]),
             ..Scenario::default()
         }])
         .unwrap();
@@ -262,8 +350,11 @@ fn ftp_unparsable_listing_reports_its_own_error() {
 fn ftp_listing_refusal_keeps_the_server_status() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
-            modification: Modification::Unsupported,
-            listing: Listing::Refused,
+            modification: UNSUPPORTED,
+            listing: Listing {
+                lines: Vec::new(),
+                refusal: Some("550 listing refused"),
+            },
             ..Scenario::default()
         }])
         .unwrap();
@@ -299,12 +390,12 @@ fn ftp_changed_instant_reloads_the_script() {
         let peer = ftp_server::serve(vec![
             Scenario::default(),
             Scenario {
-                transfer: Transfer::Body(b"second script".to_vec()),
+                transfer: Transfer::body(b"second script".to_vec()),
                 ..Scenario::default()
             },
             Scenario {
                 modification: Modification::Instant("20240101120001"),
-                transfer: Transfer::Body(b"second script".to_vec()),
+                transfer: Transfer::body(b"second script".to_vec()),
                 ..Scenario::default()
             },
         ])
@@ -329,17 +420,17 @@ fn ftp_subsecond_instants_decide_reuse() {
         let peer = ftp_server::serve(vec![
             Scenario {
                 modification: Modification::Instant("20240101120000.500"),
-                transfer: Transfer::Body(b"first".to_vec()),
+                transfer: Transfer::body(b"first".to_vec()),
                 ..Scenario::default()
             },
             Scenario {
                 modification: Modification::Instant("20240101120000.000"),
-                transfer: Transfer::Body(b"second".to_vec()),
+                transfer: Transfer::body(b"second".to_vec()),
                 ..Scenario::default()
             },
             Scenario {
                 modification: Modification::Instant("20240101120000.500"),
-                transfer: Transfer::Body(b"third".to_vec()),
+                transfer: Transfer::body(b"third".to_vec()),
                 ..Scenario::default()
             },
         ])
@@ -392,7 +483,10 @@ fn ftp_failed_login_keeps_the_server_status() {
 fn ftp_transfer_refusal_reports_not_found() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
-            transfer: Transfer::Refused,
+            transfer: Transfer {
+                refusal: Some("550 no such file"),
+                ..Transfer::body(Vec::new())
+            },
             ..Scenario::default()
         }])
         .unwrap();
@@ -408,7 +502,11 @@ fn ftp_transfer_refusal_reports_not_found() {
 fn ftp_interrupted_transfer_reports_an_error() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
-            transfer: Transfer::Interrupted(b"half a script, cut off".to_vec()),
+            transfer: Transfer {
+                body: b"half a script, cut off".to_vec(),
+                completion: Some("426 transfer aborted"),
+                ..Transfer::body(Vec::new())
+            },
             ..Scenario::default()
         }])
         .unwrap();
@@ -429,7 +527,7 @@ fn ftp_closes_control_and_data_connections() {
             (
                 "missing",
                 Scenario {
-                    modification: Modification::Missing,
+                    modification: Modification::MISSING,
                     ..Scenario::default()
                 },
                 false,
@@ -437,8 +535,11 @@ fn ftp_closes_control_and_data_connections() {
             (
                 "refused listing",
                 Scenario {
-                    modification: Modification::Unsupported,
-                    listing: Listing::Refused,
+                    modification: UNSUPPORTED,
+                    listing: Listing {
+                        lines: Vec::new(),
+                        refusal: Some("550 listing refused"),
+                    },
                     ..Scenario::default()
                 },
                 false,
@@ -446,7 +547,10 @@ fn ftp_closes_control_and_data_connections() {
             (
                 "refused transfer",
                 Scenario {
-                    transfer: Transfer::Refused,
+                    transfer: Transfer {
+                        refusal: Some("550 no such file"),
+                        ..Transfer::body(Vec::new())
+                    },
                     ..Scenario::default()
                 },
                 false,
@@ -472,20 +576,31 @@ fn ftp_closes_control_and_data_connections() {
 #[test]
 fn ftp_cancelled_load_releases_the_connection() {
     crate::tests::runtime::run(async {
-        let mut peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
-        let mut events = peer.events().unwrap();
+        // The server sends these bytes and keeps the data connection open, so the load can only
+        // end by being cancelled.
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                completion: None,
+                ..Transfer::body(b"half a script".to_vec())
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
         let uri = url::Url::parse(&source(&peer, "", "/script.pac")).unwrap();
         let task = tokio::spawn(async move {
             let fetch = configured_fetch(Route::default());
             get_uri::load(&uri, None, &fetch).await
         });
-        while let Some(command) = events.recv().await {
-            if command.starts_with("RETR") {
-                break;
-            }
+        while !peer.commands().iter().any(|line| line.starts_with("RETR")) {
+            tokio::task::yield_now().await;
         }
+        assert!(
+            !task.is_finished(),
+            "the load must still be reading when it is cancelled"
+        );
         task.abort();
-        let _ = task.await;
+        let outcome = task.await.expect_err("cancelling the load fails it");
+        assert!(outcome.is_cancelled(), "{outcome}");
         let closed = peer.finish().unwrap();
         assert!(closed.control, "the control connection closed");
         assert!(closed.data, "the pending data connection closed");
@@ -508,6 +623,167 @@ fn ftp_path_segments_follow_the_reference_rules() {
         assert_eq!(maestro_path::posix::dirname(path), directory, "{path}");
         assert_eq!(maestro_path::posix::basename(path, None), name, "{path}");
     }
+}
+
+#[test]
+fn ftp_listing_fallback_asks_for_the_empty_path_segment() {
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario {
+            modification: UNSUPPORTED,
+            listing: listing(ftp_server::machine("b.pac", Some("20240101120000"))),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/a//b.pac"), None).await.unwrap();
+        assert!(matches!(
+            loaded.cache,
+            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+        ));
+        let commands = peer.commands();
+        assert!(
+            commands.contains(&"MDTM /a//b.pac".to_owned()),
+            "{commands:?}"
+        );
+        assert!(commands.contains(&"MLSD /a/".to_owned()), "{commands:?}");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_epsv_only_server_transfers() {
+    crate::tests::runtime::run(async {
+        let peer = ftp_server::serve(vec![Scenario {
+            passive: Passive {
+                extended: true,
+                standard: None,
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        let commands = peer.commands();
+        assert!(commands.contains(&"EPSV".to_owned()), "{commands:?}");
+        assert!(
+            !commands.iter().any(|line| line.starts_with("PASV")),
+            "{commands:?}"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_advertised_data_host_is_kept() {
+    crate::tests::runtime::run(async {
+        // The server offers no extended passive mode and advertises a data host of its own, which
+        // is the only address its data listener answers on.
+        let peer = ftp_server::serve(vec![Scenario {
+            passive: Passive {
+                extended: false,
+                standard: Some(Ipv4Addr::new(127, 0, 0, 2)),
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        let commands = peer.commands();
+        assert!(
+            commands.iter().any(|line| line.starts_with("PASV")),
+            "{commands:?}"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_silent_server_times_out_the_control_connection() {
+    crate::tests::runtime::run_paused(async {
+        let peer = silent(Silence {
+            modification: false,
+            ..Silence::EVERY
+        });
+        let uri = url::Url::parse(&source(&peer, "", "/script.pac")).unwrap();
+        let task = tokio::spawn(async move {
+            let fetch = configured_fetch(Route::default());
+            get_uri::load(&uri, None, &fetch).await
+        });
+        // Step the clock only once the unanswered command is the one the loader waits for.
+        while !peer.commands().iter().any(|line| line.starts_with("MDTM")) {
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(INACTIVITY + Duration::from_secs(1)).await;
+        let error = task
+            .await
+            .expect("the stalled load finishes")
+            .expect_err("the stalled load fails");
+        assert_eq!(error.to_string(), "Timeout (control socket)");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_silent_data_connection_times_out() {
+    crate::tests::runtime::run_paused(async {
+        let mut data = Silent;
+        let error = payload(&mut data, None).await.unwrap_err();
+        assert_eq!(error.to_string(), "Timeout (data socket)");
+    });
+}
+
+/// A data connection that never sends another byte.
+struct Silent;
+
+impl tokio::io::AsyncRead for Silent {
+    fn poll_read(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        _: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Pending
+    }
+}
+
+#[test]
+fn ftp_teardown_does_not_wait_for_the_quit_reply() {
+    crate::tests::runtime::run(async {
+        // The server answers every command but `QUIT`, so a completed load only returns when its
+        // teardown stops waiting for that reply.
+        let peer = silent(Silence {
+            quit: false,
+            ..Silence::EVERY
+        });
+        let started = std::time::Instant::now();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        assert!(
+            started.elapsed() < INACTIVITY,
+            "the load waited {:?} for the QUIT reply",
+            started.elapsed()
+        );
+        while !peer.commands().contains(&"QUIT".to_owned()) {
+            tokio::task::yield_now().await;
+        }
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_listing_read_stops_at_the_reference_limit() {
+    crate::tests::runtime::run(async {
+        let mut data: &[u8] = b"0123456789";
+        let error = payload(&mut data, Some(4)).await.unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("The FTP server sent a directory listing larger than"),
+            "{error}"
+        );
+        let mut data: &[u8] = b"0123456789";
+        assert_eq!(payload(&mut data, Some(10)).await.unwrap(), b"0123456789");
+        let mut data: &[u8] = b"0123456789";
+        assert_eq!(payload(&mut data, None).await.unwrap(), b"0123456789");
+    });
 }
 
 #[test]

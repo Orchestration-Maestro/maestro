@@ -203,15 +203,23 @@ file's modification time and compare it at millisecond precision.
 Source requests do not recursively apply the script they are loading. Destination
 exclusions and a supplied sender skip script loading entirely.
 
-An FTP source logs in with the URL's decoded credentials, or anonymously when it
-has none, at the URL's port, or 21 when it names none. It asks the modification-time
-command first: a refused file is not found, while an unsupported command falls back
-to listing the containing directory. Only a machine listing carries a comparable
-instant, so an entry from a Unix or DOS listing is not found; a listing in no
-accepted format reports the listing format as its own error. A transfer the server
-refuses is not found rather than an empty script, and a transfer that breaks off is
-an error rather than a shortened one. The control and data connections close on
-success, failure and cancellation.
+An FTP source logs in with the URL's decoded credentials, or anonymously when it has
+none, at the URL's port, or 21 when it names none. It asks the modification-time command
+first: a refused file is not found, while an unsupported command falls back to listing
+the containing directory. Only a machine listing carries a comparable instant, so an
+entry from a Unix or DOS listing is not found; a listing in no accepted format reports
+the listing format as its own error. Machine-listing entries keep the name the server
+spelled and the stamp it reported, including a fractional stamp, a symbolic-link type,
+and a name that holds a semicolon or starts with a space. A transfer the server refuses
+is not found rather than an empty script, and a transfer that breaks off is an error
+rather than a shortened one.
+
+A passive data connection opens in extended passive mode first and falls back to the
+classic mode, which keeps the data host the server advertises unless that address is
+private and the control connection's is not. A control or data wait that sees no traffic
+for thirty seconds fails with a timeout, a directory listing larger than 40 MiB is
+refused, and the control and data connections close on success, failure and
+cancellation.
 
 ## Hooks and results
 

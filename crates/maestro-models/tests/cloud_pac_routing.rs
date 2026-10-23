@@ -200,7 +200,11 @@ fn pac_ftp_sources_load_and_revalidate_scripts() -> TestResult {
     let ftp = crate::ftp_server::serve(ftp_scenarios(&proxy.url))?;
     let output = ftp_child(&origin.url, &ftp)?;
     let commands = ftp.commands();
-    ftp.finish()?;
+    let closed = ftp.finish()?;
+    assert!(
+        closed.control && closed.data,
+        "the child closed the FTP control and data connections"
+    );
     origin.finish()?;
     proxy.finish()?;
     assert!(output.status.success(), "{output:?}");
@@ -251,12 +255,12 @@ fn ftp_scenarios(proxy: &str) -> Vec<crate::ftp_server::Scenario> {
             } else {
                 "20240101120001"
             }),
-            transfer: crate::ftp_server::Transfer::Body(ftp_script(proxy, kind).into_bytes()),
+            transfer: crate::ftp_server::Transfer::body(ftp_script(proxy, kind).into_bytes()),
             ..crate::ftp_server::Scenario::default()
         })
         .collect();
     scenarios.push(crate::ftp_server::Scenario {
-        modification: crate::ftp_server::Modification::Missing,
+        modification: crate::ftp_server::Modification::MISSING,
         ..crate::ftp_server::Scenario::default()
     });
     scenarios

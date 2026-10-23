@@ -111,7 +111,7 @@ fn pac_ftp_unchanged_source_keeps_compiled_globals() {
         };
         let scenario = |modification, marker: &str| ftp_server::Scenario {
             modification,
-            transfer: ftp_server::Transfer::Body(code(marker).into_bytes()),
+            transfer: ftp_server::Transfer::body(code(marker).into_bytes()),
             ..ftp_server::Scenario::default()
         };
         let peer = ftp_server::serve(vec![

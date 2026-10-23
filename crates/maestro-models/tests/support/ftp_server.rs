@@ -2,12 +2,11 @@
 //! connection for each listing and transfer.
 
 #![cfg(not(target_arch = "wasm32"))]
-// The library and the integration binary share this peer; each builds only the reply shapes and
-// helpers its own scenarios need, so the other consumer's items are unreachable here.
-#![allow(dead_code)]
+// Reply shapes and observations only the library tests build are gated on `cfg(test)`, so the
+// integration binary compiles only the peer it reads.
 
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::thread::JoinHandle;
@@ -15,17 +14,13 @@ use std::thread::JoinHandle;
 /// Fallible test body result.
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-/// How the server answers `FEAT`.
+/// How the server answers `FEAT`: the reply it sends.
 #[derive(Clone)]
-pub enum Features {
+pub struct Features(pub &'static str);
+
+impl Features {
     /// A multiline reply that advertises a machine listing.
-    Machine,
-    /// A multiline reply with no machine listing.
-    Text,
-    /// The single-line reply of a server without optional features.
-    Absent,
-    /// A refused command.
-    Refused,
+    pub const MACHINE: Self = Self("211-Features:\r\n MLST\r\n MDTM\r\n211 End");
 }
 
 /// How the server answers `MDTM`.
@@ -33,30 +28,95 @@ pub enum Features {
 pub enum Modification {
     /// A `213` reply carrying this timestamp.
     Instant(&'static str),
-    /// The path is unavailable.
-    Missing,
-    /// The command is not implemented.
-    Unsupported,
+    /// This reply line, sent verbatim.
+    Reply(&'static str),
+}
+
+impl Modification {
+    /// The reply of a server that does not have the requested path.
+    pub const MISSING: Self = Self::Reply("550 file unavailable");
 }
 
 /// What the server answers a listing command with.
 #[derive(Clone)]
-pub enum Listing {
+pub struct Listing {
     /// Lines sent on the data connection.
-    Lines(Vec<String>),
-    /// A refused command.
-    Refused,
+    pub lines: Vec<String>,
+    /// The reply that refuses the command, instead of a listing.
+    pub refusal: Option<&'static str>,
 }
 
 /// What the server sends for the requested file.
 #[derive(Clone)]
-pub enum Transfer {
-    /// The complete file.
-    Body(Vec<u8>),
-    /// Half of the file, then a transfer that broke off.
-    Interrupted(Vec<u8>),
-    /// A refused command.
-    Refused,
+pub struct Transfer {
+    /// Bytes sent on the data connection.
+    pub body: Vec<u8>,
+    /// The reply that refuses the command, instead of a transfer.
+    pub refusal: Option<&'static str>,
+    /// The reply sent after the bytes, or none when the data connection stays open.
+    pub completion: Option<&'static str>,
+}
+
+impl Transfer {
+    /// The reply that completes a transfer which sent every byte.
+    pub const COMPLETE: &'static str = "226 transfer complete";
+
+    /// A transfer that sends these bytes and completes.
+    pub fn body(body: Vec<u8>) -> Self {
+        Self {
+            body,
+            refusal: None,
+            completion: Some(Self::COMPLETE),
+        }
+    }
+}
+
+/// How the server answers the passive-mode commands.
+#[derive(Clone)]
+pub struct Passive {
+    /// Whether `EPSV` is answered.
+    pub extended: bool,
+    /// The data host `PASV` advertises, when `PASV` is answered.
+    pub standard: Option<Ipv4Addr>,
+}
+
+impl Passive {
+    /// A server that answers both commands on its control connection's address.
+    pub const BOTH: Self = Self {
+        extended: true,
+        standard: Some(Ipv4Addr::LOCALHOST),
+    };
+
+    /// The data host this script binds for the command, when it answers it.
+    fn host(&self, command: &str) -> Option<Ipv4Addr> {
+        match command {
+            "EPSV" if self.extended => Some(Ipv4Addr::LOCALHOST),
+            "PASV" => self.standard,
+            _ => None,
+        }
+    }
+}
+
+/// Commands the server does not answer, which leaves the client waiting.
+#[derive(Clone, Copy)]
+pub struct Silence {
+    /// Whether `MDTM` is answered.
+    pub modification: bool,
+    /// Whether `QUIT` is answered.
+    pub quit: bool,
+}
+
+impl Silence {
+    /// A server that answers every command.
+    pub const EVERY: Self = Self {
+        modification: true,
+        quit: true,
+    };
+
+    /// Whether the server answers this command.
+    fn answers(self, command: &str) -> bool {
+        (self.modification || !command.starts_with("MDTM")) && (self.quit || command != "QUIT")
+    }
 }
 
 /// One scripted server behaviour.
@@ -72,16 +132,25 @@ pub struct Scenario {
     pub listing: Listing,
     /// File content.
     pub transfer: Transfer,
+    /// Passive-mode reply.
+    pub passive: Passive,
+    /// Commands the server does not answer.
+    pub silence: Silence,
 }
 
 impl Default for Scenario {
     fn default() -> Self {
         Self {
             login: true,
-            features: Features::Machine,
+            features: Features::MACHINE,
             modification: Modification::Instant("20240101120000"),
-            listing: Listing::Lines(machine("script.pac", Some("20240101120000"))),
-            transfer: Transfer::Body(b"function FindProxyForURL(){return 'DIRECT'}".to_vec()),
+            listing: Listing {
+                lines: machine("script.pac", Some("20240101120000")),
+                refusal: None,
+            },
+            transfer: Transfer::body(b"function FindProxyForURL(){return 'DIRECT'}".to_vec()),
+            passive: Passive::BOTH,
+            silence: Silence::EVERY,
         }
     }
 }
@@ -95,16 +164,6 @@ pub fn machine(name: &str, modified: Option<&str>) -> Vec<String> {
     vec![facts]
 }
 
-/// A Unix text-listing entry, which carries no comparable modification stamp.
-pub fn unix(name: &str) -> Vec<String> {
-    vec![format!("-rw-r--r-- 1 user group 4 Nov 5 13:46 {name}")]
-}
-
-/// A DOS text-listing entry, which carries no comparable modification stamp.
-pub fn dos(name: &str) -> Vec<String> {
-    vec![format!("11-05-20  01:46PM                  4 {name}")]
-}
-
 /// What the server observed about its connections when it stopped.
 pub struct Closed {
     /// Whether the client closed the control connection.
@@ -116,7 +175,6 @@ pub struct Closed {
 /// A running scripted server.
 pub struct Peer {
     address: SocketAddr,
-    events: Option<tokio::sync::mpsc::UnboundedReceiver<String>>,
     commands: Arc<Mutex<Vec<String>>>,
     control_closed: Arc<AtomicBool>,
     data_closed: Arc<AtomicBool>,
@@ -128,11 +186,6 @@ impl Peer {
     /// The loopback address the server listens on.
     pub fn address(&self) -> SocketAddr {
         self.address
-    }
-
-    /// Commands as they arrive, for tests that must act during a dialogue.
-    pub fn events(&mut self) -> Option<tokio::sync::mpsc::UnboundedReceiver<String>> {
-        self.events.take()
     }
 
     /// Commands the server has read so far.
@@ -176,7 +229,6 @@ impl Drop for Peer {
 /// Recorded observations of one admitted session.
 struct Observed {
     commands: Arc<Mutex<Vec<String>>>,
-    events: tokio::sync::mpsc::UnboundedSender<String>,
     control_closed: Arc<AtomicBool>,
     data_closed: Arc<AtomicBool>,
 }
@@ -188,7 +240,6 @@ impl Observed {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(command.to_owned());
-        let _ = self.events.send(command.to_owned());
     }
 }
 
@@ -197,6 +248,7 @@ fn session(
     mut control: TcpStream,
     scenario: &Scenario,
     observed: &Observed,
+    stop: &AtomicBool,
 ) -> std::io::Result<()> {
     let mut reader = BufReader::new(control.try_clone()?);
     reply(&mut control, "220 scripted ftp ready")?;
@@ -207,16 +259,23 @@ fn session(
             return Ok(());
         };
         observed.command(&command);
-        if command == "QUIT" {
-            reply(&mut control, "221 bye")?;
-            // The client closes the control connection next, which the next read observes.
-            continue;
-        }
-        if let Some(listener) = passive(&command, &mut control)? {
-            data = Some(listener.accept()?.0);
+        if !scenario.silence.answers(&command) {
+            // A command the script never answers is a stalled control connection.
             continue;
         }
         match command.split(' ').next().unwrap_or_default() {
+            "QUIT" => {
+                reply(&mut control, "221 bye")?;
+                // The client closes the control connection next, which the next read observes.
+            }
+            "PASV" | "EPSV" => match passive(&command, &mut control, &scenario.passive)? {
+                Some(listener) => match accept_data(&listener, stop)? {
+                    Some(stream) => data = Some(stream),
+                    // A stopped peer leaves the data connection unopened and ends the session.
+                    None => return Ok(()),
+                },
+                None => data = None,
+            },
             "USER" => reply(&mut control, "331 need password")?,
             "PASS" if scenario.login => reply(&mut control, "230 logged in")?,
             "PASS" => reply(&mut control, "530 login incorrect")?,
@@ -230,50 +289,87 @@ fn session(
 }
 
 /// Answer `PASV` and `EPSV` with a fresh listener, which is returned for its data connection.
-fn passive(command: &str, control: &mut TcpStream) -> std::io::Result<Option<TcpListener>> {
-    let listener = TcpListener::bind("127.0.0.1:0")?;
+fn passive(
+    command: &str,
+    control: &mut TcpStream,
+    script: &Passive,
+) -> std::io::Result<Option<TcpListener>> {
+    if !matches!(command, "PASV" | "EPSV") {
+        return Ok(None);
+    }
+    let Some(host) = script.host(command) else {
+        // A mode this script does not offer is a command the server refuses.
+        reply(control, "500 passive mode not implemented")?;
+        return Ok(None);
+    };
+    let listener = TcpListener::bind((host, 0))?;
     let port = listener.local_addr()?.port();
     match command {
-        "PASV" => reply(
-            control,
-            &format!(
-                "227 Entering Passive Mode (127,0,0,1,{},{}).",
-                port / 256,
-                port % 256
-            ),
-        )?,
-        "EPSV" => reply(
+        "PASV" => {
+            let [a, b, c, d] = host.octets();
+            reply(
+                control,
+                &format!(
+                    "227 Entering Passive Mode ({a},{b},{c},{d},{},{}).",
+                    port / 256,
+                    port % 256
+                ),
+            )?;
+        }
+        _ => reply(
             control,
             &format!("229 Entering Extended Passive Mode (|||{port}|)"),
         )?,
-        _ => return Ok(None),
     }
     Ok(Some(listener))
 }
 
-/// Answer `FEAT` in each reply shape a server may use.
-fn features(control: &mut TcpStream, announced: &Features) -> std::io::Result<()> {
-    match announced {
-        Features::Machine => {
-            write!(control, "211-Features:\r\n MLST\r\n MDTM\r\n211 End\r\n")?;
-            control.flush()
+/// Accept the data connection, or nothing when the peer stops before it opens.
+fn accept_data(listener: &TcpListener, stop: &AtomicBool) -> std::io::Result<Option<TcpStream>> {
+    listener.set_nonblocking(true)?;
+    loop {
+        match listener.accept() {
+            Ok((stream, _)) => {
+                stream.set_nonblocking(false)?;
+                return Ok(Some(stream));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                if stop.load(Ordering::SeqCst) {
+                    return Ok(None);
+                }
+                std::thread::yield_now();
+            }
+            Err(error) => return Err(error),
         }
-        Features::Text => {
-            write!(control, "211-Features:\r\n MDTM\r\n211 End\r\n")?;
-            control.flush()
-        }
-        Features::Absent => reply(control, "211 no features"),
-        Features::Refused => reply(control, "500 unknown command"),
     }
+}
+
+/// Answer `FEAT` with its scripted reply.
+fn features(control: &mut TcpStream, announced: &Features) -> std::io::Result<()> {
+    write!(control, "{}\r\n", announced.0)?;
+    control.flush()
 }
 
 /// Answer `MDTM`.
 fn modification(control: &mut TcpStream, announced: &Modification) -> std::io::Result<()> {
     match announced {
         Modification::Instant(stamp) => reply(control, &format!("213 {stamp}")),
-        Modification::Missing => reply(control, "550 file unavailable"),
-        Modification::Unsupported => reply(control, "500 unknown command"),
+        Modification::Reply(line) => reply(control, line),
     }
+}
+
+/// Answer the command with the script's refusal, when it has one.
+fn refused(
+    control: &mut TcpStream,
+    announced: Option<&'static str>,
+    data: &mut Option<TcpStream>,
+) -> std::io::Result<bool> {
+    let Some(refusal) = announced else {
+        return Ok(false);
+    };
+    *data = None;
+    reply(control, refusal)?;
+    Ok(true)
 }
 
 /// Answer a listing command, keeping the data connection observable until the client closes it.
@@ -283,16 +379,13 @@ fn listed(
     data: &mut Option<TcpStream>,
     observed: &Observed,
 ) -> std::io::Result<()> {
-    let lines = match announced {
-        Listing::Refused => {
-            *data = None;
-            return reply(control, "550 listing refused");
-        }
-        Listing::Lines(lines) => lines.join("\r\n") + "\r\n",
-    };
+    if refused(control, announced.refusal, data)? {
+        return Ok(());
+    }
+    let lines = announced.lines.join("\r\n") + "\r\n";
     reply(control, "150 here comes the listing")?;
     let stream = data.take().ok_or_else(no_data)?;
-    send_body(stream, lines.as_bytes(), observed)?;
+    send_body(stream, lines.as_bytes(), true, observed)?;
     reply(control, "226 listing done")
 }
 
@@ -303,34 +396,47 @@ fn transferred(
     data: &mut Option<TcpStream>,
     observed: &Observed,
 ) -> std::io::Result<()> {
-    let (body, completion) = match announced {
-        Transfer::Body(body) => (body.as_slice(), "226 transfer complete"),
-        Transfer::Interrupted(body) => (&body[..body.len() / 2], "426 transfer aborted"),
-        Transfer::Refused => {
-            *data = None;
-            return reply(control, "550 no such file");
-        }
-    };
+    if refused(control, announced.refusal, data)? {
+        return Ok(());
+    }
     reply(control, "150 opening data connection")?;
     let stream = data.take().ok_or_else(no_data)?;
-    send_body(stream, body, observed)?;
-    reply(control, completion)
+    // A transfer without a completion reply keeps the data connection open, so the client's read
+    // never sees its end.
+    send_body(
+        stream,
+        &announced.body,
+        announced.completion.is_some(),
+        observed,
+    )?;
+    match announced.completion {
+        Some(completion) => reply(control, completion),
+        None => Ok(()),
+    }
 }
 
 /// Send `body`, then wait for the client to close the data connection before completing.
-fn send_body(mut stream: TcpStream, body: &[u8], observed: &Observed) -> std::io::Result<()> {
-    let outcome = transfer_body(&mut stream, body);
+fn send_body(
+    mut stream: TcpStream,
+    body: &[u8],
+    complete: bool,
+    observed: &Observed,
+) -> std::io::Result<()> {
+    let outcome = transfer_body(&mut stream, body, complete);
     // A client that closed the connection first ends the dialogue just as surely as one that
     // read every byte, so the observation covers both shapes.
     observed.data_closed.store(true, Ordering::SeqCst);
     outcome
 }
 
-/// Write the body, then read until the client closes the data connection.
-fn transfer_body(stream: &mut TcpStream, body: &[u8]) -> std::io::Result<()> {
+/// Write the body, close the write side of a completed transfer, then wait for the client's close.
+fn transfer_body(stream: &mut TcpStream, body: &[u8], complete: bool) -> std::io::Result<()> {
     stream.write_all(body)?;
-    stream.shutdown(std::net::Shutdown::Write)?;
-    // The client closes the data connection before it reads the completion reply.
+    // A client reading to the end of the file needs the write side closed; one held mid-transfer
+    // never sees its end.
+    if complete {
+        stream.shutdown(std::net::Shutdown::Write)?;
+    }
     let mut exhausted = Vec::new();
     stream.read_to_end(&mut exhausted)?;
     Ok(())
@@ -375,7 +481,7 @@ fn accept_until_stopped(
         let last = scenarios.len().saturating_sub(1);
         let script = &scenarios[served.min(last)];
         served += 1;
-        if let Err(error) = session(control, script, observed) {
+        if let Err(error) = session(control, script, observed, stop) {
             // A client that went away mid-reply is a completed session, not a peer failure.
             if !matches!(
                 error.kind(),
@@ -401,10 +507,8 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     let control_closed = Arc::new(AtomicBool::new(false));
     let data_closed = Arc::new(AtomicBool::new(false));
     let stop = Arc::new(AtomicBool::new(false));
-    let (events, receiver) = tokio::sync::mpsc::unbounded_channel();
     let observed = Observed {
         commands: Arc::clone(&commands),
-        events,
         control_closed: Arc::clone(&control_closed),
         data_closed: Arc::clone(&data_closed),
     };
@@ -413,7 +517,6 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
         accept_until_stopped(&listener, &stopping, &scenarios, &observed)
     });
     Ok(Peer {
-        events: Some(receiver),
         address,
         commands,
         control_closed,
