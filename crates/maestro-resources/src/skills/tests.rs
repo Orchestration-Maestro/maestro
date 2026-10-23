@@ -6,7 +6,9 @@ use super::real_path::real_path;
 #[cfg(unix)]
 use super::{LoadSkillsFromDirOptions, ResourceFileType, load_skills_from_dir};
 use super::{LoadSkillsOptions, LoadSkillsResult, load_skills};
-use crate::{SourceOrigin, SourceScope, paths::resolve};
+use crate::paths::resolve;
+#[cfg(not(windows))]
+use crate::{SourceOrigin, SourceScope};
 use maestro_test_directory::Scratch;
 use std::{
     fs, io,
