@@ -88,7 +88,7 @@ mod tests {
     fn malformed_reload_keeps_every_workspace_area() {
         let storage = Arc::new(ControlledStorage(Mutex::new(Ok("{".into()))));
         let mut manager = SettingsManager::from_storage(storage.clone());
-        let output = Output::default();
+        let output = maestro_test_tracing::Output::default();
         let subscriber = tracing_subscriber::fmt()
             .without_time()
             .with_ansi(false)
@@ -103,7 +103,7 @@ mod tests {
         assert!(errors.is_empty());
         assert_eq!(loaded.config, Config::default());
         assert!(loaded.diagnostics[0].starts_with("config parse error:"));
-        let warning = String::from_utf8(output.0.lock().unwrap().clone()).unwrap();
+        let warning = output.text();
         assert!(warning.contains("config parse error, using defaults"));
         assert!(warning.contains("err="));
         *storage.0.lock().unwrap() = Ok(json!({
@@ -122,7 +122,7 @@ mod tests {
         let previous = current.clone();
         for input in [Ok("{".into()), Err(std::io::ErrorKind::PermissionDenied)] {
             *storage.0.lock().unwrap() = input;
-            output.0.lock().unwrap().clear();
+            output.clear();
             let subscriber = tracing_subscriber::fmt()
                 .without_time()
                 .with_ansi(false)
@@ -138,21 +138,7 @@ mod tests {
             assert_eq!(report.status, ConfigReloadStatus::Failed);
             assert!(report.diagnostics[0].ends_with("keeping current config"));
             assert_eq!(current, previous);
-            assert!(output.0.lock().unwrap().is_empty());
-        }
-    }
-
-    /// Owned writer shared with the scoped tracing subscriber.
-    #[derive(Clone, Default)]
-    struct Output(Arc<Mutex<Vec<u8>>>);
-
-    impl std::io::Write for Output {
-        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-            self.0.lock().unwrap().extend_from_slice(bytes);
-            Ok(bytes.len())
-        }
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
+            assert!(output.text().is_empty());
         }
     }
 }

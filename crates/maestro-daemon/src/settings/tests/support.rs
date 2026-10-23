@@ -1,9 +1,6 @@
 //! Controlled settings-owner and warning fixtures.
 
-use std::{
-    io::{self, Write},
-    sync::{Arc, Mutex},
-};
+use std::sync::Arc;
 
 use maestro_settings::{InMemorySettingsStorage, SettingsManager, SettingsScope, SettingsStorage};
 use serde_json::Value;
@@ -33,24 +30,9 @@ pub fn manager(global: &Value, project: &Value) -> (SettingsManager, Arc<InMemor
     (SettingsManager::from_storage(storage.clone()), storage)
 }
 
-/// Thread-scoped tracing output, never a global subscriber.
-#[derive(Clone, Default)]
-struct Output(Arc<Mutex<Vec<u8>>>);
-
-impl Write for Output {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.0.lock().unwrap().extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
 /// Capture warning message and error fields around one synchronous operation.
 pub fn capture<T>(action: impl FnOnce() -> T) -> (T, String) {
-    let output = Output::default();
+    let output = maestro_test_tracing::Output::default();
     let writer = output.clone();
     let subscriber = tracing_subscriber::fmt()
         .without_time()
@@ -59,6 +41,5 @@ pub fn capture<T>(action: impl FnOnce() -> T) -> (T, String) {
         .with_writer(move || writer.clone())
         .finish();
     let result = maestro_test_tracing::with_default(subscriber, action);
-    let text = String::from_utf8(output.0.lock().unwrap().clone()).unwrap();
-    (result, text)
+    (result, output.text())
 }
