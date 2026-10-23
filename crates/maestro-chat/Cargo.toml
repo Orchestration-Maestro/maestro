@@ -13,7 +13,7 @@ maestro-theme = { path = "../maestro-theme" }
 indexmap = "=2.14.2"
 serde_json.workspace = true
 ryu-js.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"] }
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
@@ -23,7 +23,7 @@ serde.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
-tokio = { version = "=1.53.2", default-features = false, features = ["process"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["process"] }
 
 [[test]]
 name = "integration"

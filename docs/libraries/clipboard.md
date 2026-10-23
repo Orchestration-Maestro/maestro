@@ -14,7 +14,7 @@ paths use the existing UUID 1.27.0 with defaults disabled and `std`, `v4` enable
 Application pixel tests use the existing image 0.24.9 with only `png` requested.
 Existing base64 0.23.1 uses
 `std` without defaults, futures-util 0.3.34 retains workspace features, and Tokio
-1.53.2 provides native `rt`, `time` and `process` without defaults.
+1.53.3 provides native `rt`, `time` and `process` without defaults.
 
 The original text-clipboard integration added 39 registry packages. Image
 reading reuses that resolution without adding, removing or replacing registry

@@ -145,7 +145,7 @@ HtmlElement and Node features were already enabled. Clipboard discovery, Promise
 settlement and fallback invocation reuse existing reflection and bindings; no
 package version, license closure or clipboard runtime is added.
 
-Hidden sandbox execution directly uses Tokio `=1.53.2`, defaults off with only
+Hidden sandbox execution directly uses Tokio `=1.53.3`, defaults off with only
 `sync`, for an owned one-shot result channel. Tokio is MIT; its already-locked
 `pin-project-lite =0.2.17` closure is MIT OR Apache-2.0. No package version,
 runtime, executor or timer implementation is added. The adapter reuses the native

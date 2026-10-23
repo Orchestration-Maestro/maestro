@@ -180,7 +180,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   decoding and further ordering.
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
-  It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.
+  It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
@@ -311,7 +311,7 @@ Ask before adding any unapproved crate; never add one silently.
 `maestro-models` pins `reqwest =0.13.5` (default features plus `stream`),
 `url =2.5.8`, `futures-core =0.3.34` (`std`) and `futures-util =0.3.34`
 (`std` and `sink`),
-`httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.2`
+`httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
 (`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
 `wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).

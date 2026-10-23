@@ -9,11 +9,11 @@ repository.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 notify = "=8.2.0"
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["test-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["test-util"] }
 
 [lints]
 workspace = true

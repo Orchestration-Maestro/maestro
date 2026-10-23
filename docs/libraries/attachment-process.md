@@ -1,6 +1,6 @@
 ## Approved attachment process libraries
 
-Outside browser targets, `maestro-tui` uses Tokio `=1.53.2`, defaults off, with
+Outside browser targets, `maestro-tui` uses Tokio `=1.53.3`, defaults off, with
 `process` and `rt` for caller-selected attachment search, whose captured child
 comes from `maestro-process`. The tools crate enables Tokio `process`, `time` and
 `macros` for explicit command execution on the same captured child, and its native

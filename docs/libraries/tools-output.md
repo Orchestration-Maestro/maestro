@@ -26,7 +26,7 @@ internal `maestro-agent`, `maestro-models`, `maestro-theme` and `maestro-tui`
 crates, workspace `serde_json` (now also a normal dependency) and workspace
 `futures-util =0.3.34` (`std`, `sink`). The read family is native-only:
 `icu_normalizer =2.3.0` with `compiled_data` supplies NFD for read paths and NFKC for
-[edit matching](../tools-edit.md#original-snapshot-matching), `tokio =1.53.2` with
+[edit matching](../tools-edit.md#original-snapshot-matching), `tokio =1.53.3` with
 `rt`, `fs` and `sync` supplies file reads, file writes, blocking probes and the
 one-shot wake-ups of the [file mutation queue](../tools-edit.md#file-mutation-queue)
 (`sync` adds no package and was already enabled in the workspace), and on Unix

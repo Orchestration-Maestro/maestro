@@ -32,13 +32,13 @@ getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
 maestro-text = { path = "../maestro-text", features = ["collation"] }
-tokio = { version = "=1.53.2", default-features = false, features = ["process", "rt"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["process", "rt"] }
 maestro-process = { path = "../maestro-process" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["net", "io-util", "macros", "rt"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["net", "io-util", "macros", "rt"] }
 
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
