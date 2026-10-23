@@ -2655,3 +2655,416 @@ fn directory_support_preserves_process_and_domain_policies() {
         Err("forbidden production dependency: maestro-models -> maestro-app".into())
     );
 }
+
+/// A function holding the explicit-instruction-path pattern, as its tracked path and its name.
+type PatternOwner = (String, String);
+
+/// Calls one function body makes, by the names the explicit-path pattern uses.
+#[derive(Default)]
+struct PatternCalls {
+    /// The body expands a leading tilde.
+    expands: bool,
+    /// The body checks whether the expansion is absolute.
+    checks_absolute: bool,
+    /// The body resolves the result.
+    resolves: bool,
+}
+
+impl PatternCalls {
+    /// Read the calls `block` makes, ignoring nested functions.
+    fn of(block: &syn::Block) -> Self {
+        let mut calls = Self::default();
+        syn::visit::visit_block(&mut calls, block);
+        calls
+    }
+
+    /// Note a call by the last segment of its path.
+    fn note(&mut self, path: &syn::ExprPath) {
+        let Some(segment) = path.path.segments.last() else {
+            return;
+        };
+        match segment.ident.to_string().as_str() {
+            "expand_tilde_text" => self.expands = true,
+            "is_absolute" => self.checks_absolute = true,
+            "resolve" => self.resolves = true,
+            _ => {}
+        }
+    }
+}
+
+impl<'ast> syn::visit::Visit<'ast> for PatternCalls {
+    fn visit_expr_call(&mut self, node: &'ast syn::ExprCall) {
+        if let syn::Expr::Path(path) = &*node.func {
+            self.note(path);
+        }
+        syn::visit::visit_expr_call(self, node);
+    }
+
+    fn visit_item(&mut self, _node: &'ast syn::Item) {}
+
+    fn visit_impl_item(&mut self, _node: &'ast syn::ImplItem) {}
+}
+
+/// Records every function of one source whose body holds the whole pattern.
+struct PatternVisitor<'a> {
+    /// Tracked path or control label used in the comparison.
+    label: &'a str,
+    /// Owners found so far.
+    owners: &'a mut Vec<PatternOwner>,
+}
+
+impl PatternVisitor<'_> {
+    /// Record `block` when it expands a tilde, checks absoluteness and resolves.
+    fn record(&mut self, name: &syn::Ident, block: &syn::Block) {
+        let calls = PatternCalls::of(block);
+        if calls.expands && calls.checks_absolute && calls.resolves {
+            self.owners.push((self.label.to_owned(), name.to_string()));
+        }
+    }
+}
+
+impl<'ast> syn::visit::Visit<'ast> for PatternVisitor<'_> {
+    fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
+        self.record(&node.sig.ident, &node.block);
+        syn::visit::visit_item_fn(self, node);
+    }
+
+    fn visit_impl_item_fn(&mut self, node: &'ast syn::ImplItemFn) {
+        self.record(&node.sig.ident, &node.block);
+        syn::visit::visit_impl_item_fn(self, node);
+    }
+}
+
+/// Every function of `source` that holds the explicit-path pattern, labeled with `label`.
+fn pattern_owners(label: &str, source: &str) -> Vec<PatternOwner> {
+    let Ok(file) = syn::parse_file(source) else {
+        return Vec::new();
+    };
+    let mut owners = Vec::new();
+    syn::visit::visit_file(
+        &mut PatternVisitor {
+            label,
+            owners: &mut owners,
+        },
+        &file,
+    );
+    owners
+}
+
+/// The arguments a delegating loader forwards to the shared owner with.
+const FORWARDED_ARGUMENTS: [&str; 3] = ["path", "options.cwd", "options.home"];
+
+/// The spelling of one call argument, with its field accesses joined by `.`.
+fn argument_spelling(expression: &syn::Expr) -> Option<String> {
+    match expression {
+        syn::Expr::Path(path) => Some(
+            path.path
+                .segments
+                .iter()
+                .map(|segment| segment.ident.to_string())
+                .collect::<Vec<_>>()
+                .join("."),
+        ),
+        syn::Expr::Field(field) => {
+            let member = match &field.member {
+                syn::Member::Named(name) => name.to_string(),
+                syn::Member::Unnamed(index) => index.index.to_string(),
+            };
+            Some(format!("{}.{member}", argument_spelling(&field.base)?))
+        }
+        _ => None,
+    }
+}
+
+/// The path and text of every tracked Rust source below `root`.
+///
+/// Every tracked file is enumerated and the Rust sources are read, since only a parsed function
+/// body can delegate.
+fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
+    let listed = std::process::Command::new("git")
+        .args(["ls-files", "-z"])
+        .current_dir(root)
+        .output()
+        .unwrap();
+    assert!(listed.status.success());
+    listed
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+        .filter_map(|path| std::str::from_utf8(path).ok())
+        .filter(|path| {
+            std::path::Path::new(path)
+                .extension()
+                .is_some_and(|kind| kind == "rs")
+        })
+        .map(|path| {
+            (
+                path.to_owned(),
+                std::fs::read_to_string(root.join(path)).unwrap(),
+            )
+        })
+        .collect()
+}
+
+/// Every function in the tracked `sources` that holds the explicit-path pattern.
+///
+/// A source that never names the expansion call cannot call it.
+fn pattern_owners_in(sources: &[(String, String)]) -> Vec<PatternOwner> {
+    let mut owners: Vec<PatternOwner> = sources
+        .iter()
+        .filter(|(_, source)| source.contains("expand_tilde_text"))
+        .flat_map(|(path, source)| pattern_owners(path, source))
+        .collect();
+    owners.sort();
+    owners
+}
+
+/// Whether `function` in `source` is exactly one tail expression that returns the shared owner's
+/// result, called with the authored path, the caller's working directory and its home spelling.
+fn delegates_directly(source: &str, function: &str) -> bool {
+    let Ok(file) = syn::parse_file(source) else {
+        return false;
+    };
+    let Some(body) = file.items.iter().find_map(|item| match item {
+        syn::Item::Fn(item) if item.sig.ident == function => Some(&item.block),
+        _ => None,
+    }) else {
+        return false;
+    };
+    let [syn::Stmt::Expr(syn::Expr::Call(call), None)] = body.stmts.as_slice() else {
+        return false;
+    };
+    let syn::Expr::Path(target) = &*call.func else {
+        return false;
+    };
+    target
+        .path
+        .segments
+        .last()
+        .is_some_and(|segment| segment.ident == "resolve_explicit_path")
+        && call
+            .args
+            .iter()
+            .filter_map(argument_spelling)
+            .eq(FORWARDED_ARGUMENTS)
+}
+
+/// Assert that a directly delegating loader is accepted and that a body returning the path,
+/// discarding the shared result or forwarding its operands in the wrong order is rejected.
+fn assert_forwarding_controls() {
+    for (label, source, function) in [
+        ("skills delegate", DELEGATE_BODY, "normalize_skill_path"),
+        (
+            "prompts delegate",
+            PROMPT_DELEGATE_BODY,
+            "resolve_prompt_path",
+        ),
+    ] {
+        assert!(delegates_directly(source, function), "{label}");
+    }
+    for (label, source, function) in [
+        ("skills bypass", SKILL_BYPASS_BODY, "normalize_skill_path"),
+        ("prompts bypass", PROMPT_BYPASS_BODY, "resolve_prompt_path"),
+        (
+            "skills discarded result",
+            SKILL_DISCARDED_RESULT_BODY,
+            "normalize_skill_path",
+        ),
+        (
+            "prompts discarded result",
+            PROMPT_DISCARDED_RESULT_BODY,
+            "resolve_prompt_path",
+        ),
+        (
+            "swapped operands",
+            SWAPPED_OPERANDS_BODY,
+            "normalize_skill_path",
+        ),
+    ] {
+        assert!(!delegates_directly(source, function), "{label}");
+    }
+}
+
+/// Assert that each instruction loader's body is the direct delegation to the shared owner.
+fn assert_tracked_delegation(sources: &[(String, String)]) {
+    for (path, function) in [
+        (
+            "crates/maestro-resources/src/prompt_templates.rs",
+            "resolve_prompt_path",
+        ),
+        (
+            "crates/maestro-resources/src/skills/mod.rs",
+            "normalize_skill_path",
+        ),
+    ] {
+        let source = sources
+            .iter()
+            .find(|(tracked, _)| tracked == path)
+            .map(|(_, source)| source.as_str());
+        assert!(
+            source.is_some_and(|source| delegates_directly(source, function)),
+            "{path}: {function}"
+        );
+    }
+}
+
+/// A shared owner holding the expansion, the absoluteness check and the resolution.
+const OWNER_BODY: &str = "\
+fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
+    let path = path.trim_matches(whitespace);
+    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    if is_absolute(&normalized) {
+        Ok(normalized)
+    } else {
+        resolve(&[cwd, &normalized])
+    }
+}
+";
+
+/// A caller that delegates to the shared owner.
+const DELEGATE_BODY: &str = "\
+fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    resolve_explicit_path(path, options.cwd, options.home)
+}
+";
+
+/// The skill loader's own copy of the expansion, absoluteness check and resolution.
+const SKILL_BODY: &str = "\
+fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    let path = path.trim_matches(whitespace);
+    if path.starts_with('~') {
+        return expand_tilde_text(path, || Ok(options.home.to_owned()));
+    }
+    if is_absolute(path) {
+        return Ok(path.to_owned());
+    }
+    resolve(&[options.cwd, path])
+}
+";
+
+/// The prompt loader's own copy of the expansion, absoluteness check and resolution.
+const PROMPT_BODY: &str = "\
+fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
+    let path = path.trim_matches(whitespace);
+    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
+    if is_absolute(&normalized) {
+        Ok(normalized)
+    } else {
+        resolve(&[options.cwd, &normalized])
+    }
+}
+";
+
+/// A prompt loader that delegates to the shared owner.
+const PROMPT_DELEGATE_BODY: &str = "\
+fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
+    resolve_explicit_path(path, options.cwd, options.home)
+}
+";
+
+/// A prompt loader that returns the path unchanged instead of delegating.
+const PROMPT_BYPASS_BODY: &str = "\
+fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
+    Ok(path.to_owned())
+}
+";
+
+/// A skill loader that returns the path unchanged instead of delegating.
+const SKILL_BYPASS_BODY: &str = "\
+fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    Ok(path.to_owned())
+}
+";
+
+/// A skill loader that calls the shared owner and discards its result.
+const SKILL_DISCARDED_RESULT_BODY: &str = "\
+fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    let _ = resolve_explicit_path(path, options.cwd, options.home);
+    Ok(path.to_owned())
+}
+";
+
+/// A prompt loader that calls the shared owner and discards its result.
+const PROMPT_DISCARDED_RESULT_BODY: &str = "\
+fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
+    let _ = resolve_explicit_path(path, options.cwd, options.home);
+    Ok(path.to_owned())
+}
+";
+
+/// A loader that forwards the working directory and the home spelling in the wrong order.
+const SWAPPED_OPERANDS_BODY: &str = "\
+fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    resolve_explicit_path(path, options.home, options.cwd)
+}
+";
+
+/// A sibling policy that expands in one function and always resolves in another.
+const RESOURCE_BODY: &str = "\
+fn expand_resource_path(path: &str, home: Home) -> std::io::Result<String> {
+    expand_tilde_text(path.trim_matches(whitespace), home)
+}
+fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<String> {
+    let expanded = expand_resource_path(path, home)?;
+    resolve(&[cwd, &expanded])
+}
+";
+
+/// The shared owner followed by a second copy beside it.
+const OWNER_AND_COPY: &str = "\
+fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
+    let path = path.trim_matches(whitespace);
+    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    if is_absolute(&normalized) {
+        Ok(normalized)
+    } else {
+        resolve(&[cwd, &normalized])
+    }
+}
+fn resolve_explicit_path_copy(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
+    let path = path.trim_matches(whitespace);
+    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    if is_absolute(&normalized) {
+        Ok(normalized)
+    } else {
+        resolve(&[cwd, &normalized])
+    }
+}
+";
+
+/// Expanding a tilde, checking the result is absolute and resolving it has one implementation,
+/// which both instruction loaders call; an inline copy in a caller or a second copy beside the
+/// owner is rejected.
+#[test]
+fn explicit_instruction_paths_share_their_resolver() {
+    let controls: [(&str, &str, &[&str]); 6] = [
+        ("owner", OWNER_BODY, &["resolve_explicit_path"]),
+        ("delegate", DELEGATE_BODY, &[]),
+        ("skills", SKILL_BODY, &["normalize_skill_path"]),
+        ("prompts", PROMPT_BODY, &["resolve_prompt_path"]),
+        ("resource policy", RESOURCE_BODY, &[]),
+        (
+            "owner twice",
+            OWNER_AND_COPY,
+            &["resolve_explicit_path", "resolve_explicit_path_copy"],
+        ),
+    ];
+    for (label, source, expected) in controls {
+        let names: Vec<_> = pattern_owners(label, source)
+            .into_iter()
+            .map(|(_, name)| name)
+            .collect();
+        assert_eq!(names, expected, "{label}");
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let sources = tracked_rust_sources(&root);
+    assert_eq!(
+        pattern_owners_in(&sources),
+        [(
+            "crates/maestro-resources/src/paths.rs".to_owned(),
+            "resolve_explicit_path".to_owned()
+        )]
+    );
+    assert_forwarding_controls();
+    assert_tracked_delegation(&sources);
+}
