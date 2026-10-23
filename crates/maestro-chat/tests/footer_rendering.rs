@@ -1,9 +1,11 @@
 //! The footer's rendered behaviour against the recorded corpus.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::footer_support::corpus::{self, Input, Lines, Render, Row, plain, rows_of};
+use crate::footer_support::corpus::{
+    self, Input, Lines, Render, Row, assert_frame, plain, rows_of,
+};
 use crate::footer_support::{Metadata, Roles, World};
-use maestro_app::{ReadonlyFooterDataProvider, ThinkingLevel};
+use maestro_app::{ReadonlyFooterDataProvider, ReadonlySessionManager, ThinkingLevel};
 use maestro_chat::FooterComponent;
 use maestro_tui::Component;
 use serde_json::{Value, json};
@@ -32,9 +34,15 @@ fn expectations(test: &str) -> Vec<(Render, Value)> {
 
 /// Replays one render group, comparing the rows the recorded state produces.
 fn replay(test: &str) {
+    replay_arranged(test, |_| {});
+}
+
+/// Replays one render group after `arrange` reshapes each recorded world.
+fn replay_arranged(test: &str, arrange: impl Fn(&World)) {
     let roles = roles();
     for (render, expected) in expectations(test) {
         let world = render.world();
+        arrange(&world);
         let footer = world.footer();
         render.apply_auto(&footer);
         match footer.try_render(render.width) {
@@ -123,7 +131,23 @@ fn footer_empty_history_uses_the_context_default() {
 
 #[test]
 fn footer_usage_comes_from_all_history_not_the_selected_branch() {
-    replay("footer_usage_comes_from_all_history_not_the_selected_branch");
+    replay_arranged(
+        "footer_usage_comes_from_all_history_not_the_selected_branch",
+        select_first_answer,
+    );
+}
+
+/// Selects the first recorded answer, leaving every later record on an abandoned branch.
+fn select_first_answer(world: &World) {
+    let mut manager = world.session.session_manager().borrow_mut();
+    let first = manager
+        .get_entries()
+        .into_iter()
+        .find(|entry| entry["type"] == "message")
+        .and_then(|entry| entry["id"].as_str())
+        .map(str::to_owned)
+        .expect("a recorded answer");
+    manager.branch(&first).expect("an indexed answer");
 }
 
 #[test]
@@ -188,23 +212,11 @@ fn footer_status_clipping_uses_display_columns() {
 
 #[test]
 fn footer_persisted_usage_field_domain() {
-    for (render, _) in expectations("footer_persisted_usage_field_domain") {
-        assert!(
-            render.field.is_some() && render.kind.is_some(),
-            "a domain row names the field and kind it writes"
-        );
-    }
     replay("footer_persisted_usage_field_domain");
 }
 
 #[test]
 fn footer_persisted_cost_field_domain() {
-    for (render, _) in expectations("footer_persisted_cost_field_domain") {
-        assert!(
-            render.kind.is_some(),
-            "a cost domain row names the kind it writes"
-        );
-    }
     replay("footer_persisted_cost_field_domain");
 }
 
@@ -271,14 +283,7 @@ fn footer_setters_and_noop_lifecycle_keep_live_owners() {
         ("manual", &manual),
         ("after", &after),
     ] {
-        let recorded = corpus::lines_of(&row.expected, name);
-        for (index, line) in lines.iter().enumerate() {
-            assert_eq!(
-                roles.label(line),
-                roles.label(&recorded[index]),
-                "{name} row {index}"
-            );
-        }
+        assert_frame(&roles, lines, &corpus::lines_of(&row.expected, name), name);
     }
     assert_ne!(before, replaced);
     assert!(manual[1].contains("12.3%") || manual[1].contains('?'));
@@ -335,14 +340,12 @@ fn footer_provider_callbacks_read_live_model_at_each_phase() {
             }));
         }
         let lines = world.footer().try_render(100).expect("a rendered frame");
-        let recorded: Vec<String> = corpus::lines_of(&row.expected, "lines");
-        for (index, line) in lines.iter().enumerate() {
-            assert_eq!(
-                roles.label(line),
-                roles.label(&recorded[index]),
-                "{phase} row {index}"
-            );
-        }
+        assert_frame(
+            &roles,
+            &lines,
+            &corpus::lines_of(&row.expected, "lines"),
+            &phase,
+        );
     }
 }
 
@@ -359,14 +362,12 @@ fn footer_theme_is_sampled_at_each_paint_boundary() {
         2.0
     }));
     let lines = world.footer().try_render(100).expect("a rendered frame");
-    let recorded: Vec<String> = corpus::lines_of(&row.expected, "lines");
-    for (index, line) in lines.iter().enumerate() {
-        assert_eq!(
-            roles.label(line),
-            roles.label(&recorded[index]),
-            "row {index}"
-        );
-    }
+    assert_frame(
+        &roles,
+        &lines,
+        &corpus::lines_of(&row.expected, "lines"),
+        "theme",
+    );
 }
 
 #[test]
@@ -389,14 +390,7 @@ fn footer_live_metadata_is_resampled_after_disposal() {
     footer.dispose();
     let second = footer.try_render(100).expect("a rendered frame");
     for (name, lines) in [("first", &first), ("second", &second)] {
-        let recorded: Vec<String> = corpus::lines_of(&row.expected, name);
-        for (index, line) in lines.iter().enumerate() {
-            assert_eq!(
-                roles.label(line),
-                roles.label(&recorded[index]),
-                "{name} row {index}"
-            );
-        }
+        assert_frame(&roles, lines, &corpus::lines_of(&row.expected, name), name);
     }
     assert_ne!(first, second);
 }
@@ -426,12 +420,7 @@ fn footer_public_type_uses_the_default_execution() {
 #[test]
 fn footer_history_and_status_work_has_no_per_item_rescan() {
     for count in [0_usize, 1, 4] {
-        let world = World::new("/tmp/project", None);
-        world.set_model("test-model", "test", false, 200_000.0);
-        let pairs: Vec<(String, String)> = (0..count)
-            .map(|index| (format!("key{index}"), format!("value{index}")))
-            .collect();
-        world.metadata.set_statuses(&pairs);
+        let (world, pairs) = world_with_items(count);
         let branch = crate::footer_support::counter();
         let statuses = crate::footer_support::counter();
         let providers = crate::footer_support::counter();
@@ -460,11 +449,16 @@ fn footer_history_and_status_work_has_no_per_item_rescan() {
             Rc::new(|_| None),
         );
         let lines = footer.try_render(200).expect("a rendered frame");
-        assert_eq!(statuses.get(), 1, "one status walk for {count} statuses");
-        assert_eq!(branch.get(), 1, "one branch read for {count} statuses");
-        assert_eq!(providers.get(), 1, "one provider read for {count} statuses");
-        if !pairs.is_empty() {
-            let status_row = plain(&lines[lines.len() - 1]);
+        assert_eq!(statuses.get(), 1, "one status walk for {count} items");
+        assert_eq!(branch.get(), 1, "one branch read for {count} items");
+        assert_eq!(providers.get(), 1, "one provider read for {count} items");
+        if count > 0 {
+            let stats = plain(&lines[1]);
+            assert!(
+                stats.starts_with(&format!("↑{count}.0k ")),
+                "{stats} totals {count} answers"
+            );
+            let status_row = plain(&lines[2]);
             for (_, value) in &pairs {
                 assert!(
                     status_row.contains(value.as_str()),
@@ -473,6 +467,26 @@ fn footer_history_and_status_work_has_no_per_item_rescan() {
             }
         }
     }
+}
+
+/// A world whose history holds `count` answers and whose metadata holds `count` statuses.
+fn world_with_items(count: usize) -> (World, Vec<(String, String)>) {
+    let world = World::new("/tmp/project", None);
+    world.set_model("test-model", "test", false, 200_000.0);
+    for _ in 0..count {
+        world.append_message(&json!({
+            "role": "assistant",
+            "usage": {
+                "input": 1000, "output": 0, "cacheRead": 0, "cacheWrite": 0,
+                "cost": {"total": 0}
+            }
+        }));
+    }
+    let pairs: Vec<(String, String)> = (0..count)
+        .map(|index| (format!("key{index}"), format!("value{index}")))
+        .collect();
+    world.metadata.set_statuses(&pairs);
+    (world, pairs)
 }
 
 /// Metadata that counts how often its statuses were walked.

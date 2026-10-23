@@ -37,6 +37,8 @@ It reuses the [terminal toolkit](../terminal/components.md) and
   name after a bullet. The second puts the cumulative token and cache totals,
   the subscription cost and the context display on the left, and the model with
   its provider and thinking level on the right, padded to the viewport width.
+  When the left side leaves no column for the model after the two-column gap,
+  the row holds the left side alone, narrower than the viewport.
   The third shows the extension statuses in the shared locale order of their
   keys, each reduced to one line. Tokens spell as plain below a thousand, one
   decimal below ten thousand, whole thousands below a million, one decimal

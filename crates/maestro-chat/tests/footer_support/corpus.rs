@@ -111,12 +111,6 @@ pub struct Render {
     /// The `USERPROFILE` value; absent and null both mean unset.
     #[serde(default, rename = "USERPROFILE")]
     pub userprofile: Option<Value>,
-    /// The persisted field a domain row changes.
-    #[serde(default)]
-    pub field: Option<String>,
-    /// The stored kind a domain row writes.
-    #[serde(default)]
-    pub kind: Option<String>,
 }
 
 /// The lines a render row records, with their measured display widths.
@@ -171,16 +165,13 @@ pub fn lines_of(expected: &Value, name: &str) -> Vec<String> {
 impl Render {
     /// The world this row describes, with the recorded state already applied.
     pub fn world(&self) -> World {
-        let cwd = self
-            .cwd
-            .clone()
-            .unwrap_or_else(|| "/tmp/project".to_owned());
-        let provider = self.provider.clone().unwrap_or_else(|| "test".to_owned());
+        let cwd = self.cwd.as_deref().unwrap_or("/tmp/project");
+        let provider = self.provider.as_deref().unwrap_or("test");
         let subscribed = self.subscription.unwrap_or(false);
-        let world = World::new(&cwd, subscribed.then_some(provider.as_str()));
+        let world = World::new(cwd, subscribed.then_some(provider));
         world.set_model(
             self.model_id.as_deref().unwrap_or("test-model"),
-            &provider,
+            provider,
             self.reasoning.unwrap_or(false),
             self.model_window.or(self.window).unwrap_or(200_000.0),
         );
@@ -208,7 +199,7 @@ impl Render {
             world.metadata.set_statuses(pairs);
         }
         world.set_environment(self.home.as_ref(), self.userprofile.as_ref());
-        world.append_entries(&self.messages());
+        world.append_entries(&self.entries);
         if !self.context_absent.unwrap_or(false) {
             if let Some(tokens) = self.context_tokens() {
                 world.set_context(tokens);
@@ -218,11 +209,6 @@ impl Render {
             }
         }
         world
-    }
-
-    /// The retained records.
-    fn messages(&self) -> Vec<Value> {
-        self.entries.clone()
     }
 
     /// The context tokens this row's percentage implies, when it states a percentage.
@@ -245,24 +231,25 @@ impl Render {
 
 /// Asserts the rows and their display widths against the recorded expectations.
 pub fn assert_lines(actual: &[String], render: &Render, expected: &Lines, roles: &Roles) {
-    assert_eq!(
-        actual.len(),
-        expected.lines.len(),
-        "{} rows",
-        expected.lines.len()
-    );
-    for (index, (line, recorded)) in actual.iter().zip(&expected.lines).enumerate() {
-        assert_eq!(
-            roles.label(line),
-            roles.label(recorded),
-            "row {index} at width {}",
-            render.width
-        );
+    let frame = format!("width {}", render.width);
+    assert_frame(roles, actual, &expected.lines, &frame);
+    for (index, line) in actual.iter().enumerate() {
         assert_eq!(
             visible_width(line),
             expected.widths[index],
-            "row {index} width at width {}",
-            render.width
+            "{frame} row {index} width"
+        );
+    }
+}
+
+/// Asserts a frame's rows against the recorded rows, which it must match in number.
+pub fn assert_frame(roles: &Roles, actual: &[String], recorded: &[String], frame: &str) {
+    assert_eq!(actual.len(), recorded.len(), "{frame} row count");
+    for (index, (line, recorded)) in actual.iter().zip(recorded).enumerate() {
+        assert_eq!(
+            roles.label(line),
+            roles.label(recorded),
+            "{frame} row {index}"
         );
     }
 }
