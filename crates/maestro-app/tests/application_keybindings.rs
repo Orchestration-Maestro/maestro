@@ -302,8 +302,8 @@ fn file_loading_keeps_prototype_named_unknown_actions() {
 #[serde(deny_unknown_fields, rename_all = "snake_case", tag = "kind")]
 enum ReadInput {
     InvalidUtf8 { bytes: Vec<u8> },
-    Directory,
-    Missing,
+    Directory {},
+    Missing {},
 }
 #[test]
 fn file_loading_uses_lossy_utf8_and_ignores_read_failures() {
@@ -314,8 +314,8 @@ fn file_loading_uses_lossy_utf8_and_ignores_read_failures() {
         let path = dir.join("keybindings.json");
         match case.input {
             ReadInput::InvalidUtf8 { bytes } => std::fs::write(&path, bytes).unwrap(),
-            ReadInput::Directory => std::fs::create_dir(&path).unwrap(),
-            ReadInput::Missing => {}
+            ReadInput::Directory {} => std::fs::create_dir(&path).unwrap(),
+            ReadInput::Missing {} => {}
         }
         assert_eq!(
             snapshot(&KeybindingsManager::create(Some(dir.0.path().to_str().unwrap())).unwrap()),
