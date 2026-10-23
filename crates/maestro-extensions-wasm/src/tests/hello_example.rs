@@ -2,8 +2,8 @@
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{invoke_tool_on_component, result_value, start};
-use crate::component_adapter::{Exports, ToolCapabilities, release};
+use super::example_support::{invoke_tool_on_component, registered, result_value};
+use crate::component_adapter::{ToolCapabilities, release};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/hello.rs"]
@@ -31,13 +31,6 @@ pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
     assert_eq!(actual, *expected);
 }
 
-/// Starts the shipped factory on a fresh controlled host and returns its tool callback key.
-async fn started() -> Result<(Controlled, u32, Exports<Controlled>), String> {
-    let (host, exports) = start::<Hello>().await?;
-    let key = host.observed().callback("tool hello")?;
-    Ok((host, key, exports))
-}
-
 /// Releases the tool callback and asserts the host registered nothing else.
 pub(super) fn released(host: &Controlled, key: u32) {
     release(key);
@@ -48,7 +41,7 @@ pub(super) fn released(host: &Controlled, key: u32) {
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, _exports) = started().await?;
+        let (host, key, _exports) = registered::<Hello>("tool hello").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare hello").is_err());
         released(&host, key);
@@ -60,7 +53,7 @@ fn hello_registers_the_greeting_schema() -> Result<(), String> {
 #[test]
 fn hello_preserves_supplied_names() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, exports) = started().await?;
+        let (host, key, exports) = registered::<Hello>("tool hello").await?;
         for row in corpus()["rows"].as_array().unwrap() {
             let actual = exports
                 .invoke_tool(
@@ -87,7 +80,7 @@ fn hello_preserves_supplied_names() -> Result<(), String> {
 #[test]
 fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, exports) = started().await?;
+        let (host, key, exports) = registered::<Hello>("tool hello").await?;
         let flag = super::controlled::Flag::default();
         flag.abort();
         let actual = exports

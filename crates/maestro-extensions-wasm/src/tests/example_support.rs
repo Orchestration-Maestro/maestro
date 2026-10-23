@@ -21,6 +21,16 @@ pub async fn start<E: Extension>() -> Result<(Controlled, Exports<Controlled>), 
     Ok((host, exports))
 }
 
+/// Starts a shipped factory on a fresh controlled host and returns the key of the tool it
+/// registered under `tool`.
+pub async fn registered<E: Extension>(
+    tool: &str,
+) -> Result<(Controlled, u32, Exports<Controlled>), String> {
+    let (host, exports) = start::<E>().await?;
+    let key = host.observed().callback(tool)?;
+    Ok((host, key, exports))
+}
+
 /// Decodes the SDK's opaque details document before comparing a caller-visible result.
 pub fn result_value(encoded: &str) -> Value {
     let mut value: Value = serde_json::from_str(encoded).unwrap();

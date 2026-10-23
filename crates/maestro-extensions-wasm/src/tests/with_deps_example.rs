@@ -2,7 +2,7 @@
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::result_value;
+use super::example_support::{registered, result_value};
 use super::hello_example::{assert_metadata, released};
 use crate::component_adapter::{Exports, ToolCapabilities};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
@@ -55,15 +55,6 @@ fn assert_outcome(row: &Value, actual: &Result<Value, String>) {
     assert_eq!(actual, &expected, "input {input:?}");
 }
 
-/// Starts the shipped factory on a fresh controlled host and returns its tool callback key.
-async fn started() -> Result<(Controlled, u32, Exports<Controlled>), String> {
-    let host = Controlled::default();
-    let exports = Exports::new(host.clone());
-    exports.start::<WithDeps>().await?;
-    let key = host.observed().callback("tool parse_duration")?;
-    Ok((host, key, exports))
-}
-
 /// One invocation of the registered callback through the in-process adapter.
 async fn invoked(
     host: &Controlled,
@@ -91,7 +82,7 @@ async fn invoked(
 /// Runs the recorded rows of one group through the in-process adapter.
 fn run_group(group: &str, count: usize) -> Result<(), String> {
     super::block_on(async {
-        let (host, key, exports) = started().await?;
+        let (host, key, exports) = registered::<WithDeps>("tool parse_duration").await?;
         let recorded = rows(group);
         assert_eq!(recorded.len(), count, "{group} rows");
         for row in recorded {
@@ -109,7 +100,7 @@ fn run_group(group: &str, count: usize) -> Result<(), String> {
 #[test]
 fn with_deps_registers_duration_schema() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, _exports) = started().await?;
+        let (host, key, _exports) = registered::<WithDeps>("tool parse_duration").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare parse_duration").is_err());
         released(&host, key);
@@ -141,7 +132,7 @@ fn with_deps_rejects_invalid_duration_text() -> Result<(), String> {
 #[test]
 fn with_deps_ignores_unused_invocation_handles() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, exports) = started().await?;
+        let (host, key, exports) = registered::<WithDeps>("tool parse_duration").await?;
         let flag = super::controlled::Flag::default();
         flag.abort();
         let row = rows("unused_member").pop().unwrap();
