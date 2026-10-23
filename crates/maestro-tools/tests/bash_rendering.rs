@@ -71,9 +71,13 @@ fn cases(test: &str) -> Vec<Case> {
     assert!(!selected.is_empty());
     selected
 }
+/// The recorded render context shared by these cases.
+fn render_context() -> serde_json::Value {
+    serde_json::json!({"readme":"", "bindings":["ctrl+o"]})
+}
 /// Existing context setup with no filesystem or highlighting effects.
 fn setup() -> Setup {
-    Setup::from(&serde_json::json!({"readme":"", "bindings":["ctrl+o"]}))
+    Setup::from(&render_context())
 }
 /// Publish the corpus's six role colors with an optional shift.
 fn env(shift: u8) -> Env {
@@ -292,8 +296,10 @@ fn result_case(case: &Case) -> Vec<String> {
         maestro_tui::ImageProtocol::Kitty
     });
     setup.show_images = input.show_images.unwrap_or(true);
-    setup.bindings = input.bindings.unwrap_or(setup.bindings);
-    let _bindings = display::bind(&setup.bindings);
+    let keys = input
+        .bindings
+        .unwrap_or_else(|| display::expand_keys(&render_context()));
+    let _bindings = display::bind(&keys);
     let env = env(0);
     let args = serde_json::json!({});
     let tool = definition();
@@ -568,7 +574,7 @@ fn bash_result_cache_tracks_content_width_and_expansion() {
         let stages: Vec<CacheStage> = serde_json::from_value(case.expected).unwrap();
         let env = env(0);
         let setup = setup();
-        let _bindings = display::bind(&setup.bindings);
+        let _bindings = display::bind(&display::expand_keys(&render_context()));
         let args = serde_json::json!({});
         let mut ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
@@ -727,7 +733,7 @@ fn bash_expand_hint_changes_on_retained_render() {
         assert_eq!(case.expected.as_object().unwrap().len(), 3);
         let env = env(0);
         let setup = setup();
-        let _bindings = display::bind(&setup.bindings);
+        let _bindings = display::bind(&display::expand_keys(&render_context()));
         let args = serde_json::json!({});
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
@@ -868,7 +874,7 @@ fn bash_default_themes_keep_role_colors() {
         let args = serde_json::json!({"command":"echo hello","timeout":2});
         let mut setup = setup();
         setup.phase.execution_started = true;
-        let _bindings = display::bind(&setup.bindings);
+        let _bindings = display::bind(&display::expand_keys(&render_context()));
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
         advance(&env, 9000);

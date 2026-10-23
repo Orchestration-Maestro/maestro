@@ -576,7 +576,6 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
     let args = Value::Null;
     let setup = display_support::Setup {
         readme: "/opt/maestro/README.md".into(),
-        bindings: Vec::new(),
         expanded: false,
         cwd: "/work".into(),
         images: None,

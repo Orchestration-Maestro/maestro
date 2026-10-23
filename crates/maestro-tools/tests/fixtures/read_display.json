@@ -1,25 +1,4 @@
 {
-  "theme_keys": [
-    "toolTitle",
-    "accent",
-    "toolOutput",
-    "warning",
-    "dim",
-    "muted",
-    "customMessageLabel",
-    "customMessageText",
-    "error",
-    "mdCodeBlock",
-    "syntaxKeyword",
-    "syntaxType",
-    "syntaxNumber",
-    "syntaxString",
-    "syntaxComment",
-    "syntaxFunction",
-    "syntaxVariable",
-    "syntaxOperator",
-    "syntaxPunctuation"
-  ],
   "cases": [
     {
       "test": "read_titles_keep_argument_precedence_and_invalid_styles",
@@ -3283,7 +3262,7 @@
           "content": [
             {
               "type": "text",
-              "text": "﻿"
+              "text": "\ufeff"
             }
           ]
         },
@@ -3300,7 +3279,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;3m﻿\u001b[39m"
+        "\u001b[38;5;3m\ufeff\u001b[39m"
       ]
     },
     {
@@ -3315,7 +3294,7 @@
           "content": [
             {
               "type": "text",
-              "text": ""
+              "text": "\u0085"
             }
           ]
         },
@@ -3332,7 +3311,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;3m\u001b[39m"
+        "\u001b[38;5;3m\u0085\u001b[39m"
       ]
     },
     {
@@ -5082,7 +5061,7 @@
       "id": "c1",
       "op": "strip",
       "input": {
-        "text": "a31mred0mb"
+        "text": "a\u009b31mred\u009b0mb"
       },
       "expected": "aredb"
     },
@@ -5091,9 +5070,9 @@
       "id": "c1",
       "op": "sanitize",
       "input": {
-        "text": "a31mred0mb"
+        "text": "a\u009b31mred\u009b0mb"
       },
-      "expected": "a31mred0mb"
+      "expected": "a\u009b31mred\u009b0mb"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5107,7 +5086,7 @@
           "content": [
             {
               "type": "text",
-              "text": "a31mred0mb"
+              "text": "a\u009b31mred\u009b0mb"
             }
           ]
         },
@@ -5282,7 +5261,7 @@
       "id": "osc_c1_st",
       "op": "strip",
       "input": {
-        "text": "a\u001b]0;titleb"
+        "text": "a\u001b]0;title\u009cb"
       },
       "expected": "ab"
     },
@@ -5291,9 +5270,9 @@
       "id": "osc_c1_st",
       "op": "sanitize",
       "input": {
-        "text": "a\u001b]0;titleb"
+        "text": "a\u001b]0;title\u009cb"
       },
-      "expected": "a]0;titleb"
+      "expected": "a]0;title\u009cb"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5307,7 +5286,7 @@
           "content": [
             {
               "type": "text",
-              "text": "a\u001b]0;titleb"
+              "text": "a\u001b]0;title\u009cb"
             }
           ]
         },
@@ -5482,18 +5461,18 @@
       "id": "controls",
       "op": "strip",
       "input": {
-        "text": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+        "text": "A\u0000B\bC\tD\nE\rF\u001fG\u007fH\u0085I"
       },
-      "expected": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+      "expected": "A\u0000B\bC\tD\nE\rF\u001fG\u007fH\u0085I"
     },
     {
       "test": "shell_sanitization_keeps_only_allowed_controls",
       "id": "controls",
       "op": "sanitize",
       "input": {
-        "text": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+        "text": "A\u0000B\bC\tD\nE\rF\u001fG\u007fH\u0085I"
       },
-      "expected": "ABC\tD\nE\rFGHI"
+      "expected": "ABC\tD\nE\rFG\u007fH\u0085I"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5507,7 +5486,7 @@
           "content": [
             {
               "type": "text",
-              "text": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+              "text": "A\u0000B\bC\tD\nE\rF\u001fG\u007fH\u0085I"
             }
           ]
         },
@@ -5525,7 +5504,7 @@
       "expected": [
         "",
         "\u001b[38;5;3mABC   D\u001b[39m",
-        "\u001b[38;5;3mEFGHI\u001b[39m"
+        "\u001b[38;5;3mEFG\u007fH\u0085I\u001b[39m"
       ]
     },
     {
@@ -5533,18 +5512,18 @@
       "id": "format",
       "op": "strip",
       "input": {
-        "text": "A￸B￹C￺D￻E￼F‍G﻿H"
+        "text": "A\ufff8B\ufff9C\ufffaD\ufffbE\ufffcF\u200dG\ufeffH"
       },
-      "expected": "A￸B￹C￺D￻E￼F‍G﻿H"
+      "expected": "A\ufff8B\ufff9C\ufffaD\ufffbE\ufffcF\u200dG\ufeffH"
     },
     {
       "test": "shell_sanitization_keeps_only_allowed_controls",
       "id": "format",
       "op": "sanitize",
       "input": {
-        "text": "A￸B￹C￺D￻E￼F‍G﻿H"
+        "text": "A\ufff8B\ufff9C\ufffaD\ufffbE\ufffcF\u200dG\ufeffH"
       },
-      "expected": "A￸BCDE￼F‍G﻿H"
+      "expected": "A\ufff8BCDE\ufffcF\u200dG\ufeffH"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5558,7 +5537,7 @@
           "content": [
             {
               "type": "text",
-              "text": "A￸B￹C￺D￻E￼F‍G﻿H"
+              "text": "A\ufff8B\ufff9C\ufffaD\ufffbE\ufffcF\u200dG\ufeffH"
             }
           ]
         },
@@ -5575,7 +5554,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;3mA￸BCDE￼F‍G﻿H\u001b[39m"
+        "\u001b[38;5;3mA\ufff8BCDE\ufffcF\u200dG\ufeffH\u001b[39m"
       ]
     },
     {
@@ -5583,18 +5562,18 @@
       "id": "unicode_digit",
       "op": "strip",
       "input": {
-        "text": "a\u001b[١mb"
+        "text": "a\u001b[\u0661mb"
       },
-      "expected": "a\u001b[١mb"
+      "expected": "a\u001b[\u0661mb"
     },
     {
       "test": "shell_sanitization_keeps_only_allowed_controls",
       "id": "unicode_digit",
       "op": "sanitize",
       "input": {
-        "text": "a\u001b[١mb"
+        "text": "a\u001b[\u0661mb"
       },
-      "expected": "a[١mb"
+      "expected": "a[\u0661mb"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5608,7 +5587,7 @@
           "content": [
             {
               "type": "text",
-              "text": "a\u001b[١mb"
+              "text": "a\u001b[\u0661mb"
             }
           ]
         },
@@ -5625,7 +5604,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;3ma[١mb\u001b[39m"
+        "\u001b[38;5;3ma[\u0661mb\u001b[39m"
       ]
     },
     {
@@ -5633,18 +5612,18 @@
       "id": "combining",
       "op": "strip",
       "input": {
-        "text": "e\u001b[31ḿ\u001b[0m"
+        "text": "e\u001b[31m\u0301\u001b[0m"
       },
-      "expected": "é"
+      "expected": "e\u0301"
     },
     {
       "test": "shell_sanitization_keeps_only_allowed_controls",
       "id": "combining",
       "op": "sanitize",
       "input": {
-        "text": "e\u001b[31ḿ\u001b[0m"
+        "text": "e\u001b[31m\u0301\u001b[0m"
       },
-      "expected": "e[31ḿ[0m"
+      "expected": "e[31m\u0301[0m"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5658,7 +5637,7 @@
           "content": [
             {
               "type": "text",
-              "text": "e\u001b[31ḿ\u001b[0m"
+              "text": "e\u001b[31m\u0301\u001b[0m"
             }
           ]
         },
@@ -5675,7 +5654,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;3mé\u001b[39m"
+        "\u001b[38;5;3me\u0301\u001b[39m"
       ]
     },
     {
@@ -5683,18 +5662,18 @@
       "id": "zwj",
       "op": "strip",
       "input": {
-        "text": "👩\u001b[31m‍💻\u001b[0m"
+        "text": "\ud83d\udc69\u001b[31m\u200d\ud83d\udcbb\u001b[0m"
       },
-      "expected": "👩‍💻"
+      "expected": "\ud83d\udc69\u200d\ud83d\udcbb"
     },
     {
       "test": "shell_sanitization_keeps_only_allowed_controls",
       "id": "zwj",
       "op": "sanitize",
       "input": {
-        "text": "👩\u001b[31m‍💻\u001b[0m"
+        "text": "\ud83d\udc69\u001b[31m\u200d\ud83d\udcbb\u001b[0m"
       },
-      "expected": "👩[31m‍💻[0m"
+      "expected": "\ud83d\udc69[31m\u200d\ud83d\udcbb[0m"
     },
     {
       "test": "read_output_sanitizes_before_tab_expansion_and_layout",
@@ -5708,7 +5687,7 @@
           "content": [
             {
               "type": "text",
-              "text": "👩\u001b[31m‍💻\u001b[0m"
+              "text": "\ud83d\udc69\u001b[31m\u200d\ud83d\udcbb\u001b[0m"
             }
           ]
         },
@@ -5725,7 +5704,7 @@
       },
       "expected": [
         "",
-        "\u001b[38;5;3m👩‍💻\u001b[39m"
+        "\u001b[38;5;3m\ud83d\udc69\u200d\ud83d\udcbb\u001b[39m"
       ]
     },
     {
@@ -5857,18 +5836,18 @@
       "id": "unicode",
       "op": "tabs",
       "input": {
-        "text": "﻿ "
+        "text": "\ufeff\u0085\u2003"
       },
-      "expected": "﻿ "
+      "expected": "\ufeff\u0085\u2003"
     },
     {
       "test": "display_literal_transforms_preserve_other_whitespace",
       "id": "unicode",
       "op": "cr",
       "input": {
-        "text": "﻿ "
+        "text": "\ufeff\u0085\u2003"
       },
-      "expected": "﻿ "
+      "expected": "\ufeff\u0085\u2003"
     },
     {
       "test": "display_paths_abbreviate_only_home_and_descendants",
@@ -6027,11 +6006,11 @@
       "id": "checkmark",
       "op": "width",
       "input": {
-        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx ./",
+        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx ./",
         "width": 65
       },
       "expected": {
-        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx ./",
+        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx ./",
         "width": 65
       }
     },
@@ -6040,11 +6019,11 @@
       "id": "emoji",
       "op": "width",
       "input": {
-        "text": "🎉 Celebration! 🚀 Launch 📦 Package ready for deployment now",
+        "text": "\ud83c\udf89 Celebration! \ud83d\ude80 Launch \ud83d\udce6 Package ready for deployment now",
         "width": 38
       },
       "expected": {
-        "text": "🎉 Celebration! 🚀 Launch 📦 Packag\u001b[0m...\u001b[0m",
+        "text": "\ud83c\udf89 Celebration! \ud83d\ude80 Launch \ud83d\udce6 Packag\u001b[0m...\u001b[0m",
         "width": 38
       }
     },
@@ -6053,11 +6032,11 @@
       "id": "wide",
       "op": "width",
       "input": {
-        "text": "Hello 世界 Test 你好 More text here that is long",
+        "text": "Hello \u4e16\u754c Test \u4f60\u597d More text here that is long",
         "width": 28
       },
       "expected": {
-        "text": "Hello 世界 Test 你好 More\u001b[0m...\u001b[0m",
+        "text": "Hello \u4e16\u754c Test \u4f60\u597d More\u001b[0m...\u001b[0m",
         "width": 28
       }
     },
@@ -6092,11 +6071,11 @@
       "id": "regression",
       "op": "width",
       "input": {
-        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx ./server.ts\"",
+        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx ./server.ts\"",
         "width": 65
       },
       "expected": {
-        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx\u001b[0m...\u001b[0m",
+        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx\u001b[0m...\u001b[0m",
         "width": 65
       }
     },

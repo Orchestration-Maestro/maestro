@@ -57,7 +57,7 @@ mod limited_host;
 mod module_loader;
 
 #[cfg(not(target_arch = "wasm32"))]
-use display_support::manual_runtime;
+use display_context::manual_runtime;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
@@ -65,20 +65,12 @@ use display_support::manual_runtime;
 mod recording_terminal;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-tools/tests/display_cases.rs"]
-#[allow(
-    dead_code,
-    reason = "This program uses part of the tools display cases."
-)]
-mod display_cases;
+#[path = "../../maestro-tools/tests/display_palette.rs"]
+mod display_palette;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-tools/tests/display_support/mod.rs"]
-#[allow(
-    dead_code,
-    reason = "This program uses part of the tools display support."
-)]
-mod display_support;
+#[path = "../../maestro-tools/tests/display_context.rs"]
+mod display_context;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/session.rs"]

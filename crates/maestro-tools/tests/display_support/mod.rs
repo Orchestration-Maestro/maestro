@@ -1,33 +1,25 @@
-//! Recorded display cases, a controlled theme and keybinding registry, and the call and result drivers.
+//! Recorded display cases, a controlled keybinding registry and the call and result drivers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-#[allow(
-    dead_code,
-    reason = "This program uses part of the shared terminal runtime."
-)]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-pub mod manual_runtime;
-
 pub use crate::display_cases::*;
+pub use crate::display_context::*;
 
 use maestro_agent::AgentToolResult;
 use maestro_models::UserBlock;
 use maestro_theme::{
-    ColorMode, ColorValue, LiveTheme, SyntaxHighlighter, SyntaxSpan, SyntectHighlighter, Theme,
-    ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,
+    ColorMode, LiveTheme, SyntaxHighlighter, SyntaxSpan, Theme, ThemeColor, ThemeOptions,
 };
 use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tools::output::truncate::{
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, TruncationBy, TruncationResult,
 };
 use maestro_tools::{
-    ReadToolDetails, ToolRenderContext, ToolRenderPhase, ToolRenderResultOptions,
-    create_read_tool_definition,
+    ReadToolDetails, ToolRenderContext, ToolRenderResultOptions, create_read_tool_definition,
 };
 use maestro_tui::{
-    ImageProtocol, KeybindingDefinition, KeybindingKeys, KeybindingsManager, TerminalCapabilities,
-    TerminalImage, get_keybindings, set_keybindings, tui::ComponentHandle, visible_width,
+    KeybindingDefinition, KeybindingKeys, KeybindingsManager, get_keybindings, set_keybindings,
+    tui::ComponentHandle, visible_width,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -54,40 +46,9 @@ impl SyntaxHighlighter for NoLanguages {
 /// Viewport width every recorded row was laid out for.
 pub const WIDTH: usize = 1000;
 
-/// The theme keys of the read corpus, in their recorded order.
-pub fn theme_keys() -> Vec<String> {
-    crate::display_cases::search_keys(include_str!("../fixtures/read_display.json"))
-}
-
-/// A theme whose key `i` of the read corpus has palette color `i + 1 + shift`.
-pub fn palette(shift: u8) -> Theme {
-    palette_of(&theme_keys(), shift)
-}
-
-/// A theme whose key `i` of `keys` has palette color `i + 1 + shift`.
-pub fn palette_of(keys: &[String], shift: u8) -> Theme {
-    let colors = keys.iter().enumerate().map(|(index, key)| {
-        let color = ThemeColor::Named(key.clone());
-        (
-            color,
-            ColorValue::Index(u8::try_from(index + 1).unwrap() + shift),
-        )
-    });
-    Theme::new(colors, [], ColorMode::Color256, ThemeOptions::default()).unwrap()
-}
-
 /// A theme with no colors.
 pub fn bare_theme() -> Theme {
     Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap()
-}
-
-/// The native highlighter, whose grammars load once per test thread.
-pub fn native_highlighter() -> Rc<SyntectHighlighter> {
-    thread_local! {
-        /// Grammars load once per test thread.
-        static NATIVE: Rc<SyntectHighlighter> = Rc::new(SyntectHighlighter::new().unwrap());
-    }
-    NATIVE.with(Rc::clone)
 }
 
 /// Records every highlight request and classifies the whole text as a keyword.
@@ -163,152 +124,14 @@ impl Drop for Bindings {
     }
 }
 
-/// The collaborators a renderer receives besides its arguments.
-pub struct Env {
-    /// Controlled terminal runtime.
-    pub runtime: Rc<manual_runtime::ManualRuntime>,
-    /// Owner of the published theme.
-    pub state: Rc<ThemeState>,
-    /// The published theme's handle.
-    pub live: LiveTheme,
-    /// Classifies code.
-    pub highlighter: Rc<dyn SyntaxHighlighter>,
-    /// Image support of the terminal.
-    pub terminal: TerminalImage,
-}
-
 impl Env {
-    /// A published palette theme shifted by `shift`, the native highlighter and no image support.
-    pub fn new(shift: u8) -> Self {
-        Self::with(Rc::new(palette(shift)), native_highlighter())
-    }
-
     /// Like [`Env::new`] with the palette built from `keys`.
     pub fn for_keys(keys: &[String], shift: u8) -> Self {
         Self::with(Rc::new(palette_of(keys, shift)), native_highlighter())
     }
-
-    /// An environment publishing `theme` and highlighting with `highlighter`.
-    pub fn with(theme: Rc<Theme>, highlighter: Rc<dyn SyntaxHighlighter>) -> Self {
-        let state = Rc::new(ThemeState::new(ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        }));
-        state.set_theme_instance(theme).unwrap();
-        let live = state.theme();
-        Self {
-            state,
-            live,
-            highlighter,
-            terminal: TerminalImage::new(|_| None, || 1),
-            runtime: Rc::new(manual_runtime::ManualRuntime::default()),
-        }
-    }
-
     /// Publish a palette shifted by `shift` and make it the renderers' theme.
     pub fn republish(&self, shift: u8) {
-        self.state
-            .set_theme_instance(Rc::new(palette(shift)))
-            .unwrap();
-    }
-}
-
-/// Everything a recorded context says.
-pub struct Setup {
-    /// Absolute documentation README.
-    pub readme: String,
-    /// Keys bound to the expand action.
-    pub bindings: Vec<String>,
-    /// Whether the row is expanded.
-    pub expanded: bool,
-    /// Working directory.
-    pub cwd: String,
-    /// Image protocol of the terminal.
-    pub images: Option<ImageProtocol>,
-    /// Whether images are shown.
-    pub show_images: bool,
-    /// Whether the result is an error.
-    pub is_error: bool,
-    /// Execution progress.
-    pub phase: ToolRenderPhase,
-    /// Palette shift of the published theme.
-    pub shift: u8,
-}
-
-impl Setup {
-    /// Decode a recorded context object.
-    pub fn from(context: &Value) -> Self {
-        let flag = |name: &str| context.get(name).and_then(Value::as_bool).unwrap_or(false);
-        let images = match context.get("images").and_then(Value::as_str) {
-            Some("kitty") => Some(ImageProtocol::Kitty),
-            Some("iterm2") => Some(ImageProtocol::Iterm2),
-            Some(other) => panic!("unknown image protocol {other}"),
-            None => None,
-        };
-        Self {
-            readme: context["readme"].as_str().unwrap().to_owned(),
-            bindings: context["bindings"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|key| key.as_str().unwrap().to_owned())
-                .collect(),
-            expanded: flag("expanded"),
-            cwd: context
-                .get("cwd")
-                .and_then(Value::as_str)
-                .unwrap_or("/work")
-                .to_owned(),
-            images,
-            show_images: context
-                .get("showImages")
-                .and_then(Value::as_bool)
-                .unwrap_or(true),
-            is_error: flag("isError"),
-            phase: ToolRenderPhase {
-                execution_started: flag("executionStarted"),
-                args_complete: flag("argsComplete"),
-                is_partial: false,
-            },
-            shift: context
-                .get("themeShift")
-                .and_then(Value::as_u64)
-                .map_or(0, |shift| u8::try_from(shift).unwrap()),
-        }
-    }
-}
-
-/// A render context over `args` for the recorded setup.
-pub fn context<'a, S: Default>(
-    args: &'a Value,
-    setup: &Setup,
-    env: &Env,
-    last: Option<ComponentHandle>,
-) -> ToolRenderContext<'a, S> {
-    env.terminal.set_capabilities(TerminalCapabilities {
-        images: setup.images,
-        true_color: true,
-        hyperlinks: true,
-    });
-    ToolRenderContext {
-        renderer_state: None,
-        args: Some(args),
-        tool_call_id: "call".into(),
-        invalidate: Rc::new(|| {}),
-        last_component: last,
-        state: Rc::new(RefCell::new(S::default())),
-        cwd: setup.cwd.clone(),
-        phase: setup.phase,
-        expanded: setup.expanded,
-        show_images: setup.show_images,
-        is_error: setup.is_error,
-        environment: Rc::new(maestro_tools::ToolRenderEnvironment {
-            runtime: env.runtime.clone(),
-            readme_path: setup.readme.clone(),
-            live_theme: env.live.clone(),
-            highlighter: Rc::clone(&env.highlighter),
-            terminal_image: env.terminal.clone(),
-        }),
+        self.publish(Rc::new(palette(shift)));
     }
 }
 
@@ -374,11 +197,22 @@ pub fn options(options: &Value) -> ToolRenderResultOptions {
     }
 }
 
+/// The expand keys a recorded context binds.
+pub fn expand_keys(context: &Value) -> Vec<String> {
+    context["bindings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|key| key.as_str().unwrap().to_owned())
+        .collect()
+}
+
 /// Render a recorded call or result and return its rows.
 pub fn render_case(case: &Case) -> Vec<String> {
-    let setup = Setup::from(&case.input["context"]);
-    let _bindings = bind(&setup.bindings);
-    let env = Env::new(setup.shift);
+    let recorded = &case.input["context"];
+    let setup = Setup::from(recorded);
+    let _bindings = bind(&expand_keys(recorded));
+    let env = Env::from_setup(&setup);
     let tool = create_read_tool_definition::<()>(
         "/work".into(),
         maestro_tools::ReadToolOptions::default(),

@@ -227,6 +227,15 @@ fn search_corpus_loading_preserves_validation_and_palette() {
     assert_eq!(selected[1].input, json!({"n":1}));
     assert_eq!(selected[1].expected, "two");
     assert_eq!(json!(search_keys(&corpus.to_string())), keys);
+    // The display recording's palette is read from its own committed file on every target.
+    let palette =
+        crate::display_palette::palette_keys(include_str!("fixtures/read_display_palette.json"));
+    assert_eq!(palette.len(), 19);
+    assert_eq!(palette.first().map(String::as_str), Some("toolTitle"));
+    assert_eq!(
+        palette.last().map(String::as_str),
+        Some("syntaxPunctuation")
+    );
     let mut envelope = corpus.clone();
     envelope["unknown"] = json!(true);
     let mut case = corpus.clone();

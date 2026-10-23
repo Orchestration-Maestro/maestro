@@ -20,12 +20,20 @@ pub struct Case {
     pub expected: Value,
 }
 
-/// The committed corpus.
+/// The committed search corpus of one tool family.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Corpus {
     /// Theme keys, whose index plus one is each key's palette color.
     theme_keys: Vec<String>,
+    /// Recorded invocations.
+    cases: Vec<Case>,
+}
+
+/// The committed display recording.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Recording {
     /// Recorded invocations.
     cases: Vec<Case>,
 }
@@ -191,7 +199,8 @@ const CONTEXT_MEMBERS: [&str; 10] = [
 
 /// The nonempty group of one test, after rejecting repeated queries and unknown members.
 pub fn cases(test: &str) -> Vec<Case> {
-    let corpus: Corpus = serde_json::from_str(include_str!("fixtures/read_display.json")).unwrap();
+    let corpus: Recording =
+        serde_json::from_str(include_str!("fixtures/read_display.json")).unwrap();
     let mut queries = HashSet::new();
     for case in &corpus.cases {
         assert!(
