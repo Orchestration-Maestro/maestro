@@ -3,10 +3,11 @@
 //! with the recorded prompt cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, Transcript, answer, assert_transcript, assistant, case,
-    command_extension, entries_view, hold_first_answer, labelled, load_history, messages_view,
-    observed_preflight, on_task_set, outcome, queue_view, recorded_skills, script_responses,
-    shell_entries, start_prompt, template, transcribed, usage, user, with_placeholders,
+    Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, assert_transcript, assistant,
+    case, command_extension, entries_view, harness, hold_first_answer, labelled, load_history,
+    messages_view, observed_preflight, of_kinds, on_task_set, outcome, queue_view, recorded_skills,
+    script_responses, shell_entries, start_and_abandon, start_prompt, supplied_failure, template,
+    transcribed, usage, user, with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_extensions::{
@@ -254,7 +255,7 @@ async fn queued_prompt_case(name: &str, behavior: UserMessageDelivery, images: V
     let text = if images.is_empty() { "later" } else { "look" };
     let options = PromptOptions {
         streaming_behavior: Some(behavior),
-        images,
+        images: (!images.is_empty()).then_some(images),
         ..PromptOptions::default()
     };
     let queued = h.session.prompt(text, options).await;
@@ -445,7 +446,7 @@ fn deferred_shell_result_flushes_before_the_next_prompt() {
             crate::support::session_harness::ScriptedShell::output("waiting", Some(0.0));
         let options = maestro_app::agent_session::BashRunOptions {
             exclude_from_context: None,
-            operations: Some(&operations),
+            operations: Some(std::sync::Arc::new(operations)),
         };
         let shell = h.session.execute_bash("echo waiting", None, options).await;
         let pending = h.session.has_pending_bash_messages();
@@ -528,5 +529,155 @@ fn prompt_compacts_after_an_aborted_full_response_before_sending() {
         );
         assert_eq!(history[0]["summary"], "auto compacted");
         assert_eq!(history[3]["content"]["blocks"][0]["text"], "three");
+    });
+}
+
+#[test]
+fn supplied_system_prompt_reaches_the_first_prompt() {
+    on_task_set(|_| async {
+        let seen = Rc::new(RefCell::new(Vec::new()));
+        let record = Rc::clone(&seen);
+        let observer = start_extension(move |event| {
+            record.borrow_mut().push(event.system_prompt.clone());
+            None
+        });
+        let h = harness(HarnessOptions {
+            system_prompt: Some("Supplied instructions."),
+            factories: vec![observer],
+            ..HarnessOptions::default()
+        })
+        .await;
+        script_responses(&h, vec![answer("reply", None, None)]);
+        h.session
+            .prompt("hi", PromptOptions::default())
+            .await
+            .unwrap();
+        let installed = h.session.system_prompt();
+        assert!(
+            installed.starts_with("Supplied instructions.\n"),
+            "{installed}"
+        );
+        assert_eq!(*seen.borrow(), [installed]);
+    });
+}
+
+#[test]
+fn input_transform_clearing_images_keeps_an_empty_list() {
+    on_task_set(|_| async {
+        let clear = input_extension(|event| {
+            Ok(Some(InputEventResult::Transform(InputTransform {
+                text: event.text.clone(),
+                images: Presence::Present(Vec::new()),
+            })))
+        });
+        let (h, t) = transcribed(HarnessOptions {
+            factories: vec![clear],
+            ..HarnessOptions::default()
+        })
+        .await;
+        script_responses(&h, vec![answer("reply", None, None)]);
+        let options = PromptOptions {
+            images: Some(vec![image()]),
+            ..PromptOptions::default()
+        };
+        h.session.prompt("look", options).await.unwrap();
+        let starts = of_kinds(&t.extension.borrow(), &["before_agent_start"]);
+        assert_eq!(starts[0]["images"], json!(0));
+        let history = messages_view(&h);
+        assert_eq!(history[0]["content"]["blocks"].as_array().unwrap().len(), 1);
+    });
+}
+
+#[test]
+fn failing_error_listener_keeps_its_supplied_fields() {
+    on_task_set(|_| async {
+        let heard = Rc::new(RefCell::new(None));
+        let h = harness(HarnessOptions {
+            factories: vec![command_extension("boom", heard, Some("command exploded"))],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let _unsubscribe = h
+            .runner
+            .on_error(Rc::new(|_| Err(Box::new(supplied_failure()))));
+        let failure = h.session.prompt("/boom", PromptOptions::default()).await;
+        assert_eq!(failure.unwrap_err(), supplied_failure());
+    });
+}
+
+#[test]
+fn failing_credential_lookup_keeps_its_supplied_fields() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            auth: Auth::None,
+            ..HarnessOptions::default()
+        })
+        .await;
+        h.registry
+            .auth_storage()
+            .set_fallback_resolver(|_| Err(supplied_failure().into()));
+        let failure = h.session.prompt("hi", PromptOptions::default()).await;
+        assert_eq!(failure.unwrap_err(), supplied_failure());
+    });
+}
+
+/// The extension whose before-agent-start handler waits for `gate` once.
+fn gated_start(gate: Rc<tokio::sync::Notify>) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let gate = Rc::clone(&gate);
+        let registered = api.on::<BeforeAgentStartEvent, BeforeAgentStartEventResult>(
+            "before_agent_start".into(),
+            Rc::new(move |_, _| {
+                let gate = Rc::clone(&gate);
+                Box::pin(async move {
+                    gate.notified().await;
+                    Ok(None)
+                })
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
+}
+
+#[test]
+fn abandoned_prompt_still_delivers_its_next_turn_messages() {
+    on_task_set(|_| async {
+        let gate = Rc::new(tokio::sync::Notify::new());
+        let spawned = Rc::new(std::cell::Cell::new(0));
+        let count = Rc::clone(&spawned);
+        let h = harness(HarnessOptions {
+            factories: vec![gated_start(Rc::clone(&gate))],
+            spawn: Some(Rc::new(move |task| {
+                count.set(count.get() + 1);
+                drop(tokio::task::spawn_local(task));
+            })),
+            ..HarnessOptions::default()
+        })
+        .await;
+        script_responses(&h, vec![answer("reply", None, None)]);
+        let note = CustomMessageInput {
+            custom_type: "note".into(),
+            content: maestro_models::UserContent::Text("next turn".into()),
+            display: true,
+            details: Presence::Missing,
+        };
+        let next_turn = SendMessageOptions {
+            trigger_turn: None,
+            deliver_as: Some(maestro_session::messages::MessageDelivery::NextTurn),
+        };
+        h.session
+            .send_custom_message(note, next_turn)
+            .await
+            .unwrap();
+        let ended = agent_ended(&h);
+        start_and_abandon(h.session.prompt("question", PromptOptions::default()));
+        assert_eq!(spawned.get(), 1, "the session's facility holds the prompt");
+        gate.notify_one();
+        ended.notified().await;
+        let kinds: Vec<Value> = messages_view(&h)
+            .iter()
+            .map(|message| message["customType"].clone())
+            .collect();
+        assert_eq!(kinds, [Value::Null, json!("note"), Value::Null]);
     });
 }

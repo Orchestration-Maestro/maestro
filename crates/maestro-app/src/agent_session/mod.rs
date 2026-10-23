@@ -19,12 +19,14 @@ pub use skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use types::*;
 
 use crate::resources::resource_loader::{LoadPromptsResult, ResourceLoader};
+use crate::resources::system_prompt::build_system_prompt;
 use crate::utils::lock::{read, write};
+use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentSpawner, AgentState, QueueMode};
 use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_credentials::ConfigValueOperations;
 use maestro_extensions::{ExtensionExecution, ExtensionRunner};
-use maestro_models::{Local, Model, Threaded, records::listeners::Listeners};
+use maestro_models::{DiagnosticErrorInfo, Local, Model, Threaded, records::listeners::Listeners};
 use maestro_session::{
     SessionManager, messages::CustomAgentMessages, session_manager::ReadonlySessionManager,
 };
@@ -66,17 +68,31 @@ pub struct AgentSession<E: ExtensionExecution = Threaded> {
 }
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// Takes the supplied owners and the scoped models.
+    /// Takes the supplied owners and the scoped models, and installs the base system prompt
+    /// built from the loaded resources for no registered tools.
     ///
     /// Started work runs on the agent's own task facility. An agent without one gets
     /// `tokio::task::spawn_local`, so its work then needs the caller's Tokio `LocalSet`.
-    #[must_use]
-    pub fn new(config: AgentSessionConfig<E>) -> Self {
+    ///
+    /// # Errors
+    /// Returns the documentation-path failure of the default prompt.
+    pub fn new(config: AgentSessionConfig<E>) -> Result<Self, DiagnosticErrorInfo> {
         let spawn = Rc::clone(
             write(&config.agent.spawn)
                 .get_or_insert_with(|| Rc::new(|task| drop(tokio::task::spawn_local(task)))),
         );
-        Self {
+        let options = tools::prompt_options(
+            &*config.resource_loader,
+            &config.cwd,
+            Vec::new(),
+            IndexMap::new(),
+            Vec::new(),
+        );
+        let prompt = build_system_prompt(&options).map_err(state::thrown)?;
+        write(config.agent.state())
+            .system_prompt
+            .clone_from(&prompt);
+        Ok(Self {
             agent: config.agent,
             spawn,
             session_manager: config.session_manager,
@@ -88,8 +104,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
             cwd: config.cwd,
             bin_dir: config.bin_dir,
             event_listeners: Rc::default(),
-            state: RefCell::new(AgentSessionState::new(config.scoped_models)),
-        }
+            state: RefCell::new(AgentSessionState::new(
+                config.scoped_models,
+                prompt,
+                options,
+            )),
+        })
     }
 
     /// The agent whose state the session reads and changes.

@@ -29,13 +29,27 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// messages are sent. Returns after the agent and any retry settle.
     ///
     /// `options.preflight_result` hears once whether the prompt was accepted, before the
-    /// agent is prompted.
+    /// agent is prompted. Once started, the prompt belongs to the session: dropping the
+    /// returned future leaves it running.
     ///
     /// # Errors
     /// Returns the refusal of a prompt that arrives while a response streams without a queue
     /// choice, the missing-credentials message, and failures of the extensions, the
     /// compaction check, the session history and the agent.
     pub async fn prompt(
+        self: &Rc<Self>,
+        text: &str,
+        options: PromptOptions,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let session = Rc::clone(self);
+        let text = text.to_owned();
+        self.start_operation(async move { session.run_prompt(&text, options).await })
+            .await
+            .map_err(thrown)?
+    }
+
+    /// The prompt the session runs, from its preflight to the settled agent and retry.
+    async fn run_prompt(
         self: &Rc<Self>,
         text: &str,
         mut options: PromptOptions,
@@ -87,9 +101,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
                      'followUp') to queue the message.",
                 ));
             };
+            let images = images.as_deref().unwrap_or_default();
             match behavior {
-                UserMessageDelivery::FollowUp => self.queue_follow_up(text, &images),
-                UserMessageDelivery::Steer => self.queue_steer(text, &images),
+                UserMessageDelivery::FollowUp => self.queue_follow_up(text, images),
+                UserMessageDelivery::Steer => self.queue_steer(text, images),
             }
             return Ok(None);
         }
@@ -107,21 +122,21 @@ impl<E: ExtensionExecution> AgentSession<E> {
     async fn emit_input(
         &self,
         text: &str,
-        images: Vec<ImageContent>,
+        images: Option<Vec<ImageContent>>,
         source: InputSource,
-    ) -> Result<Option<(String, Vec<ImageContent>)>, DiagnosticErrorInfo> {
+    ) -> Result<Option<(String, Option<Vec<ImageContent>>)>, DiagnosticErrorInfo> {
         if !self.extension_runner.has_handlers("input") {
             return Ok(Some((text.to_owned(), images)));
         }
-        let mut current = image_presence(images);
+        let mut current = images.map_or(Presence::Missing, Presence::Present);
         let result = self
             .extension_runner
             .emit_input(text, &mut current, source)
             .await
             .map_err(thrown)?;
         let images = match current {
-            Presence::Present(images) => images,
-            _ => Vec::new(),
+            Presence::Present(images) => Some(images),
+            _ => None,
         };
         Ok(match result {
             InputEventResult::Handled => None,
@@ -152,19 +167,19 @@ impl<E: ExtensionExecution> AgentSession<E> {
     async fn assemble_messages(
         &self,
         text: String,
-        images: Vec<ImageContent>,
+        images: Option<Vec<ImageContent>>,
     ) -> Result<Vec<NativeAgentMessage>, DiagnosticErrorInfo> {
-        let mut messages = vec![user_message(text.clone(), &images)];
-        let mut images = image_presence(images);
+        let mut messages = vec![user_message(
+            text.clone(),
+            images.as_deref().unwrap_or_default(),
+        )];
+        let mut images = images.map_or(Presence::Missing, Presence::Present);
         messages.append(&mut self.state.borrow_mut().pending_next_turn_messages);
         let (base, base_options) = {
             let state = self.state.borrow();
             let options = state.base_system_prompt_options.clone();
             (state.base_system_prompt.clone(), options)
         };
-        // Before the first rebuild, the options of the active tools stand in.
-        let base_options = base_options
-            .unwrap_or_else(|| self.system_prompt_options(&self.get_active_tool_names()));
         let result = self
             .extension_runner
             .emit_before_agent_start(text, &mut images, base.clone(), base_options)
@@ -260,15 +275,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
 pub(super) fn split_command(text: &str) -> (&str, &str) {
     let command = text.strip_prefix('/').unwrap_or(text);
     command.split_once(' ').unwrap_or((command, ""))
-}
-
-/// Images as an extension event carries them: absent when there are none.
-fn image_presence(images: Vec<ImageContent>) -> Presence<Vec<ImageContent>> {
-    if images.is_empty() {
-        Presence::Missing
-    } else {
-        Presence::Present(images)
-    }
 }
 
 /// A user message of one text block followed by the images.

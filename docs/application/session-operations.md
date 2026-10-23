@@ -5,7 +5,9 @@ every frontend shares. `AgentSession::new` takes an `AgentSessionConfig` and mov
 the supplied owners in: the local agent, the session history, the settings, the
 working directory, the scoped models, the resource loader, the model catalog, the
 extension runner and the command port that configured credentials use. It
-subscribes to nothing and builds no runtime of its own.
+builds the base system prompt from the loaded resources for no registered tools and
+installs it on the agent; it fails only when the default prompt cannot find its
+documentation path. It subscribes to nothing and builds no other runtime of its own.
 
 Session state lives in one cell. No borrow of that cell, the history, the settings
 or the agent state is held while the session awaits work, calls a listener or an

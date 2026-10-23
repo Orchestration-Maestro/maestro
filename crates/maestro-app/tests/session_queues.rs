@@ -27,18 +27,23 @@ fn assert_queue_case(h: &Harness, t: &Transcript, case: &Value) {
     assert_transcript(h, t, &transcript);
 }
 
+/// A session over the recorded skills and the `plan` template.
+async fn expanding_session() -> (Harness, Transcript) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    transcribed(HarnessOptions {
+        skills: recorded_skills(&scratch),
+        prompts: vec![template("plan", "Plan $1")],
+        scratch: Some(scratch),
+        ..HarnessOptions::default()
+    })
+    .await
+}
+
 #[test]
 fn steer_expands_skills_and_templates() {
     on_task_set(|_| async {
         let expected = expected("steering expands skill commands and templates");
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
-        let (h, t) = transcribed(HarnessOptions {
-            skills: recorded_skills(&scratch),
-            prompts: vec![template("plan", "Plan $1")],
-            scratch: Some(scratch),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let (h, t) = expanding_session().await;
         let first = h.session.steer("/skill:review look", &[]);
         let second = h.session.steer("/plan alpha", &[]);
         assert_eq!(
@@ -47,6 +52,23 @@ fn steer_expands_skills_and_templates() {
         );
         assert_queue_case(&h, &t, &expected);
         assert_eq!(h.session.pending_message_count(), 2);
+    });
+}
+
+#[test]
+fn follow_up_expands_skills_and_templates_as_steering_does() {
+    on_task_set(|_| async {
+        let expected = expected("steering expands skill commands and templates");
+        let (h, _) = expanding_session().await;
+        let first = h.session.follow_up("/skill:review look", &[]);
+        let second = h.session.follow_up("/plan alpha", &[]);
+        assert_eq!(
+            json!([outcome(first), outcome(second)]),
+            expected["results"]
+        );
+        let queued = json!(h.session.get_follow_up_messages());
+        assert_eq!(with_placeholders(queued, &h), expected["queue"]["steering"]);
+        assert!(h.session.get_steering_messages().is_empty());
     });
 }
 

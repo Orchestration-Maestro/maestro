@@ -369,7 +369,7 @@ fn owner_view(h: &Harness) -> Value {
         "model": model_view(&h.session.model()),
         "thinkingLevel": h.session.thinking_level(),
         "streaming": h.session.is_streaming(),
-        "systemPrompt": h.session.system_prompt(),
+        "systemPrompt": h.session.system_prompt().ends_with(&format!("directory: {}", h.cwd)),
         "liveHistory": live_history,
         "sessionId": h.session.session_id() == h.session.session_manager().borrow().get_session_id(),
         "templates": h.session.prompt_templates().prompts.len(),
@@ -384,7 +384,7 @@ fn session_getters_read_the_supplied_owners() {
     on_task_set(|_| async {
         let memory = harness(HarnessOptions::default()).await;
         let view = json!({"model": "faux/plain", "thinkingLevel": "off", "streaming": false,
-            "systemPrompt": "base", "liveHistory": true, "sessionId": true, "templates": 0, "scoped": 0});
+            "systemPrompt": true, "liveHistory": true, "sessionId": true, "templates": 0, "scoped": 0});
         assert_eq!(owner_view(&memory), view);
         assert_eq!(memory.session.session_file(), None);
         assert!(Arc::ptr_eq(

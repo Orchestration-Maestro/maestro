@@ -589,18 +589,21 @@ pub async fn harness(options: HarnessOptions) -> Harness {
         ..create_test_resource_loader(Some(extensions))
     };
     let settings: maestro_settings::Settings = serde_json::from_value(options.settings).unwrap();
-    let session = Rc::new(AgentSession::new(AgentSessionConfig {
-        agent,
-        session_manager,
-        settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
-        cwd: cwd.clone(),
-        bin_dir: format!("{}/bin", scratch.path().display()),
-        scoped_models: Vec::new(),
-        resource_loader: Rc::new(loader),
-        model_registry: Arc::clone(&registry),
-        extension_runner: Rc::clone(&runner),
-        config_value_operations: Arc::new(FailingCommands),
-    }));
+    let session = Rc::new(
+        AgentSession::new(AgentSessionConfig {
+            agent,
+            session_manager,
+            settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
+            cwd: cwd.clone(),
+            bin_dir: format!("{}/bin", scratch.path().display()),
+            scoped_models: Vec::new(),
+            resource_loader: Rc::new(loader),
+            model_registry: Arc::clone(&registry),
+            extension_runner: Rc::clone(&runner),
+            config_value_operations: Arc::new(FailingCommands),
+        })
+        .unwrap(),
+    );
     let events = recorded_session_events(&session);
     Harness {
         faux,
@@ -950,9 +953,8 @@ fn image_count(images: &Presence<Vec<maestro_models::ImageContent>>) -> Value {
     }
 }
 
-/// A session over `options` with the recording extension loaded first, the base system
-/// prompt built for no tools, and its errors, agent events and session announcements
-/// recorded.
+/// A session over `options` with the recording extension loaded first, and its base system
+/// prompt, errors, agent events and session announcements recorded.
 pub async fn transcribed(options: HarnessOptions) -> (Harness, Transcript) {
     let transcript = Transcript::default();
     let mut factories = vec![recording_extension(&transcript)];
@@ -962,7 +964,6 @@ pub async fn transcribed(options: HarnessOptions) -> (Harness, Transcript) {
         ..options
     })
     .await;
-    h.session.set_active_tools_by_name(&[]).unwrap();
     *transcript.base.borrow_mut() = h.session.system_prompt();
     let errors = Rc::clone(&transcript.errors);
     let _unsubscribe = h.runner.on_error(Rc::new(move |error| {
@@ -1449,4 +1450,38 @@ pub fn bash_result_view(result: &maestro_tools::BashResult) -> Value {
         view["fullOutputPath"] = json!("$ARTIFACT");
     }
     view
+}
+
+/// Notified once an agent run ends.
+pub fn agent_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
+    let ended = Rc::new(tokio::sync::Notify::new());
+    let notify = Rc::clone(&ended);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        if matches!(
+            *event.read().unwrap(),
+            maestro_agent::AgentEvent::AgentEnd { .. }
+        ) {
+            notify.notify_one();
+        }
+        Box::pin(std::future::ready(Ok(())))
+    })));
+    ended
+}
+
+/// Starts `operation` with one poll and drops it unfinished, as a caller that stops
+/// observing it.
+pub fn start_and_abandon(operation: impl std::future::Future) {
+    let mut operation = std::pin::pin!(operation);
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(operation.as_mut().poll(&mut context).is_pending());
+}
+
+/// A supplied failure carrying every diagnostic field.
+pub fn supplied_failure() -> DiagnosticErrorInfo {
+    DiagnosticErrorInfo {
+        name: Some("RemoteError".into()),
+        message: "connection reset".into(),
+        stack: Some("RemoteError: connection reset\n    at remote".into()),
+        code: Some(maestro_models::DiagnosticCode::Text("ECONNRESET".into())),
+    }
 }

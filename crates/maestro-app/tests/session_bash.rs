@@ -2,11 +2,18 @@
 //! cancellation and the recorded transcript, compared with the recorded shell cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, ScriptedShell, Transcript, bash_result_view, case, entries_view,
-    labelled, messages_view, on_task_set, queue_view, transcribed, with_placeholders,
+    Harness, HarnessOptions, ScriptedShell, Transcript, assistant, bash_result_view, case,
+    entries_view, harness, hold_first_answer, labelled, messages_view, on_task_set, queue_view,
+    start_and_abandon, start_prompt, supplied_failure, transcribed, with_placeholders,
 };
-use maestro_app::agent_session::BashRunOptions;
+use maestro_app::agent_session::{BashRunOptions, PromptOptions};
+use maestro_session::SessionManager;
 use serde_json::{Value, json};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 /// The recorded shell case `name`.
 fn expected(name: &str) -> Value {
@@ -18,13 +25,13 @@ fn expected(name: &str) -> Value {
 async fn run(
     options: HarnessOptions,
     command: &str,
-    operations: &ScriptedShell,
+    operations: &Arc<ScriptedShell>,
     exclude_from_context: Option<bool>,
 ) -> (Harness, Transcript, Value) {
     let (h, t) = transcribed(options).await;
     let run_options = BashRunOptions {
         exclude_from_context,
-        operations: Some(operations),
+        operations: Some(operations.clone()),
     };
     let result = h
         .session
@@ -63,7 +70,7 @@ fn shell_prefix_applies_to_execution_only() {
     on_task_set(|_| async {
         let expected =
             expected("a direct shell records the original command and runs the prefixed one");
-        let operations = ScriptedShell::output("prefixed output", Some(7.0));
+        let operations = Arc::new(ScriptedShell::output("prefixed output", Some(7.0)));
         let settings = with_settings(json!({"shellCommandPrefix": "shopt -s expand_aliases"}));
         let (h, t, result) = run(settings, "echo hi", &operations, None).await;
         let executed = with_placeholders(json!(*operations.executed.lock().unwrap()), &h);
@@ -79,7 +86,7 @@ fn shell_prefix_applies_to_execution_only() {
 fn shell_runs_in_the_session_directory() {
     on_task_set(|_| async {
         let expected = expected("a direct shell uses the session directory");
-        let operations = ScriptedShell::output("", Some(0.0));
+        let operations = Arc::new(ScriptedShell::output("", Some(0.0)));
         let (h, t, result) = run(HarnessOptions::default(), "pwd", &operations, None).await;
         let executed = with_placeholders(json!(*operations.executed.lock().unwrap()), &h);
         assert_eq!(
@@ -95,20 +102,24 @@ fn shell_progress_reaches_the_caller() {
     on_task_set(|_| async {
         let expected = expected("progress chunks reach the caller");
         let (h, t) = transcribed(HarnessOptions::default()).await;
-        let operations = ScriptedShell::chunks(vec!["one ".into(), "two".into()], Some(0.0));
-        let mut chunks = Vec::new();
-        let mut collect = |chunk: &str| chunks.push(chunk.to_owned());
+        let operations = Arc::new(ScriptedShell::chunks(
+            vec!["one ".into(), "two".into()],
+            Some(0.0),
+        ));
+        let chunks = Arc::new(Mutex::new(Vec::new()));
+        let sink = Arc::clone(&chunks);
+        let collect = Box::new(move |chunk: &str| sink.lock().unwrap().push(chunk.to_owned()));
         let options = BashRunOptions {
             exclude_from_context: None,
-            operations: Some(&operations),
+            operations: Some(operations.clone()),
         };
         let result = h
             .session
-            .execute_bash("stream", Some(&mut collect), options)
+            .execute_bash("stream", Some(collect), options)
             .await;
         let result = json!({"ok": bash_result_view(&result.unwrap())});
         assert_eq!(
-            json!([result, labelled("chunks", chunks)]),
+            json!([result, labelled("chunks", &*chunks.lock().unwrap())]),
             expected["results"]
         );
         assert_shell_case(&h, &t, &expected);
@@ -120,10 +131,10 @@ fn cancelled_shell_is_recorded_as_cancelled() {
     on_task_set(|_| async {
         let expected = expected("a cancelled command is recorded as cancelled");
         let (h, t) = transcribed(HarnessOptions::default()).await;
-        let operations = ScriptedShell::held(vec!["partial".into()], None);
+        let operations = Arc::new(ScriptedShell::held(vec!["partial".into()], None));
         let options = BashRunOptions {
             exclude_from_context: None,
-            operations: Some(&operations),
+            operations: Some(operations.clone()),
         };
         let cancel = async {
             operations.started.notified().await;
@@ -142,10 +153,10 @@ fn running_shell_state_spans_the_command() {
     on_task_set(|_| async {
         let expected = expected("a running command reports its state until it settles");
         let (h, t) = transcribed(HarnessOptions::default()).await;
-        let operations = ScriptedShell::held(Vec::new(), Some(0.0));
+        let operations = Arc::new(ScriptedShell::held(Vec::new(), Some(0.0)));
         let options = BashRunOptions {
             exclude_from_context: None,
-            operations: Some(&operations),
+            operations: Some(operations.clone()),
         };
         assert!(!h.session.is_bash_running());
         let observe = async {
@@ -202,7 +213,7 @@ fn configured_shell_path_runs_the_command() {
 fn shell_records_announce_no_messages() {
     on_task_set(|_| async {
         let expected = expected("a shell result emits no message events");
-        let operations = ScriptedShell::output("", Some(0.0));
+        let operations = Arc::new(ScriptedShell::output("", Some(0.0)));
         let (h, t, result) = run(HarnessOptions::default(), "echo quiet", &operations, None).await;
         assert_eq!(json!([result]), expected["results"]);
         assert_shell_case(&h, &t, &expected);
@@ -213,7 +224,7 @@ fn shell_records_announce_no_messages() {
 fn excluded_shell_result_is_recorded_without_context() {
     on_task_set(|_| async {
         let expected = expected("an excluded shell result is recorded without context");
-        let operations = ScriptedShell::output("", Some(0.0));
+        let operations = Arc::new(ScriptedShell::output("", Some(0.0)));
         let (h, t, result) = run(
             HarnessOptions::default(),
             "echo secret",
@@ -230,7 +241,7 @@ fn excluded_shell_result_is_recorded_without_context() {
 fn truncated_shell_result_keeps_its_artifact() {
     on_task_set(|_| async {
         let expected = expected("a truncated result keeps its overflow path");
-        let operations = ScriptedShell::output(&"x".repeat(60 * 1024), Some(0.0));
+        let operations = Arc::new(ScriptedShell::output(&"x".repeat(60 * 1024), Some(0.0)));
         let (h, t, result) = run(HarnessOptions::default(), "big", &operations, None).await;
         assert_eq!(json!([result]), expected["results"]);
         assert_shell_case(&h, &t, &expected);
@@ -238,5 +249,132 @@ fn truncated_shell_result_keeps_its_artifact() {
         let record = serde_json::to_value(&messages.read().unwrap()[0]).unwrap();
         let artifact = record["fullOutputPath"].as_str().unwrap();
         assert_eq!(std::fs::read(artifact).unwrap().len(), 60 * 1024);
+    });
+}
+
+/// Shell operations that fail with `0`.
+struct FailingShell(maestro_models::DiagnosticErrorInfo);
+
+impl maestro_tools::BashOperations for FailingShell {
+    fn exec<'a>(
+        &'a self,
+        _: &'a str,
+        _: &'a str,
+        _: maestro_tools::BashExecOptions<'a>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<
+                    Output = Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
+                > + Send
+                + 'a,
+        >,
+    > {
+        let failure = maestro_tools::BashError::Other(Box::new(self.0.clone()));
+        Box::pin(std::future::ready(Err(failure)))
+    }
+}
+
+#[test]
+fn shell_failure_keeps_its_supplied_fields() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let options = BashRunOptions {
+            exclude_from_context: None,
+            operations: Some(Arc::new(FailingShell(supplied_failure()))),
+        };
+        let failure = h.session.execute_bash("remote", None, options).await;
+        assert_eq!(failure.unwrap_err(), supplied_failure());
+        assert!(!h.session.is_bash_running());
+    });
+}
+
+#[test]
+fn abandoned_shell_command_still_settles_and_records() {
+    on_task_set(|_| async {
+        let tasks = Rc::new(RefCell::new(Vec::new()));
+        let queue = Rc::clone(&tasks);
+        let h = harness(HarnessOptions {
+            spawn: Some(Rc::new(move |task| queue.borrow_mut().push(task))),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let operations = Arc::new(ScriptedShell::held(vec!["late".into()], Some(0.0)));
+        let options = BashRunOptions {
+            exclude_from_context: None,
+            operations: Some(operations.clone()),
+        };
+        start_and_abandon(h.session.execute_bash("slow", None, options));
+        assert!(h.session.is_bash_running());
+        let task = tasks.borrow_mut().pop();
+        let task = task.expect("the session's facility holds the command");
+        operations.release.notify_one();
+        task.await;
+        assert!(!h.session.is_bash_running());
+        assert_eq!(shell_commands(&h), [json!("slow")]);
+    });
+}
+
+/// The commands of the shell results in the history, in order.
+fn shell_commands(h: &Harness) -> Vec<Value> {
+    messages_view(h)
+        .iter()
+        .filter(|message| message["role"] == "bashExecution")
+        .map(|message| message["command"].clone())
+        .collect()
+}
+
+#[test]
+fn failed_flush_keeps_the_unwritten_shell_results() {
+    on_task_set(|_| async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path().display().to_string();
+        let sessions = format!("{root}/sessions");
+        let manager =
+            SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
+        let h = harness(HarnessOptions {
+            session_manager: Some(manager),
+            scratch: Some(scratch),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let seeded = assistant("seeded", 1, &json!({}));
+        drop(
+            h.session
+                .session_manager()
+                .borrow_mut()
+                .append_message(seeded)
+                .unwrap(),
+        );
+        let (requested, release) = hold_first_answer(&h, "first", &["third"]);
+        let running = start_prompt(&h, "first");
+        requested.notified().await;
+        let deferred = |command| {
+            let finished = maestro_tools::BashResult {
+                output: String::new(),
+                exit_code: Some(0.0),
+                cancelled: false,
+                truncated: false,
+                full_output_path: None,
+            };
+            h.session
+                .record_bash_result(command, &finished, None)
+                .unwrap();
+        };
+        deferred("one");
+        deferred("two");
+        release.notify_one();
+        running.await.unwrap().unwrap();
+        std::fs::remove_dir_all(&sessions).unwrap();
+        let failed = h.session.prompt("second", PromptOptions::default()).await;
+        assert!(failed.is_err());
+        assert!(h.session.has_pending_bash_messages());
+        assert_eq!(shell_commands(&h), [json!("one")]);
+        std::fs::create_dir_all(&sessions).unwrap();
+        h.session
+            .prompt("third", PromptOptions::default())
+            .await
+            .unwrap();
+        assert!(!h.session.has_pending_bash_messages());
+        assert_eq!(shell_commands(&h), [json!("one"), json!("two")]);
     });
 }

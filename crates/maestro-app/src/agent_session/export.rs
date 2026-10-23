@@ -56,7 +56,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }),
             operations,
         )
-        .map_err(thrown)
+        // An export failure may hold a renderer failure that cannot cross threads, so it is
+        // reported by its text.
+        .map_err(|error| thrown(error.to_string()))
     }
 
     /// The prompt and resolved tool declarations an export records, read without holding

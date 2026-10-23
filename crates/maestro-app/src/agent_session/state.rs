@@ -43,7 +43,7 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     /// The system prompt built for the active tools, before any extension replaces it.
     pub(super) base_system_prompt: String,
     /// The options that built the base system prompt.
-    pub(super) base_system_prompt_options: Option<BuildSystemPromptOptions>,
+    pub(super) base_system_prompt_options: BuildSystemPromptOptions,
     /// Pending steering texts, as the agent's steering queue holds them.
     pub(super) steering_messages: Vec<String>,
     /// Pending follow-up texts, as the agent's follow-up queue holds them.
@@ -51,14 +51,19 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     /// Custom messages sent with the next prompt.
     pub(super) pending_next_turn_messages: Vec<NativeAgentMessage>,
     /// Shell results recorded while a response streamed, appended before the next prompt.
-    pub(super) pending_bash_messages: Vec<NativeAgentMessage>,
+    pub(super) pending_bash_messages: std::collections::VecDeque<NativeAgentMessage>,
     /// Stops the direct shell command now running.
     pub(super) bash_signal: Option<Cancellation>,
 }
 
 impl<E: ExtensionExecution> AgentSessionState<E> {
-    /// Empty registries over the supplied scoped models.
-    pub(super) fn new(scoped_models: Vec<ScopedModel>) -> Self {
+    /// Empty registries over the supplied scoped models, with the base system prompt and the
+    /// options that built it.
+    pub(super) fn new(
+        scoped_models: Vec<ScopedModel>,
+        base_system_prompt: String,
+        base_system_prompt_options: BuildSystemPromptOptions,
+    ) -> Self {
         Self {
             scoped_models,
             tool_definitions: IndexMap::new(),
@@ -73,12 +78,12 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             retry_attempt: 0,
             retry_gate: None,
             retry_open: None,
-            base_system_prompt: String::new(),
-            base_system_prompt_options: None,
+            base_system_prompt,
+            base_system_prompt_options,
             steering_messages: Vec::new(),
             follow_up_messages: Vec::new(),
             pending_next_turn_messages: Vec::new(),
-            pending_bash_messages: Vec::new(),
+            pending_bash_messages: std::collections::VecDeque::new(),
             bash_signal: None,
         }
     }
@@ -129,7 +134,14 @@ pub(super) fn last_assistant_message(
     })
 }
 
-/// The thrown form of a lower failure.
-pub(super) fn thrown(error: impl std::fmt::Display) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo::error(error.to_string())
+/// The thrown form of a lower failure: the diagnostic a supplied failure retains, else an
+/// error carrying the failure's text.
+pub(super) fn thrown(
+    error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
+) -> DiagnosticErrorInfo {
+    let error = error.into();
+    maestro_extensions::runner::retained_diagnostic(error.as_ref()).map_or_else(
+        || DiagnosticErrorInfo::error(error.to_string()),
+        Clone::clone,
+    )
 }

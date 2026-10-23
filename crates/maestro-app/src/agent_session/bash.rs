@@ -1,6 +1,6 @@
 //! Direct shell commands and their recorded transcript.
 use super::state::thrown;
-use super::{AgentSession, BashRunOptions};
+use super::{AgentSession, BashChunkCallback, BashRunOptions};
 use crate::utils::lock::write;
 use maestro_agent::AgentMessage;
 use maestro_extensions::{ExtensionExecution, NativeAgentMessage};
@@ -9,23 +9,42 @@ use maestro_session::Presence;
 use maestro_session::messages::{BashExecutionMessage, CustomAgentMessages};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tools::{
-    BashExecutorOptions, BashResult, create_local_bash_operations, execute_bash_with_operations,
+    BashError, BashExecutorOptions, BashResult, create_local_bash_operations,
+    execute_bash_with_operations,
 };
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Runs `command` in the session directory and records the result under `command`. The
     /// configured command prefix is put on its own line before the command it runs; the
-    /// configured shell path runs it unless `options` supply the operations.
+    /// configured shell path runs it unless `options` supply the operations. Once started,
+    /// the command belongs to the session: dropping the returned future leaves it running,
+    /// and `abort_bash` stops it.
     ///
     /// # Errors
     /// Returns the shell operation's failure, an output failure or the session history's
     /// failure.
     pub async fn execute_bash(
+        self: &Rc<Self>,
+        command: &str,
+        on_chunk: Option<BashChunkCallback>,
+        options: BashRunOptions,
+    ) -> Result<BashResult, DiagnosticErrorInfo> {
+        let session = Rc::clone(self);
+        let command = command.to_owned();
+        self.start_operation(async move { session.run_bash(&command, on_chunk, options).await })
+            .await
+            .map_err(thrown)?
+    }
+
+    /// The shell command the session runs, from installing its signal to recording its
+    /// result.
+    async fn run_bash(
         &self,
         command: &str,
-        on_chunk: Option<&mut (dyn FnMut(&str) + Send)>,
-        options: BashRunOptions<'_>,
+        mut on_chunk: Option<BashChunkCallback>,
+        options: BashRunOptions,
     ) -> Result<BashResult, DiagnosticErrorInfo> {
         let signal = Cancellation::new();
         self.state.borrow_mut().bash_signal = Some(signal.clone());
@@ -40,22 +59,24 @@ impl<E: ExtensionExecution> AgentSession<E> {
             Some(prefix) => format!("{prefix}\n{command}"),
             None => command.to_owned(),
         };
-        let local;
-        let operations = if let Some(operations) = options.operations {
-            operations
-        } else {
-            local = create_local_bash_operations(self.bin_dir.clone(), shell_path);
-            &*local
-        };
+        let operations = options
+            .operations
+            .unwrap_or_else(|| create_local_bash_operations(self.bin_dir.clone(), shell_path));
         let cwd = self.session_manager.borrow().get_cwd().to_owned();
         let executor = BashExecutorOptions {
             // Shortens the callback's lifetime to the signal's borrow.
-            on_chunk: on_chunk.map(|chunk| -> &mut (dyn FnMut(&str) + Send) { chunk }),
+            on_chunk: on_chunk
+                .as_deref_mut()
+                .map(|chunk| -> &mut (dyn FnMut(&str) + Send) { chunk }),
             signal: Some(&signal),
         };
-        let result = execute_bash_with_operations(&resolved, &cwd, operations, executor).await;
+        let result = execute_bash_with_operations(&resolved, &cwd, &*operations, executor).await;
         self.state.borrow_mut().bash_signal = None;
-        let result = result.map_err(thrown)?;
+        let result = result.map_err(|error| match error {
+            // The operation's own failure keeps the diagnostic it carries.
+            BashError::Other(error) => thrown(error),
+            error => thrown(error),
+        })?;
         self.record_bash_result(command, &result, options.exclude_from_context)?;
         Ok(result)
     }
@@ -89,7 +110,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }),
         )));
         if self.is_streaming() {
-            self.state.borrow_mut().pending_bash_messages.push(message);
+            self.state
+                .borrow_mut()
+                .pending_bash_messages
+                .push_back(message);
             return Ok(());
         }
         self.append_bash_message(message)
@@ -120,10 +144,15 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns the session history's first failure.
     pub(super) fn flush_pending_bash_messages(&self) -> Result<(), DiagnosticErrorInfo> {
-        let pending = std::mem::take(&mut self.state.borrow_mut().pending_bash_messages);
-        pending
-            .into_iter()
-            .try_for_each(|message| self.append_bash_message(message))
+        // Each result leaves the queue before its append, so a failed write keeps only the
+        // results not yet appended.
+        loop {
+            let next = self.state.borrow_mut().pending_bash_messages.pop_front();
+            let Some(message) = next else {
+                return Ok(());
+            };
+            self.append_bash_message(message)?;
+        }
     }
 
     /// Appends one shell result to the history and the session.

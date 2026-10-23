@@ -113,7 +113,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         options: SendUserMessageOptions,
     ) -> Result<(), DiagnosticErrorInfo> {
         let (text, images) = match content {
-            UserContent::Text(text) => (text, Vec::new()),
+            UserContent::Text(text) => (text, None),
             UserContent::Blocks(blocks) => {
                 let mut texts = Vec::new();
                 let mut images = Vec::new();
@@ -123,7 +123,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                         UserBlock::Image(image) => images.push(image),
                     }
                 }
-                (texts.join("\n"), images)
+                (texts.join("\n"), (!images.is_empty()).then_some(images))
             }
         };
         let options = PromptOptions {

@@ -6,6 +6,7 @@ mod contexts;
 mod dispatch;
 pub use dispatch::{RunnerEmitEvent, emit_session_shutdown_event};
 mod errors;
+pub use errors::retained_diagnostic;
 mod input;
 mod registration;
 mod resources;

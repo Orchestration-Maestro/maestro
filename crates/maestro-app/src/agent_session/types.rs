@@ -96,8 +96,8 @@ pub type PreflightResult = Rc<dyn Fn(bool)>;
 pub struct PromptOptions {
     /// Whether commands, skills and templates expand; absent means they do.
     pub expand_prompt_templates: Option<bool>,
-    /// Images sent after the text.
-    pub images: Vec<ImageContent>,
+    /// Images sent after the text; an empty list stays present for the extensions.
+    pub images: Option<Vec<ImageContent>>,
     /// How a prompt that arrives while a response streams is queued; required then.
     pub streaming_behavior: Option<UserMessageDelivery>,
     /// Where the input came from; absent means interactive.
@@ -115,13 +115,16 @@ pub struct QueueTexts {
     pub follow_up: Vec<String>,
 }
 
+/// Hears each cleaned output chunk of a direct shell command as it arrives.
+pub type BashChunkCallback = Box<dyn FnMut(&str) + Send>;
+
 /// How a direct shell command runs and is recorded.
-#[derive(Clone, Copy, Default)]
-pub struct BashRunOptions<'a> {
+#[derive(Clone, Default)]
+pub struct BashRunOptions {
     /// Whether the recorded output is kept out of the model context; absent is not recorded.
     pub exclude_from_context: Option<bool>,
     /// The operations that run the command; absent means the local shell.
-    pub operations: Option<&'a dyn maestro_tools::BashOperations>,
+    pub operations: Option<Arc<dyn maestro_tools::BashOperations>>,
 }
 
 /// A session listener.

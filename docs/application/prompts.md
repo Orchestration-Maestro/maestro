@@ -16,7 +16,8 @@ ends the prompt:
    `command`, and it still counts as run.
 2. The extension `input` handlers see the text, the images and the source
    (`interactive` unless the options say otherwise). A handler can mark the input
-   handled, which ends the prompt, or replace the text and images. A failing
+   handled, which ends the prompt, or replace the text and images. An empty image
+   list, whether supplied or set by a handler, is kept as an empty list. A failing
    handler is reported and the prompt goes on.
 3. With expansion on, `/skill:<name> <arguments>` becomes the skill block followed
    by a blank line and the trimmed arguments, then `/<template> <arguments>`
@@ -43,10 +44,14 @@ ends the prompt:
 `preflight_result` hears once whether the prompt was accepted: `true` when a
 command ran, a handler handled the input, the prompt was queued or the agent is
 about to be prompted, and `false` when a step failed. `prompt` returns after the
-agent and any retry settle.
+agent and any retry settle. Once started, a prompt belongs to the session: dropping
+the returned future leaves it running to the end.
 
-The base prompt is the system prompt `set_active_tools_by_name` last built for the
-active tools.
+The base prompt is the system prompt construction built, or the one
+`set_active_tools_by_name` last built for the active tools.
+
+A failure supplied by an extension handler or listener, by shell operations or by a
+credential lookup keeps its name, code and stack when the session returns it.
 
 ## Queues
 
@@ -85,11 +90,14 @@ under the command as given. A configured command prefix goes on its own line bef
 the command that runs. A configured shell path runs it unless the options supply
 the shell operations. Progress chunks reach the caller in arrival order.
 `abort_bash` stops the running command, which is then recorded as cancelled without
-an exit status. `is_bash_running` is true while a command runs.
+an exit status. `is_bash_running` is true while a command runs. Once started, a
+command belongs to the session: dropping the returned future leaves it running and
+its result is still recorded.
 
 `record_bash_result` records a result. While the agent is idle the record is
 appended to the history and the session at once. While a response streams it waits
 (`has_pending_bash_messages` is true) and is appended before the next prompt's user
-message, so a response's tool calls and results stay together. Shell records
-announce no message start or end. `exclude_from_context` is stored with the record
-when given, and a truncated result keeps the path of its full output.
+message, so a response's tool calls and results stay together. When appending one
+fails, that prompt fails and only the results not yet appended stay pending. Shell
+records announce no message start or end. `exclude_from_context` is stored with the
+record when given, and a truncated result keeps the path of its full output.
