@@ -1505,6 +1505,45 @@ fn maestro_unreadable_tree_entry_names_that_entry() {
     );
 }
 
+/// Assert that a failed copy leaves no destination more permissive than its source.
+#[cfg(target_os = "linux")]
+#[test]
+fn maestro_failed_copy_keeps_the_source_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    let (source, package, _metadata, viewer) = split_inputs(&fixture);
+    // This process's memory is a private regular file whose first read fails, so the
+    // copy stops after the destination exists and before a single byte is written.
+    let private = Path::new("/proc/self/mem");
+    assert_eq!(
+        fs::metadata(private).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    let destination = fixture.root.join("standalone");
+    let error = tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: private,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .starts_with(&format!("cannot copy {}: ", private.display())),
+        "{error}"
+    );
+    let mode = fs::metadata(destination.join("Cargo.toml"))
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(mode, 0o600, "a failed copy exposed its destination");
+}
+
 /// Assert that a destination-side failure keeps its native error without an input name.
 #[test]
 fn maestro_destination_failure_keeps_its_native_error() {

@@ -166,9 +166,9 @@ fn input_error(source: &Path, error: &io::Error) -> io::Error {
 /// Copy one input file, naming the source for every failure on its side.
 ///
 /// Readings and writes are separate calls: a source failure names the source path,
-/// while a destination failure keeps the operating system's own error. The source
-/// is classified before the destination is created, so an unusable source leaves
-/// no destination behind.
+/// while a destination failure keeps the operating system's own error. The destination
+/// is created only after the source is opened and checked as a regular file, and it
+/// carries the source's own restrictions before a byte is written.
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     let mut reader = fs::File::open(source).map_err(|error| input_error(source, &error))?;
     let metadata = reader
@@ -180,7 +180,7 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
             format!("cannot copy {}: not a regular file", source.display()),
         ));
     }
-    let mut writer = fs::File::create(destination)?;
+    let mut writer = create_destination(destination, &metadata)?;
     let mut buffer = [0; 8 * 1024];
     loop {
         let read = reader
@@ -191,7 +191,26 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
         }
         writer.write_all(&buffer[..read])?;
     }
-    writer.set_permissions(metadata.permissions())
+    Ok(())
+}
+
+/// Create or truncate the destination under the source's own restrictions.
+///
+/// A new destination is created with the source mode, and the mode is installed on
+/// the open handle before the first byte, so copying never exposes content the
+/// source keeps private, even when a later read or write fails. Destination
+/// failures keep their native error.
+fn create_destination(destination: &Path, source: &fs::Metadata) -> io::Result<fs::File> {
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        options.mode(source.permissions().mode());
+    }
+    let writer = options.open(destination)?;
+    writer.set_permissions(source.permissions())?;
+    Ok(writer)
 }
 
 /// Replace a destination file with the source's symbolic link.
