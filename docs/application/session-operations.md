@@ -5,7 +5,9 @@ every frontend shares. `AgentSession::new` takes an `AgentSessionConfig` and mov
 the supplied owners in: the local agent, the session history, the settings, the
 working directory, the scoped models, the resource loader, the model catalog, the
 extension runner and the command port that configured credentials use. It
-subscribes to nothing and builds no runtime of its own.
+builds the base system prompt from the loaded resources for no registered tools and
+installs it on the agent; it fails only when the default prompt cannot find its
+documentation path. It subscribes to nothing and builds no other runtime of its own.
 
 Session state lives in one cell. No borrow of that cell, the history, the settings
 or the agent state is held while the session awaits work, calls a listener or an
@@ -67,8 +69,15 @@ tool new to the registry is added. Repeated names are dropped.
 unknown names and keeping repeats. It sets the agent tools and rebuilds the system
 prompt from the working directory, the loaded skills and context files, the
 loader's replacement prompt, the appended texts joined by a blank line, the
-selected names, their snippets and all their guidelines in order. `get_all_tools`
-lists the registry with each tool's source.
+selected names, their snippets and all their guidelines in order. That prompt and
+the options that built it become the base prompt that prompts restore.
+`get_all_tools` lists the registry with each tool's source.
+
+## Prompts, queues and shell commands
+
+`prompt`, `steer`, `follow_up`, `send_custom_message`, `send_user_message`,
+`clear_queue` and `execute_bash` are described in
+[prompts, queues and shell commands](prompts.md).
 
 ## Names and navigation
 

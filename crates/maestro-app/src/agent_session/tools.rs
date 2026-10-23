@@ -1,5 +1,6 @@
 //! Tool registry, active tools and the rebuilt system prompt.
 use super::{AgentSession, RefreshToolRegistryOptions, state::thrown};
+use crate::resources::resource_loader::ResourceLoader;
 use crate::resources::system_prompt::{BuildSystemPromptOptions, build_system_prompt};
 use crate::utils::lock::{read, write};
 use indexmap::{IndexMap, IndexSet};
@@ -125,12 +126,25 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         write(self.agent.state()).set_tools(tools);
         let prompt = self.rebuild_system_prompt(&valid).map_err(thrown)?;
+        self.state
+            .borrow_mut()
+            .base_system_prompt
+            .clone_from(&prompt);
         write(self.agent.state()).system_prompt = prompt;
         Ok(())
     }
 
-    /// The system prompt for the registered tools among `tool_names`.
+    /// The system prompt for the registered tools among `tool_names`; its options become the
+    /// base options.
     fn rebuild_system_prompt(&self, tool_names: &[String]) -> std::io::Result<String> {
+        let options = self.system_prompt_options(tool_names);
+        let prompt = build_system_prompt(&options);
+        self.state.borrow_mut().base_system_prompt_options = options;
+        prompt
+    }
+
+    /// The options that build the system prompt for the registered tools among `tool_names`.
+    fn system_prompt_options(&self, tool_names: &[String]) -> BuildSystemPromptOptions {
         let state = self.state.borrow();
         let selected: Vec<String> = tool_names
             .iter()
@@ -148,27 +162,43 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }
         }
         drop(state);
-        let append = self.resource_loader.get_append_system_prompt();
-        let options = BuildSystemPromptOptions {
-            cwd: self.cwd.clone(),
-            skills: Presence::Present(self.resource_loader.get_skills().skills.clone()),
-            context_files: Presence::Present(self.resource_loader.get_agents_files().to_vec()),
-            custom_prompt: self
-                .resource_loader
-                .get_system_prompt()
-                .map_or(Presence::Missing, |text| {
-                    Presence::Present(text.to_string())
-                }),
-            append_system_prompt: if append.is_empty() {
-                Presence::Missing
-            } else {
-                Presence::Present(append.join("\n\n"))
-            },
-            selected_tools: Presence::Present(selected),
-            tool_snippets: Presence::Present(snippets),
-            prompt_guidelines: Presence::Present(prompt_guidelines),
-        };
-        build_system_prompt(&options)
+        prompt_options(
+            &*self.resource_loader,
+            &self.cwd,
+            selected,
+            snippets,
+            prompt_guidelines,
+        )
+    }
+}
+
+/// The options that build the system prompt in `cwd` from the loaded resources and the
+/// selected tools' snippets and guidelines.
+pub(super) fn prompt_options<E: ExtensionExecution>(
+    resource_loader: &dyn ResourceLoader<E>,
+    cwd: &str,
+    selected: Vec<String>,
+    snippets: IndexMap<String, String>,
+    prompt_guidelines: Vec<String>,
+) -> BuildSystemPromptOptions {
+    let append = resource_loader.get_append_system_prompt();
+    BuildSystemPromptOptions {
+        cwd: cwd.to_owned(),
+        skills: Presence::Present(resource_loader.get_skills().skills.clone()),
+        context_files: Presence::Present(resource_loader.get_agents_files().to_vec()),
+        custom_prompt: resource_loader
+            .get_system_prompt()
+            .map_or(Presence::Missing, |text| {
+                Presence::Present(text.to_string())
+            }),
+        append_system_prompt: if append.is_empty() {
+            Presence::Missing
+        } else {
+            Presence::Present(append.join("\n\n"))
+        },
+        selected_tools: Presence::Present(selected),
+        tool_snippets: Presence::Present(snippets),
+        prompt_guidelines: Presence::Present(prompt_guidelines),
     }
 }
 

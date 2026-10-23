@@ -2,8 +2,9 @@
 //! recovery cases: the announced events, the rebuilt history and the stored entries.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, answer, assistant, case, harness, load_history, message_text,
-    on_paused_task_set, recorded_number, script_responses, usage, user,
+    Auth, Harness, HarnessOptions, agent_ended, answer, assistant, case, harness, load_history,
+    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon, usage,
+    user,
 };
 use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_app::agent_session::CompactionReason;
@@ -563,27 +564,6 @@ fn agent_starts(h: &Harness) -> Rc<RefCell<Vec<tokio::time::Instant>>> {
         Box::pin(std::future::ready(Ok(())))
     })));
     starts
-}
-
-/// Notified once an agent run ends.
-fn agent_ended(h: &Harness) -> Rc<Notify> {
-    let ended = Rc::new(Notify::new());
-    let notify = Rc::clone(&ended);
-    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
-        if matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. }) {
-            notify.notify_one();
-        }
-        Box::pin(std::future::ready(Ok(())))
-    })));
-    ended
-}
-
-/// Starts `operation` with one poll and drops it unfinished, as a caller that stops
-/// observing it.
-fn start_and_abandon(operation: impl std::future::Future) {
-    let mut operation = std::pin::pin!(operation);
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    assert!(operation.as_mut().poll(&mut context).is_pending());
 }
 
 // -------------------------------------------------------------- classification

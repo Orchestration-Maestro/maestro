@@ -3,10 +3,11 @@ use crate::resources::resource_loader::ResourceLoader;
 use maestro_agent::{Agent, AgentEvent};
 use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_credentials::ConfigValueOperations;
-use maestro_extensions::{ExtensionExecution, ExtensionRunner};
-use maestro_models::{Local, Model, ModelThinkingLevel, Threaded};
+use maestro_extensions::{ExtensionExecution, ExtensionRunner, InputSource};
+use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel, Threaded};
 use maestro_session::{
-    BranchSummaryEntry, CompactionResult, SessionManager, messages::CustomAgentMessages,
+    BranchSummaryEntry, CompactionResult, SessionManager,
+    messages::{CustomAgentMessages, UserMessageDelivery},
 };
 use maestro_settings::SettingsManager;
 use std::{
@@ -87,6 +88,45 @@ pub enum AgentSessionEvent {
     },
 }
 
+/// Hears whether a prompt passed its preflight, once per prompt.
+pub type PreflightResult = Rc<dyn Fn(bool)>;
+
+/// How a prompt is sent.
+#[derive(Default)]
+pub struct PromptOptions {
+    /// Whether commands, skills and templates expand; absent means they do.
+    pub expand_prompt_templates: Option<bool>,
+    /// Images sent after the text; an empty list stays present for the extensions.
+    pub images: Option<Vec<ImageContent>>,
+    /// How a prompt that arrives while a response streams is queued; required then.
+    pub streaming_behavior: Option<UserMessageDelivery>,
+    /// Where the input came from; absent means interactive.
+    pub source: Option<InputSource>,
+    /// Hears whether the prompt passed its preflight.
+    pub preflight_result: Option<PreflightResult>,
+}
+
+/// The pending steering and follow-up texts.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct QueueTexts {
+    /// Pending steering texts.
+    pub steering: Vec<String>,
+    /// Pending follow-up texts.
+    pub follow_up: Vec<String>,
+}
+
+/// Hears each cleaned output chunk of a direct shell command as it arrives.
+pub type BashChunkCallback = Box<dyn FnMut(&str) + Send>;
+
+/// How a direct shell command runs and is recorded.
+#[derive(Clone, Default)]
+pub struct BashRunOptions {
+    /// Whether the recorded output is kept out of the model context; absent is not recorded.
+    pub exclude_from_context: Option<bool>,
+    /// The operations that run the command; absent means the local shell.
+    pub operations: Option<Arc<dyn maestro_tools::BashOperations>>,
+}
+
 /// A session listener.
 pub type AgentSessionEventListener = Rc<dyn Fn(&AgentSessionEvent)>;
 
@@ -100,6 +140,8 @@ pub struct AgentSessionConfig<E: ExtensionExecution = Threaded> {
     pub settings_manager: Rc<RefCell<SettingsManager>>,
     /// The session working directory.
     pub cwd: String,
+    /// The directory of the tool binaries that shell commands find first.
+    pub bin_dir: String,
     /// Models to cycle through, in order.
     pub scoped_models: Vec<ScopedModel>,
     /// The loaded skills, prompts, context files and system prompt.
