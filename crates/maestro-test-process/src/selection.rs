@@ -104,7 +104,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn failing_listing_fails_the_discovery() {
-        let error = require_eligible(Path::new("/bin/false"), "t", false).unwrap_err();
+        let error = require_eligible(Path::new("/usr/bin/false"), "t", false).unwrap_err();
         assert!(
             error.to_string().contains("the test listing failed"),
             "{error}"

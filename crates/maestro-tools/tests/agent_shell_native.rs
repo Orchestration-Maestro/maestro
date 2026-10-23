@@ -27,7 +27,7 @@ async fn invoke(
 fn bash_native_uses_factory_shell_path_and_override_precedence() {
     let dir = Scratch::new().unwrap();
     run(async {
-        let error = invoke(dir.text(), "exit 7", shell_path("/bin/false".into()))
+        let error = invoke(dir.text(), "exit 7", shell_path("/usr/bin/false".into()))
             .await
             .err()
             .unwrap();

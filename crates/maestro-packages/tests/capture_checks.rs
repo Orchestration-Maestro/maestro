@@ -149,7 +149,7 @@ fn capture_failure_keeps_stream_precedence_and_signal() {
     assert_eq!(
         runtime()
             .block_on(operations.run_command_capture(
-                "/bin/false",
+                "/usr/bin/false",
                 &[],
                 CommandCaptureOptions {
                     cwd: None,
@@ -159,7 +159,7 @@ fn capture_failure_keeps_stream_precedence_and_signal() {
             ))
             .unwrap_err()
             .to_string(),
-        "/bin/false  failed with code 1: "
+        "/usr/bin/false  failed with code 1: "
     );
 }
 

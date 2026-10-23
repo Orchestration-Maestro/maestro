@@ -745,7 +745,9 @@ fn project_batch_preparation_keeps_existing_files() {
             .set_project_packages(vec![PackageSource::Source("npm:a".into())]);
         settings
             .borrow_mut()
-            .set_npm_command(Some(vec![SettingsListEntry::String("/bin/true".into())]));
+            .set_npm_command(Some(vec![SettingsListEntry::String(
+                "/usr/bin/true".into(),
+            )]));
         let local = Rc::new(tokio::task::LocalSet::new());
         let manager = Rc::new(DefaultPackageManager::new(
             PackageManagerOptions {
