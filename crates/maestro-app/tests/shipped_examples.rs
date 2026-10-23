@@ -64,7 +64,7 @@ fn assert_index_lists(folder: &Path, entries: &[String]) {
 fn index_entries(index: &str) -> Vec<String> {
     let document = maestro_markdown::parse(index.to_owned());
     let mut entries = Vec::new();
-    for node in descendants(document.nodes.iter()) {
+    for node in descendants(document.nodes.iter(), nodes::children) {
         match &node.kind {
             Kind::Link(_, _, destination, link)
                 if link.link_type == LinkType::Inline && !destination.contains("://") =>
@@ -82,7 +82,8 @@ fn index_entries(index: &str) -> Vec<String> {
 
 /// The first code span among one table row's cells.
 fn first_code(row: &[Cell]) -> Option<String> {
-    descendants(row.iter().flat_map(|cell| &cell.children)).find_map(|node| match &node.kind {
+    let cells = row.iter().flat_map(|cell| &cell.children);
+    descendants(cells, nodes::children).find_map(|node| match &node.kind {
         Kind::Code(code) => Some(code.clone()),
         _ => None,
     })
@@ -90,12 +91,15 @@ fn first_code(row: &[Cell]) -> Option<String> {
 
 /// Every node at or below the given ones, in authored order, read lazily through a
 /// stack of child iterators.
-fn descendants<'a>(roots: impl Iterator<Item = &'a Node> + 'a) -> impl Iterator<Item = &'a Node> {
+fn descendants<'a>(
+    roots: impl Iterator<Item = &'a Node> + 'a,
+    children: impl Fn(&'a Kind) -> Box<dyn Iterator<Item = &'a Node> + 'a> + 'a,
+) -> impl Iterator<Item = &'a Node> {
     let mut levels: Vec<Box<dyn Iterator<Item = &'a Node> + 'a>> = vec![Box::new(roots)];
     std::iter::from_fn(move || {
         while let Some(level) = levels.last_mut() {
             if let Some(node) = level.next() {
-                levels.push(nodes::children(&node.kind));
+                levels.push(children(&node.kind));
                 return Some(node);
             }
             levels.pop();
@@ -111,9 +115,39 @@ fn index_entries_follow_the_markdown_structure() {
 
 | File | Notes |
 | --- | --- |
-| \`hello\` greets | `hello.rs` |
+| \`hello\` greets | `shutdown.rs` |
 ";
-    assert_eq!(index_entries(index), ["hello.rs", "hello.rs"]);
+    assert_eq!(index_entries(index), ["hello.rs", "shutdown.rs"]);
+}
+
+/// The walk reads each node only when the consumer asks for it, depth first in authored order.
+#[test]
+fn descendants_read_each_node_on_demand_in_authored_order() {
+    let document = maestro_markdown::parse("`a` *`b` **`c`** `d`* `e`\n\n> `f`\n".to_owned());
+    let reads = std::cell::Cell::new(0);
+    let walk = descendants(counted(document.nodes.iter(), &reads), |kind| {
+        counted(nodes::children(kind), &reads)
+    });
+    let mut labels = Vec::new();
+    for (taken, node) in walk.enumerate() {
+        assert_eq!(
+            reads.get(),
+            taken + 1,
+            "the walk read ahead of the consumer"
+        );
+        if let Kind::Code(code) = &node.kind {
+            labels.push(code.clone());
+        }
+    }
+    assert_eq!(labels, ["a", "b", "c", "d", "e", "f"]);
+}
+
+/// Count every node the walk reads from one level.
+fn counted<'a>(
+    level: impl Iterator<Item = &'a Node> + 'a,
+    reads: &'a std::cell::Cell<usize>,
+) -> Box<dyn Iterator<Item = &'a Node> + 'a> {
+    Box::new(level.inspect(move |_| reads.set(reads.get() + 1)))
 }
 
 /// Both rejection branches run against disposable files, without changing shipped inputs.
