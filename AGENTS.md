@@ -259,10 +259,12 @@ premise the host can exercise.
 Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
-scoped tracing subscriber that sees every callsite. Only daemon, terminal and
-workspace may declare it, under the directory owner's rules. Capture helpers call its
-`with_default` instead of `tracing::subscriber::with_default` and write formatted
-events into its `Output` sink. See the
+scoped tracing subscriber that sees every callsite. Only daemon, models, process,
+terminal and workspace may declare it, under the directory owner's rules. Tests
+capture through its `with_default` or, for a future, its `with_subscriber`. A
+conventions check rejects `tracing`'s scoped subscriber functions and the
+`with_subscriber` method in other test sources. Formatting subscribers write into
+its `Output` sink. See the
 [tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
