@@ -110,8 +110,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// running, and `abort_branch_summary` stops its summary.
     ///
     /// # Errors
-    /// Returns `Entry <id> not found`, or an authentication, summary, recording or
-    /// extension failure.
+    /// Returns `Entry <id> not found`, an authentication, summary, recording or extension
+    /// failure, or the failure when the navigation's task ended before it did.
     pub async fn navigate_tree(
         self: &Rc<Self>,
         target_id: &str,
