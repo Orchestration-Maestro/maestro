@@ -41,7 +41,7 @@ pub(crate) struct BlockTokens {
     /// Last grammar token, independent of visible output.
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
-    pub(super) list: Option<Box<ListState>>,
+    list: Option<Box<ListState>>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -103,6 +103,23 @@ impl BlockTokens {
         self.tail =
             Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
         self.nodes.push(node);
+    }
+
+    /// Publish a container's own node together with the item history it carries, so a
+    /// published list is never separated from the slots its history fills.
+    pub(super) fn push_container(
+        &mut self,
+        raw: Segmented,
+        node: Node,
+        list: Option<Box<ListState>>,
+    ) {
+        self.push_segmented(raw, node);
+        self.list = list;
+    }
+
+    /// Take the trailing list's item history for publication.
+    pub(super) fn take_list(&mut self) -> Option<Box<ListState>> {
+        self.list.take()
     }
 
     /// Drop contributions admitted after `mark`, returning the removed nodes, and restore the

@@ -157,8 +157,7 @@ impl BlockRun {
             } => {
                 let start = awaiting.cursor;
                 self.output
-                    .push_segmented(self.source.select(start..start + consumed), node);
-                self.output.list = list;
+                    .push_container(self.source.select(start..start + consumed), node, list);
                 let rest = self.source.select(start..self.source.len());
                 self.admitted(lexer, &rest, (start, awaiting.mark), consumed);
                 None
