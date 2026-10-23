@@ -32,3 +32,6 @@ pub use runtime::*;
 /// Native event contracts.
 pub mod events;
 pub use events::*;
+
+#[cfg(test)]
+mod tests;
