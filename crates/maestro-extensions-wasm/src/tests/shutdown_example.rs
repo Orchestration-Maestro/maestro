@@ -278,7 +278,7 @@ fn component_quit(harness: &mut super::host::Harness) -> Result<(), String> {
         .callback("command quit")
         .map_err(|error| error.to_string())?;
     let start = harness.observed().transcript.len();
-    invoke_command_on_component(harness, key, "ignored Ω")?;
+    invoke_command_on_component(harness, key, "ignored Ω", false)?;
     assert_eq!(harness.observed().transcript[start..], ["context shutdown"]);
     Ok(())
 }

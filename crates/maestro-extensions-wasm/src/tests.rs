@@ -56,6 +56,7 @@ mod registration_callbacks;
 mod registration_corpus;
 mod registration_fixture;
 mod registration_host;
+mod reload_runtime_example;
 mod renderer_callbacks;
 pub(crate) mod renderer_host;
 mod replacement_commands;

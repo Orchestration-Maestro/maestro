@@ -26,6 +26,7 @@ steps.
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
+| `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 
 ### Building an example
 
@@ -49,6 +50,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -74,6 +77,7 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
+<<<<<<< HEAD
 ### Building with-deps
 
 The [`with-deps/main.rs`](with-deps/main.rs) example parses a duration string
@@ -100,3 +104,12 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 No provider, paid service or extension installation is required. Loading the
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the runtime reload command does
+
+`/reload-runtime` awaits the reload request its command context supplies and
+returns nothing else. The `reload_runtime` tool runs with the ordinary context,
+which has no reload method, so it queues `/reload-runtime` as a follow-up user
+message and answers that it queued it. The controlled run reloads nothing in a
+running application; loading the component is opt-in and needs that
+application's component runtime.

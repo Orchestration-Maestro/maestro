@@ -38,20 +38,27 @@ pub fn result_value(encoded: &str) -> Value {
     value
 }
 
-/// Runs the built component's command callback and returns its outcome.
+/// Runs the built component's command callback and returns its outcome; `held` keeps the
+/// operation it awaits pending until the test saw it and released it.
 pub fn invoke_command_on_component(
     harness: &mut Harness,
     key: u32,
     args: &str,
+    held: bool,
 ) -> Result<(), String> {
     let ctx = harness
         .command_context("/work")
         .map_err(|error| error.to_string())?;
     let exports = harness.exports.clone();
+    let (pending, entered, open) = super::observed::gate();
+    if held {
+        harness.observed().hold_next_idle(pending);
+    }
     super::block_on(harness.store.run_concurrent(async |accessor| {
-        exports
-            .call_invoke_command(accessor, super::host::borrow(key), args.to_owned(), ctx)
-            .await
+        let call =
+            exports.call_invoke_command(accessor, super::host::borrow(key), args.to_owned(), ctx);
+        let release = super::host::release_held(accessor, held.then_some((entered, open)));
+        super::join::alongside(call, release).await
     }))
     .map_err(|error| error.to_string())?
     .map_err(|error| error.to_string())??;

@@ -1212,6 +1212,10 @@ fn shipped_examples() -> [(&'static str, &'static str); 5] {
             include_str!("../../../examples/extensions/with-deps/main.rs"),
         ),
         (
+            "examples/extensions/reload_runtime.rs",
+            include_str!("../../../examples/extensions/reload_runtime.rs"),
+        ),
+        (
             "examples/extensions/README.md",
             include_str!("../../../examples/extensions/README.md"),
         ),
