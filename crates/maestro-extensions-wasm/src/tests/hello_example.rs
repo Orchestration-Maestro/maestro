@@ -46,6 +46,12 @@ async fn started() -> Result<(Controlled, u32, Exports<Controlled>), String> {
     Ok((host, key, exports))
 }
 
+/// Releases the tool callback and asserts the host registered nothing else.
+fn released(host: &Controlled, key: u32) {
+    release(key);
+    assert_eq!(host.observed().live, 0);
+}
+
 /// Register once and assert the declared required string without optional metadata.
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
@@ -53,8 +59,7 @@ fn hello_registers_the_greeting_schema() -> Result<(), String> {
         let (host, key, _exports) = started().await?;
         assert_metadata(&host.observed().tools);
         assert!(host.observed().callback("prepare hello").is_err());
-        release(key);
-        assert_eq!(host.observed().live, 0);
+        released(&host, key);
         Ok(())
     })
 }
@@ -81,8 +86,7 @@ fn hello_preserves_supplied_names() -> Result<(), String> {
                 .await?;
             assert_eq!(result_value(&actual), row["result"]);
         }
-        release(key);
-        assert_eq!(host.observed().live, 0);
+        released(&host, key);
         Ok(())
     })
 }
@@ -110,8 +114,7 @@ fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
             .await?;
         assert_eq!(result_value(&actual), corpus()["rows"][0]["result"]);
         assert!(host.observed().updates.is_empty());
-        release(key);
-        assert_eq!(host.observed().live, 0);
+        released(&host, key);
         Ok(())
     })
 }
