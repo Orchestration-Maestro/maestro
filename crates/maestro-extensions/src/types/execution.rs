@@ -6,7 +6,9 @@ use super::{ExtensionActions, ProviderConfig};
 use crate::loader::runtime::{NOT_INITIALIZED, SET_MODEL_NOT_INITIALIZED};
 use crate::{
     CallbackEmitter, EventBus, EventError, EventTail,
-    types::{ExtensionCommandContext, ExtensionContext, MessageRenderer},
+    types::{
+        ExtensionCommandContext, ExtensionContext, MessageRenderer, renderers::MessageRendererCall,
+    },
 };
 use maestro_models::{Execution, Local, Threaded};
 use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
@@ -158,14 +160,19 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
         + ?Sized;
     /// A renderer stored without its details type.
     type RendererRegistration;
-    /// Stores a typed renderer.
+    /// Stores a typed renderer with the bus that invokes it.
     fn erase_message_renderer<T: 'static>(
         renderer: MessageRenderer<T, Self>,
+        events: EventBus<Self>,
     ) -> Self::RendererRegistration;
     /// Returns the stored renderer when it has exactly this details type.
     fn recover_message_renderer<T: 'static>(
         registration: &Self::RendererRegistration,
     ) -> Option<MessageRenderer<T, Self>>;
+    /// Returns the stored renderer with the bus that invokes it.
+    fn recover_message_renderer_call<T: 'static>(
+        registration: &Self::RendererRegistration,
+    ) -> Option<MessageRendererCall<T, Self>>;
     /// Erases the shared tail settlement, which keeps the bus alive until it finishes.
     fn tail_task(
         tail: EventTail<Self>,
@@ -252,13 +259,21 @@ macro_rules! family {
             type RendererRegistration = Box<dyn Any $($bound)*>;
             fn erase_message_renderer<T: 'static>(
                 renderer: MessageRenderer<T, Self>,
+                events: EventBus<Self>,
             ) -> Self::RendererRegistration {
-                Box::new(renderer)
+                Box::new(MessageRendererCall::<T, Self>::new(renderer, events))
             }
             fn recover_message_renderer<T: 'static>(
                 registration: &Self::RendererRegistration,
             ) -> Option<MessageRenderer<T, Self>> {
-                registration.downcast_ref::<MessageRenderer<T, Self>>().cloned()
+                Self::recover_message_renderer_call::<T>(registration).map(|call| call.renderer)
+            }
+            fn recover_message_renderer_call<T: 'static>(
+                registration: &Self::RendererRegistration,
+            ) -> Option<MessageRendererCall<T, Self>> {
+                registration
+                    .downcast_ref::<MessageRendererCall<T, Self>>()
+                    .cloned()
             }
             fn tail_task(
                 tail: EventTail<Self>,

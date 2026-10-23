@@ -16,6 +16,11 @@ pub use components::assistant_message::{AssistantMessageComponent, AssistantMess
 
 pub use components::branch_summary_message::BranchSummaryMessageComponent;
 
+pub use components::custom_message::CustomMessageComponent;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use components::skill_invocation_message::SkillInvocationMessageComponent;
+
 pub use components::compaction_summary_message::CompactionSummaryMessageComponent;
 
 pub use components::thinking_selector::ThinkingSelectorComponent;

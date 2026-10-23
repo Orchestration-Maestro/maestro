@@ -12,6 +12,8 @@ pub use maestro_session::messages::{
     BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
 };
 
+pub use maestro_session::messages::CustomMessage;
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::SessionListProgress;
 

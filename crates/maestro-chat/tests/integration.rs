@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod custom_and_skill_messages;
 mod extension_dialogs;
 mod extension_editor;
 #[path = "support/recorded_keys/filter_mode.rs"]

@@ -156,6 +156,53 @@ fixes it: a struct literal bound before registration
 (`ExtensionRunner::<maestro_models::Threaded>::new`). Literals passed directly to a facade method
 infer the facade's family.
 
+## Retained message renderer calls
+
+`ExtensionAPI::register_message_renderer` stores a typed renderer beside its
+class, keeping the original slot on replacement and retaining the registering
+bus with the callback. `ExtensionRunner::get_message_renderer` returns the raw
+callback of the first owner that registered the class; a different details type
+on that owner is absent and later owners are not consulted.
+`ExtensionRunner::get_message_renderer_call` selects the same owner and returns a
+`MessageRendererCall`, which keeps the callback and that bus together.
+
+`MessageRendererCall::new` binds a supplied renderer to an existing bus for
+callers that hold a renderer already, and `MessageRendererCall::call` invokes it
+once through the ordinary callback frame: same-extension listeners run before the
+callback returns and foreign listeners afterwards. A retained call keeps working
+after its registration is replaced or removed, and releases the callback and bus
+with its last handle. It never captures the runner. Clone shares both owners
+without requiring details that can be cloned.
+
+```rust
+use maestro_extensions::{MessageRenderOptions, MessageRenderer, MessageRendererCall};
+use maestro_extensions::create_event_bus;
+use maestro_models::{Execution, Threaded, UserContent};
+use maestro_session::Presence;
+use maestro_session::messages::CustomMessage;
+use std::sync::Arc;
+
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
+let renderer: MessageRenderer<u8, Threaded> =
+    Arc::new(|_message, _options, _theme, _emitter| Ok(None));
+let call = MessageRendererCall::<u8, Threaded>::new(renderer, (*bus).clone());
+let outcome = call.call(
+    Threaded::share(CustomMessage {
+        custom_type: "note".into(),
+        content: UserContent::Text("body".into()),
+        display: true,
+        details: Presence::Missing,
+        timestamp: 0.0,
+    }),
+    MessageRenderOptions { expanded: false },
+    maestro_theme::LiveTheme::default(),
+)?;
+assert!(outcome.is_none());
+# Ok(())
+# }
+```
+
 ## Commands
 
 Same-owner replacement keeps the original insertion position. Queries read the

@@ -54,6 +54,42 @@ wrapping, empty styled text and narrow-viewport padding follow the toolkit owner
 Background callbacks read the live theme; cached Markdown is refreshed by
 invalidation. Summary labels and hints are repainted when rebuilt.
 
+## Custom messages and skill invocations
+
+`CustomMessageComponent` renders an extension-supplied custom message and
+`SkillInvocationMessageComponent` renders a parsed skill block; both are exported
+at the crate root and in their `components` modules, and the skill widget is
+native-only with its parsed record. Constructors take the live theme, prepared
+Markdown callbacks and shared terminal image capabilities.
+
+The custom widget keeps one leading spacer and then either the component returned
+by its retained renderer or a default panel with `customMessageBg` background, a
+bold literal `[<customType>]` label in `customMessageLabel`, a spacer and the body
+as Markdown in `customMessageText`. String content is used unchanged; part lists
+keep only text parts, in order, joined by newlines, so images never reach the
+default display. `display` and `timestamp` are carried for callers and never
+filtered here. `set_expanded` rebuilds only when the flag changes; `invalidate`
+always rebuilds.
+
+A renderer that returns a component owns its own styling and replaces the panel.
+A creation error or a missing component selects the default panel without
+reporting an extension error; a failure from the selected child's `try_render`
+propagates to the caller unchanged. Supplying a renderer means calling
+`MessageRendererCall::new` with the renderer and its event bus, or taking the call
+from the runner as described in [registration](../extensions/registration.md).
+
+The skill widget is a `customMessageBg` panel. Collapsed, it shows one row with the
+bold `[skill]` label, the skill name and a dim `(<expand key> to expand)` hint read
+from the active `app.tools.expand` keys. Expanded, it shows the label and the
+Markdown `**<name>**` header followed by the skill content. Its location and
+trailing user text belong to the caller and are not displayed. `set_expanded` and
+`invalidate` rebuild on every call, including an unchanged flag.
+
+Both widgets expose the existing editable child-array interface through `Deref`:
+the custom widget targets `Container` and the skill widget targets `Box`.
+Rebuilding replaces only the body the widget owns, so unrelated outer edits and
+retained array aliases keep working.
+
 ## Direct shell output
 
 `BashExecutionComponent`, exported at the crate root and in

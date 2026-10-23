@@ -13,6 +13,7 @@ mod hook_dispatch;
 mod hook_exports;
 mod hook_transforms;
 mod local_registration;
+mod message_renderer_calls;
 mod registered_tools;
 mod registration_queries;
 mod ui_capabilities;

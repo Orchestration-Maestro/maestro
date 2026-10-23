@@ -8,6 +8,9 @@ use syn::ext::IdentExt;
 mod wit;
 use wit::{ScanContext, WitInputs};
 
+/// Single-owner rule for retained message renderer calls.
+mod message_renderers;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -40,6 +43,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
         }
     }
+    message_renderers::check(members)?;
     wit.finish()
 }
 

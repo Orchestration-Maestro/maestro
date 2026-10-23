@@ -35,3 +35,5 @@ pub use events::*;
 
 #[cfg(test)]
 mod tests;
+
+pub use renderers::MessageRendererCall;

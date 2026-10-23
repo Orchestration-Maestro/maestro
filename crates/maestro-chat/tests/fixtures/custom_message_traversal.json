@@ -1,0 +1,23 @@
+[
+  {
+    "n": 16,
+    "reference_type_reads": 16,
+    "indexed_control": 16,
+    "rescan_negative": 256,
+    "expected_text": "x\nx\nx\nx\nx\nx\nx\nx"
+  },
+  {
+    "n": 32,
+    "reference_type_reads": 32,
+    "indexed_control": 32,
+    "rescan_negative": 1024,
+    "expected_text": "x\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx"
+  },
+  {
+    "n": 64,
+    "reference_type_reads": 64,
+    "indexed_control": 64,
+    "rescan_negative": 4096,
+    "expected_text": "x\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx\nx"
+  }
+]
