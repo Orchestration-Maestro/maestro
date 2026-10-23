@@ -129,9 +129,12 @@ fn step(announcement: &str, command: &mut Command, failure: &str) -> bool {
 
 /// Check whether captured paths change the conventions checker or its fixtures.
 fn needs_conventions(paths: &[OsString]) -> bool {
-    paths
-        .iter()
-        .any(|path| Path::new(path).starts_with("crates/maestro-test-conventions"))
+    paths.iter().any(|path| is_conventions(Path::new(path)))
+}
+
+/// Whether a staged path changes the workspace-wide conventions checker.
+fn is_conventions(path: &Path) -> bool {
+    path.starts_with("crates/maestro-test-conventions")
 }
 
 /// Capture staged paths without losing native filename bytes or move sources.

@@ -56,7 +56,8 @@ fn child_toolchain_uses_declared_pin() {
     check_declared_children(&fixture);
     let declaration = include_str!("../../../rust-toolchain.toml");
     assert!(
-        toolchain_support::declare_toolchain(fixture.root.path().join("missing"), declaration).is_err()
+        toolchain_support::declare_toolchain(&fixture.root.path().join("missing"), declaration)
+            .is_err()
     );
     assert!(toolchain_support::declare_toolchain(&fixture.child, declaration).is_err());
     assert!(
@@ -1063,10 +1064,8 @@ fn maestro_source_keeps_switch_rules_and_literal_arguments() {
         };
         expected.extend(remaining.iter().map(|arg| arg.as_bytes().to_vec()));
         assert_eq!(fixture.arguments(), expected);
-        assert_eq!(
-            fixture.receipt("cwd"),
-            fixture.root.path().as_os_str().as_encoded_bytes()
-        );
+        let cwd = fixture.root.path().as_os_str().as_encoded_bytes();
+        assert_eq!(fixture.receipt("cwd").as_slice(), cwd);
         assert_eq!(
             stdout(&output)
                 .matches("Running without API keys...\n")
@@ -1317,7 +1316,11 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     let package = fixture.root.path().join("package");
     package_inputs(&package);
     let metadata = fixture.root.path().join("binary/Cargo.toml");
-    write_input(fixture.root.path().join("binary"), "Cargo.toml", "manifest");
+    write_input(
+        &fixture.root.path().join("binary"),
+        "Cargo.toml",
+        "manifest",
+    );
     let viewer = fixture.root.path().join("viewer");
     write_input(&viewer, "index.html", "viewer");
     (source, package, metadata, viewer)
@@ -1463,7 +1466,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
         remove_input(&input);
         let error = tooling::copy_assets::copy(
             &source,
-            fixture.root.path().join("dist"),
+            &fixture.root.path().join("dist"),
             tooling::copy_assets::Layout::Library,
         )
         .unwrap_err();
@@ -1475,7 +1478,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
     remove_input(&input);
     let error = tooling::copy_assets::copy(
         &source,
-        fixture.root.path().join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1493,7 +1496,7 @@ fn maestro_missing_metadata_names_the_absent_path() {
     let metadata = fixture.root.path().join("absent/Cargo.toml");
     let error = tooling::copy_assets::copy(
         &source,
-        fixture.root.path().join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1515,7 +1518,7 @@ fn maestro_unreadable_viewer_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        fixture.root.path().join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1545,7 +1548,7 @@ fn maestro_unreadable_source_file_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        fixture.root.path().join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1576,7 +1579,7 @@ fn maestro_unreadable_tree_entry_names_that_entry() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        fixture.root.path().join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1973,7 +1976,7 @@ fn compact_metadata(path: &Path) -> PathBuf {
 /// The fixture root leads `PATH`, so `just` resolves to the controlled tool while the
 /// hook still finds its native Git.
 fn run_hook(fixture: &Fixture, test: &str) -> TestProcess {
-    let metadata = compact_metadata(fixture.root.path().join("metadata.json"));
+    let metadata = compact_metadata(&fixture.root.path().join("metadata.json"));
     fixture
         .invoke(test, "hook", &[])
         .env("MAESTRO_METADATA", metadata)
@@ -2246,7 +2249,7 @@ fn maestro_hook_messages_follow_phase_results() {
         )
         .env(
             "MAESTRO_METADATA",
-            compact_metadata(fixture.root.path().join("metadata.json")),
+            compact_metadata(&fixture.root.path().join("metadata.json")),
         )
         .env("PATH", fixture_path(&fixture))
         .output()
@@ -2705,7 +2708,7 @@ fn assert_dispatcher_routes_delivered_smoke() {
             )
             .env(
                 "MAESTRO_METADATA",
-                compact_metadata(fixture.root.path().join("metadata.json")),
+                compact_metadata(&fixture.root.path().join("metadata.json")),
             )
             .env("PATH", fixture_path(&fixture))
             .output()

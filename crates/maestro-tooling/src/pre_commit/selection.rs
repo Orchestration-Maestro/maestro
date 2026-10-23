@@ -2,9 +2,10 @@
 
 use std::collections::{HashMap, HashSet};
 use std::ffi::{OsStr, OsString};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use cargo_metadata::{Metadata, Package};
+use maestro_path::normalize_native;
 
 #[cfg(test)]
 mod tests;
@@ -38,7 +39,7 @@ impl Scope {
 
 /// Select the changed members and every transitive reverse dependent.
 pub(super) fn select(metadata: &Metadata, paths: &[OsString]) -> Scope {
-    let members = metadata.workspace_packages();
+    let members = members(metadata);
     let roots = member_roots(&members);
     let Some(changed) = changed_owners(&roots, metadata.workspace_root.as_std_path(), paths) else {
         return Scope::Workspace(names(&members));
@@ -52,6 +53,20 @@ pub(super) fn select(metadata: &Metadata, paths: &[OsString]) -> Scope {
             .map(|(_, package)| package.name.to_string())
             .collect(),
     )
+}
+
+/// Workspace members in metadata package order.
+fn members(metadata: &Metadata) -> Vec<&Package> {
+    let workspace: HashSet<&str> = metadata
+        .workspace_members
+        .iter()
+        .map(|id| id.repr.as_str())
+        .collect();
+    metadata
+        .packages
+        .iter()
+        .filter(|package| workspace.contains(package.id.repr.as_str()))
+        .collect()
 }
 
 /// Names of every workspace member in metadata order.
@@ -69,7 +84,7 @@ fn member_roots(members: &[&Package]) -> HashMap<PathBuf, usize> {
         .enumerate()
         .filter_map(|(member, package)| {
             let root = package.manifest_path.parent()?;
-            Some((normalize(root.as_std_path()), member))
+            Some((normalize_native(root.as_std_path()), member))
         })
         .collect()
 }
@@ -91,17 +106,12 @@ fn changed_owners(
 
 /// Find the deepest member root holding a staged path.
 fn owner(roots: &HashMap<PathBuf, usize>, workspace_root: &Path, path: &Path) -> Option<usize> {
-    if path.file_name() == Some(OsStr::new("Cargo.toml")) || is_conventions(path) {
+    if path.file_name() == Some(OsStr::new("Cargo.toml")) || super::is_conventions(path) {
         return None;
     }
-    normalize(&workspace_root.join(path))
+    normalize_native(&workspace_root.join(path))
         .ancestors()
         .find_map(|ancestor| roots.get(ancestor).copied())
-}
-
-/// Whether a staged path changes the workspace-wide conventions checker.
-fn is_conventions(path: &Path) -> bool {
-    path.starts_with("crates/maestro-test-conventions")
 }
 
 /// Index every member that declares a path dependency on another member.
@@ -112,7 +122,7 @@ fn reverse_edges(members: &[&Package], roots: &HashMap<PathBuf, usize>) -> Vec<V
             let Some(path) = dependency.path.as_deref() else {
                 continue;
             };
-            if let Some(&target) = roots.get(&normalize(path.as_std_path())) {
+            if let Some(&target) = roots.get(&normalize_native(path.as_std_path())) {
                 reverse[target].push(caller);
             }
         }
@@ -132,19 +142,4 @@ fn closure(reverse: &[Vec<usize>], changed: HashSet<usize>) -> HashSet<usize> {
         }
     }
     selected
-}
-
-/// Reduce `.` and `..` components without reading the filesystem.
-fn normalize(path: &Path) -> PathBuf {
-    let mut parts: Vec<Component<'_>> = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::CurDir => {}
-            Component::ParentDir if matches!(parts.last(), Some(Component::Normal(_))) => {
-                parts.pop();
-            }
-            other => parts.push(other),
-        }
-    }
-    parts.iter().collect()
 }

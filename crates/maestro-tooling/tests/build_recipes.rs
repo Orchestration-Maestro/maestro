@@ -792,7 +792,11 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
-    for owner in ["maestro-test-process", "maestro-test-directory"] {
+    for owner in [
+        "maestro-test-process",
+        "maestro-test-directory",
+        "maestro-path",
+    ] {
         let dependency = workspace.path().join("crates").join(owner);
         copy_tree(
             &source.join("..").join(owner).join("src"),
