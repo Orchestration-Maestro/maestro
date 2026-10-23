@@ -360,8 +360,13 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
 pub(crate) const TEST_TRACING: &str = "maestro-test-tracing";
 
 /// Declared consumers of scoped test tracing.
-pub(crate) const TEST_TRACING_CALLERS: &[&str] =
-    &["maestro-daemon", "maestro-terminal", "maestro-workspace"];
+pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
+    "maestro-daemon",
+    "maestro-models",
+    "maestro-process",
+    "maestro-terminal",
+    "maestro-workspace",
+];
 
 /// Resolve one named support owner without granting a crate-name pattern.
 pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str]> {

@@ -672,18 +672,25 @@ test action under a scoped tracing subscriber that sees every callsite. It has
 no workspace edges except the native feature unifier and is excluded from the
 foundation utility permission. Its only incoming edges are non-optional
 development dependencies under `cfg(not(target_arch = "wasm32"))` from
-`maestro-daemon`, `maestro-terminal` and `maestro-workspace`; a caller
+`maestro-daemon`, `maestro-models`, `maestro-process`, `maestro-terminal` and
+`maestro-workspace`; a caller
 declares it only when it uses it. The directory owner's declaration, alias and
 cycle rules apply.
 
 `with_default(subscriber, action)` keeps one subscriber that records nothing
 registered for the life of the test process, then runs the action under
-`tracing::subscriber::with_default`. Callsite interest is cached process-wide
-and rebuilt when dispatchers register or the interest cache is explicitly
-rebuilt. While only one subscriber is registered, `tracing` decides a callsite's
+`tracing::subscriber::with_default`. `with_subscriber(future, subscriber)`
+keeps the same subscriber registered and makes `subscriber` the default
+whenever the future is polled; dropping the future drops the subscriber.
+Callsite interest is cached process-wide and rebuilt when dispatchers register
+or the interest cache is explicitly rebuilt. While only one subscriber is
+registered, `tracing` decides a callsite's
 interest from the registering thread's own subscriber. Without the kept
 subscriber, a sibling test thread with no subscriber can cache disabled interest
-for the capturing thread too, until a rebuild.
+for the capturing thread too, until a rebuild. The conventions check therefore
+rejects `tracing::subscriber::with_default` and `set_default`,
+`tracing::dispatcher::with_default` and `set_default`, and the `with_subscriber`
+method in test-owned sources outside this leaf.
 
 `Output` is the byte sink a formatting subscriber writes to. Every clone
 appends to the same capture; `text` reads it and `clear` empties it.

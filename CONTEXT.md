@@ -298,5 +298,6 @@ From `docs/specs/tool-additions.md`.
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
   leaf that runs a test action under a scoped tracing subscriber that sees
   every callsite, whichever thread reaches the callsite first. Only daemon,
-  terminal and workspace may use it through native development edges.
+  models, process, terminal and workspace may use it through native development
+  edges, and tests capture only through it.
   See the [contract](docs/specs/maestro-port.md#test-tracing-owner).

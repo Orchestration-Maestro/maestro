@@ -2353,7 +2353,13 @@ const DIRECTORY: &str = "maestro-test-directory";
 const TRACING: &str = "maestro-test-tracing";
 
 /// Independently declared native tracing consumers.
-const TRACING_CALLERS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-workspace"];
+const TRACING_CALLERS: &[&str] = &[
+    "maestro-daemon",
+    "maestro-models",
+    "maestro-process",
+    "maestro-terminal",
+    "maestro-workspace",
+];
 
 /// Independently declared native directory consumers.
 const DIRECTORY_CALLERS: &[&str] = &[

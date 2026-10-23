@@ -6,7 +6,8 @@ use syn::{
 
 use crate::source::{Member, cfg_test, inherit_test_context, test_layout};
 
-/// Reject recognized optional polling macros and timer calls in test-owned parsed sources.
+/// Reject recognized optional polling macros, timer calls and scoped tracing captures in
+/// test-owned parsed sources; only the test tracing owner may capture directly.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members {
@@ -20,6 +21,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 testing: member.name.starts_with("maestro-test-")
                     || test_layout(&source.path, &member.directory)
                     || cfg_test(&syntax.attrs),
+                tracing_owner: member.name == crate::graph::TEST_TRACING,
                 found: Vec::new(),
                 imports: aliases.0,
             };
@@ -42,6 +44,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 match api {
                     Diagnostic::Timer(api) => format!("{file}:{line}: test-owned time limit: {api}; wait for completion instead"),
                     Diagnostic::OptionalPoll => format!("{file}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())"),
+                    Diagnostic::Capture(api) => format!("{file}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead"),
                 }
             })
             .collect::<Vec<_>>()
@@ -55,6 +58,8 @@ enum Diagnostic {
     Timer(String),
     /// Single polling requires an optional dependency feature.
     OptionalPoll,
+    /// Canonical scoped subscriber identity that bypasses the test tracing owner.
+    Capture(String),
 }
 
 /// Test ownership and located policy occurrences for one source.
@@ -63,6 +68,8 @@ struct Calls {
     imports: BTreeMap<String, BTreeSet<String>>,
     /// Whether the current syntax belongs to tests.
     testing: bool,
+    /// Whether the source belongs to the test tracing owner, which may capture directly.
+    tracing_owner: bool,
     /// Canonical labels with source coordinates.
     found: Vec<((usize, usize), Diagnostic)>,
 }
@@ -83,7 +90,7 @@ fn imports(tree: &syn::UseTree, prefix: &str, names: &mut BTreeMap<String, BTree
             }
         }
         syn::UseTree::Glob(_) => {
-            for api in TIMERS.iter().chain(OPTIONAL_POLL) {
+            for api in TIMERS.iter().chain(OPTIONAL_POLL).chain(CAPTURES) {
                 if api
                     .rsplit_once("::")
                     .is_some_and(|(module, _)| module == prefix.trim_end_matches("::"))
@@ -98,13 +105,21 @@ fn imports(tree: &syn::UseTree, prefix: &str, names: &mut BTreeMap<String, BTree
     }
 }
 
-/// Retain aliases of known timer functions, optional macros or their namespaces.
+/// Retain aliases of known timer functions, optional macros, captures or their namespaces.
 fn bind(names: &mut BTreeMap<String, BTreeSet<String>>, name: &syn::Ident, path: String) {
     if matches!(
         path.as_str(),
-        "tokio" | "tokio::time" | "std" | "std::thread" | "futures_util"
+        "tokio"
+            | "tokio::time"
+            | "std"
+            | "std::thread"
+            | "futures_util"
+            | "tracing"
+            | "tracing::subscriber"
+            | "tracing::dispatcher"
     ) || TIMERS.contains(&path.as_str())
         || OPTIONAL_POLL.contains(&path.as_str())
+        || CAPTURES.contains(&path.as_str())
     {
         names
             .entry(name.unraw().to_string())
@@ -122,6 +137,14 @@ const TIMERS: &[&str] = &[
 
 /// Canonical optional single-poll macro identity.
 const OPTIONAL_POLL: &[&str] = &["futures_util::poll"];
+
+/// Canonical scoped subscriber functions the test tracing owner wraps.
+const CAPTURES: &[&str] = &[
+    "tracing::subscriber::with_default",
+    "tracing::subscriber::set_default",
+    "tracing::dispatcher::with_default",
+    "tracing::dispatcher::set_default",
+];
 
 /// Resolve a self import to its containing namespace.
 fn import_path(prefix: &str, name: &syn::Ident) -> String {
@@ -167,6 +190,16 @@ impl Calls {
             let position = path.span().start();
             self.found
                 .push(((position.line, position.column), Diagnostic::OptionalPoll));
+        }
+    }
+
+    /// Record a scoped capture in test-owned syntax outside the test tracing owner.
+    fn capture(&mut self, position: proc_macro2::LineColumn, api: &str) {
+        if self.testing && !self.tracing_owner {
+            self.found.push((
+                (position.line, position.column),
+                Diagnostic::Capture(api.into()),
+            ));
         }
     }
 
@@ -222,6 +255,11 @@ impl<'ast> Visit<'ast> for Calls {
             let position = call.span().start();
             self.found
                 .push(((position.line, position.column), Diagnostic::Timer(name)));
+        } else if name == "with_subscriber" {
+            self.capture(
+                call.method.span().start(),
+                "tracing::instrument::WithSubscriber::with_subscriber",
+            );
         }
         syn::visit::visit_expr_method_call(self, call);
     }
@@ -246,6 +284,9 @@ impl<'ast> Visit<'ast> for Calls {
                     (position.line, position.column),
                     Diagnostic::Timer(api.into()),
                 ));
+            }
+            if let Some(api) = self.resolve(&name, CAPTURES) {
+                self.capture(call.span().start(), api);
             }
         }
         syn::visit::visit_expr_call(self, call);

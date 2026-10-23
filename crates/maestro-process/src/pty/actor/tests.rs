@@ -317,27 +317,30 @@ fn handoff_pauses_reads_and_input_until_rollback() {
 #[test]
 fn actor_exit_and_errors_preserve_their_single_delivery() {
     let events = Events::default();
-    let _subscriber = tracing::subscriber::set_default(events.clone());
-    crate::child_process::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("actor_exit_and_errors_preserve_their_single_delivery")
+    maestro_test_tracing::with_default(events.clone(), || {
+        crate::child_process::runtime().unwrap().block_on(async {
+            if maestro_test_process::run_alone(
+                "actor_exit_and_errors_preserve_their_single_delivery",
+            )
             .unwrap()
-        {
-            return;
-        }
-        assert_read_outcomes(&events);
-        assert_write_outcomes(&events);
-        assert_closed_actor_replies(&events).await;
-        assert_reader_exit_releases_callbacks(&events).await;
-        let (socket, peer) = std::os::unix::net::UnixStream::pair().unwrap();
-        fill(&socket);
-        peer.shutdown(std::net::Shutdown::Write).unwrap();
-        let mut runner = controlled_runner(socket.into(), Arc::default());
-        runner.enqueue(b"blocked".to_vec());
-        drop(runner.fd.readable().await.unwrap());
-        assert_eq!(
-            runner.begin_handoff().await.unwrap_err().to_string(),
-            "PTY closed while draining writes before handoff"
-        );
+            {
+                return;
+            }
+            assert_read_outcomes(&events);
+            assert_write_outcomes(&events);
+            assert_closed_actor_replies(&events).await;
+            assert_reader_exit_releases_callbacks(&events).await;
+            let (socket, peer) = std::os::unix::net::UnixStream::pair().unwrap();
+            fill(&socket);
+            peer.shutdown(std::net::Shutdown::Write).unwrap();
+            let mut runner = controlled_runner(socket.into(), Arc::default());
+            runner.enqueue(b"blocked".to_vec());
+            drop(runner.fd.readable().await.unwrap());
+            assert_eq!(
+                runner.begin_handoff().await.unwrap_err().to_string(),
+                "PTY closed while draining writes before handoff"
+            );
+        });
     });
 }
 

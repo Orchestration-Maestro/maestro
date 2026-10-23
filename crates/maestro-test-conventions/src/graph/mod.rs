@@ -9,7 +9,7 @@ pub(crate) mod metadata;
 /// Scoped crate ownership and direct-dependency rules.
 mod policy;
 use metadata::{canonical, check_kind, members};
-pub(crate) use policy::UNIFIER;
+pub(crate) use policy::{TEST_TRACING, UNIFIER};
 use policy::{UTILITY, rule, test_support_callers, uses_utility};
 
 #[derive(Deserialize)]

@@ -53,7 +53,7 @@ impl tracing::field::Visit for Messages {
 #[test]
 fn pac_alerts_preserve_exact_messages_without_printing() {
     let messages = Messages::default();
-    tracing::subscriber::with_default(messages.clone(), || {
+    maestro_test_tracing::with_default(messages.clone(), || {
         crate::tests::runtime::run(async {
             assert_eq!(
                 super::expression(
@@ -73,7 +73,6 @@ fn pac_alerts_preserve_exact_messages_without_printing() {
 #[test]
 fn pac_containing_source_owner_releases_interpreter() {
     use crate::providers::http::{HttpRequest, Route, configured_fetch};
-    use tracing::instrument::WithSubscriber;
     crate::tests::runtime::run(async {
         let (released, mut finished) = tokio::sync::oneshot::channel();
         let subscriber = Messages(Arc::new(Recording {
@@ -93,8 +92,7 @@ fn pac_containing_source_owner_releases_interpreter() {
             body: Vec::new(),
             signal: None,
         };
-        let error = fetch(request)
-            .with_subscriber(subscriber)
+        let error = maestro_test_tracing::with_subscriber(fetch(request), subscriber)
             .await
             .err()
             .unwrap();
@@ -113,7 +111,6 @@ fn pac_containing_source_owner_releases_interpreter() {
 
 #[test]
 fn pac_cancelled_startup_releases_queued_interpreter() {
-    use tracing::instrument::WithSubscriber;
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .max_blocking_threads(1)
@@ -132,12 +129,12 @@ fn pac_cancelled_startup_releases_queued_interpreter() {
                 messages: Mutex::default(),
                 released: Mutex::new(Some(released)),
             }));
-            let mut startup = Box::pin(
+            let mut startup = Box::pin(maestro_test_tracing::with_subscriber(
                 super::super::Resolver::new(
                     "alert('started');function FindProxyForURL(){return 'DIRECT'}".into(),
-                )
-                .with_subscriber(messages.clone()),
-            );
+                ),
+                messages.clone(),
+            ));
             assert!(
                 std::future::Future::poll(
                     startup.as_mut(),
