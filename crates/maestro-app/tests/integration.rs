@@ -102,6 +102,7 @@ mod service_releases;
 mod session_exports;
 mod session_facade;
 mod session_model_selection;
+mod session_recovery;
 mod session_services;
 mod session_skill_blocks;
 mod session_statistics;

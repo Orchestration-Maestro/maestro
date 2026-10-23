@@ -1,7 +1,9 @@
 //! The session that frontends share: agent state, model and thinking selection, tool
 //! selection, history navigation, statistics and exports.
+mod compaction;
 mod export;
 mod navigation;
+mod retry;
 mod selection;
 mod skill_block;
 mod state;
@@ -13,8 +15,8 @@ pub use skill_block::{ParsedSkillBlock, parse_skill_block};
 pub use types::*;
 
 use crate::resources::resource_loader::{LoadPromptsResult, ResourceLoader};
-use crate::utils::lock::read;
-use maestro_agent::{Agent, AgentState, QueueMode};
+use crate::utils::lock::{read, write};
+use maestro_agent::{Agent, AgentSpawner, AgentState, QueueMode};
 use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_credentials::ConfigValueOperations;
 use maestro_extensions::{ExtensionExecution, ExtensionRunner};
@@ -35,6 +37,8 @@ use std::{
 pub struct AgentSession<E: ExtensionExecution = Threaded> {
     /// The agent whose state the session reads and changes.
     agent: Rc<Agent<CustomAgentMessages, Local>>,
+    /// The task facility that finishes the session's started work.
+    spawn: AgentSpawner<Local>,
     /// The session history.
     session_manager: Rc<RefCell<SessionManager>>,
     /// The preferences.
@@ -57,10 +61,18 @@ pub struct AgentSession<E: ExtensionExecution = Threaded> {
 
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Takes the supplied owners and the scoped models.
+    ///
+    /// Started work runs on the agent's own task facility. An agent without one gets
+    /// `tokio::task::spawn_local`, so its work then needs the caller's Tokio `LocalSet`.
     #[must_use]
     pub fn new(config: AgentSessionConfig<E>) -> Self {
+        let spawn = Rc::clone(
+            write(&config.agent.spawn)
+                .get_or_insert_with(|| Rc::new(|task| drop(tokio::task::spawn_local(task)))),
+        );
         Self {
             agent: config.agent,
+            spawn,
             session_manager: config.session_manager,
             settings_manager: config.settings_manager,
             model_registry: config.model_registry,
@@ -200,5 +212,60 @@ impl<E: ExtensionExecution> AgentSession<E> {
     #[must_use]
     pub fn prompt_templates(&self) -> Rc<LoadPromptsResult> {
         self.resource_loader.get_prompts()
+    }
+
+    /// Stops a retry, stops the running turn and waits for the agent to settle.
+    pub async fn abort(&self) {
+        self.abort_retry();
+        self.agent.abort();
+        self.agent.wait_for_idle().await;
+    }
+
+    /// Runs `operation` as the session's own work: polled once now, then finished on the
+    /// session's task facility. The receiver only observes the result, so dropping it leaves
+    /// the operation running.
+    pub(super) fn start_operation<T: 'static>(
+        &self,
+        operation: impl std::future::Future<Output = T> + 'static,
+    ) -> tokio::sync::oneshot::Receiver<T> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let mut task: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> =
+            Box::pin(async move {
+                drop(sender.send(operation.await));
+            });
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        if task.as_mut().poll(&mut context).is_pending() {
+            (self.spawn)(task);
+        }
+        receiver
+    }
+
+    /// Runs one continuation after `delay` on the session's task facility.
+    pub(super) fn schedule_continuation(&self, delay: std::time::Duration) {
+        let due = tokio::time::Instant::now() + delay;
+        let agent = Rc::clone(&self.agent);
+        (self.spawn)(Box::pin(async move {
+            // The wait is anchored now, so a late first poll does not delay the continuation.
+            let remaining = due.saturating_duration_since(tokio::time::Instant::now());
+            let _ = maestro_tools::process::sleep::sleep(remaining, None).await;
+            drop(agent.r#continue().await);
+        }));
+    }
+
+    /// Removes the newest agent message when it is a response `removable` accepts, keeping
+    /// the stored history.
+    pub(super) fn drop_trailing_assistant(
+        &self,
+        removable: impl Fn(&maestro_models::AssistantMessage) -> bool,
+    ) {
+        let messages = self.messages();
+        let mut messages = write(&messages);
+        let remove = matches!(
+            messages.last(),
+            Some(maestro_extensions::NativeAgentMessage::Assistant(last)) if removable(&read(last))
+        );
+        if remove {
+            messages.pop();
+        }
     }
 }

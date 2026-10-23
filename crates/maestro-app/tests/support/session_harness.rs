@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentInitialState, AgentOptions};
+use maestro_app::agent_session::CompactionReason;
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::resources::resource_loader::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
@@ -10,6 +11,7 @@ use maestro_app::resources::resource_loader::{
 use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};
 use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData, ConfigValueOperations};
+use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
     ExtensionContext, ExtensionExecution, ExtensionFactory, ExtensionRunner, LoadExtensionsResult,
     RegisteredTool, RegisteredToolInput, create_event_bus_for, create_extension_runtime,
@@ -17,12 +19,14 @@ use maestro_extensions::{
 };
 use maestro_models::system_prompt::ContextFile;
 use maestro_models::{
-    Execution, FauxModelDefinition, FauxProviderRegistration, Local, Model,
-    RegisterFauxProviderOptions, Tool, register_faux_provider,
+    AssistantMessage, DiagnosticErrorInfo, Execution, FauxAssistantMessageOptions,
+    FauxModelDefinition, FauxProviderRegistration, FauxResponseInput, FauxResponseStep, Local,
+    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, faux_assistant_message,
+    register_faux_provider,
 };
 use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
-use maestro_session::{Presence, SessionManager, messages::CustomAgentMessages};
+use maestro_session::{CompactionResult, Presence, SessionManager, messages::CustomAgentMessages};
 use maestro_settings::SettingsManager;
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
@@ -30,7 +34,7 @@ use std::{
     cell::RefCell,
     io,
     rc::Rc,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex, RwLock},
 };
 
 /// The recorded corpus file `name`.
@@ -88,6 +92,8 @@ pub struct HarnessOptions {
     pub system_prompt: Option<&'static str>,
     /// The loader's appended prompt texts.
     pub append_system_prompt: Vec<String>,
+    /// The agent's own task facility; the session supplies its default when absent.
+    pub spawn: Option<maestro_agent::AgentSpawner<Local>>,
 }
 
 impl Default for HarnessOptions {
@@ -101,6 +107,7 @@ impl Default for HarnessOptions {
             session_manager: None,
             system_prompt: None,
             append_system_prompt: Vec::new(),
+            spawn: None,
         }
     }
 }
@@ -110,7 +117,7 @@ pub struct Harness {
     /// The scripted provider.
     pub faux: FauxProviderRegistration,
     /// The session under test.
-    pub session: AgentSession<Local>,
+    pub session: Rc<AgentSession<Local>>,
     /// The catalog the session was given.
     pub registry: Arc<ModelRegistry>,
     /// Thinking and name events the session announced.
@@ -480,11 +487,15 @@ pub fn build_tree(manager: &mut SessionManager) -> Names {
 }
 
 /// A local agent on the first scripted model, with the window replaced when given.
-fn agent(model: &Model, window: Option<f64>) -> Rc<Agent<CustomAgentMessages, Local>> {
+fn agent(
+    model: &Model,
+    window: Option<f64>,
+    spawn: Option<maestro_agent::AgentSpawner<Local>>,
+) -> Rc<Agent<CustomAgentMessages, Local>> {
     let mut initial = model.clone();
     initial.context_window = window.unwrap_or(initial.context_window);
     Rc::new(Agent::new_local(AgentOptions {
-        spawn: Some(spawn_local()),
+        spawn,
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
@@ -533,7 +544,7 @@ pub async fn harness(options: HarnessOptions) -> Harness {
         ..RegisterFauxProviderOptions::default()
     });
     let registry = Arc::new(catalog(&faux, options.auth, options.context_window));
-    let agent = agent(&faux.models[0], options.context_window);
+    let agent = agent(&faux.models[0], options.context_window, options.spawn);
     let session_manager =
         Rc::new(RefCell::new(options.session_manager.unwrap_or_else(|| {
             SessionManager::in_memory(Some(&cwd)).unwrap()
@@ -541,7 +552,7 @@ pub async fn harness(options: HarnessOptions) -> Harness {
     let extensions = create_test_extensions_result(options.factories, &cwd).await;
     let runner = runner(&extensions, &cwd, &session_manager, &registry);
     let settings: maestro_settings::Settings = serde_json::from_value(options.settings).unwrap();
-    let session = AgentSession::new(AgentSessionConfig {
+    let session = Rc::new(AgentSession::new(AgentSessionConfig {
         agent,
         session_manager,
         settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
@@ -555,7 +566,7 @@ pub async fn harness(options: HarnessOptions) -> Harness {
         model_registry: Arc::clone(&registry),
         extension_runner: runner,
         config_value_operations: Arc::new(FailingCommands),
-    });
+    }));
     let events = Rc::new(RefCell::new(Vec::new()));
     let recorded = Rc::clone(&events);
     let _unsubscribe = session.subscribe(Rc::new(move |event| {
@@ -573,7 +584,7 @@ pub async fn harness(options: HarnessOptions) -> Harness {
     }
 }
 
-/// The recorded form of a thinking or name event.
+/// The recorded form of a session event the scripts assert.
 pub fn session_event_view(event: &AgentSessionEvent) -> Option<Value> {
     match event {
         AgentSessionEvent::ThinkingLevelChanged { level } => {
@@ -585,8 +596,228 @@ pub fn session_event_view(event: &AgentSessionEvent) -> Option<Value> {
         AgentSessionEvent::SessionInfoChanged { name: None } => {
             Some(json!({"type": "session_info_changed"}))
         }
+        AgentSessionEvent::CompactionStart { reason } => {
+            Some(json!({"type": "compaction_start", "reason": reason_view(*reason)}))
+        }
+        AgentSessionEvent::AutoRetryStart {
+            attempt,
+            max_attempts,
+            delay_ms,
+            error_message,
+        } => Some(json!({
+            "type": "auto_retry_start",
+            "attempt": attempt,
+            "maxAttempts": recorded_number(*max_attempts),
+            "delayMs": recorded_number(*delay_ms),
+            "errorMessage": error_message,
+        })),
+        AgentSessionEvent::CompactionEnd { reason, result, .. } => {
+            Some(compaction_end_view(event, *reason, result.as_ref()))
+        }
+        AgentSessionEvent::AutoRetryEnd {
+            success,
+            attempt,
+            final_error,
+        } => {
+            let mut view = json!({
+                "type": "auto_retry_end",
+                "attempt": attempt,
+                "success": success,
+            });
+            if let Some(error) = final_error {
+                view["finalError"] = json!(error);
+            }
+            Some(view)
+        }
         _ => None,
     }
+}
+
+/// The recorded form of a compaction end.
+fn compaction_end_view(
+    event: &AgentSessionEvent,
+    reason: CompactionReason,
+    result: Option<&CompactionResult>,
+) -> Value {
+    let AgentSessionEvent::CompactionEnd {
+        aborted,
+        will_retry,
+        error_message,
+        ..
+    } = event
+    else {
+        return Value::Null;
+    };
+    let mut view = json!({
+        "type": "compaction_end",
+        "reason": reason_view(reason),
+        "aborted": aborted,
+        "willRetry": will_retry,
+        "result": result.map(compaction_result_view),
+    });
+    if let Some(message) = error_message {
+        view["errorMessage"] = json!(message);
+    }
+    view
+}
+
+/// The recorded form of a stored compaction result.
+fn compaction_result_view(result: &CompactionResult) -> Value {
+    json!({
+        "summary": result.summary,
+        "firstKeptEntryId": result.first_kept_entry_id,
+        "tokensBefore": recorded_number(result.tokens_before),
+        "details": result.details,
+    })
+}
+
+/// What started a compaction, as the recorded cases spell it.
+fn reason_view(reason: CompactionReason) -> &'static str {
+    match reason {
+        CompactionReason::Manual => "manual",
+        CompactionReason::Threshold => "threshold",
+        CompactionReason::Overflow => "overflow",
+    }
+}
+
+/// A number as a script writes it: integral values without a fraction.
+pub fn recorded_number(value: f64) -> Value {
+    if value.is_finite()
+        && value.fract() == 0.0
+        && let Some(integral) = num_traits::cast::cast::<f64, i64>(value)
+    {
+        return json!(integral);
+    }
+    json!(value)
+}
+
+/// Completes `body` on a fresh current-thread runtime with a paused clock, inside a task set
+/// it receives; the clock moves when a test advances it or when every task waits on a timer.
+pub fn on_paused_task_set<F: std::future::Future>(
+    body: impl FnOnce(Rc<tokio::task::LocalSet>) -> F,
+) -> F::Output {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    runtime.block_on(local.run_until(body(Rc::clone(&local))))
+}
+
+/// The text of a message record: plain content, joined text blocks, or its summary.
+pub fn message_text(record: &Value) -> Value {
+    match &record["content"] {
+        Value::String(text) => json!(text),
+        Value::Array(blocks) => json!(
+            blocks
+                .iter()
+                .filter(|block| block["type"] == "text")
+                .filter_map(|block| block["text"].as_str())
+                .collect::<String>()
+        ),
+        _ => record.get("summary").cloned().unwrap_or(Value::Null),
+    }
+}
+
+/// A scripted answer with an optional stop reason and error text.
+pub fn answer(text: &str, stop: Option<StopReason>, error: Option<&str>) -> AssistantMessage {
+    faux_assistant_message(
+        text,
+        FauxAssistantMessageOptions {
+            stop_reason: stop,
+            error_message: error.map(str::to_owned),
+            ..FauxAssistantMessageOptions::default()
+        },
+    )
+}
+
+/// A scripted answer that records the request's message texts.
+pub struct RecordPrompt {
+    /// Prompts in request order.
+    pub prompts: Arc<Mutex<Vec<String>>>,
+    /// The answer.
+    pub response: AssistantMessage,
+}
+
+impl RecordPrompt {
+    /// Records the request and answers.
+    fn respond<E: maestro_models::ProviderExecution>(
+        &self,
+        input: &FauxResponseInput<E>,
+    ) -> std::future::Ready<Result<AssistantMessage, DiagnosticErrorInfo>> {
+        let texts: Vec<String> = input
+            .context
+            .messages
+            .iter()
+            .map(|message| message_text(&serde_json::to_value(message).unwrap()))
+            .map(|text| text.as_str().unwrap_or_default().to_owned())
+            .collect();
+        self.prompts.lock().unwrap().push(texts.join("\n---\n"));
+        std::future::ready(Ok(self.response.clone()))
+    }
+}
+
+impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for RecordPrompt {
+    type Return = <Local as maestro_models::Execution>::Future<
+        'static,
+        Result<AssistantMessage, DiagnosticErrorInfo>,
+    >;
+    fn invoke(&self, input: FauxResponseInput<Local>) -> Self::Return {
+        Box::pin(self.respond(&input))
+    }
+}
+
+impl maestro_models::Invoke<Threaded, FauxResponseInput<Threaded>> for RecordPrompt {
+    type Return = <Threaded as maestro_models::Execution>::Future<
+        'static,
+        Result<AssistantMessage, DiagnosticErrorInfo>,
+    >;
+    fn invoke(&self, input: FauxResponseInput<Threaded>) -> Self::Return {
+        Box::pin(self.respond(&input))
+    }
+}
+
+/// Replaces the agent's live history with the stored history.
+pub fn load_history(h: &Harness) {
+    let records = h
+        .session
+        .session_manager()
+        .borrow()
+        .build_session_context()
+        .unwrap()
+        .messages;
+    let history: Vec<NativeAgentMessage> = serde_json::from_value(json!(records)).unwrap();
+    h.session
+        .agent()
+        .state()
+        .write()
+        .unwrap()
+        .set_messages(history);
+}
+
+/// Queues the answers; the returned list collects each request's prompt.
+pub fn script_responses(h: &Harness, responses: Vec<AssistantMessage>) -> Arc<Mutex<Vec<String>>> {
+    let prompts = Arc::new(Mutex::new(Vec::new()));
+    let steps = responses.into_iter().map(|response| {
+        let prompts = Arc::clone(&prompts);
+        FauxResponseStep::Factory(Arc::new(RecordPrompt { prompts, response }))
+    });
+    h.faux.set_responses(steps.collect());
+    prompts
+}
+
+/// The agent history as roles and texts.
+pub fn history_view(h: &Harness) -> Vec<Value> {
+    let messages = h.session.messages();
+    let messages = messages.read().unwrap();
+    messages
+        .iter()
+        .map(|message| {
+            let record = serde_json::to_value(message).unwrap();
+            json!({"role": record["role"], "text": message_text(&record)})
+        })
+        .collect()
 }
 
 /// Completes `body` on a fresh current-thread runtime inside a task set it receives.

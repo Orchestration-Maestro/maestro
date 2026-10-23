@@ -12,11 +12,8 @@ use maestro_models::{
 use maestro_session::Presence;
 use maestro_settings::{MessageDeliveryMode, ThinkingLevel as SavedThinkingLevel};
 use std::{
-    future::Future,
-    pin::Pin,
     rc::Rc,
     sync::{Arc, RwLock},
-    task::{Context, Waker},
 };
 
 /// A model to cycle to with its explicit thinking level.
@@ -236,19 +233,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Starts the selection notification now and lets it finish on the agent's task facility;
-    /// without one, a notification that does not finish at once is dropped.
+    /// Starts the selection notification now and lets it finish on the session's task
+    /// facility.
     fn emit_thinking_level_select(&self, mut event: ThinkingLevelSelectEvent) {
         let runner = Rc::clone(&self.extension_runner);
-        let mut task: Pin<Box<dyn Future<Output = ()>>> = Box::pin(async move {
+        drop(self.start_operation(async move {
             drop(runner.emit(&mut event).await);
-        });
-        let mut context = Context::from_waker(Waker::noop());
-        if task.as_mut().poll(&mut context).is_pending()
-            && let Some(spawn) = read(&self.agent.spawn).clone()
-        {
-            spawn(task);
-        }
+        }));
     }
 
     /// The level a model switch starts from: the explicit one, else the saved or default

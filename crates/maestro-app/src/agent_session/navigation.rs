@@ -20,6 +20,7 @@ use maestro_session::{
 };
 use serde::Deserialize as _;
 use serde_json::{Value, json};
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 /// Summary text and details chosen for the branch left behind.
@@ -65,7 +66,7 @@ fn replace<T>(slot: &mut Option<T>, value: Presence<T>) {
 }
 
 /// An optional choice as an event field: absent stays omitted.
-fn presence<T>(value: Option<T>) -> Presence<T> {
+pub(super) fn presence<T>(value: Option<T>) -> Presence<T> {
     value.map_or(Presence::Missing, Presence::Present)
 }
 
@@ -104,12 +105,31 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Moves to `target_id` in the same session, optionally summarizing the branch left.
+    /// Moves to `target_id` in the same session, optionally summarizing the branch left. Once
+    /// started, the move belongs to the session: dropping the returned future leaves it
+    /// running, and `abort_branch_summary` stops its summary.
     ///
     /// # Errors
     /// Returns `Entry <id> not found`, or an authentication, summary, recording or
     /// extension failure.
     pub async fn navigate_tree(
+        self: &Rc<Self>,
+        target_id: &str,
+        options: NavigateTreeOptions,
+    ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
+        let session = Rc::clone(self);
+        let target_id = target_id.to_owned();
+        self.start_operation(async move {
+            let navigated = session.navigate(&target_id, options).await;
+            session.state.borrow_mut().branch_summary_signal = None;
+            navigated
+        })
+        .await
+        .map_err(thrown)?
+    }
+
+    /// The navigation the session runs, before its summary signal is cleared.
+    async fn navigate(
         &self,
         target_id: &str,
         options: NavigateTreeOptions,
@@ -155,6 +175,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .await
     }
 
+    /// Starts a branch summary and records its signal for the caller to abort.
+    fn open_branch_summary(&self) -> Cancellation {
+        let signal = Cancellation::new();
+        self.state.borrow_mut().branch_summary_signal = Some(signal.clone());
+        signal
+    }
+
     /// The move to `target_id` and the before-tree event describing the branch left;
     /// `None` when the target is already the leaf.
     fn prepare_navigation<'a>(
@@ -185,7 +212,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 replace_instructions: presence(options.replace_instructions),
                 label: presence(options.label.clone()),
             },
-            signal: Cancellation::new(),
+            signal: self.open_branch_summary(),
         };
         let tree_move = TreeMove {
             target_id,
@@ -366,7 +393,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// The key and headers a summary request for `model` uses.
-    async fn get_required_request_auth(
+    pub(super) async fn get_required_request_auth(
         &self,
         model: &Arc<RwLock<Model>>,
     ) -> Result<(String, Option<IndexMap<String, String>>), DiagnosticErrorInfo> {

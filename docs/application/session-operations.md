@@ -44,9 +44,8 @@ first position. A scoped entry's own level wins over the starting level.
 It always writes the agent level. Only an effective change records a
 `thinking_level_change` entry, saves the default level (except `off` on a model
 that cannot reason), emits `ThinkingLevelChanged` and starts `thinking_level_select`.
-That notification starts at once and finishes on the agent's task facility, so a
-slow handler never delays the change. An agent without a task facility drops a
-notification that does not finish at once. An unrecognized saved level reads as
+That notification starts at once and finishes on the session's task facility, so a
+slow handler never delays the change. An unrecognized saved level reads as
 `off` and clamps to the model's first supported level.
 
 `cycle_thinking_level` returns `None` for a model that cannot reason and otherwise
@@ -97,6 +96,14 @@ credential failure is returned verbatim.
 
 `get_user_messages_for_forking` lists the user messages that have text, in entry
 order.
+
+## Compaction and retries
+
+`compact` shrinks the context on demand and `check_compaction` does it when the
+context passes the reserve; `handle_retryable_error` repeats a failed response
+after a doubling delay. Both announce their start and end events, can be aborted,
+and are described with the preferences they read in
+[compaction and retries](recovery.md).
 
 ## Statistics
 
