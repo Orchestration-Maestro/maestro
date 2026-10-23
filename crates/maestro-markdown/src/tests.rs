@@ -582,6 +582,12 @@ fn grows_at_most_linearly([small, medium, large]: [usize; 3]) -> bool {
     large + 2 * small <= 3 * medium
 }
 
+#[test]
+fn growth_bound_accepts_sublinear_work_and_rejects_quadratic_work() {
+    assert!(grows_at_most_linearly([32, 48, 64]));
+    assert!(!grows_at_most_linearly([26_400, 104_000, 412_800]));
+}
+
 /// Require only text and line breaks, spelled exactly as the source.
 ///
 /// The closing line ending ends the paragraph rather than adding a node.
