@@ -15,6 +15,18 @@ pub fn uncanonicalized_scratch() -> Scratch {
     Scratch::new_in(&std::env::temp_dir()).unwrap()
 }
 
+/// `name` joined below `root` as the stored string spelling, asserting that the joined
+/// spelling still holds the dot segments the caller supplied; joining below a canonicalized
+/// root removes them, which would leave a preservation assertion nothing to tell apart.
+pub fn below_keeping_dots(root: &std::path::Path, name: &str) -> String {
+    let spelling = below(root, name);
+    assert!(
+        spelling.contains(name),
+        "the joined spelling keeps its dot segments: {spelling}"
+    );
+    spelling
+}
+
 /// A published history whose session file was replaced by a directory, so every
 /// further append fails natively; returns the manager and its first entry identity.
 pub fn broken_history(scratch: &Scratch) -> (SessionManager, String) {

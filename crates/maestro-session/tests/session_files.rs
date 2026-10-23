@@ -12,7 +12,7 @@ use maestro_session::{NewSessionOptions, SessionManager};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
-use support::native::{below, uncanonicalized_scratch};
+use support::native::{below, below_keeping_dots, uncanonicalized_scratch};
 use support::session_files::cases;
 
 #[test]
@@ -656,11 +656,7 @@ fn opening_resolves_once_before_loading_the_selected_file() {
 #[test]
 fn session_paths_keep_authored_spelling_until_explicit_resolution() {
     let directory = Directory(uncanonicalized_scratch());
-    let authored = below(directory.path(), "./nested/..");
-    assert!(
-        authored.contains("./nested/.."),
-        "the supplied spelling keeps its dot segment: {authored}"
-    );
+    let authored = below_keeping_dots(directory.path(), "./nested/..");
     let manager =
         SessionManager::create("relative/../authored", Some(&authored), "unused").unwrap();
     assert_eq!(manager.get_session_dir(), authored);
