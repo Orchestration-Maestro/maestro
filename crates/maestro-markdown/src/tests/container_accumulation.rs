@@ -326,3 +326,105 @@ fn merged_code_scope_ends_at_consumed_source_prefix() {
     assert!(matches!(children[1].kind, Kind::Gap));
     assert_eq!(paragraph_text(&children[2]).as_deref(), Some("y"));
 }
+
+/// Bytes a finished list item retains, against the record publication reads from.
+const COMPLETED_RECORD_CEILING: usize = 800;
+
+#[test]
+fn completed_item_record_retains_only_publication_state() {
+    let record = crate::tokenizer::block::completed_record_bytes();
+    let document = parse("- item\n".repeat(2048));
+    let Kind::List(_, items) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    assert_eq!(items.len(), 2048);
+    assert!(
+        record <= COMPLETED_RECORD_CEILING,
+        "{record} bytes kept per finished item"
+    );
+}
+
+/// One-line item list with `count` items.
+fn one_line_items(count: usize) -> String {
+    use std::fmt::Write;
+    let mut source = String::new();
+    for index in 0..count {
+        writeln!(source, "- item {index}").unwrap();
+    }
+    source
+}
+
+/// Work counters for one parsed item list, with the number of items it produced.
+fn measured_items(source: String) -> (super::Work, usize) {
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = parse(source);
+    let Kind::List(_, items) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    let items = items.len();
+    (super::WORK.with_borrow(|work| *work), items)
+}
+
+/// Assert that doubling the workload at most triples every selected counter.
+fn assert_counters_triple_at_most(
+    name: &str,
+    counts: &[(super::Work, usize); 2],
+    fields: fn(&super::Work) -> Vec<usize>,
+) {
+    let observed = counts.each_ref().map(|(work, _)| fields(work));
+    eprintln!("{name}: {observed:?}");
+    assert!(
+        observed[1]
+            .iter()
+            .zip(&observed[0])
+            .all(|(doubled, single)| *doubled <= 3 * single),
+        "{name}: {observed:?}"
+    );
+}
+
+#[test]
+fn one_line_item_work_grows_linearly_with_item_count() {
+    let counts = [512, 1024].map(|count| measured_items(one_line_items(count)));
+    assert_eq!(counts.each_ref().map(|(_, items)| *items), [512, 1024]);
+    assert_counters_triple_at_most("one-line items", &counts, |work| {
+        vec![
+            work.source_views,
+            work.projections,
+            work.joined_bytes,
+            work.source_bytes,
+        ]
+    });
+}
+
+#[test]
+fn item_work_grows_linearly_with_item_length() {
+    let counts = [64, 128].map(|length| {
+        use std::fmt::Write;
+        let content = "x".repeat(length);
+        let mut source = String::new();
+        for _ in 0..32 {
+            let _ = writeln!(source, "- {content}");
+        }
+        measured_items(source)
+    });
+    assert_eq!(counts.each_ref().map(|(_, items)| *items), [32, 32]);
+    assert_counters_triple_at_most("item length", &counts, |work| {
+        vec![work.framing_bytes, work.block_recognizer_bytes]
+    });
+}
+
+#[test]
+fn continued_item_lines_keep_their_admission_work_linear() {
+    let counts = [512, 1024].map(|count| {
+        use std::fmt::Write;
+        let mut source = String::new();
+        for index in 0..count {
+            let _ = writeln!(source, "- item {index}\n  cont {index}");
+        }
+        measured_items(source)
+    });
+    assert_eq!(counts.each_ref().map(|(_, items)| *items), [512, 1024]);
+    assert_counters_triple_at_most("continued items", &counts, |work| {
+        vec![work.source_views, work.projections]
+    });
+}

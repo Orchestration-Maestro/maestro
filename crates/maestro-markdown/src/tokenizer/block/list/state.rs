@@ -220,6 +220,18 @@ impl ItemLines {
         }
     }
 
+    /// Keep only what publication and a caller replay read from a stopped item.
+    pub(super) fn complete(self) -> CompletedItem {
+        let task = super::task(&self.body).1;
+        let blank_end = blank_suffix(&self.suffix);
+        CompletedItem {
+            child: self.child,
+            body: self.body,
+            task,
+            blank_end,
+        }
+    }
+
     /// Borrow dedented source for child admission.
     pub(super) fn body(&self) -> &Segmented {
         &self.body
@@ -239,15 +251,55 @@ impl ItemLines {
     pub(super) fn raw_end(&self) -> usize {
         self.raw_end
     }
+}
 
-    /// Apply the existing blank-suffix predicate to its bounded physical-line window.
+/// Whether the two physical lines that end an item carry a blank-line suffix.
+fn blank_suffix(window: &[ScopeSource; 2]) -> bool {
+    let window = [&*window[0].text, &*window[1].text].concat();
+    #[cfg(test)]
+    crate::tests::block_operand(&window);
+    crate::rules::LIST_BLANK_END
+        .as_ref()
+        .is_some_and(|rule| rule.find(&window).is_some())
+}
+
+/// One stopped item as its list retains it, until publication and caller replay.
+pub(super) struct CompletedItem {
+    /// Settled child admission: its published output and the step a caller replay resumes.
+    child: Child,
+    /// Dedented semantic body, which publication reads the item's task marker from.
+    body: Segmented,
+    /// Task marker state, consumed when the child publishes.
+    task: Option<bool>,
+    /// Whether a blank line ends this item, which loosens the list.
+    blank_end: bool,
+}
+
+impl CompletedItem {
+    /// Borrow the dedented semantic body a caller replay re-admits.
+    pub(super) fn body(&self) -> &Segmented {
+        &self.body
+    }
+
+    /// Borrow the child invocation a caller replay re-admits through.
+    pub(super) fn child(&mut self) -> &mut Child {
+        &mut self.child
+    }
+
+    /// Publish the item's settled output, inserting its task marker once.
+    pub(super) fn finish(&mut self) -> crate::lexer::BlockTokens {
+        self.child.finish(self.task)
+    }
+
+    /// Whether a blank line ends this item, which loosens the list.
     pub(super) fn blank_end(&self) -> bool {
-        let window = [&*self.suffix[0].text, &*self.suffix[1].text].concat();
-        #[cfg(test)]
-        crate::tests::block_operand(&window);
-        crate::rules::LIST_BLANK_END
-            .as_ref()
-            .is_some_and(|rule| rule.find(&window).is_some())
+        self.blank_end
+    }
+
+    /// Charge the unique source this item keeps alive until its list publishes.
+    #[cfg(test)]
+    pub(super) fn retained(&self, retained: &mut crate::tests::Retained) {
+        self.body.retained(retained);
     }
 }
 

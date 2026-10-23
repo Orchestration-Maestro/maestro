@@ -1,14 +1,14 @@
 //! List admission and item continuation framing.
 use crate::{
     Kind, MarkedOptions, Node,
-    lexer::{Done, Frame, Level, Lexer, Step},
+    lexer::{BlockTokens, Child, Done, Frame, Level, Lexer, Step},
     rules,
     source::{Cursor, ScopeSource, Segmented},
     tokenizer::capture,
 };
 use maestro_text::is_whitespace_scalar;
 mod state;
-use state::ItemLines;
+use state::{CompletedItem, ItemLines};
 
 /// Marker identity and indentation at the start of one list item.
 struct Marker {
@@ -77,60 +77,97 @@ pub(crate) struct ListState {
     item: ItemLines,
     /// Logical start of the final item within its list operand.
     item_start: usize,
-    /// Completed item admission states, preserving callback replay order.
-    completed: Vec<ItemLines>,
+    /// Stopped items as publication and a caller replay read them, in authored order.
+    completed: Vec<CompletedItem>,
 }
 
 impl ListState {
     /// Complete the trailing item and admit the next marker's first line.
     fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
         let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
-        self.completed.push(previous);
+        self.completed.push(previous.complete());
     }
 
     /// The item this level admits, from a replayed position or the trailing item.
-    fn item_mut(&mut self, replay: Option<usize>) -> Option<&mut ItemLines> {
+    fn item_mut(&mut self, replay: Option<usize>) -> Option<ItemSlot<'_>> {
         match replay {
-            Some(index) => self.completed.get_mut(index),
-            None => Some(&mut self.item),
+            Some(index) => self.completed.get_mut(index).map(ItemSlot::Stopped),
+            None => Some(ItemSlot::Open(&mut self.item)),
         }
     }
 
     /// Produce each item's output and whether the list is loose.
-    pub(crate) fn outputs(mut self) -> (Vec<crate::lexer::BlockTokens>, bool) {
+    pub(crate) fn outputs(mut self) -> (Vec<BlockTokens>, bool) {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| {
             let mut retained = crate::tests::Retained::default();
-            for item in self.completed.iter().chain([&self.item]) {
+            for item in &self.completed {
                 item.retained(&mut retained);
             }
+            self.item.retained(&mut retained);
             work.frame_bytes = work.frame_bytes.max(retained.bytes);
         });
         let following = self.completed.len();
         let mut outputs = Vec::with_capacity(following + 1);
         let mut loose = false;
-        for (index, item) in self
-            .completed
-            .iter_mut()
-            .chain(std::iter::once(&mut self.item))
-            .enumerate()
-        {
-            let output = item.child.finish(task(item.body()).1);
-            loose |= index < following && item.blank_end()
-                || output.nodes.iter().any(|node| {
-                    matches!(node.kind, Kind::Gap)
-                        && node
-                            .authored
-                            .chunks()
-                            .flat_map(str::bytes)
-                            .filter(|byte| *byte == b'\n')
-                            .count()
-                            > 1
-                });
+        for item in &mut self.completed {
+            let output = item.finish();
+            loose |= item.blank_end() || blank_separator(&output);
             outputs.push(output);
         }
+        let output = self.item.child.finish(task(self.item.body()).1);
+        loose |= blank_separator(&output);
+        outputs.push(output);
         (outputs, loose)
     }
+}
+
+/// The item one list level admits: the open trailing item or a stopped one replayed.
+enum ItemSlot<'a> {
+    /// The trailing item, still admitting its own continuation lines.
+    Open(&'a mut ItemLines),
+    /// A stopped item a caller tokenizer re-admits.
+    Stopped(&'a mut CompletedItem),
+}
+
+impl ItemSlot<'_> {
+    /// Borrow the dedented semantic body this item's child admits.
+    fn body(&self) -> &Segmented {
+        match self {
+            Self::Open(item) => item.body(),
+            Self::Stopped(item) => item.body(),
+        }
+    }
+
+    /// The final semantic boundary only the trailing item's trim still reads.
+    fn body_end(&self) -> Option<usize> {
+        match self {
+            Self::Open(item) => Some(item.body_end()),
+            Self::Stopped(_) => None,
+        }
+    }
+
+    /// Borrow the child invocation the item's body admits into.
+    fn child(&mut self) -> &mut Child {
+        match self {
+            Self::Open(item) => &mut item.child,
+            Self::Stopped(item) => item.child(),
+        }
+    }
+}
+
+/// Whether an item's output opens with a blank separator of its own, which loosens the list.
+fn blank_separator(output: &BlockTokens) -> bool {
+    output.nodes.iter().any(|node| {
+        matches!(node.kind, Kind::Gap)
+            && node
+                .authored
+                .chunks()
+                .flat_map(str::bytes)
+                .filter(|byte| *byte == b'\n')
+                .count()
+                > 1
+    })
 }
 
 /// A recognized list whose items are admitted by their own levels.
@@ -295,9 +332,10 @@ impl ListFrame {
         let body = awaiting.take()?;
         let replay = *replay;
         let state = self.state.as_deref_mut()?;
-        if let Some(item) = state.item_mut(replay) {
-            item.child.restore_output(output);
-            lexer.settle(&body, &mut item.child, open);
+        if let Some(mut item) = state.item_mut(replay) {
+            let child = item.child();
+            child.restore_output(output);
+            lexer.settle(&body, child, open);
         }
         self.item_finished(lexer);
         None
@@ -315,12 +353,15 @@ impl ListFrame {
             self.phase = ListPhase::Reject;
             return Step::Done(Done::Rejected);
         };
-        let Some(item) = state.item_mut(replay) else {
+        let Some(mut item) = state.item_mut(replay) else {
             self.phase = ListPhase::Reject;
             return Step::Done(Done::Rejected);
         };
-        let (body, prefix) = operand(item, following);
-        let rest = lexer.reopen(&body, prefix, &mut item.child);
+        // Only the final list item is trimmed of its trailing whitespace.
+        let end = item.body_end().filter(|_| !following);
+        let (body, prefix) = operand(item.body(), end);
+        let child = item.child();
+        let rest = lexer.reopen(&body, prefix, child);
         self.phase = ListPhase::Item {
             next,
             replay,
@@ -331,8 +372,8 @@ impl ListFrame {
             self.item_finished(lexer);
             return Step::Again;
         };
-        lexer.top = item.child.enter_top();
-        let output = item.child.take_output();
+        lexer.top = child.enter_top();
+        let output = child.take_output();
         Step::Push(Frame::Run(lexer.block_run(rest, output, Level::Item)))
     }
 
@@ -432,13 +473,18 @@ impl<E> Lexer<'_, E> {
     }
 }
 
+/// Bytes one finished list item retains until its list publishes.
+#[cfg(test)]
+pub(crate) fn completed_record_bytes() -> usize {
+    std::mem::size_of::<state::CompletedItem>()
+}
+
 /// Select one item's child operand, trimmed only for the final list item.
-fn operand(item: &ItemLines, following: bool) -> (Segmented, usize) {
-    let (mut body, _) = task(item.body());
-    let prefix = item.body().len() - body.len();
-    if !following {
-        let trimmed = item.body().len() - item.body_end();
-        body.truncate(body.len().saturating_sub(trimmed));
+fn operand(source: &Segmented, end: Option<usize>) -> (Segmented, usize) {
+    let (mut body, _) = task(source);
+    let prefix = source.len() - body.len();
+    if let Some(end) = end {
+        body.truncate(end.saturating_sub(prefix));
     }
     (body, prefix)
 }
