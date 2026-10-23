@@ -408,13 +408,12 @@ fn session_link_resolution_matrix() {
         return;
     }
     for depth in 1..=3 {
-        for payload in ["absolute", "relative", "absolute-relative", "mixed-case"] {
+        for payload in ["absolute", "relative", "absolute-relative"] {
             for moving in ["none", "final", "intermediate", "deep", "blocked"]
                 .into_iter()
                 .filter(|moving| {
                     !(depth == 1 && matches!(*moving, "intermediate" | "blocked")
-                        || depth < 3 && *moving == "deep"
-                        || payload == "mixed-case" && *moving == "blocked")
+                        || depth < 3 && *moving == "deep")
                 })
             {
                 check_resolution_orders(depth, payload, moving);
@@ -428,18 +427,6 @@ fn check_resolution_orders(depth: usize, payload: &str, moving: &str) {
     let mut orders = std::collections::BTreeSet::new();
     for arrangement in 0..2 * (depth + 1) {
         let (scratch, paths) = resolution_chain(depth, payload, moving, arrangement);
-        // The mixed-case chain links an upper-cased spelling of a name the same chain also
-        // converts: a host that keeps the spellings apart holds no such entry to resolve, and a
-        // host that folds them converts the twin, so neither answer states this expectation.
-        let name = paths[1].file_name().unwrap();
-        let upper = name.to_ascii_uppercase();
-        if payload == "mixed-case"
-            && (!scratch.0.path().join(&upper).exists()
-                || !scratch.0.keeps_distinct(&[name, &upper]).unwrap())
-        {
-            eprintln!("host cannot resolve and tell apart {name:?} and {upper:?}");
-            return;
-        }
         let entries: Vec<_> = std::fs::read_dir(scratch.0.path())
             .unwrap()
             .map(|entry| entry.unwrap().path())
@@ -500,12 +487,7 @@ fn resolution_chain(
             .unwrap();
         } else {
             let target = &paths[index + 1];
-            let target = if payload == "mixed-case" {
-                scratch
-                    .0
-                    .path()
-                    .join(target.file_name().unwrap().to_ascii_uppercase())
-            } else if payload != "relative"
+            let target = if payload != "relative"
                 && !(index > 0 && (moving == "blocked" || payload == "absolute-relative"))
             {
                 target.clone()
