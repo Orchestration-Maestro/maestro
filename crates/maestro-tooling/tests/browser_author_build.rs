@@ -1141,7 +1141,7 @@ fn assert_authored_target(browser: &Browser, config: &std::path::Path, target: &
     );
 }
 
-/// State the prepared inputs are exactly the files the author fixture reads.
+/// Assert the complete prepared-input inventory.
 fn assert_prepared_inputs(directory: &std::path::Path) {
     let mut prepared: Vec<String> = fs::read_dir(directory.join("inputs"))
         .unwrap()
