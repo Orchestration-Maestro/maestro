@@ -1,6 +1,6 @@
 //! Deletion opener cost at the shared owner and through both public entries.
-use super::{SELECTIONS, WORK, Work, grows_linearly, parsed};
-use crate::{Kind, MarkedOptions, Node, tokenizer::inline::delimiters::Delimiters};
+use super::{SELECTIONS, WORK, Work, assert_literal, grows_linearly, parsed};
+use crate::{Kind, MarkedOptions, tokenizer::inline::delimiters::Delimiters};
 use serde::Deserialize;
 
 /// Approximations and unclosed double openers, literal under every caller selection.
@@ -47,26 +47,6 @@ fn unclosed_deletion_root_work_is_linear() {
         assert!(counts[0] > 0, "{options:?} {piece:?}");
         assert!(grows_linearly(counts), "{options:?} {piece:?}: {counts:?}");
     }
-}
-
-/// Require only text and line breaks, spelled exactly as the source.
-///
-/// The closing line ending ends the paragraph rather than adding a node.
-fn assert_literal(children: &[Node], source: &str, case: &str) {
-    assert!(
-        children
-            .iter()
-            .all(|node| matches!(node.kind, Kind::Text(_) | Kind::Break)),
-        "{case}"
-    );
-    assert_eq!(
-        children
-            .iter()
-            .map(|node| node.authored.to_owned_string())
-            .collect::<String>(),
-        source.trim_end_matches('\n'),
-        "{case}"
-    );
 }
 
 /// Work through one public entry, with the literal result it keeps.

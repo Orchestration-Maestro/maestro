@@ -192,11 +192,9 @@ impl<'a> Tokenizer<'a> {
     }
 
     /// Code normalizes newlines and trims exactly one pair of edge spaces.
-    fn code(text: &str) -> Option<(usize, Kind)> {
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.inline_code_bytes += text.len());
-        let matched = rules::INLINE_CODE.as_ref()?.find(text)?;
-        let body = capture(text, &matched, 2).replace('\n', " ");
+    fn code(&self, range: Range<usize>) -> Option<(usize, Kind)> {
+        let (consumed, body) = self.delimiters.code_span(&self.source.text, &range)?;
+        let body = self.source.text[body].replace('\n', " ");
         let trim =
             body.starts_with(' ') && body.ends_with(' ') && body.contains(|scalar| scalar != ' ');
         let body = if trim {
@@ -204,7 +202,7 @@ impl<'a> Tokenizer<'a> {
         } else {
             body
         };
-        Some((matched.end(), Kind::Code(body)))
+        Some((consumed, Kind::Code(body)))
     }
 
     /// Breaks come from authored source, never from a decoded entity newline.
@@ -239,7 +237,7 @@ impl<'a> Tokenizer<'a> {
             b'\\' => Self::escape(text),
             b'<' => self.tag(text).or_else(|| self.angle(range)),
             b'[' | b'!' => self.link(range, atoms, admission),
-            b'`' => Self::code(text),
+            b'`' => self.code(range),
             _ => None,
         }
     }

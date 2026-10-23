@@ -71,16 +71,11 @@ fn inline_text_rules_match_their_reference_spellings() {
 
 #[test]
 fn markup_rules_match_their_reference_spellings() {
-    for (label, compiled, source, flags) in [
-        ("tag", &rules::INLINE_TAG, rules::INLINE_TAG_SOURCE, ""),
-        ("code", &rules::INLINE_CODE, rules::INLINE_CODE_SOURCE, ""),
-    ] {
-        let reference = Regex::with_flags(source, flags).unwrap();
-        assert_same_matches(
-            compiled.as_ref().unwrap(),
-            &reference,
-            &MARKUP_PIECES,
-            label,
-        );
-    }
+    let reference = Regex::with_flags(rules::INLINE_TAG_SOURCE, "").unwrap();
+    assert_same_matches(
+        rules::INLINE_TAG.as_ref().unwrap(),
+        &reference,
+        &MARKUP_PIECES,
+        "tag",
+    );
 }

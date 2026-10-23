@@ -35,11 +35,17 @@ Each inline tokenizer indexes its source's `*` and `_` run endpoints once, and
 prepares the raw closing positions its caller's deletion grammar admits. Recursive
 emphasis and deletion reuse that preparation, with widths and closers clipped to
 their selected window; projected link labels build an index for their own source.
+The same source view also prepares where each backtick run can close a code span of
+its own width and which bracket pairs a link label reaches, so a code-span or link
+opener is answered from that preparation instead of re-reading the rest of the
+window. The code-span runs take one pass over the source; the label scan takes one
+forward pass over bracket pairs and one reverse pass over the closers they reach.
 Masks remain local to each window because clipping can reveal syntax hidden by an
-enclosing mask. Width and closer lookup are constant time; right matching and
-recursive masking still have their own traversal costs. Deletion keeps its own raw
-closing rules rather than the emphasis mask, so a raw `~~` inside code ticks still
-closes it.
+enclosing mask. Label-closer lookup is constant time and code-span lookup is a binary
+search over the prepared runs, while an opener whose label can reach a closing pair
+still runs the caller's own link rule over its window. Right matching and recursive
+masking keep their own traversal costs. Deletion keeps its own raw closing rules
+rather than the emphasis mask, so a raw `~~` inside code ticks still closes it.
 
 Parsing emits bare URL, www and email links at reached inline cursors outside
 link labels and raw anchors in the terminal, browser and export grammars.

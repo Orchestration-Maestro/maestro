@@ -3,11 +3,15 @@ use crate::{InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse};
 use std::cell::RefCell;
 
 mod code_progress;
+mod code_span_windows;
 mod container_depth;
 mod container_frames;
 mod deletion_scanning;
 mod emphasis_work;
+mod fixture_corpus;
 mod html_progress;
+mod link_windows;
+mod opener_work;
 mod paragraph_progress;
 mod segment_balance;
 mod shared_text;
@@ -108,9 +112,9 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
-    /// Suffix bytes supplied to direct-link admission, including rejected links.
+    /// Steps a label preparation takes, plus one per label query and per rule window.
     pub(crate) link_bytes: usize,
-    /// Suffix bytes supplied to inline code-span recognition, including unclosed openers.
+    /// Sources a code-span preparation reads plus one per reached-opener lookup.
     pub(crate) inline_code_bytes: usize,
     /// Sources a deletion preparation reads plus one per reached-opener lookup.
     pub(crate) deletion_bytes: usize,
@@ -569,6 +573,26 @@ fn paragraph_work(source: String, options: crate::MarkedOptions) -> Work {
 /// Whether work measured at N, 2N and 4N units grows by the same amount per unit.
 fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
     large - medium == 2 * (medium - small)
+}
+
+/// Require only text and line breaks, spelled exactly as the source.
+///
+/// The closing line ending ends the paragraph rather than adding a node.
+fn assert_literal(children: &[Node], source: &str, case: &str) {
+    assert!(
+        children
+            .iter()
+            .all(|node| matches!(node.kind, Kind::Text(_) | Kind::Break)),
+        "{case}"
+    );
+    assert_eq!(
+        children
+            .iter()
+            .map(|node| node.authored.to_owned_string())
+            .collect::<String>(),
+        source.trim_end_matches('\n'),
+        "{case}"
+    );
 }
 
 #[test]
