@@ -52,6 +52,7 @@ maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
 maestro-tools = { path = "../maestro-tools" }
 maestro-process = { path = "../maestro-process" }
+maestro-listing = { path = "../maestro-listing" }
 maestro-theme = { path = "../maestro-theme" }
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
