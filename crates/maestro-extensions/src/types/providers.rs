@@ -28,7 +28,7 @@ pub struct ProviderActions<E: ExtensionExecution = Threaded> {
 pub struct PendingProviderRegistration {
     /// Provider name.
     pub name: String,
-    /// The registered configuration.
+    /// The registered configuration: the platform handle, browser-local or natively shared.
     pub config: SharedHandle<RwLock<ProviderConfig>>,
     /// Path of the registering extension.
     pub extension_path: String,

@@ -123,7 +123,8 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
     type GetThinkingLevel: Fn() -> Result<ThinkingLevel, EventError> + ?Sized;
     /// Sets the thinking level.
     type SetThinkingLevel: Fn(ThinkingLevel) -> Result<(), EventError> + ?Sized;
-    /// Registers a provider.
+    /// Registers a provider; the configuration is the platform handle, browser-local or
+    /// natively shared.
     type RegisterProvider: Fn(String, SharedHandle<RwLock<ProviderConfig>>) -> Result<(), EventError>
         + ?Sized;
     /// Unregisters a provider.

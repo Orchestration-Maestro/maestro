@@ -146,6 +146,9 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     }
     /// Registers a provider attributed to this extension.
     ///
+    /// The configuration is the platform handle, retained as the browser's local owner or
+    /// the native shared one.
+    ///
     /// # Errors
     /// Returns the stale error, or the bound route's error after binding.
     pub fn register_provider(
