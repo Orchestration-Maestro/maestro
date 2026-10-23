@@ -565,18 +565,6 @@ fn drive() {
             &mut conventions,
             (std::env::var("MAESTRO_ACTIVE_SMOKE").as_deref() == Ok("true")).then_some(&mut smoke),
         )
-    } else if args[0] == "consumer-hook" {
-        let mut format = Command::new(&cargo);
-        format.current_dir(&root).args(["fmt", "--all"]);
-        let mut conventions = Command::new(&cargo);
-        conventions.current_dir(&root).arg("test");
-        tooling::pre_commit::run(
-            Path::new(&root),
-            Path::new(&cargo),
-            &mut format,
-            &mut conventions,
-            None,
-        )
     } else {
         tooling::run(&args, Path::new(&cargo), Path::new(&root))
     };
@@ -1976,9 +1964,19 @@ fn compact_metadata(path: &Path) -> PathBuf {
 /// The fixture root leads `PATH`, so `just` resolves to the controlled tool while the
 /// hook still finds its native Git.
 fn run_hook(fixture: &Fixture, test: &str) -> TestProcess {
+    run_driver(fixture, test, "hook")
+}
+
+/// Invoke the production `pre-commit` dispatcher for `test` against the fixture metadata.
+fn run_pre_commit(fixture: &Fixture, test: &str) -> TestProcess {
+    run_driver(fixture, test, "pre-commit")
+}
+
+/// Invoke `operation` for `test` with the fixture metadata and controlled tools on `PATH`.
+fn run_driver(fixture: &Fixture, test: &str, operation: &str) -> TestProcess {
     let metadata = compact_metadata(&fixture.root.path().join("metadata.json"));
     fixture
-        .invoke(test, "hook", &[])
+        .invoke(test, operation, &[])
         .env("MAESTRO_METADATA", metadata)
         .env("PATH", fixture_path(fixture))
 }
@@ -2241,17 +2239,7 @@ fn maestro_hook_messages_follow_phase_results() {
 
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
-    let output = fixture
-        .invoke(
-            "maestro_hook_messages_follow_phase_results",
-            "pre-commit",
-            &[],
-        )
-        .env(
-            "MAESTRO_METADATA",
-            compact_metadata(&fixture.root.path().join("metadata.json")),
-        )
-        .env("PATH", fixture_path(&fixture))
+    let output = run_pre_commit(&fixture, "maestro_hook_messages_follow_phase_results")
         .output()
         .unwrap();
     assert!(
@@ -2429,7 +2417,7 @@ fn maestro_hook_renames_check_both_previous_and_new_owners() {
     drive();
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
-    stage_paths(fixture.root.path(), &["crates/a/src/moved.rs"]);
+    stage_paths(fixture.root.path(), &["crates/b/src/moved.rs"]);
     git(
         fixture.root.path(),
         &[
@@ -2445,12 +2433,12 @@ fn maestro_hook_renames_check_both_previous_and_new_owners() {
             "fixture",
         ],
     );
-    fs::create_dir_all(fixture.root.path().join("crates/b/src")).unwrap();
+    fs::create_dir_all(fixture.root.path().join("crates/alone/src")).unwrap();
     git(
         fixture.root.path(),
-        &["mv", "crates/a/src/moved.rs", "crates/b/src/moved.rs"],
+        &["mv", "crates/b/src/moved.rs", "crates/alone/src/moved.rs"],
     );
-    let output = run_hook(
+    let output = run_pre_commit(
         &fixture,
         "maestro_hook_renames_check_both_previous_and_new_owners",
     )
@@ -2461,14 +2449,12 @@ fn maestro_hook_renames_check_both_previous_and_new_owners() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert_eq!(
-        check_invocation(&fixture),
-        "_check|-p|a|-p|f|-p|b|-p|c|-p|d|-p|e|-p|g"
-    );
-    assert!(!fixture.root.path().join("crates/a/src/moved.rs").exists());
+    // `b` reaches only `b` and `d`, `alone` only itself, so each owner adds its own members.
+    assert_eq!(check_invocation(&fixture), "_check|-p|b|-p|d|-p|alone");
+    assert!(!fixture.root.path().join("crates/b/src/moved.rs").exists());
     let listed = String::from_utf8(git(fixture.root.path(), &["ls-files"]).stdout).unwrap();
-    assert!(!listed.contains("crates/a/src/moved.rs"), "{listed}");
-    assert!(listed.contains("crates/b/src/moved.rs"), "{listed}");
+    assert!(!listed.contains("crates/b/src/moved.rs"), "{listed}");
+    assert!(listed.contains("crates/alone/src/moved.rs"), "{listed}");
 }
 
 #[test]
@@ -2556,14 +2542,16 @@ fn maestro_hook_missing_check_tool_reports_failure() {
     );
 }
 
-/// Fail one recipe phase and assert the later phases never run.
+/// Fail one recipe phase and assert the later phases never run, after the formatted
+/// source was re-staged.
 #[cfg(unix)]
 fn assert_recipe_phase_failure(phase: &str, expected: &[&str]) {
     let scratch = Scratch::new().unwrap();
     let workspace = consumer_workspace(scratch.path());
+    let formatted = LEAF_SOURCE.replace("    7", "    8");
     fs::write(
         workspace.join("leaf/src/lib.rs"),
-        LEAF_SOURCE.replace("    7", "    8"),
+        formatted.replace("    8", "8"),
     )
     .unwrap();
     git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
@@ -2590,6 +2578,11 @@ fn assert_recipe_phase_failure(phase: &str, expected: &[&str]) {
         .filter(|name| *name != "metadata")
         .collect();
     assert_eq!(ran, expected, "{phase}: {log}");
+    assert_eq!(
+        git(&workspace, &["show", ":leaf/src/lib.rs"]).stdout,
+        formatted.as_bytes(),
+        "{phase}"
+    );
 }
 
 #[test]
@@ -2621,11 +2614,11 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
     }
 
     #[cfg(unix)]
-    #[cfg(unix)]
     for (phase, expected) in [
         ("hakari", &["fmt", "hakari"][..]),
         ("clippy", &["fmt", "hakari", "clippy"][..]),
         ("doc", &["fmt", "hakari", "clippy", "doc"][..]),
+        ("test", &["fmt", "hakari", "clippy", "doc", "test"][..]),
     ] {
         assert_recipe_phase_failure(phase, expected);
     }
@@ -2701,19 +2694,12 @@ fn assert_dispatcher_routes_delivered_smoke() {
         if delivered {
             stage_paths(fixture.root.path(), &[entry]);
         }
-        let output = fixture
-            .invoke(
-                "maestro_hook_browser_smoke_runs_once_for_reached_inputs",
-                "pre-commit",
-                &[],
-            )
-            .env(
-                "MAESTRO_METADATA",
-                compact_metadata(&fixture.root.path().join("metadata.json")),
-            )
-            .env("PATH", fixture_path(&fixture))
-            .output()
-            .unwrap();
+        let output = run_pre_commit(
+            &fixture,
+            "maestro_hook_browser_smoke_runs_once_for_reached_inputs",
+        )
+        .output()
+        .unwrap();
         assert!(output.status.success(), "{delivered}");
         assert_eq!(
             stdout(&output).contains("Running browser smoke check...\n"),
@@ -2933,14 +2919,15 @@ fn run_consumer_hook(test: &str, workspace: &Path) -> Output {
     consumer_hook_command(test, workspace).output().unwrap()
 }
 
-/// Prepare the hook driver for a native workspace with its recorded tool shim.
+/// Prepare the production `pre-commit` dispatcher for a native workspace with its
+/// recorded tool shim.
 #[cfg(unix)]
 fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
     let mut command = TestProcess::named(format!("tooling_commands::{test}"))
         .unwrap()
         .nocapture()
         .current_dir(workspace)
-        .env("MAESTRO_DRIVER", "consumer-hook")
+        .env("MAESTRO_DRIVER", "pre-commit")
         .env("MAESTRO_FIXTURE_ROOT", workspace)
         .env("MAESTRO_FIXTURE_CARGO", workspace.join("bin/cargo"))
         .env("MAESTRO_RECEIPT", workspace.join("receipt"))
