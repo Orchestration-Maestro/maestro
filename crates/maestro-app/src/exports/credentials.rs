@@ -2,5 +2,5 @@
 
 pub use maestro_credentials::{
     ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
-    InMemoryAuthStorageBackend, OAuthCredential,
+    AuthStorageData, InMemoryAuthStorageBackend, OAuthCredential,
 };

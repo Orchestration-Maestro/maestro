@@ -5,6 +5,9 @@ mod extension_dialogs;
 mod extension_editor;
 #[path = "support/recorded_keys/filter_mode.rs"]
 mod filter_mode;
+mod footer_rendering;
+#[path = "footer_support/mod.rs"]
+mod footer_support;
 #[path = "support/keybindings.rs"]
 mod keybindings;
 mod login_dialog;

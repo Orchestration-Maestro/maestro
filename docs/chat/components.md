@@ -32,6 +32,27 @@ It reuses the [terminal toolkit](../terminal/components.md) and
   component, focus and editor traits delegate to the same editor, with input
   capabilities using the custom router.
 
+- `FooterComponent` renders three rows at most. The first shows the working
+  directory with its home shortened, the branch in parentheses and the session
+  name after a bullet. The second puts the cumulative token and cache totals,
+  the subscription cost and the context display on the left, and the model with
+  its provider and thinking level on the right, padded to the viewport width.
+  The third shows the extension statuses in the shared locale order of their
+  keys, each reduced to one line. Tokens spell as plain below a thousand, one
+  decimal below ten thousand, whole thousands below a million, one decimal
+  below ten million and whole millions above; costs carry three decimals and a
+  subscription marker. The context display warns above 70 percent and errors
+  above 90, shows `?` while tokens are unknown, and marks automatic compaction.
+  Usage totals count every answer in the retained history, not the selected
+  branch: a stored field that is missing suppresses its total, a stored null
+  counts as zero, and an unreadable usage or cost record reports through
+  `try_render` without a partial frame. Each row re-reads the session, the
+  metadata provider and the published theme where it uses them, so a getter
+  that changes the model or a theme republished mid-paint shows in the same
+  frame. Left text truncates before the right side, the sides stay two spaces
+  apart, and the footer registers no callback, so `invalidate` and `dispose`
+  change nothing.
+
 The [extension question dialogs](extension-ui.md) provide clamped selection and
 text submission with optional countdowns and retained input focus.
 

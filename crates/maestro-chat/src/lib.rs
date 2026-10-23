@@ -58,6 +58,9 @@ pub use components::session_selector::*;
 extern crate self as maestro_chat;
 pub use components::bash_execution::BashExecutionComponent;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use components::footer::FooterComponent;
+
 pub use components::tool_execution::{
     ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams, ToolExecutionResult,
 };

@@ -1,0 +1,4630 @@
+[
+  {
+    "test": "footer_uninitialized_theme_fails_at_first_paint",
+    "input": {
+      "op": "uninitialized-theme"
+    },
+    "expected": {
+      "error": {
+        "name": "Error",
+        "message": "Theme not initialized. Call initTheme() first."
+      }
+    }
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": -2
+    },
+    "expected": "-2"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": -0.1
+    },
+    "expected": "-0.1"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 0
+    },
+    "expected": "0"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 0.1
+    },
+    "expected": "0.1"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 999
+    },
+    "expected": "999"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 999.5
+    },
+    "expected": "999.5"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 999.99
+    },
+    "expected": "999.99"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1000
+    },
+    "expected": "1.0k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1001
+    },
+    "expected": "1.0k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1049
+    },
+    "expected": "1.0k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1050
+    },
+    "expected": "1.1k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1099
+    },
+    "expected": "1.1k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 9999
+    },
+    "expected": "10.0k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 9999.9
+    },
+    "expected": "10.0k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 10000
+    },
+    "expected": "10k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 10499
+    },
+    "expected": "10k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 10500
+    },
+    "expected": "11k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 999499
+    },
+    "expected": "999k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 999500
+    },
+    "expected": "1000k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 999999
+    },
+    "expected": "1000k"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1000000
+    },
+    "expected": "1.0M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1049999
+    },
+    "expected": "1.0M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1050000
+    },
+    "expected": "1.1M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 9999999
+    },
+    "expected": "10.0M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 10000000
+    },
+    "expected": "10M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 10499999
+    },
+    "expected": "10M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 10500000
+    },
+    "expected": "11M"
+  },
+  {
+    "test": "footer_token_units_cover_every_rounding_boundary",
+    "input": {
+      "op": "tokens",
+      "count": 1e+21
+    },
+    "expected": "1000000000000000M"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": ""
+    },
+    "expected": ""
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "  a  b  "
+    },
+    "expected": "a b"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "\r\n\ta\r\n\tb\t"
+    },
+    "expected": "a b"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "﻿ A ﻿"
+    },
+    "expected": "A"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "A"
+    },
+    "expected": "A"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "\u000bA\f"
+    },
+    "expected": "A"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "a  b"
+    },
+    "expected": "a  b"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "\u001b[7m \u001b[27m"
+    },
+    "expected": "\u001b[7m \u001b[27m"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "\u001b[44m \u001b[49m"
+    },
+    "expected": "\u001b[44m \u001b[49m"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "\u001b[4m \u001b[24m"
+    },
+    "expected": "\u001b[4m \u001b[24m"
+  },
+  {
+    "test": "footer_status_text_normalizes_only_the_owned_characters",
+    "input": {
+      "op": "sanitize",
+      "value": "a\u0007b"
+    },
+    "expected": "a\u0007b"
+  },
+  {
+    "test": "footer_wide_session_name_stays_within_columns",
+    "input": {
+      "op": "render",
+      "width": 93,
+      "name": "한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main) • 한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글한글\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                  test-model\u001b[39m"
+      ],
+      "widths": [
+        93,
+        93
+      ]
+    }
+  },
+  {
+    "test": "footer_wide_model_and_provider_stay_within_columns",
+    "input": {
+      "op": "render",
+      "width": 60,
+      "name": "",
+      "modelId": "模模模模模模模模模模模模模模模模模模模模模模模模模模模模模模",
+      "provider": "공급자",
+      "reasoning": true,
+      "thinking": "high",
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "providers": 2
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>   模模模模模模模模模模模\u001b[0m\u001b[39m"
+      ],
+      "widths": [
+        19,
+        60
+      ]
+    }
+  },
+  {
+    "test": "footer_empty_history_uses_the_context_default",
+    "input": {
+      "op": "render",
+      "width": 100
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_comes_from_all_history_not_the_selected_branch",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1000,
+              "output": 2000,
+              "cacheRead": 3000,
+              "cacheWrite": 4000,
+              "cost": {
+                "total": 0.125
+              }
+            }
+          }
+        },
+        {
+          "type": "compaction",
+          "summary": "old"
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 7,
+              "output": 8,
+              "cacheRead": 9,
+              "cacheWrite": 10,
+              "cost": {
+                "total": 0.375
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "ignored"
+          }
+        },
+        {
+          "type": "custom",
+          "data": {}
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1.0k ↓2.0k R3.0k W4.0k $0.500 12.3%/200k (auto)\u001b[39m<dark:dim>                                          test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↓1 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 1,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>R1 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 1,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>W1 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>$1.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                  test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": -1,
+              "output": -2,
+              "cacheRead": -3,
+              "cacheWrite": -4,
+              "cost": {
+                "total": -0.1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑-1 ↓-2 R-3 W-4 $-0.100 12.3%/200k (auto)\u001b[39m<dark:dim>                                                 test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0.0005
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>$0.001 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                  test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_usage_fields_and_cost_rounding_remain_distinct",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.2345
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>$1.234 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                  test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_subscription_cost_marker_is_independent_of_usage",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "subscription": false,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_subscription_cost_marker_is_independent_of_usage",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "subscription": false,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0.125
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>$0.125 12.3%/200k (auto)\u001b[39m<dark:dim>                                                                  test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_subscription_cost_marker_is_independent_of_usage",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "subscription": true,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>$0.000 (sub) 12.3%/200k (auto)\u001b[39m<dark:dim>                                                            test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_subscription_cost_marker_is_independent_of_usage",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "subscription": true,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 0.125
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>$0.125 (sub) 12.3%/200k (auto)\u001b[39m<dark:dim>                                                            test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 0,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0M\u001b[39m<dark:dim>                                                                                 test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 0,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0M (auto)\u001b[39m<dark:dim>                                                                          test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 69.95,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>70.0%/1.0M\u001b[39m<dark:dim>                                                                                test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 69.95,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>70.0%/1.0M (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 70,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>70.0%/1.0M\u001b[39m<dark:dim>                                                                                test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 70,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>70.0%/1.0M (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 70.0001,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:warning>70.0%/1.0M\u001b[39m\u001b[39m<dark:dim>                                                                                test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 70.0001,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:warning>70.0%/1.0M (auto)\u001b[39m\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 90,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:warning>90.0%/1.0M\u001b[39m\u001b[39m<dark:dim>                                                                                test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 90,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:warning>90.0%/1.0M (auto)\u001b[39m\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 90.0001,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:error>90.0%/1.0M\u001b[39m\u001b[39m<dark:dim>                                                                                test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 90.0001,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:error>90.0%/1.0M (auto)\u001b[39m\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 100,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:error>100.0%/1.0M\u001b[39m\u001b[39m<dark:dim>                                                                               test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": 100,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim><dark:error>100.0%/1.0M (auto)\u001b[39m\u001b[39m<dark:dim>                                                                        test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": null,
+      "auto": false,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>?/1.0M\u001b[39m<dark:dim>                                                                                    test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_colors_use_strict_thresholds",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "percent": null,
+      "auto": true,
+      "window": 1000000
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>?/1.0M (auto)\u001b[39m<dark:dim>                                                                             test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_home_precedence_and_raw_prefix_are_preserved",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "HOME": "/home/a",
+      "USERPROFILE": "/other",
+      "cwd": "/home/a/project"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>~/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        16,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_home_precedence_and_raw_prefix_are_preserved",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "HOME": "",
+      "USERPROFILE": "/user",
+      "cwd": "/user/project"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>~/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        16,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_home_precedence_and_raw_prefix_are_preserved",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "HOME": null,
+      "USERPROFILE": "/user",
+      "cwd": "/user/project"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>~/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        16,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_home_precedence_and_raw_prefix_are_preserved",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "HOME": "/home/a",
+      "USERPROFILE": null,
+      "cwd": "/home/ab/project"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>~b/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        17,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_home_precedence_and_raw_prefix_are_preserved",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "HOME": "/home/a",
+      "USERPROFILE": null,
+      "cwd": "/different"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/different (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        17,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_home_precedence_and_raw_prefix_are_preserved",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "HOME": null,
+      "USERPROFILE": null,
+      "cwd": "/tmp/project"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_path_branch_and_session_name_have_separate_presence",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "branch": null,
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        12,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_path_branch_and_session_name_have_separate_presence",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "branch": null,
+      "name": "named"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project • named\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        20,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_path_branch_and_session_name_have_separate_presence",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "branch": "",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        12,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_path_branch_and_session_name_have_separate_presence",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "branch": "",
+      "name": "named"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project • named\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        20,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_path_branch_and_session_name_have_separate_presence",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "branch": "topic",
+      "name": ""
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (topic)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        20,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_path_branch_and_session_name_have_separate_presence",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "branch": "topic",
+      "name": "named"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (topic) • named\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        28,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "off",
+      "reasoning": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "off",
+      "reasoning": true
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                          test-model • thinking off\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "minimal",
+      "reasoning": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "minimal",
+      "reasoning": true
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                               test-model • minimal\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "low",
+      "reasoning": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "low",
+      "reasoning": true
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                   test-model • low\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "medium",
+      "reasoning": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "medium",
+      "reasoning": true
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                test-model • medium\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "high",
+      "reasoning": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "high",
+      "reasoning": true
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                  test-model • high\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "xhigh",
+      "reasoning": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_thinking_label_depends_on_model_reasoning",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "thinking": "xhigh",
+      "reasoning": true
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                 test-model • xhigh\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_empty_model_id_uses_no_model",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "modelId": ""
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                           no-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_context_absence_with_zero_window",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "contextAbsent": true,
+      "modelWindow": 0
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/0 (auto)\u001b[39m<dark:dim>                                                                             test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 15,
+      "providers": 0,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  mode\u001b[0m\u001b[39m"
+      ],
+      "widths": [
+        15,
+        15
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 16,
+      "providers": 0,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project \u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  model\u001b[39m"
+      ],
+      "widths": [
+        16,
+        16
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 19,
+      "providers": 0,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>     model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        19
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 20,
+      "providers": 0,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>      model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        20
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 21,
+      "providers": 0,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>       model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        21
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 32,
+      "providers": 0,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>                  model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        32
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 15,
+      "providers": 1,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  mode\u001b[0m\u001b[39m"
+      ],
+      "widths": [
+        15,
+        15
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 16,
+      "providers": 1,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project \u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  model\u001b[39m"
+      ],
+      "widths": [
+        16,
+        16
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 19,
+      "providers": 1,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>     model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        19
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 20,
+      "providers": 1,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>      model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        20
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 21,
+      "providers": 1,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>       model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        21
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 32,
+      "providers": 1,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>                  model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        32
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 15,
+      "providers": 2,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  mode\u001b[0m\u001b[39m"
+      ],
+      "widths": [
+        15,
+        15
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 16,
+      "providers": 2,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project \u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  model\u001b[39m"
+      ],
+      "widths": [
+        16,
+        16
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 19,
+      "providers": 2,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>     model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        19
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 20,
+      "providers": 2,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>  (P) model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        20
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 21,
+      "providers": 2,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>   (P) model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        21
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_prefix_uses_count_and_exact_fit",
+    "input": {
+      "op": "render",
+      "width": 32,
+      "providers": 2,
+      "modelId": "model",
+      "provider": "P",
+      "percent": 0,
+      "window": 1000,
+      "auto": false
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>0.0%/1.0k\u001b[39m<dark:dim>              (P) model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        32
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 3,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[0m<dark:dim>...\u001b[0m",
+        "<dark:dim>\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "\u001b[0m<dark:dim>...\u001b[0m"
+      ],
+      "widths": [
+        3,
+        3,
+        3
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 4,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>↑\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "l\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        4,
+        4,
+        4
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 10,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/pr\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>↑12k ↓6\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long lo\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 19,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.23\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long l\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        19,
+        19
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 20,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long lo\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        20,
+        20
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 21,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 \u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long lon\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        21,
+        21
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 22,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 1\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        22,
+        22
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 23,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long \u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        23,
+        23
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 24,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long l\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        24,
+        24
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 25,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long lo\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        25,
+        25
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 26,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long lon\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        26,
+        26
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 27,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long long\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        27,
+        27
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 28,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/2\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long long \u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        28,
+        28
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 34,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (a\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long long long l\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        34,
+        34
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 35,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long long long lo\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        35,
+        35
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 36,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long long long lon\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        35,
+        36
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 37,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>\u001b[39m",
+        "long long long long long long long\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        35,
+        37
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 38,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  t\u001b[0m\u001b[39m",
+        "long long long long long long long \u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        38,
+        38
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 39,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  te\u001b[0m\u001b[39m",
+        "long long long long long long long l\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        39,
+        39
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 40,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  tes\u001b[0m\u001b[39m",
+        "long long long long long long long lo\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        40,
+        40
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 41,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  test\u001b[0m\u001b[39m",
+        "long long long long long long long lon\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        41,
+        41
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 42,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  test-\u001b[0m\u001b[39m",
+        "long long long long long long long long\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        42,
+        42
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 43,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  test-m\u001b[0m\u001b[39m",
+        "long long long long long long long long \u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        43,
+        43
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 44,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  test-mo\u001b[0m\u001b[39m",
+        "long long long long long long long long l\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        44,
+        44
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 45,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>  test-mod\u001b[0m\u001b[39m",
+        "long long long long long long long long lo\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        19,
+        45,
+        45
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 50,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>     test-model\u001b[39m",
+        "long long long long long long long long long long"
+      ],
+      "widths": [
+        19,
+        50,
+        49
+      ]
+    }
+  },
+  {
+    "test": "footer_layout_clips_left_then_right_without_overflow",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 12345,
+              "output": 6789,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": {
+                "total": 1.234
+              }
+            }
+          }
+        }
+      ],
+      "statuses": [
+        [
+          "s",
+          "long long long long long long long long long long "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑12k ↓6.8k $1.234 12.3%/200k (auto)\u001b[39m<dark:dim>                                                       test-model\u001b[39m",
+        "long long long long long long long long long long"
+      ],
+      "widths": [
+        19,
+        100,
+        49
+      ]
+    }
+  },
+  {
+    "test": "footer_status_order_spacing_and_visible_styles_are_retained",
+    "input": {
+      "op": "render",
+      "width": 120,
+      "statuses": [
+        [
+          "b",
+          " B\n two "
+        ],
+        [
+          "a",
+          " A\t one "
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                                             test-model\u001b[39m",
+        "A one B two"
+      ],
+      "widths": [
+        19,
+        120,
+        11
+      ]
+    }
+  },
+  {
+    "test": "footer_status_order_spacing_and_visible_styles_are_retained",
+    "input": {
+      "op": "render",
+      "width": 120,
+      "statuses": [
+        [
+          "z",
+          "lower"
+        ],
+        [
+          "Z",
+          "upper"
+        ],
+        [
+          "é",
+          "accent"
+        ],
+        [
+          "e",
+          "plain"
+        ],
+        [
+          "2",
+          "two"
+        ],
+        [
+          "10",
+          "ten"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                                             test-model\u001b[39m",
+        "ten two plain accent lower upper"
+      ],
+      "widths": [
+        19,
+        120,
+        32
+      ]
+    }
+  },
+  {
+    "test": "footer_status_order_spacing_and_visible_styles_are_retained",
+    "input": {
+      "op": "render",
+      "width": 120,
+      "statuses": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "\t"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                                             test-model\u001b[39m",
+        " "
+      ],
+      "widths": [
+        19,
+        120,
+        1
+      ]
+    }
+  },
+  {
+    "test": "footer_status_order_spacing_and_visible_styles_are_retained",
+    "input": {
+      "op": "render",
+      "width": 120,
+      "statuses": [
+        [
+          "A",
+          "first"
+        ],
+        [
+          "a",
+          "second"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                                             test-model\u001b[39m",
+        "second first"
+      ],
+      "widths": [
+        19,
+        120,
+        12
+      ]
+    }
+  },
+  {
+    "test": "footer_status_order_spacing_and_visible_styles_are_retained",
+    "input": {
+      "op": "render",
+      "width": 120,
+      "statuses": [
+        [
+          "é",
+          "first"
+        ],
+        [
+          "é",
+          "second"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                                             test-model\u001b[39m",
+        "first second"
+      ],
+      "widths": [
+        19,
+        120,
+        12
+      ]
+    }
+  },
+  {
+    "test": "footer_status_order_spacing_and_visible_styles_are_retained",
+    "input": {
+      "op": "render",
+      "width": 120,
+      "statuses": [
+        [
+          "a",
+          "\u001b[7m \u001b[27m inverse"
+        ],
+        [
+          "b",
+          "\u001b[44m \u001b[49m background"
+        ],
+        [
+          "c",
+          "\u001b[4m \u001b[24m underline"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                                             test-model\u001b[39m",
+        "\u001b[7m \u001b[27m inverse \u001b[44m \u001b[49m background \u001b[4m \u001b[24m underline"
+      ],
+      "widths": [
+        19,
+        120,
+        34
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "input",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↓2 R3 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": null,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "input",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↓2 R3 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 7,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "input",
+      "kind": "number"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑7 ↓2 R3 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "output",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 R3 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": null,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "output",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 R3 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 7,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "output",
+      "kind": "number"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓7 R3 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheRead",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": null,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheRead",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 7,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheRead",
+      "kind": "number"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R7 W4 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheWrite",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R3 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": null,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheWrite",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R3 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                         test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_usage_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 7,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheWrite",
+      "kind": "number"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R3 W7 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_cost_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {}
+            }
+          }
+        }
+      ],
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R3 W4 12.3%/200k (auto)\u001b[39m<dark:dim>                                                             test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_cost_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": null
+              }
+            }
+          }
+        }
+      ],
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R3 W4 12.3%/200k (auto)\u001b[39m<dark:dim>                                                             test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_persisted_cost_field_domain",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 7
+              }
+            }
+          }
+        }
+      ],
+      "kind": "number"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑1 ↓2 R3 W4 $7.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_reports_a_reached_failure",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant"
+          }
+        }
+      ],
+      "kind": "missing"
+    },
+    "expected": {
+      "error": {
+        "name": "TypeError",
+        "message": "Cannot read properties of undefined (reading 'input')"
+      }
+    }
+  },
+  {
+    "test": "footer_missing_cost_reports_a_reached_failure",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            }
+          }
+        }
+      ],
+      "kind": "missing"
+    },
+    "expected": {
+      "error": {
+        "name": "TypeError",
+        "message": "Cannot read properties of undefined (reading 'total')"
+      }
+    }
+  },
+  {
+    "test": "footer_missing_usage_reports_a_reached_failure",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": null
+          }
+        }
+      ],
+      "kind": "null"
+    },
+    "expected": {
+      "error": {
+        "name": "TypeError",
+        "message": "Cannot read properties of null (reading 'input')"
+      }
+    }
+  },
+  {
+    "test": "footer_missing_cost_reports_a_reached_failure",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "cost": null
+            }
+          }
+        }
+      ],
+      "kind": "null"
+    },
+    "expected": {
+      "error": {
+        "name": "TypeError",
+        "message": "Cannot read properties of null (reading 'total')"
+      }
+    }
+  },
+  {
+    "test": "footer_setters_and_noop_lifecycle_keep_live_owners",
+    "input": {
+      "op": "lifecycle"
+    },
+    "expected": {
+      "before": [
+        "<dark:dim>/tmp/project (main) • first\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m"
+      ],
+      "replaced": [
+        "<dark:dim>/tmp/project (main) • second\u001b[39m",
+        "<dark:dim>?/200k (auto)\u001b[39m<dark:dim>                                                                             test-model\u001b[39m"
+      ],
+      "manual": [
+        "<dark:dim>/tmp/project (main) • second\u001b[39m",
+        "<dark:dim>?/200k\u001b[39m<dark:dim>                                                                                    test-model\u001b[39m"
+      ],
+      "after": [
+        "<dark:dim>/tmp/project (main) • second\u001b[39m",
+        "<dark:dim>?/200k\u001b[39m<dark:dim>                                                                                    test-model\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "input",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↓11 R13 W15 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                      test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": null,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "input",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑8 ↓11 R13 W15 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                   test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "output",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑9 R13 W15 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                       test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": null,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "output",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑9 ↓9 R13 W15 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                    test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheRead",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑9 ↓11 W15 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                       test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": null,
+              "cacheWrite": 4,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheRead",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑9 ↓11 R10 W15 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                   test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheWrite",
+      "kind": "missing"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑9 ↓11 R13 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                       test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_missing_usage_poisoning_is_not_null_zero",
+    "input": {
+      "op": "render",
+      "width": 100,
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": null,
+              "cost": {
+                "total": 5
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "usage": {
+              "input": 8,
+              "output": 9,
+              "cacheRead": 10,
+              "cacheWrite": 11,
+              "cost": {
+                "total": 0
+              }
+            }
+          }
+        }
+      ],
+      "field": "cacheWrite",
+      "kind": "null"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>↑9 ↓11 R13 W11 $5.000 12.3%/200k (auto)\u001b[39m<dark:dim>                                                   test-model\u001b[39m"
+      ],
+      "widths": [
+        19,
+        100
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_callbacks_read_live_model_at_each_phase",
+    "input": {
+      "op": "callback",
+      "phase": "branch"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (changed)\u001b[39m",
+        "<dark:dim>20.0%/1.0k (auto)\u001b[39m<dark:dim>                                                                 (new) after • high\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "footer_provider_callbacks_read_live_model_at_each_phase",
+    "input": {
+      "op": "callback",
+      "phase": "provider-count"
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>20.0%/1.0k (auto)\u001b[39m<dark:dim>                                                                       (new) before\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "footer_status_clipping_uses_display_columns",
+    "input": {
+      "op": "render",
+      "width": 3,
+      "statuses": [
+        [
+          "a",
+          "界界 é \u001b[7m \u001b[27m"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[0m<dark:dim>...\u001b[0m",
+        "<dark:dim>\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "\u001b[0m<dark:dim>...\u001b[0m"
+      ],
+      "widths": [
+        3,
+        3,
+        3
+      ]
+    }
+  },
+  {
+    "test": "footer_status_clipping_uses_display_columns",
+    "input": {
+      "op": "render",
+      "width": 4,
+      "statuses": [
+        [
+          "a",
+          "界界 é \u001b[7m \u001b[27m"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>1\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "\u001b[0m<dark:dim>...\u001b[39m\u001b[0m"
+      ],
+      "widths": [
+        4,
+        4,
+        3
+      ]
+    }
+  },
+  {
+    "test": "footer_status_clipping_uses_display_columns",
+    "input": {
+      "op": "render",
+      "width": 9,
+      "statuses": [
+        [
+          "a",
+          "界界 é \u001b[7m \u001b[27m"
+        ]
+      ]
+    },
+    "expected": {
+      "lines": [
+        "<dark:dim>/tmp/p\u001b[0m<dark:dim>...\u001b[39m\u001b[0m",
+        "<dark:dim>12.3%/\u001b[0m...\u001b[0m\u001b[39m<dark:dim>\u001b[39m",
+        "界界 é \u001b[7m \u001b[27m"
+      ],
+      "widths": [
+        9,
+        9,
+        8
+      ]
+    }
+  },
+  {
+    "test": "footer_theme_is_sampled_at_each_paint_boundary",
+    "input": {
+      "op": "live-theme"
+    },
+    "expected": {
+      "lines": [
+        "<light:dim>/tmp/project (main)\u001b[39m",
+        "<light:dim><dark:error>91.0%/200k (auto)\u001b[39m\u001b[39m<light:dim>                                                                  (test) test-model\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "footer_live_metadata_is_resampled_after_disposal",
+    "input": {
+      "op": "live-metadata"
+    },
+    "expected": {
+      "first": [
+        "<dark:dim>/tmp/project (main)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m",
+        "old"
+      ],
+      "second": [
+        "<dark:dim>/tmp/project (next)\u001b[39m",
+        "<dark:dim>12.3%/200k (auto)\u001b[39m<dark:dim>                                                                         test-model\u001b[39m",
+        "new"
+      ]
+    }
+  }
+]

@@ -23,6 +23,9 @@ pub mod tree_selector;
 
 pub mod user_message;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod footer;
+
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor, paint};
 use maestro_tui::{
     Component, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TerminalImage,
@@ -252,6 +255,14 @@ fn list_window(selected: usize, total: usize, capacity: usize) -> std::ops::Rang
         .saturating_sub(capacity / 2)
         .min(total.saturating_sub(capacity));
     start..start.saturating_add(capacity).min(total)
+}
+
+/// Replaces the first nonempty home variable's raw prefix for display.
+fn shorten_path_with_home(path: &str, environment: &dyn Fn(&str) -> Option<String>) -> String {
+    let home = environment("HOME")
+        .filter(|home| !home.is_empty())
+        .or_else(|| environment("USERPROFILE").filter(|home| !home.is_empty()));
+    shorten_home_path(path, home.as_deref())
 }
 
 /// Replaces a nonempty supplied raw home prefix for display.
