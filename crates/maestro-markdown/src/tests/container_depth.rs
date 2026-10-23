@@ -1,5 +1,5 @@
 //! Deep container nesting, its recorded documents and record teardown.
-use super::{REDUCED_STACK, WORKER_STACK, on_small_stack, on_stack};
+use super::{REDUCED_STACK, WORKER_STACK, nodes::children, on_small_stack, on_stack};
 use crate::{Document, InlineContext, Kind, MappedText, MarkedOptions, Node, parse_with_options};
 
 /// Caller grammars every depth row covers.
@@ -24,31 +24,6 @@ fn shape(document: &Document) -> (usize, usize) {
         pending.extend(children(&node.kind).map(|child| (depth + 1, child)));
     }
     (containers, nodes)
-}
-
-/// Children that deepen the container chain, in authored order.
-fn children(kind: &Kind) -> Box<dyn Iterator<Item = &Node> + '_> {
-    match kind {
-        Kind::Paragraph(nodes)
-        | Kind::Inline(nodes)
-        | Kind::Heading(_, nodes, _)
-        | Kind::Quote(nodes, _)
-        | Kind::Item(nodes)
-        | Kind::List(_, nodes)
-        | Kind::Strong(nodes)
-        | Kind::Strike(nodes)
-        | Kind::Emphasis(nodes)
-        | Kind::Link(nodes, _, _, _) => Box::new(nodes.iter()),
-        Kind::Image(_, metadata) => Box::new(metadata.children.iter()),
-        Kind::Table(table) => Box::new(
-            table
-                .header
-                .iter()
-                .chain(table.rows.iter().flatten())
-                .flat_map(|cell| cell.children.iter()),
-        ),
-        _ => Box::new(std::iter::empty()),
-    }
 }
 
 /// Short tag for one node kind in a recorded document.

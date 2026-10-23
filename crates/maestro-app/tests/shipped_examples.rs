@@ -3,8 +3,12 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::configuration::config;
+use maestro_markdown::{Cell, Kind, LinkType, Node};
 use std::fs;
 use std::path::Path;
+
+#[path = "../../maestro-markdown/tests/support/nodes.rs"]
+mod nodes;
 
 /// Resolve the folder through the running process's package directory.
 #[test]
@@ -55,23 +59,55 @@ fn assert_index_lists(folder: &Path, entries: &[String]) {
     }
 }
 
-/// List the files an index page points at, through a relative link or a table row.
+/// List the files an index page points at, through a relative link or a table row's
+/// first code span.
 fn index_entries(index: &str) -> Vec<String> {
-    let mut entries: Vec<String> = index
-        .split("](")
-        .skip(1)
-        .filter_map(|part| part.split_once(')'))
-        .map(|(target, _)| target)
-        .filter(|target| !target.contains("://"))
-        .map(str::to_owned)
-        .collect();
-    entries.extend(
-        index
-            .lines()
-            .filter(|line| line.starts_with('|'))
-            .filter_map(|row| row.split('`').nth(1).map(str::to_owned)),
-    );
+    let document = maestro_markdown::parse(index.to_owned());
+    let mut entries = Vec::new();
+    for node in descendants(&document.nodes) {
+        match &node.kind {
+            Kind::Link(_, _, destination, link)
+                if link.link_type == LinkType::Inline && !destination.contains("://") =>
+            {
+                entries.push(destination.clone());
+            }
+            Kind::Table(table) => {
+                entries.extend(table.rows.iter().filter_map(|row| first_code(row)));
+            }
+            _ => {}
+        }
+    }
     entries
+}
+
+/// The first code span among one table row's cells.
+fn first_code(row: &[Cell]) -> Option<String> {
+    descendants(row.iter().flat_map(|cell| &cell.children))
+        .into_iter()
+        .find_map(|node| match &node.kind {
+            Kind::Code(code) => Some(code.clone()),
+            _ => None,
+        })
+}
+
+/// Every node at or below the given ones, in authored order.
+fn descendants<'a>(roots: impl IntoIterator<Item = &'a Node>) -> Vec<&'a Node> {
+    roots
+        .into_iter()
+        .flat_map(|node| std::iter::once(node).chain(descendants(nodes::children(&node.kind))))
+        .collect()
+}
+
+/// Link labels and escaped backticks are Markdown syntax, not entry delimiters.
+#[test]
+fn index_entries_follow_the_markdown_structure() {
+    let index = r"[`a](b)`](hello.rs)
+
+| File | Notes |
+| --- | --- |
+| \`hello\` greets | `hello.rs` |
+";
+    assert_eq!(index_entries(index), ["hello.rs", "hello.rs"]);
 }
 
 /// Both rejection branches run against disposable files, without changing shipped inputs.
@@ -83,10 +119,18 @@ fn shipped_examples_index_rejects_unlisted_and_missing_files() {
     fs::write(root.join("README.md"), "# Examples\n").unwrap();
     let unlisted = std::panic::catch_unwind(|| assert_index_lists(root, &["hello.rs".to_owned()]));
     assert!(unlisted.is_err(), "an unlisted shipped file must fail");
-    fs::write(root.join("README.md"), "| `missing.rs` |\n").unwrap();
+    fs::write(
+        root.join("README.md"),
+        "| File |\n| --- |\n| `missing.rs` |\n",
+    )
+    .unwrap();
     let missing = std::panic::catch_unwind(|| assert_index_lists(root, &[]));
     assert!(missing.is_err(), "a listed missing file must fail");
-    fs::write(root.join("README.md"), "| `hello.rs` |\n").unwrap();
+    fs::write(
+        root.join("README.md"),
+        "| File |\n| --- |\n| `hello.rs` |\n",
+    )
+    .unwrap();
     assert_index_lists(root, &["hello.rs".to_owned()]);
 }
 

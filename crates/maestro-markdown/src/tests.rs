@@ -11,6 +11,8 @@ mod emphasis_work;
 mod fixture_corpus;
 mod html_progress;
 mod link_windows;
+#[path = "../tests/support/nodes.rs"]
+pub(crate) mod nodes;
 mod opener_work;
 mod paragraph_progress;
 mod segment_balance;
