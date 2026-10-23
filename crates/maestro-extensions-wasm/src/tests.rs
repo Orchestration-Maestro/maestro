@@ -78,6 +78,7 @@ mod shutdown_example;
 mod stream_events;
 mod tool_callbacks;
 mod tool_events;
+mod with_deps_example;
 
 use std::future::Future;
 

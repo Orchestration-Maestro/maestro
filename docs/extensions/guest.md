@@ -552,6 +552,31 @@ prompt. A supplied user append is already part of the event's `systemPrompt`,
 including any edit an earlier handler made; the example never appends that
 option again. Loading it into an application is opt-in, and
 `examples/extensions/README.md` gives the build and controlled-run commands.
+### A duration tool with its own dependency
+
+`examples/extensions/with-deps/main.rs` is the shipped example that parses
+durations with a regular expression. The dependency is the workspace pin,
+declared once as a development dependency of the example crate, so its examples
+and tests share it and the guest library never depends on a parsing library. It
+registers one `parse_duration` tool whose schema requires the string member
+`duration`, returns `<duration> = <milliseconds> milliseconds`, and leaves the
+details an empty document with optional metadata and termination absent.
+
+Units run from milliseconds to years, each with its short and long aliases and
+matched case-insensitively over ASCII. A bare number means milliseconds, and a
+leading minus sign or decimal point is allowed. The number is rendered as the
+shortest spelling of the double it rounds to, so values below a nanosecond keep
+exponent notation.
+
+Text outside the grammar, or longer than 100 bytes, is rejected as
+`Invalid duration: "<text>"`, with the original text inside the message; the
+empty text returns the dependency's own message instead.
+
+Loading it into an application requires a host that enables the component
+runtime, so the extension stays opt-in. The extension crate's tests instantiate
+the built component in a controlled host and compare every recorded duration
+text; `examples/extensions/README.md` gives the build and controlled-run
+commands.
 
 ### A user-request summary handler
 

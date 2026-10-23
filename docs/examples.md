@@ -8,10 +8,12 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. Three extensions ship:
+`sdk/`, and each folder has its own index page. Four extensions ship:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
-builds a quit command with two tools that ask the host to shut down, and
-`extensions/prompt_customizer.rs` builds a prompt-guidance component. The
+builds a quit command with two tools that ask the host to shut down,
+`extensions/prompt_customizer.rs` builds a prompt-guidance component, and
+`extensions/with-deps/main.rs` builds one that parses durations with a regular
+expression; the
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
 lists the examples still to come with their owners.
 

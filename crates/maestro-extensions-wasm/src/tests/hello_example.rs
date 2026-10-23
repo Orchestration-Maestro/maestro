@@ -2,8 +2,8 @@
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{invoke_tool_on_component, result_value, start};
-use crate::component_adapter::{Exports, ToolCapabilities, release};
+use super::example_support::{invoke_tool_on_component, registered, result_value};
+use crate::component_adapter::{ToolCapabilities, release};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/hello.rs"]
@@ -23,23 +23,16 @@ fn corpus() -> Value {
     serde_json::from_str(include_str!("hello_expected.json")).unwrap()
 }
 
-/// Assert the metadata and schema received by the actual host.
-fn assert_metadata(metadata: &[String]) {
+/// Assert the metadata and schema received by the actual host against a recorded document.
+pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
     assert_eq!(metadata.len(), 1);
     let mut actual: Value = serde_json::from_str(&metadata[0]).unwrap();
     actual["parameters"] = serde_json::from_str(actual["parameters"].as_str().unwrap()).unwrap();
-    assert_eq!(actual, corpus()["metadata"]);
-}
-
-/// Starts the shipped factory on a fresh controlled host and returns its tool callback key.
-async fn started() -> Result<(Controlled, u32, Exports<Controlled>), String> {
-    let (host, exports) = start::<Hello>().await?;
-    let key = host.observed().callback("tool hello")?;
-    Ok((host, key, exports))
+    assert_eq!(actual, *expected);
 }
 
 /// Releases the tool callback and asserts the host registered nothing else.
-fn released(host: &Controlled, key: u32) {
+pub(super) fn released(host: &Controlled, key: u32) {
     release(key);
     assert_eq!(host.observed().live, 0);
 }
@@ -48,8 +41,8 @@ fn released(host: &Controlled, key: u32) {
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, _exports) = started().await?;
-        assert_metadata(&host.observed().tools);
+        let (host, key, _exports) = registered::<Hello>("tool hello").await?;
+        assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare hello").is_err());
         released(&host, key);
         Ok(())
@@ -60,7 +53,7 @@ fn hello_registers_the_greeting_schema() -> Result<(), String> {
 #[test]
 fn hello_preserves_supplied_names() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, exports) = started().await?;
+        let (host, key, exports) = registered::<Hello>("tool hello").await?;
         for row in corpus()["rows"].as_array().unwrap() {
             let actual = exports
                 .invoke_tool(
@@ -87,7 +80,7 @@ fn hello_preserves_supplied_names() -> Result<(), String> {
 #[test]
 fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, exports) = started().await?;
+        let (host, key, exports) = registered::<Hello>("tool hello").await?;
         let flag = super::controlled::Flag::default();
         flag.abort();
         let actual = exports
@@ -118,7 +111,7 @@ fn hello_component_greets_through_the_host() -> Result<(), String> {
     let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
     let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
         .map_err(|error| error.to_string())?;
-    assert_metadata(&harness.observed().tools);
+    assert_metadata(&harness.observed().tools, &corpus()["metadata"]);
     let key = harness.callback("tool hello").map_err(|e| e.to_string())?;
     for row in corpus()["rows"].as_array().unwrap() {
         let resources = super::host_family::guest::ToolCapabilities {

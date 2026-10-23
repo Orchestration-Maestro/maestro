@@ -4111,6 +4111,7 @@ dependencies = [
  "maestro-json",
  "maestro-request",
  "maestro-tool",
+ "regex",
  "serde",
  "serde_json",
  "tokio",
