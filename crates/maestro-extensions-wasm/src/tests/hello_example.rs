@@ -37,15 +37,22 @@ fn result_value(encoded: &str) -> Value {
     value
 }
 
+/// Starts the shipped factory on a fresh controlled host and returns its tool callback key.
+async fn started() -> Result<(Controlled, u32, Exports<Controlled>), String> {
+    let host = Controlled::default();
+    let exports = Exports::new(host.clone());
+    exports.start::<Hello>().await?;
+    let key = host.observed().callback("tool hello")?;
+    Ok((host, key, exports))
+}
+
 /// Register once and assert the declared required string without optional metadata.
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        Exports::new(host.clone()).start::<Hello>().await?;
+        let (host, key, _exports) = started().await?;
         assert_metadata(&host.observed().tools);
         assert!(host.observed().callback("prepare hello").is_err());
-        let key = host.observed().callback("tool hello")?;
         release(key);
         assert_eq!(host.observed().live, 0);
         Ok(())
@@ -56,10 +63,7 @@ fn hello_registers_the_greeting_schema() -> Result<(), String> {
 #[test]
 fn hello_preserves_supplied_names() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<Hello>().await?;
-        let key = host.observed().callback("tool hello")?;
+        let (host, key, exports) = started().await?;
         for row in corpus()["rows"].as_array().unwrap() {
             let actual = exports
                 .invoke_tool(
@@ -87,10 +91,7 @@ fn hello_preserves_supplied_names() -> Result<(), String> {
 #[test]
 fn hello_ignores_unused_invocation_handles() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<Hello>().await?;
-        let key = host.observed().callback("tool hello")?;
+        let (host, key, exports) = started().await?;
         let flag = super::controlled::Flag::default();
         flag.abort();
         let actual = exports
