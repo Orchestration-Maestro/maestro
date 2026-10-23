@@ -60,7 +60,7 @@ enum RecordedMessage {
     },
     /// Unknown role.
     #[serde(rename = "foreign")]
-    Foreign,
+    Foreign {},
 }
 /// Construct complete typed input and prove no supplied field was discarded.
 fn message(value: &Value) -> AgentMessage<CustomAgentMessages<Foreign>> {
@@ -107,7 +107,7 @@ fn message(value: &Value) -> AgentMessage<CustomAgentMessages<Foreign>> {
                 timestamp,
             },
         )))),
-        RecordedMessage::Foreign => AgentMessage::Custom(Arc::new(RwLock::new(
+        RecordedMessage::Foreign {} => AgentMessage::Custom(Arc::new(RwLock::new(
             CustomAgentMessages::Other(Foreign("foreign".into())),
         ))),
     };

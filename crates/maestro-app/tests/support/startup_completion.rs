@@ -29,7 +29,7 @@ struct Input {
 #[serde(tag = "kind", deny_unknown_fields)]
 enum InputEntry {
     #[serde(rename = "dir")]
-    Directory,
+    Directory {},
     #[serde(rename = "file")]
     File { text: String },
     #[serde(rename = "link")]
@@ -67,7 +67,7 @@ struct Failure {
 #[serde(tag = "kind", deny_unknown_fields)]
 enum Entry {
     #[serde(rename = "dir")]
-    Directory,
+    Directory {},
     #[serde(rename = "file")]
     File { hex: String },
     #[serde(rename = "link")]
@@ -106,7 +106,7 @@ fn setup(root: &Path, input: &Input) {
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         match entry {
-            InputEntry::Directory => fs::create_dir_all(path).unwrap(),
+            InputEntry::Directory {} => fs::create_dir_all(path).unwrap(),
             InputEntry::File { text } => {
                 fs::write(path, text.replace("$ROOT", root.to_str().unwrap())).unwrap();
             }
@@ -162,7 +162,7 @@ fn check_tree(root: &Path, expected: &BTreeMap<String, Entry>) {
         let path = root.join(name);
         let meta = fs::symlink_metadata(&path).unwrap();
         match entry {
-            Entry::Directory => assert!(meta.is_dir(), "{name}"),
+            Entry::Directory {} => assert!(meta.is_dir(), "{name}"),
             Entry::File { hex: expected } => {
                 assert!(meta.is_file());
                 assert!(
