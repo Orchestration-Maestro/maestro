@@ -25,7 +25,7 @@ Windows backend packages under BSL-1.0:
 
 | Package | Version |
 |---|---|
-| clipboard-win | 5.4.1 |
+| clipboard-win | 5.4.3 |
 | error-code | 3.4.0 |
 | windows-win | 3.0.0 |
 

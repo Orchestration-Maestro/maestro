@@ -422,7 +422,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 The desktop clipboard uses clipboard-rs 0.2.4 under MIT. Its Windows backend
 includes these packages by Douman <douman@gmx.se>, under BSL-1.0:
 
-- [clipboard-win 5.4.1](https://github.com/DoumanAsh/clipboard-win)
+- [clipboard-win 5.4.3](https://github.com/DoumanAsh/clipboard-win)
 - [error-code 3.4.0](https://github.com/DoumanAsh/error-code)
 - [windows-win 3.0.0](https://github.com/DoumanAsh/windows-win-rs)
 
