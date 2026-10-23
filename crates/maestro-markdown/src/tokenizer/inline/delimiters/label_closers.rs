@@ -1,23 +1,34 @@
-//! Source-owned closing positions of each caller grammar's inline label scan.
+//! Source-owned bracket observations used by inline link admission.
 
 /// Offset with no reachable closing pair.
 const ABSENT: usize = usize::MAX;
 
-/// Nearest closing `](` each label offset can reach.
+/// Closing bracket observations shared by link admission.
 pub(super) struct LabelClosers {
     /// Nearest closing-pair byte offset each label offset can reach, or [`ABSENT`].
     reach: Vec<usize>,
+    /// Nearest unescaped closing bracket at each offset.
+    brackets: Vec<usize>,
 }
 
 impl LabelClosers {
-    /// Prepare reachable closing pairs, or nothing where no label can close.
+    /// Prepare reference-bracket observations and direct-label closing pairs.
     ///
-    /// One forward pass pairs brackets; one reverse pass then answers every offset.
+    /// Direct-label tables are absent unless `](` occurs in the source.
     pub(super) fn prepare(text: &str) -> Option<Self> {
-        if !text.contains("](") {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.reference_bytes += text.len());
+        if !text.contains(']') {
             return None;
         }
         let bytes = text.as_bytes();
+        let brackets = closing_brackets(bytes);
+        if !text.contains("](") {
+            return Some(Self {
+                reach: Vec::new(),
+                brackets,
+            });
+        }
         let pairs = pair_ends(bytes);
         let mut reach = vec![ABSENT; bytes.len() + 1];
         let mut ticks = Ticks::NONE;
@@ -36,7 +47,12 @@ impl LabelClosers {
                 ticks.record(offset);
             }
         }
-        Some(Self { reach })
+        Some(Self { reach, brackets })
+    }
+
+    /// Whether an unescaped closing bracket remains inside this window.
+    pub(super) fn reference_possible(&self, start: usize, end: usize) -> bool {
+        self.brackets.get(start).is_some_and(|closer| *closer < end)
     }
 
     /// Select the closing pair a label starting at `start` reaches inside the window.
@@ -122,4 +138,19 @@ impl Ticks {
         }
         self.start = offset;
     }
+}
+
+/// Record each offset's nearest unescaped closing bracket in one reverse pass.
+fn closing_brackets(bytes: &[u8]) -> Vec<usize> {
+    let mut brackets = vec![ABSENT; bytes.len() + 1];
+    for offset in (0..bytes.len()).rev() {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.reference_bytes += 1);
+        brackets[offset] = match bytes[offset] {
+            b']' => offset,
+            b'\\' => after(&brackets, offset + 2),
+            _ => brackets[offset + 1],
+        };
+    }
+    brackets
 }

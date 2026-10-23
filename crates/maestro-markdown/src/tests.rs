@@ -13,6 +13,8 @@ mod html_progress;
 mod link_windows;
 mod opener_work;
 mod paragraph_progress;
+mod reference_windows;
+mod reference_work;
 mod segment_balance;
 mod shared_text;
 mod table_progress;
@@ -56,6 +58,8 @@ pub(crate) const SELECTIONS: [MarkedOptions; 5] = [
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
+    /// Source bytes prepared, admission queries and attempted reference rule operands.
+    pub(crate) reference_bytes: usize,
     /// Bytes visited while constructing or recounting delimiter widths.
     pub(crate) emphasis_left: usize,
     /// Matched bytes visited by right-candidate iteration.

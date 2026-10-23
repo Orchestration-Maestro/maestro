@@ -13,7 +13,7 @@ pub(crate) struct Delimiters {
     tildes: Option<deletion::DeletionEnds>,
     /// Closing runs of the caller's code-span grammar, absent without backticks.
     backticks: Option<code_spans::CodeEnds>,
-    /// Closing pairs the caller's label scan can reach, absent without `](`.
+    /// Direct-link and reference bracket observations, absent without `]`.
     labels: Option<label_closers::LabelClosers>,
 }
 
@@ -66,6 +66,18 @@ impl Delimiters {
         range: &Range<usize>,
     ) -> Option<(usize, Range<usize>)> {
         self.backticks.as_ref()?.find(text, range)
+    }
+
+    /// Admit reference matching only where a closing bracket remains in the window.
+    pub(crate) fn reference_possible(&self, text: &str, range: &Range<usize>) -> bool {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.reference_bytes += 1);
+        let bang = usize::from(text.starts_with('!'));
+        text.as_bytes().get(bang) == Some(&b'[')
+            && self
+                .labels
+                .as_ref()
+                .is_some_and(|labels| labels.reference_possible(range.start + bang + 1, range.end))
     }
 
     /// Select the closing pair an authored link label reaches inside the window.
