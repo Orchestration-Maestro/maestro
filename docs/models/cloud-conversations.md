@@ -214,12 +214,13 @@ and a name that holds a semicolon or starts with a space. A transfer the server 
 is not found rather than an empty script, and a transfer that breaks off is an error
 rather than a shortened one.
 
-A passive data connection opens in extended passive mode first and falls back to the
-classic mode, which keeps the data host the server advertises unless that address is
-private and the control connection's is not. A control or data wait that sees no traffic
-for thirty seconds fails with a timeout, a directory listing larger than 40 MiB is
-refused, and the control and data connections close on success, failure and
-cancellation.
+A passive data connection opens in extended passive mode first, taking only the port from a
+reply that may delimit it with `|` or, as the IBM i server does, with `!`. When that preparation
+fails the loader falls back to the classic mode, which keeps the data host the server advertises
+unless that address is private and the control connection's is not. A control or data wait that
+sees no traffic for thirty seconds fails with a timeout that ends the session, a directory
+listing larger than 40 MiB is refused, and the control and data connections close on success,
+failure and cancellation.
 
 ## Hooks and results
 

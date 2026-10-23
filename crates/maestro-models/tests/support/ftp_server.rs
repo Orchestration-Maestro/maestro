@@ -2,12 +2,11 @@
 //! connection for each listing and transfer.
 
 #![cfg(not(target_arch = "wasm32"))]
-// Reply shapes and observations only the library tests build are gated on `cfg(test)`, so the
-// integration binary compiles only the peer it reads.
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::thread::JoinHandle;
 
@@ -74,8 +73,8 @@ impl Transfer {
 /// How the server answers the passive-mode commands.
 #[derive(Clone)]
 pub struct Passive {
-    /// Whether `EPSV` is answered.
-    pub extended: bool,
+    /// The character an `EPSV` reply repeats three times around its port, when `EPSV` is answered.
+    pub extended: Option<char>,
     /// The data host `PASV` advertises, when `PASV` is answered.
     pub standard: Option<Ipv4Addr>,
 }
@@ -83,14 +82,14 @@ pub struct Passive {
 impl Passive {
     /// A server that answers both commands on its control connection's address.
     pub const BOTH: Self = Self {
-        extended: true,
+        extended: Some('|'),
         standard: Some(Ipv4Addr::LOCALHOST),
     };
 
     /// The data host this script binds for the command, when it answers it.
     fn host(&self, command: &str) -> Option<Ipv4Addr> {
         match command {
-            "EPSV" if self.extended => Some(Ipv4Addr::LOCALHOST),
+            "EPSV" if self.extended.is_some() => Some(Ipv4Addr::LOCALHOST),
             "PASV" => self.standard,
             _ => None,
         }
@@ -120,7 +119,6 @@ impl Silence {
 }
 
 /// One scripted server behaviour.
-#[derive(Clone)]
 pub struct Scenario {
     /// Whether `PASS` is accepted.
     pub login: bool,
@@ -136,6 +134,25 @@ pub struct Scenario {
     pub passive: Passive,
     /// Commands the server does not answer.
     pub silence: Silence,
+    /// Commands whose reply waits for the test to release it.
+    pub held: Option<Held>,
+}
+
+/// Commands whose reply the peer holds until the test releases it.
+pub struct Held {
+    /// The commands whose reply waits for a release.
+    pub commands: &'static [&'static str],
+    /// One release per held reply, sent by the test.
+    pub releases: mpsc::Receiver<()>,
+}
+
+impl Held {
+    /// Wait for the test's release, when this command is one whose reply it holds.
+    fn gate(&self, command: &str) {
+        if self.commands.contains(&command) {
+            self.releases.recv().ok();
+        }
+    }
 }
 
 impl Default for Scenario {
@@ -151,6 +168,7 @@ impl Default for Scenario {
             transfer: Transfer::body(b"function FindProxyForURL(){return 'DIRECT'}".to_vec()),
             passive: Passive::BOTH,
             silence: Silence::EVERY,
+            held: None,
         }
     }
 }
@@ -248,17 +266,19 @@ fn session(
     mut control: TcpStream,
     scenario: &Scenario,
     observed: &Observed,
-    stop: &AtomicBool,
 ) -> std::io::Result<()> {
     let mut reader = BufReader::new(control.try_clone()?);
     reply(&mut control, "220 scripted ftp ready")?;
-    let mut data: Option<TcpStream> = None;
+    let mut data: Option<TcpListener> = None;
     loop {
         let Some(command) = read_command(&mut reader)? else {
             observed.control_closed.store(true, Ordering::SeqCst);
             return Ok(());
         };
         observed.command(&command);
+        if let Some(held) = &scenario.held {
+            held.gate(command.split(' ').next().unwrap_or_default());
+        }
         if !scenario.silence.answers(&command) {
             // A command the script never answers is a stalled control connection.
             continue;
@@ -268,14 +288,7 @@ fn session(
                 reply(&mut control, "221 bye")?;
                 // The client closes the control connection next, which the next read observes.
             }
-            "PASV" | "EPSV" => match passive(&command, &mut control, &scenario.passive)? {
-                Some(listener) => match accept_data(&listener, stop)? {
-                    Some(stream) => data = Some(stream),
-                    // A stopped peer leaves the data connection unopened and ends the session.
-                    None => return Ok(()),
-                },
-                None => data = None,
-            },
+            "PASV" | "EPSV" => data = passive(&command, &mut control, &scenario.passive)?,
             "USER" => reply(&mut control, "331 need password")?,
             "PASS" if scenario.login => reply(&mut control, "230 logged in")?,
             "PASS" => reply(&mut control, "530 login incorrect")?,
@@ -316,6 +329,8 @@ fn passive(
                 ),
             )?;
         }
+        // A server on IBM i delimits with `!` and leaves out the usual sentence.
+        _ if script.extended == Some('!') => reply(control, &format!("229 (!!!{port}!)"))?,
         _ => reply(
             control,
             &format!("229 Entering Extended Passive Mode (|||{port}|)"),
@@ -324,24 +339,11 @@ fn passive(
     Ok(Some(listener))
 }
 
-/// Accept the data connection, or nothing when the peer stops before it opens.
-fn accept_data(listener: &TcpListener, stop: &AtomicBool) -> std::io::Result<Option<TcpStream>> {
-    listener.set_nonblocking(true)?;
-    loop {
-        match listener.accept() {
-            Ok((stream, _)) => {
-                stream.set_nonblocking(false)?;
-                return Ok(Some(stream));
-            }
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                if stop.load(Ordering::SeqCst) {
-                    return Ok(None);
-                }
-                std::thread::yield_now();
-            }
-            Err(error) => return Err(error),
-        }
-    }
+/// Take the data connection the client opened after a passive reply.
+fn accepted(data: &mut Option<TcpListener>) -> std::io::Result<TcpStream> {
+    // The client connects before it sends the command, so the connection is already queued.
+    let listener = data.take().ok_or_else(no_data)?;
+    listener.accept().map(|(stream, _)| stream)
 }
 
 /// Answer `FEAT` with its scripted reply.
@@ -362,7 +364,7 @@ fn modification(control: &mut TcpStream, announced: &Modification) -> std::io::R
 fn refused(
     control: &mut TcpStream,
     announced: Option<&'static str>,
-    data: &mut Option<TcpStream>,
+    data: &mut Option<TcpListener>,
 ) -> std::io::Result<bool> {
     let Some(refusal) = announced else {
         return Ok(false);
@@ -376,7 +378,7 @@ fn refused(
 fn listed(
     control: &mut TcpStream,
     announced: &Listing,
-    data: &mut Option<TcpStream>,
+    data: &mut Option<TcpListener>,
     observed: &Observed,
 ) -> std::io::Result<()> {
     if refused(control, announced.refusal, data)? {
@@ -384,7 +386,7 @@ fn listed(
     }
     let lines = announced.lines.join("\r\n") + "\r\n";
     reply(control, "150 here comes the listing")?;
-    let stream = data.take().ok_or_else(no_data)?;
+    let stream = accepted(data)?;
     send_body(stream, lines.as_bytes(), true, observed)?;
     reply(control, "226 listing done")
 }
@@ -393,14 +395,14 @@ fn listed(
 fn transferred(
     control: &mut TcpStream,
     announced: &Transfer,
-    data: &mut Option<TcpStream>,
+    data: &mut Option<TcpListener>,
     observed: &Observed,
 ) -> std::io::Result<()> {
     if refused(control, announced.refusal, data)? {
         return Ok(());
     }
     reply(control, "150 opening data connection")?;
-    let stream = data.take().ok_or_else(no_data)?;
+    let stream = accepted(data)?;
     // A transfer without a completion reply keeps the data connection open, so the client's read
     // never sees its end.
     send_body(
@@ -481,7 +483,7 @@ fn accept_until_stopped(
         let last = scenarios.len().saturating_sub(1);
         let script = &scenarios[served.min(last)];
         served += 1;
-        if let Err(error) = session(control, script, observed, stop) {
+        if let Err(error) = session(control, script, observed) {
             // A client that went away mid-reply is a completed session, not a peer failure.
             if !matches!(
                 error.kind(),

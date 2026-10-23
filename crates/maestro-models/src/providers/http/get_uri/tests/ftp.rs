@@ -4,10 +4,33 @@ use super::super::ftp::{INACTIVITY, instant_millis, payload, port};
 use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
 use crate::providers::http::{Route, configured_fetch};
 use crate::tests::ftp_server::{
-    self, Features, Listing, Modification, Passive, Peer, Scenario, Silence, Transfer,
+    self, Features, Held, Listing, Modification, Passive, Peer, Scenario, Silence, Transfer,
 };
+use std::future::Future;
 use std::net::Ipv4Addr;
+use std::pin::Pin;
+use std::task::{Context, Poll, Waker};
 use std::time::Duration;
+
+/// The silence a login reply may take and still be inside its own window.
+const LOGIN_WAIT: Duration = Duration::from_secs(20);
+
+/// Poll one step of a controlled load, without a waker to say when it may make progress.
+fn step<T>(loading: &mut Pin<&mut impl Future<Output = T>>) -> Poll<T> {
+    loading
+        .as_mut()
+        .poll(&mut Context::from_waker(Waker::noop()))
+}
+
+/// Poll a load until it completes, letting the peer answer between steps.
+async fn settle<T>(loading: &mut Pin<&mut impl Future<Output = T>>) -> T {
+    loop {
+        if let Poll::Ready(output) = step(loading) {
+            return output;
+        }
+        tokio::task::yield_now().await;
+    }
+}
 
 /// A source URL naming `peer`, with optional user info and a path.
 fn source(peer: &Peer, userinfo: &str, path: &str) -> String {
@@ -50,6 +73,14 @@ fn listing(lines: Vec<String>) -> Listing {
         lines,
         refusal: None,
     }
+}
+
+/// The number of file transfer commands the peer read.
+fn transfers(commands: &[String]) -> usize {
+    commands
+        .iter()
+        .filter(|line| line.starts_with("RETR"))
+        .count()
 }
 
 /// A Unix text-listing entry, which carries no comparable modification stamp.
@@ -499,6 +530,85 @@ fn ftp_transfer_refusal_reports_not_found() {
 }
 
 #[test]
+fn ftp_transfer_refusal_does_not_retry_the_data_connection() {
+    crate::tests::runtime::run(async {
+        // The server offers extended passive mode only, so a second preparation would replace the
+        // file's own refusal with an unrelated one.
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                refusal: Some("550 no such file"),
+                ..Transfer::body(Vec::new())
+            },
+            passive: Passive {
+                extended: Some('|'),
+                standard: None,
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert!(error.is::<NotFound>(), "{error}");
+        let commands = peer.commands();
+        assert_eq!(transfers(&commands), 1, "{commands:?}");
+        assert!(
+            !commands.iter().any(|line| line.starts_with("PASV")),
+            "{commands:?}"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_transient_transfer_refusal_is_not_retried() {
+    crate::tests::runtime::run(async {
+        // A transient refusal of the transfer command is the caller's answer, not a reason to
+        // prepare the data connection again and ask once more.
+        let peer = ftp_server::serve(vec![Scenario {
+            transfer: Transfer {
+                refusal: Some("450 file busy"),
+                ..Transfer::body(Vec::new())
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("450 file busy"), "{error}");
+        assert!(!error.is::<NotFound>(), "{error}");
+        let commands = peer.commands();
+        assert_eq!(transfers(&commands), 1, "{commands:?}");
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
+fn ftp_ibm_i_extended_passive_reply_transfers() {
+    crate::tests::runtime::run(async {
+        // A server on IBM i delimits its extended passive port with `!` rather than `|`.
+        let peer = ftp_server::serve(vec![Scenario {
+            passive: Passive {
+                extended: Some('!'),
+                standard: None,
+            },
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        let commands = peer.commands();
+        assert!(commands.contains(&"EPSV".to_owned()), "{commands:?}");
+        assert!(
+            !commands.iter().any(|line| line.starts_with("PASV")),
+            "{commands:?}"
+        );
+        peer.finish().unwrap();
+    });
+}
+
+#[test]
 fn ftp_interrupted_transfer_reports_an_error() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
@@ -654,7 +764,7 @@ fn ftp_epsv_only_server_transfers() {
     crate::tests::runtime::run(async {
         let peer = ftp_server::serve(vec![Scenario {
             passive: Passive {
-                extended: true,
+                extended: Some('|'),
                 standard: None,
             },
             ..Scenario::default()
@@ -679,7 +789,7 @@ fn ftp_advertised_data_host_is_kept() {
         // is the only address its data listener answers on.
         let peer = ftp_server::serve(vec![Scenario {
             passive: Passive {
-                extended: false,
+                extended: None,
                 standard: Some(Ipv4Addr::new(127, 0, 0, 2)),
             },
             ..Scenario::default()
@@ -703,19 +813,21 @@ fn ftp_silent_server_times_out_the_control_connection() {
             modification: false,
             ..Silence::EVERY
         });
-        let uri = url::Url::parse(&source(&peer, "", "/script.pac")).unwrap();
-        let task = tokio::spawn(async move {
-            let fetch = configured_fetch(Route::default());
-            get_uri::load(&uri, None, &fetch).await
-        });
-        // Step the clock only once the unanswered command is the one the loader waits for.
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        // Step the clock only once the loader waits for the reply the peer never sends.
         while !peer.commands().iter().any(|line| line.starts_with("MDTM")) {
+            assert!(step(&mut loading).is_pending());
             tokio::task::yield_now().await;
         }
-        tokio::time::advance(INACTIVITY + Duration::from_secs(1)).await;
-        let error = task
+        tokio::time::advance(INACTIVITY.saturating_sub(Duration::from_secs(1))).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "the wait is still inside its window"
+        );
+        tokio::time::advance(Duration::from_secs(2)).await;
+        let error = settle(&mut loading)
             .await
-            .expect("the stalled load finishes")
             .expect_err("the stalled load fails");
         assert_eq!(error.to_string(), "Timeout (control socket)");
         peer.finish().unwrap();
@@ -726,7 +838,17 @@ fn ftp_silent_server_times_out_the_control_connection() {
 fn ftp_silent_data_connection_times_out() {
     crate::tests::runtime::run_paused(async {
         let mut data = Silent;
-        let error = payload(&mut data, None).await.unwrap_err();
+        let mut reading = std::pin::pin!(payload(&mut data, None));
+        assert!(step(&mut reading).is_pending(), "the read awaits a byte");
+        tokio::time::advance(INACTIVITY.saturating_sub(Duration::from_secs(1))).await;
+        assert!(
+            step(&mut reading).is_pending(),
+            "the read is still inside its window"
+        );
+        tokio::time::advance(Duration::from_secs(2)).await;
+        let error = reading
+            .await
+            .expect_err("the stalled data connection fails the read");
         assert_eq!(error.to_string(), "Timeout (data socket)");
     });
 }
@@ -742,6 +864,50 @@ impl tokio::io::AsyncRead for Silent {
     ) -> std::task::Poll<std::io::Result<()>> {
         std::task::Poll::Pending
     }
+}
+
+#[test]
+fn ftp_login_window_resets_for_each_reply() {
+    crate::tests::runtime::run_paused(async {
+        let (releasing, held) = std::sync::mpsc::channel();
+        let peer = ftp_server::serve(vec![Scenario {
+            held: Some(Held {
+                commands: &["USER", "PASS"],
+                releases: held,
+            }),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        // Declared after the peer, so a failing step drops every sender before the peer waits for
+        // its held reply.
+        let releases = releasing;
+        let url = source(&peer, "", "/script.pac");
+        let mut loading = std::pin::pin!(load(&url, None));
+        while !peer.commands().iter().any(|line| line.starts_with("USER")) {
+            assert!(step(&mut loading).is_pending());
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "the USER reply has its own window"
+        );
+        releases.send(()).unwrap();
+        while !peer.commands().iter().any(|line| line.starts_with("PASS")) {
+            assert!(step(&mut loading).is_pending());
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(LOGIN_WAIT).await;
+        assert!(
+            step(&mut loading).is_pending(),
+            "the PASS reply has its own window, past the first window's deadline"
+        );
+        releases.send(()).unwrap();
+        let load = settle(&mut loading).await;
+        let loaded = load.expect("both replies are inside their own windows");
+        assert_eq!(loaded.bytes, b"function FindProxyForURL(){return 'DIRECT'}");
+        peer.finish().unwrap();
+    });
 }
 
 #[test]
@@ -783,6 +949,37 @@ fn ftp_listing_read_stops_at_the_reference_limit() {
         assert_eq!(payload(&mut data, Some(10)).await.unwrap(), b"0123456789");
         let mut data: &[u8] = b"0123456789";
         assert_eq!(payload(&mut data, None).await.unwrap(), b"0123456789");
+    });
+}
+
+#[test]
+fn ftp_listing_beyond_the_reference_limit_is_refused() {
+    crate::tests::runtime::run(async {
+        // The reference client refuses a listing beyond 40 MiB instead of accumulating it, so a
+        // server that keeps sending is stopped rather than answered.
+        let line = "type=file;size=4;modify=20240101120000; filler.pac";
+        let mut lines = Vec::new();
+        let mut bytes = 0;
+        while bytes <= 40 * 1024 * 1024 {
+            lines.push(line.to_owned());
+            bytes += line.len() + 2;
+        }
+        let peer = ftp_server::serve(vec![Scenario {
+            modification: Modification::Reply("500 unknown command"),
+            listing: listing(lines),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let error = load(&source(&peer, "", "/script.pac"), None)
+            .await
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("The FTP server sent a directory listing larger than 41943040 bytes"),
+            "{error}"
+        );
+        peer.finish().unwrap();
     });
 }
 

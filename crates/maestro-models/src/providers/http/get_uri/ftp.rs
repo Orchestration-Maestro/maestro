@@ -5,14 +5,14 @@ use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
-use tokio::io::{AsyncRead, AsyncReadExt as _};
+use tokio::io::{AsyncRead, AsyncReadExt as _, AsyncWriteExt as _};
 use tokio::net::TcpStream;
 
 use super::{Cache, Failure, Source, listing, notfound::NotFound, notmodified::NotModified};
 use maestro_path::posix;
 use suppaftp::Status;
-use suppaftp::tokio::{AsyncFtpStream, AsyncNoTlsStream, TransferStream};
-use suppaftp::types::{FileType, FtpError, Mode, Response};
+use suppaftp::tokio::AsyncFtpStream;
+use suppaftp::types::{FtpError, Response};
 
 /// The directory facts the reference client asks for before a machine listing.
 const LISTING_FACTS: &str = concat!(
@@ -59,7 +59,8 @@ pub(super) fn instant_millis(stamp: &str) -> Option<i64> {
     Some(date.and_time(time).and_utc().timestamp_millis() + i64::from(millis))
 }
 
-/// An open FTP session and the passive strategy chosen for it.
+/// An open FTP session: its control connection, the passive strategy it accepted and whether that
+/// connection stalled.
 struct Session {
     /// The control connection.
     stream: AsyncFtpStream,
@@ -67,6 +68,8 @@ struct Session {
     machine: bool,
     /// The passive strategy that worked, once one has.
     strategy: Option<Strategy>,
+    /// The socket whose inactivity ended the session, which no later wait can use.
+    stalled: Option<Connection>,
 }
 
 impl Session {
@@ -81,8 +84,13 @@ impl Session {
             AsyncFtpStream::connect((host, port(uri))),
         )
         .await?;
-        let mut stream = routing(stream).await;
-        let _ = bounded(Connection::Control, stream.opts("UTF8", Some("ON"))).await;
+        let mut session = Self {
+            stream,
+            machine: false,
+            strategy: None,
+            stalled: None,
+        };
+        let _ = session.command("OPTS UTF8 ON", &[Status::CommandOk]).await;
         let user = credential(
             &super::super::proxy_agent::decode(uri.username())?,
             "anonymous",
@@ -91,27 +99,70 @@ impl Session {
             &super::super::proxy_agent::decode(uri.password().unwrap_or_default())?,
             "guest",
         );
-        bounded(Connection::Control, stream.login(&user, &password)).await?;
-        let machine = advertised(&mut stream).await;
-        bounded(Connection::Control, stream.transfer_type(FileType::Binary)).await?;
-        let _ = bounded(
+        session.login(&user, &password).await?;
+        session.machine = session.advertised().await;
+        session.command("TYPE I", &[Status::CommandOk]).await?;
+        let _ = session.command("STRU F", &[Status::CommandOk]).await;
+        let _ = session.command("OPTS UTF8 ON", &[Status::CommandOk]).await;
+        if session.machine {
+            let _ = session
+                .command(format!("OPTS MLST {LISTING_FACTS}"), &[Status::CommandOk])
+                .await;
+        }
+        Ok(session)
+    }
+
+    /// Log in, answering a password request as the reference does.
+    async fn login(&mut self, user: &str, password: &str) -> Result<(), Failure> {
+        let asked = self
+            .command(
+                format!("USER {user}"),
+                &[Status::LoggedIn, Status::NeedPassword],
+            )
+            .await?;
+        if asked.status == Status::NeedPassword {
+            self.command(format!("PASS {password}"), &[Status::LoggedIn])
+                .await?;
+        }
+        Ok(())
+    }
+
+    /// Send one command and read its reply, within one inactivity window.
+    async fn command(
+        &mut self,
+        command: impl ToString,
+        accepted: &[Status],
+    ) -> Result<Response, Failure> {
+        self.usable()?;
+        let result = bounded(
             Connection::Control,
-            stream.custom_command("STRU F", &[Status::CommandOk]),
+            self.stream.custom_command(command, accepted),
         )
         .await;
-        let _ = bounded(Connection::Control, stream.opts("UTF8", Some("ON"))).await;
-        if machine {
-            let _ = bounded(
-                Connection::Control,
-                stream.opts("MLST", Some(LISTING_FACTS)),
-            )
-            .await;
+        self.settled(result)
+    }
+
+    /// Read one reply, within one inactivity window.
+    async fn reply(&mut self, accepted: &[Status]) -> Result<Response, Failure> {
+        self.usable()?;
+        let result = bounded(Connection::Control, self.stream.read_response_in(accepted)).await;
+        self.settled(result)
+    }
+
+    /// Refuse a wait once the control connection stalled, as the reference's closed client does.
+    fn usable(&self) -> Result<(), Failure> {
+        match self.stalled {
+            Some(connection) => Err(Box::new(Stalled(connection))),
+            None => Ok(()),
         }
-        Ok(Self {
-            stream,
-            machine,
-            strategy: None,
-        })
+    }
+
+    /// Remember a control stall, after which the session can answer no further command.
+    fn settled<T>(&mut self, result: Result<T, Failure>) -> Result<T, Failure> {
+        if result.as_ref().err().is_some_and(stalling) {
+            self.stalled = Some(Connection::Control);
+        }
+        result
     }
 
     /// Compare the file's modification instant with the retained one, then transfer it.
@@ -143,12 +194,7 @@ impl Session {
 
     /// The file's modification instant, or why the server did not report one.
     async fn modification(&mut self, path: &str) -> Result<Option<i64>, Time> {
-        let requested = bounded(
-            Connection::Control,
-            self.stream
-                .custom_command(format!("MDTM {path}"), &[Status::File]),
-        )
-        .await;
+        let requested = self.command(format!("MDTM {path}"), &[Status::File]).await;
         match requested {
             // The reply body repeats its code, so the stamp starts at its fourth byte.
             Ok(response) => Ok(String::from_utf8_lossy(&response.body)
@@ -200,68 +246,98 @@ impl Session {
 
     /// One listing command's lines, within the reference client's listing limit.
     async fn listing(&mut self, command: &str) -> Result<Vec<String>, Failure> {
-        let mut data = self.data(Request::Listing(command)).await?;
+        let mut data = self.data().await?;
+        self.command(command, &[Status::AboutToSend, Status::AlreadyOpen])
+            .await?;
         let bytes = payload(&mut data, Some(LISTING_LIMIT)).await?;
-        bounded(Connection::Control, data.finish()).await?;
+        self.complete(&mut data).await?;
         Ok(split(&bytes))
     }
 
     /// Read the file, reporting a refused file as the source's not-found category.
     async fn transfer(&mut self, path: &str) -> Result<Vec<u8>, Failure> {
-        let mut data = self.data(Request::File(path)).await.map_err(unavailable)?;
+        let mut data = self.data().await?;
+        self.command(
+            format!("RETR {path}"),
+            &[Status::AboutToSend, Status::AlreadyOpen],
+        )
+        .await
+        .map_err(unavailable)?;
         let bytes = payload(&mut data, None).await?;
-        bounded(Connection::Control, data.finish()).await?;
+        self.complete(&mut data).await?;
         Ok(bytes)
     }
 
-    /// Open a data connection, using the first passive strategy the server accepts.
-    async fn data(&mut self, request: Request<'_>) -> Result<Data, Failure> {
-        let chosen = self.strategy;
-        let strategy = chosen.unwrap_or(Strategy::Extended);
-        self.stream.set_mode(strategy.mode());
-        match self.connect(request).await {
-            Ok(data) => {
-                self.strategy = Some(strategy);
-                Ok(data)
-            }
-            // A server that refuses a strategy may accept the next one, so the reference tries
-            // both before it reports a transfer as impossible.
-            Err(_) if chosen.is_none() => {
-                self.strategy = Some(Strategy::Standard);
-                self.stream.set_mode(Mode::Passive);
-                self.connect(request).await
-            }
-            Err(failure) => Err(failure),
+    /// Close the data connection and read the reply that completes the transfer.
+    async fn complete(&mut self, data: &mut TcpStream) -> Result<(), Failure> {
+        data.shutdown()
+            .await
+            .map_err(|error| -> Failure { FtpError::ConnectionError(error).into() })?;
+        self.reply(&[Status::ClosingDataConnection, Status::RequestedFileActionOk])
+            .await?;
+        Ok(())
+    }
+
+    /// Open a data connection with the passive strategy the server accepted, or the first it
+    /// accepts when none was tried yet.
+    async fn data(&mut self) -> Result<TcpStream, Failure> {
+        if let Some(strategy) = self.strategy {
+            return self.prepare(strategy).await;
+        }
+        // A server that refuses a strategy may accept the next one, so the reference tries both
+        // before it reports a transfer as impossible.
+        if let Ok(data) = self.prepare(Strategy::Extended).await {
+            self.strategy = Some(Strategy::Extended);
+            Ok(data)
+        } else {
+            let data = self.prepare(Strategy::Standard).await?;
+            self.strategy = Some(Strategy::Standard);
+            Ok(data)
         }
     }
 
-    /// Send one command and return the data connection it opened.
-    async fn connect(&mut self, request: Request<'_>) -> Result<Data, Failure> {
-        bounded(Connection::Control, async {
-            match request {
-                Request::Listing(command) => self
-                    .stream
-                    .custom_data_command(command, &[Status::AboutToSend, Status::AlreadyOpen])
-                    .await
-                    .map(|(_, data)| data),
-                Request::File(path) => self.stream.retr_as_stream(path).await,
+    /// Ask the server for a data address and connect to it, without sending the operation itself.
+    async fn prepare(&mut self, strategy: Strategy) -> Result<TcpStream, Failure> {
+        let address = match strategy {
+            Strategy::Extended => {
+                let reply = self.command("EPSV", &[Status::ExtendedPassiveMode]).await?;
+                let port = extended_port(&String::from_utf8_lossy(&reply.body))?;
+                SocketAddr::new(self.control_host().await?, port)
             }
-        })
-        .await
+            Strategy::Standard => {
+                let reply = self.command("PASV", &[Status::PassiveMode]).await?;
+                let advertised = passive_address(&String::from_utf8_lossy(&reply.body))?;
+                data_host(self.control_host().await.ok(), advertised)
+            }
+        };
+        bounded(Connection::Data, TcpStream::connect(address)).await
+    }
+
+    /// The address of the control connection, which an extended passive transfer reuses.
+    async fn control_host(&mut self) -> Result<IpAddr, Failure> {
+        match self.stream.get_ref().await.peer_addr() {
+            Ok(peer) => Ok(peer.ip()),
+            Err(error) => Err(io::Error::other(format!(
+                "Control socket is disconnected, can't get remote address: {error}"
+            ))
+            .into()),
+        }
+    }
+
+    /// Whether the server advertises a machine listing (`MLST`).
+    async fn advertised(&mut self) -> bool {
+        // The library's own feature reader waits for continuation lines after a `211-` opener,
+        // which a server without optional features never sends; reading the reply as a
+        // non-accepted answer returns its complete body for both shapes and keeps the control
+        // connection in step.
+        match self.command("FEAT", &[Status::CommandOk]).await {
+            Ok(response) => announces_mlst(&response.body),
+            Err(failure) => {
+                answered(&failure).is_some_and(|response| announces_mlst(&response.body))
+            }
+        }
     }
 }
-
-/// A request carried by a data connection.
-#[derive(Clone, Copy)]
-enum Request<'a> {
-    /// One listing command with its directory argument.
-    Listing(&'a str),
-    /// The file to transfer.
-    File(&'a str),
-}
-
-/// A data connection the caller reads.
-type Data = TransferStream<AsyncNoTlsStream>;
 
 /// A passive transfer strategy, in the order the reference client tries them.
 #[derive(Clone, Copy)]
@@ -270,16 +346,6 @@ enum Strategy {
     Extended,
     /// Passive mode, whose advertised data host is kept unless a NAT replacement applies.
     Standard,
-}
-
-impl Strategy {
-    /// The library mode this strategy selects.
-    fn mode(self) -> Mode {
-        match self {
-            Self::Extended => Mode::ExtendedPassive,
-            Self::Standard => Mode::Passive,
-        }
-    }
 }
 
 /// The connection a wait belongs to, named as the reference client names it.
@@ -327,6 +393,11 @@ impl std::fmt::Display for Stalled {
 
 impl std::error::Error for Stalled {}
 
+/// Whether the failure is an inactivity deadline rather than a server answer.
+fn stalling(failure: &Failure) -> bool {
+    failure.downcast_ref::<Stalled>().is_some()
+}
+
 /// Read a data connection to its end, refusing more than `limit` bytes.
 pub(super) async fn payload<R>(data: &mut R, limit: Option<usize>) -> Result<Vec<u8>, Failure>
 where
@@ -358,24 +429,6 @@ fn split(bytes: &[u8]) -> Vec<String> {
         .collect()
 }
 
-/// Resolve passive data hosts as the reference client does, then connect to the result.
-async fn routing(stream: AsyncFtpStream) -> AsyncFtpStream {
-    let control = stream
-        .get_ref()
-        .await
-        .peer_addr()
-        .ok()
-        .map(|peer| peer.ip());
-    stream.passive_stream_builder(move |advertised| {
-        Box::pin(async move {
-            let address = data_host(control, advertised);
-            TcpStream::connect(address)
-                .await
-                .map_err(FtpError::ConnectionError)
-        })
-    })
-}
-
 /// The address a passive data connection uses.
 fn data_host(control: Option<IpAddr>, advertised: SocketAddr) -> SocketAddr {
     // A server behind NAT advertises an address outside its client's reach; the control host is the
@@ -396,6 +449,70 @@ fn private(address: IpAddr) -> bool {
     }
 }
 
+/// The port of an extended passive reply, between the delimiters the reference accepts.
+fn extended_port(reply: &str) -> Result<u16, Failure> {
+    // A server on IBM i answers `229 (!!!port!)` where most servers answer `(|||port|)`, so the
+    // reference accepts either delimiter, mixed included.
+    let delimiter = |character: char| matches!(character, '|' | '!');
+    let opening = reply
+        .char_indices()
+        .find(|(index, _)| {
+            reply[*index..]
+                .chars()
+                .take(3)
+                .filter(|character| delimiter(*character))
+                .count()
+                == 3
+        })
+        .map(|(index, _)| index);
+    let refused = || -> Failure { io::Error::other(unparsable("EPSV", reply)).into() };
+    let Some(opening) = opening else {
+        return Err(refused());
+    };
+    let payload = &reply[opening + 3..];
+    let Some(closing) = payload.rfind(delimiter) else {
+        return Err(refused());
+    };
+    payload[..closing].trim().parse().map_err(|_| refused())
+}
+
+/// The data address of a passive reply, from its comma-separated host and port.
+fn passive_address(reply: &str) -> Result<SocketAddr, Failure> {
+    let refused = || -> Failure { io::Error::other(unparsable("PASV", reply)).into() };
+    let inside = reply
+        .split_once('(')
+        .and_then(|(_, rest)| rest.rsplit_once(')').map(|(inside, _)| inside));
+    let Some(inside) = inside else {
+        return Err(refused());
+    };
+    let numbers = inside
+        .split(',')
+        .map(|part| part.trim().parse::<u16>())
+        .collect::<Result<Vec<u16>, _>>()
+        .map_err(|_| refused())?;
+    let [first, second, third, fourth, high, low] = numbers.as_slice() else {
+        return Err(refused());
+    };
+    let octet = |value: &u16| u8::try_from(*value).map_err(|_| refused());
+    let host = Ipv4Addr::new(octet(first)?, octet(second)?, octet(third)?, octet(fourth)?);
+    Ok(SocketAddr::new(
+        IpAddr::V4(host),
+        ((high & 255) << 8) | (low & 255),
+    ))
+}
+
+/// The message the reference reports for a passive reply it cannot parse.
+fn unparsable(command: &str, reply: &str) -> String {
+    format!("Can't parse {command} response: {reply}")
+}
+
+/// Whether a `FEAT` reply body advertises a machine listing.
+fn announces_mlst(body: &[u8]) -> bool {
+    String::from_utf8_lossy(body)
+        .lines()
+        .any(|line| line.trim_start().starts_with("MLST"))
+}
+
 /// A URL credential, defaulting exactly as the reference client logs in.
 fn credential(value: &str, default: &str) -> String {
     if value.is_empty() {
@@ -403,29 +520,6 @@ fn credential(value: &str, default: &str) -> String {
     } else {
         String::from(value)
     }
-}
-
-/// Whether the server advertises a machine listing (`MLST`).
-async fn advertised(stream: &mut AsyncFtpStream) -> bool {
-    // The library's own feature reader waits for continuation lines after a `211-` opener, which
-    // a server without optional features never sends; reading the reply as a non-accepted answer
-    // returns its complete body for both shapes and keeps the control connection in step.
-    let reply = match bounded(
-        Connection::Control,
-        stream.custom_command("FEAT", &[Status::CommandOk]),
-    )
-    .await
-    {
-        Ok(response) => Some(response),
-        Err(failure) => answered(&failure).cloned(),
-    };
-    let Some(reply) = reply else {
-        return false;
-    };
-    let body = reply.body;
-    String::from_utf8_lossy(&body)
-        .lines()
-        .any(|line| line.trim_start().starts_with("MLST"))
 }
 
 /// Why a modification-time observation did not supply an instant.
