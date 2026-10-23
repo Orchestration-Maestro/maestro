@@ -64,7 +64,7 @@ fn assert_index_lists(folder: &Path, entries: &[String]) {
 fn index_entries(index: &str) -> Vec<String> {
     let document = maestro_markdown::parse(index.to_owned());
     let mut entries = Vec::new();
-    for node in descendants(&document.nodes) {
+    for node in descendants(document.nodes.iter()) {
         match &node.kind {
             Kind::Link(_, _, destination, link)
                 if link.link_type == LinkType::Inline && !destination.contains("://") =>
@@ -82,20 +82,26 @@ fn index_entries(index: &str) -> Vec<String> {
 
 /// The first code span among one table row's cells.
 fn first_code(row: &[Cell]) -> Option<String> {
-    descendants(row.iter().flat_map(|cell| &cell.children))
-        .into_iter()
-        .find_map(|node| match &node.kind {
-            Kind::Code(code) => Some(code.clone()),
-            _ => None,
-        })
+    descendants(row.iter().flat_map(|cell| &cell.children)).find_map(|node| match &node.kind {
+        Kind::Code(code) => Some(code.clone()),
+        _ => None,
+    })
 }
 
-/// Every node at or below the given ones, in authored order.
-fn descendants<'a>(roots: impl IntoIterator<Item = &'a Node>) -> Vec<&'a Node> {
-    roots
-        .into_iter()
-        .flat_map(|node| std::iter::once(node).chain(descendants(nodes::children(&node.kind))))
-        .collect()
+/// Every node at or below the given ones, in authored order, read lazily through a
+/// stack of child iterators.
+fn descendants<'a>(roots: impl Iterator<Item = &'a Node> + 'a) -> impl Iterator<Item = &'a Node> {
+    let mut levels: Vec<Box<dyn Iterator<Item = &'a Node> + 'a>> = vec![Box::new(roots)];
+    std::iter::from_fn(move || {
+        while let Some(level) = levels.last_mut() {
+            if let Some(node) = level.next() {
+                levels.push(nodes::children(&node.kind));
+                return Some(node);
+            }
+            levels.pop();
+        }
+        None
+    })
 }
 
 /// Link labels and escaped backticks are Markdown syntax, not entry delimiters.
