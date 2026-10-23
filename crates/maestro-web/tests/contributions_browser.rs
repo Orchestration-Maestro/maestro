@@ -1002,6 +1002,46 @@ pub async fn isolated_frame_receives_changed_input(import_module: js_sys::Functi
     assert_eq!(parent.query_selector("iframe").unwrap(), Some(after));
 }
 
+/// Replacing a registered document reloads it even when the slot input is unchanged.
+#[wasm_bindgen]
+pub async fn replacing_a_document_with_unchanged_input_loads_the_new_document(
+    import_module: js_sys::Function,
+) {
+    let (parent, mut home, view, _kept, mut received) = frame_messages(&import_module).await;
+    assert_eq!(received.recv().await.unwrap()["text"], "frame:Home");
+    let wrapper = parent.first_element_child().unwrap();
+    let before = parent.query_selector("iframe").unwrap().unwrap();
+    assert_eq!(
+        wrapper.query_selector("iframe").unwrap(),
+        Some(before.clone())
+    );
+    let mut replacement = contributions()
+        .await
+        .into_iter()
+        .find(|c| c.descriptor.id == "fixture-frame")
+        .unwrap();
+    replacement.descriptor.document = Some("frames/replacement.html".into());
+    let replacement_host = host(&view, &import_module);
+    let (registrations, failures) = replacement_host.load(&[replacement], &base()).await;
+    assert!(failures.is_empty());
+    home.show(&json!({"title": "Home"}), &view);
+    let after = parent.query_selector("iframe").unwrap().unwrap();
+    assert_ne!(before, after, "the frame kept its replaced document");
+    assert_eq!(
+        parent.first_element_child(),
+        Some(wrapper),
+        "replacing a contribution reordered its slot"
+    );
+    assert_eq!(parent.query_selector_all("iframe").unwrap().length(), 1);
+    assert_eq!(
+        frame_receiver().recv().await.unwrap()["text"],
+        "replacement:Home"
+    );
+    home.show(&json!({"title": "Home"}), &view);
+    assert_eq!(parent.query_selector("iframe").unwrap(), Some(after));
+    drop(registrations);
+}
+
 /// Content whose mount always fails.
 struct Unmountable;
 impl DomContent for Unmountable {

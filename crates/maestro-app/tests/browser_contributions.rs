@@ -122,16 +122,18 @@ fn resource_loader_reads_the_contributions_the_browser_receives() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let agent = scratch.path().join("agent").to_string_lossy().into_owned();
     let cwd = fixtures.to_string_lossy().into_owned();
+    let configured_package = package.clone();
     let loaded = on_task_set(|local| async move {
         let mut resources =
             ResourceLoaderOptions::<maestro_models::Local>::new(local, module_loader());
         // A source relative to the working directory keeps the package identity the same on every machine.
         resources.additional_extension_paths = vec!["./package".into()];
+        let settings = serde_json::json!({"packages": [configured_package.to_string_lossy()]});
         let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
             cwd,
             agent_dir: agent,
             settings_manager: Some(Rc::new(RefCell::new(SettingsManager::in_memory(Settings(
-                serde_json::Map::new(),
+                settings.as_object().unwrap().clone(),
             ))))),
             resources,
         });

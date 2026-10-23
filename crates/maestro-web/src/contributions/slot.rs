@@ -24,7 +24,7 @@ pub struct SlotMount {
     mounted: Vec<Mounted>,
 }
 /// One contribution's identity, wrapper and mounted content.
-type Mounted = ((String, String), Element, MountedContent);
+type Mounted = ((String, String), Rc<()>, Element, MountedContent);
 impl SlotMount {
     /// Mount nothing yet into `parent`.
     #[must_use]
@@ -37,19 +37,20 @@ impl SlotMount {
     }
     /// Show every attached contribution for `input` and return the failures shown in place.
     ///
-    /// Wrappers and roots of contributions that stay attached are kept in place. A
+    /// Wrappers stay in place; roots are kept while their registration stays attached. A
     /// contribution that is not admitted, conflicts or fails to mount shows its failure
     /// in its own wrapper, and the rest of the slot still mounts.
     pub fn show(&mut self, input: &Value, view: &DomView) -> Vec<ContributionFailure> {
         let contract = super::slot_input(&self.name);
         let mut failures = Vec::new();
         let mut next = Vec::new();
-        for (contribution, factory) in super::slot_contributions(&self.name) {
+        for entry in super::slot_entries(&self.name) {
+            let contribution = entry.contribution;
             let key = (
                 contribution.package.clone(),
                 contribution.descriptor.id.clone(),
             );
-            let (wrapper, mut mounted) = match self.take(&key, view) {
+            let (wrapper, mut mounted) = match self.take(&key, &entry.owner, view) {
                 Ok(taken) => taken,
                 Err(error) => {
                     failures.push(mount_failure(&key.1, format!("{error:?}")));
@@ -61,7 +62,7 @@ impl SlotMount {
                 Err(conflict) => Err(conflict.clone()),
             };
             let shown = admitted.and_then(|()| {
-                let content = factory.content(input);
+                let content = entry.view.content(input);
                 mounted
                     .show(content.as_ref(), &wrapper, view)
                     .map_err(|error| mount_failure(&key.1, error.to_string()))
@@ -76,27 +77,32 @@ impl SlotMount {
             {
                 failures.push(mount_failure(&key.1, format!("{error:?}")));
             }
-            next.push((key, wrapper, mounted));
+            next.push((key, entry.owner, wrapper, mounted));
         }
         remove(std::mem::replace(&mut self.mounted, next));
         failures
     }
-    /// The wrapper and mount kept for `key`, or a new empty wrapper.
+    /// Keep the mount only while its registration still owns it.
     fn take(
         &mut self,
         key: &(String, String),
+        owner: &Rc<()>,
         view: &DomView,
     ) -> Result<(Element, MountedContent), JsValue> {
-        match self.mounted.iter().position(|(k, ..)| k == key) {
-            Some(index) => {
-                let (_, wrapper, mounted) = self.mounted.remove(index);
-                Ok((wrapper, mounted))
+        if let Some(index) = self.mounted.iter().position(|(k, ..)| k == key) {
+            let (_, previous, wrapper, mounted) = self.mounted.remove(index);
+            if Rc::ptr_eq(&previous, owner) {
+                return Ok((wrapper, mounted));
             }
-            None => Ok((
-                view.document.create_element("div")?,
-                MountedContent::default(),
-            )),
+            wrapper.set_text_content(None);
+            // Release the old frame's registered source before mounting its replacement.
+            drop(mounted);
+            return Ok((wrapper, MountedContent::default()));
         }
+        Ok((
+            view.document.create_element("div")?,
+            MountedContent::default(),
+        ))
     }
     /// Remove every mounted contribution.
     pub fn clear(&mut self) {
@@ -112,7 +118,7 @@ fn mount_failure(id: &str, cause: String) -> ContributionFailure {
 }
 /// Remove wrappers; dropping their mounted content releases what each root owns.
 fn remove(mounted: Vec<Mounted>) {
-    for (_, wrapper, _) in mounted {
+    for (_, _, wrapper, _) in mounted {
         wrapper.remove();
     }
 }

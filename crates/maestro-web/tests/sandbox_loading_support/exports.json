@@ -88,6 +88,7 @@
     "copy_control_reports_success_then_restores",
     "repeated_mount_and_unmount_records_mutations_timings_memory_and_sizes",
     "isolated_frame_receives_changed_input",
+    "replacing_a_document_with_unchanged_input_loads_the_new_document",
     "failing_mounts_show_their_failure_and_later_contributions_mount",
     "a_replacement_with_a_new_tag_replaces_the_element",
     "conflicting_slot_contracts_are_visible_failures",

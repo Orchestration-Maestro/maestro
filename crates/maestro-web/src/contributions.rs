@@ -27,6 +27,7 @@ pub trait ContributionView {
     fn content(&self, input: &Value) -> Box<dyn DomContent>;
 }
 /// One registered contribution.
+#[derive(Clone)]
 struct Entry {
     /// Supplying package and its declaration.
     contribution: BrowserContribution,
@@ -104,6 +105,13 @@ impl ContributionRegistration {
 /// Contributions attached to `slot`, in registration order.
 #[must_use]
 pub fn slot_contributions(slot: &str) -> Vec<(BrowserContribution, Rc<dyn ContributionView>)> {
+    slot_entries(slot)
+        .into_iter()
+        .map(|entry| (entry.contribution, entry.view))
+        .collect()
+}
+/// Contributions attached to `slot`, including the identity that owns their mounts.
+fn slot_entries(slot: &str) -> Vec<Entry> {
     CONTRIBUTIONS.with(|all| {
         all.borrow()
             .iter()
@@ -111,7 +119,7 @@ pub fn slot_contributions(slot: &str) -> Vec<(BrowserContribution, Rc<dyn Contri
                 e.contribution.descriptor.target == slot
                     && is_slotted(&e.contribution.descriptor.kind)
             })
-            .map(|e| (e.contribution.clone(), Rc::clone(&e.view)))
+            .cloned()
             .collect()
     })
 }

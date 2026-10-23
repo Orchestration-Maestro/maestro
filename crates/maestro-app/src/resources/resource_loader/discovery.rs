@@ -153,8 +153,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
                 Some(SourceScope::Temporary),
             )
             .await?;
-        let mut contributions = std::mem::take(&mut explicit.contributions);
-        contributions.append(&mut resolved.contributions);
+        let contributions = self.merge_contributions(&mut explicit, &mut resolved)?;
         let (configured, explicit) = {
             let mut state = self.state.borrow_mut();
             state.contributions = Rc::new(crate::contributions::load_contributions(&contributions));
@@ -200,6 +199,30 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             self.update(collection, additional)?;
         }
         self.load_prompt_files()
+    }
+
+    /// Merge enabled contribution files canonically, retaining the first source's metadata.
+    fn merge_contributions(
+        &self,
+        explicit: &mut ResolvedPaths,
+        configured: &mut ResolvedPaths,
+    ) -> io::Result<Vec<ResolvedResource>> {
+        let mut resources = IndexMap::new();
+        for mut resource in explicit
+            .contributions
+            .drain(..)
+            .chain(configured.contributions.drain(..))
+            .filter(|r| r.enabled)
+        {
+            resource.path = self.resolve_resource_path(&resource.path)?;
+            resources.entry(resource.path.clone()).or_insert(resource);
+        }
+        let paths: Vec<_> = resources.keys().cloned().collect();
+        Ok(self
+            .merge_paths(&paths, [])?
+            .into_iter()
+            .filter_map(|path| resources.swap_remove(&path))
+            .collect())
     }
 
     /// Explicit paths, then configured ones unless `kind` is disabled, then `additional`,

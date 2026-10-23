@@ -137,8 +137,10 @@ prompts and themes, with the same ordering, deduplication and `contributions`
 settings filter. `maestro_app::contributions::load_contributions` reads each
 enabled file as one descriptor. An unreadable or invalid file yields one warning
 naming its path, and the other files still load. `DefaultResourceLoader` reads
-them on each reload, beside the other four kinds, and
-`ResourceLoader::get_contributions` returns the accepted records and warnings.
+them on each reload, beside the other four kinds. Explicit package sources come
+first; the first source for each canonical contribution file supplies its package
+identity. `ResourceLoader::get_contributions` returns the accepted records and
+warnings.
 The records live in `maestro-protocol::contributions`. Delivering them to
 browser pages as plain JSON belongs to the shell's protocol operation.
 
@@ -155,10 +157,11 @@ browser pages as plain JSON belongs to the shell's protocol operation.
 The `tool-renderer`, `message-renderer` and `api` kinds register with the tool
 registry, the message registry and the host API table. Every other kind attaches
 to the slot its `target` names. `register_contribution` registers built-in
-content; the same package and identifier replace an entry in place, and
-`ContributionRegistration::unregister` removes it only while that registration
-still owns it. `slot_contributions`, `route_contribution`, `slot_input` and
-`admit` read the registry. A route claimed by two contributions, or a child
+content; the same package and identifier replace an entry in place. Each
+registration owns its mount identity: replacing an entry replaces its mounted
+content even when its input is unchanged. `ContributionRegistration::unregister`
+removes it only while that registration still owns it. `slot_contributions`,
+`route_contribution`, `slot_input` and `admit` read the registry. A route claimed by two contributions, or a child
 slot two contributions declare with different contracts, makes
 `route_contribution` or `slot_input` return a conflict.
 
