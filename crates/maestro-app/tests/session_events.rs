@@ -4,12 +4,12 @@
 //! and disposal.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, agent_event_type, echo_tools, harness, hold_first_answer,
-    on_paused_task_set, on_task_set, start_prompt,
+    Harness, HarnessOptions, Scripted, agent_event_type, echo_tools, free_to_change, harness,
+    hold_first_answer, on_paused_task_set, on_task_set, start_prompt,
 };
 use maestro_agent::{AgentEvent, AgentMessage};
-use maestro_app::AgentSessionEvent;
 use maestro_app::agent_session::PromptOptions;
+use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionFactory, MessageEndEvent, MessageEndEventResult, NativeAgentMessage, ToolCallEvent,
     ToolCallEventResult, ToolResultEvent, ToolResultEventResult, TurnEndEvent, TurnStartEvent,
@@ -194,6 +194,30 @@ fn removes_a_queued_follow_up_after_steering() {
 }
 
 #[test]
+fn queue_listeners_can_change_the_delivered_user_message() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let (requested, release) = hold_first_answer(&h, "first", &["second"]);
+        let running = start_prompt(&h, "first");
+        requested.notified().await;
+        h.session.steer("later", &[]).unwrap();
+        let writable = Rc::new(RefCell::new(Vec::new()));
+        let (state, seen) = (Rc::downgrade(h.session.state()), Rc::clone(&writable));
+        drop(h.session.subscribe(Rc::new(move |event| {
+            if let AgentSessionEvent::QueueUpdate { .. } = event
+                && let Some(state) = state.upgrade()
+                && let Some(AgentMessage::User(user)) = state.read().unwrap().streaming_message()
+            {
+                seen.borrow_mut().push(user.try_write().is_ok());
+            }
+        })));
+        release.notify_one();
+        running.await.unwrap().unwrap();
+        assert_eq!(*writable.borrow(), [true]);
+    });
+}
+
+#[test]
 fn delivers_extension_events_before_session_listeners() {
     on_task_set(|_| async {
         let log = Rc::new(RefCell::new(Vec::new()));
@@ -310,6 +334,37 @@ fn increments_the_turn_index_across_turns() {
         assert_eq!(
             *turns.borrow(),
             ["start 0", "end 0", "start 1", "end 1", "start 0", "end 0"]
+        );
+    });
+}
+
+#[test]
+fn extension_handlers_run_with_the_session_free_to_change() {
+    on_task_set(|_| async {
+        let slot = Rc::new(RefCell::new(std::rc::Weak::<AgentSession<Local>>::new()));
+        let free = Rc::new(RefCell::new(Vec::new()));
+        let probe = |event: &'static str| {
+            let (session, seen) = (Rc::clone(&slot), Rc::clone(&free));
+            move || {
+                let session = session.borrow().upgrade().unwrap();
+                seen.borrow_mut().push((event, free_to_change(&session)));
+            }
+        };
+        let (on_call, on_turn) = (probe("tool_call"), probe("turn_end"));
+        let call = handling::<ToolCallEvent, ToolCallEventResult>("tool_call", move |_| {
+            on_call();
+            Ok(None)
+        });
+        let turn = handling::<TurnEndEvent, ()>("turn_end", move |_| {
+            on_turn();
+            Ok(None)
+        });
+        let h = echo_session(vec![call, turn], vec![echo_call(), Scripted::text("done")]).await;
+        *slot.borrow_mut() = Rc::downgrade(&h.session);
+        prompt(&h, "use the tool").await;
+        assert_eq!(
+            *free.borrow(),
+            [("tool_call", true), ("turn_end", true), ("turn_end", true)]
         );
     });
 }

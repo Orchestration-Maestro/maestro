@@ -5,7 +5,7 @@ use crate::support;
 use maestro_export::*;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use serde_json::{Value, json};
-use std::{collections::VecDeque, io};
+use std::{cell::RefCell, collections::VecDeque, io};
 use support::{
     ASSETS, CSS, Fixture, NativeObserved, Operations, Renderer, Returns, Scratch, View,
     adapter_swap, brand_swap, bundle, call_view, corpus, document, export_document, native_theme,
@@ -18,7 +18,7 @@ fn preconditions_precede_render_assets_and_write() {
     let session = SessionManager::in_memory(Some("/work")).unwrap();
     let operations = Operations::default();
     assert!(matches!(
-        export_session_to_html(&session, None, None, &operations),
+        export_session_to_html(&RefCell::new(session), None, None, &operations),
         Err(ExportError::InMemorySession)
     ));
     let unpublished =
@@ -26,7 +26,7 @@ fn preconditions_precede_render_assets_and_write() {
     let output = scratch.at("out.html");
     assert!(matches!(
         export_session_to_html(
-            &unpublished,
+            &RefCell::new(unpublished),
             None,
             Some(output.as_str().into()),
             &operations
@@ -38,7 +38,12 @@ fn preconditions_precede_render_assets_and_write() {
         ..View::default()
     };
     assert!(matches!(
-        export_session_to_html(&empty, None, Some(output.as_str().into()), &operations),
+        export_session_to_html(
+            &RefCell::new(empty),
+            None,
+            Some(output.as_str().into()),
+            &operations
+        ),
         Err(ExportError::InMemorySession)
     ));
     assert!(operations.events.borrow().is_empty());
@@ -53,7 +58,7 @@ fn preconditions_precede_render_assets_and_write() {
         };
         assert!(
             export_session_to_html(
-                &view,
+                &RefCell::new(view),
                 None,
                 Some(ExportOptions {
                     output_path: Some(&output),
@@ -90,21 +95,82 @@ fn complete_tree_and_selected_leaf_survive_export() {
         json!({"type":"unknown","id":"right","parentId":"root","data":{"nested":null}}),
     ];
     let path = scratch.session("branched.jsonl", &entries);
-    let mut session = SessionManager::open(&path, None, None).unwrap();
-    session.branch("left").unwrap();
+    let session = RefCell::new(SessionManager::open(&path, None, None).unwrap());
+    session.borrow_mut().branch("left").unwrap();
     let operations = Operations::default();
     let output = scratch.at("out.html");
     export_session_to_html(&session, None, Some(output.as_str().into()), &operations).unwrap();
     let data: Value = serde_json::from_str(&payload(&read_document(&output))).unwrap();
     assert_eq!(data["entries"], json!(entries));
     assert_eq!(data["leafId"], "left");
-    assert_eq!(data["header"], *session.get_header().unwrap());
+    assert_eq!(data["header"], *session.borrow().get_header().unwrap());
     let view = published(&scratch, View::default());
-    export_session_to_html(&view, None, Some(output.as_str().into()), &operations).unwrap();
+    export_session_to_html(
+        &RefCell::new(view),
+        None,
+        Some(output.as_str().into()),
+        &operations,
+    )
+    .unwrap();
     assert_eq!(
         serde_json::from_str::<Value>(&payload(&read_document(&output))).unwrap()["leafId"],
         Value::Null
     );
+}
+/// A renderer recording, per call, whether the session it renders could change.
+struct Probe<'a> {
+    /// The rendered session.
+    session: &'a RefCell<View>,
+    /// One observation per call and result rendering.
+    free: RefCell<Vec<bool>>,
+}
+impl ToolHtmlRenderer for Probe<'_> {
+    fn render_call(
+        &self,
+        _: &str,
+        _: &str,
+        _: Option<&Value>,
+    ) -> Result<Option<String>, Box<dyn std::error::Error>> {
+        self.free
+            .borrow_mut()
+            .push(self.session.try_borrow_mut().is_ok());
+        Ok(None)
+    }
+    fn render_result(
+        &self,
+        _: &str,
+        _: &str,
+        _: ToolHtmlResultInput<'_>,
+    ) -> Result<Option<ToolHtmlResult>, Box<dyn std::error::Error>> {
+        self.free
+            .borrow_mut()
+            .push(self.session.try_borrow_mut().is_ok());
+        Ok(None)
+    }
+}
+#[test]
+fn renderers_run_with_the_session_free_to_change() {
+    let scratch = Scratch::new().unwrap();
+    let output = scratch.at("out.html");
+    let mut view = published(&scratch, call_view("a"));
+    view.data["entries"].as_array_mut().unwrap().push(json!({"type":"message","message":{"role":"toolResult","toolCallId":"a","toolName":"custom","content":[],"isError":false}}));
+    let session = RefCell::new(view);
+    let renderer = Probe {
+        session: &session,
+        free: RefCell::default(),
+    };
+    export_session_to_html(
+        &session,
+        None,
+        Some(ExportOptions {
+            output_path: Some(&output),
+            tool_renderer: Some(&renderer),
+            ..ExportOptions::default()
+        }),
+        &Operations::default(),
+    )
+    .unwrap();
+    assert_eq!(*renderer.free.borrow(), [true, true]);
 }
 #[test]
 fn state_projection_preserves_optional_metadata() {
@@ -156,7 +222,7 @@ fn default_names_and_option_routes_preserve_authored_paths() {
             ..View::default()
         };
         assert_eq!(
-            export_session_to_html(&view, None, None, &operations).unwrap(),
+            export_session_to_html(&RefCell::new(view), None, None, &operations).unwrap(),
             row.expected
         );
         std::fs::remove_file(&row.expected).unwrap();
@@ -176,7 +242,7 @@ fn default_names_and_option_routes_preserve_authored_paths() {
         let operations = Operations::default();
         let result = if row.operation == "session" {
             export_session_to_html(
-                &published(&scratch, View::default()),
+                &RefCell::new(published(&scratch, View::default())),
                 None,
                 options,
                 &operations,
@@ -313,7 +379,13 @@ fn asset_reads_stop_before_theme_on_failure() {
         file: Some(input),
         ..View::default()
     };
-    export_session_to_html(&view, None, Some(output.as_str().into()), &native).unwrap();
+    export_session_to_html(
+        &RefCell::new(view),
+        None,
+        Some(output.as_str().into()),
+        &native,
+    )
+    .unwrap();
     assert_eq!(std::fs::read_to_string(output).unwrap(), row.expected);
 }
 #[test]
@@ -349,7 +421,7 @@ fn theme_failure_follows_renderer_and_precedes_write() {
         });
         let view = published(&scratch, call_view("a"));
         let result = export_session_to_html(
-            &view,
+            &RefCell::new(view),
             None,
             Some(ExportOptions {
                 output_path: Some(&output),
@@ -641,7 +713,7 @@ fn public_options_forward_theme_and_renderer() {
         };
         assert_eq!(
             export_session_to_html(
-                &published(&scratch, call_view("a")),
+                &RefCell::new(published(&scratch, call_view("a"))),
                 None,
                 Some(options),
                 &operations

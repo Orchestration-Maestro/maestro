@@ -31,7 +31,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Result<String, DiagnosticErrorInfo> {
         let theme_name = self.settings_manager.borrow().get_theme();
         let (system_prompt, tools) = self.export_state()?;
-        let manager = self.session_manager.borrow();
+        let cwd = self.session_manager.borrow().get_cwd().to_owned();
         let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
             get_tool_definition: |name: &str| {
                 self.get_tool_definition(name)
@@ -39,12 +39,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     .transpose()
             },
             theme: environment.live_theme.clone(),
-            cwd: manager.get_cwd(),
+            cwd: &cwd,
             width: None,
             environment,
         });
         export_session_to_html(
-            &*manager,
+            &*self.session_manager,
             Some(ExportState {
                 system_prompt: Some(&system_prompt),
                 tools: Some(&tools),

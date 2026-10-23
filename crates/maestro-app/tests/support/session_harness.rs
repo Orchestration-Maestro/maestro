@@ -893,6 +893,14 @@ pub fn history_view(h: &Harness) -> Vec<Value> {
         .collect()
 }
 
+/// Whether code running now could change `session`: its history, its settings and its agent
+/// state are all free to borrow mutably.
+pub fn free_to_change(session: &AgentSession<Local>) -> bool {
+    session.session_manager().try_borrow_mut().is_ok()
+        && session.settings_manager().try_borrow_mut().is_ok()
+        && session.state().try_write().is_ok()
+}
+
 /// Completes `body` on a fresh current-thread runtime inside a task set it receives.
 pub fn on_task_set<F: std::future::Future>(
     body: impl FnOnce(Rc<tokio::task::LocalSet>) -> F,

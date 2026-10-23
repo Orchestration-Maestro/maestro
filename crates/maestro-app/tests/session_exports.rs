@@ -1,8 +1,8 @@
 //! JSONL and HTML exports of the session.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, assistant, build_tree, corpus, harness, on_task_set, sdk_definition,
-    sdk_tools, tool_definition, user,
+    Harness, HarnessOptions, assistant, build_tree, corpus, free_to_change, harness, on_task_set,
+    sdk_definition, sdk_tools, tool_definition, user,
 };
 use base64::Engine as _;
 use maestro_app::AgentSession;
@@ -348,7 +348,7 @@ fn native_payload(session: &AgentSession<Local>, root: &str) -> Value {
     payload(&path)
 }
 
-/// Each tool description is resolved with the agent state and the history free to change.
+/// Each tool description is resolved with the session free to change.
 #[test]
 fn html_export_resolves_tool_descriptions_outside_locks() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -362,18 +362,47 @@ fn html_export_resolves_tool_descriptions_outside_locks() {
             ..HarnessOptions::default()
         })
         .await;
-        let state = Rc::clone(h.session.state());
-        let history = Rc::clone(h.session.session_manager());
-        let tool = Rc::clone(&state.read().unwrap().tools().read().unwrap()[0]);
-        // The state owns this description, so it holds the state weakly.
-        let state = Rc::downgrade(&state);
+        let tool = Rc::clone(&h.session.state().read().unwrap().tools().read().unwrap()[0]);
+        // The session owns this description, so it holds the session weakly.
+        let session = Rc::downgrade(&h.session);
         tool.write().unwrap().description = Some(Rc::new(move || {
-            let state = state.upgrade().unwrap();
-            let free = state.try_write().is_ok() && history.try_borrow_mut().is_ok();
+            let free = free_to_change(&session.upgrade().unwrap());
             Ok(if free { "free" } else { "held" }.to_owned())
         }));
         let data = exported_payload(&h.session, &root, published());
         assert_eq!(data["tools"][0]["description"], "free");
+    });
+}
+
+#[test]
+fn html_export_renders_custom_calls_with_the_session_free_to_change() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().display().to_string();
+    on_task_set(|_| async {
+        let call =
+            json!([{"type": "toolCall", "id": "call-1", "name": "probing", "arguments": {}}]);
+        let answer = assistant("", 2, &json!({"content": call, "stopReason": "toolUse"}));
+        let slot = Rc::new(RefCell::new(std::rc::Weak::<AgentSession<Local>>::new()));
+        let free = Rc::new(RefCell::new(Vec::new()));
+        let (session, seen) = (Rc::clone(&slot), Rc::clone(&free));
+        let mut probing = tool_definition("probing", None, None);
+        probing.render_call = Some(Rc::new(move |_, _, _| {
+            let session = session.borrow().upgrade().unwrap();
+            seen.borrow_mut().push(free_to_change(&session));
+            Ok(Rc::new(Text::new("Probed call".into(), 0, 0, None)) as ComponentHandle)
+        }));
+        let h = harness(HarnessOptions {
+            session_manager: Some(file_session(&root, &[user(&json!("probe"), 1), answer])),
+            custom_tools: vec![sdk_definition(probing)],
+            base_tools_override: Some(indexmap::IndexMap::new()),
+            ..HarnessOptions::default()
+        })
+        .await;
+        *slot.borrow_mut() = Rc::downgrade(&h.session);
+        let data = exported_payload(&h.session, &root, published());
+        assert_eq!(*free.borrow(), [true]);
+        let rendered = data["renderedTools"]["call-1"].to_string();
+        assert!(rendered.contains("Probed call"), "{rendered}");
     });
 }
 

@@ -214,6 +214,7 @@ pub struct LiteralCase {
 }
 
 /// Supplied session observations without a replacement file parser.
+#[derive(Clone)]
 pub struct View {
     /// Selected filename.
     pub file: Option<String>,
@@ -402,7 +403,7 @@ pub fn export_document(
 ) -> Result<String, ExportError> {
     let path = output_path(scratch);
     export_session_to_html(
-        view,
+        &RefCell::new(view.clone()),
         state,
         Some(ExportOptions {
             output_path: Some(&path),
@@ -493,13 +494,13 @@ pub fn record(name: &str) {
     let operations = Operations::default();
     let scratch = Scratch::new().unwrap();
     let output = scratch.at("out.html");
-    let view = published(
+    let view = RefCell::new(published(
         &scratch,
         View {
             data: json!({"header":null,"entries":row.entries,"leafId":null}),
             ..View::default()
         },
-    );
+    ));
     let result = export_session_to_html(
         &view,
         None,
@@ -526,7 +527,7 @@ pub fn record(name: &str) {
         result.unwrap();
         let payload = payload(&read_document(&output));
         let data: Value = serde_json::from_str(&payload).unwrap();
-        assert_eq!(data["entries"], view.data["entries"]);
+        assert_eq!(data["entries"], view.borrow().data["entries"]);
         let records = data
             .get("renderedTools")
             .cloned()
@@ -569,12 +570,17 @@ pub fn document(name: &str) -> String {
     if name == "unicode" {
         view.data["entries"][1]["numbers"][1] = json!(-0.0);
     }
+    let prompt = view
+        .data
+        .get("systemPrompt")
+        .and_then(Value::as_str)
+        .map(str::to_owned);
     let state = ExportState {
-        system_prompt: view.data.get("systemPrompt").and_then(Value::as_str),
+        system_prompt: prompt.as_deref(),
         tools: tools.as_deref(),
     };
     export_session_to_html(
-        &view,
+        &RefCell::new(view),
         Some(state),
         Some(output.as_str().into()),
         &operations,
@@ -723,7 +729,7 @@ pub fn adapter_swap() {
     view.data["entries"][0]["id"] = json!("entry");
     view.data["entries"][0]["parentId"] = Value::Null;
     let input = scratch.session("tree.jsonl", view.data["entries"].as_array().unwrap());
-    let session = maestro_session::SessionManager::open(&input, None, None).unwrap();
+    let session = RefCell::new(maestro_session::SessionManager::open(&input, None, None).unwrap());
     let theme = native_theme(&scratch);
     let mut operations = Operations::default();
     operations.assets[2] = "first bundle".into();

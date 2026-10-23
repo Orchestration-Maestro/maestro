@@ -7,10 +7,12 @@ The document template is in
 
 ## Entry points
 
-`export_session_to_html` accepts a borrowed
-[`ReadonlySessionManager`](../crates/maestro-session/src/session_manager/types.rs),
-optional `ExportState`, optional `ExportOptions` and an `ExportOperations` adapter.
-It uses retained entries, including inactive branches, and the selected leaf.
+`export_session_to_html` accepts a
+[`ReadonlySessionManager`](../crates/maestro-session/src/session_manager/types.rs)
+in a `RefCell`, optional `ExportState`, optional `ExportOptions` and an
+`ExportOperations` adapter. It uses retained entries, including inactive branches,
+and the selected leaf. It borrows the session only to read it, so a renderer may
+change the session; the document keeps the entries read before rendering.
 `ExportState` borrows a prompt and tool descriptors; omitted fields stay omitted,
 and empty strings/arrays stay present. Tool metadata contains name, description
 and parameters. Its input presence check and document write need a native file

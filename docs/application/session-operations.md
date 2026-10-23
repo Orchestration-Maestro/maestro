@@ -157,8 +157,9 @@ system prompt and tools, the saved theme name and custom tool rendering. The
 caller supplies the export assets and the rendering environment whose published
 theme the renderers use. A renderer resolves that theme only when it reads a
 color: without a published theme, one that never reads it still draws, and one
-that reads it keeps its standard rendering. It refuses a session that is only in
-memory before it renders or writes anything.
+that reads it keeps its standard rendering. Renderers run with the session free,
+so one may change it. It refuses a session that is only in memory before it
+renders or writes anything.
 
 `export_to_jsonl` writes a fresh session header followed by the current branch,
 each entry's `parentId` replaced by the previous entry's identity. Without a path

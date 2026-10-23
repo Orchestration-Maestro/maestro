@@ -8,36 +8,48 @@ use maestro_session::session_manager::ReadonlySessionManager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use native::NativeExportOperations;
 use serde_json::{Map, Value, json};
-use std::io;
+use std::{cell::RefCell, io};
 pub use types::*;
 
 /// Export retained session entries and optional metadata to a supplied bundle.
 ///
+/// The session is borrowed only while it is read, so a renderer may change it; the
+/// document keeps the entries read before rendering.
 /// The input presence check and the document write need a native file system.
 ///
 /// # Errors
 /// Rejects in-memory/unpublished sessions before rendering; propagates reached
 /// renderer, asset, theme, encoding and write failures.
 pub fn export_session_to_html(
-    session: &dyn ReadonlySessionManager,
+    session: &RefCell<dyn ReadonlySessionManager>,
     state: Option<ExportState<'_>>,
     options: Option<ExportOptions<'_>>,
     operations: &dyn ExportOperations,
 ) -> Result<String, ExportError> {
     let file = session
+        .borrow()
         .get_session_file()
         .filter(|file| !file.is_empty())
+        .map(str::to_owned)
         .ok_or(ExportError::InMemorySession)?;
-    if !std::path::Path::new(file).exists() {
+    if !std::path::Path::new(&file).exists() {
         return Err(ExportError::UnpublishedSession);
     }
     let options = options.unwrap_or_default();
-    let entries = session.get_entries();
+    let entries: Vec<Value> = session
+        .borrow()
+        .get_entries()
+        .into_iter()
+        .cloned()
+        .collect();
     let rendered = options
         .tool_renderer
         .map(|renderer| render_tools(&entries, renderer))
         .transpose()?;
-    let mut data = json!({"header": session.get_header(), "entries": entries, "leafId": session.get_leaf_id()});
+    let mut data = {
+        let session = session.borrow();
+        json!({"header": session.get_header(), "entries": entries, "leafId": session.get_leaf_id()})
+    };
     if let Some(state) = state {
         if let Some(prompt) = state.system_prompt {
             data["systemPrompt"] = prompt.into();
@@ -49,7 +61,7 @@ pub fn export_session_to_html(
     if let Some(rendered) = rendered.filter(|map| !map.is_empty()) {
         data["renderedTools"] = rendered.into();
     }
-    publish(file, &data, &options, operations)
+    publish(&file, &data, &options, operations)
 }
 /// Open a native session with its owner, then export without state/custom rendering.
 ///
@@ -113,7 +125,7 @@ fn string<'a>(value: &'a Value, field: &str) -> Result<&'a str, ExportError> {
 }
 /// Walk stored messages in order, retaining only own call-ID keys.
 fn render_tools(
-    entries: &[&Value],
+    entries: &[Value],
     renderer: &dyn ToolHtmlRenderer,
 ) -> Result<Map<String, Value>, ExportError> {
     let mut records = Map::new();
