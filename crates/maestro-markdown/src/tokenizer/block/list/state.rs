@@ -267,7 +267,7 @@ fn blank_suffix(window: &[ScopeSource; 2]) -> bool {
 pub(super) struct CompletedItem {
     /// Settled child admission: its published output and the step a caller replay resumes.
     child: Child,
-    /// Dedented semantic body, which publication reads the item's task marker from.
+    /// Dedented semantic body a caller replay re-admits.
     body: Segmented,
     /// Task marker state, consumed when the child publishes.
     task: Option<bool>,

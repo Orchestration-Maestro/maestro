@@ -156,7 +156,7 @@ impl ItemSlot<'_> {
     }
 }
 
-/// Whether an item's output opens with a blank separator of its own, which loosens the list.
+/// Whether an item's output contains a blank separator of its own, which loosens the list.
 fn blank_separator(output: &BlockTokens) -> bool {
     output.nodes.iter().any(|node| {
         matches!(node.kind, Kind::Gap)

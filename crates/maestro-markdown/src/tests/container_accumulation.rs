@@ -414,7 +414,7 @@ fn item_work_grows_linearly_with_item_length() {
 }
 
 #[test]
-fn continued_item_lines_keep_their_admission_work_linear() {
+fn continued_item_work_grows_linearly_with_item_count() {
     let counts = [512, 1024].map(|count| {
         use std::fmt::Write;
         let mut source = String::new();
@@ -424,7 +424,7 @@ fn continued_item_lines_keep_their_admission_work_linear() {
         measured_items(source)
     });
     assert_eq!(counts.each_ref().map(|(_, items)| *items), [512, 1024]);
-    assert_counters_triple_at_most("continued items", &counts, |work| {
+    assert_counters_triple_at_most("continued-item count", &counts, |work| {
         vec![work.source_views, work.projections]
     });
 }
