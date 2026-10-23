@@ -1,0 +1,474 @@
+[
+  {
+    "route": "set",
+    "observe": false,
+    "before": {
+      "log": [
+        "first-enter"
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "settled": false
+    },
+    "middle": [
+      "first-enter",
+      "first-exit",
+      "second-enter"
+    ],
+    "after": {
+      "log": [
+        "first-enter",
+        "first-exit",
+        "second-enter",
+        "second-exit"
+      ],
+      "events": [
+        {
+          "model": "next",
+          "previous": "first",
+          "source": "set"
+        }
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "model": "next",
+      "thinkingLevel": "off",
+      "result": null
+    }
+  },
+  {
+    "route": "set",
+    "observe": true,
+    "before": {
+      "log": [
+        "first-enter"
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "settled": false
+    },
+    "middle": [
+      "first-enter",
+      "first-exit",
+      "second-enter"
+    ],
+    "after": {
+      "log": [
+        "first-enter",
+        "first-exit",
+        "second-enter",
+        "second-exit"
+      ],
+      "events": [
+        {
+          "model": "next",
+          "previous": "first",
+          "source": "set"
+        }
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "model": "next",
+      "thinkingLevel": "off",
+      "result": null
+    }
+  },
+  {
+    "route": "scoped",
+    "observe": false,
+    "before": {
+      "log": [
+        "first-enter"
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "settled": false
+    },
+    "middle": [
+      "first-enter",
+      "first-exit",
+      "second-enter"
+    ],
+    "after": {
+      "log": [
+        "first-enter",
+        "first-exit",
+        "second-enter",
+        "second-exit"
+      ],
+      "events": [
+        {
+          "model": "next",
+          "previous": "first",
+          "source": "cycle"
+        }
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "model": "next",
+      "thinkingLevel": "off",
+      "result": null
+    }
+  },
+  {
+    "route": "scoped",
+    "observe": true,
+    "before": {
+      "log": [
+        "first-enter"
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "settled": false
+    },
+    "middle": [
+      "first-enter",
+      "first-exit",
+      "second-enter"
+    ],
+    "after": {
+      "log": [
+        "first-enter",
+        "first-exit",
+        "second-enter",
+        "second-exit"
+      ],
+      "events": [
+        {
+          "model": "next",
+          "previous": "first",
+          "source": "cycle"
+        }
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "model": "next",
+      "thinkingLevel": "off",
+      "result": {
+        "model": "next",
+        "thinkingLevel": "off",
+        "isScoped": true
+      }
+    }
+  },
+  {
+    "route": "available",
+    "observe": false,
+    "before": {
+      "log": [
+        "first-enter"
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "settled": false
+    },
+    "middle": [
+      "first-enter",
+      "first-exit",
+      "second-enter"
+    ],
+    "after": {
+      "log": [
+        "first-enter",
+        "first-exit",
+        "second-enter",
+        "second-exit"
+      ],
+      "events": [
+        {
+          "model": "next",
+          "previous": "first",
+          "source": "cycle"
+        }
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "model": "next",
+      "thinkingLevel": "off",
+      "result": null
+    }
+  },
+  {
+    "route": "available",
+    "observe": true,
+    "before": {
+      "log": [
+        "first-enter"
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "settled": false
+    },
+    "middle": [
+      "first-enter",
+      "first-exit",
+      "second-enter"
+    ],
+    "after": {
+      "log": [
+        "first-enter",
+        "first-exit",
+        "second-enter",
+        "second-exit"
+      ],
+      "events": [
+        {
+          "model": "next",
+          "previous": "first",
+          "source": "cycle"
+        }
+      ],
+      "entries": [
+        {
+          "type": "model_change",
+          "provider": "faux",
+          "modelId": "next"
+        }
+      ],
+      "model": "next",
+      "thinkingLevel": "off",
+      "result": {
+        "model": "next",
+        "thinkingLevel": "off",
+        "isScoped": false
+      }
+    }
+  },
+  {
+    "route": "same",
+    "log": [],
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "first"
+      }
+    ],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "missing-auth",
+    "log": [],
+    "entries": [],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": "No API key for faux/next"
+  },
+  {
+    "route": "single-scoped",
+    "log": [],
+    "entries": [],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "single-available",
+    "log": [],
+    "entries": [],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "empty-scoped",
+    "log": [],
+    "entries": [],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "empty-available",
+    "log": [],
+    "entries": [],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "duplicate-scoped",
+    "log": [],
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "first"
+      }
+    ],
+    "model": "first",
+    "thinkingLevel": "off",
+    "result": {
+      "model": "first",
+      "thinkingLevel": "off",
+      "isScoped": true
+    },
+    "error": null
+  },
+  {
+    "route": "no-handlers",
+    "log": [],
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "next"
+      }
+    ],
+    "model": "next",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "handler-error",
+    "log": [
+      "first",
+      "second"
+    ],
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "next"
+      }
+    ],
+    "model": "next",
+    "thinkingLevel": "off",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "thinking",
+    "log": [
+      "thinking"
+    ],
+    "entries": [
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      }
+    ],
+    "model": "first",
+    "thinkingLevel": "high",
+    "result": null,
+    "error": null
+  },
+  {
+    "route": "scoped-handler-level",
+    "log": [
+      "first",
+      "second",
+      "thinking"
+    ],
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "next"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      }
+    ],
+    "model": "next",
+    "thinkingLevel": "high",
+    "result": {
+      "model": "next",
+      "thinkingLevel": "high",
+      "isScoped": true
+    },
+    "error": null
+  },
+  {
+    "route": "available-handler-level",
+    "log": [
+      "first",
+      "second",
+      "thinking"
+    ],
+    "entries": [
+      {
+        "type": "model_change",
+        "provider": "faux",
+        "modelId": "next"
+      },
+      {
+        "type": "thinking_level_change",
+        "thinkingLevel": "high"
+      }
+    ],
+    "model": "next",
+    "thinkingLevel": "high",
+    "result": {
+      "model": "next",
+      "thinkingLevel": "high",
+      "isScoped": false
+    },
+    "error": null
+  }
+]

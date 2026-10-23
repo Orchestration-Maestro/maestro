@@ -120,7 +120,7 @@ fn selection_case(name: &str, steps: impl AsyncFnOnce(&Harness) -> Vec<Value>) {
 }
 
 /// The model and thinking entries the session recorded, in order.
-fn selection_entries(h: &Harness) -> Vec<Value> {
+pub(crate) fn selection_entries(h: &Harness) -> Vec<Value> {
     let manager = h.session.session_manager().borrow();
     manager
         .get_entries()
