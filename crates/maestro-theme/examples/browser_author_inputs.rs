@@ -35,29 +35,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     fs::write(out.join("brand.css"), format!(":root{{{declarations}}}"))?;
     fs::write(out.join("mark.svg"), pack.mark_svg(mode, None)?)?;
     fs::write(out.join("wordmark.txt"), view.wordmark)?;
-    let body = view.typography.get("body").ok_or("missing body type")?;
-    fs::write(out.join("body-size.txt"), body.size.to_string())?;
-    fs::write(
-        out.join("body.txt"),
-        &view
-            .fonts
-            .get(&body.font)
-            .ok_or("missing body font")?
-            .family,
-    )?;
-    for role in [
-        "text",
-        "background",
-        "panel",
-        "border",
-        "accent",
-        "on-accent",
-    ] {
-        fs::write(
-            out.join(format!("{role}.txt")),
-            *view.colors.get(role).ok_or("missing color role")?,
-        )?;
-    }
     Ok(())
 }
 
