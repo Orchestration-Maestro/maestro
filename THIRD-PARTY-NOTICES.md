@@ -426,9 +426,6 @@ includes these packages by Douman <douman@gmx.se>, under BSL-1.0:
 - [error-code 3.4.0](https://github.com/DoumanAsh/error-code)
 - [windows-win 3.0.0](https://github.com/DoumanAsh/windows-win-rs)
 
-This license approval is limited to these exact versions as the clipboard
-Windows backend. It is not a general license allowance.
-
 ```text
 Boost Software License - Version 1.0 - August 17th, 2003
 
