@@ -116,11 +116,30 @@ pub fn parse_timestamp_millis(text: &str) -> Option<i64> {
     }
     NaiveDateTime::parse_from_str(text, "%Y-%m-%dT%H:%M:%S%.f")
         .ok()
-        .and_then(|date| match Local.from_local_datetime(&date) {
-            chrono::LocalResult::Ambiguous(a, b) => Some(a.min(b)),
-            result => result.single(),
-        })
-        .map(|date| date.timestamp_millis())
+        .and_then(local_timestamp_millis)
+}
+
+/// Resolve a local date-time to epoch milliseconds.
+///
+/// A repeated local time selects the earlier instant. A skipped local time keeps
+/// the offset in force at that local reading, so it advances by the actual change
+/// the zone makes.
+#[must_use]
+pub fn local_timestamp_millis(value: NaiveDateTime) -> Option<i64> {
+    match Local.from_local_datetime(&value) {
+        chrono::LocalResult::Single(date) => Some(date.timestamp_millis()),
+        chrono::LocalResult::Ambiguous(earlier, later) => {
+            Some(earlier.timestamp_millis().min(later.timestamp_millis()))
+        }
+        chrono::LocalResult::None => {
+            let reading = value.and_utc();
+            let offset = i64::from(Local.offset_from_utc_datetime(&value).local_minus_utc());
+            Some(
+                (reading.timestamp() - offset) * 1_000
+                    + i64::from(reading.timestamp_subsec_millis()),
+            )
+        }
+    }
 }
 
 /// Retain injected content, visibility and details with a parsed timestamp.

@@ -7,14 +7,22 @@ use std::{
     time::UNIX_EPOCH,
 };
 
+/// Encode an authored working directory into its session directory name.
+///
+/// Strips one leading separator and replaces separators and drive colons with
+/// dashes. Performs no I/O and does not normalize the authored path.
+#[must_use]
+pub fn encode_session_dir(cwd: &str) -> String {
+    let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
+    format!("--{}--", cwd.replace(['/', '\\', ':'], "-"))
+}
+
 /// Encode the authored cwd into a default directory beneath the resolved agent root.
 ///
 /// # Errors
 /// Propagates native directory creation errors.
 pub fn get_default_session_dir(cwd: &str, agent_dir: &str) -> io::Result<String> {
-    let cwd = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
-    let safe = format!("--{}--", cwd.replace(['/', '\\', ':'], "-"));
-    let directory = maestro_path::join(&[agent_dir, "sessions", &safe]);
+    let directory = maestro_path::join(&[agent_dir, "sessions", &encode_session_dir(cwd)]);
     if !std::path::Path::new(&directory).exists() {
         fs::create_dir_all(&directory)?;
     }
