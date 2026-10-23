@@ -35,8 +35,8 @@ fn link_admission_matches_selected_raw_windows() {
             }
         }
     }
-    assert_eq!(windows, 1000);
-    assert_eq!(selected, 90 + 93 * 3 + 88);
+    assert_eq!(windows, 1048);
+    assert_eq!(selected, 92 + 96 * 3 + 90);
 }
 
 /// Select one window through the shared owner and the pinned caller rule.

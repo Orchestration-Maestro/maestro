@@ -26,8 +26,8 @@ fn code_span_lookup_matches_selected_raw_windows() {
             }
         }
     }
-    assert_eq!(windows, 863);
-    assert_eq!(selected, 151 * 5);
+    assert_eq!(windows, 845);
+    assert_eq!(selected, 148 * 5);
 }
 
 /// The code span a window produces through the configured grammar.

@@ -13,8 +13,8 @@ pub(crate) struct Delimiters {
     tildes: Option<deletion::DeletionEnds>,
     /// Closing runs of the caller's code-span grammar, absent without backticks.
     backticks: Option<code_spans::CodeEnds>,
-    /// Closing pairs the caller's label scan can reach.
-    labels: label_closers::LabelClosers,
+    /// Closing pairs the caller's label scan can reach, absent without `](`.
+    labels: Option<label_closers::LabelClosers>,
 }
 
 impl Delimiters {
@@ -71,7 +71,11 @@ impl Delimiters {
     /// Select the closing pair an authored link label reaches inside the window.
     pub(crate) fn link_closer(&self, text: &str, range: &Range<usize>) -> Option<usize> {
         let bang = usize::from(text.starts_with('!'));
-        (text.as_bytes().get(bang)? == &b'[').then_some(())?;
-        self.labels.reachable(range.start + bang + 1, range.end)
+        if text.as_bytes().get(bang)? != &b'[' {
+            return None;
+        }
+        self.labels
+            .as_ref()?
+            .reachable(range.start + bang + 1, range.end)
     }
 }

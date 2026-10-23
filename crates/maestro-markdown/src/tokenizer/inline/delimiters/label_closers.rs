@@ -1,18 +1,7 @@
-//! Source-owned closing positions of the caller's inline label scan.
-use super::code_spans::run_end;
+//! Source-owned closing positions of each caller grammar's inline label scan.
 
 /// Offset with no reachable closing pair.
 const ABSENT: usize = usize::MAX;
-
-/// One step of the label scan over an original source byte.
-enum Step {
-    /// The scan stops on this byte: it begins a closing `](`.
-    Exit,
-    /// The scan consumes up to this byte and continues there.
-    Continue(usize),
-    /// No label element starts with this byte.
-    Blocked,
-}
 
 /// Nearest closing `](` each label offset can reach.
 pub(super) struct LabelClosers {
@@ -21,85 +10,116 @@ pub(super) struct LabelClosers {
 }
 
 impl LabelClosers {
-    /// Prepare reachable closing pairs in one reverse pass over the source.
-    pub(super) fn prepare(text: &str) -> Self {
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.link_bytes += text.len());
-        let bytes = text.as_bytes();
-        let ticks = closing_ticks(bytes);
-        let mut reach = vec![ABSENT; bytes.len() + 1];
-        for offset in (0..bytes.len()).rev() {
-            reach[offset] = match step(bytes, offset, &ticks) {
-                Step::Exit => offset,
-                Step::Continue(end) => reach.get(end).copied().unwrap_or(ABSENT),
-                Step::Blocked => ABSENT,
-            };
+    /// Prepare reachable closing pairs, or nothing where no label can close.
+    ///
+    /// One forward pass pairs brackets; one reverse pass then answers every offset.
+    pub(super) fn prepare(text: &str) -> Option<Self> {
+        if !text.contains("](") {
+            return None;
         }
-        Self { reach }
+        let bytes = text.as_bytes();
+        let pairs = pair_ends(bytes);
+        let mut reach = vec![ABSENT; bytes.len() + 1];
+        let mut ticks = Ticks::NONE;
+        for offset in (0..bytes.len()).rev() {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.link_bytes += 1);
+            reach[offset] = match bytes[offset] {
+                b'`' => ticks.closer(&reach, offset),
+                b']' if bytes.get(offset + 1) == Some(&b'(') => offset,
+                b'[' if pairs[offset] != ABSENT => after(&reach, pairs[offset] + 1),
+                b']' | b'[' => ABSENT,
+                b'\\' => after(&reach, offset + 2),
+                _ => reach[offset + 1],
+            };
+            if bytes[offset] == b'`' {
+                ticks.record(offset);
+            }
+        }
+        Some(Self { reach })
     }
 
     /// Select the closing pair a label starting at `start` reaches inside the window.
     pub(super) fn reachable(&self, start: usize, end: usize) -> Option<usize> {
-        let closer = *self.reach.get(start)?;
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.link_bytes += 1);
+        let closer = *self.reach.get(start)?;
         (closer != ABSENT && closer + 1 < end).then_some(closer)
     }
 }
 
-/// Byte offset of each backtick run the label scan can consume, or [`ABSENT`].
-fn closing_ticks(bytes: &[u8]) -> Vec<usize> {
-    let mut ticks = vec![ABSENT; bytes.len() + 1];
-    for offset in (0..bytes.len()).rev() {
-        ticks[offset] = if bytes[offset] == b'`' {
-            offset
+/// The `]` each `[` pairs with before a nested bracket, or [`ABSENT`].
+fn pair_ends(bytes: &[u8]) -> Vec<usize> {
+    let mut pairs = vec![ABSENT; bytes.len()];
+    let mut open = ABSENT;
+    let mut offset = 0;
+    while let Some(byte) = bytes.get(offset) {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.link_bytes += 1);
+        match byte {
+            b'\\' => {
+                offset += 2;
+                continue;
+            }
+            b'[' => open = offset,
+            b']' if open != ABSENT => {
+                pairs[open] = offset;
+                open = ABSENT;
+            }
+            _ => {}
+        }
+        offset += 1;
+    }
+    pairs
+}
+
+/// The closer reachable from a byte the scan passes over, or [`ABSENT`].
+fn after(reach: &[usize], offset: usize) -> usize {
+    reach.get(offset).copied().unwrap_or(ABSENT)
+}
+
+/// The backtick runs above the reviewed byte, nearest run first.
+struct Ticks {
+    /// Start of the nearest run, or [`ABSENT`] when no run starts above.
+    start: usize,
+    /// Exclusive end of the nearest run, or [`ABSENT`].
+    end: usize,
+    /// Exclusive end of the run after the nearest one, or [`ABSENT`].
+    next: usize,
+}
+
+impl Ticks {
+    /// The state a preparation starts with, above the last byte.
+    const NONE: Self = Self {
+        start: ABSENT,
+        end: ABSENT,
+        next: ABSENT,
+    };
+
+    /// Continue the scan for the tick at `offset` wherever a caller grammar closes.
+    ///
+    /// A run of two or more ticks closes itself, so the scan resumes at the run's
+    /// end. The terminal and export grammars pair single ticks instead, and resume
+    /// one tick past the opener or past the first tick of the closing run. Admitting
+    /// both spellings keeps every label the selected grammar accepts reachable.
+    fn closer(&self, reach: &[usize], offset: usize) -> usize {
+        if self.start == offset + 1 {
+            after(reach, offset + 2)
+                .min(after(reach, self.end))
+                .min(after(reach, self.next))
+        } else if self.start == ABSENT {
+            ABSENT
         } else {
-            ticks[offset + 1]
-        };
-    }
-    ticks
-}
-
-/// Classify the label element that starts at `offset`.
-fn step(bytes: &[u8], offset: usize, ticks: &[usize]) -> Step {
-    if bytes[offset] == b']' && bytes.get(offset + 1) == Some(&b'(') {
-        return Step::Exit;
-    }
-    match bytes[offset] {
-        b'\\' => escaped(bytes, offset),
-        b'`' => code_span(bytes, offset, ticks),
-        b'[' => pair_end(bytes, offset).map_or(Step::Blocked, |end| Step::Continue(end + 1)),
-        b']' => Step::Blocked,
-        _ => Step::Continue(offset + 1),
-    }
-}
-
-/// An escape unit consumes the byte after its backslash.
-fn escaped(bytes: &[u8], offset: usize) -> Step {
-    match offset + 1 {
-        next if next < bytes.len() => Step::Continue(next + 1),
-        _ => Step::Blocked,
-    }
-}
-
-/// A code-span element closes on the next backtick run.
-fn code_span(bytes: &[u8], offset: usize, ticks: &[usize]) -> Step {
-    match ticks.get(run_end(bytes, offset)).copied() {
-        Some(tick) if tick != ABSENT => Step::Continue(run_end(bytes, tick)),
-        _ => Step::Blocked,
-    }
-}
-
-/// A nested bracket element closes on the first bracket-free, escape-free end.
-fn pair_end(bytes: &[u8], offset: usize) -> Option<usize> {
-    let mut cursor = offset + 1;
-    while cursor < bytes.len() {
-        match bytes[cursor] {
-            b']' => return Some(cursor),
-            b'\\' => cursor += 2,
-            b'[' => return None,
-            _ => cursor += 1,
+            after(reach, self.start + 1).min(after(reach, self.end))
         }
     }
-    None
+
+    /// Record the run that starts at `offset`, dropping the runs it precedes.
+    fn record(&mut self, offset: usize) {
+        if self.start != offset + 1 {
+            self.next = self.end;
+            self.end = offset + 1;
+        }
+        self.start = offset;
+    }
 }

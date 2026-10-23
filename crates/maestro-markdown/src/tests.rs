@@ -112,7 +112,7 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
-    /// Sources a link-closer preparation reads, plus one per label query and per rule attempt.
+    /// Steps a label preparation takes, plus one per label query and per rule window.
     pub(crate) link_bytes: usize,
     /// Sources a code-span preparation reads plus one per reached-opener lookup.
     pub(crate) inline_code_bytes: usize,
