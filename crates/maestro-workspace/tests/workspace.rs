@@ -139,6 +139,8 @@ fn display_label_uses_admitted_identity_cache() {
     ws.identity_cwd = directory.clone();
     ws.cached_identity_cwd = directory;
     ws.cached_auto_label = "cached-checkout".into();
+    // With the directory gone, the admitted cache is the label's only source.
+    drop(scratch);
     assert_eq!(ws.display_name(None), "cached-checkout");
 }
 

@@ -238,17 +238,29 @@ mod tests {
     use super::expand_session_dir_with;
 
     /// Each supported session-directory form returns the reference's result for the six
-    /// supplied homes.
+    /// supplied homes, spelled in the host's path flavor.
     #[test]
     fn session_directories_follow_the_reference_table() {
-        for (written, home, expected) in [
-            ("~", "/h", "/h"),
-            ("~/", "/h", "/h"),
-            ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "~x"),
-            ("~", "/h/.", "/h/."),
-            ("~", "", ""),
-        ] {
+        let rows = if cfg!(windows) {
+            [
+                ("~", r"C:\h", r"C:\h"),
+                ("~/", r"C:\h", r"C:\h"),
+                ("~/x", r"C:\h", r"C:\h\x"),
+                ("~x", r"C:\h", "~x"),
+                ("~", r"C:\h\.", r"C:\h\."),
+                ("~", "", ""),
+            ]
+        } else {
+            [
+                ("~", "/h", "/h"),
+                ("~/", "/h", "/h"),
+                ("~/x", "/h", "/h/x"),
+                ("~x", "/h", "~x"),
+                ("~", "/h/.", "/h/."),
+                ("~", "", ""),
+            ]
+        };
+        for (written, home, expected) in rows {
             assert_eq!(
                 expand_session_dir_with(written, || Ok(home.to_owned())),
                 expected,

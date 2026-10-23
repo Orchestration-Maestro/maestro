@@ -300,17 +300,30 @@ fn expand_resource_path(
 mod tests {
     use super::expand_resource_path;
 
-    /// Each resource form returns the reference's result for the six supplied homes.
+    /// Each resource form returns the reference's result for the six supplied homes, spelled in
+    /// the host's path flavor.
     #[test]
     fn resource_paths_follow_the_reference_table() {
-        for (written, home, expected) in [
-            ("~", "/h", "/h"),
-            ("~/", "/h", "/h"),
-            ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "/h/x"),
-            ("~", "/h/.", "/h/."),
-            ("~", "", ""),
-        ] {
+        let rows = if cfg!(windows) {
+            [
+                ("~", r"C:\h", r"C:\h"),
+                ("~/", r"C:\h", r"C:\h"),
+                ("~/x", r"C:\h", r"C:\h\x"),
+                ("~x", r"C:\h", r"C:\h\x"),
+                ("~", r"C:\h\.", r"C:\h\."),
+                ("~", "", ""),
+            ]
+        } else {
+            [
+                ("~", "/h", "/h"),
+                ("~/", "/h", "/h"),
+                ("~/x", "/h", "/h/x"),
+                ("~x", "/h", "/h/x"),
+                ("~", "/h/.", "/h/."),
+                ("~", "", ""),
+            ]
+        };
+        for (written, home, expected) in rows {
             assert_eq!(
                 expand_resource_path(written, || Ok(home.to_owned())).unwrap(),
                 expected,
@@ -322,9 +335,14 @@ mod tests {
     /// The form is trimmed before it is expanded, as the reference does.
     #[test]
     fn padded_forms_expand_as_trimmed() {
+        let (home, expected) = if cfg!(windows) {
+            (r"C:\h", r"C:\h\x")
+        } else {
+            ("/h", "/h/x")
+        };
         assert_eq!(
-            expand_resource_path("  ~/x ", || Ok("/h".to_owned())).unwrap(),
-            "/h/x"
+            expand_resource_path("  ~/x ", || Ok(home.to_owned())).unwrap(),
+            expected
         );
     }
 }

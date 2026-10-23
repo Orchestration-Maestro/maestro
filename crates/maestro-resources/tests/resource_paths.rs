@@ -296,17 +296,35 @@ fn native_directory_entries_follow_platform_order() {
     assert_eq!(names, ["C.md", "_x.md", "a.md", "b.md"]);
 }
 
-/// A leading `~` joins below the home directory and normalizes the written segments.
+/// A leading `~` joins below the home directory and normalizes the written segments, spelled in
+/// the host's path flavor.
 #[test]
 fn text_tilde_expansion_joins_below_the_home_directory() {
-    let text = || Ok("/home/sample".to_owned());
-    for (written, expected) in [
-        ("~/link/../f", "/home/sample/f"),
-        ("~", "/home/sample"),
-        ("~/", "/home/sample"),
-        ("~//note", "/home/sample/note"),
-        ("~child", "/home/sample/child"),
-    ] {
+    let (home, rows) = if cfg!(windows) {
+        (
+            r"C:\home\sample",
+            [
+                ("~/link/../f", r"C:\home\sample\f"),
+                ("~", r"C:\home\sample"),
+                ("~/", r"C:\home\sample"),
+                ("~//note", r"C:\home\sample\note"),
+                ("~child", r"C:\home\sample\child"),
+            ],
+        )
+    } else {
+        (
+            "/home/sample",
+            [
+                ("~/link/../f", "/home/sample/f"),
+                ("~", "/home/sample"),
+                ("~/", "/home/sample"),
+                ("~//note", "/home/sample/note"),
+                ("~child", "/home/sample/child"),
+            ],
+        )
+    };
+    let text = || Ok(home.to_owned());
+    for (written, expected) in rows {
         assert_eq!(
             expand_tilde_text(written, text).unwrap(),
             expected,
