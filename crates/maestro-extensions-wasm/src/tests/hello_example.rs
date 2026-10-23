@@ -1,7 +1,6 @@
 //! The shipped greeting factory exercised through registration and invocation.
 use serde_json::{Value, json};
 
-use super::controlled::Controlled;
 use super::example_support::{
     decoded, invoke_tool_on_component, registered, release_all, result_value,
 };
@@ -34,7 +33,7 @@ pub(super) fn assert_metadata(metadata: &[String], expected: &Value) {
 #[test]
 fn hello_registers_the_greeting_schema() -> Result<(), String> {
     super::block_on(async {
-        let (host, key, _exports) = registered::<Hello>("tool hello").await?;
+        let (host, ..) = registered::<Hello>("tool hello").await?;
         assert_metadata(&host.observed().tools, &corpus()["metadata"]);
         assert!(host.observed().callback("prepare hello").is_err());
         release_all(&host);
