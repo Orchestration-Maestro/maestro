@@ -295,10 +295,12 @@ Conventions reject a second or foreign declaration of `MessageRendererCall`:
 production syntax may not name the raw extension machinery: `MessageRenderer`,
 `CallbackEmitter`, `EventBus`, `get_message_renderer` or `invoke_callback`.
 Import declarations, imported aliases, every segment of a qualified path and
-method calls also count; the frontend uses the projected call and
-`get_message_renderer_call` instead. Test layouts, `cfg(test)` scopes, ordinary
-comments and string literals are exempt. The scan reads parsed syntax, so it does
-not expand macros, resolve arbitrary re-exports or follow unparsed fragments.
+method calls also count. An import path is read whole: a prefix module, a nested
+group, a renamed item and a glob that names a restricted item are each rejected.
+The frontend uses the projected call and `get_message_renderer_call` instead.
+Test layouts, `cfg(test)` scopes, ordinary comments and string literals are
+exempt. The scan reads parsed syntax, so it does not expand macros, resolve
+arbitrary re-exports or follow unparsed fragments.
 
 The root manifest must forbid every protected quality lint; member manifests
 are parsed as TOML and must set the boolean `lints.workspace` to `true`,

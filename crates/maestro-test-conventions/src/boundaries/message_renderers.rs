@@ -64,38 +64,79 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     }
 }
 
+/// One item a use tree imports.
+struct Import {
+    /// Path segments as written, ending with the imported item.
+    path: Vec<syn::Ident>,
+    /// Local name the import binds, absent for a glob.
+    binding: Option<syn::Ident>,
+}
+
+impl Import {
+    /// Name of the item the import binds, where `self` names the module above it.
+    fn item(&self) -> Option<String> {
+        let (last, above) = self.path.split_last()?;
+        let name = if last == "self" { above.last()? } else { last };
+        Some(name.unraw().to_string())
+    }
+}
+
+/// Every item one use tree imports, whatever nesting or aliasing it writes.
+fn flatten(tree: &syn::UseTree) -> Vec<Import> {
+    let mut imports = Vec::new();
+    collect(tree, &[], &mut imports);
+    imports
+}
+
+/// Appends the items of one use tree below the segments already written.
+fn collect(tree: &syn::UseTree, above: &[syn::Ident], imports: &mut Vec<Import>) {
+    match tree {
+        syn::UseTree::Path(path) => {
+            let mut prefix = above.to_vec();
+            prefix.push(path.ident.clone());
+            collect(&path.tree, &prefix, imports);
+        }
+        syn::UseTree::Name(name) => imports.push(Import {
+            path: beneath(above, &name.ident),
+            binding: Some(name.ident.clone()),
+        }),
+        syn::UseTree::Rename(rename) => imports.push(Import {
+            path: beneath(above, &rename.ident),
+            binding: Some(rename.rename.clone()),
+        }),
+        syn::UseTree::Group(group) => {
+            for tree in &group.items {
+                collect(tree, above, imports);
+            }
+        }
+        syn::UseTree::Glob(_) => imports.push(Import {
+            path: above.to_vec(),
+            binding: None,
+        }),
+    }
+}
+
+/// The segments of the path that names one imported item.
+fn beneath(above: &[syn::Ident], item: &syn::Ident) -> Vec<syn::Ident> {
+    let mut path = above.to_vec();
+    path.push(item.clone());
+    path
+}
+
 /// Known raw aliases collected across one parsed file.
 #[derive(Default)]
 struct Aliases(BTreeMap<String, String>);
 
-/// Known import candidates from a use tree.
-fn imports(tree: &syn::UseTree, aliases: &mut BTreeMap<String, String>) {
-    match tree {
-        syn::UseTree::Path(path) => imports(&path.tree, aliases),
-        syn::UseTree::Name(name) => {
-            let raw = name.ident.unraw().to_string();
-            if RAW.contains(&raw.as_str()) {
-                aliases.insert(raw.clone(), raw);
-            }
-        }
-        syn::UseTree::Rename(name) => {
-            let raw = name.ident.unraw().to_string();
-            if RAW.contains(&raw.as_str()) {
-                aliases.insert(name.rename.unraw().to_string(), raw);
-            }
-        }
-        syn::UseTree::Group(group) => {
-            for tree in &group.items {
-                imports(tree, aliases);
-            }
-        }
-        syn::UseTree::Glob(_) => {}
-    }
-}
-
 impl<'ast> Visit<'ast> for Aliases {
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        imports(&item.tree, &mut self.0);
+        for import in flatten(&item.tree) {
+            let Some(binding) = &import.binding else {
+                continue;
+            };
+            if let Some(name) = import.item().filter(|name| RAW.contains(&name.as_str())) {
+                self.0.insert(binding.unraw().to_string(), name);
+            }
+        }
     }
 }
 
@@ -139,22 +180,12 @@ impl Guard<'_> {
         ));
     }
 
-    /// Records a raw identifier named by an import.
+    /// Records every restricted name a use tree writes, prefix segments included.
     fn imported(&mut self, tree: &syn::UseTree) {
-        match tree {
-            syn::UseTree::Path(path) => self.imported(&path.tree),
-            syn::UseTree::Name(name) => {
-                self.raw(&name.ident.unraw().to_string(), name.ident.span());
+        for import in flatten(tree) {
+            for segment in &import.path {
+                self.raw(&segment.unraw().to_string(), segment.span());
             }
-            syn::UseTree::Rename(name) => {
-                self.raw(&name.ident.unraw().to_string(), name.ident.span());
-            }
-            syn::UseTree::Group(group) => {
-                for tree in &group.items {
-                    self.imported(tree);
-                }
-            }
-            syn::UseTree::Glob(_) => {}
         }
     }
 
