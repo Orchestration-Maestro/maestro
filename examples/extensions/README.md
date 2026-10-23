@@ -23,27 +23,38 @@ steps.
 | File | Registers |
 | --- | --- |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
+| `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 
-### Building hello
+### Building an example
 
-Authors need the pinned toolchain with the `wasm32-wasip2` target. The example
+Authors need the pinned toolchain with the `wasm32-wasip2` target. Each example
 builds to a component library; there is no command-line entry point:
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
-  -p maestro-extensions-wasm --example hello --target wasm32-wasip2 --release
+  -p maestro-extensions-wasm --example <name> --target wasm32-wasip2 --release
 ```
 
-### Running hello
+### Running an example
 
-The controlled run instantiates the built component in the test host and calls
-the registered tool with the recorded names:
+The controlled runs instantiate the built component in the test host and call
+the command and tools it registered:
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib hello_component_greets_through_the_host
+  -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 ```
 
-No provider, paid service or extension installation is required. Loading the
+No provider, paid service or extension installation is required. Loading a
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the shutdown example does
+
+`/quit`, `finish_and_exit` and `deploy_and_exit` ask the host to shut down
+through their context, and each one keeps the answer it returns. The deployment
+tool is illustrative: it reports progress, returns the environment it was given
+and starts no deployment process. Loading the component into an interactive host
+is opt-in and requests that host's shutdown.

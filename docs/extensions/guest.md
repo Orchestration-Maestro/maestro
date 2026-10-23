@@ -521,6 +521,24 @@ runtime, so the extension stays opt-in. The extension crate's tests instantiate
 the built component in a controlled host; `examples/extensions/README.md` gives
 the build and controlled-run commands.
 
+### A shutdown command and two tools
+
+[`examples/extensions/shutdown_command.rs`](../../examples/extensions/shutdown_command.rs)
+is the shipped shutdown extension. Its `/quit` command requests shutdown as soon
+as it runs, whatever arguments it receives. The `finish_and_exit` tool requests
+shutdown first and then returns `Shutdown requested. Exiting after this
+response.`. With a progress handle, `deploy_and_exit` reports `Deploying to
+<environment>...` and `Deployment complete, exiting...`, requests shutdown and
+returns `Done! Shutdown requested.` with the environment as its details. The
+deployment tool is illustrative and runs no deployment process.
+
+The three callbacks read no cancellation signal and write no console output. A
+refused registration stops the ones that follow, and a refused shutdown or
+progress update leaves the call with that message instead of a result. Loading
+the component into an interactive host is opt-in and asks that host to shut
+down; `examples/extensions/README.md` gives the build and controlled-run
+commands.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes

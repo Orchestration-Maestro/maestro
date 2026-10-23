@@ -2,6 +2,7 @@
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
+use super::example_support::{invoke_tool_on_component, result_value, start};
 use crate::component_adapter::{Exports, ToolCapabilities, release};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
@@ -30,18 +31,9 @@ fn assert_metadata(metadata: &[String]) {
     assert_eq!(actual, corpus()["metadata"]);
 }
 
-/// Decode the SDK's opaque details document before comparing the caller-visible result.
-fn result_value(encoded: &str) -> Value {
-    let mut value: Value = serde_json::from_str(encoded).unwrap();
-    value["details"] = serde_json::from_str(value["details"].as_str().unwrap()).unwrap();
-    value
-}
-
 /// Starts the shipped factory on a fresh controlled host and returns its tool callback key.
 async fn started() -> Result<(Controlled, u32, Exports<Controlled>), String> {
-    let host = Controlled::default();
-    let exports = Exports::new(host.clone());
-    exports.start::<Hello>().await?;
+    let (host, exports) = start::<Hello>().await?;
     let key = host.observed().callback("tool hello")?;
     Ok((host, key, exports))
 }
@@ -136,18 +128,7 @@ fn hello_component_greets_through_the_host() -> Result<(), String> {
             signal: None,
             update: None,
         };
-        let invocation = super::host_family::guest::ToolInvocation {
-            tool_call_id: "component-call".into(),
-            params: row["input"].to_string(),
-        };
-        let exports = harness.exports.clone();
-        let encoded = super::block_on(harness.store.run_concurrent(async |accessor| {
-            exports
-                .call_invoke_tool(accessor, super::host::borrow(key), invocation, resources)
-                .await
-        }))
-        .map_err(|error| error.to_string())?
-        .map_err(|error| error.to_string())??;
+        let encoded = invoke_tool_on_component(&mut harness, key, &row["input"], resources)?;
         assert_eq!(result_value(&encoded), row["result"]);
     }
     super::block_on(harness.release(key)).map_err(|error| error.to_string())?;

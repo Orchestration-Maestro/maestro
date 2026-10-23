@@ -40,6 +40,7 @@ mod controlled_driver;
 mod documents;
 mod event_transport;
 mod event_values;
+mod example_support;
 mod finite_records;
 #[macro_use]
 mod fixtures;
@@ -72,6 +73,7 @@ mod shared_messages;
 mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;
+mod shutdown_example;
 mod stream_events;
 mod tool_callbacks;
 mod tool_events;

@@ -1181,8 +1181,8 @@ impl Imports for Controlled {
         handler: &Callback,
     ) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();
-        if let Some(error) = &observed.registrations.error {
-            return Err(error.clone());
+        if let Some(error) = observed.registrations.refusal() {
+            return Err(error);
         }
         observed.register(format!("renderer {custom_type}"), handler.id);
         observed.log(format!(
@@ -1200,8 +1200,8 @@ impl Imports for Controlled {
         handler: &Callback,
     ) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();
-        if let Some(error) = &observed.registrations.error {
-            return Err(error.clone());
+        if let Some(error) = observed.registrations.refusal() {
+            return Err(error);
         }
         observed.register_command(name, handler.id);
         observed.registrations.commands.push((
@@ -1221,8 +1221,8 @@ impl Imports for Controlled {
         handler: &Callback,
     ) -> ExtensionResult<()> {
         let mut observed = self.observed.borrow_mut();
-        if let Some(error) = &observed.registrations.error {
-            return Err(error.clone());
+        if let Some(error) = observed.registrations.refusal() {
+            return Err(error);
         }
         observed
             .registrations
@@ -1232,8 +1232,8 @@ impl Imports for Controlled {
         Ok(())
     }
     fn register_flag(&self, name: &str, options: &crate::FlagOptions) -> ExtensionResult<()> {
-        if let Some(error) = &self.observed.borrow().registrations.error {
-            return Err(error.clone());
+        if let Some(error) = self.observed.borrow_mut().registrations.refusal() {
+            return Err(error);
         }
         self.observed
             .borrow_mut()
@@ -1259,11 +1259,10 @@ impl Imports for Controlled {
 
     fn tool_update(&self, update: &Update, partial: &str) -> ExtensionResult<()> {
         let value: serde_json::Value = serde_json::from_str(partial).map_err(|e| e.to_string())?;
-        update.observed.borrow_mut().updates.push(partial.into());
-        if value["details"] == "fail update" {
-            return Err("failed update: Ω".into());
-        }
-        Ok(())
+        update
+            .observed
+            .borrow_mut()
+            .update(partial, &value["details"])
     }
 
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()> {

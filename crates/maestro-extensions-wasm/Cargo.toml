@@ -15,6 +15,11 @@ name = "hello"
 path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "shutdown_command"
+path = "../../examples/extensions/shutdown_command.rs"
+crate-type = ["cdylib"]
+
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
