@@ -39,6 +39,7 @@ fn write_reaches_the_retained_state_after_a_panicking_writer() {
     *write(&shared) = 2;
     assert_eq!(*read(&shared), 2);
     poison_rwlock(&shared);
+    assert_eq!(*write(&shared), 2);
     *write(&shared) = 3;
     assert_eq!(*read(&shared), 3);
 }
@@ -49,6 +50,7 @@ fn lock_returns_the_retained_value_after_a_panicking_holder() {
     let shared = Arc::new(Mutex::new(3));
     assert_eq!(*lock(&shared), 3);
     poison_mutex(&shared);
+    assert_eq!(*lock(&shared), 3);
     *lock(&shared) = 4;
     assert_eq!(*lock(&shared), 4);
 }

@@ -29,6 +29,7 @@ fn write_lands_after_a_panicking_writer() {
         panic!("writer panics while holding the write guard");
     })
     .join();
+    assert_eq!(*write(&shared), 2);
     *write(&shared) = 3;
     assert_eq!(*read(&shared), 3);
 }
@@ -44,6 +45,7 @@ fn lock_recovers_the_mutex_a_panicking_holder_left() {
         panic!("holder panics while holding the mutex guard");
     })
     .join();
+    assert_eq!(*lock(&shared), 9);
     *lock(&shared) = 10;
     assert_eq!(*lock(&shared), 10);
 }
