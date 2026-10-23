@@ -31,7 +31,7 @@ impl Tokenizer<'_> {
         let text = &self.source.text[range.clone()];
         let link = self
             .inline_link(text, &range)
-            .or_else(|| self.reference(text))?;
+            .or_else(|| self.reference(text, &range))?;
         let label = range.start + link.label.start..range.start + link.label.end;
         let label_source = self.source.select(std::iter::once(label.clone()));
         let source = label_source.brackets();
@@ -138,11 +138,18 @@ impl Tokenizer<'_> {
     }
 
     /// Resolve explicit, collapsed and shortcut references using the original index.
-    fn reference(&self, text: &str) -> Option<Link> {
+    fn reference(&self, text: &str, range: &Range<usize>) -> Option<Link> {
+        if !self.delimiters.reference_possible(text, range) {
+            return None;
+        }
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.reference_bytes += text.len());
         let explicit = rules::inline_reflink(self.options)?.find(text);
-        let matched = explicit
-            .clone()
-            .or_else(|| rules::inline_nolink(self.options)?.find(text))?;
+        let matched = explicit.clone().or_else(|| {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.reference_bytes += text.len());
+            rules::inline_nolink(self.options)?.find(text)
+        })?;
         let label = capture(text, &matched, 1);
         let identity = if explicit.is_some() {
             capture(text, &matched, 2)
