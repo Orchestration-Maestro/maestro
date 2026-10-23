@@ -28,11 +28,8 @@ fn check(fixtures: &[Fixture]) -> Result<(), String> {
             .collect::<Vec<_>>(),
     );
     for fixture in fixtures {
-        let directory = workspace.root.path().join("crates").join(fixture.name);
         for (path, contents) in &fixture.files {
-            let path = directory.join(path);
-            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-            std::fs::write(path, contents).unwrap();
+            support::source(&workspace, fixture.name, path, contents);
         }
         if fixture
             .files

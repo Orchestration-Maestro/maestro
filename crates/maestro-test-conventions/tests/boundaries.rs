@@ -3,7 +3,7 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
-use support::Workspace;
+use support::{Workspace, source};
 
 const DECLARATIONS: &[(&str, &str)] = &[
     ("dependencies", ""),
@@ -91,17 +91,6 @@ fn toolkit_excludes_framework_and_highlighting_dependencies() {
             assert_eq!(check_workspace(workspace.root.path()), Ok(()));
         }
     }
-}
-
-fn source(workspace: &Workspace, owner: &str, relative: &str, contents: &str) {
-    let path = workspace
-        .root
-        .path()
-        .join("crates")
-        .join(owner)
-        .join(relative);
-    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-    std::fs::write(path, contents).unwrap();
 }
 
 #[test]

@@ -3,7 +3,7 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
-use support::Workspace;
+use support::{Workspace, source};
 
 /// Writes each authored source and compares the complete located diagnostics.
 fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)]) {
@@ -11,9 +11,7 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
     workspace.foundation(&[member]);
     let directory = workspace.root.path().join("crates").join(member);
     for (file, contents) in files {
-        let path = directory.join(file);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, contents).unwrap();
+        source(&workspace, member, file, contents);
     }
     if member == "maestro-tui"
         && files.iter().any(|(file, _)| {

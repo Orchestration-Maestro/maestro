@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use std::fs;
-#[cfg(unix)]
 use std::path::PathBuf;
 
 /// The guest crate's own lint table: the fixture workspace table with the three lints its
@@ -118,6 +117,20 @@ pub fn required(name: &str) -> &'static [&'static str] {
 
 pub fn class(name: &str) -> &'static str {
     policy::rule(name).unwrap().class
+}
+
+/// Write one authored source under a member's directory, creating its parents, and return
+/// its path.
+pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &str) -> PathBuf {
+    let path = workspace
+        .root
+        .path()
+        .join("crates")
+        .join(member)
+        .join(relative);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, contents).unwrap();
+    path
 }
 
 impl Workspace {
