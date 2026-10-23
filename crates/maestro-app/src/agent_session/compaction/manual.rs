@@ -32,11 +32,13 @@ impl<E: ExtensionExecution> AgentSession<E> {
         .map_err(thrown)?
     }
 
-    /// The manual compaction the session runs, announced from start to end.
+    /// The manual compaction the session runs, announced from start to end, with agent events
+    /// kept from the session until it ends.
     async fn manual_compaction(
         &self,
         custom_instructions: Option<&str>,
     ) -> Result<CompactionResult, DiagnosticErrorInfo> {
+        self.disconnect_from_agent();
         self.abort().await;
         let signal = Cancellation::new();
         self.state.borrow_mut().compaction_signal = Some(signal.clone());
@@ -65,6 +67,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }
         };
         self.close_compaction(&end);
+        self.reconnect_to_agent();
         outcome
     }
 

@@ -1,5 +1,6 @@
 //! Credentials, settings, the model catalog and resources bound to one session working
 //! directory.
+use crate::agent_session::ToolDefinitionHandle;
 use crate::configuration::config::{
     get_agent_dir,
     paths::{get_auth_path, get_models_path},
@@ -8,18 +9,28 @@ use crate::resources::resource_loader::{
     DefaultEventBus, DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader,
     ResourceLoaderOptions,
 };
+use crate::sdk::{
+    CreateAgentSessionOptions, CreateAgentSessionResult, NoTools, SessionResources,
+    create_agent_session,
+};
 use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
-use maestro_catalog::{ConfigValues, ModelRegistry};
+use maestro_catalog::{ConfigValues, ModelRegistry, ScopedModel};
 use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
+use maestro_extensions::SessionStartEvent;
 use maestro_extensions::{
     ExtensionExecution, LoadExtensionsResult,
     types::{FlagType, FlagValue},
 };
-use maestro_models::{SharedHandle, Threaded};
+use maestro_models::{
+    DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, SharedHandle, Threaded,
+};
 use maestro_resources::paths::CONFIG_DIR_NAME;
+use maestro_session::SessionManager;
 use maestro_settings::SettingsManager;
+use maestro_theme::LiveTheme;
 use maestro_tools::utils::shell::get_shell_config;
+use std::sync::RwLock;
 use std::{cell::RefCell, collections::HashMap, io, rc::Rc, sync::Arc};
 
 /// The severity of an [`AgentSessionRuntimeDiagnostic`].
@@ -154,7 +165,7 @@ fn register_providers<E: ExtensionExecution>(
 }
 
 /// Native commands that configured credential values name, behind the tools' shell selector.
-fn native_config_values() -> ConfigValues {
+pub(crate) fn native_config_values() -> ConfigValues {
     Arc::new(ProcessConfigValueOperations::new(|| {
         get_shell_config(None).map(|config| (config.shell, config.args))
     }))
@@ -194,13 +205,13 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
             .map_err(io::Error::other)?,
         ),
     };
-    let resource_loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
-        cwd: cwd.clone(),
-        agent_dir: agent_dir.clone(),
-        settings_manager: Some(Rc::clone(&settings_manager)),
-        resources: options.resource_loader_options,
-    });
-    resource_loader.reload().await?;
+    let resource_loader = default_resource_loader(
+        &cwd,
+        &agent_dir,
+        &settings_manager,
+        options.resource_loader_options,
+    )
+    .await?;
     let extensions = resource_loader.get_extensions();
     let mut diagnostics = register_providers(&extensions, &model_registry);
     if let Some(values) = options.extension_flag_values {
@@ -212,7 +223,80 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
         auth_storage,
         settings_manager,
         model_registry,
-        resource_loader: Rc::new(resource_loader),
+        resource_loader,
         diagnostics,
     })
+}
+
+/// The default resource loader for `cwd` and `agent_dir` over the shared settings, loaded.
+///
+/// # Errors
+/// Returns the reload failure.
+pub(crate) async fn default_resource_loader<E: DefaultEventBus>(
+    cwd: &str,
+    agent_dir: &str,
+    settings_manager: &Rc<RefCell<SettingsManager>>,
+    resources: ResourceLoaderOptions<E>,
+) -> io::Result<Rc<dyn ResourceLoader<E>>> {
+    let loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+        cwd: cwd.to_owned(),
+        agent_dir: agent_dir.to_owned(),
+        settings_manager: Some(Rc::clone(settings_manager)),
+        resources,
+    });
+    loader.reload().await?;
+    Ok(Rc::new(loader))
+}
+
+/// What [`create_agent_session_from_services`] adds to existing services.
+pub struct CreateAgentSessionFromServicesOptions {
+    /// The services the session is created over.
+    pub services: Rc<AgentSessionServices<Local>>,
+    /// The session history.
+    pub session_manager: Rc<RefCell<SessionManager>>,
+    /// The start event extensions receive when they are bound.
+    pub session_start_event: Option<SessionStartEvent>,
+    /// The model; absent means the recorded or default one.
+    pub model: Option<Arc<RwLock<Model>>>,
+    /// The thinking level; absent means the recorded or default one.
+    pub thinking_level: Option<ModelThinkingLevel>,
+    /// Models to cycle through, in order.
+    pub scoped_models: Vec<ScopedModel>,
+    /// The only tools enabled, when present.
+    pub tools: Option<Vec<String>>,
+    /// The default tools to leave off when no tool list is supplied.
+    pub no_tools: Option<NoTools>,
+    /// Tool definitions registered outside extensions.
+    pub custom_tools: Vec<ToolDefinitionHandle>,
+    /// The published theme extensions see while no user interface is bound.
+    pub theme: LiveTheme,
+}
+
+/// Creates a session over services that already exist, with their directories, credentials,
+/// catalog, preferences and resources.
+///
+/// # Errors
+/// Returns the failures of [`create_agent_session`].
+pub async fn create_agent_session_from_services(
+    options: CreateAgentSessionFromServicesOptions,
+) -> Result<CreateAgentSessionResult, DiagnosticErrorInfo> {
+    let services = options.services;
+    create_agent_session(CreateAgentSessionOptions {
+        cwd: Some(services.cwd.clone()),
+        agent_dir: Some(services.agent_dir.clone()),
+        auth_storage: Some(Arc::clone(&services.auth_storage)),
+        model_registry: Some(Arc::clone(&services.model_registry)),
+        model: options.model,
+        thinking_level: options.thinking_level,
+        scoped_models: options.scoped_models,
+        no_tools: options.no_tools,
+        tools: options.tools,
+        custom_tools: options.custom_tools,
+        resources: SessionResources::Loader(Rc::clone(&services.resource_loader)),
+        session_manager: Some(options.session_manager),
+        settings_manager: Some(Rc::clone(&services.settings_manager)),
+        session_start_event: options.session_start_event,
+        theme: options.theme,
+    })
+    .await
 }

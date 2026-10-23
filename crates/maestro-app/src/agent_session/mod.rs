@@ -1,9 +1,12 @@
 //! The session that frontends share: agent state, model and thinking selection, tool
-//! selection, history navigation, statistics, exports, prompts, queues and direct shell
-//! commands.
+//! selection, history navigation, statistics, exports, prompts, queues, direct shell
+//! commands, the extension runtime and the agent-event dispatch.
 mod bash;
 mod compaction;
+mod events;
 mod export;
+mod extensions;
+mod lifecycle;
 mod navigation;
 mod prompting;
 mod queues;
@@ -12,24 +15,35 @@ mod selection;
 mod skill_block;
 mod state;
 mod statistics;
+mod tool_runtime;
 mod tools;
 mod types;
 
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+mod tests;
+
+pub(crate) use selection::{model_level, saved_level};
 pub use skill_block::{ParsedSkillBlock, parse_skill_block};
+pub(crate) use state::{agent_messages, content_text, thrown};
 pub use types::*;
 
 use crate::resources::resource_loader::{LoadPromptsResult, ResourceLoader};
-use crate::resources::system_prompt::build_system_prompt;
 use crate::utils::lock::{read, write};
-use indexmap::IndexMap;
-use maestro_agent::{Agent, AgentSpawner, AgentState, QueueMode};
+use indexmap::{IndexMap, IndexSet};
+use maestro_agent::Subscription;
+use maestro_agent::{Agent, AgentListener, AgentSpawner, AgentState, QueueMode, SharedAgentTool};
 use maestro_catalog::{ModelRegistry, ScopedModel};
-use maestro_extensions::{ExtensionExecution, ExtensionRunner};
-use maestro_models::{DiagnosticErrorInfo, Local, Model, Threaded, records::listeners::Listeners};
+use maestro_extensions::{
+    ExtensionExecution, ExtensionRunner, ReplacedSessionContext, SessionStartEvent,
+};
+use maestro_models::{DiagnosticErrorInfo, Local, Model, records::listeners::Listeners};
 use maestro_session::{
-    SessionManager, messages::CustomAgentMessages, session_manager::ReadonlySessionManager,
+    Presence, SessionManager, messages::CustomAgentMessages,
+    session_manager::ReadonlySessionManager,
 };
 use maestro_settings::SettingsManager;
+use maestro_theme::LiveTheme;
 use state::AgentSessionState;
 use std::{
     cell::RefCell,
@@ -39,7 +53,7 @@ use std::{
 
 /// The session operations shared by every frontend, over the agent, the session history,
 /// the settings, the model catalog and the loaded resources.
-pub struct AgentSession<E: ExtensionExecution = Threaded> {
+pub struct AgentSession<E: ExtensionExecution = Local> {
     /// The agent whose state the session reads and changes.
     agent: Rc<Agent<CustomAgentMessages, Local>>,
     /// The task facility that finishes the session's started work.
@@ -52,60 +66,183 @@ pub struct AgentSession<E: ExtensionExecution = Threaded> {
     model_registry: Arc<ModelRegistry>,
     /// The loaded resources.
     resource_loader: Rc<dyn ResourceLoader<E>>,
-    /// The extensions' runner.
-    extension_runner: Rc<ExtensionRunner<E>>,
+    /// The extensions' runner now in effect; every runtime build replaces it.
+    extension_runner: RefCell<Rc<ExtensionRunner<E>>>,
+    /// The caller's slot that mirrors the runner now in effect.
+    extension_runner_ref: Option<ExtensionRunnerRef<E>>,
     /// The session working directory.
     cwd: String,
     /// The directory of the tool binaries that shell commands find first.
     bin_dir: String,
+    /// The search index the built-in grep and find tools share.
+    tools_manager: Arc<ToolsManager>,
+    /// The theme extensions see while no user interface is bound.
+    theme: LiveTheme,
+    /// The only tool names exposed, when present.
+    allowed_tool_names: Option<IndexSet<String>>,
+    /// Executable tools used in place of the built-in ones.
+    base_tools_override: Option<IndexMap<String, SharedAgentTool<Local>>>,
+    /// The start event extensions receive when they are bound.
+    session_start_event: SessionStartEvent,
     /// Session listeners in subscription order.
     event_listeners: Rc<RefCell<Listeners<AgentSessionEventListener>>>,
-    /// Scoped models and the tool registry.
+    /// The one agent listener, kept so a reconnection registers the same identity.
+    agent_listener: AgentListener<CustomAgentMessages, Local>,
+    /// The agent subscription, absent while disconnected.
+    agent_subscription: RefCell<Option<Subscription<CustomAgentMessages, Local>>>,
+    /// Scoped models, the tool registry and the session's running work.
     state: RefCell<AgentSessionState<E>>,
 }
 
-impl<E: ExtensionExecution> AgentSession<E> {
-    /// Takes the supplied owners and the scoped models, and installs the base system prompt
-    /// built from the loaded resources for no registered tools.
+/// The task facility a session falls back on: `tokio::task::spawn_local`, so the work needs
+/// the caller's Tokio `LocalSet`.
+pub(crate) fn local_spawner() -> AgentSpawner<Local> {
+    Rc::new(|task| drop(tokio::task::spawn_local(task)))
+}
+
+impl AgentSession<Local> {
+    /// Takes the supplied owners, subscribes to the agent's events, installs the tool hooks
+    /// and builds the extension runner, the tool registry and the base system prompt.
+    /// Extensions receive the start event only once [`AgentSession::bind_extensions`] runs.
     ///
     /// Started work runs on the agent's own task facility. An agent without one gets
     /// `tokio::task::spawn_local`, so its work then needs the caller's Tokio `LocalSet`.
     ///
     /// # Errors
-    /// Returns the documentation-path failure of the default prompt.
-    pub fn new(config: AgentSessionConfig<E>) -> Result<Self, DiagnosticErrorInfo> {
-        let spawn = Rc::clone(
-            write(&config.agent.spawn)
-                .get_or_insert_with(|| Rc::new(|task| drop(tokio::task::spawn_local(task)))),
-        );
-        let options = tools::prompt_options(
+    /// Returns the documentation-path failure of the base prompt, or an extension error
+    /// listener's failure while queued provider registrations are applied.
+    pub fn new(config: AgentSessionConfig<Local>) -> Result<Rc<Self>, DiagnosticErrorInfo> {
+        let active_tool_names = config.initial_active_tool_names.clone();
+        let session = Rc::new_cyclic(|weak| Self::assemble(config, weak));
+        session.finish_runtime_build(active_tool_names, true)?;
+        Ok(session)
+    }
+
+    /// The session over `config`, subscribed to the agent, with its tool hooks and a fresh
+    /// runner in place.
+    fn assemble(config: AgentSessionConfig<Local>, weak: &std::rc::Weak<Self>) -> Self {
+        let spawn = Rc::clone(write(&config.agent.spawn).get_or_insert_with(local_spawner));
+        let agent_listener = events::agent_listener(weak);
+        let subscription = config.agent.subscribe(Rc::clone(&agent_listener));
+        tool_runtime::install_agent_tool_hooks(&config.agent, weak);
+        let prompt_options = tools::prompt_options(
             &*config.resource_loader,
             &config.cwd,
             Vec::new(),
             IndexMap::new(),
             Vec::new(),
         );
-        let prompt = build_system_prompt(&options).map_err(state::thrown)?;
-        write(config.agent.state())
-            .system_prompt
-            .clone_from(&prompt);
-        Ok(Self {
+        let runner = lifecycle::create_runner(
+            &*config.resource_loader,
+            &config.cwd,
+            &config.session_manager,
+            &config.model_registry,
+            &config.theme,
+        );
+        if let Some(slot) = &config.extension_runner_ref {
+            slot.borrow_mut().replace(Rc::clone(&runner));
+        }
+        Self {
             agent: config.agent,
             spawn,
             session_manager: config.session_manager,
             settings_manager: config.settings_manager,
             model_registry: config.model_registry,
             resource_loader: config.resource_loader,
-            extension_runner: config.extension_runner,
+            extension_runner: RefCell::new(runner),
+            extension_runner_ref: config.extension_runner_ref,
             cwd: config.cwd,
             bin_dir: config.bin_dir,
+            tools_manager: config.tools_manager,
+            theme: config.theme,
+            allowed_tool_names: config.allowed_tool_names.map(IndexSet::from_iter),
+            base_tools_override: config.base_tools_override,
+            session_start_event: config.session_start_event.unwrap_or(SessionStartEvent {
+                reason: maestro_extensions::SessionStartReason::Startup,
+                previous_session_file: Presence::Missing,
+            }),
             event_listeners: Rc::default(),
+            agent_listener,
+            agent_subscription: RefCell::new(Some(subscription)),
             state: RefCell::new(AgentSessionState::new(
                 config.scoped_models,
-                prompt,
-                options,
+                config.custom_tools,
+                prompt_options,
             )),
-        })
+        }
+    }
+}
+
+impl<E: ExtensionExecution> AgentSession<E> {
+    /// The extensions' runner now in effect.
+    #[must_use]
+    pub fn extension_runner(&self) -> Rc<ExtensionRunner<E>> {
+        Rc::clone(&self.extension_runner.borrow())
+    }
+
+    /// Whether any loaded extension handles `event_type`.
+    #[must_use]
+    pub fn has_extension_handlers(&self, event_type: &str) -> bool {
+        self.extension_runner().has_handlers(event_type)
+    }
+
+    /// Stops delivering agent events to the session; the session listeners stay.
+    pub(super) fn disconnect_from_agent(&self) {
+        if let Some(subscription) = self.agent_subscription.borrow_mut().take() {
+            subscription.unsubscribe();
+        }
+    }
+
+    /// Delivers agent events to the session again after a disconnection.
+    pub(super) fn reconnect_to_agent(&self) {
+        let mut subscription = self.agent_subscription.borrow_mut();
+        if subscription.is_none() {
+            *subscription = Some(self.agent.subscribe(Rc::clone(&self.agent_listener)));
+        }
+    }
+
+    /// Invalidates every extension context with the stale-context guidance, stops agent
+    /// delivery, drops every session listener and releases the session's provider resources.
+    /// Nothing running is aborted or awaited.
+    pub fn dispose(&self) {
+        self.extension_runner().invalidate(None);
+        self.disconnect_from_agent();
+        let listeners = std::mem::take(&mut *self.event_listeners.borrow_mut());
+        drop(listeners);
+        let session_id = self.session_id();
+        drop(maestro_models::cleanup_session_resources(Some(&session_id)));
+    }
+
+    /// The runner's command context with this session's message operations, for work that
+    /// continues against a replacement session.
+    #[must_use]
+    pub fn create_replaced_session_context(self: &Rc<Self>) -> ReplacedSessionContext
+    where
+        E: 'static,
+    {
+        let messages = Rc::clone(self);
+        let users = Rc::clone(self);
+        ReplacedSessionContext::new(
+            self.extension_runner().create_command_context(),
+            Rc::new(move |message, options| {
+                let session = Rc::clone(&messages);
+                Box::pin(async move {
+                    session
+                        .send_custom_message(message, options.unwrap_or_default())
+                        .await
+                        .map_err(Into::into)
+                })
+            }),
+            Rc::new(move |content, options| {
+                let session = Rc::clone(&users);
+                Box::pin(async move {
+                    session
+                        .send_user_message(content, options.unwrap_or_default())
+                        .await
+                        .map_err(Into::into)
+                })
+            }),
+        )
     }
 
     /// The agent whose state the session reads and changes.

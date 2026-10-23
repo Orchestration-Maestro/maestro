@@ -5,3 +5,5 @@ pub use maestro_settings::{
 };
 
 pub use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};
+
+pub use maestro_settings::{CompactionSettings, ImageSettings, RetrySettings};

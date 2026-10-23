@@ -231,10 +231,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         summarize: bool,
         choices: &mut NavigationChoices,
     ) -> Result<BeforeTree, DiagnosticErrorInfo> {
-        if !self.extension_runner.has_handlers("session_before_tree") {
+        if !self.extension_runner().has_handlers("session_before_tree") {
             return Ok(BeforeTree::Continue(None));
         }
-        let Some(mut result) = self.extension_runner.emit(event).await.map_err(thrown)? else {
+        let Some(mut result) = self.extension_runner().emit(event).await.map_err(thrown)? else {
             return Ok(BeforeTree::Continue(None));
         };
         if matches!(result.cancel, Presence::Present(true)) {
@@ -326,7 +326,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             summary_entry: presence(summary_entry.clone()),
             from_extension: presence(from_extension),
         };
-        self.extension_runner
+        self.extension_runner()
             .emit(&mut event)
             .await
             .map_err(thrown)?;

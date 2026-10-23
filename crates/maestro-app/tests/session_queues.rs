@@ -21,7 +21,10 @@ fn assert_queue_case(h: &Harness, t: &Transcript, case: &Value) {
     assert_eq!(with_placeholders(queue_view(h, t), h), case["queue"]);
     let updates = t.events_of(&["queue_update"]);
     assert_eq!(with_placeholders(json!(updates), h), case["sessionEvents"]);
-    assert_eq!(entries_view(h), Vec::<Value>::new());
+    assert_eq!(
+        with_placeholders(json!(entries_view(h)), h),
+        case["entries"]
+    );
     let mut transcript = case.clone();
     transcript["contexts"] = json!({"calls": 0});
     assert_transcript(h, t, &transcript);

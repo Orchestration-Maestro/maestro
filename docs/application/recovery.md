@@ -34,16 +34,17 @@ Aborting is `abort_compaction()`, which cancels a manual and an automatic
 compaction in progress, and `abort_branch_summary()`, which cancels a branch
 summary. `is_compacting()` reports any of the three.
 
-Automatic compaction runs on `check_compaction(response, skip_aborted_check)`.
-With the preference off, it does nothing. It skips an aborted response unless
-the caller is checking before a prompt, and it skips a response recorded at or
-before the newest compaction. When the response reports an overflow from the
+Automatic compaction checks the newest response when a run ends and before a
+prompt is sent. With the preference off, it does nothing. It skips an aborted
+response unless the check runs before a prompt, and it skips a response recorded
+at or before the newest compaction. When the response reports an overflow from the
 selected model, the failed response leaves the agent history but stays in the
 stored history, the session compacts once and asks the agent to continue 100 ms
 later; a second overflow in the same turn adds no second start event and reports
 that the recovery failed. When the reported usage passes the reserve instead,
 the session compacts without retrying and resumes any queued messages 100 ms
-later. `clear_overflow_recovery_attempt()` re-arms the one recovery a turn gets.
+later. A started user message and a successful response re-arm the one recovery
+a turn gets.
 
 Automatic compaction reads its preferences once, before `compaction_start`, so a
 listener that changes them affects only the next compaction. Missing
@@ -59,12 +60,13 @@ running.
 
 ## Retries
 
-`is_retryable_error(response)` accepts a response that failed with a non-empty
+When a run ends, its newest response is retried when it failed with a non-empty
 message matching the transient-error classifier, unless the provider reported a
-context overflow, which compaction recovers.
+context overflow, which compaction recovers. The retry is checked before
+compaction.
 
-`handle_retryable_error(response)` counts the attempt, and refuses it once the
-count passes `maxRetries` (3 by default), reporting `auto_retry_end` with
+The retry counts the attempt and refuses it once the count passes `maxRetries`
+(3 by default), reporting `auto_retry_end` with
 success `false`, the last attempt, the failure text and a cleared counter. A
 passed attempt announces `auto_retry_start` with the attempt, the limit, the
 error text and the doubling delay `baseDelayMs` (2000 by default) scaled by
@@ -74,9 +76,11 @@ delay. Aborting during the wait announces `Retry cancelled` and clears the
 counter. `abort_retry()` stops a waiting retry; `abort()` stops the retry, the
 turn and waits for the agent to settle.
 
-`wait_for_retry()` returns at once when no retry is in flight; otherwise it
-waits for the retry and then for the agent to settle. Dropping the wait never
-aborts the retry. `is_retrying()` reports a retry in flight and
+A prompt returns after its run and, when a retry is in flight, after the retry
+and the agent settle. A successful response after retries announces
+`auto_retry_end` with success `true`; its listeners still read the completed
+attempt from `retry_attempt()`, which returns to 0 afterwards. Dropping the
+prompt never aborts the retry. `is_retrying()` reports a retry in flight and
 `retry_attempt()` the attempts it has made. `auto_retry_enabled()`,
 `set_auto_retry_enabled`, `auto_compaction_enabled()` and
 `set_auto_compaction_enabled` read and write the saved preferences.

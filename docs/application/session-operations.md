@@ -3,16 +3,38 @@
 [`AgentSession`](../../crates/maestro-app/src/agent_session/mod.rs) is the session
 every frontend shares. `AgentSession::new` takes an `AgentSessionConfig` and moves
 the supplied owners in: the local agent, the session history, the settings, the
-working directory, the scoped models, the resource loader, the model catalog, the
-extension runner and the command port that configured credentials use. It
-builds the base system prompt from the loaded resources for no registered tools and
-installs it on the agent; it fails only when the default prompt cannot find its
-documentation path. It subscribes to nothing and builds no other runtime of its own.
+working directory, the scoped models, the resource loader, the model catalog and
+the command port that configured credentials use. It subscribes to the agent's
+events, installs the tool hooks, then builds the extension runner, the tool
+registry and the base system prompt. It fails when that prompt cannot find its
+documentation path or an extension error listener fails. Programs usually create
+it through [`create_agent_session`](sdk.md), which also covers the bindings,
+the reload and session replacement.
 
 Session state lives in one cell. No borrow of that cell, the history, the settings
 or the agent state is held while the session awaits work, calls a listener or an
 extension event handler, or resolves a tool description, so any of them can call
 back into the session.
+
+## Agent events
+
+The session's one agent listener opens the retry observation at once when a run
+ends on a response a retry can recover, then queues the event. Queued events are
+processed one at a time in order; a failing event is dropped and the rest still
+run. For each event the session first removes a started user message's text from
+the steering mirror, else the follow-up mirror, announcing the queues. It then
+tells the extensions, then the listeners. A finished custom message is stored as
+a custom entry, and a finished user, assistant or tool-result message as a
+message entry. When the run ends, the newest response is retried when it can be,
+else checked for compaction. An extension that rewrites a finished message
+replaces it in the shared history, so the listeners, later events, the totals
+and the stored entry read the replacement. Extension turn events count turns
+from the run's start.
+
+A tool call reaches the `tool_call` handlers only after the queued events are
+processed, and the arguments they edit are the ones executed. `tool_result`
+handlers may replace a result's content, details and error flag. A manual
+compaction keeps agent events from the session until it ends.
 
 ## Observations and listeners
 
@@ -60,14 +82,17 @@ moves to the next supported level, wrapping. `set_steering_mode` and
 
 ## Tools and the system prompt
 
-`refresh_tool_registry` takes the definitions in order. For each one it keeps the
-prompt snippet with whitespace runs collapsed to one space (dropping blank
-snippets) and the prompt guidelines trimmed, without blanks or repeats, and wraps
-one executable tool. It then activates tools and rebuilds the system prompt.
-Requested names replace the active tools; without them, the active tools stay
-active. When the options include every extension tool, the
-listed extension tools are added; otherwise, when no names are requested, each
-tool new to the registry is added. Repeated names are dropped.
+Every runtime build and every extension refresh rebuilds the tool registry: the
+built-in definitions first, under `<builtin:name>`, then the extension and SDK
+tools replacing them by name, keeping only allowlisted names when there is an
+allowlist. For each definition the registry keeps the prompt snippet with
+whitespace runs collapsed to one space (dropping blank snippets) and the prompt
+guidelines trimmed, without blanks or repeats, and wraps one executable tool. It
+then activates tools and rebuilds the system prompt. A runtime build activates
+the initial tools (`read`, `bash`, `edit` and `write` by default) and adds every
+extension and SDK tool; a refresh keeps the active tools and adds the tools new
+to the registry. With an allowlist, every allowed registry tool is active.
+Repeated names are dropped.
 
 `set_active_tools_by_name` keeps the registered names in the given order, skipping
 unknown names and keeping repeats. It sets the agent tools and rebuilds the system
@@ -112,11 +137,10 @@ order.
 
 ## Compaction and retries
 
-`compact` shrinks the context on demand and `check_compaction` does it when the
-context passes the reserve; `handle_retryable_error` repeats a failed response
-after a doubling delay. Both announce their start and end events, can be aborted,
-and are described with the preferences they read in
-[compaction and retries](recovery.md).
+`compact` shrinks the context on demand, and the session compacts on its own when
+a run ends past the reserve; a failed response is repeated after a doubling delay.
+Both announce their start and end events, can be aborted, and are described with
+the preferences they read in [compaction and retries](recovery.md).
 
 ## Statistics
 
@@ -133,8 +157,9 @@ system prompt and tools, the saved theme name and custom tool rendering. The
 caller supplies the export assets and the rendering environment whose published
 theme the renderers use. A renderer resolves that theme only when it reads a
 color: without a published theme, one that never reads it still draws, and one
-that reads it keeps its standard rendering. It refuses a session that is only in
-memory before it renders or writes anything.
+that reads it keeps its standard rendering. Renderers run with the session free,
+so one may change it. It refuses a session that is only in memory before it
+renders or writes anything.
 
 `export_to_jsonl` writes a fresh session header followed by the current branch,
 each entry's `parentId` replaced by the previous entry's identity. Without a path

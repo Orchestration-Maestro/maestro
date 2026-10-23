@@ -82,7 +82,10 @@ impl<E: ExtensionExecution> AgentSession<E> {
         custom_instructions: Option<String>,
         signal: &Cancellation,
     ) -> Result<BeforeCompaction, DiagnosticErrorInfo> {
-        if !self.extension_runner.has_handlers("session_before_compact") {
+        if !self
+            .extension_runner()
+            .has_handlers("session_before_compact")
+        {
             return Ok(BeforeCompaction::Continue {
                 preparation: Box::new(preparation),
             });
@@ -96,7 +99,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             signal: signal.clone(),
         };
         let result = self
-            .extension_runner
+            .extension_runner()
             .emit(&mut event)
             .await
             .map_err(thrown)?;
@@ -180,7 +183,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             compaction_entry: entry,
             from_extension,
         };
-        self.extension_runner
+        self.extension_runner()
             .emit(&mut event)
             .await
             .map_err(thrown)?;

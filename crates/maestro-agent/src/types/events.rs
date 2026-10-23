@@ -60,3 +60,53 @@ pub enum AgentEvent<C: CustomAgentMessages = crate::NoCustomMessages> {
         is_error: bool,
     },
 }
+impl<C: CustomAgentMessages> Clone for AgentEvent<C> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::AgentStart => Self::AgentStart,
+            Self::AgentEnd { messages } => Self::AgentEnd {
+                messages: messages.clone(),
+            },
+            Self::TurnStart => Self::TurnStart,
+            Self::TurnEnd {
+                message,
+                tool_results,
+            } => Self::TurnEnd {
+                message: message.clone(),
+                tool_results: tool_results.clone(),
+            },
+            Self::MessageStart { message } => Self::MessageStart {
+                message: message.clone(),
+            },
+            Self::MessageUpdate {
+                message,
+                assistant_message_event,
+            } => Self::MessageUpdate {
+                message: message.clone(),
+                assistant_message_event: assistant_message_event.clone(),
+            },
+            Self::MessageEnd { message } => Self::MessageEnd {
+                message: message.clone(),
+            },
+            Self::ToolExecutionStart { tool_call } => Self::ToolExecutionStart {
+                tool_call: tool_call.clone(),
+            },
+            Self::ToolExecutionUpdate {
+                tool_call,
+                partial_result,
+            } => Self::ToolExecutionUpdate {
+                tool_call: tool_call.clone(),
+                partial_result: partial_result.clone(),
+            },
+            Self::ToolExecutionEnd {
+                tool_call,
+                result,
+                is_error,
+            } => Self::ToolExecutionEnd {
+                tool_call: tool_call.clone(),
+                result: result.clone(),
+                is_error: *is_error,
+            },
+        }
+    }
+}

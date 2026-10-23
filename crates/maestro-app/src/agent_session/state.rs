@@ -1,16 +1,23 @@
 //! The one session state, and the bridge between typed agent messages and stored records.
+use super::{ExtensionBindings, ToolDefinitionHandle};
 use indexmap::IndexMap;
-use maestro_agent::AgentMessage;
 use maestro_agent::SharedAgentTool;
+use maestro_agent::{AgentEvent, AgentMessage};
 use maestro_catalog::ScopedModel;
 use maestro_extensions::{
     BuildSystemPromptOptions, ExtensionExecution, NativeAgentMessage, RegisteredTool,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, SharedAssistantMessage};
+use maestro_session::messages::CustomAgentMessages;
 use serde_json::Value;
+use std::collections::VecDeque;
+use std::sync::{Arc, RwLock};
 
-/// A retry that every observer sees released once.
-pub(super) type RetryGate = futures_util::future::Shared<tokio::sync::oneshot::Receiver<()>>;
+/// A release that every observer sees once.
+pub(super) type Gate = futures_util::future::Shared<tokio::sync::oneshot::Receiver<()>>;
+
+/// An agent event as the agent shares it with its listeners.
+pub(super) type SharedAgentEvent = Arc<RwLock<AgentEvent<CustomAgentMessages>>>;
 
 /// Session state the session owns beside its supplied owners.
 pub(super) struct AgentSessionState<E: ExtensionExecution> {
@@ -37,7 +44,7 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     /// The retry attempts made in this turn.
     pub(super) retry_attempt: u32,
     /// The release every retry observer awaits.
-    pub(super) retry_gate: Option<RetryGate>,
+    pub(super) retry_gate: Option<Gate>,
     /// Opens the release once.
     pub(super) retry_open: Option<tokio::sync::oneshot::Sender<()>>,
     /// The system prompt built for the active tools, before any extension replaces it.
@@ -51,17 +58,33 @@ pub(super) struct AgentSessionState<E: ExtensionExecution> {
     /// Custom messages sent with the next prompt.
     pub(super) pending_next_turn_messages: Vec<NativeAgentMessage>,
     /// Shell results recorded while a response streamed, appended before the next prompt.
-    pub(super) pending_bash_messages: std::collections::VecDeque<NativeAgentMessage>,
+    pub(super) pending_bash_messages: VecDeque<NativeAgentMessage>,
     /// Stops the direct shell command now running.
     pub(super) bash_signal: Option<Cancellation>,
+    /// Tool definitions registered outside extensions.
+    pub(super) custom_tools: Vec<ToolDefinitionHandle<E>>,
+    /// The built-in tool definitions by name, rebuilt with each runtime.
+    pub(super) base_tool_definitions: IndexMap<String, ToolDefinitionHandle<E>>,
+    /// The host operations bound to the extensions.
+    pub(super) bindings: ExtensionBindings,
+    /// Removes the bound error listener from the runner it was added to.
+    pub(super) error_unsubscriber: Option<Box<dyn Fn()>>,
+    /// The turn the extensions' turn events report, counted from the agent start.
+    pub(super) turn_index: u32,
+    /// The newest finished response, checked for retry and compaction at the agent end.
+    pub(super) last_assistant_message: Option<SharedAssistantMessage>,
+    /// Agent events waiting for the session's ordered processing.
+    pub(super) agent_events: VecDeque<SharedAgentEvent>,
+    /// Released when the queued agent events are processed; absent while none are.
+    pub(super) agent_event_drain: Option<Gate>,
 }
 
 impl<E: ExtensionExecution> AgentSessionState<E> {
-    /// Empty registries over the supplied scoped models, with the base system prompt and the
-    /// options that built it.
+    /// Empty registries over the supplied scoped models and SDK tools, with an empty base
+    /// system prompt and the options it starts from.
     pub(super) fn new(
         scoped_models: Vec<ScopedModel>,
-        base_system_prompt: String,
+        custom_tools: Vec<ToolDefinitionHandle<E>>,
         base_system_prompt_options: BuildSystemPromptOptions,
     ) -> Self {
         Self {
@@ -78,19 +101,27 @@ impl<E: ExtensionExecution> AgentSessionState<E> {
             retry_attempt: 0,
             retry_gate: None,
             retry_open: None,
-            base_system_prompt,
+            base_system_prompt: String::new(),
             base_system_prompt_options,
             steering_messages: Vec::new(),
             follow_up_messages: Vec::new(),
             pending_next_turn_messages: Vec::new(),
-            pending_bash_messages: std::collections::VecDeque::new(),
+            pending_bash_messages: VecDeque::new(),
             bash_signal: None,
+            custom_tools,
+            base_tool_definitions: IndexMap::new(),
+            bindings: ExtensionBindings::default(),
+            error_unsubscriber: None,
+            turn_index: 0,
+            last_assistant_message: None,
+            agent_events: VecDeque::new(),
+            agent_event_drain: None,
         }
     }
 }
 
 /// Typed messages from stored message records.
-pub(super) fn agent_messages(
+pub(crate) fn agent_messages(
     records: Vec<Value>,
 ) -> Result<Vec<NativeAgentMessage>, DiagnosticErrorInfo> {
     records
@@ -112,7 +143,7 @@ pub(super) fn message_records(
 }
 
 /// The text blocks of stored message content joined without a separator; plain text as is.
-pub(super) fn content_text(content: Option<&Value>) -> String {
+pub(crate) fn content_text(content: Option<&Value>) -> String {
     match content {
         Some(Value::String(text)) => text.clone(),
         Some(Value::Array(blocks)) => blocks
@@ -129,14 +160,14 @@ pub(super) fn last_assistant_message(
     messages: &[NativeAgentMessage],
 ) -> Option<SharedAssistantMessage> {
     messages.iter().rev().find_map(|message| match message {
-        AgentMessage::Assistant(response) => Some(std::sync::Arc::clone(response)),
+        AgentMessage::Assistant(response) => Some(Arc::clone(response)),
         _ => None,
     })
 }
 
 /// The thrown form of a lower failure: the diagnostic a supplied failure retains, else an
 /// error carrying the failure's text.
-pub(super) fn thrown(
+pub(crate) fn thrown(
     error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
 ) -> DiagnosticErrorInfo {
     let error = error.into();

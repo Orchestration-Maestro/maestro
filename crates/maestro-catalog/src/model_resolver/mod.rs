@@ -110,6 +110,7 @@ pub use selection::{FindInitialModelOptions, InitialModelResult, find_initial_mo
 mod restoration;
 pub use restoration::{
     RestoreModelFromSessionOptions, RestoreModelFromSessionResult, restore_model_from_session,
+    restore_saved_model,
 };
 /// A shared descriptor with an optional explicit thinking choice.
 #[derive(Clone)]

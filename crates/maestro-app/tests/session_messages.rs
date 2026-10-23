@@ -4,7 +4,7 @@
 use crate::support::session_harness::{
     Harness, HarnessOptions, Transcript, answer, assert_transcript, case, command_extension,
     entries_view, hold_first_answer, labelled, of_kinds, on_task_set, outcome, queue_view,
-    recorded_skills, script_responses, start_prompt, template, transcribed,
+    recorded_skills, script_responses, start_prompt, template, transcribed, with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_models::{ImageContent, TextContent, UserBlock, UserContent};
@@ -44,18 +44,18 @@ fn user_delivery(deliver_as: Option<UserMessageDelivery>) -> SendUserMessageOpti
     SendUserMessageOptions { deliver_as }
 }
 
-/// Asserts the transcript, the queue updates and, when nothing was queued, the final queue
-/// against `case`; the turn messages are stored by the agent-event persistence, which also
-/// removes delivered texts from the mirrors, so the recording keeps only the session's own
-/// first announcements.
+/// Asserts the transcript, the final queue, the queue updates and the stored entries
+/// against `case`.
 fn assert_message_case(h: &Harness, t: &Transcript, case: &Value) {
     assert_transcript(h, t, case);
     let updates = t.events_of(&["queue_update"]);
     let recorded = of_kinds(case["sessionEvents"].as_array().unwrap(), &["queue_update"]);
     assert_eq!(updates, recorded);
-    if updates.is_empty() {
-        assert_eq!(queue_view(h, t), case["queue"]);
-    }
+    assert_eq!(queue_view(h, t), case["queue"]);
+    assert_eq!(
+        with_placeholders(json!(entries_view(h)), h),
+        case["entries"]
+    );
 }
 
 /// Sends `message` with `options` while the first answer streams, then lets the turn end;
@@ -75,7 +75,6 @@ async fn streaming_custom_case(
     running.await.unwrap().unwrap();
     let expected = expected(name);
     assert_message_case(&h, &t, &expected);
-    assert_eq!(entries_view(&h), Vec::<Value>::new());
     (h, t, outcome(sent), streaming)
 }
 

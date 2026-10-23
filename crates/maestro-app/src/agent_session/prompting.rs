@@ -125,12 +125,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
         images: Option<Vec<ImageContent>>,
         source: InputSource,
     ) -> Result<Option<(String, Option<Vec<ImageContent>>)>, DiagnosticErrorInfo> {
-        if !self.extension_runner.has_handlers("input") {
+        if !self.extension_runner().has_handlers("input") {
             return Ok(Some((text.to_owned(), images)));
         }
         let mut current = images.map_or(Presence::Missing, Presence::Present);
         let result = self
-            .extension_runner
+            .extension_runner()
             .emit_input(text, &mut current, source)
             .await
             .map_err(thrown)?;
@@ -181,7 +181,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             (state.base_system_prompt.clone(), options)
         };
         let result = self
-            .extension_runner
+            .extension_runner()
             .emit_before_agent_start(text, &mut images, base.clone(), base_options)
             .await
             .map_err(thrown)?;
@@ -198,12 +198,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// listeners and still counts as run.
     async fn try_execute_extension_command(&self, text: &str) -> Result<bool, DiagnosticErrorInfo> {
         let (name, arguments) = split_command(text);
-        let Some(command) = self.extension_runner.get_command(name) else {
+        let Some(command) = self.extension_runner().get_command(name) else {
             return Ok(false);
         };
-        let context = self.extension_runner.create_command_context();
+        let context = self.extension_runner().create_command_context();
         if let Err(error) = (command.command.handler)(arguments.to_owned(), context).await {
-            self.extension_runner
+            self.extension_runner()
                 .emit_error(&ExtensionError {
                     extension_path: format!("command:{name}"),
                     event: "command".into(),
@@ -236,7 +236,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let body = match body {
             Ok(body) => body,
             Err(error) => {
-                self.extension_runner
+                self.extension_runner()
                     .emit_error(&ExtensionError {
                         extension_path: skill.file_path.clone(),
                         event: "skill_expansion".into(),

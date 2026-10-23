@@ -41,6 +41,9 @@ mod settings;
 mod terminal_exports;
 /// Existing text re-exports.
 mod text;
+/// Existing theme re-exports.
+#[cfg(not(target_arch = "wasm32"))]
+mod theme;
 /// Existing tools re-exports.
 mod tools;
 
@@ -67,4 +70,6 @@ pub use settings::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use terminal_exports::*;
 pub use text::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use theme::*;
 pub use tools::*;

@@ -11,10 +11,7 @@ use maestro_models::{
 };
 use maestro_session::Presence;
 use maestro_settings::{MessageDeliveryMode, ThinkingLevel as SavedThinkingLevel};
-use std::{
-    rc::Rc,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 /// A model to cycle to with its explicit thinking level.
 type Candidate = (Arc<RwLock<Model>>, Option<ModelThinkingLevel>);
@@ -232,7 +229,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             previous_model: Presence::Present(previous),
             source,
         };
-        let runner = Rc::clone(&self.extension_runner);
+        let runner = self.extension_runner();
         self.start_operation(
             async move { runner.emit(&mut event).await.map_err(thrown).map(|_| ()) },
         )
@@ -243,7 +240,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Starts the selection notification now and lets it finish on the session's task
     /// facility.
     fn emit_thinking_level_select(&self, mut event: ThinkingLevelSelectEvent) {
-        let runner = Rc::clone(&self.extension_runner);
+        let runner = self.extension_runner();
         drop(self.start_operation(async move {
             drop(runner.emit(&mut event).await);
         }));
@@ -283,7 +280,7 @@ fn delivery_mode(mode: QueueMode) -> MessageDeliveryMode {
 }
 
 /// The saved form of a level.
-fn saved_level(level: &ModelThinkingLevel) -> SavedThinkingLevel {
+pub(crate) fn saved_level(level: &ModelThinkingLevel) -> SavedThinkingLevel {
     match level {
         ModelThinkingLevel::Off => SavedThinkingLevel::Off,
         ModelThinkingLevel::Minimal => SavedThinkingLevel::Minimal,
@@ -296,6 +293,6 @@ fn saved_level(level: &ModelThinkingLevel) -> SavedThinkingLevel {
 
 /// A saved level; an unrecognized one is off, which clamping turns into the model's first
 /// supported level.
-fn model_level(level: &SavedThinkingLevel) -> ModelThinkingLevel {
+pub(crate) fn model_level(level: &SavedThinkingLevel) -> ModelThinkingLevel {
     level.as_str().parse().unwrap_or(ModelThinkingLevel::Off)
 }

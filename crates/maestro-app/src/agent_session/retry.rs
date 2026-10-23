@@ -23,7 +23,7 @@ fn retryable() -> Option<&'static regex::Regex> {
 
 impl<E: ExtensionExecution> AgentSession<E> {
     /// Whether `message` reports an error a retry can recover from.
-    pub fn is_retryable_error(&self, message: &AssistantMessage) -> bool {
+    pub(crate) fn is_retryable_error(&self, message: &AssistantMessage) -> bool {
         if message.stop_reason != StopReason::Error {
             return false;
         }
@@ -46,7 +46,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// # Errors
     /// Returns the failure when the wait's task ended before the wait did, for example when
     /// the caller's task set was dropped mid-operation.
-    pub async fn handle_retryable_error(
+    pub(crate) async fn handle_retryable_error(
         self: &Rc<Self>,
         message: &AssistantMessage,
     ) -> Result<bool, DiagnosticErrorInfo> {
@@ -118,7 +118,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
 
     /// Waits for a retry in flight and then for the agent to settle; returns at once when no
     /// retry is in flight.
-    pub async fn wait_for_retry(&self) {
+    pub(crate) async fn wait_for_retry(&self) {
         let gate = self.state.borrow().retry_gate.clone();
         let Some(gate) = gate else {
             return;

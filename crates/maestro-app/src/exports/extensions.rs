@@ -26,3 +26,11 @@ pub use maestro_extensions::MessageRendererCall;
 /// A frontend binds an inline native renderer to this bus through
 /// [`MessageRendererCall::new`] and then retains the projected call.
 pub use maestro_extensions::create_event_bus;
+
+pub use maestro_extensions::{
+    EventBus, EventBusController, ExtensionFlag, ExtensionShortcut, RegisteredCommand,
+    ResolvedCommand,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_extensions::discover_and_load_extensions;

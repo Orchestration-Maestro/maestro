@@ -18,7 +18,7 @@ pub use model_resolver::DEFAULT_MODEL_PER_PROVIDER;
 pub use model_resolver::{
     FindInitialModelOptions, InitialModelResult, ModelResolverOutput,
     RestoreModelFromSessionOptions, RestoreModelFromSessionResult, ScopedModel, find_initial_model,
-    resolve_model_scope, restore_model_from_session,
+    resolve_model_scope, restore_model_from_session, restore_saved_model,
 };
 pub use model_resolver::{
     ParseModelPatternOptions, ParsedModelResult, find_exact_model_reference_match,

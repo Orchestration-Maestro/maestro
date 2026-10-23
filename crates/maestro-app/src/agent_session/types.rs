@@ -1,14 +1,21 @@
 //! Session configuration, events and operation results.
 use crate::resources::resource_loader::ResourceLoader;
+use indexmap::IndexMap;
+use maestro_agent::SharedAgentTool;
 use maestro_agent::{Agent, AgentEvent};
 use maestro_catalog::{ModelRegistry, ScopedModel};
-use maestro_extensions::{ExtensionExecution, ExtensionRunner, InputSource};
-use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel, Threaded};
+use maestro_extensions::{
+    ExtensionCommandContextActions, ExtensionErrorListener, ExtensionExecution, ExtensionRunner,
+    ExtensionUIContext, InputSource, SessionStartEvent, types::ShutdownHandler,
+};
+use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel};
 use maestro_session::{
     BranchSummaryEntry, CompactionResult, SessionManager,
     messages::{CustomAgentMessages, UserMessageDelivery},
 };
 use maestro_settings::SettingsManager;
+use maestro_theme::LiveTheme;
+pub use maestro_tools::ToolsManager;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -130,7 +137,7 @@ pub struct BashRunOptions {
 pub type AgentSessionEventListener = Rc<dyn Fn(&AgentSessionEvent)>;
 
 /// The owners a session works over.
-pub struct AgentSessionConfig<E: ExtensionExecution = Threaded> {
+pub struct AgentSessionConfig<E: ExtensionExecution = Local> {
     /// The agent whose state the session reads and changes.
     pub agent: Rc<Agent<CustomAgentMessages, Local>>,
     /// The session history.
@@ -143,21 +150,47 @@ pub struct AgentSessionConfig<E: ExtensionExecution = Threaded> {
     pub bin_dir: String,
     /// Models to cycle through, in order.
     pub scoped_models: Vec<ScopedModel>,
-    /// The loaded skills, prompts, context files and system prompt.
+    /// The loaded skills, prompts, context files, extensions and system prompt.
     pub resource_loader: Rc<dyn ResourceLoader<E>>,
+    /// Tool definitions registered outside extensions, each with an `<sdk:name>` source.
+    pub custom_tools: Vec<ToolDefinitionHandle<E>>,
     /// The model catalog used for credentials and model discovery.
     pub model_registry: Arc<ModelRegistry>,
-    /// The extensions' runner.
-    pub extension_runner: Rc<ExtensionRunner<E>>,
+    /// The built-in tools activated first; absent means read, bash, edit and write.
+    pub initial_active_tool_names: Option<Vec<String>>,
+    /// The only tool names exposed, when present.
+    pub allowed_tool_names: Option<Vec<String>>,
+    /// Executable tools used in place of the built-in ones, by name.
+    pub base_tools_override: Option<IndexMap<String, SharedAgentTool<Local>>>,
+    /// A slot that always holds the runner currently in effect.
+    pub extension_runner_ref: Option<ExtensionRunnerRef<E>>,
+    /// The start event extensions receive when they are bound; absent means `startup`.
+    pub session_start_event: Option<SessionStartEvent>,
+    /// The search index the built-in grep and find tools share.
+    pub tools_manager: Arc<ToolsManager>,
+    /// The published theme extensions see while no user interface is bound.
+    pub theme: LiveTheme,
 }
 
-/// What a tool-registry refresh activates.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct RefreshToolRegistryOptions {
-    /// The tools to activate in place of the active ones.
-    pub active_tool_names: Option<Vec<String>>,
-    /// Whether every extension tool is activated as well.
-    pub include_all_extension_tools: bool,
+/// A slot that always holds the runner currently in effect.
+pub type ExtensionRunnerRef<E = Local> = Rc<RefCell<Option<Rc<ExtensionRunner<E>>>>>;
+
+/// A retained tool definition, as extensions register them.
+pub type ToolDefinitionHandle<E = Local> =
+    <E as maestro_models::Execution>::Shared<<E as ExtensionExecution>::RegisteredDefinition>;
+
+/// The host operations a session binds to its extensions; an absent field leaves the bound
+/// operation unchanged.
+#[derive(Clone, Default)]
+pub struct ExtensionBindings {
+    /// The user interface extensions draw on.
+    pub ui_context: Option<ExtensionUIContext>,
+    /// The session operations behind command contexts.
+    pub command_context_actions: Option<ExtensionCommandContextActions>,
+    /// Requests a graceful shutdown.
+    pub shutdown_handler: Option<ShutdownHandler>,
+    /// Hears extension failures.
+    pub on_error: Option<ExtensionErrorListener>,
 }
 
 /// Which way models are cycled.

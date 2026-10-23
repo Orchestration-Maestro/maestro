@@ -6,7 +6,7 @@ pub use maestro_session::session_manager::{
     SessionTreeNode, ThinkingLevelChangeEntry,
 };
 
-pub use maestro_session::{Presence, SessionInfo};
+pub use maestro_session::{Presence, SessionInfo, SessionManager};
 
 pub use maestro_session::messages::{
     BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
@@ -22,7 +22,42 @@ pub use maestro_session::export_html;
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
-    ModelCycleResult, ParsedSkillBlock, SessionStats, parse_skill_block,
+    ExtensionBindings, ModelCycleResult, ParsedSkillBlock, PromptOptions, SessionStats,
+    parse_skill_block,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::runtime::agent_session_runtime::{
+    AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeFactory,
+    CreateAgentSessionRuntimeOptions, CreateAgentSessionRuntimeResult, ForkResult, RebindSession,
+    SessionImportFileNotFoundError, create_agent_session_runtime,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::runtime::agent_session_services::{
+    CreateAgentSessionFromServicesOptions, create_agent_session_from_services,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::sdk::{
+    CreateAgentSessionOptions, CreateAgentSessionResult, NoTools, SessionResources,
+    create_agent_session,
+};
+
+pub use maestro_session::compaction::{
+    BranchPreparation, BranchSummaryResult, CollectEntriesResult, CompactionResult, CutPointResult,
+    DEFAULT_COMPACTION_SETTINGS, FileOperations, GenerateBranchSummaryOptions,
+    calculate_context_tokens, collect_entries_for_branch_summary, compact, estimate_tokens,
+    find_cut_point, find_turn_start_index, generate_branch_summary, generate_summary,
+    get_last_assistant_usage, prepare_branch_entries, serialize_conversation, should_compact,
+};
+
+pub use maestro_session::convert_to_llm;
+
+pub use maestro_session::session_manager::{
+    CURRENT_SESSION_VERSION, FileEntry, NewSessionOptions, SessionContext, SessionHeader,
+    build_session_context, get_latest_compaction_entry, migrate_session_entries,
+    parse_session_entries,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -30,4 +65,4 @@ pub use maestro_extensions::runner::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_session::session_manager::CompactionOptions;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+pub use maestro_session::session_manager::ReadonlySessionManager;
