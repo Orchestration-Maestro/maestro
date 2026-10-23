@@ -780,9 +780,12 @@ impl maestro_app::OAuthProviderInterface for RejectingModels {
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
 fn rejecting_registry() -> maestro_app::ModelRegistry {
-    let registry = maestro_app::ModelRegistry::in_memory(SharedHandle::new(
-        maestro_app::AuthStorage::in_memory(std::iter::empty().collect()),
-    ))
+    let registry = maestro_app::ModelRegistry::in_memory(
+        SharedHandle::new(maestro_app::AuthStorage::in_memory(
+            std::iter::empty().collect(),
+        )),
+        no_commands(),
+    )
     .unwrap();
     registry
         .register_provider(

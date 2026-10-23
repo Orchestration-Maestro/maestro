@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::default_configuration as fixture;
+use crate::support::session_harness::no_commands;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_app::{AuthStorage, ModelRegistry, SettingsManager};
@@ -367,7 +368,8 @@ fn catalog(agent: &str, credential: Value, expected: &Model) {
         auth.get("qualification").as_ref() == Some(&credential),
         "selected dummy credential"
     );
-    let registry = ModelRegistry::create(auth, paths::get_models_path(agent)).unwrap();
+    let registry =
+        ModelRegistry::create(auth, paths::get_models_path(agent), no_commands()).unwrap();
     assert!(registry.get_error().is_none());
     let model = registry
         .find(&expected.provider, &expected.id)

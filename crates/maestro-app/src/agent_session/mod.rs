@@ -24,7 +24,6 @@ use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentSpawner, AgentState, QueueMode};
 use maestro_catalog::{ModelRegistry, ScopedModel};
-use maestro_credentials::ConfigValueOperations;
 use maestro_extensions::{ExtensionExecution, ExtensionRunner};
 use maestro_models::{DiagnosticErrorInfo, Local, Model, Threaded, records::listeners::Listeners};
 use maestro_session::{
@@ -55,8 +54,6 @@ pub struct AgentSession<E: ExtensionExecution = Threaded> {
     resource_loader: Rc<dyn ResourceLoader<E>>,
     /// The extensions' runner.
     extension_runner: Rc<ExtensionRunner<E>>,
-    /// Runs the commands that configured credentials name.
-    config_value_operations: Arc<dyn ConfigValueOperations>,
     /// The session working directory.
     cwd: String,
     /// The directory of the tool binaries that shell commands find first.
@@ -100,7 +97,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
             model_registry: config.model_registry,
             resource_loader: config.resource_loader,
             extension_runner: config.extension_runner,
-            config_value_operations: config.config_value_operations,
             cwd: config.cwd,
             bin_dir: config.bin_dir,
             event_listeners: Rc::default(),

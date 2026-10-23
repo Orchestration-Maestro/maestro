@@ -187,10 +187,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// The key and headers automatic compaction uses, absent when none are configured.
     async fn configured_auth(&self) -> Option<(String, Option<IndexMap<String, String>>)> {
         let model = self.model();
-        let auth = self
-            .model_registry
-            .get_api_key_and_headers(&model, &*self.config_value_operations)
-            .await;
+        let auth = self.model_registry.get_api_key_and_headers(&model).await;
         let maestro_catalog::ResolvedRequestAuth::Ok {
             api_key: Some(api_key),
             headers,

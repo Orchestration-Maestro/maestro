@@ -23,9 +23,6 @@ pub use crate::agent_session::{
     ModelCycleResult, ParsedSkillBlock, SessionStats, parse_skill_block,
 };
 
-// The session constructor's supplied owners, so a frontend can build a session.
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_credentials::{ConfigValueOperations, ProcessConfigValueOperations};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::runner::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]

@@ -10,8 +10,8 @@ use crate::resources::resource_loader::{
 };
 use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
-use maestro_catalog::ModelRegistry;
-use maestro_credentials::AuthStorage;
+use maestro_catalog::{ConfigValues, ModelRegistry};
+use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
 use maestro_extensions::{
     ExtensionExecution, LoadExtensionsResult,
     types::{FlagType, FlagValue},
@@ -19,6 +19,7 @@ use maestro_extensions::{
 use maestro_models::{SharedHandle, Threaded};
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_settings::SettingsManager;
+use maestro_tools::utils::shell::get_shell_config;
 use std::{cell::RefCell, collections::HashMap, io, rc::Rc, sync::Arc};
 
 /// The severity of an [`AgentSessionRuntimeDiagnostic`].
@@ -152,6 +153,13 @@ fn register_providers<E: ExtensionExecution>(
         .collect()
 }
 
+/// Native commands that configured credential values name, behind the tools' shell selector.
+fn native_config_values() -> ConfigValues {
+    Arc::new(ProcessConfigValueOperations::new(|| {
+        get_shell_config(None).map(|config| (config.shell, config.args))
+    }))
+}
+
 /// Creates the services, reloads resources, applies queued provider registrations and
 /// applies extension flag values.
 ///
@@ -178,8 +186,12 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
     let model_registry = match options.model_registry {
         Some(model_registry) => model_registry,
         None => Arc::new(
-            ModelRegistry::create(Arc::clone(&auth_storage), get_models_path(&agent_dir))
-                .map_err(io::Error::other)?,
+            ModelRegistry::create(
+                Arc::clone(&auth_storage),
+                get_models_path(&agent_dir),
+                native_config_values(),
+            )
+            .map_err(io::Error::other)?,
         ),
     };
     let resource_loader = DefaultResourceLoader::new(DefaultResourceLoaderOptions {

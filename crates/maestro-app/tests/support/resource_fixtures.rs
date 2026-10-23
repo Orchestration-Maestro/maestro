@@ -352,7 +352,7 @@ pub fn module_loader() -> ModuleLoader<Local> {
     })
 }
 
-pub use crate::support::session_harness::on_task_set;
+pub use crate::support::session_harness::{no_commands, on_task_set};
 
 /// The loader inputs a recorded case describes.
 pub fn resource_options(
@@ -590,7 +590,9 @@ fn runner_view(loader: &impl ResourceLoader<Local>, recorded: &Value) -> Value {
     let session = ExtensionRunnerSession {
         cwd: "/work".into(),
         session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
-        model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth).unwrap()),
+        model_registry: maestro_models::SharedHandle::new(
+            ModelRegistry::in_memory(auth, no_commands()).unwrap(),
+        ),
     };
     let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(result.extensions.clone())),

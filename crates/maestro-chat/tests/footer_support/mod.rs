@@ -4,7 +4,7 @@ use crate::published;
 pub mod corpus;
 
 use maestro_app::{
-    AgentSession, AgentSessionConfig, AuthStorage, CompactionOptions, ConfigValueOperations,
+    AgentSession, AgentSessionConfig, AuthStorage, CompactionOptions, ConfigValues,
     DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionRunner, ExtensionRunnerSession,
     ExtensionStatuses, Model, ModelRegistry, ModuleLoader, Presence, ProcessConfigValueOperations,
     ReadonlyFooterDataProvider, ResourceLoader, ResourceLoaderOptions, SessionManager, Settings,
@@ -333,10 +333,14 @@ fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>
     let history = Rc::new(RefCell::new(
         SessionManager::in_memory(Some(cwd)).expect("a memory session"),
     ));
+    let commands: ConfigValues = Arc::new(ProcessConfigValueOperations::new(|| {
+        Err(std::io::Error::other("not invoked"))
+    }));
     let registry = Arc::new(
-        ModelRegistry::in_memory(Arc::new(AuthStorage::in_memory(credentials(
-            oauth_provider,
-        ))))
+        ModelRegistry::in_memory(
+            Arc::new(AuthStorage::in_memory(credentials(oauth_provider))),
+            commands,
+        )
         .expect("an in-memory catalog"),
     );
     let module_loader: ModuleLoader = Arc::new(|_| Box::pin(async { Err("unused".into()) }));
@@ -362,10 +366,6 @@ fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>
         warning,
         LiveTheme::default(),
     ));
-    let commands: Arc<dyn ConfigValueOperations> =
-        Arc::new(ProcessConfigValueOperations::new(|| {
-            Err(std::io::Error::other("not invoked"))
-        }));
     Rc::new(
         AgentSession::new(AgentSessionConfig {
             agent: Rc::default(),
@@ -377,7 +377,6 @@ fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>
             resource_loader: loader,
             model_registry: registry,
             extension_runner: runner,
-            config_value_operations: commands,
         })
         .expect("a memory session"),
     )

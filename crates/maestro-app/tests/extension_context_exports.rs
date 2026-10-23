@@ -1,5 +1,7 @@
 //! Base extension context records through the application root.
 #[cfg(not(target_arch = "wasm32"))]
+use crate::support::session_harness::no_commands;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{CompactOptions, ContextUsage, ExtensionContext, ExtensionContextActions};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{ExtensionActions, ExtensionError, ExtensionRuntime, create_extension_runtime};
@@ -95,7 +97,9 @@ fn runner() -> ExtensionRunner {
     let session = ExtensionRunnerSession {
         cwd: "/work".into(),
         session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
-        model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth).unwrap()),
+        model_registry: maestro_models::SharedHandle::new(
+            ModelRegistry::in_memory(auth, no_commands()).unwrap(),
+        ),
     };
     ExtensionRunner::<maestro_models::Threaded>::new(
         Arc::new(RwLock::new(Vec::new())),

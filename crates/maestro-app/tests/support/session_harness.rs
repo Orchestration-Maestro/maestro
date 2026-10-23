@@ -193,6 +193,11 @@ impl ConfigValueOperations for FailingCommands {
     }
 }
 
+/// Configured-value commands no application test reaches.
+pub fn no_commands() -> maestro_catalog::ConfigValues {
+    Arc::new(FailingCommands)
+}
+
 /// A loader returning the supplied extensions and no other resources.
 pub struct TestResourceLoader {
     /// The loaded extensions.
@@ -298,7 +303,7 @@ fn catalog(faux: &FauxProviderRegistration, auth: Auth, window: Option<f64>) -> 
         Auth::Key => storage.set_runtime_api_key("faux", "faux-key"),
         Auth::Header | Auth::None | Auth::Command => {}
     }
-    let registry = ModelRegistry::in_memory(storage).unwrap();
+    let registry = ModelRegistry::in_memory(storage, no_commands()).unwrap();
     let config = match auth {
         Auth::None | Auth::Subscription => return registry,
         Auth::Header => ProviderConfigInput {
@@ -600,7 +605,6 @@ pub async fn harness(options: HarnessOptions) -> Harness {
             resource_loader: Rc::new(loader),
             model_registry: Arc::clone(&registry),
             extension_runner: Rc::clone(&runner),
-            config_value_operations: Arc::new(FailingCommands),
         })
         .unwrap(),
     );

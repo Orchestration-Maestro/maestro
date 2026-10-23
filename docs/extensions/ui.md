@@ -37,10 +37,17 @@ impl ExtensionUIContextPort for EditorHost {
 
 fn retained_ui_owned_host_example() -> Result<(), EventError> {
 #   let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   struct NoCommands;
+#   impl maestro_credentials::ConfigValueOperations for NoCommands {
+#       fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#           None
+#       }
+#   }
+#   let no_commands = maestro_models::SharedHandle::new(NoCommands);
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
+#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(Vec::new())),

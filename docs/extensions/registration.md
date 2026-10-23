@@ -60,10 +60,17 @@ api.register_shortcut("ctrl+x".into(), ExtensionShortcutOptions {
     }),
 })?;
 let auth = SharedHandle::new(AuthStorage::in_memory(Default::default()));
+# struct NoCommands;
+# impl maestro_credentials::ConfigValueOperations for NoCommands {
+#     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#         None
+#     }
+# }
+# let no_commands = SharedHandle::new(NoCommands);
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
-    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth)?),
+    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth, no_commands)?),
 };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     owners, runtime, session, Arc::new(|line| eprint!("{line}")),
@@ -130,10 +137,17 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
         }),
     })?;
 #   let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   struct NoCommands;
+#   impl maestro_credentials::ConfigValueOperations for NoCommands {
+#       fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#           None
+#       }
+#   }
+#   let no_commands = maestro_models::SharedHandle::new(NoCommands);
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
+#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         owners, runtime, session, Rc::new(|line| eprint!("{line}")),
@@ -236,10 +250,17 @@ use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 let auth = SharedHandle::new(AuthStorage::in_memory(Default::default()));
+# struct NoCommands;
+# impl maestro_credentials::ConfigValueOperations for NoCommands {
+#     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#         None
+#     }
+# }
+# let no_commands = SharedHandle::new(NoCommands);
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
-    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth)?),
+    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth, no_commands)?),
 };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
@@ -289,10 +310,17 @@ use maestro_extensions::runner::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+# struct NoCommands;
+# impl maestro_credentials::ConfigValueOperations for NoCommands {
+#     fn execute(&self, _command: &str) -> Option<Vec<u8>> {
+#         None
+#     }
+# }
+# let no_commands = maestro_models::SharedHandle::new(NoCommands);
 # let session = ExtensionRunnerSession {
 #     cwd: "/work".into(),
 #     session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#     model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
+#     model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
 # };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,

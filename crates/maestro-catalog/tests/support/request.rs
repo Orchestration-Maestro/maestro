@@ -51,11 +51,8 @@ pub fn document(provider_fields: &str, model_fields: &str) -> String {
 /// Select request values through the shared model boundary.
 /// # Panics
 /// Panics when a controlled test operation or assertion fails.
-pub fn request(
-    registry: &ModelRegistry,
-    operations: &dyn ConfigValueOperations,
-) -> maestro_request::model_registry::ResolvedRequestAuth {
-    run(registry.get_api_key_and_headers(&registry.find("p", "m").unwrap(), operations))
+pub fn request(registry: &ModelRegistry) -> maestro_request::model_registry::ResolvedRequestAuth {
+    run(registry.get_api_key_and_headers(&registry.find("p", "m").unwrap()))
 }
 /// Assert values without including credential values in failure output.
 /// # Panics

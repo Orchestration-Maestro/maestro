@@ -404,10 +404,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }
             Err(error) => thrown(error),
         };
-        let resolved = self
-            .model_registry
-            .get_api_key_and_headers(model, &*self.config_value_operations)
-            .await;
+        let resolved = self.model_registry.get_api_key_and_headers(model).await;
         match resolved {
             ResolvedRequestAuth::Error { error } if error.starts_with("No API key found") => {
                 Err(no_key())
