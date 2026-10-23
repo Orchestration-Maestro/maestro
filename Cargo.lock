@@ -4200,6 +4200,7 @@ dependencies = [
  "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
+ "maestro-test-tracing",
  "maestro-text",
  "num-bigint 0.4.8",
  "num-traits",
@@ -4293,6 +4294,7 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-test-process",
+ "maestro-test-tracing",
  "process-wrap",
  "rustix",
  "serde",

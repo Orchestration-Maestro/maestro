@@ -1,8 +1,12 @@
 //! Scoped subscribers keep their events whichever thread reaches a callsite first.
+#![cfg(test)]
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+    task::{Context, Waker},
 };
 use tracing::{Event, Metadata, span};
 
@@ -31,12 +35,30 @@ fn reach() {
     tracing::warn!("reached");
 }
 
+/// Reach the callsite on a thread without a subscriber, then on this one.
+fn reach_after_another_thread() {
+    std::thread::spawn(reach).join().unwrap();
+    reach();
+}
+
 #[test]
 fn events_arrive_when_another_thread_reached_the_callsite_first() {
     let count = Count::default();
-    maestro_test_tracing::with_default(count.clone(), || {
-        std::thread::spawn(reach).join().unwrap();
-        reach();
-    });
+    maestro_test_tracing::with_default(count.clone(), reach_after_another_thread);
+    assert_eq!(count.0.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn future_events_arrive_when_another_thread_reached_the_callsite_first() {
+    let count = Count::default();
+    let future = maestro_test_tracing::with_subscriber(
+        async { reach_after_another_thread() },
+        count.clone(),
+    );
+    assert!(
+        std::pin::pin!(future)
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_ready()
+    );
     assert_eq!(count.0.load(Ordering::SeqCst), 1);
 }
