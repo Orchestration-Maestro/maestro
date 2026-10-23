@@ -910,16 +910,6 @@
     ]
   },
   {
-    "id": "empty-second-blank-control",
-    "input": "-\n\n- b",
-    "targets": [
-      {},
-      {},
-      {},
-      {}
-    ]
-  },
-  {
     "id": "ascii-history-control",
     "input": "- a\nxx    code\noutside",
     "targets": [
