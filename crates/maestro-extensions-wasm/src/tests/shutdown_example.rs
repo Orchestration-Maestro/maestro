@@ -3,10 +3,11 @@ use serde_json::{Value, json};
 
 use super::controlled::Controlled;
 use super::example_support::{
-    invoke_command_on_component, invoke_tool_on_component, result_value, start,
+    decoded, invoke_command_on_component, invoke_tool_on_component, release_all, result_value,
+    start,
 };
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
-use crate::component_adapter::{Exports, ToolCapabilities, release};
+use crate::component_adapter::{Exports, ToolCapabilities};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/shutdown_command.rs"]
@@ -24,13 +25,6 @@ impl Extension for Shutdown {
 /// Recorded metadata, arguments and results these tests consume.
 fn corpus() -> Value {
     serde_json::from_str(include_str!("shutdown_expected.json")).unwrap()
-}
-
-/// Decode the parameter schema a registration carries as text.
-fn schema_decoded(metadata: &str) -> Value {
-    let mut value: Value = serde_json::from_str(metadata).unwrap();
-    value["parameters"] = serde_json::from_str(value["parameters"].as_str().unwrap()).unwrap();
-    value
 }
 
 /// One controlled tool invocation with its arguments and optional progress and cancellation.
@@ -71,19 +65,6 @@ async fn run(
         .await
 }
 
-/// Releases every registration in order and asserts the host holds nothing else.
-fn released(host: &Controlled) -> Vec<String> {
-    let mut order = Vec::new();
-    loop {
-        let next = host.observe().next_to_release();
-        let Some((name, key)) = next else { break };
-        order.push(name);
-        release(key);
-    }
-    assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
-    order
-}
-
 /// Register once and assert the declared command, tool metadata and schemas in order.
 #[test]
 fn shutdown_example_registers_command_and_tool_contracts() -> Result<(), String> {
@@ -102,13 +83,13 @@ fn shutdown_example_registers_command_and_tool_contracts() -> Result<(), String>
             .observed()
             .tools
             .iter()
-            .map(|metadata| schema_decoded(metadata))
+            .map(|metadata| decoded(metadata, "parameters"))
             .collect();
         assert_eq!(json!(tools), expected["tools"]);
         assert!(host.observed().callback("prepare finish_and_exit").is_err());
         assert!(host.observed().callback("prepare deploy_and_exit").is_err());
         assert_eq!(
-            released(&host),
+            release_all(&host),
             [
                 "command quit",
                 "tool finish_and_exit",
@@ -138,7 +119,7 @@ fn quit_command_requests_shutdown() -> Result<(), String> {
         }
         assert!(host.observed().updates.is_empty());
         assert_eq!(
-            released(&host),
+            release_all(&host),
             [
                 "command quit",
                 "tool finish_and_exit",
@@ -172,7 +153,7 @@ fn finish_tool_returns_after_request() -> Result<(), String> {
             assert_eq!(host.observed().transcript[start..], ["context shutdown"]);
             assert!(host.observed().updates.is_empty());
         }
-        released(&host);
+        release_all(&host);
         Ok(())
     })
 }
@@ -222,7 +203,7 @@ fn deployment_progress_keeps_environment_and_order() -> Result<(), String> {
                 })
             );
         }
-        released(&host);
+        release_all(&host);
         Ok(())
     })
 }
@@ -251,7 +232,7 @@ fn deployment_without_progress_keeps_result() -> Result<(), String> {
             result_value(&encoded),
             expected["withoutProgress"]["result"]
         );
-        released(&host);
+        release_all(&host);
         Ok(())
     })
 }
@@ -387,7 +368,7 @@ fn refused_command(shutdown: &str) -> Result<(), String> {
             Err(shutdown.to_owned())
         );
         assert!(host.observed().transcript[start..].is_empty());
-        released(&host);
+        release_all(&host);
         Ok(())
     })
 }
@@ -433,7 +414,7 @@ fn refused_tools(shutdown: &str) -> Result<(), String> {
         );
         assert_eq!(host.observed().updates.len(), 2);
         assert!(host.observed().transcript[start..].is_empty());
-        released(&host);
+        release_all(&host);
         Ok(())
     })
 }
@@ -467,7 +448,7 @@ fn refused_progress(position: usize, message: &str) -> Result<(), String> {
             host.observed().transcript[start..].is_empty(),
             "no shutdown is requested"
         );
-        released(&host);
+        release_all(&host);
         Ok(())
     })
 }
@@ -509,7 +490,7 @@ fn shutdown_example_stops_on_registration_error() -> Result<(), String> {
                 "the registration at position {} is refused",
                 row["refused"]
             );
-            assert_eq!(json!(released(&host)), row["admitted"]);
+            assert_eq!(json!(release_all(&host)), row["admitted"]);
         }
         Ok(())
     })

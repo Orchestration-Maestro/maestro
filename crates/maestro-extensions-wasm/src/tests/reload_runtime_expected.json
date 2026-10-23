@@ -213,15 +213,7 @@
         "error": "send denied: Ω"
       },
       "expected": {
-        "calls": [
-          {
-            "operation": "sendUserMessage",
-            "content": "/reload-runtime",
-            "options": {
-              "deliverAs": "followUp"
-            }
-          }
-        ],
+        "calls": [],
         "outcome": "rejected",
         "error": "send denied: Ω"
       }

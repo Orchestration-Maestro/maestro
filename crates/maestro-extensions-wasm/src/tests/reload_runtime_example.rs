@@ -4,11 +4,12 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::example_support::{
-    invoke_command_on_component, invoke_tool_on_component, result_value, start,
+    decoded, invoke_command_on_component, invoke_tool_on_component, release_all, result_value,
+    start,
 };
 use super::host::Harness;
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
-use crate::component_adapter::{Exports, ToolCapabilities, release};
+use crate::component_adapter::{Exports, ToolCapabilities};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/reload_runtime.rs"]
@@ -48,6 +49,9 @@ trait Host {
 
     /// The current observation mark.
     fn mark(&self) -> usize;
+
+    /// How many progress results the host recorded.
+    fn progress(&self) -> usize;
 }
 
 /// The supplied host answer a case selects.
@@ -143,6 +147,10 @@ impl Host for ControlledHost {
     fn mark(&self) -> usize {
         self.host.observed().transcript.len()
     }
+
+    fn progress(&self) -> usize {
+        self.host.observed().updates.len()
+    }
 }
 
 /// Starts the shipped factory on the controlled adapter.
@@ -230,18 +238,10 @@ impl Host for ComponentHost {
     fn mark(&self) -> usize {
         self.harness.store.data().observed.transcript.len()
     }
-}
 
-/// Releases every registration in the order the host received it.
-fn release_in_order(host: &Controlled) -> Vec<String> {
-    let mut names = Vec::new();
-    loop {
-        let next = host.observe().next_to_release();
-        let Some((name, key)) = next else { break };
-        release(key);
-        names.push(name);
+    fn progress(&self) -> usize {
+        self.harness.store.data().observed.updates.len()
     }
-    names
 }
 
 /// Exactly one command precedes exactly one tool, with the recorded metadata.
@@ -250,8 +250,7 @@ fn reload_runtime_registers_command_and_tool() -> Result<(), String> {
     let started = controlled()?;
     let expected = corpus().metadata;
     assert_metadata(&started.host.observed(), &expected);
-    assert_eq!(release_in_order(&started.host), recorded_order(&expected));
-    assert_eq!(started.host.observed().live, 0);
+    assert_eq!(release_all(&started.host), recorded_order(&expected));
     Ok(())
 }
 
@@ -271,11 +270,7 @@ fn assert_metadata(observed: &super::observed::Observed, expected: &Metadata) {
 
 /// The registered metadata with its schema decoded from the guest's parameter text.
 fn tool_metadata(registered: &str) -> Tool {
-    let mut metadata: Value = serde_json::from_str(registered).expect("tool metadata");
-    metadata["parameters"] =
-        serde_json::from_str(metadata["parameters"].as_str().expect("parameter text"))
-            .expect("parameter schema");
-    serde_json::from_value(metadata).expect("the registered tool metadata")
+    serde_json::from_value(decoded(registered, "parameters")).expect("the registered tool metadata")
 }
 
 /// The registration order the corpus records, in the host's own names.
@@ -297,6 +292,7 @@ fn reload_runtime_command_awaits_reload_and_returns() -> Result<(), String> {
     for case in selected(&corpus().commands, Outcome::Fulfilled) {
         command_case(&mut host, case);
     }
+    release_all(&host.host);
     Ok(())
 }
 
@@ -307,6 +303,7 @@ fn reload_runtime_command_propagates_reload_failure() -> Result<(), String> {
     for case in selected(&corpus().commands, Outcome::Rejected) {
         command_case(&mut host, case);
     }
+    release_all(&host.host);
     Ok(())
 }
 
@@ -354,6 +351,7 @@ fn reload_runtime_tool_queues_follow_up_before_result() -> Result<(), String> {
     for case in selected(&corpus().tools, Outcome::Fulfilled) {
         tool_case(&mut host, case);
     }
+    release_all(&host.host);
     Ok(())
 }
 
@@ -364,6 +362,7 @@ fn reload_runtime_tool_propagates_delivery_failure() -> Result<(), String> {
     for case in selected(&corpus().tools, Outcome::Rejected) {
         tool_case(&mut host, case);
     }
+    release_all(&host.host);
     Ok(())
 }
 
@@ -371,6 +370,7 @@ fn reload_runtime_tool_propagates_delivery_failure() -> Result<(), String> {
 fn tool_case<H: Host>(host: &mut H, case: &Case) {
     host.reject(Supplied::Delivery, case.input.error.clone());
     let params = case.input.params.as_ref().expect("tool arguments");
+    let progress = host.progress();
     let (mut lines, mut results) = (Vec::new(), Vec::new());
     for _ in 0..case.input.repetitions {
         let answer = host.tool(params, case.input.aborted);
@@ -399,6 +399,7 @@ fn tool_case<H: Host>(host: &mut H, case: &Case) {
         case.name
     );
     assert_eq!(results, case.expected.results, "{}: answers", case.name);
+    assert_eq!(host.progress(), progress, "{}: progress", case.name);
 }
 
 /// The built single-copy example runs every recorded case through its callbacks.
