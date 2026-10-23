@@ -448,14 +448,15 @@ not create browser URLs, load fonts into a browser or render a preview.
 
 ## Word page rendering
 
-`maestro_web::docx_preview::WordPreview::load` opens a Word package with the
-readers above and prepares its body, styles, notes, headers and footers. A
-malformed part fails the load with `DocxError`, so rendering itself cannot fail.
-`render_sections` lays the body out as pages and returns one `HtmlElement` per
-page; `to_html` writes a page as HTML text for a browser to mount.
-`docx_preview::Options` defaults to the `docx` class namespace, page-break
-detection, ignored last-rendered page breaks, kept page sizes, and rendered
-headers, footers and note lists.
+`maestro_web::docx_preview::parse_async` opens a Word package with the readers
+above and prepares its body, styles, theme, numbering, fonts, notes, headers and
+footers. A malformed part fails the load with `DocxError`, so rendering itself
+cannot fail. `WordPreview::render` returns the styles, the pages and the resource
+styles one rendering composes; `render_sections` returns the pages alone.
+`docx_preview::Options` defaults to the `docx` class namespace, XML declaration
+trimming, page-break detection, ignored last-rendered page breaks, kept page
+sizes, rendered headers, footers and note lists, the page wrapper, loaded fonts,
+object URLs and rendered alternate chunks.
 
 A paragraph's section properties end a section after that paragraph, and the
 body's own section properties apply to the sections after the last such
@@ -512,15 +513,61 @@ This corrects base values overwriting a style's own, styles without paragraph
 properties inheriting nothing, and styles defined before their base losing the
 rest of the chain.
 
-Text and attribute values are escaped exactly once. Each style value stays inside
-its own declaration: a value whose strings or brackets do not close, or that
-holds a separator, block, comment, priority or escape outside a string, is
-dropped, as an invalid style property is, so a document cannot add declarations.
-The default stylesheet, document and numbering styles, the page wrapper, images,
-drawings, math, themes, fonts, alternate chunks and the preview entry points
-remain with [Word drawings, math, theme and fonts](https://github.com/Orchestration-Maestro/maestro/issues/784),
-and the attachment mount remains with
+Each style value stays inside its own declaration: a value whose strings or
+brackets do not close, or that holds a separator, block, comment, priority or
+escape outside a string, is dropped, as an invalid style property is, so a
+document cannot add declarations. Values the renderer composes itself, such as
+resource URLs, counters and level text, are written as composed.
+
+## Word preview composition
+
+One rendering carries the library stylesheet, the page wrapper, theme variables,
+document and list styles, embedded font faces, the pages, the images and shapes
+they name, and the alternate format chunks. `WordPreview::render` returns them as
+a `Rendering`: `styles` holds the style elements in the order the library mounts
+them, `body` holds the page wrapper or the pages themselves, and `resource_styles`
+holds the picture-bullet variables and font faces that follow the body. A mount
+writes `styles`, then `body`, then `resource_styles` into the style container,
+which is the body container unless one is given.
+
+The style order is the library stylesheet, the theme, the document styles, the
+list styles, the body, the picture-bullet variables and the font faces. The
+library stylesheet declares the page frame, the page box, the page content, the
+tables and the inline defaults under the class namespace; the two wrapper rules
+sit inside `@media not print` when the wrapper is hidden on print. The theme
+declares `--docx-majorHAnsi-font`, `--docx-minorHAnsi-font` and one
+`--docx-<slot>-color` per colour slot, spelling a missing value `null`. Document
+styles emit their own resolved substyles, then their linked style's, with the
+last default definition of a target also matching that target anywhere in the
+document. List styles emit a marker, a counter set per level and a
+`counter-reset` on the page wrapper, or on the document root when the pages are
+unwrapped. Font faces name their embedded bytes once de-obfuscated and add
+`font-weight` and `font-style` by face kind.
+
+Images, picture bullets, fonts and alternate chunks load against the part whose
+relationships name them: the document part by default, and each header, footer
+and note part for its own content. Their bytes become a data URL, or an object
+URL when the options ask for object URLs. A drawing becomes an inline block
+holding its content, a picture carries its crop and rotation as a transform and a
+clip path, shapes become SVG, equations become MathML, and a chunk becomes a
+frame that shows its text and runs no script.
+
+`render_document` clears the containers and mounts a rendering as nodes built with
+`createElementNS` in each element's namespace, assigning attributes in order. One
+frame later it sizes each shape image to its shape's bounding box.
+`render_async` parses and mounts in one call. Both return a `RenderedDocument`,
+which cancels pending shape sizing and revokes its object URLs when it is dropped.
+The attachment mount belongs to
 [the attachment DOM switch](https://github.com/Orchestration-Maestro/maestro/issues/1761).
+
+These corrections to the library are kept: an alternate chunk's frame carries
+`sandbox=""` so its scripts never run; a value that would leave its own
+declaration, and a style, counter or variable token that is not a plain
+identifier, are dropped; a font name CSS would reject is enclosed as a string; a
+missing resource leaves its reference unset instead of writing `null`; an image in
+a note reads the notes part's own relationships; a bottom bar underlines its base;
+a malformed equation takes the documented default instead of failing the document;
+and list level text keeps its literal `%`, quotes and backslashes.
 
 ## Worksheet tables
 

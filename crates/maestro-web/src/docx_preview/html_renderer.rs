@@ -1,18 +1,24 @@
-//! Page rendering state, style lookup and the element dispatch.
-use super::html_element::{HtmlContent, HtmlElement};
+//! Rendering state, the composition of one rendering, style lookup and the element dispatch.
+use super::html_element::{HtmlContent, HtmlElement, Namespace};
 use super::utils::escape_class_name;
-use super::{Options, WordPreview};
+use super::{Options, Rendering, WordPreview};
 use indexmap::IndexMap;
 use maestro_app::browser::docx_preview::{
-    DomType, Numbering, OpenXmlElementData as Data, OpenXmlElementTree, Part,
+    DomType, OpenXmlElementData as Data, OpenXmlElementTree, Part,
 };
 
+mod drawing;
 mod header_footer;
 pub(super) mod inline;
+mod math;
 mod notes;
+mod numbering;
 mod pages;
+mod resources;
 mod styles;
+mod stylesheet;
 mod tables;
+mod vml;
 
 use notes::NoteMap;
 use pages::Slice;
@@ -34,11 +40,13 @@ const CELL_STYLE_KEYS: [&str; 8] = [
     "padding-bottom",
 ];
 
-/// State of one page rendering over a prepared document.
+/// State of one rendering over a prepared document.
 pub(crate) struct HtmlRenderer<'a> {
-    /// Prepared package, parts and options.
+    /// Prepared package and parts.
     preview: &'a WordPreview,
-    /// Part whose relationships the links being rendered resolve against.
+    /// Rendering options.
+    options: &'a Options,
+    /// Part whose relationships the links and images being rendered resolve against.
     current_part: Option<&'a Part>,
     /// Footnotes by identifier.
     footnote_map: NoteMap<'a>,
@@ -48,6 +56,11 @@ pub(crate) struct HtmlRenderer<'a> {
     current_footnote_ids: Vec<Option<&'a str>>,
     /// Endnote references placed so far in the document.
     current_endnote_ids: Vec<Option<&'a str>>,
+    /// Picture-bullet images and font faces, in load order.
+    resource_styles: Vec<HtmlElement>,
+    /// Object URLs the rendered elements name.
+    #[cfg(target_arch = "wasm32")]
+    object_urls: Vec<crate::utils::download::ObjectUrl>,
 }
 
 /// Children a paragraph or run renders: its own, or the ones a page split kept.
@@ -61,49 +74,74 @@ pub(crate) enum Children<'s> {
 
 impl<'a> HtmlRenderer<'a> {
     /// Start a rendering in the document part with empty note lists.
-    pub(crate) fn new(preview: &'a WordPreview) -> Self {
+    pub(crate) fn new(preview: &'a WordPreview, options: &'a Options) -> Self {
         Self {
             preview,
+            options,
             current_part: preview.document.document_part(),
             footnote_map: NoteMap::new(preview, preview.parts.footnotes.as_ref()),
             endnote_map: NoteMap::new(preview, preview.parts.endnotes.as_ref()),
             current_footnote_ids: Vec::new(),
             current_endnote_ids: Vec::new(),
+            resource_styles: Vec::new(),
+            #[cfg(target_arch = "wasm32")]
+            object_urls: Vec::new(),
+        }
+    }
+
+    /// Render the library styles, then the theme, document and list styles the package has,
+    /// the font faces unless fonts are ignored, and the pages, wrapped when requested.
+    pub(crate) fn render(mut self) -> Rendering {
+        let (preview, options) = (self.preview, self.options);
+        let class_name = options.class_name.as_str();
+        let parts = &preview.parts;
+        let mut styles = vec![stylesheet::render_default_style(
+            class_name,
+            options.wrapper.hide_wrapper_on_print,
+        )];
+        styles.extend(
+            parts
+                .theme
+                .as_ref()
+                .map(|theme| stylesheet::render_theme(theme, class_name)),
+        );
+        styles.extend(
+            parts
+                .styles
+                .as_ref()
+                .map(|document_styles| document_styles.render_styles(class_name)),
+        );
+        if let Some(numbering) = &parts.numbering {
+            styles.push(self.render_numbering(numbering));
+        }
+        if !options.resources.ignore_fonts
+            && let Some(fonts) = &parts.font_table
+        {
+            self.render_font_table(fonts);
+        }
+        let pages = self.render_sections();
+        let body = if options.wrapper.in_wrapper {
+            vec![stylesheet::render_wrapper(class_name, pages)]
+        } else {
+            pages
+        };
+        Rendering {
+            styles,
+            body,
+            resource_styles: self.resource_styles,
+            #[cfg(target_arch = "wasm32")]
+            object_urls: self.object_urls,
         }
     }
 
     /// Borrow the rendering options.
     fn options(&self) -> &'a Options {
-        &self.preview.options
+        self.options
     }
 
     /// Borrow the resolved paragraph values for a style name.
     fn find_style(&self, style_name: Option<&str>) -> Option<&'a ParagraphStyle> {
-        self.preview.parts.styles.find_style(style_name)
-    }
-
-    /// Prefix a nonempty style name with the class namespace.
-    fn process_style_name(&self, class_name: &str) -> String {
-        format!(
-            "{}_{}",
-            self.options().class_name,
-            escape_class_name(class_name)
-        )
-    }
-
-    /// Name the numbering class, spelling an absent part `undefined` and a null part `null`.
-    fn numbering_class(&self, numbering: &Numbering) -> String {
-        let id = match &numbering.id {
-            None => "undefined",
-            Some(None) => "null",
-            Some(Some(id)) => id,
-        };
-        let level = match numbering.level {
-            None => "undefined".into(),
-            Some(None) => "null".into(),
-            Some(Some(level)) => ryu_js::Buffer::new().format(level).to_owned(),
-        };
-        format!("{}-num-{id}-{level}", self.options().class_name)
+        self.preview.parts.styles.as_ref()?.find_style(style_name)
     }
 
     /// Replace the class with authored classes, then add the style's class token.
@@ -117,7 +155,10 @@ impl<'a> HtmlRenderer<'a> {
             output.set_attribute("class", class_name);
         }
         if let Some(style_name) = style_name.filter(|name| !name.is_empty()) {
-            output.add_class(&self.process_style_name(style_name));
+            output.add_class(&process_style_name(
+                &self.options().class_name,
+                Some(style_name),
+            ));
         }
     }
 
@@ -144,8 +185,8 @@ impl<'a> HtmlRenderer<'a> {
         }
     }
 
-    /// Render elements whose links resolve against a part's relationships, then return to the
-    /// enclosing part.
+    /// Render elements whose links and images resolve against a part's relationships, then
+    /// return to the enclosing part.
     fn render_part_elements(
         &mut self,
         part: Option<&'a Part>,
@@ -184,19 +225,31 @@ impl<'a> HtmlRenderer<'a> {
         }
     }
 
-    /// Render an element's own children into a new element.
+    /// Render an element's own children into a new HTML element.
     fn render_container(
         &mut self,
         tree: &'a OpenXmlElementTree,
         index: usize,
         tag_name: &'static str,
     ) -> HtmlElement {
-        let mut element = HtmlElement::new(tag_name);
+        self.render_container_ns(tree, index, Namespace::Html, tag_name)
+    }
+
+    /// Render an element's own children into a new element of a namespace.
+    fn render_container_ns(
+        &mut self,
+        tree: &'a OpenXmlElementTree,
+        index: usize,
+        namespace: Namespace,
+        tag_name: &'static str,
+    ) -> HtmlElement {
+        let mut element = HtmlElement::new_ns(namespace, tag_name);
         element.append(self.render_elements(tree, &tree.nodes[index].base.children));
         element
     }
 
-    /// Append one element by kind; kinds without output here render nothing.
+    /// Append one element by kind: text as text, inserted content as its children, any other
+    /// kind as its element.
     fn render_element(
         &mut self,
         tree: &'a OpenXmlElementTree,
@@ -205,43 +258,74 @@ impl<'a> HtmlRenderer<'a> {
         output: &mut Vec<HtmlContent>,
     ) {
         let node = &tree.nodes[index];
-        let element = match &node.data {
+        match &node.data {
+            Data::Text { text } => output.push(HtmlContent::Text(text.clone())),
+            Data::NoBreakHyphen => output.push(HtmlContent::Text("\u{2011}".into())),
+            Data::Inserted => self.render_elements_into(tree, &node.base.children, output),
+            _ => output.extend(
+                self.render_node(tree, index, children)
+                    .map(HtmlContent::Element),
+            ),
+        }
+    }
+
+    /// Render one element by kind; kinds without output here render nothing.
+    fn render_node(
+        &mut self,
+        tree: &'a OpenXmlElementTree,
+        index: usize,
+        children: Children<'_>,
+    ) -> Option<HtmlElement> {
+        let element = match &tree.nodes[index].data {
             Data::Paragraph { properties } => {
-                Some(self.render_paragraph(tree, index, properties, children))
+                self.render_paragraph(tree, index, properties, children)
             }
-            Data::BookmarkStart { name, .. } => {
-                Some(inline::render_bookmark_start(name.as_deref()))
-            }
+            Data::BookmarkStart { name, .. } => inline::render_bookmark_start(name.as_deref()),
             Data::Run {
                 r#type: DomType::Run,
                 field_run: false,
                 properties,
-            } => Some(self.render_run(tree, index, properties, children)),
-            Data::Table(table) => Some(self.render_table(tree, index, table)),
-            Data::Hyperlink(link) => Some(self.render_hyperlink(tree, index, link)),
-            Data::SmartTag(_) => Some(self.render_container(tree, index, "span")),
-            Data::Text { text } => {
-                output.push(HtmlContent::Text(text.clone()));
-                return;
-            }
-            Data::Tab => Some(inline::render_tab()),
+            } => self.render_run(tree, index, properties, children),
+            Data::Run {
+                r#type: DomType::MmlRun,
+                properties,
+                ..
+            } => self.render_mml_run(tree, index, properties),
+            Data::Table(table) => self.render_table(tree, index, table),
+            Data::Hyperlink(link) => self.render_hyperlink(tree, index, link),
+            Data::SmartTag(_) => self.render_container(tree, index, "span"),
+            Data::Tab => inline::render_tab(),
             Data::Symbol { font, char: code } => {
-                Some(inline::render_symbol(font.as_deref(), code.as_deref()))
+                inline::render_symbol(font.as_deref(), code.as_deref())
             }
-            Data::Break { r#break } => inline::render_break(r#break),
-            Data::NoBreakHyphen => {
-                output.push(HtmlContent::Text("\u{2011}".into()));
-                return;
+            Data::Break { r#break } => return inline::render_break(r#break),
+            Data::FootnoteReference { id } => self.render_footnote_reference(id.as_deref()),
+            Data::EndnoteReference { id } => self.render_endnote_reference(id.as_deref()),
+            Data::Drawing { css_style } => self.render_drawing(tree, index, css_style),
+            Data::Image {
+                src,
+                css_style,
+                src_rect,
+                rotation,
+            } => self.render_image(src.as_deref(), css_style, *src_rect, *rotation),
+            Data::VmlPicture => self.render_container(tree, index, "div"),
+            Data::VmlElement(shape) => self.render_vml_element(tree, index, shape),
+            Data::Math { r#type, props } => {
+                return self.render_math(tree, index, *r#type, props.as_ref());
             }
-            Data::FootnoteReference { id } => Some(self.render_footnote_reference(id.as_deref())),
-            Data::EndnoteReference { id } => Some(self.render_endnote_reference(id.as_deref())),
-            Data::Inserted => {
-                self.render_elements_into(tree, &node.base.children, output);
-                return;
-            }
-            _ => None,
+            Data::AltChunk { id } => return self.render_alt_chunk(id.as_deref()),
+            _ => return None,
         };
-        output.extend(element.map(HtmlContent::Element));
+        Some(element)
+    }
+}
+
+/// Name a style's class: the class namespace alone for an absent or empty identifier,
+/// otherwise the namespace and the escaped identifier.
+fn process_style_name(class_name: &str, style_name: Option<&str>) -> String {
+    match style_name.filter(|name| !name.is_empty()) {
+        Some(name) => format!("{class_name}_{}", escape_class_name(name)),
+        None => class_name.to_owned(),
     }
 }
 

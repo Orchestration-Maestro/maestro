@@ -1,13 +1,26 @@
-//! Owned rendered elements and their escaped HTML text.
+//! Owned rendered elements in their namespaces.
 use indexmap::IndexMap;
-use maestro_app::markup::{EscapeMode, escape_into};
 use std::collections::BTreeMap;
 
-/// One rendered element with ordered attributes, inline declarations and children.
+/// Namespace an element is created in.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Namespace {
+    /// HTML elements.
+    Html,
+    /// SVG elements.
+    Svg,
+    /// `MathML` elements.
+    MathMl,
+}
+
+/// One rendered element with its namespace, ordered attributes, inline declarations and
+/// children.
 #[derive(Debug)]
 pub struct HtmlElement {
     /// Tag name.
     pub(super) tag: &'static str,
+    /// Namespace the element is created in.
+    pub(super) namespace: Namespace,
     /// Attributes in assignment order; inline declarations are kept apart.
     pub(super) attributes: IndexMap<String, String>,
     /// Inline declarations by CSS property name.
@@ -18,60 +31,60 @@ pub struct HtmlElement {
 
 /// One child of a rendered element.
 #[derive(Debug)]
-pub(crate) enum HtmlContent {
+pub enum HtmlContent {
     /// A nested element.
     Element(HtmlElement),
-    /// Literal text, escaped when serialized.
+    /// Literal text.
     Text(String),
 }
 
 impl HtmlElement {
-    /// Start an element without attributes or children.
+    /// Start an HTML element without attributes or children.
     pub(crate) fn new(tag: &'static str) -> Self {
+        Self::new_ns(Namespace::Html, tag)
+    }
+
+    /// Start an element in a namespace without attributes or children.
+    pub(crate) fn new_ns(namespace: Namespace, tag: &'static str) -> Self {
         Self {
             tag,
+            namespace,
             attributes: IndexMap::new(),
             style: BTreeMap::new(),
             children: Vec::new(),
         }
     }
 
-    /// Serialize the element and its children as HTML text, escaping every value once.
+    /// Tag name.
     #[must_use]
-    pub fn to_html(&self) -> String {
-        let mut out = String::new();
-        self.write_html(&mut out);
-        out
+    pub fn tag(&self) -> &'static str {
+        self.tag
     }
 
-    /// Append the opening tag, the content and the closing tag.
-    fn write_html(&self, out: &mut String) {
-        out.push('<');
-        out.push_str(self.tag);
-        for (name, value) in &self.attributes {
-            write_attribute(name, value, out);
-        }
-        if !self.style.is_empty() {
-            let declarations: Vec<_> = self
-                .style
-                .iter()
-                .map(|(property, value)| format!("{property}:{value}"))
-                .collect();
-            write_attribute("style", &declarations.join(";"), out);
-        }
-        out.push('>');
-        if matches!(self.tag, "br" | "col") {
-            return;
-        }
-        for child in &self.children {
-            match child {
-                HtmlContent::Element(element) => element.write_html(out),
-                HtmlContent::Text(text) => escape_into(text, out, EscapeMode::HtmlDecimal),
-            }
-        }
-        out.push_str("</");
-        out.push_str(self.tag);
-        out.push('>');
+    /// Namespace the element is created in.
+    #[must_use]
+    pub fn namespace(&self) -> Namespace {
+        self.namespace
+    }
+
+    /// Attributes in assignment order.
+    pub fn attributes(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.attributes
+            .iter()
+            .map(|(name, value)| (name.as_str(), value.as_str()))
+    }
+
+    /// Inline declarations sorted by property name.
+    pub fn declarations(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.style
+            .iter()
+            .map(|(property, value)| (property.as_str(), value.as_str()))
+    }
+
+    /// Children in document order.
+    #[must_use]
+    pub fn children(&self) -> &[HtmlContent] {
+        &self.children
     }
 
     /// Assign one attribute, replacing an earlier value in place.
@@ -136,22 +149,13 @@ impl HtmlElement {
     }
 }
 
-/// Append one name and value pair, escaping both.
-fn write_attribute(name: &str, value: &str, out: &mut String) {
-    out.push(' ');
-    escape_into(name, out, EscapeMode::HtmlDecimal);
-    out.push_str("=\"");
-    escape_into(value, out, EscapeMode::HtmlDecimal);
-    out.push('"');
-}
-
 /// Whether a declaration value ends where it starts: strings and brackets close, and no
 /// separator, block, comment, priority or escape appears outside a string.
 ///
 /// A style property assignment parses each value on its own and rejects one that is not a
-/// single value; written into one style attribute, such a value would instead end its
+/// single value; written into one style attribute or rule, such a value would instead end its
 /// declaration early or swallow the declarations after it.
-fn contained(value: &str) -> bool {
+pub(crate) fn contained(value: &str) -> bool {
     let mut quote = None;
     let mut depth = 0_usize;
     let mut characters = value.chars().peekable();

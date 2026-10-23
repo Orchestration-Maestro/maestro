@@ -38,8 +38,9 @@ pub(super) fn archive_name(path: &str) -> String {
     result.join("/")
 }
 
-/// Preserve valid font-family values, enclosing names rejected by CSS.
-pub(super) fn enclose_font_family(name: &str) -> String {
+/// Preserve valid font-family values, enclosing names CSS would reject.
+#[must_use]
+pub fn enclose_font_family(name: &str) -> String {
     let chars: Vec<_> = name.chars().collect();
     let interior = chars
         .get(1..chars.len().saturating_sub(1))

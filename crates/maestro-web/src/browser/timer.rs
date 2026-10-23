@@ -43,7 +43,7 @@ pub(crate) fn native(
 }
 /// Register one native animation frame with the same callback lifetime owner.
 #[cfg(target_arch = "wasm32")]
-pub(super) fn frame(
+pub(crate) fn frame(
     window: web_sys::Window,
     callback: std::rc::Rc<dyn Fn()>,
 ) -> Result<Timer, wasm_bindgen::JsValue> {
