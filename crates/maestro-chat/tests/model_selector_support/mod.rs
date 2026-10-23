@@ -1,7 +1,8 @@
 //! Strict model-picker corpus and controlled owner operations.
 use crate::bindings::Binding;
 use maestro_app::{
-    AuthStorage, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
+    AuthStorage, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput,
+    ProviderModelInput, SharedHandle,
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use serde::Deserialize;
@@ -71,9 +72,9 @@ pub struct Descriptor {
 impl Descriptor {
     /// Builds a full record using the existing owner's default metadata.
     pub fn model(&self) -> Model {
-        let mut model = maestro_app::ModelRegistry::in_memory(Arc::new(AuthStorage::in_memory(
-            std::iter::empty().collect(),
-        )))
+        let mut model = maestro_app::ModelRegistry::in_memory(SharedHandle::new(
+            AuthStorage::in_memory(std::iter::empty().collect()),
+        ))
         .unwrap()
         .get_all()
         .read()
@@ -315,7 +316,7 @@ impl ModelFileOperations for Files {
 pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicUsize>) {
     let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let registry = ModelRegistry::with_operations(
-        Arc::new(AuthStorage::in_memory(std::iter::empty().collect())),
+        SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
         query
             .read_failure
             .as_ref()
@@ -342,7 +343,7 @@ pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicU
         registry
             .register_provider(
                 &provider,
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     base_url: Some("https://example.invalid".into()),
                     api_key: Some("fixture-key".into()),
                     api: Some("openai-completions".into()),
@@ -359,7 +360,7 @@ pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicU
 /// Malformed data is parsed by the real catalog loader.
 pub fn malformed_registry() -> ModelRegistry {
     let registry = ModelRegistry::with_operations(
-        Arc::new(AuthStorage::in_memory(std::iter::empty().collect())),
+        SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
         "<malformed-models-file>",
         Files {
             reads: Arc::new(std::sync::atomic::AtomicUsize::new(0)),

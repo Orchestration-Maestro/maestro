@@ -21,6 +21,7 @@ use maestro_extensions::types::{
     RegisteredCommandOptions, ExtensionFlagOptions,
     ExtensionShortcutOptions, FlagType, FlagValue,
 };
+use maestro_models::SharedHandle;
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 
@@ -58,7 +59,7 @@ api.register_shortcut("ctrl+x".into(), ExtensionShortcutOptions {
         Box::pin(async move { assert_eq!(cwd?, "/work"); Ok(()) })
     }),
 })?;
-let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+let auth = SharedHandle::new(AuthStorage::in_memory(Default::default()));
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
@@ -128,7 +129,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
             })
         }),
     })?;
-#   let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
@@ -228,12 +229,13 @@ use maestro_catalog::ModelRegistry;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::runner::ExtensionRunnerSession;
 use maestro_extensions::{ExtensionContextActions, ExtensionRunner};
+use maestro_models::SharedHandle;
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
-let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+let auth = SharedHandle::new(AuthStorage::in_memory(Default::default()));
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
@@ -286,7 +288,7 @@ use maestro_extensions::types::{NewSessionCommandOptions, SessionChangeResult};
 use maestro_extensions::runner::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-# let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+# let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
 # let session = ExtensionRunnerSession {
 #     cwd: "/work".into(),
 #     session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),

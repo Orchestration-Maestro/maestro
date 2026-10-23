@@ -36,7 +36,7 @@ impl ExtensionUIContextPort for EditorHost {
 }
 
 fn retained_ui_owned_host_example() -> Result<(), EventError> {
-#   let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   let auth = maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),

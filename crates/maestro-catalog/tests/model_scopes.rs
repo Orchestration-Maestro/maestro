@@ -5,6 +5,7 @@ use crate::scopes;
 use maestro_catalog::ModelRegistry;
 use maestro_catalog::{ModelResolverOutput, model_id_comparator, resolve_model_scope};
 use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_models::SharedHandle;
 use scopes::replay;
 use std::sync::{Arc, Mutex};
 
@@ -141,7 +142,7 @@ fn scope_diagnostics_are_best_effort() {
 #[test]
 fn scope_empty_patterns_still_consult_authentication() {
     let handles = [scopes::model("p", "alpha")];
-    let storage = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
+    let storage = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()));
     let asked = Arc::new(Mutex::new(Vec::new()));
     let observer = Arc::clone(&asked);
     storage.set_fallback_resolver(move |provider| {

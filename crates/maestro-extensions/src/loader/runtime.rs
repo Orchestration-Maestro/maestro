@@ -44,7 +44,7 @@ impl<E: ExtensionExecution> BoundProviders<E> {
     pub(crate) fn register_provider(
         &self,
         name: String,
-        config: Arc<RwLock<ProviderConfig>>,
+        config: SharedHandle<RwLock<ProviderConfig>>,
     ) -> Result<(), EventError> {
         match &self.actions.register_provider {
             Some(register) => register(name, config),
@@ -92,7 +92,7 @@ impl<E: ExtensionExecution> ExtensionRuntime<E> {
     pub fn register_provider(
         &self,
         name: String,
-        config: Arc<RwLock<ProviderConfig>>,
+        config: SharedHandle<RwLock<ProviderConfig>>,
         extension_path: Option<String>,
     ) -> Result<(), EventError> {
         let mut route = write(&self.providers);

@@ -3,9 +3,12 @@
 `maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
 model file. `create` uses native file operations; `with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
-`in_memory` skips file access. `auth_storage` borrows the supplied credential owner.
-Native file effects require `Send + Sync`; browser file effects may capture local
-`Rc` state.
+`in_memory` skips file access. `auth_storage` borrows the supplied credential
+owner. Constructors take that credential as
+`maestro_models::SharedHandle<AuthStorage>`: a shared handle on native targets
+and a local one in the browser, so each caller builds the owner its target
+allows. Native file effects require `Send + Sync`; browser file effects may
+capture local `Rc` state.
 
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
@@ -89,8 +92,10 @@ provides compile-only evidence for local browser effects.
 
 ## Dynamic providers
 
-`register_provider(name, Arc<RwLock<ProviderConfigInput>>)` validates the incoming
-record, applies it, then retains it. A callback requires a nonempty provider API;
+`register_provider(name, SharedHandle<RwLock<ProviderConfigInput>>)` validates
+the incoming record, applies it, then retains it. The configuration is the same
+platform handle, so registration keeps one owner from admission through replay,
+display-name reads and refresh. A callback requires a nonempty provider API;
 a nonempty model list requires a provider endpoint, key or OAuth, and an API on
 each model or its provider. Validation failure changes nothing. Dynamic
 `ProviderModelInput` values do not use the file loader's defaults or limit checks.

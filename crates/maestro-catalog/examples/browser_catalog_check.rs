@@ -4,8 +4,8 @@ mod browser {
     //! Compile-only browser callers with real non-Send effects.
     use maestro_catalog::{CatalogError, ModelFileOperations, ModelRegistry, ProviderConfigInput};
     use maestro_credentials::AuthStorage;
-    use maestro_models::OAuthCredentials;
-    use std::sync::{Arc, RwLock};
+    use maestro_models::{OAuthCredentials, SharedHandle};
+    use std::sync::RwLock;
     use std::{cell::Cell, rc::Rc};
     /// Caller-local observations.
     struct Files(Rc<Cell<usize>>);
@@ -53,7 +53,7 @@ mod browser {
     }
     /// Compile the existing browser family without adding native auto-trait bounds to it.
     pub fn qualify(
-        auth: Arc<AuthStorage>,
+        auth: SharedHandle<AuthStorage>,
         count: Rc<Cell<usize>>,
     ) -> Result<Rc<ModelRegistry>, CatalogError> {
         let registry = Rc::new(ModelRegistry::with_operations(
@@ -61,10 +61,10 @@ mod browser {
             "browser-models",
             Files(count.clone()),
         )?);
-        let config = Arc::from(Box::new(RwLock::new(ProviderConfigInput {
+        let config = SharedHandle::new(RwLock::new(ProviderConfigInput {
             oauth: Some(Rc::new(Account(count))),
             ..Default::default()
-        })));
+        }));
         registry.register_provider("browser", config)?;
         registry.refresh()?;
         registry.unregister_provider("browser")?;
@@ -76,9 +76,9 @@ mod browser {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_arch = "wasm32")]
     browser::qualify(
-        std::sync::Arc::from(Box::new(maestro_credentials::AuthStorage::in_memory(
+        maestro_models::SharedHandle::new(maestro_credentials::AuthStorage::in_memory(
             maestro_credentials::AuthStorageData::new(),
-        ))),
+        )),
         std::rc::Rc::new(std::cell::Cell::new(0)),
     )?;
     Ok(())

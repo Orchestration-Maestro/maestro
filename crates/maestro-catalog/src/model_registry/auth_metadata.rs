@@ -2,7 +2,7 @@
 use super::{ModelRegistry, read_provider};
 use crate::CatalogError;
 use maestro_credentials::{AuthSource, AuthStatus};
-use maestro_models::Model;
+use maestro_models::{Model, SharedHandle};
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Check credential presence, then freshly read the configured provider identity.
@@ -80,7 +80,7 @@ impl ModelRegistry {
             .unwrap_or_else(PoisonError::into_inner)
             .registered_providers
             .get(provider)
-            .map(|(_, c)| Arc::clone(c));
+            .map(|(_, c)| SharedHandle::clone(c));
         let registered = retained.map(|config| {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
             (config.name.clone(), config.oauth.clone())

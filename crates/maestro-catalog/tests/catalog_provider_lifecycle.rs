@@ -4,6 +4,7 @@
 use crate::dynamic;
 use crate::support;
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};
+use maestro_models::SharedHandle;
 use std::sync::{Arc, RwLock};
 
 #[test]
@@ -13,9 +14,9 @@ fn upsert_mutates_first_retained_config_and_keeps_defined_empty_values() {
     }
     let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let first = dynamic::config(&["m"]);
-    let weak = Arc::downgrade(&first);
+    let weak = SharedHandle::downgrade(&first);
     registry.register_provider("p", first.clone()).unwrap();
-    let second = Arc::new(RwLock::new(ProviderConfigInput {
+    let second = SharedHandle::new(RwLock::new(ProviderConfigInput {
         name: Some(String::new()),
         base_url: Some(String::new()),
         models: Some(vec![]),
@@ -52,7 +53,7 @@ fn empty_retained_models_restore_underlying_catalog_on_refresh() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 models: Some(vec![]),
                 ..Default::default()
             })),
@@ -73,7 +74,7 @@ fn display_name_precedence_keeps_present_empty_names() {
         registry.get_provider_display_name("anthropic"),
         "Anthropic (Claude Pro/Max)"
     );
-    let config = Arc::new(RwLock::new(ProviderConfigInput {
+    let config = SharedHandle::new(RwLock::new(ProviderConfigInput {
         name: Some(String::new()),
         ..Default::default()
     }));
@@ -82,7 +83,7 @@ fn display_name_precedence_keeps_present_empty_names() {
     registry
         .register_provider(
             "unlisted",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 name: Some("Registered".into()),
                 ..Default::default()
             })),
@@ -134,7 +135,7 @@ fn refresh_replays_initial_provider_order_and_defined_field_merges() {
     let q = dynamic::config(&["other"]);
     dynamic::callback(&q, "q");
     registry.register_provider("q", q).unwrap();
-    let p = Arc::new(RwLock::new(ProviderConfigInput {
+    let p = SharedHandle::new(RwLock::new(ProviderConfigInput {
         api: Some("openai-completions".into()),
         base_url: Some("https://latest.invalid".into()),
         ..Default::default()
@@ -184,7 +185,7 @@ fn registered_oauth_label_precedes_current_global_provider() {
         registry
             .register_provider(
                 "p",
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     oauth: Some(dynamic::oauth(name)),
                     ..Default::default()
                 })),
@@ -304,7 +305,7 @@ fn immediate_registration_uses_incoming_config_not_merged_config() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: Some("https://override.invalid".into()),
                 ..Default::default()
             })),
@@ -498,7 +499,7 @@ fn removal_restores_builtin_oauth_and_deletes_custom_provider() {
         registry
             .register_provider(
                 id,
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     oauth: Some(dynamic::oauth("Override")),
                     ..Default::default()
                 })),
@@ -614,7 +615,7 @@ fn provider_overrides_and_replacements_survive_refresh() {
                 .unwrap();
         }
         if [0, 2, 4, 5].contains(&case) {
-            let config = Arc::new(RwLock::new(ProviderConfigInput {
+            let config = SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: (case != 5).then(|| "https://proxy.invalid".into()),
                 headers: (case == 5).then(|| [("x-proxy".into(), "enabled".into())].into()),
                 ..Default::default()

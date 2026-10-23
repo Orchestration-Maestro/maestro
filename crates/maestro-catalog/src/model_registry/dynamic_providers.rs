@@ -14,7 +14,7 @@ impl ModelRegistry {
     pub(super) fn apply_provider_config(
         &self,
         provider: &str,
-        config: &Arc<RwLock<ProviderConfigInput>>,
+        config: &SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Result<(), CatalogError> {
         let oauth = self.prepare_provider_config(provider, config);
         if let Some(oauth) = oauth {
@@ -26,7 +26,7 @@ impl ModelRegistry {
     pub(super) fn prepare_provider_config(
         &self,
         provider: &str,
-        config: &Arc<RwLock<ProviderConfigInput>>,
+        config: &SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Option<OAuthProviderHandle> {
         install_operations(provider, config);
         {
@@ -96,12 +96,12 @@ impl ModelRegistry {
     pub(super) fn upsert_registered_provider(
         &self,
         provider: &str,
-        config: Arc<RwLock<ProviderConfigInput>>,
+        config: SharedHandle<RwLock<ProviderConfigInput>>,
     ) {
         let existing = {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
             if let Some((_, existing)) = state.registered_providers.get(provider) {
-                Arc::clone(existing)
+                SharedHandle::clone(existing)
             } else {
                 let ordinal = state.next_provider;
                 state.next_provider += 1;
@@ -111,7 +111,7 @@ impl ModelRegistry {
                 return;
             }
         };
-        if Arc::ptr_eq(&existing, &config) {
+        if SharedHandle::ptr_eq(&existing, &config) {
             return;
         }
         let retired = {
@@ -133,7 +133,7 @@ impl ModelRegistry {
     }
 }
 /// Install retained account/callback handles without guards over registry retirement.
-fn install_operations(provider: &str, config: &Arc<RwLock<ProviderConfigInput>>) {
+fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfigInput>>) {
     let oauth = config
         .read()
         .unwrap_or_else(PoisonError::into_inner)

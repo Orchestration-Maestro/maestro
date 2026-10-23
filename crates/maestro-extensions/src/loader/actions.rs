@@ -3,7 +3,9 @@ use crate::{
     EventError, ExtensionExecution,
     types::{ExtensionAPI, ExtensionActions, ProviderConfig, read},
 };
-use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
+use maestro_models::{
+    Model, ModelThinkingLevel as ThinkingLevel, SharedHandle, ToolInfo, UserContent,
+};
 use maestro_resources::SlashCommandInfo;
 use maestro_session::messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions};
 #[cfg(not(target_arch = "wasm32"))]
@@ -149,7 +151,7 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     pub fn register_provider(
         &self,
         name: String,
-        config: Arc<RwLock<ProviderConfig>>,
+        config: SharedHandle<RwLock<ProviderConfig>>,
     ) -> Result<(), EventError> {
         let owner = self.owner()?;
         let path = read(&owner).path.clone();

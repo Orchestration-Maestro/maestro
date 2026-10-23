@@ -30,8 +30,8 @@ mod native {
     }
     /// Valid provider input over supplied definitions.
     #[must_use]
-    pub fn config(ids: &[&str]) -> Arc<RwLock<ProviderConfigInput>> {
-        Arc::new(RwLock::new(ProviderConfigInput {
+    pub fn config(ids: &[&str]) -> SharedHandle<RwLock<ProviderConfigInput>> {
+        SharedHandle::new(RwLock::new(ProviderConfigInput {
             api: Some("openai-completions".into()),
             base_url: Some("https://dynamic.invalid/v1".into()),
             api_key: Some("configured".into()),
@@ -157,7 +157,7 @@ mod native {
     /// Install an error callback labeling which ordered registration won.
     /// # Panics
     /// Panics if the configuration guard is poisoned.
-    pub fn callback(config: &Arc<RwLock<ProviderConfigInput>>, message: &'static str) {
+    pub fn callback(config: &SharedHandle<RwLock<ProviderConfigInput>>, message: &'static str) {
         config.write().unwrap().stream_simple = Some(SharedHandle::new(FailedProvider(message)));
     }
     /// Invoke the current protocol through the raw public callback.

@@ -3,6 +3,7 @@
 //! Dynamic provider admission and request observations.
 use crate::support;
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};
+use maestro_models::SharedHandle;
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions, StreamOptionsInput,
 };
@@ -62,7 +63,7 @@ fn registration_checks_incoming_fields_before_any_effect() {
     assert_eq!(dynamic::failure(&registry, "p", "m"), "retained");
 }
 /// Competing admission failures selected from independent incoming records.
-fn invalid_config(case: usize) -> Arc<RwLock<ProviderConfigInput>> {
+fn invalid_config(case: usize) -> SharedHandle<RwLock<ProviderConfigInput>> {
     let config = dynamic::config(&["m"]);
     let mut incoming = config.write().unwrap();
     incoming.oauth = Some(dynamic::oauth("incoming"));
@@ -115,7 +116,7 @@ fn dynamic_definitions_keep_values_without_file_defaults() {
         registry
             .register_provider(
                 "empty",
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     models,
                     ..Default::default()
                 })),
@@ -181,7 +182,7 @@ fn request_sources_replace_only_on_truthy_incoming_fields() {
     }
 }
 /// Source inputs distinguish truthy immediate storage from defined retained merging.
-fn request_update(case: usize) -> Arc<RwLock<ProviderConfigInput>> {
+fn request_update(case: usize) -> SharedHandle<RwLock<ProviderConfigInput>> {
     let mut incoming = ProviderConfigInput::default();
     match case {
         1 => incoming.api_key = Some(String::new()),
@@ -248,7 +249,7 @@ fn empty_lists_and_overrides_preserve_branch_specific_identity() {
         registry
             .register_provider(
                 "p",
-                Arc::new(RwLock::new(ProviderConfigInput {
+                SharedHandle::new(RwLock::new(ProviderConfigInput {
                     base_url: Some(String::new()),
                     models,
                     ..Default::default()
@@ -261,7 +262,7 @@ fn empty_lists_and_overrides_preserve_branch_specific_identity() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: Some(String::new()),
                 headers: Some(indexmap::IndexMap::default()),
                 ..Default::default()
@@ -359,7 +360,7 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 oauth: Some(supplied.clone()),
                 ..Default::default()
             })),
@@ -561,7 +562,7 @@ fn empty_configured_keys_keep_presence_but_skip_resolution() {
     registry
         .register_provider(
             "p",
-            Arc::new(RwLock::new(ProviderConfigInput {
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
                 api_key: Some(String::new()),
                 headers: Some(indexmap::IndexMap::default()),
                 ..Default::default()
