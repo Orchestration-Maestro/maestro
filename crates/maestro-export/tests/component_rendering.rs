@@ -1121,7 +1121,8 @@ fn theme_readers_fall_back_without_a_published_theme() {
     );
 }
 
-/// Every native tool, each bound to a themed call and to result branches that draw nothing.
+/// The six native tools the theme-free rendering cases bind, each with its call and result
+/// callbacks; a tool that is not bound here fails the lookup and renders nothing.
 fn native_bindings() -> Vec<(&'static str, maestro_tools::ToolRendererBinding)> {
     use maestro_tools::ToolRendererBinding;
     let read = maestro_tools::create_read_tool_definition::<()>(
@@ -1166,8 +1167,11 @@ fn native_bindings() -> Vec<(&'static str, maestro_tools::ToolRendererBinding)> 
     ]
 }
 
-/// An HTML renderer over every native tool with no published theme.
-fn unpublished_native_renderer() -> impl maestro_export::ToolHtmlRenderer {
+/// An HTML renderer over those six native tools with no published theme, highlighting
+/// through `highlighter`.
+fn native_renderer_without_a_theme(
+    highlighter: Rc<dyn maestro_theme::SyntaxHighlighter>,
+) -> impl maestro_export::ToolHtmlRenderer {
     use maestro_export::{ToolHtmlRendererDeps, create_tool_html_renderer};
     let bindings = native_bindings();
     create_tool_html_renderer(ToolHtmlRendererDeps {
@@ -1180,8 +1184,13 @@ fn unpublished_native_renderer() -> impl maestro_export::ToolHtmlRenderer {
         theme: maestro_theme::LiveTheme::default(),
         cwd: "/work",
         width: None,
-        environment: component_support::environment(),
+        environment: component_support::environment_with(highlighter),
     })
+}
+
+/// The same six tools over a highlighter that claims no language.
+fn unpublished_native_renderer() -> impl maestro_export::ToolHtmlRenderer {
+    native_renderer_without_a_theme(Rc::new(component_support::NoLanguages))
 }
 
 #[test]
@@ -1200,8 +1209,8 @@ fn native_calls_fall_back_without_a_published_theme() {
     }
 }
 
-/// A successful write, an empty or hidden result and a listing without output draw nothing,
-/// so they render their empty component instead of falling back.
+/// Results without content draw nothing, so a read (visible and hidden), an edit, a write, a
+/// find, a grep and a listing render their empty component instead of falling back.
 #[test]
 fn native_theme_free_result_branches_render_without_a_published_theme() {
     use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};
@@ -1243,6 +1252,53 @@ fn native_theme_free_result_branches_render_without_a_published_theme() {
     }
 }
 
+/// A read of a path whose language the syntax registry does not admit colors its rows through
+/// the theme, so it falls back; a supported language keeps its custom rendering.
+#[test]
+fn native_reads_fall_back_for_languages_the_registry_does_not_admit() {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};
+    use maestro_theme::SyntaxHighlighter as _;
+    use serde_json::json;
+    let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
+    let renderer = native_renderer_without_a_theme(Rc::clone(&highlighter) as _);
+    let read = |path: &str| {
+        assert_eq!(
+            renderer
+                .render_call("id", "read", Some(&json!({"path": path})))
+                .unwrap(),
+            None,
+            "{path} call falls back"
+        );
+        renderer
+            .render_result(
+                "id",
+                "read",
+                ToolHtmlResultInput {
+                    content: Some(&json!([{"type": "text", "text": "echo hello"}])),
+                    details: None,
+                    is_error: false,
+                },
+            )
+            .unwrap()
+    };
+    for path in [
+        "config.fish",
+        "styles.sass",
+        "schema.graphql",
+        "main.tf",
+        "main.hcl",
+    ] {
+        let language = maestro_theme::get_language_from_path(path).unwrap();
+        assert!(
+            highlighter.supports_language(language),
+            "{path} names a language the engine could paint"
+        );
+        assert!(read(path).is_none(), "{path} result falls back");
+    }
+    assert!(read("notes.rs").is_some(), "a supported language renders");
+}
+
+/// A write error result is drawn in a color, so it falls back instead.
 #[test]
 fn native_styled_result_branches_fall_back_without_a_published_theme() {
     use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};

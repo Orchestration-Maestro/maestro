@@ -55,21 +55,21 @@ fn preview_rows<'a>(
     raw_path: &str,
     cache: Option<&'a HighlightCache>,
     context: &ToolRenderContext<'_>,
-) -> Cow<'a, [String]> {
-    match (language_of(raw_path), cache) {
+) -> Rendered<Cow<'a, [String]>> {
+    Ok(match (language_of(raw_path), cache) {
         (Some(_), Some(cache)) => Cow::Borrowed(&cache.highlighted_lines),
         (Some(language), None) => Cow::Owned(rows(
             context,
             &replace_tabs(&normalize_display_text(body)),
             language,
-        )),
+        )?),
         (None, _) => Cow::Owned(
             normalize_display_text(body)
                 .split('\n')
                 .map(str::to_owned)
                 .collect(),
         ),
-    }
+    })
 }
 
 /// The content preview: the first rows, then how many more there are and how to expand.
@@ -80,7 +80,7 @@ fn format_preview(
     (theme, context): (&Theme, &ToolRenderContext<'_>),
 ) -> Rendered<String> {
     let highlighted = language_of(raw_path).is_some();
-    let rendered = preview_rows(body, raw_path, cache, context);
+    let rendered = preview_rows(body, raw_path, cache, context)?;
     let lines = without_trailing_empty(&rendered);
     let limit = if context.expanded {
         lines.len()
@@ -151,10 +151,10 @@ pub(super) fn render_call(
     let raw_path = str(selected_path(args)).unwrap_or_default();
     let previous = component.cache.take();
     let cache = match str(args.get("content")) {
-        None => None,
+        None => Ok(None),
         Some(body) if context.phase.args_complete => rebuild(raw_path, body, context),
         Some(body) => update(previous, raw_path, body, context),
-    };
+    }?;
     component.cache.replace(cache);
     let resolved = themed(theme.get())?;
     let text = format_call(

@@ -226,12 +226,12 @@ fn format_read_result(
         .filter(|raw| !raw.is_empty())
         .and_then(get_language_from_path);
     let lines = match language {
-        Some(language) => highlight_code(
+        Some(language) => themed(highlight_code(
             &context.environment.live_theme,
             &*context.environment.highlighter,
             &replace_tabs(&output),
             Some(language),
-        ),
+        ))?,
         None => output.split('\n').map(str::to_owned).collect(),
     };
     let lines = without_trailing_empty(&lines);

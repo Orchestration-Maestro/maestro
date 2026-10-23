@@ -16,6 +16,7 @@ mod lifecycle;
 mod loading;
 mod registry;
 mod styles;
+mod syntax_labels;
 mod watching;
 pub use crate::highlight::HighlightProfile;
 pub use brand::{

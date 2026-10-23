@@ -42,7 +42,7 @@ struct Config {
     reenter: bool,
     steps: Vec<Value>,
 }
-struct NoLanguages;
+pub struct NoLanguages;
 impl SyntaxHighlighter for NoLanguages {
     fn supports_language(&self, _: &str) -> bool {
         false
@@ -59,6 +59,9 @@ pub fn theme() -> Theme {
     Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap()
 }
 pub fn environment() -> Rc<ToolRenderEnvironment> {
+    environment_with(Rc::new(NoLanguages))
+}
+pub fn environment_with(highlighter: Rc<dyn SyntaxHighlighter>) -> Rc<ToolRenderEnvironment> {
     let state = ThemeState::new(ThemeDirectories {
         themes_dir: String::new(),
         custom_themes_dir: String::new(),
@@ -67,7 +70,7 @@ pub fn environment() -> Rc<ToolRenderEnvironment> {
         runtime: Rc::new(manual_runtime::ManualRuntime::default()),
         readme_path: "/opt/maestro/README.md".into(),
         live_theme: state.theme(),
-        highlighter: Rc::new(NoLanguages),
+        highlighter,
         terminal_image: TerminalImage::default(),
     })
 }

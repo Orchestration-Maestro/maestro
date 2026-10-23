@@ -1,21 +1,34 @@
 //! Terminal rows and escaped HTML fragments from highlighter spans.
 use super::styles::paint;
-use super::{LiveTheme, SyntaxHighlighter, SyntaxSpan, ThemeColor};
+use super::syntax_labels;
+use super::{LiveTheme, SyntaxHighlighter, SyntaxSpan, ThemeColor, ThemeError};
 use std::error::Error;
 
 /// What a failing engine returns instead of rows.
 pub(super) type Recovery = fn(&LiveTheme, &str) -> Vec<String>;
 
-/// The label, when it is present, nonempty and supported.
-fn supported<'a>(highlighter: &dyn SyntaxHighlighter, lang: Option<&'a str>) -> Option<&'a str> {
-    lang.filter(|lang| !lang.is_empty() && highlighter.supports_language(lang))
+/// The label, when it is present, nonempty and a language the syntax registry admits.
+///
+/// A label the registry does not name is painted as code, never handed to another grammar.
+fn admitted(lang: Option<&str>) -> Option<&str> {
+    lang.filter(|lang| !lang.is_empty() && syntax_labels::admits(lang))
 }
 
 /// Split `code` at every line feed, coloring each row as unclassified code.
-pub(super) fn colored_rows(theme: &LiveTheme, code: &str) -> Vec<String> {
-    code.split('\n')
-        .map(|row| paint(theme.get().ok().as_deref(), &ThemeColor::MdCodeBlock, row))
-        .collect()
+///
+/// # Errors
+/// Returns the failure to read the published theme.
+fn colored_rows(theme: &LiveTheme, code: &str) -> Result<Vec<String>, ThemeError> {
+    let theme = theme.get()?;
+    Ok(code
+        .split('\n')
+        .map(|row| paint(Some(&*theme), &ThemeColor::MdCodeBlock, row))
+        .collect())
+}
+
+/// `colored_rows` for a caller that cannot report a failure: unstyled rows instead.
+pub(super) fn colored_rows_or_raw(theme: &LiveTheme, code: &str) -> Vec<String> {
+    colored_rows(theme, code).unwrap_or_else(|_| raw_rows(theme, code))
 }
 
 /// Split `code` at every line feed without styling.
@@ -23,23 +36,39 @@ fn raw_rows(_theme: &LiveTheme, code: &str) -> Vec<String> {
     code.split('\n').map(str::to_owned).collect()
 }
 
+/// Rows of an admitted `lang`: the engine's rows when it has that grammar, code rows when it
+/// does not, and `recover` when the engine fails.
+fn admitted_rows(
+    theme: &LiveTheme,
+    highlighter: &dyn SyntaxHighlighter,
+    code: &str,
+    lang: &str,
+    recover: Recovery,
+) -> Vec<String> {
+    if !highlighter.supports_language(lang) {
+        return colored_rows_or_raw(theme, code);
+    }
+    match highlighter.highlight(code, lang) {
+        Ok(spans) => styled_rows(theme, code, &spans),
+        Err(_) => recover(theme, code),
+    }
+}
+
 /// Rows of highlighted code; `recover` supplies the rows when the engine fails.
 ///
-/// A missing, empty or unsupported label skips the engine and colors the rows as code;
-/// text the engine leaves unclassified is returned unchanged.
+/// A missing, empty or unadmitted label skips the engine and colors the rows as code, which
+/// stays unstyled when no theme is published; text the engine leaves unclassified is
+/// returned unchanged.
 pub(super) fn highlight_rows(
     theme: &LiveTheme,
     highlighter: &dyn SyntaxHighlighter,
     (code, lang): (&str, Option<&str>),
     recover: Recovery,
 ) -> Vec<String> {
-    let Some(lang) = supported(highlighter, lang) else {
-        return colored_rows(theme, code);
+    let Some(lang) = admitted(lang) else {
+        return colored_rows_or_raw(theme, code);
     };
-    match highlighter.highlight(code, lang) {
-        Ok(spans) => styled_rows(theme, code, &spans),
-        Err(_) => recover(theme, code),
-    }
+    admitted_rows(theme, highlighter, code, lang, recover)
 }
 
 /// Rows of `code` split at line feeds; classified runs are colored from the live theme and
@@ -72,17 +101,31 @@ fn styled_rows(theme: &LiveTheme, code: &str, spans: &[SyntaxSpan]) -> Vec<Strin
 
 /// Highlight `code` for a terminal, never guessing a language.
 ///
-/// A missing, empty or unsupported label colors every row as code without calling the
+/// A missing, empty or unadmitted label colors every row as code without calling the
 /// engine, text the engine leaves unclassified stays unchanged, and an engine failure
 /// returns the rows unstyled.
-#[must_use]
+///
+/// # Errors
+/// Returns the failure to read the published theme for a label the syntax registry does
+/// not admit, whose rows are drawn in the code color.
 pub fn highlight_code(
     theme: &LiveTheme,
     highlighter: &dyn SyntaxHighlighter,
     code: &str,
     lang: Option<&str>,
-) -> Vec<String> {
-    highlight_rows(theme, highlighter, (code, lang), raw_rows)
+) -> Result<Vec<String>, ThemeError> {
+    let Some(lang) = admitted(lang) else {
+        return colored_rows(theme, code);
+    };
+    Ok(admitted_rows(theme, highlighter, code, lang, raw_rows))
+}
+
+/// The label, when it is present, nonempty and a language the engine has a grammar for.
+fn engine_language<'a>(
+    highlighter: &dyn SyntaxHighlighter,
+    lang: Option<&'a str>,
+) -> Option<&'a str> {
+    lang.filter(|lang| !lang.is_empty() && highlighter.supports_language(lang))
 }
 
 /// Escape `text` for HTML content and attribute values.
@@ -96,13 +139,13 @@ fn escape(text: &str, out: &mut String) {
 /// caller owns any automatic recognition and plain fallback.
 ///
 /// # Errors
-/// Returns the engine's failure for a supported label.
+/// Returns the engine's failure for a label it supports.
 pub fn highlight_html(
     highlighter: &dyn SyntaxHighlighter,
     code: &str,
     lang: Option<&str>,
 ) -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
-    let Some(lang) = supported(highlighter, lang) else {
+    let Some(lang) = engine_language(highlighter, lang) else {
         return Ok(None);
     };
     render_html(highlighter, code, lang).map(Some)
