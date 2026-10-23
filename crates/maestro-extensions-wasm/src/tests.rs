@@ -44,6 +44,7 @@ mod finite_records;
 #[macro_use]
 mod fixtures;
 mod guest_family;
+mod hello_example;
 pub(crate) mod host;
 mod host_family;
 mod join;

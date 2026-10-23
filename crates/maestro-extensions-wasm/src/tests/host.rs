@@ -866,6 +866,11 @@ impl Harness {
     /// Instantiates the component and runs its factory.
     pub async fn start(path: &Path) -> wasmtime::Result<Self> {
         let (engine, component) = compiled(path)?;
+        Self::from_compiled(engine, component).await
+    }
+
+    /// Instantiates a supplied compiled component and runs its factory.
+    pub async fn from_compiled(engine: &Engine, component: &Component) -> wasmtime::Result<Self> {
         let mut linker = Linker::new(engine);
         wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
         Extension::add_to_linker::<State, Imports>(&mut linker, |state| state)?;

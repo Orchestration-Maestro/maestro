@@ -508,6 +508,19 @@ both hosts with the probe handler. `src/tests/session_events.rs` and
 `src/tests/session_records.rs` cover the session event kinds and their records.
 
 
+### A greeting tool
+
+`examples/extensions/hello.rs` is the shipped greeting extension: it registers
+one `hello` tool whose schema requires the string member `name`, and answers
+with `Hello, <name>!` while returning the same name as `greeted` details. It
+keeps the name byte-for-byte, writes no progress updates and leaves optional
+metadata and termination absent.
+
+Loading it into an application requires a host that enables the component
+runtime, so the extension stays opt-in. The extension crate's tests instantiate
+the built component in a controlled host; `examples/extensions/README.md` gives
+the build and controlled-run commands.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes

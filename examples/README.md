@@ -1,7 +1,7 @@
 # Examples
 
-Extension and SDK examples for Maestro. No example ships yet: each folder holds
-an index page that gains a row for an example when it lands.
+Extension and SDK examples for Maestro. Each folder holds an index page listing
+the examples it ships.
 
 The default system prompt points the model at this folder. It sits beside the
 package manifest, at `<package>/examples`, so the same path works in a source

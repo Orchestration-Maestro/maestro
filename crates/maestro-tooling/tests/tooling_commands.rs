@@ -1204,6 +1204,20 @@ fn standalone_inputs(source: &Path, package: &Path) {
     package_inputs(package);
 }
 
+/// The shipped example and its index page, as authors write them.
+fn shipped_examples() -> [(&'static str, &'static str); 2] {
+    [
+        (
+            "examples/extensions/hello.rs",
+            include_str!("../../../examples/extensions/hello.rs"),
+        ),
+        (
+            "examples/extensions/README.md",
+            include_str!("../../../examples/extensions/README.md"),
+        ),
+    ]
+}
+
 /// Write the package-level inputs the standalone layout copies.
 fn package_inputs(package: &Path) {
     for (name, bytes) in [
@@ -1213,6 +1227,9 @@ fn package_inputs(package: &Path) {
         ("docs/guide.md", "guide"),
         ("examples/nested/demo.rs", "example"),
     ] {
+        write_input(package, name, bytes);
+    }
+    for (name, bytes) in shipped_examples() {
         write_input(package, name, bytes);
     }
 }
@@ -1291,6 +1308,9 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         ("export-html/style.css", "style"),
         ("export-html/vendor/engine.js", "engine"),
     ] {
+        assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
+    }
+    for (name, bytes) in shipped_examples() {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
     assert_viewer_required(&source, &destination, &package);
