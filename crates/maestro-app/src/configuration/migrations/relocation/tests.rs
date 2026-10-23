@@ -56,7 +56,6 @@ impl Fixture {
 }
 
 #[cfg(unix)]
-#[cfg(unix)]
 #[test]
 fn independent_links_use_one_settlement_visit_each() {
     for n in [0, 1, 32, 64] {
