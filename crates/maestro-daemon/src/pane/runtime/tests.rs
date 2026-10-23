@@ -167,7 +167,8 @@ fn runtime_cwd_returns_accepted_report_without_rechecking_filesystem() {
     if run_alone(name).unwrap() {
         return;
     }
-    let path = std::env::temp_dir().join(format!("maestro-cwd-{}", std::process::id()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("cwd");
     std::fs::create_dir(&path).unwrap();
     let script = format!(
         "printf '\\033]7;file://{}\\033\\\\'; read -r line",
@@ -230,18 +231,18 @@ fn runtime_process_cwd_does_not_require_traversing_the_directory_path() {
     if run_alone(name).unwrap() {
         return;
     }
-    let base = std::env::temp_dir().join(format!("maestro-process-cwd-{}", std::process::id()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let base = scratch.path();
     let path = base.join("cwd");
     std::fs::create_dir_all(&path).unwrap();
     let script = format!("cd '{}'; printf 'CWD-READY'; read -r line", path.display());
     with_runtime(name, &script, |runtime, _, notify| async move {
         wait_text(&runtime, &notify, "CWD-READY").await;
         assert_eq!(runtime.cwd(), Some(path.clone()));
-        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o0)).unwrap();
+        std::fs::set_permissions(base, std::fs::Permissions::from_mode(0o0)).unwrap();
         let observed = runtime.cwd();
-        std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o700)).unwrap();
+        std::fs::set_permissions(base, std::fs::Permissions::from_mode(0o700)).unwrap();
         runtime.shutdown().await;
-        std::fs::remove_dir_all(&base).unwrap();
         assert_eq!(observed, Some(path));
     });
 }
