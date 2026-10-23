@@ -252,7 +252,17 @@ directory the file system holds under the written spelling keeps that spelling a
 the rest of the path takes plain spaces, unless a directory of the space-replaced
 path reaches deeper; then the whole path takes plain spaces. So unless the
 space-replaced path reaches deeper, a new file lands inside the directory named with
-one of those spaces, not in a space-replaced twin.
+one of those spaces, not in a space-replaced twin. A relative path keeps the
+spelling of the directory it was resolved against, even when the file system no
+longer holds that directory (as after the working directory is removed), and that
+directory bounds the search. The whole path is reduced lexically first, and each
+parent segment it climbs then drops that directory's last component wherever the
+climb stands, while a name written after the climb takes plain spaces. A climb that
+would pass the root stops there, so an existing directory under the written spelling
+still supplies it.
+Expansion through `@` or `~` can make a path absolute; such a path was resolved
+against no directory, so nothing in its spelling comes from one. A directory the
+file system holds under the written spelling keeps it for absolute paths too.
 
 The signal is checked before each of the three operations and watched while one is
 pending. An abort seen there settles the read with `Operation aborted`, and a
