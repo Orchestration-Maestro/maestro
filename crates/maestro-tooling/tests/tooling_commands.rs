@@ -2621,6 +2621,7 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
     }
 
     #[cfg(unix)]
+    #[cfg(unix)]
     for (phase, expected) in [
         ("hakari", &["fmt", "hakari"][..]),
         ("clippy", &["fmt", "hakari", "clippy"][..]),
