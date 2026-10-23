@@ -382,7 +382,9 @@ release-generated history, themes, images, the supplied viewer, docs and example
 Themes and images come from `SOURCE`, the `export-html` directory from `VIEWER`,
 and the README, history, documentation and examples from the package directory
 `PACKAGE`, which defaults to the justfile directory. An empty `VIEWER` directory
-copies as an empty `export-html` directory.
+copies as an empty `export-html` directory into a fresh destination. In an existing
+destination, the `export-html` directory keeps the entries it already holds and
+gains nothing from the viewer.
 These commands do not generate a viewer or regenerate assets. A missing or unusable
 input fails with a message naming the path it could not read; already copied groups
 and unrelated destination files remain. `app-build` compiles
