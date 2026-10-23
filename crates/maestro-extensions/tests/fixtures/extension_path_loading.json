@@ -3395,5 +3395,39 @@
         }
       ]
     }
+  },
+  {
+    "id": "load_home_dot_spelling",
+    "tree": [],
+    "calls": [
+      {
+        "op": "load",
+        "paths": [
+          "~",
+          "~/"
+        ],
+        "cwd": "$ROOT/work",
+        "bus": "fresh"
+      }
+    ],
+    "expected": {
+      "outcomes": [
+        {
+          "extensions": [],
+          "errors": [
+            {
+              "path": "~",
+              "error": "Failed to load extension: module not found: $ROOT/home"
+            },
+            {
+              "path": "~/",
+              "error": "Failed to load extension: module not found: $ROOT/home"
+            }
+          ],
+          "flagValues": {}
+        }
+      ],
+      "received": []
+    }
   }
 ]

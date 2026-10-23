@@ -225,7 +225,11 @@ fn same_pin(stored: &str, input: &str) -> bool {
 /// Keeps the source kind separate from its identity string.
 pub(super) fn identity<'a>(source: &'a str, base: &str) -> io::Result<Identity<'a>> {
     Ok(match sources::parse(source) {
-        Source::Local(path) => Identity::Local(super::paths::resolve_local(path, base)?),
+        Source::Local(path) => Identity::Local(super::paths::resolve_local(
+            path,
+            base,
+            super::operations::home_dir,
+        )?),
         Source::Git(git) => Identity::Git(git.host, git.path),
         Source::Npm { name, .. } => Identity::Npm(name),
     })

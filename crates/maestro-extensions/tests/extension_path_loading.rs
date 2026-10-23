@@ -1,7 +1,7 @@
 //! Loading extensions from paths and discovering them in standard and configured locations.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::module_loader::{Trace, check, check_with_home, module_loader};
+use crate::module_loader::{Trace, check, check_with_home, check_with_home_dot, module_loader};
 use serde_json::json;
 
 #[test]
@@ -37,6 +37,14 @@ fn home_paths_expand_against_the_home_directory() {
     check_with_home(
         "home_paths_expand_against_the_home_directory",
         &["load_home_paths", "discover_configured_files"],
+    );
+}
+
+#[test]
+fn bare_home_normalizes_the_home_spelling_before_loading() {
+    check_with_home_dot(
+        "bare_home_normalizes_the_home_spelling_before_loading",
+        &["load_home_dot_spelling"],
     );
 }
 

@@ -1,8 +1,8 @@
 //! Native read-path transformations for authored tool paths.
 
 use icu_normalizer::DecomposingNormalizer;
-use maestro_path::{homedir, is_absolute};
-use maestro_resources::paths::resolve_groups_with;
+use maestro_path::is_absolute;
+use maestro_resources::paths::{home_directory, resolve_groups_with};
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -53,7 +53,7 @@ fn expand_written_path(file_path: &str) -> io::Result<String> {
 /// Returns the error `home` returns for an accepted form.
 fn expand_written_path_with(
     file_path: &str,
-    home: impl FnOnce() -> io::Result<PathBuf>,
+    home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
     let file_path = file_path.strip_prefix('@').unwrap_or(file_path);
     let Some(rest) = file_path
@@ -62,23 +62,12 @@ fn expand_written_path_with(
     else {
         return Ok(file_path.to_owned());
     };
-    let home = utf8(home()?, "home directory")?;
+    let home = home()?;
     Ok(if rest.is_empty() {
         home
     } else {
         format!("{home}{rest}")
     })
-}
-
-/// Read the home directory as native bytes.
-fn home_directory() -> io::Result<PathBuf> {
-    homedir(
-        std::env::var_os("HOME")
-            .filter(|_| cfg!(unix))
-            .map(PathBuf::from),
-        std::env::home_dir,
-    )
-    .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))
 }
 
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.

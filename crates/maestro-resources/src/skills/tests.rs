@@ -623,3 +623,34 @@ fn native_nofollow_metadata_distinguishes_links() {
         io::ErrorKind::NotFound
     );
 }
+
+/// Each explicit skill form returns the reference's result for the six supplied homes.
+#[test]
+fn explicit_skill_paths_follow_the_reference_table() {
+    for (written, home, expected) in [
+        ("~", "/h", "/h"),
+        ("~/", "/h", "/h"),
+        ("~/x", "/h", "/h/x"),
+        ("~x", "/h", "/h/x"),
+        ("~", "/h/.", "/h/."),
+        ("~", "", ""),
+    ] {
+        assert_eq!(
+            super::normalize_skill_path(written, &options(home)).unwrap(),
+            expected,
+            "{written:?} with home {home:?}"
+        );
+    }
+}
+
+/// Options with the supplied home spelling and the working directory `/w`.
+fn options(home: &str) -> LoadSkillsOptions<'_> {
+    LoadSkillsOptions {
+        cwd: "/w",
+        home,
+        agent_dir: "/a",
+        config_dir_name: ".maestro",
+        skill_paths: &[],
+        include_defaults: false,
+    }
+}

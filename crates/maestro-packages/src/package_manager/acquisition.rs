@@ -40,7 +40,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Fails unless the local path, resolved against the input base, exists.
     fn require_local(&self, path: &str) -> io::Result<()> {
-        let resolved = super::paths::resolve_local(path, &self.options.cwd)?;
+        let resolved =
+            super::paths::resolve_local(path, &self.options.cwd, super::operations::home_dir)?;
         if Path::new(&resolved).exists() {
             return Ok(());
         }

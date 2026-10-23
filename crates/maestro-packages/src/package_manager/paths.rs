@@ -21,7 +21,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     ) -> io::Result<Option<String>> {
         let parsed = sources::parse(source);
         let path = if let Source::Local(path) = parsed {
-            resolve_local(path, &self.base(scope))?
+            resolve_local(path, &self.base(scope), super::operations::home_dir)?
         } else {
             self.remote_path(&parsed, scope.resource_scope())?
         };
@@ -43,7 +43,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 Ok(join(&[&root, name]))
             }
             Source::Git(git) => Ok(self.git_path(git, scope)),
-            Source::Local(path) => resolve_local(path, &self.options.cwd),
+            Source::Local(path) => {
+                resolve_local(path, &self.options.cwd, super::operations::home_dir)
+            }
         }
     }
     /// Selects the npm root path for project or temporary installation.
@@ -82,7 +84,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         scope: InstalledSourceScope,
     ) -> io::Result<String> {
         if let Source::Local(path) = sources::parse(source) {
-            let resolved = resolve_local(path, &self.options.cwd)?;
+            let resolved = resolve_local(path, &self.options.cwd, super::operations::home_dir)?;
             let base = resolve(&[&self.base(scope)])?;
             let resolved = resolve(&[&resolved])?;
             let result = relative(
@@ -123,11 +125,49 @@ fn temporary_dir(prefix: &str, suffix: &str) -> String {
     ])
 }
 
-/// Resolves local input with this caller's trim and tilde rules.
-pub(super) fn resolve_local(source: &str, base: &str) -> io::Result<String> {
+/// Resolves local input with this caller's trim and tilde rules, reading the home directory
+/// through `home`.
+pub(super) fn resolve_local(
+    source: &str,
+    base: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
     let source = crate::trim(source);
     if source.starts_with('~') {
-        return expand_tilde_text(source, super::operations::home_dir);
+        return expand_tilde_text(source, home);
     }
     resolve(&[base, source])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_local;
+
+    /// Each local source form returns the reference's result for the six supplied homes.
+    #[test]
+    fn local_sources_follow_the_reference_table() {
+        for (written, home, expected) in [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "/h/x"),
+            ("~", "/h/.", "/h/."),
+            ("~", "", ""),
+        ] {
+            assert_eq!(
+                resolve_local(written, "/b", || Ok(home.to_owned())).unwrap(),
+                expected,
+                "{written:?} with home {home:?}"
+            );
+        }
+    }
+
+    /// A source that does not start with `~` resolves against the supplied base and reads no
+    /// home directory.
+    #[test]
+    fn other_sources_resolve_from_the_base_without_home() {
+        let failing = || Err(std::io::Error::other("unknown home"));
+        assert_eq!(resolve_local("x", "/b", failing).unwrap(), "/b/x");
+        assert_eq!(resolve_local(" ../y ", "/b", failing).unwrap(), "/y");
+    }
 }

@@ -3,7 +3,10 @@
 use crate::{
     current_directory, drive_directories, frontmatter::text_whitespace, skills::real_path,
 };
-use std::{io, path::Path};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 /// The project and user configuration directory name.
 pub const CONFIG_DIR_NAME: &str = ".maestro";
@@ -72,6 +75,36 @@ pub fn expand_tilde_text(
     }
     let rest = rest.strip_prefix('/').unwrap_or(rest);
     Ok(maestro_path::join(&[&home()?, rest]))
+}
+
+/// The home directory as a native path: on Unix the `HOME` variable as set, an empty one
+/// included, otherwise the account entry.
+#[must_use]
+pub fn native_home_directory() -> Option<PathBuf> {
+    maestro_path::homedir(
+        std::env::var_os("HOME")
+            .filter(|_| cfg!(unix))
+            .map(PathBuf::from),
+        std::env::home_dir,
+    )
+}
+
+/// The home directory as text.
+///
+/// # Errors
+/// Returns a not-found error when the host knows no home directory, or an invalid-data one
+/// when the home directory is not valid UTF-8.
+pub fn home_directory() -> io::Result<String> {
+    native_home_directory()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
+        .into_os_string()
+        .into_string()
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "home directory is not valid UTF-8",
+            )
+        })
 }
 
 /// Compare preserved target spelling against a root resolved from the process
