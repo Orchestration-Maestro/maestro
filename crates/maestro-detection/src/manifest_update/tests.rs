@@ -19,7 +19,7 @@ contains = ["{contains}"]
 fn newer_download_publishes_exact_manifest_bytes() {
     let fixture = Fixture::new();
     let content = remote_manifest("9999.01.01.1", "ready");
-    let commit = process_agent_manifest(&fixture.catalog, Agent::Codex, &content)
+    let commit = process_agent_manifest(&fixture.catalog(), Agent::Codex, &content)
         .unwrap()
         .unwrap();
     assert_eq!(commit.agent, Agent::Codex);
@@ -28,7 +28,7 @@ fn newer_download_publishes_exact_manifest_bytes() {
         ManifestVersion::parse("9999.01.01.1").unwrap()
     );
     assert_eq!(
-        std::fs::read_to_string(remote_manifest_path(&fixture.catalog, Agent::Codex)).unwrap(),
+        std::fs::read_to_string(remote_manifest_path(&fixture.catalog(), Agent::Codex)).unwrap(),
         content
     );
 }
@@ -62,9 +62,10 @@ fn update_commit_reloads_before_result_callback() {
         }
     };
     let mut observed = false;
+    let catalog = fixture.catalog();
     auto_update(
         &mut fixture.cache,
-        &fixture.catalog,
+        &catalog,
         "https://catalog.invalid/detection/index.toml",
         &mut fetch,
         |cache, output| {
@@ -109,12 +110,12 @@ fn malformed_or_oversized_version_segments_are_rejected() {
 fn downgrade_preserves_cached_manifest_bytes() {
     let fixture = Fixture::new();
     let current = remote_manifest("9999.01.01.1", "current");
-    process_agent_manifest(&fixture.catalog, Agent::Codex, &current).unwrap();
+    process_agent_manifest(&fixture.catalog(), Agent::Codex, &current).unwrap();
 
     let older = remote_manifest("9999.01.01.0", "older");
-    assert!(process_agent_manifest(&fixture.catalog, Agent::Codex, &older).is_err());
+    assert!(process_agent_manifest(&fixture.catalog(), Agent::Codex, &older).is_err());
     assert_eq!(
-        std::fs::read_to_string(remote_manifest_path(&fixture.catalog, Agent::Codex)).unwrap(),
+        std::fs::read_to_string(remote_manifest_path(&fixture.catalog(), Agent::Codex)).unwrap(),
         current
     );
 }
@@ -123,12 +124,12 @@ fn downgrade_preserves_cached_manifest_bytes() {
 fn equal_version_changed_content_preserves_cached_bytes() {
     let fixture = Fixture::new();
     let current = remote_manifest("9999.01.01.1", "current");
-    process_agent_manifest(&fixture.catalog, Agent::Codex, &current).unwrap();
+    process_agent_manifest(&fixture.catalog(), Agent::Codex, &current).unwrap();
 
     let changed = remote_manifest("9999.01.01.1", "changed");
-    assert!(process_agent_manifest(&fixture.catalog, Agent::Codex, &changed).is_err());
+    assert!(process_agent_manifest(&fixture.catalog(), Agent::Codex, &changed).is_err());
     assert_eq!(
-        std::fs::read_to_string(remote_manifest_path(&fixture.catalog, Agent::Codex)).unwrap(),
+        std::fs::read_to_string(remote_manifest_path(&fixture.catalog(), Agent::Codex)).unwrap(),
         current
     );
 }
@@ -137,9 +138,9 @@ fn equal_version_changed_content_preserves_cached_bytes() {
 fn equal_version_identical_content_skips_commit() {
     let fixture = Fixture::new();
     let current = remote_manifest("9999.01.01.1", "current");
-    process_agent_manifest(&fixture.catalog, Agent::Codex, &current).unwrap();
+    process_agent_manifest(&fixture.catalog(), Agent::Codex, &current).unwrap();
 
-    let result = process_agent_manifest(&fixture.catalog, Agent::Codex, &current).unwrap();
+    let result = process_agent_manifest(&fixture.catalog(), Agent::Codex, &current).unwrap();
     assert!(result.is_none());
 }
 
@@ -198,7 +199,7 @@ fn fetch_boundaries_apply_before_catalog_decoding() {
     let mut at_limit = b"schema_version = 1\n".to_vec();
     at_limit.resize(MAX_FETCH_BYTES, b' ');
     let output = check_and_update(
-        &fixture.catalog,
+        &fixture.catalog(),
         "https://catalog.invalid/index.toml",
         &mut |_| Ok(at_limit.clone()),
     )
@@ -208,7 +209,7 @@ fn fetch_boundaries_apply_before_catalog_decoding() {
     at_limit.push(b' ');
     assert_eq!(
         check_and_update(
-            &fixture.catalog,
+            &fixture.catalog(),
             "https://catalog.invalid/index.toml",
             &mut |_| Ok(at_limit.clone())
         )
@@ -217,7 +218,7 @@ fn fetch_boundaries_apply_before_catalog_decoding() {
     );
     assert!(
         check_and_update(
-            &fixture.catalog,
+            &fixture.catalog(),
             "https://catalog.invalid/index.toml",
             &mut |_| Ok(vec![0xff])
         )
@@ -230,13 +231,13 @@ fn fetch_boundaries_apply_before_catalog_decoding() {
 fn independent_agent_failures_keep_healthy_commits_and_status() {
     let fixture = Fixture::new();
     assert_eq!(
-        load_status(&fixture.catalog),
+        load_status(&fixture.catalog()),
         ManifestUpdateStatus::default()
     );
-    std::fs::create_dir_all(&fixture.catalog).unwrap();
-    std::fs::write(status_path(&fixture.catalog), "not valid = [").unwrap();
+    std::fs::create_dir_all(fixture.catalog()).unwrap();
+    std::fs::write(status_path(&fixture.catalog()), "not valid = [").unwrap();
     assert_eq!(
-        load_status(&fixture.catalog),
+        load_status(&fixture.catalog()),
         ManifestUpdateStatus::default()
     );
     let document = remote_manifest("9999.1", "ready");
@@ -249,7 +250,7 @@ fn independent_agent_failures_keep_healthy_commits_and_status() {
     }
     };
     let first = check_and_update(
-        &fixture.catalog,
+        &fixture.catalog(),
         "https://catalog.invalid/root/index.toml",
         &mut fetch,
     )
@@ -265,9 +266,9 @@ fn independent_agent_failures_keep_healthy_commits_and_status() {
         first.status.agents["claude"].last_error.as_deref(),
         Some("fetch failed: controlled unavailable document")
     );
-    assert_eq!(load_status(&fixture.catalog), first.status);
+    assert_eq!(load_status(&fixture.catalog()), first.status);
     let second = check_and_update(
-        &fixture.catalog,
+        &fixture.catalog(),
         "https://catalog.invalid/root/index.toml",
         &mut fetch,
     )
@@ -276,7 +277,7 @@ fn independent_agent_failures_keep_healthy_commits_and_status() {
     assert_eq!(second.status.agents["codex"].last_result, "current");
     assert_eq!(second.status.agents["codex"].attempted_version, None);
     assert_eq!(
-        std::fs::read_to_string(remote_manifest_path(&fixture.catalog, Agent::Codex)).unwrap(),
+        std::fs::read_to_string(remote_manifest_path(&fixture.catalog(), Agent::Codex)).unwrap(),
         document
     );
 }
@@ -285,9 +286,10 @@ fn independent_agent_failures_keep_healthy_commits_and_status() {
 fn failure_callback_and_status_publication_errors_remain_distinct() {
     let mut fixture = Fixture::new();
     let mut callbacks = Vec::new();
+    let catalog = fixture.catalog();
     auto_update(
         &mut fixture.cache,
-        &fixture.catalog,
+        &catalog,
         "https://catalog.invalid/index.toml",
         &mut |_| Err("offline transport".to_owned()),
         |_, output| callbacks.push(output),
@@ -300,10 +302,10 @@ fn failure_callback_and_status_publication_errors_remain_distinct() {
         Some("failed: offline transport")
     );
     assert!(callbacks[0].status.last_check_unix.is_some());
-    std::fs::remove_file(status_path(&fixture.catalog)).unwrap();
-    std::fs::create_dir(status_path(&fixture.catalog)).unwrap();
+    std::fs::remove_file(status_path(&fixture.catalog())).unwrap();
+    std::fs::create_dir(status_path(&fixture.catalog())).unwrap();
     let output = check_and_update(
-        &fixture.catalog,
+        &fixture.catalog(),
         "https://catalog.invalid/index.toml",
         &mut |_| Ok(b"schema_version = 1\n".to_vec()),
     )

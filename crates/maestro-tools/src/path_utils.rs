@@ -1,7 +1,8 @@
 //! Native read-path transformations for authored tool paths.
 
 use icu_normalizer::DecomposingNormalizer;
-use maestro_path::{env_drive_directories, homedir, is_absolute, resolve_with};
+use maestro_path::is_absolute;
+use maestro_resources::paths::{home_directory, resolve_groups_with};
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -35,26 +36,38 @@ pub fn normalize_unicode_spaces(text: &str) -> String {
 
 /// Strip one leading `@` and expand a bare `~` or `~/`, keeping every other spelling.
 ///
-/// The home directory is read only for those two forms: on Unix `HOME` as set, even
-/// empty, otherwise [`std::env::home_dir`].
-///
 /// # Errors
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
 fn expand_written_path(file_path: &str) -> io::Result<String> {
+    expand_written_path_with(file_path, home_directory)
+}
+
+/// Expand the two home forms this resolver accepts: an exact `~` gives the home directory, and
+/// a `~/` prefix gives the home followed by the rest exactly as written, separators and parent
+/// segments included.
+///
+/// Any other spelling, a `~` followed by other text included, is returned as written and reads
+/// no home directory.
+///
+/// # Errors
+/// Returns the error `home` returns for an accepted form.
+fn expand_written_path_with(
+    file_path: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
     let file_path = file_path.strip_prefix('@').unwrap_or(file_path);
-    let rest = match file_path.strip_prefix('~') {
-        Some("") => "",
-        Some(rest) if rest.starts_with('/') => rest,
-        _ => return Ok(file_path.to_owned()),
+    let Some(rest) = file_path
+        .strip_prefix('~')
+        .filter(|rest| rest.is_empty() || rest.starts_with('/'))
+    else {
+        return Ok(file_path.to_owned());
     };
-    let home = homedir(
-        std::env::var_os("HOME")
-            .filter(|_| cfg!(unix))
-            .map(PathBuf::from),
-        std::env::home_dir,
-    )
-    .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
-    Ok(utf8(home, "home directory")? + rest)
+    let home = home()?;
+    Ok(if rest.is_empty() {
+        home
+    } else {
+        format!("{home}{rest}")
+    })
 }
 
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
@@ -99,15 +112,9 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
 /// # Errors
 /// Returns an error when a needed host directory is unavailable or not UTF-8.
 pub(crate) fn resolve_path(parts: &[&str]) -> io::Result<String> {
-    let directories = cfg!(windows)
-        .then(|| env_drive_directories(|name| std::env::var_os(name)))
-        .unwrap_or_default();
-    resolve_with(
-        &[parts],
-        || &directories,
-        || utf8(std::env::current_dir()?, "working directory"),
-    )
-    .map(|resolved| resolved.into_iter().collect::<String>())
+    let current_directory = || utf8(std::env::current_dir()?, "working directory");
+    resolve_groups_with(&[parts], current_directory)
+        .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Insert the narrow no-break space before a case-insensitive ` AM.` or ` PM.`.
@@ -242,3 +249,6 @@ pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
     }
     Ok(spelling)
 }
+
+#[cfg(test)]
+mod tests;

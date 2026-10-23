@@ -7,6 +7,7 @@ use super::{
     CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
     WorkbookError, decode_cell, decode_range, encode_cell, format_cell::ERRORS, styles::Package,
 };
+use crate::utils::lock::write;
 mod blob;
 mod cfb;
 mod formulas;
@@ -62,10 +63,7 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
     Ok(WorkBook {
         sheets,
         date1904,
-        ssf: ssf
-            .table
-            .read()
-            .map_or_else(|error| error.into_inner().clone(), |table| table.clone()),
+        ssf: crate::utils::lock::read(&ssf.table).clone(),
     })
 }
 /// Resolve worksheet-local results without discarding readable siblings.
@@ -305,11 +303,7 @@ fn cell(
         .copied()
         .unwrap_or(0);
     {
-        let mut table = format
-            .1
-            .table
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut table = write(&format.1.table);
         table.entry(id).or_insert_with(|| {
             let fallback = match id {
                 32..=35 => 21,

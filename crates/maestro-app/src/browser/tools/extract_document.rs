@@ -1,6 +1,7 @@
 //! Executable document download and text extraction.
 use super::prompts::EXTRACT_DOCUMENT_DESCRIPTION;
 use crate::browser::utils::attachment_utils::{Attachment, AttachmentSource, load_attachment};
+use crate::utils::lock::read;
 use futures_util::TryStreamExt;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
 use maestro_models::SharedHandle;
@@ -121,10 +122,7 @@ async fn execute(
             if !crate::browser::utils::proxy_utils::is_cors_error(&error) {
                 return Err(error);
             }
-            let proxy = proxy
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
+            let proxy = read(proxy).clone();
             let Some(proxy) = proxy.filter(|value| !value.is_empty()) else {
                 return Err(DiagnosticErrorInfo::error(NO_PROXY));
             };

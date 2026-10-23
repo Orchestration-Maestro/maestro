@@ -355,7 +355,13 @@ fn token_responses_must_be_objects_with_a_text_access_token() {
 fn lazy_configuration_failures_keep_their_fixed_messages() {
     super::run(async {
         let files = super::Files::new();
-        let missing = files.0.join("missing.json").to_str().unwrap().to_owned();
+        let missing = files
+            .0
+            .path()
+            .join("missing.json")
+            .to_str()
+            .unwrap()
+            .to_owned();
         let certificate = serde_json::json!({"type":"external_account","audience":"//a","subject_token_type":"t","credential_source":{"certificate":{"certificate_config_location":missing}}});
         let credentials =
             super::super::google_auth::from_json(certificate, Effects::default()).unwrap();

@@ -87,7 +87,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-listing",
         ],
     ),
-    ("maestro-settings", &["maestro-lock", "maestro-json"]),
+    (
+        "maestro-settings",
+        &["maestro-lock", "maestro-json", "maestro-resources"],
+    ),
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-process", &[]),
     ("maestro-test-directory", &[]),
@@ -101,6 +104,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-process",
             "maestro-markdown",
             "maestro-listing",
+            "maestro-resources",
         ],
     ),
     (
@@ -165,6 +169,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-json",
             "maestro-listing",
+            "maestro-resources",
         ],
     ),
     (
@@ -179,6 +184,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-json",
             "maestro-process",
             "maestro-listing",
+            "maestro-resources",
         ],
     ),
     (
@@ -322,13 +328,19 @@ pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
 /// Declared consumers of disposable native directory ownership.
 pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-app",
+    "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
     "maestro-daemon",
+    "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-ipc",
+    "maestro-listing",
+    "maestro-lock",
     "maestro-models",
     "maestro-packages",
+    "maestro-process",
     "maestro-resources",
     "maestro-session",
     "maestro-settings",
@@ -338,7 +350,10 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
+    "maestro-tui",
     "maestro-tui-crossterm",
+    "maestro-watch",
+    "maestro-workspace",
 ];
 
 /// Native owner of scoped tracing subscribers that see every callsite.

@@ -22,6 +22,7 @@ maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-tracing.workspace = true
+maestro-test-directory.workspace = true
 
 [[test]]
 name = "integration"

@@ -92,7 +92,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
-            let path = super::paths::resolve_local(path, &base)?;
+            let path = super::paths::resolve_local(path, &base, super::operations::home_dir)?;
             Self::collect_local(path, &mut metadata, filter, result);
             return Ok(());
         }

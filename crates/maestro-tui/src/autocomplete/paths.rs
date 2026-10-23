@@ -73,17 +73,14 @@ pub(super) fn expand_home<O: AutocompleteOperations>(
     operations: &O,
     raw: &str,
 ) -> io::Result<String> {
-    if raw == "~" {
-        return operations.home_dir();
+    if !matches!(raw.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/')) {
+        return Ok(raw.to_owned());
     }
-    if let Some(rest) = raw.strip_prefix("~/") {
-        let mut expanded = join(&[&operations.home_dir()?, rest]);
-        if raw.ends_with('/') && !expanded.ends_with('/') {
-            expanded.push('/');
-        }
-        return Ok(expanded);
+    let mut expanded = maestro_resources::paths::expand_tilde_text(raw, || operations.home_dir())?;
+    if raw.ends_with('/') && !expanded.ends_with('/') {
+        expanded.push('/');
     }
-    Ok(raw.to_owned())
+    Ok(expanded)
 }
 
 /// Choose the directory operand and entry-name prefix.
@@ -263,5 +260,74 @@ pub(super) fn to_display_path(path: &str) -> std::borrow::Cow<'_, str> {
         std::borrow::Cow::Owned(path.replace('\\', "/"))
     } else {
         std::borrow::Cow::Borrowed(path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::{AutocompleteOperations, DirectoryEntry};
+    use super::expand_home;
+    use std::{cmp::Ordering, io, pin::Pin};
+
+    /// Host operations whose home directory is the supplied text.
+    struct Home(&'static str);
+
+    impl AutocompleteOperations for Home {
+        type Signal = ();
+
+        fn is_aborted(&self, (): &()) -> bool {
+            false
+        }
+
+        fn run_fd<'a>(
+            &'a self,
+            _: &'a str,
+            _: &'a [String],
+            (): &'a (),
+        ) -> Pin<Box<dyn std::future::Future<Output = io::Result<Vec<u8>>> + 'a>> {
+            Box::pin(std::future::ready(Ok(Vec::new())))
+        }
+
+        fn home_dir(&self) -> io::Result<String> {
+            Ok(self.0.to_owned())
+        }
+
+        fn read_dir(&self, _: &str) -> io::Result<Vec<DirectoryEntry>> {
+            Ok(Vec::new())
+        }
+
+        fn is_directory(&self, _: &str) -> io::Result<bool> {
+            Ok(false)
+        }
+
+        fn compare(&self, left: &str, right: &str) -> io::Result<Ordering> {
+            Ok(left.cmp(right))
+        }
+    }
+
+    /// Each completion form returns the reference's result for the six supplied homes.
+    #[test]
+    fn completion_paths_follow_the_reference_table() {
+        for (written, home, expected) in [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h/"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "~x"),
+            ("~", "/h/.", "/h/."),
+            ("~", "", ""),
+        ] {
+            assert_eq!(
+                expand_home(&Home(home), written).unwrap(),
+                expected,
+                "{written:?} with home {home:?}"
+            );
+        }
+    }
+
+    /// An unsupported form is returned as written without reading the home directory.
+    #[test]
+    fn other_forms_read_no_home_directory() {
+        let home = Home("/h");
+        assert_eq!(expand_home(&home, "a~/x").unwrap(), "a~/x");
     }
 }

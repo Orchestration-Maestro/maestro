@@ -122,8 +122,8 @@ fn watch_creation_and_error_delivery_share_the_seam() {
 #[cfg(not(target_arch = "wasm32"))]
 fn native_creation(on_error: &Rc<dyn Fn()>, errors: &Cell<usize>) {
     use maestro_watch::fs_watch::NativeWatchOperations;
-    let root = std::env::temp_dir().join(format!("maestro-watch-contract-{}", std::process::id()));
-    std::fs::create_dir(&root).unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = root.path().to_path_buf();
     let local = Rc::new(tokio::task::LocalSet::new());
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
@@ -151,7 +151,6 @@ fn native_creation(on_error: &Rc<dyn Fn()>, errors: &Cell<usize>) {
         assert_eq!(errors.get(), 4);
         close_watcher(watcher);
     });
-    std::fs::remove_dir(root).unwrap();
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -1,7 +1,6 @@
 //! Configuration cases that run in a child process holding only the case's environment.
 
 #![cfg(not(target_arch = "wasm32"))]
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -70,7 +69,7 @@ impl Case {
 }
 
 /// Shared-config and credentials files holding two distinguishable synthetic profiles.
-pub struct AwsFiles(PathBuf);
+pub struct AwsFiles(maestro_test_directory::Scratch);
 
 impl AwsFiles {
     pub fn create(test: &str) -> TestResult<Self> {
@@ -83,21 +82,21 @@ impl AwsFiles {
     }
 
     /// Create exclusively owned configuration files for a synthetic profile.
-    pub fn create_with(test: &str, config: &str, credentials: &str) -> TestResult<Self> {
-        let dir =
-            std::env::temp_dir().join(format!("maestro-bedrock-{test}-{}", std::process::id()));
-        std::fs::create_dir(&dir)?;
-        let files = Self(dir);
-        std::fs::write(files.0.join("config"), config)?;
-        std::fs::write(files.0.join("credentials"), credentials)?;
+    pub fn create_with(_test: &str, config: &str, credentials: &str) -> TestResult<Self> {
+        let files = Self(maestro_test_directory::Scratch::new()?);
+        std::fs::write(files.0.path().join("config"), config)?;
+        std::fs::write(files.0.path().join("credentials"), credentials)?;
         Ok(files)
     }
 
     /// The environment of a child: the files, no metadata service, and the case's variables.
     pub fn environment(&self, case: &Case) -> Vec<(String, String)> {
-        let path = |name: &str| self.0.join(name).to_string_lossy().into_owned();
+        let path = |name: &str| self.0.path().join(name).to_string_lossy().into_owned();
         let mut vars = vec![
-            ("HOME".to_owned(), self.0.to_string_lossy().into_owned()),
+            (
+                "HOME".to_owned(),
+                self.0.path().to_string_lossy().into_owned(),
+            ),
             ("AWS_CONFIG_FILE".to_owned(), path("config")),
             (
                 "AWS_SHARED_CREDENTIALS_FILE".to_owned(),
@@ -111,12 +110,6 @@ impl AwsFiles {
                 .map(|(k, v)| ((*k).to_owned(), (*v).to_owned())),
         );
         vars
-    }
-}
-
-impl Drop for AwsFiles {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).ok();
     }
 }
 

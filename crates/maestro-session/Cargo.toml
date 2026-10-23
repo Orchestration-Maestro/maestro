@@ -25,6 +25,7 @@ indexmap = "=2.14.2"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
+maestro-resources = { path = "../maestro-resources" }
 tokio = { version = "=1.53.2", default-features = false, features = ["fs", "rt"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

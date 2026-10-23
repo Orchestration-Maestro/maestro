@@ -1,5 +1,6 @@
 //! Returned-file records preserving raw host values.
 use crate::browser::components::sandboxed_iframe::SandboxFile;
+use crate::utils::lock::{read, write};
 
 /// A returned file whose content and metadata retain their original values.
 pub type DownloadableFile<V = serde_json::Value> = SandboxFile<V, V>;
@@ -35,21 +36,11 @@ impl<V: RuntimeProviderValue> FileDownloadRuntimeProvider<V> {
     /// Retain the live collection, including caller edits.
     #[must_use]
     pub fn get_files(&self) -> Arc<RwLock<Vec<DownloadableFile<V>>>> {
-        Arc::clone(
-            &self
-                .files
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
+        Arc::clone(&read(&self.files))
     }
     /// Replace the current collection without clearing earlier aliases.
     pub fn reset(&self) {
-        let old = std::mem::take(
-            &mut *self
-                .files
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
+        let old = std::mem::take(&mut *write(&self.files));
         drop(old);
     }
     /// Collect and acknowledge immediately, leaving only settlement to the future.
@@ -60,16 +51,8 @@ impl<V: RuntimeProviderValue> FileDownloadRuntimeProvider<V> {
     ) -> Result<(), DiagnosticErrorInfo> {
         if message.message_type()?.as_deref() == Some("file-returned") {
             let file = message.project_download()?;
-            let files = Arc::clone(
-                &self
-                    .files
-                    .read()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner),
-            );
-            files
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(file);
+            let files = Arc::clone(&read(&self.files));
+            write(&files).push(file);
             respond(V::success_response()?)?;
         }
         Ok(())

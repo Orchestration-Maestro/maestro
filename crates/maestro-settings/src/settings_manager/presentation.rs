@@ -1,7 +1,8 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use maestro_path::join;
+use maestro_resources::paths::{expand_tilde_text, native_home_directory};
 use serde_json::Value;
+use std::io;
 
 use super::SettingsManager;
 use super::conversion::number;
@@ -19,9 +20,23 @@ fn env_enabled(name: &str) -> bool {
     std::env::var_os(name).is_some_and(|value| value == "1")
 }
 
-/// The home directory as authored text; bytes that are not valid UTF-8 read as U+FFFD.
-fn home_dir() -> Option<String> {
-    std::env::home_dir().map(|home| home.to_string_lossy().into_owned())
+/// Expand the two supported home forms, keeping every other spelling as written.
+fn expand_session_dir(configured: &str) -> String {
+    expand_session_dir_with(configured, || {
+        native_home_directory()
+            .map(|home| home.to_string_lossy().into_owned())
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
+    })
+}
+
+/// Expand the two supported home forms through `home`, keeping every other spelling as
+/// written and returning the configured text when the home lookup fails.
+fn expand_session_dir_with(configured: &str, home: impl FnOnce() -> io::Result<String>) -> String {
+    let supported = matches!(configured.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/'));
+    if !supported {
+        return configured.to_owned();
+    }
+    expand_tilde_text(configured, home).unwrap_or_else(|_| configured.to_owned())
 }
 
 impl SettingsManager {
@@ -31,14 +46,7 @@ impl SettingsManager {
     #[must_use]
     pub fn get_session_dir(&self) -> Option<String> {
         let configured = self.text("sessionDir")?;
-        let expanded = if configured == "~" {
-            home_dir()
-        } else {
-            configured
-                .strip_prefix("~/")
-                .and_then(|suffix| Some(join(&[&home_dir()?, suffix])))
-        };
-        Some(expanded.unwrap_or_else(|| configured.to_owned()))
+        Some(expand_session_dir(configured))
     }
 
     /// Returns whether inline images are shown (default true).
@@ -223,4 +231,36 @@ fn clamp_floor(value: f64, low: f64, high: f64) -> f64 {
         return floored;
     }
     floored.clamp(low, high) + 0.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::expand_session_dir_with;
+
+    /// Each supported session-directory form returns the reference's result for the six
+    /// supplied homes.
+    #[test]
+    fn session_directories_follow_the_reference_table() {
+        for (written, home, expected) in [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "~x"),
+            ("~", "/h/.", "/h/."),
+            ("~", "", ""),
+        ] {
+            assert_eq!(
+                expand_session_dir_with(written, || Ok(home.to_owned())),
+                expected,
+                "{written:?} with home {home:?}"
+            );
+        }
+    }
+
+    /// A supported form whose home lookup fails keeps the configured spelling.
+    #[test]
+    fn unknown_home_keeps_the_configured_spelling() {
+        let unknown = || Err(std::io::Error::other("unknown home"));
+        assert_eq!(expand_session_dir_with("~/x", unknown), "~/x");
+    }
 }

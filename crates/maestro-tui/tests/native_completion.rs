@@ -65,8 +65,8 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
     )
     .unwrap()
     .case("*")
-    .env("HOME", &tree.0)
-    .env("USERPROFILE", &tree.0)
+    .env("HOME", tree.path())
+    .env("USERPROFILE", tree.path())
     .output()
     .unwrap();
     assert!(
@@ -93,7 +93,7 @@ fn native_directories_follow_links_without_filtering_hidden_entries() {
         ("file-link", "file.txt"),
         ("broken-link", "missing"),
     ] {
-        std::os::unix::fs::symlink(target, tree.0.join(name)).unwrap();
+        std::os::unix::fs::symlink(target, tree.path().join(name)).unwrap();
     }
     let provider = CombinedAutocompleteProvider::new(
         vec![],

@@ -3,7 +3,10 @@
 use crate::{
     current_directory, drive_directories, frontmatter::text_whitespace, skills::real_path,
 };
-use std::{io, path::Path};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 /// The project and user configuration directory name.
 pub const CONFIG_DIR_NAME: &str = ".maestro";
@@ -16,6 +19,31 @@ pub fn is_local_path(value: &str) -> bool {
         .any(|prefix| value.starts_with(prefix))
 }
 
+/// Resolve each operand group from right to left, reading the process working
+/// directory and the drive directories only when an operand leaves a part open.
+///
+/// Every group sees one reading of those directories, and the working directory
+/// reaches its text through [`current_directory`].
+///
+/// # Errors
+/// Returns the working directory's error when it was needed and unreadable.
+pub fn resolve_groups(groups: &[&[&str]]) -> io::Result<Vec<String>> {
+    resolve_groups_with(groups, current_directory)
+}
+
+/// Resolve each operand group, reading the working directory through
+/// `current_directory`, which keeps the caller's own text conversion.
+///
+/// # Errors
+/// Returns the error `current_directory` returned, unchanged, when a group
+/// needs the working directory.
+pub fn resolve_groups_with(
+    groups: &[&[&str]],
+    current_directory: impl FnOnce() -> io::Result<String>,
+) -> io::Result<Vec<String>> {
+    maestro_path::resolve_with(groups, drive_directories, current_directory)
+}
+
 /// Resolve `paths` from right to left, reading the process working directory and the
 /// drive directories only when the operands leave a part open.
 ///
@@ -24,20 +52,59 @@ pub fn is_local_path(value: &str) -> bool {
 /// # Errors
 /// Returns the working directory's error when it was needed and unreadable.
 pub fn resolve(paths: &[&str]) -> io::Result<String> {
-    maestro_path::resolve_with(&[paths], drive_directories, current_directory)
-        .map(|resolved| resolved.into_iter().collect::<String>())
+    resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
-/// Join the rest of a leading `~` of `path` to the home directory, which `home` reads only
-/// then; any other path is returned as written.
+/// Join a leading `~` of `path` below the home directory as text: the rest drops the separator
+/// that introduced it and is normalized lexically, so `.`, `..` and repeated separators resolve.
+///
+/// An exact `~` is the home directory, and any other path is returned as written without reading
+/// the home directory.
 ///
 /// # Errors
 /// Returns the error of `home`.
-pub fn expand_tilde(path: &str, home: impl FnOnce() -> io::Result<String>) -> io::Result<String> {
-    match path.strip_prefix('~') {
-        Some(rest) => Ok(maestro_path::join(&[&home()?, rest])),
-        None => Ok(path.to_owned()),
+pub fn expand_tilde_text(
+    path: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
+    let Some(rest) = path.strip_prefix('~') else {
+        return Ok(path.to_owned());
+    };
+    if rest.is_empty() {
+        return home();
     }
+    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    Ok(maestro_path::join(&[&home()?, rest]))
+}
+
+/// The home directory as a native path: on Unix the `HOME` variable as set, an empty one
+/// included, otherwise the account entry.
+#[must_use]
+pub fn native_home_directory() -> Option<PathBuf> {
+    maestro_path::homedir(
+        std::env::var_os("HOME")
+            .filter(|_| cfg!(unix))
+            .map(PathBuf::from),
+        std::env::home_dir,
+    )
+}
+
+/// The home directory as text.
+///
+/// # Errors
+/// Returns a not-found error when the host knows no home directory, or an invalid-data one
+/// when the home directory is not valid UTF-8.
+pub fn home_directory() -> io::Result<String> {
+    native_home_directory()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
+        .into_os_string()
+        .into_string()
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "home directory is not valid UTF-8",
+            )
+        })
 }
 
 /// Compare preserved target spelling against a root resolved from the process

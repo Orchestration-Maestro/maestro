@@ -5,8 +5,8 @@ use maestro_workspace::persist::{load, save_to_paths};
 #[test]
 fn empty_snapshot_keeps_sidebar_selection() {
     let dir = Directory::new();
-    let path = dir.0.join("session.json");
-    save_to_paths(&path, &dir.0.join("history.json"), &empty(), None).unwrap();
+    let path = dir.path().join("session.json");
+    save_to_paths(&path, &dir.path().join("history.json"), &empty(), None).unwrap();
     let actual = load(&path).unwrap();
     assert!(actual.workspaces.is_empty());
     assert_eq!(actual.active, None);
@@ -172,7 +172,7 @@ fn snapshot_retains_optional_pane_and_worktree_data() {
 #[test]
 fn history_snapshot_round_trips_and_checks_versions() {
     let dir = Directory::new();
-    let path = dir.0.join("history.json");
+    let path = dir.path().join("history.json");
     let expected = serde_json::to_value(history()).unwrap();
     fs::write(&path, serde_json::to_vec_pretty(&expected).unwrap()).unwrap();
     assert_eq!(
@@ -403,7 +403,7 @@ fn assert_malformed_and_duplicate_fields() {
         r#"{"version":1,"version":1}"#,
         r#"{"version":1,"selected":0,"selected":1}"#,
     ] {
-        let path = dir.0.join("malformed.json");
+        let path = dir.path().join("malformed.json");
         fs::write(&path, bytes).unwrap();
         assert!(load(&path).is_none());
     }

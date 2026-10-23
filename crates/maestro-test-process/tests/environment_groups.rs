@@ -146,15 +146,12 @@ fn an_unknown_group_is_refused() {
 fn cleared_children_keep_the_temporary_directory() {
     let test = "cleared_children_keep_the_temporary_directory";
     if !maestro_test_process::selection().is_child() {
-        let root =
-            std::env::temp_dir().join(format!("maestro-test-process-temp-{}", std::process::id()));
-        std::fs::create_dir_all(&root).unwrap();
+        let root = maestro_test_directory::Scratch::new().unwrap();
         let output = TestProcess::current(test)
             .unwrap()
             .case("*")
-            .temp_dir(&root)
+            .temp_dir(root.path())
             .output();
-        std::fs::remove_dir_all(&root).unwrap();
         let output = output.unwrap();
         assert!(output.status.success(), "{output:?}");
         return;

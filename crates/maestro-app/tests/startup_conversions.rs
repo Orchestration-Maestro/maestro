@@ -155,8 +155,8 @@ fn windows_basename() {
         migrate_sessions_from_agent_root().unwrap();
         return;
     }
-    let root = std::env::temp_dir().join(format!("maestro-startup-{}", std::process::id()));
-    fs::create_dir(&root).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().to_path_buf();
     let source = root.join("one.jsonl");
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\nopaque";
     fs::write(&source, body).unwrap();
@@ -174,7 +174,6 @@ fn windows_basename() {
         fs::read(root.join("sessions/--work--/one.jsonl")).unwrap(),
         body
     );
-    fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

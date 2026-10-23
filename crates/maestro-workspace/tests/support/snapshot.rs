@@ -3,35 +3,25 @@ use maestro_workspace::persist::{SessionSnapshot, load};
 use serde_json::{Value, json};
 use std::{
     fs,
-    path::PathBuf,
-    sync::atomic::{AtomicUsize, Ordering},
+    path::{Path, PathBuf},
 };
 
 /// Isolated native fixture directory.
-pub struct Directory(pub PathBuf);
+pub struct Directory(maestro_test_directory::Scratch);
 impl Directory {
     pub fn new() -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-snapshot-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        fs::create_dir(&path).unwrap();
-        Self(path)
+        Self(maestro_test_directory::Scratch::new().unwrap())
+    }
+    /// The directory this test owns.
+    pub fn path(&self) -> &Path {
+        self.0.path()
     }
     pub fn put(&self, value: &Value) -> PathBuf {
-        let path = self.0.join("input.json");
+        let path = self.path().join("input.json");
         fs::write(&path, serde_json::to_vec_pretty(value).unwrap()).unwrap();
         path
     }
 }
-impl Drop for Directory {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
-    }
-}
-
 pub fn empty() -> SessionSnapshot {
     serde_json::from_value(json!({"version":1,"workspaces":[],"active":null,"selected":0,"sidebar_width":26,"sidebar_section_split":0.5})).unwrap()
 }

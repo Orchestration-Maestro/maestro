@@ -244,10 +244,9 @@ general dev-dependency target.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
-foundation utility permission. Only app, chat, credentials, daemon, export,
-extensions, models, packages, resources, session, settings, terminal,
-conventions, test-process, theme, tooling, tools and tui-crossterm may
-declare it, as a non-optional native development dependency when used. `Scratch::new`
+foundation utility permission. Only the crates its [directory
+contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
+as a non-optional native development dependency when used. `Scratch::new`
 canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
 spelling. On Unix, `enter_removed` and `enter_unreadable` put a test process in a
 removed or unreadable working directory, and `deny(path, mode)` sets a mode and
@@ -256,7 +255,7 @@ privileged run. `keeps_distinct(names)` reports whether the running host keeps a
 leaf names apart, and `folded_names(paths)` reports every name group it does not keep
 apart across all components of the supplied relative paths, so a fixture can state a
 premise the host can exercise.
-Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
+Both graph cycle checks still apply.
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
 scoped tracing subscriber that sees every callsite. Only daemon, terminal and

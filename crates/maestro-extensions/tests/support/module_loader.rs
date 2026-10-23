@@ -169,16 +169,27 @@ pub fn check(ids: &[&str]) {
 
 /// Runs the named cases, each in a cleared child whose `HOME` is `<case root>/home`.
 pub fn check_with_home(test: &str, ids: &[&str]) {
+    check_with_home_spelling(test, ids, "home");
+}
+
+/// Runs the named cases, each in a cleared child whose `HOME` is `<case root>/home/.`, so a bare
+/// `~` has to normalize the spelling before it is used.
+pub fn check_with_home_dot(test: &str, ids: &[&str]) {
+    check_with_home_spelling(test, ids, "home/.");
+}
+
+/// Runs the named cases in one cleared child per case with `HOME` set to `<case root>/<spelling>`.
+fn check_with_home_spelling(test: &str, ids: &[&str], spelling: &str) {
     let parent = (!maestro_test_process::selection().is_child()).then(|| Scratch::new().unwrap());
     let base = parent.as_ref().map_or_else(
         || {
             let home = std::env::var("HOME").unwrap();
-            let case_root = home.strip_suffix("/home").unwrap();
+            let case_root = home.trim_end_matches("/.").strip_suffix("/home").unwrap();
             case_root.rsplit_once('/').unwrap().0.to_owned()
         },
         |scratch| scratch.path().display().to_string(),
     );
-    let home = |id: &&str| BTreeMap::from([("HOME", format!("{base}/{id}/home"))]);
+    let home = |id: &&str| BTreeMap::from([("HOME", format!("{base}/{id}/{spelling}"))]);
     let selected = maestro_test_process::run_per_environment(test, ids.iter().copied(), home);
     for id in selected.unwrap().into_iter().flatten() {
         run_case(&format!("{base}/{id}"), &case(id));

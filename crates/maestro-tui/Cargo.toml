@@ -12,6 +12,7 @@ maestro-markdown = { path = "../maestro-markdown" }
 maestro-text = { path = "../maestro-text" }
 maestro-path = { path = "../maestro-path" }
 maestro-cancellation = { path = "../maestro-cancellation" }
+maestro-resources = { path = "../maestro-resources" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 rand = "=0.10.3"
 unicode-segmentation = { version = "=1.13.3", default-features = false }
@@ -35,6 +36,7 @@ tokio = { version = "=1.53.2", default-features = false, features = ["process", 
 maestro-process = { path = "../maestro-process" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["net", "io-util", "macros", "rt"] }
 

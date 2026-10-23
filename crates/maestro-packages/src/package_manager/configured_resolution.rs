@@ -60,7 +60,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             entries.into_iter().partition(|entry| is_pattern(entry));
         let paths = plain
             .iter()
-            .map(|entry| super::paths::resolve_local(entry, &base))
+            .map(|entry| super::paths::resolve_local(entry, &base, super::operations::home_dir))
             .collect::<io::Result<Vec<_>>>()?;
         let metadata = PathMetadata {
             source: "local".into(),

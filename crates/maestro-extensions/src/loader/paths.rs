@@ -4,30 +4,48 @@ use crate::{
     EventBusController, ExtensionExecution, create_extension_runtime,
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
-use maestro_resources::paths::resolve;
+use maestro_resources::paths::{home_directory, resolve};
 use maestro_tools::path_utils::resolve_existing_spelling;
 use std::io;
 
-/// Joins the rest of a leading `~` or `~/` of `path` to the home directory, then keeps an
+/// Joins the rest of a leading `~` below the home directory through `home`, then keeps an
 /// absolute result as written and resolves a relative one against `cwd`.
-fn anchor_path(path: &str, cwd: &str) -> io::Result<String> {
-    let expanded = match path.strip_prefix('~') {
-        Some(rest) => maestro_path::join(&[
-            &maestro_tools::expand_path("~")?,
-            rest.strip_prefix('/').unwrap_or(rest),
-        ]),
-        None => path.to_owned(),
-    };
+fn anchor_path(
+    path: &str,
+    cwd: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
+    let expanded = expand_extension_path(path, home)?;
     if maestro_path::is_absolute(&expanded) {
         return Ok(expanded);
     }
     resolve(&[cwd, &expanded])
 }
+
+/// Join the rest of a leading `~` below the home directory through `home`.
+///
+/// The rest is always joined, an empty one included, so a home spelling that ends in `/` or `/.`
+/// is normalized. Characters stay as written, so the selector still sees the written candidate
+/// before it falls back to the space-replaced one. Any other path is returned as written without
+/// reading the home directory.
+fn expand_extension_path(
+    path: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
+    if !path.starts_with('~') {
+        return Ok(path.to_owned());
+    }
+    let rest = path.strip_prefix('~').unwrap_or_default();
+    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    Ok(maestro_path::join(&[&home()?, rest]))
+}
 /// Anchors `extension_path` at `cwd` and resolves it through
 /// [`resolve_existing_spelling`], which keeps the spelling of the directories the file
 /// system holds.
 pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
-    resolve_existing_spelling(extension_path, |path| anchor_path(path, cwd))
+    resolve_existing_spelling(extension_path, |path| {
+        anchor_path(path, cwd, home_directory)
+    })
 }
 /// Loads `paths` in order through `module_loader`, with one shared runtime and one bus
 /// identity per path. A failed path is recorded with its supplied spelling and loading
@@ -73,4 +91,36 @@ pub async fn load_extensions<E: ExtensionExecution>(
         }
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::anchor_path;
+    use std::io;
+
+    /// Each extension form returns the reference's result for the six supplied homes.
+    #[test]
+    fn extension_paths_follow_the_reference_table() {
+        for (written, home, expected) in [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "/h/x"),
+            ("~", "/h/.", "/h"),
+            ("~", "", "/w"),
+        ] {
+            assert_eq!(
+                anchor_path(written, "/w", || Ok(home.to_owned())).unwrap(),
+                expected,
+                "{written:?} with home {home:?}"
+            );
+        }
+    }
+
+    /// A path that does not start with `~` never reads the home directory.
+    #[test]
+    fn other_forms_read_no_home_directory() {
+        let failing = || Err(io::Error::new(io::ErrorKind::NotFound, "unknown home"));
+        assert_eq!(anchor_path("x/~/y", "/w", failing).unwrap(), "/w/x/~/y");
+    }
 }

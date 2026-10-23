@@ -4,26 +4,22 @@ use maestro_lock::{Replace, replace};
 use std::{fs, path::PathBuf};
 
 /// Isolated directory removed after each native transaction.
-struct Directory(PathBuf);
+struct Directory(maestro_test_directory::Scratch);
 impl Directory {
-    fn new(name: &str) -> Self {
-        let path =
-            std::env::temp_dir().join(format!("maestro-replacement-{}-{name}", std::process::id()));
-        fs::create_dir(&path).unwrap();
-        Self(path)
+    fn new() -> Self {
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
-}
-impl Drop for Directory {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
+    /// The directory this test owns.
+    fn path(&self) -> &std::path::Path {
+        self.0.path()
     }
 }
 
 #[test]
 fn replacement_handles_relative_and_extensionless_paths() {
-    let dir = Directory::new("paths");
+    let dir = Directory::new();
     let relative = dir
-        .0
+        .path()
         .strip_prefix(std::env::current_dir().unwrap())
         .map_or_else(
             |_| PathBuf::from("target").join(format!("replacement-{}", std::process::id())),
@@ -55,14 +51,14 @@ fn replacement_handles_relative_and_extensionless_paths() {
     {
         use std::os::unix::ffi::{OsStrExt, OsStringExt};
         let name = std::ffi::OsString::from_vec(vec![b'n', 255]);
-        let path = dir.0.join(&name);
+        let path = dir.path().join(&name);
         // A host may refuse names that are not valid UTF-8; the observations above stay
         // unconditional.
         match fs::write(&path, b"probe") {
             Ok(()) => (),
             // A control name in the same directory is stored, so this is the host refusing
             // these bytes rather than another write failure.
-            Err(error) if fs::write(dir.0.join("control"), b"control").is_ok() => {
+            Err(error) if fs::write(dir.path().join("control"), b"control").is_ok() => {
                 eprintln!("host refuses the name bytes {:?}: {error}", name.as_bytes());
                 return;
             }
@@ -93,8 +89,8 @@ fn replacement_preserves_long_and_dangling_chains() {
         (17, false),
         (41, true),
     ] {
-        let dir = Directory::new(&format!("chain-{count}-{existing}"));
-        let target = dir.0.join("target");
+        let dir = Directory::new();
+        let target = dir.path().join("target");
         if existing {
             fs::write(&target, b"old").unwrap();
         }
@@ -104,11 +100,11 @@ fn replacement_preserves_long_and_dangling_chains() {
             } else {
                 format!("link-{}", i + 1)
             };
-            std::os::unix::fs::symlink(next, dir.0.join(format!("link-{i}"))).unwrap();
+            std::os::unix::fs::symlink(next, dir.path().join(format!("link-{i}"))).unwrap();
         }
-        let before = fs::read_dir(&dir.0).unwrap().count();
+        let before = fs::read_dir(dir.path()).unwrap().count();
         let result = replace(
-            &dir.0.join("link-0"),
+            &dir.path().join("link-0"),
             b"published",
             Replace {
                 through_symlinks: true,
@@ -120,11 +116,11 @@ fn replacement_preserves_long_and_dangling_chains() {
                 "symbolic link chain exceeds 40 links"
             );
             assert_eq!(fs::read(&target).unwrap(), b"old");
-            assert_eq!(fs::read_dir(&dir.0).unwrap().count(), before);
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), before);
         } else {
             result.unwrap();
             assert_eq!(fs::read(target).unwrap(), b"published");
-            assert_eq!(fs::read_dir(&dir.0).unwrap().count(), count + 1);
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), count + 1);
         }
         for i in 0..count {
             let expected = if i + 1 == count {
@@ -133,7 +129,7 @@ fn replacement_preserves_long_and_dangling_chains() {
                 format!("link-{}", i + 1)
             };
             assert_eq!(
-                fs::read_link(dir.0.join(format!("link-{i}"))).unwrap(),
+                fs::read_link(dir.path().join(format!("link-{i}"))).unwrap(),
                 PathBuf::from(expected)
             );
         }
@@ -143,9 +139,9 @@ fn replacement_preserves_long_and_dangling_chains() {
 #[cfg(unix)]
 #[test]
 fn replacement_can_replace_link_entry_when_following_is_disabled() {
-    let dir = Directory::new("policies");
-    let target = dir.0.join("target");
-    let link = dir.0.join("link");
+    let dir = Directory::new();
+    let target = dir.path().join("target");
+    let link = dir.path().join("link");
     fs::write(&target, b"old").unwrap();
     std::os::unix::fs::symlink("target", &link).unwrap();
     replace(
@@ -180,14 +176,17 @@ fn replacement_can_replace_link_entry_when_following_is_disabled() {
 #[test]
 fn replacement_rejects_cycles_without_touching_disk() {
     for pair in [false, true] {
-        let dir = Directory::new(&format!("cycle-{pair}"));
-        std::os::unix::fs::symlink(if pair { "second" } else { "first" }, dir.0.join("first"))
-            .unwrap();
+        let dir = Directory::new();
+        std::os::unix::fs::symlink(
+            if pair { "second" } else { "first" },
+            dir.path().join("first"),
+        )
+        .unwrap();
         if pair {
-            std::os::unix::fs::symlink("first", dir.0.join("second")).unwrap();
+            std::os::unix::fs::symlink("first", dir.path().join("second")).unwrap();
         }
         let result = replace(
-            &dir.0.join("first"),
+            &dir.path().join("first"),
             b"no",
             Replace {
                 through_symlinks: true,
@@ -198,17 +197,17 @@ fn replacement_rejects_cycles_without_touching_disk() {
             "symbolic link chain exceeds 40 links"
         );
         assert_eq!(
-            fs::read_link(dir.0.join("first")).unwrap(),
+            fs::read_link(dir.path().join("first")).unwrap(),
             PathBuf::from(if pair { "second" } else { "first" })
         );
         if pair {
             assert_eq!(
-                fs::read_link(dir.0.join("second")).unwrap(),
+                fs::read_link(dir.path().join("second")).unwrap(),
                 PathBuf::from("first")
             );
         }
         assert_eq!(
-            fs::read_dir(&dir.0).unwrap().count(),
+            fs::read_dir(dir.path()).unwrap().count(),
             if pair { 2 } else { 1 }
         );
     }

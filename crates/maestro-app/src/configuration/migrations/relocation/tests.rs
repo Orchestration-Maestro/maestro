@@ -23,62 +23,56 @@ fn take_work() -> Vec<(&'static str, usize)> {
 
 /// Invocation-local native filesystem fixture.
 #[cfg(unix)]
-struct Fixture(PathBuf);
+struct Fixture(maestro_test_directory::Scratch);
 
 #[cfg(unix)]
 impl Fixture {
     /// Create distinct source and destination directories with canonical identities.
     fn new() -> Self {
-        let root =
-            std::env::temp_dir().join(format!("maestro-relocation-{}", uuid::Uuid::new_v4()));
-        fs::create_dir(&root).unwrap();
-        let root = fs::canonicalize(root).unwrap();
-        fs::create_dir(root.join("old")).unwrap();
-        fs::create_dir(root.join("new")).unwrap();
+        let root = maestro_test_directory::Scratch::new().unwrap();
+        fs::create_dir(root.path().join("old")).unwrap();
+        fs::create_dir(root.path().join("new")).unwrap();
         Self(root)
     }
 
     /// Create one admitted entry, capturing link identity before any effects.
     fn entry(&self, name: &str) -> PreparedMove {
-        let path = self.0.join("old").join(name);
+        let path = self.0.path().join("old").join(name);
         PreparedMove {
             referent: fs::read_link(&path)
                 .ok()
                 .map(|_| fs::canonicalize(&path).unwrap()),
             path,
-            target: self.0.join("new").join(name),
+            target: self.0.path().join("new").join(name),
         }
     }
 
     /// Create an independently bound relative link.
     fn independent(&self, index: usize) -> PreparedMove {
         let name = format!("alias{index}");
-        symlink("../payload", self.0.join("old").join(&name)).unwrap();
+        symlink("../payload", self.0.path().join("old").join(&name)).unwrap();
         self.entry(&name)
     }
 }
 
 #[cfg(unix)]
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
-    }
-}
-
 #[cfg(unix)]
 #[test]
 fn independent_links_use_one_settlement_visit_each() {
     for n in [0, 1, 32, 64] {
         let fixture = Fixture::new();
-        fs::write(fixture.0.join("payload"), b"original").unwrap();
+        fs::write(fixture.0.path().join("payload"), b"original").unwrap();
         let entries = (0..n).map(|i| fixture.independent(i)).collect();
         take_work();
         assert_eq!(relocate(entries), n);
         for i in 0..n {
-            let target = fixture.0.join("new").join(format!("alias{i}"));
+            let target = fixture.0.path().join("new").join(format!("alias{i}"));
             assert_eq!(fs::read(&target).unwrap(), b"original");
             assert!(fs::symlink_metadata(&target).unwrap().is_symlink());
-            assert!(fs::symlink_metadata(fixture.0.join("old").join(format!("alias{i}"))).is_err());
+            assert!(
+                fs::symlink_metadata(fixture.0.path().join("old").join(format!("alias{i}")))
+                    .is_err()
+            );
         }
         let visits = take_work()
             .into_iter()
@@ -108,7 +102,7 @@ fn take_publications() -> Vec<PathBuf> {
 fn blocked_stages_leave_unaffected_publications_in_place() {
     for n in [32, 64] {
         let fixture = Fixture::new();
-        fs::write(fixture.0.join("payload"), b"original").unwrap();
+        fs::write(fixture.0.path().join("payload"), b"original").unwrap();
         let entries = (0..2 * n)
             .map(|i| fixture.independent(i))
             .collect::<Vec<_>>();
@@ -119,7 +113,7 @@ fn blocked_stages_leave_unaffected_publications_in_place() {
         assert_eq!(relocate(entries), n);
         let attempts = take_publications();
         for i in 0..2 * n {
-            let source = fixture.0.join("old").join(format!("alias{i}"));
+            let source = fixture.0.path().join("old").join(format!("alias{i}"));
             assert_independent(&fixture, i, i < n);
             assert_eq!(
                 attempts.iter().filter(|path| **path == source).count(),
@@ -137,10 +131,13 @@ fn blocked_stages_leave_unaffected_publications_in_place() {
         assert_eq!(relocate(retry), n);
         for i in n..2 * n {
             assert_eq!(
-                fs::read(fixture.0.join("new").join(format!("alias{i}"))).unwrap(),
+                fs::read(fixture.0.path().join("new").join(format!("alias{i}"))).unwrap(),
                 b"original"
             );
-            assert!(fs::symlink_metadata(fixture.0.join("old").join(format!("alias{i}"))).is_err());
+            assert!(
+                fs::symlink_metadata(fixture.0.path().join("old").join(format!("alias{i}")))
+                    .is_err()
+            );
         }
     }
 }
@@ -149,7 +146,7 @@ fn blocked_stages_leave_unaffected_publications_in_place() {
 impl Fixture {
     /// Create a link within the captured source directory.
     fn link(&self, name: &str, payload: &str) {
-        symlink(payload, self.0.join("old").join(name)).unwrap();
+        symlink(payload, self.0.path().join("old").join(name)).unwrap();
     }
 
     /// Read admitted entries in the requested encounter order.
@@ -163,7 +160,7 @@ impl Fixture {
 fn held_changes_are_processed_once() {
     for n in [1, 32, 64] {
         let fixture = Fixture::new();
-        fs::write(fixture.0.join("payload"), b"original").unwrap();
+        fs::write(fixture.0.path().join("payload"), b"original").unwrap();
         let entries = (0..n).map(|i| fixture.independent(i)).collect::<Vec<_>>();
         let links = capture(&entries);
         let mut batch = Batch::new(&entries, &links);
@@ -179,7 +176,7 @@ fn held_changes_are_processed_once() {
         }
     }
     let fixture = Fixture::new();
-    fs::write(fixture.0.join("old/file"), b"shared").unwrap();
+    fs::write(fixture.0.path().join("old/file"), b"shared").unwrap();
     fixture.link("middle", "file");
     fixture.link("a", "middle");
     fixture.link("b", "middle");
@@ -235,8 +232,8 @@ fn changed_bindings(names: &[&str]) {
     let intermediate = names.contains(&"middle");
     let reverse = names[0] != "unaffected";
     let fixture = Fixture::new();
-    fs::write(fixture.0.join("old/f"), b"retained-f").unwrap();
-    fs::write(fixture.0.join("old/g"), b"moved-g").unwrap();
+    fs::write(fixture.0.path().join("old/f"), b"retained-f").unwrap();
+    fs::write(fixture.0.path().join("old/g"), b"moved-g").unwrap();
     fixture.link("unaffected", "g");
     fixture.link("changed", "f");
     fixture.link("middle", "f");
@@ -249,7 +246,12 @@ fn changed_bindings(names: &[&str]) {
         &["blocked"][..]
     } {
         fs::write(
-            fixture.0.join("old").join(name).with_extension("migrating"),
+            fixture
+                .0
+                .path()
+                .join("old")
+                .join(name)
+                .with_extension("migrating"),
             b"occupied",
         )
         .unwrap();
@@ -259,16 +261,16 @@ fn changed_bindings(names: &[&str]) {
     let attempts = take_publications();
     assert_changed_bindings(&fixture, &attempts, reverse);
     assert_eq!(
-        fs::read(fixture.0.join("old/blocked")).unwrap(),
+        fs::read(fixture.0.path().join("old/blocked")).unwrap(),
         b"retained-f"
     );
     assert_eq!(
-        fs::read(fixture.0.join("old/blocked.migrating")).unwrap(),
+        fs::read(fixture.0.path().join("old/blocked.migrating")).unwrap(),
         b"occupied"
     );
     if intermediate {
         assert_eq!(
-            fs::read(fixture.0.join("old/middle")).unwrap(),
+            fs::read(fixture.0.path().join("old/middle")).unwrap(),
             b"retained-f"
         );
     }
@@ -296,24 +298,24 @@ fn dependency_readiness_tracks_fan_in_and_fan_out() {
     fixture.link("dangling", "missing");
     assert_eq!(
         relocate(vec![PreparedMove {
-            path: fixture.0.join("old/dangling"),
-            target: fixture.0.join("new/dangling"),
-            referent: Some(fixture.0.join("old/missing")),
+            path: fixture.0.path().join("old/dangling"),
+            target: fixture.0.path().join("new/dangling"),
+            referent: Some(fixture.0.path().join("old/missing")),
         }]),
         0
     );
     assert_eq!(
-        fs::read_link(fixture.0.join("old/dangling")).unwrap(),
+        fs::read_link(fixture.0.path().join("old/dangling")).unwrap(),
         Path::new("missing")
     );
-    assert!(fs::symlink_metadata(fixture.0.join("new/dangling")).is_err());
+    assert!(fs::symlink_metadata(fixture.0.path().join("new/dangling")).is_err());
 }
 
 /// Observe source retention, edge consumption and dependant-first retirement together.
 #[cfg(unix)]
 fn ready_dependencies(names: &[&str], blocked: bool) {
     let fixture = Fixture::new();
-    fs::write(fixture.0.join("old/file"), b"shared").unwrap();
+    fs::write(fixture.0.path().join("old/file"), b"shared").unwrap();
     let intermediate = names.contains(&"middle");
     fixture.link("a", if intermediate { "middle" } else { "file" });
     if names.contains(&"b") {
@@ -325,7 +327,7 @@ fn ready_dependencies(names: &[&str], blocked: bool) {
     let entries = fixture.entries(names);
     let links = capture(&entries);
     if blocked {
-        fs::write(fixture.0.join("old/a.migrating"), b"occupied").unwrap();
+        fs::write(fixture.0.path().join("old/a.migrating"), b"occupied").unwrap();
     }
     take_work();
     assert_eq!(
@@ -361,11 +363,11 @@ fn ready_dependencies(names: &[&str], blocked: bool) {
 #[cfg(unix)]
 fn assert_independent(fixture: &Fixture, index: usize, successful: bool) {
     let name = format!("alias{index}");
-    let source = fixture.0.join("old").join(&name);
+    let source = fixture.0.path().join("old").join(&name);
     if successful {
         assert!(fs::symlink_metadata(&source).is_err());
         assert_eq!(
-            fs::read(fixture.0.join("new").join(&name)).unwrap(),
+            fs::read(fixture.0.path().join("new").join(&name)).unwrap(),
             b"original"
         );
         assert!(fs::symlink_metadata(source.with_extension("migrating")).is_err());
@@ -390,10 +392,13 @@ fn assert_changed_bindings(fixture: &Fixture, attempts: &[PathBuf], reverse: boo
             if reverse { 1 } else { 2 },
         ),
     ] {
-        let target = fixture.0.join("new").join(name);
-        assert_eq!(fs::canonicalize(&target).unwrap(), fixture.0.join(identity));
+        let target = fixture.0.path().join("new").join(name);
+        assert_eq!(
+            fs::canonicalize(&target).unwrap(),
+            fixture.0.path().join(identity)
+        );
         assert_eq!(fs::read(&target).unwrap(), bytes);
-        let source = fixture.0.join("old").join(name);
+        let source = fixture.0.path().join("old").join(name);
         assert!(fs::symlink_metadata(&source).is_err());
         assert_eq!(
             attempts.iter().filter(|path| **path == source).count(),
@@ -410,6 +415,7 @@ fn assert_ready_files(fixture: &Fixture, names: &[&str], blocked: bool) {
         let retained = blocked && *name != "b";
         let path = fixture
             .0
+            .path()
             .join(if retained { "old" } else { "new" })
             .join(name);
         assert_eq!(fs::read(&path).unwrap(), b"shared");
@@ -417,10 +423,11 @@ fn assert_ready_files(fixture: &Fixture, names: &[&str], blocked: bool) {
             fs::canonicalize(&path).unwrap(),
             fixture
                 .0
+                .path()
                 .join(if blocked { "old/file" } else { "new/file" })
         );
         if !retained {
-            assert!(fs::symlink_metadata(fixture.0.join("old").join(name)).is_err());
+            assert!(fs::symlink_metadata(fixture.0.path().join("old").join(name)).is_err());
         }
         if *name != "file" {
             assert!(fs::symlink_metadata(path).unwrap().is_symlink());

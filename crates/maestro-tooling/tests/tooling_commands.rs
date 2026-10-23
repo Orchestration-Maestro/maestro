@@ -7,7 +7,6 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(unix)]
 use maestro_test_directory::Scratch;
@@ -19,7 +18,7 @@ use maestro_tooling as tooling;
 fn child_toolchain_uses_declared_pin() {
     if std::env::var_os("MAESTRO_TOOLCHAIN_CONTROL").is_none() {
         let owner = Fixture::new();
-        let home = owner.root.join("rustup");
+        let home = owner.root.path().join("rustup");
         let sysroot = prepare_incomplete_toolchain(&home);
         for selector in [None, Some("incomplete")] {
             let mut command = TestProcess::current("child_toolchain_uses_declared_pin")
@@ -51,13 +50,14 @@ fn child_toolchain_uses_declared_pin() {
     assert_incomplete_default();
     let fixture = Fixture::new();
     assert_eq!(
-        fs::read(fixture.root.join("rust-toolchain.toml")).unwrap(),
+        fs::read(fixture.root.path().join("rust-toolchain.toml")).unwrap(),
         include_bytes!("../../../rust-toolchain.toml")
     );
     check_declared_children(&fixture);
     let declaration = include_str!("../../../rust-toolchain.toml");
     assert!(
-        toolchain_support::declare_toolchain(&fixture.root.join("missing"), declaration).is_err()
+        toolchain_support::declare_toolchain(&fixture.root.path().join("missing"), declaration)
+            .is_err()
     );
     assert!(toolchain_support::declare_toolchain(&fixture.child, declaration).is_err());
     assert!(
@@ -122,7 +122,7 @@ fn prepare_incomplete_toolchain(home: &Path) -> PathBuf {
 /// Require compiler output, Cargo metadata and a real recipe below the declaration.
 fn check_declared_children(fixture: &Fixture) {
     let sysroot = toolchain_support::command("rustc")
-        .current_dir(&fixture.root)
+        .current_dir(fixture.root.path())
         .args(["--print", "sysroot"])
         .output()
         .unwrap();
@@ -137,20 +137,20 @@ fn check_declared_children(fixture: &Fixture) {
         fs::canonicalize(expected).unwrap()
     );
     let run = Command::new(&fixture.child)
-        .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
-        .env("HOME", &fixture.root)
+        .env("MAESTRO_RECEIPT", fixture.root.path().join("receipt"))
+        .env("HOME", fixture.root.path())
         .status()
         .unwrap();
     assert!(run.success());
     println!("declared compiler and emitted executable: passed");
     check_declared_metadata(fixture);
     fs::write(
-        fixture.root.join("justfile"),
+        fixture.root.path().join("justfile"),
         "probe:\n    rustc --print sysroot\n",
     )
     .unwrap();
     let recipe = toolchain_support::command("just")
-        .current_dir(&fixture.root)
+        .current_dir(fixture.root.path())
         .arg("probe")
         .output()
         .unwrap();
@@ -166,14 +166,14 @@ fn check_declared_children(fixture: &Fixture) {
 /// Require the real Cargo proxy to identify the local offline package.
 fn check_declared_metadata(fixture: &Fixture) {
     fs::write(
-        fixture.root.join("Cargo.toml"),
+        fixture.root.path().join("Cargo.toml"),
         "[package]\nname = 'toolchain-probe'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
     )
     .unwrap();
-    fs::create_dir(fixture.root.join("src")).unwrap();
-    fs::write(fixture.root.join("src/lib.rs"), "").unwrap();
+    fs::create_dir(fixture.root.path().join("src")).unwrap();
+    fs::write(fixture.root.path().join("src/lib.rs"), "").unwrap();
     let metadata = toolchain_support::command("cargo")
-        .current_dir(&fixture.root)
+        .current_dir(fixture.root.path())
         .args([
             "metadata",
             "--offline",
@@ -243,22 +243,22 @@ fn child_toolchain_preserves_parent_profile_destination() {
 fn child_toolchain_keeps_parent_counters_while_building_wasm() {
     let fixture = Fixture::new();
     fs::write(
-        fixture.root.join("Cargo.toml"),
+        fixture.root.path().join("Cargo.toml"),
         "[package]\nname = 'wasm-child'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
     )
     .unwrap();
-    fs::create_dir(fixture.root.join("src")).unwrap();
+    fs::create_dir(fixture.root.path().join("src")).unwrap();
     fs::write(
-        fixture.root.join("src/lib.rs"),
+        fixture.root.path().join("src/lib.rs"),
         "pub fn value() -> u32 { 7 }\n",
     )
     .unwrap();
     let binary = compile_toolchain_probe(&fixture);
-    let profile = fixture.root.join("parent.profraw");
+    let profile = fixture.root.path().join("parent.profraw");
     let parent = Command::new(&binary)
-        .current_dir(&fixture.root)
+        .current_dir(fixture.root.path())
         .env("MAESTRO_PROBE_CARGO", env!("CARGO"))
-        .env("CARGO_TARGET_DIR", fixture.root.join("target"))
+        .env("CARGO_TARGET_DIR", fixture.root.path().join("target"))
         .env("RUSTFLAGS", "-C instrument-coverage")
         .env("CARGO_ENCODED_RUSTFLAGS", "-Cinstrument-coverage")
         .env("LLVM_PROFILE_FILE", &profile)
@@ -272,6 +272,7 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
     assert!(
         fixture
             .root
+            .path()
             .join("target/wasm32-unknown-unknown/debug/libwasm_child.rlib")
             .is_file()
     );
@@ -281,21 +282,21 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
 /// Compile an instrumented parent independently of the integration runner's instrumentation.
 fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
     let lock = toolchain_support::command(env!("CARGO"))
-        .current_dir(&fixture.root)
+        .current_dir(fixture.root.path())
         .arg("generate-lockfile")
         .output()
         .unwrap();
     assert!(lock.status.success());
     fs::write(
-        fixture.root.join("toolchain_support.rs"),
+        fixture.root.path().join("toolchain_support.rs"),
         include_str!("fixtures/toolchain_support.rs"),
     )
     .unwrap();
-    let source = fixture.root.join("parent.rs");
+    let source = fixture.root.path().join("parent.rs");
     fs::write(&source, include_str!("fixtures/child_toolchain_probe.rs")).unwrap();
-    let binary = fixture.root.join("parent");
+    let binary = fixture.root.path().join("parent");
     let compile = toolchain_support::command("rustc")
-        .current_dir(&fixture.root)
+        .current_dir(fixture.root.path())
         .args(["--cfg", "test", "-C", "instrument-coverage"])
         .arg(&source)
         .arg("-o")
@@ -340,24 +341,26 @@ fn assert_profile_counters(profile: &Path) {
 }
 
 struct Fixture {
-    root: PathBuf,
+    root: maestro_test_directory::Scratch,
     child: PathBuf,
+    /// Retains the deliberately spaced and apostrophe-containing parent of `root`.
+    _parent: maestro_test_directory::Scratch,
 }
 
 impl Fixture {
     fn new() -> Self {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "Maestro's tooling fixture-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        fs::create_dir(&root).unwrap();
-        toolchain_support::declare_toolchain(&root, include_str!("../../../rust-toolchain.toml"))
-            .unwrap();
-        fs::create_dir(root.join("receipt")).unwrap();
-        fs::create_dir_all(root.join(".maestro/agent")).unwrap();
-        let source = root.join("child.rs");
+        let parent = maestro_test_directory::Scratch::new().unwrap();
+        let spelled = parent.path().join("Maestro's tooling fixture");
+        fs::create_dir(&spelled).unwrap();
+        let root = maestro_test_directory::Scratch::new_in(&spelled).unwrap();
+        toolchain_support::declare_toolchain(
+            root.path(),
+            include_str!("../../../rust-toolchain.toml"),
+        )
+        .unwrap();
+        fs::create_dir(root.path().join("receipt")).unwrap();
+        fs::create_dir_all(root.path().join(".maestro/agent")).unwrap();
+        let source = root.path().join("child.rs");
         fs::write(&source, r#"
 use std::{env, fs, path::PathBuf};
 fn main() {
@@ -397,9 +400,15 @@ fn main() {
     std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
 }
 "#).unwrap();
-        let child = root.join(format!("just{}", std::env::consts::EXE_SUFFIX));
-        compile_fixture(&root, &source, &child);
-        Self { root, child }
+        let child = root
+            .path()
+            .join(format!("just{}", std::env::consts::EXE_SUFFIX));
+        compile_fixture(root.path(), &source, &child);
+        Self {
+            root,
+            child,
+            _parent: parent,
+        }
     }
 
     fn invoke(&self, test: &str, operation: &str, args: &[&str]) -> TestProcess {
@@ -414,11 +423,11 @@ fn main() {
             )
             .env("MAESTRO_DRIVER", operation)
             .env("MAESTRO_FIXTURE_CARGO", &self.child)
-            .env("MAESTRO_FIXTURE_ROOT", &self.root)
-            .env("MAESTRO_RECEIPT", self.root.join("receipt"))
-            .env("HOME", &self.root)
-            .env("PATH", &self.root)
-            .current_dir(&self.root);
+            .env("MAESTRO_FIXTURE_ROOT", self.root.path())
+            .env("MAESTRO_RECEIPT", self.root.path().join("receipt"))
+            .env("HOME", self.root.path())
+            .env("PATH", self.root.path())
+            .current_dir(self.root.path());
         if let Some(channel) = toolchain_support::channel() {
             command = command.env("RUSTUP_TOOLCHAIN", channel);
         }
@@ -429,13 +438,13 @@ fn main() {
     }
 
     fn auth(&self) -> PathBuf {
-        self.root.join(".maestro/agent/auth.json")
+        self.root.path().join(".maestro/agent/auth.json")
     }
     fn receipt(&self, name: &str) -> Vec<u8> {
-        fs::read(self.root.join("receipt").join(name)).unwrap()
+        fs::read(self.root.path().join("receipt").join(name)).unwrap()
     }
     fn arguments(&self) -> Vec<Vec<u8>> {
-        let root = self.root.join("receipt/args");
+        let root = self.root.path().join("receipt/args");
         (0..fs::read_dir(&root).unwrap().count())
             .map(|index| fs::read(root.join(index.to_string())).unwrap())
             .collect()
@@ -454,12 +463,6 @@ fn compile_fixture(root: &Path, source: &Path, child: &Path) {
             .unwrap()
             .success()
     );
-}
-
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.root).unwrap();
-    }
 }
 
 /// Reject a stale fixture identity before a zero-test child can report success.
@@ -601,7 +604,7 @@ fn maestro_offline_removes_only_listed_credentials() {
         );
         for key in OFFLINE_KEYS {
             assert!(
-                !fixture.root.join("receipt/env").join(key).exists(),
+                !fixture.root.path().join("receipt/env").join(key).exists(),
                 "{key}"
             );
         }
@@ -617,7 +620,7 @@ fn maestro_offline_removes_only_listed_credentials() {
         assert_eq!(fixture.receipt("env/MAESTRO_NO_LOCAL_LLM"), b"1");
         assert_eq!(
             fixture.receipt("env/HOME"),
-            fixture.root.as_os_str().as_encoded_bytes()
+            fixture.root.path().as_os_str().as_encoded_bytes()
         );
         assert!(stdout(&output).contains("Running tests without API keys...\n"));
     }
@@ -627,7 +630,7 @@ fn maestro_offline_removes_only_listed_credentials() {
 fn maestro_source_reports_missing_tool_and_child_failure() {
     drive();
     let fixture = Fixture::new();
-    let missing = fixture.root.join("missing-cargo");
+    let missing = fixture.root.path().join("missing-cargo");
     let output = fixture
         .invoke(
             "maestro_source_reports_missing_tool_and_child_failure",
@@ -745,7 +748,7 @@ fn assert_auth_move_errors() {
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(fs::read(fixture.auth()).unwrap(), b"auth");
-    assert!(!fixture.root.join("receipt/auth-present").exists());
+    assert!(!fixture.root.path().join("receipt/auth-present").exists());
     let fixture = Fixture::new();
     fs::write(fixture.auth(), "restore bytes").unwrap();
     let output = fixture
@@ -769,7 +772,7 @@ fn assert_auth_move_errors() {
 #[cfg(unix)]
 fn assert_auth_link_restored() {
     let fixture = Fixture::new();
-    let target = fixture.root.join("auth-target");
+    let target = fixture.root.path().join("auth-target");
     fs::write(&target, "linked auth").unwrap();
     std::os::unix::fs::symlink(&target, fixture.auth()).unwrap();
     let output = fixture
@@ -873,7 +876,7 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
     assert_eq!(fixture.arguments(), vec![b"test".to_vec()]);
     assert_eq!(
         fixture.receipt("cwd"),
-        fixture.root.as_os_str().as_encoded_bytes()
+        fixture.root.path().as_os_str().as_encoded_bytes()
     );
 }
 
@@ -908,7 +911,7 @@ fn maestro_source_launchers_clear_the_same_credentials() {
                 .filter(|key| **key != "BEDROCK_EXTENSIVE_MODEL_TEST")
             {
                 assert!(
-                    !fixture.root.join("receipt/env").join(key).exists(),
+                    !fixture.root.path().join("receipt/env").join(key).exists(),
                     "{key}"
                 );
             }
@@ -917,7 +920,7 @@ fn maestro_source_launchers_clear_the_same_credentials() {
                 "AZURE_OPENAI_BASE_URL",
                 "AZURE_OPENAI_RESOURCE_NAME",
             ] {
-                assert!(!fixture.root.join("receipt/env").join(key).exists());
+                assert!(!fixture.root.path().join("receipt/env").join(key).exists());
             }
             assert_eq!(
                 fixture.receipt("env/BEDROCK_EXTENSIVE_MODEL_TEST"),
@@ -962,14 +965,8 @@ fn maestro_source_keeps_switch_rules_and_literal_arguments() {
         let mut expected: Vec<_> = ["run", "--quiet", "--manifest-path"]
             .map(|arg| arg.as_bytes().to_vec())
             .into();
-        expected.push(
-            fixture
-                .root
-                .join("Cargo.toml")
-                .as_os_str()
-                .as_encoded_bytes()
-                .to_vec(),
-        );
+        let manifest = fixture.root.path().join("Cargo.toml");
+        expected.push(manifest.as_os_str().as_encoded_bytes().to_vec());
         expected.extend(["-p", "maestro", "--"].map(|arg| arg.as_bytes().to_vec()));
         let remaining: &[&str] = if operation == "run-source-windows" {
             &["", "a b", "'quoted'", "--", "é\u{feff}\u{85}\u{2003}"]
@@ -987,7 +984,7 @@ fn maestro_source_keeps_switch_rules_and_literal_arguments() {
         assert_eq!(fixture.arguments(), expected);
         assert_eq!(
             fixture.receipt("cwd"),
-            fixture.root.as_os_str().as_encoded_bytes()
+            fixture.root.path().as_os_str().as_encoded_bytes()
         );
         assert_eq!(
             stdout(&output)
@@ -1039,7 +1036,7 @@ fn maestro_source_without_switch_preserves_environment() {
 }
 
 fn asset_inputs(fixture: &Fixture) -> PathBuf {
-    let source = fixture.root.join("assets-source");
+    let source = fixture.root.path().join("assets-source");
     for (path, bytes) in [
         ("src/modes/interactive/theme/schema.json", "schema"),
         ("src/modes/interactive/theme/dark.json", "dark"),
@@ -1064,7 +1061,7 @@ fn maestro_library_assets_keep_selection_and_copy_order() {
     fs::write(themes.join("space é.json"), "spaced").unwrap();
     fs::create_dir(themes.join("nested")).unwrap();
     fs::write(themes.join("nested/inside.json"), "excluded").unwrap();
-    let destination = fixture.root.join("dist");
+    let destination = fixture.root.path().join("dist");
     fs::create_dir_all(destination.join("modes/interactive/theme")).unwrap();
     fs::write(destination.join("modes/interactive/theme/dark.json"), "old").unwrap();
     fs::write(destination.join("unrelated"), "kept").unwrap();
@@ -1164,20 +1161,20 @@ fn assert_viewer_required(source: &Path, destination: &Path, package: &Path) {
 fn maestro_standalone_assets_preserve_recursive_layout() {
     let fixture = Fixture::new();
     let source = asset_inputs(&fixture);
-    let package = fixture.root.join("package");
+    let package = fixture.root.path().join("package");
     standalone_inputs(&source, &package);
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     fs::create_dir_all(source.join("src")).unwrap();
     fs::write(source.join("src/main.rs"), "fn main() {}\n").unwrap();
     fs::write(
-        fixture.root.join("Cargo.toml"),
+        fixture.root.path().join("Cargo.toml"),
         "[workspace]\nmembers = ['assets-source']\nresolver = '3'\n",
     )
     .unwrap();
     assert!(
         toolchain_support::command(env!("CARGO"))
             .arg("generate-lockfile")
-            .current_dir(&fixture.root)
+            .current_dir(fixture.root.path())
             .status()
             .unwrap()
             .success()
@@ -1190,7 +1187,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         package.clone().into_os_string(),
     ];
     assert_eq!(
-        tooling::run(&args, Path::new(env!("CARGO")), &fixture.root).unwrap(),
+        tooling::run(&args, Path::new(env!("CARGO")), fixture.root.path()).unwrap(),
         std::process::ExitCode::SUCCESS
     );
     for (name, bytes) in [
@@ -1216,7 +1213,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         "[package]\nname = 'not-the-binary'\nversion = '0.1.0'\n",
     )
     .unwrap();
-    assert!(tooling::run(&args, Path::new(env!("CARGO")), &fixture.root).is_err());
+    assert!(tooling::run(&args, Path::new(env!("CARGO")), fixture.root.path()).is_err());
 }
 
 /// Build a crate-shaped source, a separate package directory and the metadata.
@@ -1230,11 +1227,15 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     ] {
         write_input(&source, name, bytes);
     }
-    let package = fixture.root.join("package");
+    let package = fixture.root.path().join("package");
     package_inputs(&package);
-    let metadata = fixture.root.join("binary/Cargo.toml");
-    write_input(&fixture.root.join("binary"), "Cargo.toml", "manifest");
-    let viewer = fixture.root.join("viewer");
+    let metadata = fixture.root.path().join("binary/Cargo.toml");
+    write_input(
+        &fixture.root.path().join("binary"),
+        "Cargo.toml",
+        "manifest",
+    );
+    let viewer = fixture.root.path().join("viewer");
     write_input(&viewer, "index.html", "viewer");
     (source, package, metadata, viewer)
 }
@@ -1245,7 +1246,7 @@ fn maestro_package_assets_come_from_the_package_directory() {
     use std::os::unix::fs::PermissionsExt;
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     #[cfg(unix)]
     fs::set_permissions(
         source.join("src/modes/interactive/theme/schema.json"),
@@ -1294,7 +1295,7 @@ fn maestro_missing_package_input_keeps_completed_groups() {
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
     fs::remove_dir_all(package.join("examples")).unwrap();
-    let destination = fixture.root.join("incomplete");
+    let destination = fixture.root.path().join("incomplete");
     assert!(
         tooling::copy_assets::copy(
             &source,
@@ -1341,7 +1342,7 @@ fn maestro_missing_package_input_names_the_absent_path() {
         let (source, package, metadata, viewer) = split_inputs(&fixture);
         let input = package.join(name);
         remove_input(&input);
-        let destination = fixture.root.join("incomplete");
+        let destination = fixture.root.path().join("incomplete");
         let error = tooling::copy_assets::copy(
             &source,
             &destination,
@@ -1379,7 +1380,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
         remove_input(&input);
         let error = tooling::copy_assets::copy(
             &source,
-            &fixture.root.join("dist"),
+            &fixture.root.path().join("dist"),
             tooling::copy_assets::Layout::Library,
         )
         .unwrap_err();
@@ -1391,7 +1392,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
     remove_input(&input);
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1406,10 +1407,10 @@ fn maestro_missing_crate_input_names_the_absent_path() {
 fn maestro_missing_metadata_names_the_absent_path() {
     let fixture = Fixture::new();
     let (source, package, _, viewer) = split_inputs(&fixture);
-    let metadata = fixture.root.join("absent/Cargo.toml");
+    let metadata = fixture.root.path().join("absent/Cargo.toml");
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1431,7 +1432,7 @@ fn maestro_unreadable_viewer_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1461,7 +1462,7 @@ fn maestro_unreadable_source_file_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1492,7 +1493,7 @@ fn maestro_unreadable_tree_entry_names_that_entry() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1524,7 +1525,7 @@ fn maestro_failed_copy_keeps_the_source_permissions() {
         fs::metadata(private).unwrap().permissions().mode() & 0o777,
         0o600
     );
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     let error = tooling::copy_assets::copy(
         &source,
         &destination,
@@ -1554,7 +1555,7 @@ fn maestro_failed_copy_keeps_the_source_permissions() {
 fn maestro_destination_failure_keeps_its_native_error() {
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     fs::create_dir_all(destination.join("README.md")).unwrap();
     let error = tooling::copy_assets::copy(
         &source,
@@ -1580,7 +1581,7 @@ fn assert_asset_match_order() {
     fs::write(themes.join("a.json"), "first").unwrap();
     fs::create_dir(themes.join("b.json")).unwrap();
     fs::write(themes.join("c.json"), "later").unwrap();
-    let destination = fixture.root.join("dist");
+    let destination = fixture.root.path().join("dist");
     let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
             .unwrap_err();
@@ -1608,7 +1609,7 @@ fn assert_asset_match_order() {
 fn maestro_asset_errors_keep_prior_copies() {
     let fixture = Fixture::new();
     let source = asset_inputs(&fixture);
-    let destination = fixture.root.join("dist");
+    let destination = fixture.root.path().join("dist");
     fs::remove_file(source.join("src/core/export-html/template.css")).unwrap();
     assert!(
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
@@ -1639,14 +1640,14 @@ fn maestro_asset_errors_keep_prior_copies() {
         format!("cannot copy {}: not a regular file", image.display())
     );
     for args in [vec![], vec!["unknown".into()], vec!["copy-assets".into()]] {
-        assert!(tooling::run(&args, &fixture.child, &fixture.root).is_err());
+        assert!(tooling::run(&args, &fixture.child, fixture.root.path()).is_err());
     }
     let output = Command::new(env!("CARGO_BIN_EXE_development"))
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(output.stderr, b"missing development command\n");
-    let blocked = fixture.root.join("blocked");
+    let blocked = fixture.root.path().join("blocked");
     fs::write(&blocked, "not a directory").unwrap();
     assert!(
         tooling::copy_assets::copy(&source, &blocked, tooling::copy_assets::Layout::Library)
@@ -1664,7 +1665,7 @@ fn maestro_asset_links_keep_layout_semantics() {
     let themes = source.join("src/modes/interactive/theme");
     fs::write(source.join("real-theme"), "linked bytes").unwrap();
     symlink(source.join("real-theme"), themes.join("linked.json")).unwrap();
-    let destination = fixture.root.join("dist");
+    let destination = fixture.root.path().join("dist");
     tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
         .unwrap();
     let copied = destination.join("modes/interactive/theme/linked.json");
@@ -1676,7 +1677,7 @@ fn maestro_asset_links_keep_layout_semantics() {
             .is_err()
     );
     fs::remove_file(themes.join("dangling.json")).unwrap();
-    let package = fixture.root.join("package");
+    let package = fixture.root.path().join("package");
     for name in ["Cargo.toml", "viewer/index.html"] {
         write_input(&source, name, name);
     }
@@ -1690,7 +1691,7 @@ fn maestro_asset_links_keep_layout_semantics() {
     }
     symlink("../examples", package.join("docs/linked-dir")).unwrap();
     symlink("missing", package.join("docs/dangling")).unwrap();
-    let standalone = fixture.root.join("standalone");
+    let standalone = fixture.root.path().join("standalone");
     tooling::copy_assets::copy(
         &source,
         &standalone,
@@ -1716,11 +1717,11 @@ fn maestro_asset_links_keep_layout_semantics() {
 fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
     let fixture = Fixture::new();
     let source = asset_inputs(&fixture);
-    let package = fixture.root.join("package");
+    let package = fixture.root.path().join("package");
     standalone_inputs(&source, &package);
     fs::rename(package.join("docs"), package.join("real-docs")).unwrap();
     std::os::unix::fs::symlink("real-docs", package.join("docs")).unwrap();
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     tooling::copy_assets::copy(
         &source,
         &destination,
@@ -1772,11 +1773,12 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
     );
     let entry = fixture
         .root
+        .path()
         .join("crates/maestro-models/examples/browser_import_check.rs");
     fs::create_dir_all(entry.parent().unwrap()).unwrap();
     fs::write(entry, "controlled build input").unwrap();
-    let log = fixture.root.join("maestro-browser-smoke-errors.log");
-    let artifact = fixture.root.join("artifact.wasm");
+    let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
+    let artifact = fixture.root.path().join("artifact.wasm");
     for exit in ["0", "17"] {
         let output = fixture
             .invoke(
@@ -1784,7 +1786,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
                 "check-browser-smoke",
                 &[],
             )
-            .temp_dir(&fixture.root)
+            .temp_dir(fixture.root.path())
             .env("MAESTRO_CHILD_EXIT", exit)
             .env("MAESTRO_ARTIFACT", &artifact)
             .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
@@ -1888,62 +1890,62 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
     assert_hook_restages_only_captured_paths();
 }
 
+/// A fixture child command cleared down to one inherited variable and one home.
+fn fixture_command(child: &std::path::Path, root: &std::path::Path) -> Command {
+    let mut command = Command::new(child);
+    command
+        .env_clear()
+        .env("PATH", std::env::var_os("PATH").unwrap())
+        .env("TMPDIR", root)
+        .env("MAESTRO_RECEIPT", root.join("receipt"))
+        .env("HOME", root);
+    command
+}
+
+/// Stage the three captured paths whose names need protection.
+fn stage_captured(root: &std::path::Path) {
+    git(
+        root,
+        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
+    );
+}
+
 fn assert_hook_restages_only_captured_paths() {
     let fixture = Fixture::new();
-    git(&fixture.root, &["init", "--quiet"]);
+    let root = fixture.root.path().to_path_buf();
+    git(&root, &["init", "--quiet"]);
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"] {
-        fs::write(fixture.root.join(name), "old").unwrap();
+        fs::write(root.join(name), "old").unwrap();
     }
-    git(
-        &fixture.root,
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
-    stage_deleted_path(&fixture.root);
+    stage_captured(&root);
+    stage_deleted_path(&root);
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
-        fs::write(fixture.root.join(name), "staged").unwrap();
+        fs::write(root.join(name), "staged").unwrap();
     }
-    git(
-        &fixture.root,
-        &["add", "--", "a space.rs", "line\nbreak.rs", "-dash.rs"],
-    );
-    let mut format = Command::new(&fixture.child);
-    format
-        .env_clear()
-        .env("PATH", std::env::var_os("PATH").unwrap())
-        .env("TMPDIR", &fixture.root)
-        .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
-        .env("HOME", &fixture.root)
-        .env("MAESTRO_FORMAT_ROOT", &fixture.root);
-    let mut check = Command::new(&fixture.child);
-    check
-        .env_clear()
-        .env("PATH", std::env::var_os("PATH").unwrap())
-        .env("TMPDIR", &fixture.root)
-        .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
-        .env("HOME", &fixture.root);
-    check.env("MAESTRO_CHECK_INDEX", &fixture.root);
+    stage_captured(&root);
+    let mut format = fixture_command(&fixture.child, &root);
+    format.env("MAESTRO_FORMAT_ROOT", &root);
+    let mut check = fixture_command(&fixture.child, &root);
+    check.env("MAESTRO_CHECK_INDEX", &root);
     let mut unused = Command::new("missing-tool");
-    tooling::pre_commit::run(&fixture.root, &mut format, &mut check, &mut unused, None).unwrap();
-    for entry in fs::read_dir(fixture.root.join("receipt/env")).unwrap() {
+    tooling::pre_commit::run(&root, &mut format, &mut check, &mut unused, None).unwrap();
+    for entry in fs::read_dir(root.join("receipt/env")).unwrap() {
         assert_ne!(fs::read(entry.unwrap().path()).unwrap(), b"secret-value");
     }
     for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"] {
-        let output = git(&fixture.root, &["show", &format!(":{name}")]);
+        let output = git(&root, &["show", &format!(":{name}")]);
         assert_eq!(output.stdout, b"formatted");
     }
-    assert_eq!(
-        fs::read(fixture.root.join("unrelated.rs")).unwrap(),
-        b"formatted"
-    );
+    assert_eq!(fs::read(root.join("unrelated.rs")).unwrap(), b"formatted");
     assert!(
-        !git(&fixture.root, &["diff", "--cached", "--name-only"])
+        !git(&root, &["diff", "--cached", "--name-only"])
             .stdout
             .windows(12)
             .any(|part| part == b"unrelated.rs")
     );
     assert_eq!(
         git(
-            &fixture.root,
+            &root,
             &["diff", "--cached", "--diff-filter=D", "--name-only"]
         )
         .stdout,
@@ -1953,14 +1955,13 @@ fn assert_hook_restages_only_captured_paths() {
 
 fn assert_hook_phase(phase: &str) {
     let fixture = Fixture::new();
-    git(&fixture.root, &["init", "--quiet"]);
-    fs::write(fixture.root.join("Cargo.toml"), "manifest").unwrap();
-    let checker = fixture
-        .root
-        .join("crates/maestro-test-conventions/src/lib.rs");
+    let root = fixture.root.path().to_path_buf();
+    git(&root, &["init", "--quiet"]);
+    fs::write(root.join("Cargo.toml"), "manifest").unwrap();
+    let checker = root.join("crates/maestro-test-conventions/src/lib.rs");
     fs::create_dir_all(checker.parent().unwrap()).unwrap();
     fs::write(checker, "checker").unwrap();
-    git(&fixture.root, &["add", "Cargo.toml", "crates"]);
+    git(&root, &["add", "Cargo.toml", "crates"]);
     let output = fixture
         .invoke("maestro_hook_messages_follow_phase_results", "hook", &[])
         .env("PATH", std::env::var_os("PATH").unwrap())
@@ -2022,7 +2023,7 @@ fn maestro_hook_messages_follow_phase_results() {
     }
 
     let fixture = Fixture::new();
-    git(&fixture.root, &["init", "--quiet"]);
+    git(fixture.root.path(), &["init", "--quiet"]);
     let output = fixture
         .invoke(
             "maestro_hook_messages_follow_phase_results",
@@ -2033,7 +2034,7 @@ fn maestro_hook_messages_follow_phase_results() {
             "PATH",
             format!(
                 "{}:{}",
-                fixture.root.display(),
+                fixture.root.path().display(),
                 std::env::var("PATH").unwrap()
             ),
         )
@@ -2072,11 +2073,11 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
         ("crates/maestro-test-conventions-old/src/lib.rs", true, ""),
     ] {
         let fixture = Fixture::new();
-        git(&fixture.root, &["init", "--quiet"]);
-        let path = fixture.root.join(name);
+        git(fixture.root.path(), &["init", "--quiet"]);
+        let path = fixture.root.path().join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(&path, "captured").unwrap();
-        git(&fixture.root, &["add", "--", name]);
+        git(fixture.root.path(), &["add", "--", name]);
         fs::remove_file(&path).unwrap();
         let output = fixture
             .invoke(
@@ -2140,6 +2141,7 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
     let fixture = Fixture::new();
     let entry = fixture
         .root
+        .path()
         .join("crates/maestro-models/examples/browser_import_check.rs");
     fs::create_dir_all(entry.parent().unwrap()).unwrap();
     fs::write(entry, "fixture").unwrap();
@@ -2150,10 +2152,10 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
             "check-browser-smoke",
             &[],
         )
-        .temp_dir(&fixture.root)
+        .temp_dir(fixture.root.path())
         .output()
         .unwrap();
-    let log = fixture.root.join("maestro-browser-smoke-errors.log");
+    let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         output.stderr,
@@ -2172,14 +2174,15 @@ fn maestro_hook_missing_tool_announces_failed_step() {
     drive();
     for phase in ["format", "check", "conventions", "smoke"] {
         let fixture = Fixture::new();
-        git(&fixture.root, &["init", "--quiet"]);
-        fs::write(fixture.root.join("Cargo.toml"), "manifest").unwrap();
+        git(fixture.root.path(), &["init", "--quiet"]);
+        fs::write(fixture.root.path().join("Cargo.toml"), "manifest").unwrap();
         let checker = fixture
             .root
+            .path()
             .join("crates/maestro-test-conventions/src/lib.rs");
         fs::create_dir_all(checker.parent().unwrap()).unwrap();
         fs::write(checker, "checker").unwrap();
-        git(&fixture.root, &["add", "Cargo.toml", "crates"]);
+        git(fixture.root.path(), &["add", "Cargo.toml", "crates"]);
         let output = fixture
             .invoke(
                 "maestro_hook_missing_tool_announces_failed_step",

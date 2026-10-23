@@ -1,7 +1,7 @@
 //! Loading extensions from paths and discovering them in standard and configured locations.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::module_loader::{Trace, check, check_with_home, module_loader};
+use crate::module_loader::{Trace, check, check_with_home, check_with_home_dot, module_loader};
 use serde_json::json;
 
 #[test]
@@ -37,6 +37,14 @@ fn home_paths_expand_against_the_home_directory() {
     check_with_home(
         "home_paths_expand_against_the_home_directory",
         &["load_home_paths", "discover_configured_files"],
+    );
+}
+
+#[test]
+fn bare_home_normalizes_the_home_spelling_before_loading() {
+    check_with_home_dot(
+        "bare_home_normalizes_the_home_spelling_before_loading",
+        &["load_home_dot_spelling"],
     );
 }
 
@@ -184,4 +192,15 @@ fn existing_files_keep_their_real_spelling() {
         "load_unicode_space_in_disk_name",
         "discover_unicode_space_in_discovered_name",
     ]);
+}
+
+#[test]
+fn tilde_paths_keep_the_written_file_name() {
+    check_with_home(
+        "tilde_paths_keep_the_written_file_name",
+        &[
+            "load_tilde_unicode_space_keeps_written_name",
+            "discover_configured_tilde_unicode_space_keeps_written_name",
+        ],
+    );
 }

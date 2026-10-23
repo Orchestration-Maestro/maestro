@@ -6,7 +6,7 @@ use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
 use maestro_path::{SEP, join};
 use maestro_resources::{
     PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
-    paths::{expand_tilde, resolve},
+    paths::{expand_tilde_text, home_directory, resolve},
 };
 use std::{collections::HashSet, io, path::Path, rc::Rc};
 
@@ -280,8 +280,51 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     /// Trims `path`, expands a leading `~` to the home directory and resolves it against
     /// the loader's working directory.
     pub(super) fn resolve_resource_path(&self, path: &str) -> io::Result<String> {
-        let trimmed = path.trim_matches(maestro_text::is_whitespace_scalar);
-        let expanded = expand_tilde(trimmed, || maestro_tools::expand_path("~"))?;
+        let expanded = expand_resource_path(path, home_directory)?;
         resolve(&[&self.cwd, &expanded])
+    }
+}
+
+/// Trim `path` and expand a leading `~` below the home directory read through `home`.
+///
+/// # Errors
+/// Returns the error of `home` when the path needs it.
+fn expand_resource_path(
+    path: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
+    expand_tilde_text(path.trim_matches(maestro_text::is_whitespace_scalar), home)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::expand_resource_path;
+
+    /// Each resource form returns the reference's result for the six supplied homes.
+    #[test]
+    fn resource_paths_follow_the_reference_table() {
+        for (written, home, expected) in [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "/h/x"),
+            ("~", "/h/.", "/h/."),
+            ("~", "", ""),
+        ] {
+            assert_eq!(
+                expand_resource_path(written, || Ok(home.to_owned())).unwrap(),
+                expected,
+                "{written:?} with home {home:?}"
+            );
+        }
+    }
+
+    /// The form is trimmed before it is expanded, as the reference does.
+    #[test]
+    fn padded_forms_expand_as_trimmed() {
+        assert_eq!(
+            expand_resource_path("  ~/x ", || Ok("/h".to_owned())).unwrap(),
+            "/h/x"
+        );
     }
 }

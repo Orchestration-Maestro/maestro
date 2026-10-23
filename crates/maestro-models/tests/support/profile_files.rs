@@ -5,7 +5,6 @@ use std::fmt::Write as _;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::TestResult;
 use crate::profile_credentials::{Input, LoginCache, Toggle};
@@ -40,15 +39,17 @@ printf '{"Version":%s,"AccessKeyId":"process-key",%s"SessionToken":"process-toke
 "#;
 
 /// A row's directory, removed when dropped.
-pub struct Workdir(PathBuf);
+pub struct Workdir(maestro_test_directory::Scratch);
 
 impl Drop for Workdir {
     fn drop(&mut self) {
         for cache in ["override-cache", ".aws/login/cache"] {
-            std::fs::set_permissions(self.0.join(cache), std::fs::Permissions::from_mode(0o755))
-                .ok();
+            std::fs::set_permissions(
+                self.0.path().join(cache),
+                std::fs::Permissions::from_mode(0o755),
+            )
+            .ok();
         }
-        std::fs::remove_dir_all(&self.0).ok();
     }
 }
 
@@ -68,20 +69,13 @@ fn install_script(directory: &Path) -> TestResult {
 impl Workdir {
     /// Create the directory of a row and write everything its input asks for.
     pub fn create(input: &Input) -> TestResult<Self> {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-profile-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&path)?;
-        let directory = Self(path);
+        let directory = Self(maestro_test_directory::Scratch::new()?);
         directory.write(input)?;
         Ok(directory)
     }
 
     fn file(&self, name: &str) -> PathBuf {
-        self.0.join(name)
+        self.0.path().join(name)
     }
 
     fn command(&self, mode: &str) -> String {
@@ -91,7 +85,7 @@ impl Workdir {
     fn write(&self, input: &Input) -> TestResult {
         std::fs::write(self.file("token"), "controlled-web-token")?;
         std::fs::write(self.file("process-count"), "")?;
-        install_script(&self.0)?;
+        install_script(self.0.path())?;
         if crate::profile_credentials::input_has_cache(input) {
             self.write_sso_cache(input)?;
         }
@@ -224,7 +218,7 @@ impl Workdir {
 
     fn write_sso_cache(&self, input: &Input) -> TestResult {
         let path = self.sso_cache_path(input);
-        std::fs::create_dir_all(self.0.join(".aws/sso/cache"))?;
+        std::fs::create_dir_all(self.0.path().join(".aws/sso/cache"))?;
         std::fs::write(path, Self::sso_cache_text(input))?;
         Ok(())
     }
@@ -254,7 +248,10 @@ impl Workdir {
         } else {
             START_URL_CACHE
         };
-        self.0.join(".aws/sso/cache").join(format!("{name}.json"))
+        self.0
+            .path()
+            .join(".aws/sso/cache")
+            .join(format!("{name}.json"))
     }
 
     /// Whether the token cache file still holds the bytes the row wrote.
@@ -432,7 +429,7 @@ impl Workdir {
     pub fn environment(&self, input: &Input, endpoint: &str) -> Vec<(String, String)> {
         let path = |name: &str| self.file(name).display().to_string();
         let mut vars = vec![
-            ("HOME".to_owned(), self.0.display().to_string()),
+            ("HOME".to_owned(), self.0.path().display().to_string()),
             ("AWS_CONFIG_FILE".to_owned(), path("config")),
             (
                 "AWS_SHARED_CREDENTIALS_FILE".to_owned(),

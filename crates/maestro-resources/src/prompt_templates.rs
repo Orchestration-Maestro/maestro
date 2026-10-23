@@ -3,8 +3,11 @@
 
 use crate::{
     FrontmatterValue, ResourceFileType, SourceInfo, SourceScope, SyntheticSourceOptions,
-    create_synthetic_source_info, frontmatter::text_whitespace, metadata, parse_frontmatter,
-    paths::resolve, read_entries, read_text,
+    create_synthetic_source_info,
+    frontmatter::text_whitespace,
+    metadata, parse_frontmatter,
+    paths::{expand_tilde_text, resolve},
+    read_entries, read_text,
 };
 use maestro_path::{basename, dirname, is_absolute, join};
 use std::{io, path::Path};
@@ -320,16 +323,46 @@ pub fn load_prompt_templates(
 /// Normalize tilde spelling before resolving an unanchored explicit path.
 fn resolve_prompt_path(path: &str, options: LoadPromptTemplatesOptions<'_>) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
-    let normalized = if path == "~" {
-        options.home.into()
-    } else if let Some(suffix) = path.strip_prefix("~/").or_else(|| path.strip_prefix('~')) {
-        join(&[options.home, suffix])
-    } else {
-        path.into()
-    };
+    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
         resolve(&[options.cwd, &normalized])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LoadPromptTemplatesOptions, resolve_prompt_path};
+
+    /// Each explicit prompt form returns the reference's result for the six supplied homes.
+    #[test]
+    fn explicit_prompt_paths_follow_the_reference_table() {
+        for (written, home, expected) in [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "/h/x"),
+            ("~", "/h/.", "/h/."),
+            ("~", "", "/w"),
+        ] {
+            assert_eq!(
+                resolve_prompt_path(written, options(home)).unwrap(),
+                expected,
+                "{written:?} with home {home:?}"
+            );
+        }
+    }
+
+    /// Options with the supplied home spelling below the working directory `/w`.
+    fn options(home: &str) -> LoadPromptTemplatesOptions<'_> {
+        LoadPromptTemplatesOptions {
+            cwd: "/w",
+            home,
+            agent_dir: "/a",
+            config_dir_name: ".maestro",
+            prompt_paths: &[],
+            include_defaults: false,
+        }
     }
 }

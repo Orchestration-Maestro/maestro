@@ -1,9 +1,10 @@
 //! Artifact state rebuilt from conversation history.
 use super::{
     ArtifactCommand, ArtifactPresentation, ArtifactsPanel, ArtifactsParams, Options,
-    created_content, definition, edited_content, read, write,
+    created_content, definition, edited_content,
 };
 use crate::browser::components::messages::{ArtifactAction, ArtifactMessage, CustomAgentMessages};
+use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::{AgentMessage, CustomAgentMessages as CustomMessage};
 use maestro_models::{AssistantContent, Tool, ToolCall, validate_tool_arguments};

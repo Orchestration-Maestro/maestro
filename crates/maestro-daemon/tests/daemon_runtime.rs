@@ -38,10 +38,16 @@ mod launch;
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
 fn app(config: &Config) -> maestro_daemon::app::App<fn() -> u128> {
+    app_with_args(config, &[])
+}
+
+/// Builds the daemon with the setup entry's own harness arguments.
+#[cfg(unix)]
+fn app_with_args(config: &Config, args: &[String]) -> maestro_daemon::app::App<fn() -> u128> {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = launch::launch_inputs(args, manifests);
     maestro_daemon::app::App::new(
         config,
         (|| 0) as fn() -> u128,
@@ -685,4 +691,173 @@ fn daemon_construction_initializes_supplied_manifest_summaries() {
     assert!(!expected.is_empty());
     let state = DaemonState::new(&Config::default(), || 0, manifests);
     assert_eq!(state.agent_manifest_summaries, expected);
+}
+
+/// Prepares a home directory, then runs this test again with it as `HOME`.
+///
+/// Returns the directory in that child and `None` in the parent.
+#[cfg(unix)]
+fn isolated_home(
+    test: &str,
+    prepare: impl FnOnce(&std::path::Path) -> std::path::PathBuf,
+) -> Option<std::path::PathBuf> {
+    const CHILD: &str = "MAESTRO_DAEMON_HOME_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        return std::env::var_os("HOME").map(std::path::PathBuf::from);
+    }
+    let owner = maestro_test_directory::Scratch::new().unwrap();
+    let home = prepare(owner.path());
+    let output = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .env("HOME", &home)
+        .env(CHILD, "1")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "child {test} failed: {}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    None
+}
+
+/// Creates the home directory whose spelling text cannot hold, below `root`.
+#[cfg(unix)]
+fn unspellable_home(root: &std::path::Path) -> std::path::PathBuf {
+    use std::os::unix::ffi::OsStrExt;
+    let home = root.join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"home-\xff"));
+    std::fs::create_dir_all(home.join("child")).unwrap();
+    home
+}
+
+/// Creates the default workspace through the prompt-free creation entry.
+#[cfg(unix)]
+fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
+    let mut config = Config::default();
+    config.terminal.default_shell = "/bin/sh".into();
+    config.terminal.new_cwd =
+        maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into());
+    let args = maestro_test_process::TestProcess::named("setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| Ok::<_, std::io::Error>(args.to_vec()))
+        .unwrap();
+    let mut app = app_with_args(&config, &args);
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            assert!(app.ensure_default_workspace());
+            let cwd = app.state.topology.workspaces[0].identity_cwd.clone();
+            for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {
+                runtime.shutdown().await;
+            }
+            cwd
+        })
+}
+
+/// A configured `~` reaches the directory its written parent segment names.
+#[cfg(unix)]
+#[test]
+fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
+    let Some(home) = isolated_home(
+        "daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path",
+        |root| {
+            std::fs::create_dir_all(root.join("elsewhere/child")).unwrap();
+            std::fs::create_dir(root.join("elsewhere/f")).unwrap();
+            std::fs::create_dir(root.join("f")).unwrap();
+            std::os::unix::fs::symlink(root.join("elsewhere/child"), root.join("link")).unwrap();
+            root.to_path_buf()
+        },
+    ) else {
+        return;
+    };
+    let cwd = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(pending_cwd(
+            maestro_daemon::settings::model::NewTerminalCwdConfig::Path("~/link/../f".into()),
+            None,
+        ));
+    assert_eq!(
+        std::fs::canonicalize(&cwd).unwrap(),
+        std::fs::canonicalize(home.join("elsewhere/f")).unwrap()
+    );
+}
+
+/// A `~` path's written rest joins the home directory as a native path, so an absolute rest
+/// replaces it.
+#[cfg(unix)]
+#[test]
+fn daemon_tilde_paths_join_their_rest_natively() {
+    let Some(home) = isolated_home("daemon_tilde_paths_join_their_rest_natively", |root| {
+        root.to_path_buf()
+    }) else {
+        return;
+    };
+    let home = home.to_string_lossy().into_owned();
+    let cases = [
+        ("~", home.clone()),
+        ("~/", format!("{home}/")),
+        ("~//note", "/note".to_owned()),
+        ("~/a/../f", format!("{home}/a/../f")),
+        ("~//x", "/x".to_owned()),
+    ];
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            for (policy, expected) in cases {
+                let cwd = pending_cwd(
+                    maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into()),
+                    None,
+                )
+                .await;
+                assert_eq!(cwd.to_string_lossy(), expected, "{policy:?}");
+            }
+        });
+}
+
+/// A home directory that text cannot hold stays the created workspace directory.
+#[cfg(unix)]
+#[test]
+fn daemon_workspace_creation_keeps_native_home_bytes() {
+    let Some(home) = isolated_home(
+        "daemon_workspace_creation_keeps_native_home_bytes",
+        unspellable_home,
+    ) else {
+        return;
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            for (policy, expected) in [("~", home.clone()), ("~/child", home.join("child"))] {
+                let cwd = pending_cwd(
+                    maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into()),
+                    None,
+                )
+                .await;
+                assert_eq!(cwd, expected, "{policy:?}");
+            }
+        });
+}
+
+/// A home directory that text cannot hold stays the default workspace directory.
+#[cfg(unix)]
+#[test]
+fn daemon_default_workspace_keeps_native_home_bytes() {
+    let Some(home) = isolated_home(
+        "daemon_default_workspace_keeps_native_home_bytes",
+        unspellable_home,
+    ) else {
+        return;
+    };
+    assert_eq!(default_workspace_cwd("~/child"), home.join("child"));
 }

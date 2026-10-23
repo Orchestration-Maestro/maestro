@@ -32,6 +32,7 @@ maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
 indexmap = "=2.14.2"
 maestro-path = { path = "../maestro-path" }
+maestro-resources = { path = "../maestro-resources" }
 maestro-process = { path = "../maestro-process" }
 getrandom = "=0.4.3"
 zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }

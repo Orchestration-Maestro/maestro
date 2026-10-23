@@ -2,7 +2,7 @@
 
 use super::installation::{Installation, PackageLayout};
 use super::{APP_NAME, CONFIG_DIR_NAME};
-use maestro_path::{dirname, join, resolve_with};
+use maestro_path::{dirname, join};
 use std::io;
 
 /// Expand only exact `~` and a leading `~/`, preserving the remaining text.
@@ -136,12 +136,8 @@ pub fn get_bundled_interactive_asset_path(assets_dir: &str, name: &str) -> Strin
 /// # Errors
 /// Returns the working-directory error unchanged when the path needs it.
 fn package_path(package_dir: &str, name: &str) -> io::Result<String> {
-    resolve_with(
-        &[&[&join(&[package_dir, name])]],
-        maestro_resources::drive_directories,
-        maestro_resources::current_directory,
-    )
-    .map(|paths| paths.into_iter().collect())
+    let path = join(&[package_dir, name]);
+    maestro_resources::paths::resolve(&[&path])
 }
 /// Resolve the packaged README path.
 ///

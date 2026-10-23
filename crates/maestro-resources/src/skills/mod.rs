@@ -11,7 +11,7 @@ mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
     parse_frontmatter,
-    paths::{is_under_path, resolve},
+    paths::{expand_tilde_text, is_under_path, resolve},
 };
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
@@ -185,19 +185,25 @@ fn load_skills_in(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult
         Ok("path")
     };
     for path in options.skill_paths {
-        let path = path.trim_matches(crate::frontmatter::text_whitespace);
-        let path = if let Some(suffix) = path.strip_prefix('~') {
-            join(&[options.home, suffix])
-        } else if is_absolute(path) {
-            path.to_owned()
-        } else {
-            resolve(&[options.cwd, path])?
-        };
+        let path = normalize_skill_path(path, &options)?;
         let loaded = explicit_path(&path, options.cwd, &source_of);
         add_skills(&mut result, &mut collisions, &mut paths, loaded);
     }
     result.diagnostics.extend(collisions);
     Ok(result)
+}
+
+/// Expand a leading `~` below the home directory; keep an absolute path and resolve a relative
+/// one against the working directory.
+fn normalize_skill_path(path: &str, options: &LoadSkillsOptions<'_>) -> io::Result<String> {
+    let path = path.trim_matches(crate::frontmatter::text_whitespace);
+    if path.starts_with('~') {
+        return expand_tilde_text(path, || Ok(options.home.to_owned()));
+    }
+    if is_absolute(path) {
+        return Ok(path.to_owned());
+    }
+    resolve(&[options.cwd, path])
 }
 /// Merge discoveries, retaining the first name and delaying collision messages.
 fn add_skills(

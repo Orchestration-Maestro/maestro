@@ -13,21 +13,30 @@ struct Case<I, E> {
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct TildeCase {
+    input: TildeInput,
+    home: String,
+    expected: String,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct TildeInput {
     args: [String; 1],
 }
 #[test]
 fn tilde_expansion_changes_only_supported_prefixes() {
-    let cases: Vec<Case<TildeInput, String>> = serde_json::from_str(include_str!(
+    let cases: Vec<TildeCase> = serde_json::from_str(include_str!(
         "fixtures/configuration/tilde_expansion_changes_only_supported_prefixes.json"
     ))
     .unwrap();
-    assert_eq!(cases.len(), 8);
+    assert_eq!(cases.len(), 11);
     for case in cases {
+        let written = &case.input.args[0];
         assert_eq!(
-            paths::expand_tilde_path(&case.input.args[0], || Ok("/home/sample".to_owned()))
-                .unwrap(),
-            case.expected
+            paths::expand_tilde_path(written, || Ok(case.home.clone())).unwrap(),
+            case.expected,
+            "{written:?} with home {:?}",
+            case.home
         );
     }
 }

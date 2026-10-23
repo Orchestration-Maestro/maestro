@@ -5,9 +5,10 @@ use maestro_daemon::{instances, paths::DaemonPaths};
 
 #[test]
 fn daemon_deletion_preserves_running_and_unrelated_folders() {
-    let root = std::env::temp_dir().join(format!("maestro-delete-{}", std::process::id()));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     let agent = root.to_str().unwrap();
-    std::fs::create_dir_all(&root).unwrap();
+    std::fs::create_dir_all(root).unwrap();
     std::fs::write(root.join("keep"), "root data").unwrap();
     for name in ["idle", "live", "unrelated", "default"] {
         let path = root.join("daemons").join(name);
@@ -54,5 +55,4 @@ fn daemon_deletion_preserves_running_and_unrelated_folders() {
         std::fs::read_to_string(root.join("daemons/not-a-directory")).unwrap(),
         "preserved"
     );
-    std::fs::remove_dir_all(root).unwrap();
 }

@@ -3,6 +3,7 @@ use super::sandbox_runtime_provider::{RuntimeProviderValue, SandboxRuntimeProvid
 use crate::browser::{
     tools::prompts::ATTACHMENTS_RUNTIME_DESCRIPTION, utils::attachment_utils::Attachment,
 };
+use crate::utils::lock::read;
 use indexmap::IndexMap;
 use maestro_models::DiagnosticErrorInfo;
 use std::{
@@ -30,11 +31,7 @@ impl<V: RuntimeProviderValue> AttachmentsRuntimeProvider<V> {
 impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for AttachmentsRuntimeProvider<V> {
     fn get_data(&self) -> Result<IndexMap<String, V>, DiagnosticErrorInfo> {
         // Freeze the input before invoking the caller-supplied value adapter.
-        let snapshot = self
-            .attachments
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone();
+        let snapshot = read(&self.attachments).clone();
         Ok(IndexMap::from([(
             "attachments".into(),
             V::attachment_array(&snapshot)?,

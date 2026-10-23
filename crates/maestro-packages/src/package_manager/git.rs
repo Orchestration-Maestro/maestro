@@ -428,7 +428,8 @@ mod tests;
 /// relative base prunes and a similarly named sibling directory does not. A failed
 /// removal ends the cleanup without failing the operation.
 fn prune_empty_parents(target: &str, root: &str) -> io::Result<()> {
-    let mut paths = super::paths::resolve_together(&[&[root], &[&dirname(target)]])?.into_iter();
+    let mut paths =
+        maestro_resources::paths::resolve_groups(&[&[root], &[&dirname(target)]])?.into_iter();
     let (Some(root), Some(mut current)) = (paths.next(), paths.next()) else {
         return Ok(());
     };

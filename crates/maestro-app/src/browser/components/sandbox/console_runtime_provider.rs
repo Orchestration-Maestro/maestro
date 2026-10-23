@@ -17,6 +17,7 @@ use super::sandbox_runtime_provider::{
     RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use crate::browser::components::sandboxed_iframe::{SandboxError, SandboxValue};
+use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use std::sync::{Arc, RwLock};
@@ -88,38 +89,22 @@ impl<V: RuntimeProviderValue> ConsoleRuntimeProvider<V> {
     /// Retain the current live collection, including caller edits.
     #[must_use]
     pub fn get_logs(&self) -> Arc<RwLock<Vec<ConsoleLog<V>>>> {
-        Arc::clone(
-            &self
-                .state
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .logs,
-        )
+        Arc::clone(&read(&self.state).logs)
     }
     /// Whether execution has reported success or failure.
     #[must_use]
     pub fn is_completed(&self) -> bool {
-        self.state
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .completed
+        read(&self.state).completed
     }
     /// Retain the current failure without copying its contents.
     #[must_use]
     pub fn get_completion_error(&self) -> Option<Arc<SandboxError>> {
-        self.state
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .error
-            .clone()
+        read(&self.state).error.clone()
     }
     /// Replace the collection and clear settlement; earlier aliases remain valid.
     pub fn reset(&self) {
         let old = std::mem::replace(
-            &mut *self
-                .state
-                .write()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            &mut *write(&self.state),
             ConsoleState {
                 logs: Arc::default(),
                 completed: false,
@@ -138,16 +123,8 @@ impl<V: RuntimeProviderValue> ConsoleRuntimeProvider<V> {
         match tag.as_deref() {
             Some("console") => {
                 let entry = message.project_console()?;
-                let logs = Arc::clone(
-                    &self
-                        .state
-                        .read()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
-                        .logs,
-                );
-                logs.write()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .push(entry);
+                let logs = Arc::clone(&read(&self.state).logs);
+                write(&logs).push(entry);
                 respond(V::success_response()?)?;
             }
             Some("execution-complete" | "execution-error") => {
@@ -155,10 +132,7 @@ impl<V: RuntimeProviderValue> ConsoleRuntimeProvider<V> {
                     .then(|| message.project_completion_error())
                     .transpose()?
                     .map(Arc::new);
-                let mut state = self
-                    .state
-                    .write()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut state = write(&self.state);
                 state.completed = true;
                 state.error = error;
             }

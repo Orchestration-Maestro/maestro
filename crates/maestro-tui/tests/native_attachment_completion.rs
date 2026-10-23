@@ -44,7 +44,7 @@ fn native_attachment_search_finds_nested_and_scoped_matches() {
         entries(&sibling, &["nested/outside.txt"]);
         let relative = format!(
             "../{}/nested/",
-            sibling.0.file_name().unwrap().to_str().unwrap()
+            sibling.path().file_name().unwrap().to_str().unwrap()
         );
         let text = format!("@{relative}out");
         assert_eq!(
@@ -93,7 +93,10 @@ fn native_attachment_search_recurses_below_external_scope() {
                 "nested/deeper/zzz.txt",
             ],
         );
-        let relative = format!("../{}/", sibling.0.file_name().unwrap().to_str().unwrap());
+        let relative = format!(
+            "../{}/",
+            sibling.path().file_name().unwrap().to_str().unwrap()
+        );
         let text = format!("@{relative}alpha");
         assert_eq!(
             paths(query(&tree.authored(), &text).await, &text),
@@ -122,13 +125,13 @@ fn native_attachment_search_respects_ignores_and_follows_links() {
                 "kept.txt",
             ],
         );
-        std::fs::write(tree.0.join(".gitignore"), "ignored.txt\n").unwrap();
+        std::fs::write(tree.path().join(".gitignore"), "ignored.txt\n").unwrap();
         let outside = Tree::new().unwrap();
         entries(&outside, &["nested/external.txt"]);
-        std::os::unix::fs::symlink(&outside.0, tree.0.join("linked-dir")).unwrap();
+        std::os::unix::fs::symlink(outside.path(), tree.path().join("linked-dir")).unwrap();
         std::os::unix::fs::symlink(
-            outside.0.join("nested/external.txt"),
-            tree.0.join("linked-file.txt"),
+            outside.path().join("nested/external.txt"),
+            tree.path().join("linked-file.txt"),
         )
         .unwrap();
         let found = paths(query(&tree.authored(), "@").await, "@");
@@ -244,8 +247,8 @@ fn native_attachment_search_is_independent_of_base_name() {
                 ],
             );
         }
-        let first = query(tree.0.join("alpha-base").to_str().unwrap(), "@alpha").await;
-        let second = query(tree.0.join("other-base").to_str().unwrap(), "@alpha").await;
+        let first = query(tree.path().join("alpha-base").to_str().unwrap(), "@alpha").await;
+        let second = query(tree.path().join("other-base").to_str().unwrap(), "@alpha").await;
         assert_eq!(first, second);
         assert_eq!(paths(first, "@alpha"), ["alpha.txt", "nested/alpha.md"]);
     });

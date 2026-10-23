@@ -167,9 +167,7 @@ impl Reducer {
             return Ok(());
         }
         let event = serde_json::from_value(value).map_err(|error| error.to_string())?;
-        let mut message = partial
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut message = crate::agent::write(partial);
         let output = self.process_proxy_event(event, &mut message, Arc::clone(partial))?;
         drop(message);
         if let Some(output) = output {

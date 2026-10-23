@@ -93,20 +93,16 @@ fn child_group_selection_uses_the_largest_live_group() {
 }
 
 /// Owns a separate procfs fixture tree for one test transaction.
-struct ProcTree(std::path::PathBuf);
+struct ProcTree(maestro_test_directory::Scratch);
 impl ProcTree {
     fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
-            "maestro-proc-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-        ));
-        std::fs::create_dir(&root).unwrap();
-        Self(root)
+        Self(maestro_test_directory::Scratch::new().unwrap())
+    }
+    fn path(&self) -> &std::path::Path {
+        self.0.path()
     }
     fn process(&self, pid: u32, (group, session, foreground): (i32, i32, i32), name: &str) {
-        let dir = self.0.join(pid.to_string());
+        let dir = self.path().join(pid.to_string());
         std::fs::create_dir_all(dir.join(format!("task/{pid}"))).unwrap();
         std::fs::write(
             dir.join("stat"),
@@ -125,15 +121,9 @@ impl ProcTree {
         }
     }
     fn children(&self, pid: u32, text: &str) {
-        std::fs::write(self.0.join(format!("{pid}/task/{pid}/children")), text).unwrap();
+        std::fs::write(self.path().join(format!("{pid}/task/{pid}/children")), text).unwrap();
     }
 }
-impl Drop for ProcTree {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
-    }
-}
-
 #[test]
 fn procfs_operations_select_live_foreground_and_session_results() {
     use super::linux::Procfs;
@@ -142,7 +132,7 @@ fn procfs_operations_select_live_foreground_and_session_results() {
     tree.process(200, (200, 100, 200), "job ) name");
     tree.process(300, (300, 300, 300), "foreign");
     tree.children(100, "200 9999");
-    let procfs = Procfs(&tree.0);
+    let procfs = Procfs(tree.path());
     for mode in [
         ProcessDetectionMode::Native,
         ProcessDetectionMode::ChildGroups,
@@ -187,7 +177,7 @@ fn procfs_operations_select_live_foreground_and_session_results() {
     let mut session = procfs.session_processes(100);
     session.sort_unstable();
     assert_eq!(session, [100, 200]);
-    std::fs::remove_file(tree.0.join("200/stat")).unwrap();
+    std::fs::remove_file(tree.path().join("200/stat")).unwrap();
     assert_eq!(procfs.session_processes(100), [100]);
     assert!(procfs.session_processes(9999).is_empty());
 }
@@ -198,11 +188,11 @@ fn session_members_survive_the_reaped_session_leader() {
     tree.process(100, (100, 100, 100), "shell");
     tree.process(200, (200, 100, 200), "survivor");
     tree.process(300, (300, 300, 300), "foreign");
-    let procfs = super::linux::Procfs(&tree.0);
+    let procfs = super::linux::Procfs(tree.path());
     let mut members = procfs.session_processes_by_id(100);
     members.sort_unstable();
     assert_eq!(members, [100, 200]);
-    std::fs::remove_file(tree.0.join("100/stat")).unwrap();
+    std::fs::remove_file(tree.path().join("100/stat")).unwrap();
     assert_eq!(procfs.session_processes_by_id(100), [200]);
     assert_eq!(procfs.session_processes(200), [200]);
     assert!(procfs.session_processes_by_id(0).is_empty());
@@ -442,10 +432,10 @@ fn process_tree_discovery_scales_with_unique_reachable_pids() {
 fn assert_native_process_values() {
     let tree = ProcTree::new();
     let target = tree
-        .0
+        .path()
         .join(std::ffi::OsString::from_vec(b"cwd-\xff".to_vec()));
     std::fs::create_dir(&target).unwrap();
-    let authored = tree.0.join("alias");
+    let authored = tree.path().join("alias");
     std::os::unix::fs::symlink(&target, &authored).unwrap();
     let mut child = Command::new("/bin/sh")
         .args(["-c", "printf READY; read -r ignored"])
