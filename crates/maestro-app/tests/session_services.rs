@@ -2,7 +2,7 @@
 //! extension flag values.
 #![cfg(unix)]
 use crate::resource_fixtures::{
-    Root, factory, module_loader, on_task_set, with_environment, with_isolated_home,
+    Root, factory, module_loader, no_commands, on_task_set, with_environment, with_isolated_home,
 };
 use indexmap::IndexMap;
 use maestro_app::{
@@ -10,7 +10,7 @@ use maestro_app::{
     CreateAgentSessionServicesOptions, ExtensionFactory, FlagValue, ProviderConfig,
     ProviderModelConfig, ResourceKind, ResourceLoaderOptions, create_agent_session_services,
 };
-use maestro_catalog::ModelRegistry;
+use maestro_catalog::{ModelRegistry, ResolvedRequestAuth};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_models::{Local, ModelCost, ModelInput};
 use maestro_settings::{Settings, SettingsManager};
@@ -311,7 +311,7 @@ fn supplied_services_are_reused() {
         let settings = Rc::new(RefCell::new(
             SettingsManager::in_memory(Settings::default()),
         ));
-        let catalog = Arc::new(ModelRegistry::in_memory(Arc::clone(&auth)).unwrap());
+        let catalog = Arc::new(ModelRegistry::in_memory(Arc::clone(&auth), no_commands()).unwrap());
         on_task_set(|local| async {
             let mut options = options(&root, local, Vec::new());
             options.auth_storage = Some(Arc::clone(&auth));
@@ -322,5 +322,35 @@ fn supplied_services_are_reused() {
             assert!(Rc::ptr_eq(&services.settings_manager, &settings));
             assert!(Arc::ptr_eq(&services.model_registry, &catalog));
         });
+    });
+}
+
+/// A catalog the services create themselves runs configured key commands.
+#[test]
+fn native_services_resolve_configured_command_keys() {
+    with_isolated_home("native_services_resolve_configured_command_keys", |base| {
+        let root = Root::new(base, "case");
+        let document = json!({"providers": {"p": {
+            "baseUrl": "https://example.test/v1",
+            "api": "openai-completions",
+            "apiKey": "!printf resolved",
+            "models": [{"id": "m"}],
+        }}});
+        std::fs::write(root.fill("$ROOT/agent/models.json"), document.to_string()).unwrap();
+        let resolved = on_task_set(|local| async {
+            let services = create_agent_session_services(options(&root, local, Vec::new()))
+                .await
+                .unwrap();
+            let model = services.model_registry.find("p", "m").unwrap();
+            services
+                .model_registry
+                .get_api_key_and_headers(&model)
+                .await
+        });
+        let ResolvedRequestAuth::Ok { api_key, headers } = resolved else {
+            panic!("configured command key must resolve")
+        };
+        assert!(api_key.as_deref().eq(&Some("resolved")));
+        assert!(headers.is_none());
     });
 }

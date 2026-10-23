@@ -78,13 +78,6 @@ pub fn catalog_callbacks_can_read_and_register_during_a_bound_registration() {
     }
 }
 
-/// Supplied request values that resolve no command.
-struct Values;
-impl maestro_credentials::ConfigValueOperations for Values {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        panic!("no helper requested")
-    }
-}
 /// Login callbacks that the deterministic account never needs.
 struct NoInteraction;
 impl OAuthLoginCallbacks for NoInteraction {
@@ -215,7 +208,7 @@ async fn assert_request(
     registry: &maestro_catalog::ModelRegistry,
     model: &Arc<std::sync::RwLock<Model>>,
 ) {
-    match registry.get_api_key_and_headers(model, &Values).await {
+    match registry.get_api_key_and_headers(model).await {
         maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
             assert!(matches!(api_key.as_deref(), Some("literal-key")));
             let headers = headers.unwrap();
@@ -315,9 +308,7 @@ fn request_variants(
         }
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
-        match crate::runtime_support::runtime()
-            .block_on(registry.get_api_key_and_headers(&model, &Values))
-        {
+        match crate::runtime_support::runtime().block_on(registry.get_api_key_and_headers(&model)) {
             maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
                 assert!(matches!(api_key.as_deref(), Some("literal-key")));
                 match headers {

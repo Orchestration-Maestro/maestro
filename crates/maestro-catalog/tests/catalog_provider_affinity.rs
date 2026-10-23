@@ -81,7 +81,7 @@ fn catalog_registration_keeps_original_option_families() {
         return;
     }
     let released = Arc::new(AtomicUsize::new(0));
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let (config, owner) = config(&released);
     registry.register_provider("p", config.clone()).unwrap();
     let _ = registry.get_all();
@@ -102,7 +102,7 @@ fn catalog_replacement_keeps_callback_and_source_ownership() {
         return;
     }
     let released = Arc::new(AtomicUsize::new(0));
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let (first_config, first) = config(&released);
     registry
         .register_provider("p", first_config.clone())

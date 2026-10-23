@@ -59,7 +59,8 @@ pub fn registry(configured: bool) -> ModelRegistry {
         *registry.get_all().write().unwrap() = vec![model];
         registry
     } else {
-        let registry = ModelRegistry::in_memory(crate::support::auth()).unwrap();
+        let registry =
+            ModelRegistry::in_memory(crate::support::auth(), crate::support::values()).unwrap();
         *registry.get_all().write().unwrap() = vec![model];
         registry
     }

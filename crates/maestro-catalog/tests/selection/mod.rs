@@ -72,9 +72,10 @@ fn optional_descriptor<'de, D: serde::Deserializer<'de>>(
 }
 /// Construct the real registry over controlled shared descriptors.
 pub fn registry(handles: &[Handle]) -> ModelRegistry {
-    let registry = ModelRegistry::in_memory(SharedHandle::new(AuthStorage::in_memory(
-        AuthStorageData::new(),
-    )))
+    let registry = ModelRegistry::in_memory(
+        SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new())),
+        crate::support::values(),
+    )
     .unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry

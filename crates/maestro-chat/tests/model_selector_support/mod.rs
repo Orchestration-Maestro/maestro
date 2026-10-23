@@ -1,8 +1,8 @@
 //! Strict model-picker corpus and controlled owner operations.
 use crate::bindings::Binding;
 use maestro_app::{
-    AuthStorage, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput,
-    ProviderModelInput, SharedHandle,
+    AuthStorage, ConfigValueOperations, ConfigValues, Model, ModelFileOperations, ModelRegistry,
+    ProviderConfigInput, ProviderModelInput, SharedHandle,
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use serde::Deserialize;
@@ -13,6 +13,20 @@ use std::{
     rc::Rc,
     sync::{Arc, RwLock},
 };
+
+/// Configured-value commands that selector fixtures never execute.
+pub struct UnusedCommands;
+
+impl ConfigValueOperations for UnusedCommands {
+    fn execute(&self, _: &str) -> Option<Vec<u8>> {
+        None
+    }
+}
+
+/// Credential command handle for selector fixtures.
+pub fn no_commands() -> ConfigValues {
+    Arc::new(UnusedCommands)
+}
 
 /// Every accepted environment authentication route, excluded from each child.
 #[cfg(not(target_arch = "wasm32"))]
@@ -72,9 +86,10 @@ pub struct Descriptor {
 impl Descriptor {
     /// Builds a full record using the existing owner's default metadata.
     pub fn model(&self) -> Model {
-        let mut model = maestro_app::ModelRegistry::in_memory(SharedHandle::new(
-            AuthStorage::in_memory(std::iter::empty().collect()),
-        ))
+        let mut model = maestro_app::ModelRegistry::in_memory(
+            SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
+            no_commands(),
+        )
         .unwrap()
         .get_all()
         .read()
@@ -326,6 +341,7 @@ pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicU
             reads: reads.clone(),
             failure: query.read_failure.as_ref().map(|f| f.message.clone()),
         },
+        no_commands(),
     )
     .unwrap();
     let mut providers: Vec<(String, Vec<ProviderModelInput>)> = vec![];
@@ -367,6 +383,7 @@ pub fn malformed_registry() -> ModelRegistry {
             failure: None,
             text: "{".into(),
         },
+        no_commands(),
     )
     .unwrap();
     assert!(

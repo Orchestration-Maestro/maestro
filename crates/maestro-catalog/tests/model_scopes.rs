@@ -149,7 +149,7 @@ fn scope_empty_patterns_still_consult_authentication() {
         observer.lock().unwrap().push(provider.to_owned());
         Ok(None)
     });
-    let registry = ModelRegistry::in_memory(storage).unwrap();
+    let registry = ModelRegistry::in_memory(storage, crate::support::values()).unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     let compare = model_id_comparator(&|_| None).unwrap();
     let (mut stdout, mut stderr) = (Vec::new(), Vec::new());

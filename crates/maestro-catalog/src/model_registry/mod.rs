@@ -10,7 +10,7 @@ pub use provider_config::{ProviderConfigInput, ProviderModelInput};
 use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
-use maestro_credentials::{AuthCredential, AuthStorage};
+use maestro_credentials::{AuthCredential, AuthStorage, ConfigValueOperations};
 use maestro_models::{
     Model, OAuthCredentials, OAuthProviderHandle, SharedHandle, get_models, get_oauth_providers,
     get_providers,
@@ -52,6 +52,12 @@ impl ModelFileOperations for NativeModelFileOperations {
         std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
     }
 }
+/// Runs the commands that configured credential values name.
+#[cfg(not(target_arch = "wasm32"))]
+pub type ConfigValues = SharedHandle<dyn ConfigValueOperations + Send + Sync>;
+/// Runs the commands that configured credential values name.
+#[cfg(target_arch = "wasm32")]
+pub type ConfigValues = SharedHandle<dyn ConfigValueOperations>;
 /// Shared mutable descriptor list published by the registry.
 type ModelList = Arc<RwLock<Vec<Arc<RwLock<Model>>>>>;
 /// Local catalog with a retained load diagnostic.
@@ -62,6 +68,8 @@ pub struct ModelRegistry {
     path: String,
     /// Caller-selected file effects.
     operations: Box<dyn ModelFileOperations>,
+    /// Runs the commands that configured credentials name.
+    config_values: ConfigValues,
     /// Privately synchronized published and retained catalog state.
     state: RwLock<CatalogState>,
 }
@@ -82,7 +90,8 @@ struct CatalogState {
 }
 
 impl ModelRegistry {
-    /// Load immediately from the explicit native file path.
+    /// Load immediately from the explicit native file path, keeping
+    /// `config_values` for configured credential commands.
     ///
     /// # Errors
     /// Returns a catalog error wrapping an account transformation failure.
@@ -90,20 +99,30 @@ impl ModelRegistry {
     pub fn create(
         auth_storage: Arc<AuthStorage>,
         models_json_path: impl Into<String>,
+        config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
-        Self::with_operations(auth_storage, models_json_path, NativeModelFileOperations)
+        Self::with_operations(
+            auth_storage,
+            models_json_path,
+            NativeModelFileOperations,
+            config_values,
+        )
     }
-    /// Construct an offline catalog without file access.
+    /// Construct an offline catalog without file access, keeping `config_values`
+    /// for configured credential commands.
     ///
     /// The credential owner is the platform handle, so a browser caller supplies its
     /// local handle while a native caller supplies the shared one.
     ///
     /// # Errors
     /// Returns a catalog error wrapping an account transformation failure.
-    pub fn in_memory(auth_storage: SharedHandle<AuthStorage>) -> Result<Self, CatalogError> {
-        Self::with_operations(auth_storage, "", MemoryOperations)
+    pub fn in_memory(
+        auth_storage: SharedHandle<AuthStorage>,
+        config_values: ConfigValues,
+    ) -> Result<Self, CatalogError> {
+        Self::with_operations(auth_storage, "", MemoryOperations, config_values)
     }
-    /// Load using caller-selected synchronous file effects.
+    /// Load using the supplied file effects and credential command handle.
     ///
     /// The credential owner is the platform handle, so a browser caller supplies its
     /// local handle while a native caller supplies the shared one.
@@ -114,11 +133,13 @@ impl ModelRegistry {
         auth_storage: SharedHandle<AuthStorage>,
         models_json_path: impl Into<String>,
         operations: impl ModelFileOperations + 'static,
+        config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
         let registry = Self {
             auth_storage,
             path: models_json_path.into(),
             operations: Box::new(operations),
+            config_values,
             state: RwLock::new(CatalogState {
                 models: Arc::default(),
                 load_error: None,

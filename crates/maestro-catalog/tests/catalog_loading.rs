@@ -22,9 +22,11 @@ fn memory_and_missing_files_use_complete_offline_catalog() {
     let expected: Vec<_> = get_providers().iter().flat_map(|p| get_models(p)).collect();
     assert_eq!(expected.len(), 970);
     for registry in [
-        ModelRegistry::in_memory(auth.clone()).unwrap(),
-        ModelRegistry::with_operations(auth.clone(), "absent", Missing).unwrap(),
-        ModelRegistry::with_operations(auth.clone(), "", Missing).unwrap(),
+        ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap(),
+        ModelRegistry::with_operations(auth.clone(), "absent", Missing, crate::support::values())
+            .unwrap(),
+        ModelRegistry::with_operations(auth.clone(), "", Missing, crate::support::values())
+            .unwrap(),
     ] {
         assert!(SharedHandle::ptr_eq(registry.auth_storage(), &auth));
         assert_eq!(registry.get_error(), None);
@@ -67,10 +69,12 @@ fn loading_never_resolves_keys_or_headers() {
     let file = support::File::new(input.as_bytes());
     let registries = vec![support::registry(&input)];
     #[cfg(not(target_arch = "wasm32"))]
-    let registries =
-        registries
-            .into_iter()
-            .chain([ModelRegistry::create(support::auth(), file.path()).unwrap()]);
+    let registries = registries.into_iter().chain([ModelRegistry::create(
+        support::auth(),
+        file.path(),
+        crate::support::values(),
+    )
+    .unwrap()]);
     for registry in registries {
         assert_eq!(registry.get_error(), None);
         assert!(
@@ -117,9 +121,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     let initial = r#"{"providers":{}}"#;
     let file = support::File::new(initial.as_bytes());
     let text = support::Text(Arc::new(std::sync::Mutex::new(Some(initial.into()))));
-    let mut native = ModelRegistry::create(support::auth(), file.path()).unwrap();
-    let mut controlled =
-        ModelRegistry::with_operations(support::auth(), "<models-file>", text.clone()).unwrap();
+    let (mut native, mut controlled) = paired_registries(&file, &text);
     std::fs::remove_file(file.path()).unwrap();
     *text.0.lock().unwrap() = None;
     for registry in [&mut native, &mut controlled] {
@@ -142,9 +144,13 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     );
     std::fs::remove_dir(file.path()).unwrap();
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(true));
-    let disappeared =
-        ModelRegistry::with_operations(support::auth(), "gone", Disappearing(fail.clone()))
-            .unwrap();
+    let disappeared = ModelRegistry::with_operations(
+        support::auth(),
+        "gone",
+        Disappearing(fail.clone()),
+        crate::support::values(),
+    )
+    .unwrap();
     assert!(
         disappeared
             .get_error()
@@ -170,6 +176,14 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     }
     native_replacement_decodes_utf8();
 }
+/// A native registry and a controlled one over the same initial text.
+#[cfg(not(target_arch = "wasm32"))]
+fn paired_registries(file: &support::File, text: &support::Text) -> (ModelRegistry, ModelRegistry) {
+    let native =
+        ModelRegistry::create(support::auth(), file.path(), crate::support::values()).unwrap();
+    let controlled = support::text_registry("<models-file>", text, crate::support::values());
+    (native, controlled)
+}
 /// Check native replacement decoding before JSON admission.
 #[cfg(not(target_arch = "wasm32"))]
 fn native_replacement_decodes_utf8() {
@@ -180,7 +194,8 @@ fn native_replacement_decodes_utf8() {
     invalid.push(255);
     invalid.extend_from_slice(b"\"}]}}}");
     let lossy = support::File::new(&invalid);
-    let registry = ModelRegistry::create(support::auth(), lossy.path()).unwrap();
+    let registry =
+        ModelRegistry::create(support::auth(), lossy.path(), crate::support::values()).unwrap();
     assert!(registry.find("custom", "\u{fffd}").is_some());
     assert_eq!(registry.get_error(), None);
 }

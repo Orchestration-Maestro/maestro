@@ -15,8 +15,7 @@ fn reload_replaces_custom_data_and_clears_load_errors() {
     support::corpus("reload_replaces_custom_data_and_clears_load_errors");
     let original = get_model("openrouter", "anthropic/claude-sonnet-4").unwrap();
     let text = support::Text(Arc::new(Mutex::new(Some(INITIAL.into()))));
-    let registry =
-        ModelRegistry::with_operations(support::auth(), "<models-file>", text.clone()).unwrap();
+    let registry = support::text_registry("<models-file>", &text, crate::support::values());
     reload(
         &registry,
         |input| *text.0.lock().unwrap() = input.map(str::to_owned),
@@ -25,7 +24,8 @@ fn reload_replaces_custom_data_and_clears_load_errors() {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let file = support::File::new(INITIAL.as_bytes());
-        let registry = ModelRegistry::create(support::auth(), file.path()).unwrap();
+        let registry =
+            ModelRegistry::create(support::auth(), file.path(), crate::support::values()).unwrap();
         reload(
             &registry,
             |input| match input {
@@ -84,7 +84,7 @@ fn reload(registry: &ModelRegistry, mut apply: impl FnMut(Option<&str>), origina
 
 #[test]
 fn retained_catalog_handles_track_edits_and_survive_reload() {
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let old = registry.get_all();
     assert!(Arc::ptr_eq(&old, &registry.get_all()));
     let first = old.read().unwrap()[0].clone();
@@ -271,7 +271,7 @@ fn oauth_transforms_run_in_registration_order_for_stored_tokens() {
         .map(|m| (m.provider, m.id))
         .collect();
     for _ in 0..2 {
-        let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+        let registry = ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap();
         let all = registry.get_all();
         let all = all.read().unwrap();
         assert_eq!(all[0].read().unwrap().name, "AB");
@@ -320,12 +320,13 @@ fn constructor_transform_failure_propagates_before_later_providers() {
     for route in 0..3 {
         fail.store(false, Ordering::SeqCst);
         let construct = || match route {
-            0 => ModelRegistry::in_memory(auth.clone()),
-            1 => ModelRegistry::create(auth.clone(), file.path()),
+            0 => ModelRegistry::in_memory(auth.clone(), crate::support::values()),
+            1 => ModelRegistry::create(auth.clone(), file.path(), crate::support::values()),
             _ => ModelRegistry::with_operations(
                 auth.clone(),
                 "<models-file>",
                 dynamic::CountFile(reads.clone()),
+                crate::support::values(),
             ),
         };
         assert!(construct().unwrap().get_error().is_none());

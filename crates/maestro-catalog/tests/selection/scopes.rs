@@ -156,7 +156,7 @@ pub fn registry(handles: &[Handle], authenticated: &[String]) -> ModelRegistry {
     for provider in authenticated {
         storage.set_runtime_api_key(provider, "present");
     }
-    let registry = ModelRegistry::in_memory(storage).unwrap();
+    let registry = ModelRegistry::in_memory(storage, crate::support::values()).unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry
 }
@@ -180,7 +180,9 @@ fn registry_with_commands(
         .collect();
     let text = serde_json::json!({ "providers": providers }).to_string();
     let storage = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()));
-    let registry = ModelRegistry::with_operations(storage, "<models>", Json(text)).unwrap();
+    let registry =
+        ModelRegistry::with_operations(storage, "<models>", Json(text), crate::support::values())
+            .unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry
 }

@@ -127,7 +127,9 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
 /// Observe absent and fallback-only provider metadata through the public registry.
 fn metadata_fallback() {
     use maestro_credentials::{AuthSource, AuthStatus};
-    let registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry =
+        maestro_catalog::ModelRegistry::in_memory(support::auth(), crate::support::values())
+            .unwrap();
     assert_eq!(
         registry
             .get_provider_auth_status("unknown-metadata")
@@ -155,7 +157,9 @@ fn metadata_fallback() {
 }
 #[test]
 fn display_names_cover_table_oauth_and_identifier_precedence() {
-    let registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry =
+        maestro_catalog::ModelRegistry::in_memory(support::auth(), crate::support::values())
+            .unwrap();
     let expected = DISPLAY_NAMES;
 
     assert_eq!(
@@ -255,8 +259,8 @@ fn display_table_mutations_are_shared_between_registries() {
 
         return;
     }
-    let first = ModelRegistry::in_memory(support::auth()).unwrap();
-    let second = ModelRegistry::in_memory(support::auth()).unwrap();
+    let first = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+    let second = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let registration = request_support::OAuth::new("openai", "OAuth title").register();
     assert_eq!(first.get_provider_display_name("openai"), "OAuth title");
     drop(registration);
@@ -390,7 +394,7 @@ fn metadata_empty_environment_and_oauth() {
 }
 /// Native environment metadata keeps the lower-layer configured flag.
 fn metadata_known_environment() {
-    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     let status = registry.get_provider_auth_status("openai").unwrap();
     assert!(!status.configured);
     assert_eq!(

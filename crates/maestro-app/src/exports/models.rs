@@ -21,8 +21,8 @@ pub use maestro_models::{Local, Threaded};
 pub use maestro_models::Transport;
 
 pub use maestro_catalog::{
-    CatalogError, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
-    ScopedModel, model_id_comparator,
+    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderConfigInput,
+    ProviderModelInput, ScopedModel, model_id_comparator,
 };
 
 pub use maestro_models::models_are_equal;

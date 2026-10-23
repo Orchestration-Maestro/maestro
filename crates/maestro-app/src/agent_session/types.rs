@@ -2,7 +2,6 @@
 use crate::resources::resource_loader::ResourceLoader;
 use maestro_agent::{Agent, AgentEvent};
 use maestro_catalog::{ModelRegistry, ScopedModel};
-use maestro_credentials::ConfigValueOperations;
 use maestro_extensions::{ExtensionExecution, ExtensionRunner, InputSource};
 use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel, Threaded};
 use maestro_session::{
@@ -150,8 +149,6 @@ pub struct AgentSessionConfig<E: ExtensionExecution = Threaded> {
     pub model_registry: Arc<ModelRegistry>,
     /// The extensions' runner.
     pub extension_runner: Rc<ExtensionRunner<E>>,
-    /// Runs the commands that configured credentials name.
-    pub config_value_operations: Arc<dyn ConfigValueOperations>,
 }
 
 /// What a tool-registry refresh activates.
