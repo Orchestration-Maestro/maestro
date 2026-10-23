@@ -269,8 +269,8 @@ mod tests {
     use super::expand_home;
     use std::{cmp::Ordering, io, pin::Pin};
 
-    /// Host operations whose home directory is the supplied text.
-    struct Home(&'static str);
+    /// Host operations whose home directory is the supplied text, or unknown without one.
+    struct Home(Option<&'static str>);
 
     impl AutocompleteOperations for Home {
         type Signal = ();
@@ -289,7 +289,9 @@ mod tests {
         }
 
         fn home_dir(&self) -> io::Result<String> {
-            Ok(self.0.to_owned())
+            self.0
+                .map(str::to_owned)
+                .ok_or_else(|| io::Error::other("unknown home"))
         }
 
         fn read_dir(&self, _: &str) -> io::Result<Vec<DirectoryEntry>> {
@@ -305,29 +307,42 @@ mod tests {
         }
     }
 
-    /// Each completion form returns the reference's result for the six supplied homes.
+    /// Each completion form returns the reference's result for the six supplied homes, spelled in
+    /// the host's path flavor.
     #[test]
     fn completion_paths_follow_the_reference_table() {
-        for (written, home, expected) in [
-            ("~", "/h", "/h"),
-            ("~/", "/h", "/h/"),
-            ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "~x"),
-            ("~", "/h/.", "/h/."),
-            ("~", "", ""),
-        ] {
+        let rows = if cfg!(windows) {
+            [
+                ("~", r"C:\h", r"C:\h"),
+                ("~/", r"C:\h", r"C:\h/"),
+                ("~/x", r"C:\h", r"C:\h\x"),
+                ("~x", r"C:\h", "~x"),
+                ("~", r"C:\h\.", r"C:\h\."),
+                ("~", "", ""),
+            ]
+        } else {
+            [
+                ("~", "/h", "/h"),
+                ("~/", "/h", "/h/"),
+                ("~/x", "/h", "/h/x"),
+                ("~x", "/h", "~x"),
+                ("~", "/h/.", "/h/."),
+                ("~", "", ""),
+            ]
+        };
+        for (written, home, expected) in rows {
             assert_eq!(
-                expand_home(&Home(home), written).unwrap(),
+                expand_home(&Home(Some(home)), written).unwrap(),
                 expected,
                 "{written:?} with home {home:?}"
             );
         }
     }
 
-    /// An unsupported form is returned as written without reading the home directory.
+    /// An unsupported form is returned as written without reading the home directory, which is
+    /// unknown here.
     #[test]
     fn other_forms_read_no_home_directory() {
-        let home = Home("/h");
-        assert_eq!(expand_home(&home, "a~/x").unwrap(), "a~/x");
+        assert_eq!(expand_home(&Home(None), "a~/x").unwrap(), "a~/x");
     }
 }

@@ -98,19 +98,38 @@ mod tests {
     use super::anchor_path;
     use std::io;
 
-    /// Each extension form returns the reference's result for the six supplied homes.
+    /// Each extension form returns the reference's result for the six supplied homes, spelled in
+    /// the host's path flavor.
     #[test]
     fn extension_paths_follow_the_reference_table() {
-        for (written, home, expected) in [
-            ("~", "/h", "/h"),
-            ("~/", "/h", "/h"),
-            ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "/h/x"),
-            ("~", "/h/.", "/h"),
-            ("~", "", "/w"),
-        ] {
+        let (cwd, rows) = if cfg!(windows) {
+            (
+                r"C:\w",
+                [
+                    ("~", r"C:\h", r"C:\h"),
+                    ("~/", r"C:\h", r"C:\h"),
+                    ("~/x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~", r"C:\h\.", r"C:\h"),
+                    ("~", "", r"C:\w"),
+                ],
+            )
+        } else {
+            (
+                "/w",
+                [
+                    ("~", "/h", "/h"),
+                    ("~/", "/h", "/h"),
+                    ("~/x", "/h", "/h/x"),
+                    ("~x", "/h", "/h/x"),
+                    ("~", "/h/.", "/h"),
+                    ("~", "", "/w"),
+                ],
+            )
+        };
+        for (written, home, expected) in rows {
             assert_eq!(
-                anchor_path(written, "/w", || Ok(home.to_owned())).unwrap(),
+                anchor_path(written, cwd, || Ok(home.to_owned())).unwrap(),
                 expected,
                 "{written:?} with home {home:?}"
             );
@@ -121,6 +140,11 @@ mod tests {
     #[test]
     fn other_forms_read_no_home_directory() {
         let failing = || Err(io::Error::new(io::ErrorKind::NotFound, "unknown home"));
-        assert_eq!(anchor_path("x/~/y", "/w", failing).unwrap(), "/w/x/~/y");
+        let (cwd, expected) = if cfg!(windows) {
+            (r"C:\w", r"C:\w\x\~\y")
+        } else {
+            ("/w", "/w/x/~/y")
+        };
+        assert_eq!(anchor_path("x/~/y", cwd, failing).unwrap(), expected);
     }
 }

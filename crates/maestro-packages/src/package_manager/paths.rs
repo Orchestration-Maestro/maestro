@@ -143,19 +143,38 @@ pub(super) fn resolve_local(
 mod tests {
     use super::resolve_local;
 
-    /// Each local source form returns the reference's result for the six supplied homes.
+    /// Each local source form returns the reference's result for the six supplied homes, spelled
+    /// in the host's path flavor.
     #[test]
     fn local_sources_follow_the_reference_table() {
-        for (written, home, expected) in [
-            ("~", "/h", "/h"),
-            ("~/", "/h", "/h"),
-            ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "/h/x"),
-            ("~", "/h/.", "/h/."),
-            ("~", "", ""),
-        ] {
+        let (base, rows) = if cfg!(windows) {
+            (
+                r"C:\b",
+                [
+                    ("~", r"C:\h", r"C:\h"),
+                    ("~/", r"C:\h", r"C:\h"),
+                    ("~/x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~", r"C:\h\.", r"C:\h\."),
+                    ("~", "", ""),
+                ],
+            )
+        } else {
+            (
+                "/b",
+                [
+                    ("~", "/h", "/h"),
+                    ("~/", "/h", "/h"),
+                    ("~/x", "/h", "/h/x"),
+                    ("~x", "/h", "/h/x"),
+                    ("~", "/h/.", "/h/."),
+                    ("~", "", ""),
+                ],
+            )
+        };
+        for (written, home, expected) in rows {
             assert_eq!(
-                resolve_local(written, "/b", || Ok(home.to_owned())).unwrap(),
+                resolve_local(written, base, || Ok(home.to_owned())).unwrap(),
                 expected,
                 "{written:?} with home {home:?}"
             );
@@ -167,7 +186,12 @@ mod tests {
     #[test]
     fn other_sources_resolve_from_the_base_without_home() {
         let failing = || Err(std::io::Error::other("unknown home"));
-        assert_eq!(resolve_local("x", "/b", failing).unwrap(), "/b/x");
-        assert_eq!(resolve_local(" ../y ", "/b", failing).unwrap(), "/y");
+        let (base, below, above) = if cfg!(windows) {
+            (r"C:\b", r"C:\b\x", r"C:\y")
+        } else {
+            ("/b", "/b/x", "/y")
+        };
+        assert_eq!(resolve_local("x", base, failing).unwrap(), below);
+        assert_eq!(resolve_local(" ../y ", base, failing).unwrap(), above);
     }
 }

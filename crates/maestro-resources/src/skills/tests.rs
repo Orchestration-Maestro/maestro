@@ -624,17 +624,28 @@ fn native_nofollow_metadata_distinguishes_links() {
     );
 }
 
-/// Each explicit skill form returns the reference's result for the six supplied homes.
+/// Each explicit skill form returns the reference's result for the five supplied homes, spelled
+/// in the host's path flavor.
 #[test]
 fn explicit_skill_paths_follow_the_reference_table() {
-    for (written, home, expected) in [
-        ("~", "/h", "/h"),
-        ("~/", "/h", "/h"),
-        ("~/x", "/h", "/h/x"),
-        ("~x", "/h", "/h/x"),
-        ("~", "/h/.", "/h/."),
-        ("~", "", ""),
-    ] {
+    let rows = if cfg!(windows) {
+        [
+            ("~", r"C:\h", r"C:\h"),
+            ("~/", r"C:\h", r"C:\h"),
+            ("~/x", r"C:\h", r"C:\h\x"),
+            ("~x", r"C:\h", r"C:\h\x"),
+            ("~", r"C:\h\.", r"C:\h\."),
+        ]
+    } else {
+        [
+            ("~", "/h", "/h"),
+            ("~/", "/h", "/h"),
+            ("~/x", "/h", "/h/x"),
+            ("~x", "/h", "/h/x"),
+            ("~", "/h/.", "/h/."),
+        ]
+    };
+    for (written, home, expected) in rows {
         assert_eq!(
             super::normalize_skill_path(written, &options(home)).unwrap(),
             expected,

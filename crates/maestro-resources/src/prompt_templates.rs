@@ -335,29 +335,48 @@ fn resolve_prompt_path(path: &str, options: LoadPromptTemplatesOptions<'_>) -> i
 mod tests {
     use super::{LoadPromptTemplatesOptions, resolve_prompt_path};
 
-    /// Each explicit prompt form returns the reference's result for the six supplied homes.
+    /// Each explicit prompt form returns the reference's result for the six supplied homes, spelled
+    /// in the host's path flavor.
     #[test]
     fn explicit_prompt_paths_follow_the_reference_table() {
-        for (written, home, expected) in [
-            ("~", "/h", "/h"),
-            ("~/", "/h", "/h"),
-            ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "/h/x"),
-            ("~", "/h/.", "/h/."),
-            ("~", "", "/w"),
-        ] {
+        let (cwd, rows) = if cfg!(windows) {
+            (
+                r"C:\w",
+                [
+                    ("~", r"C:\h", r"C:\h"),
+                    ("~/", r"C:\h", r"C:\h"),
+                    ("~/x", r"C:\h", r"C:\h\x"),
+                    ("~x", r"C:\h", r"C:\h\x"),
+                    ("~", r"C:\h\.", r"C:\h\."),
+                    ("~", "", r"C:\w"),
+                ],
+            )
+        } else {
+            (
+                "/w",
+                [
+                    ("~", "/h", "/h"),
+                    ("~/", "/h", "/h"),
+                    ("~/x", "/h", "/h/x"),
+                    ("~x", "/h", "/h/x"),
+                    ("~", "/h/.", "/h/."),
+                    ("~", "", "/w"),
+                ],
+            )
+        };
+        for (written, home, expected) in rows {
             assert_eq!(
-                resolve_prompt_path(written, options(home)).unwrap(),
+                resolve_prompt_path(written, options(cwd, home)).unwrap(),
                 expected,
                 "{written:?} with home {home:?}"
             );
         }
     }
 
-    /// Options with the supplied home spelling below the working directory `/w`.
-    fn options(home: &str) -> LoadPromptTemplatesOptions<'_> {
+    /// Options with the supplied working directory and home spelling.
+    fn options<'a>(cwd: &'a str, home: &'a str) -> LoadPromptTemplatesOptions<'a> {
         LoadPromptTemplatesOptions {
-            cwd: "/w",
+            cwd,
             home,
             agent_dir: "/a",
             config_dir_name: ".maestro",
