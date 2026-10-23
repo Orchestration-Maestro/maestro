@@ -41,8 +41,8 @@ struct Frame {
 #[serde(deny_unknown_fields, tag = "kind", rename_all = "lowercase")]
 enum Effect {
     Write { data: String },
-    Show,
-    Hide,
+    Show {},
+    Hide {},
 }
 
 /// Replays both focus paths using the delivered writer and shared controlled runtime.
@@ -168,8 +168,8 @@ fn frames(
             .iter()
             .map(|effect| match effect {
                 Effect::Write { data } => data.clone(),
-                Effect::Show => "\x1b[?25h".into(),
-                Effect::Hide => "\x1b[?25l".into(),
+                Effect::Show {} => "\x1b[?25h".into(),
+                Effect::Hide {} => "\x1b[?25l".into(),
             })
             .collect();
         assert_eq!(terminal.writes(), expected);

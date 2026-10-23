@@ -68,13 +68,13 @@ fn replay(case: &Case) {
             Action::Hide { value } => widget.assistant().set_hide_thinking_block(*value),
             Action::Label { value } => widget.assistant().set_hidden_thinking_label(value.clone()),
             Action::Expand { value } => widget.expand(*value),
-            Action::Invalidate => widget.invalidate(),
+            Action::Invalidate {} => widget.invalidate(),
             Action::Theme { value } => {
                 state.set_theme_instance(palette::palette(value)).unwrap();
             }
             Action::Keys { value } => bind(value.clone()),
-            Action::CaptureChildren => alias = Some(widget.children()),
-            Action::Clear => widget.clear(),
+            Action::CaptureChildren {} => alias = Some(widget.children()),
+            Action::Clear {} => widget.clear(),
             Action::AppendAlias { text } => alias
                 .as_ref()
                 .unwrap()
