@@ -1121,10 +1121,9 @@ fn theme_readers_fall_back_without_a_published_theme() {
     );
 }
 
-#[test]
-fn native_renderers_fall_back_without_a_published_theme() {
-    use maestro_export::{ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput};
-    use serde_json::json;
+/// Every native tool, each bound to a themed call and to result branches that draw nothing.
+fn native_bindings() -> Vec<(&'static str, maestro_tools::ToolRendererBinding)> {
+    use maestro_tools::ToolRendererBinding;
     let read = maestro_tools::create_read_tool_definition::<()>(
         "/work".into(),
         maestro_tools::ReadToolOptions::default(),
@@ -1133,17 +1132,45 @@ fn native_renderers_fall_back_without_a_published_theme() {
         "/work".into(),
         maestro_tools::EditToolOptions::default(),
     );
-    let bindings: Vec<(&str, maestro_tools::ToolRendererBinding)> = vec![
-        (
-            "read",
-            maestro_tools::ToolRendererBinding::from_definition(&read),
-        ),
-        (
-            "edit",
-            maestro_tools::ToolRendererBinding::from_raw(&edit).unwrap(),
-        ),
-    ];
-    let renderer = maestro_export::create_tool_html_renderer(ToolHtmlRendererDeps {
+    let write = maestro_tools::create_write_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::WriteToolOptions::default(),
+    );
+    let find = maestro_tools::create_find_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::FindToolOptions::default(),
+        std::sync::Arc::new(maestro_tools::ToolsManager::new(
+            "/unused/search".into(),
+            None,
+        )),
+    );
+    let grep = maestro_tools::create_grep_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::GrepToolOptions::default(),
+        std::sync::Arc::new(maestro_tools::ToolsManager::new(
+            "/unused/search".into(),
+            None,
+        )),
+    );
+    let ls = maestro_tools::create_ls_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::LsToolOptions::default(),
+    );
+    vec![
+        ("read", ToolRendererBinding::from_definition(&read)),
+        ("edit", ToolRendererBinding::from_raw(&edit).unwrap()),
+        ("write", ToolRendererBinding::from_raw(&write).unwrap()),
+        ("find", ToolRendererBinding::from_raw(&find).unwrap()),
+        ("grep", ToolRendererBinding::from_raw(&grep).unwrap()),
+        ("ls", ToolRendererBinding::from_raw(&ls).unwrap()),
+    ]
+}
+
+/// An HTML renderer over every native tool with no published theme.
+fn unpublished_native_renderer() -> impl maestro_export::ToolHtmlRenderer {
+    use maestro_export::{ToolHtmlRendererDeps, create_tool_html_renderer};
+    let bindings = native_bindings();
+    create_tool_html_renderer(ToolHtmlRendererDeps {
         get_tool_definition: move |name: &str| {
             Ok(bindings
                 .iter()
@@ -1154,8 +1181,15 @@ fn native_renderers_fall_back_without_a_published_theme() {
         cwd: "/work",
         width: None,
         environment: component_support::environment(),
-    });
-    for name in ["read", "edit"] {
+    })
+}
+
+#[test]
+fn native_calls_fall_back_without_a_published_theme() {
+    use maestro_export::ToolHtmlRenderer;
+    use serde_json::json;
+    let renderer = unpublished_native_renderer();
+    for name in ["read", "edit", "write", "find", "grep", "ls"] {
         assert_eq!(
             renderer
                 .render_call("id", name, Some(&json!({"path": "notes.txt"})))
@@ -1163,22 +1197,78 @@ fn native_renderers_fall_back_without_a_published_theme() {
             None,
             "{name} call"
         );
-        assert!(
-            renderer
-                .render_result(
-                    "id",
-                    name,
-                    ToolHtmlResultInput {
-                        content: None,
-                        details: None,
-                        is_error: false,
-                    },
-                )
-                .unwrap()
-                .is_none(),
-            "{name} result"
-        );
     }
+}
+
+/// A successful write, an empty or hidden result and a listing without output draw nothing,
+/// so they render their empty component instead of falling back.
+#[test]
+fn native_theme_free_result_branches_render_without_a_published_theme() {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};
+    use serde_json::json;
+    let renderer = unpublished_native_renderer();
+    let rows = [
+        ("read", json!({"path": "notes.txt"})),
+        ("read-hidden", json!({"path": "AGENTS.md"})),
+        (
+            "edit",
+            json!({"path": "notes.txt", "oldText": "a", "newText": "b"}),
+        ),
+        ("write", json!({"path": "notes.txt"})),
+        ("find", json!({"pattern": "*.rs"})),
+        ("grep", json!({"pattern": "needle"})),
+        ("ls", json!({"path": "."})),
+    ];
+    for (id, args) in rows {
+        let name = id.split('-').next().unwrap_or(id);
+        assert_eq!(
+            renderer.render_call(id, name, Some(&args)).unwrap(),
+            None,
+            "{id} call"
+        );
+        let result = renderer
+            .render_result(
+                id,
+                name,
+                ToolHtmlResultInput {
+                    content: None,
+                    details: None,
+                    is_error: false,
+                },
+            )
+            .unwrap()
+            .unwrap_or_else(|| panic!("{id} result"));
+        assert_eq!(result.collapsed, None, "{id} collapsed");
+        assert_eq!(result.expanded.as_deref(), Some(""), "{id} expanded");
+    }
+}
+
+#[test]
+fn native_styled_result_branches_fall_back_without_a_published_theme() {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlResultInput};
+    use serde_json::json;
+    let renderer = unpublished_native_renderer();
+    assert_eq!(
+        renderer
+            .render_call("id", "write", Some(&json!({"path": "notes.txt"})))
+            .unwrap(),
+        None
+    );
+    assert!(
+        renderer
+            .render_result(
+                "id",
+                "write",
+                ToolHtmlResultInput {
+                    content: Some(&json!([{"type": "text", "text": "no such file"}])),
+                    details: None,
+                    is_error: true,
+                },
+            )
+            .unwrap()
+            .is_none(),
+        "a styled error falls back"
+    );
 }
 
 #[test]

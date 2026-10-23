@@ -180,7 +180,7 @@ pub(super) fn render_call(
 }
 
 /// The warning line for a truncated read, empty when nothing was cut.
-fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String> {
+fn truncation_notice(details: Option<&Value>, theme: &LiveTheme) -> Rendered<String> {
     let Some(cut) = TruncationView::selected(details) else {
         return Ok(String::new());
     };
@@ -203,9 +203,10 @@ fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String>
             format_size(cut.max_bytes())
         )
     };
+    let resolved = themed(theme.get())?;
     Ok(format!(
         "\n{}",
-        paint(theme, &ThemeColor::Warning, &notice)?
+        paint(&resolved, &ThemeColor::Warning, &notice)?
     ))
 }
 
@@ -213,7 +214,7 @@ fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String>
 fn format_read_result(
     result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<String> {
     let output = get_text_output(
@@ -239,17 +240,22 @@ fn format_read_result(
     } else {
         PREVIEW_LINES.min(lines.len())
     };
-    let rows = lines[..shown]
+    let shown_lines = &lines[..shown];
+    let styled = (!shown_lines.is_empty() && language.is_none())
+        .then(|| themed(theme.get()))
+        .transpose()?;
+    let rows = shown_lines
         .iter()
-        .map(|line| match language {
-            Some(_) => Ok(replace_tabs(line)),
-            None => paint(theme, &ThemeColor::ToolOutput, &replace_tabs(line)),
+        .map(|line| match &styled {
+            Some(theme) => paint(theme, &ThemeColor::ToolOutput, &replace_tabs(line)),
+            None => Ok(replace_tabs(line)),
         })
         .collect::<Rendered<Vec<_>>>()?;
     let mut text = ["\n", &rows.join("\n")].concat();
     if lines.len() > shown {
         let counts = format!("{} more lines", lines.len() - shown);
-        text += &expand_hint(&counts, theme, &context.environment.live_theme)?;
+        let resolved = themed(theme.get())?;
+        text += &expand_hint(&counts, &resolved, &context.environment.live_theme)?;
     }
     Ok(text + &truncation_notice(result.details, theme)?)
 }
@@ -265,8 +271,6 @@ pub(super) fn render_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let hidden = !options.expanded
         && !context.is_error
         && classify(render_args(context.args), context)?.is_some();

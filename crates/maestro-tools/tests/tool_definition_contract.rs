@@ -591,7 +591,7 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
     };
     let mut context = display_support::context::<Value>(&args, &setup, &env, None);
     let expected = Rc::clone(&context.environment);
-    let selected = Rc::clone(&env.theme);
+    let selected = env.live.get().unwrap();
     let observations = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&observations);
     let callback: maestro_tools::ToolRenderCall<Value> = Rc::new(move |args, _, context| {

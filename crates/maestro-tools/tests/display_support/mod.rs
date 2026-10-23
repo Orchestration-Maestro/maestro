@@ -396,8 +396,6 @@ pub struct Env {
     pub state: Rc<ThemeState>,
     /// The published theme's handle.
     pub live: LiveTheme,
-    /// The theme the renderers are given.
-    pub theme: Rc<Theme>,
     /// Classifies code.
     pub highlighter: Rc<dyn SyntaxHighlighter>,
     /// Image support of the terminal.
@@ -421,12 +419,11 @@ impl Env {
             themes_dir: String::new(),
             custom_themes_dir: String::new(),
         }));
-        state.set_theme_instance(Rc::clone(&theme)).unwrap();
+        state.set_theme_instance(theme).unwrap();
         let live = state.theme();
         Self {
             state,
             live,
-            theme,
             highlighter,
             terminal: TerminalImage::new(|_| None, || 1),
             runtime: Rc::new(manual_runtime::ManualRuntime::default()),
@@ -434,10 +431,9 @@ impl Env {
     }
 
     /// Publish a palette shifted by `shift` and make it the renderers' theme.
-    pub fn republish(&mut self, shift: u8) {
-        self.theme = Rc::new(palette(shift));
+    pub fn republish(&self, shift: u8) {
         self.state
-            .set_theme_instance(Rc::clone(&self.theme))
+            .set_theme_instance(Rc::new(palette(shift)))
             .unwrap();
     }
 }

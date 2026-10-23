@@ -629,7 +629,7 @@ fn bash_renderers_read_the_published_theme() {
             case.expected["original"]
         );
         env.state
-            .set_theme_instance(std::rc::Rc::clone(&self::env(20).theme))
+            .set_theme_instance(self::env(20).live.get().unwrap())
             .unwrap();
         ctx.last_component = Some(original);
         let replacement = tool.render_call.as_ref().unwrap()(Some(&args), &decoy, &ctx).unwrap();
@@ -761,7 +761,7 @@ fn bash_expand_hint_changes_on_retained_render() {
             case.expected["after"]
         );
         env.state
-            .set_theme_instance(std::rc::Rc::clone(&self::env(20).theme))
+            .set_theme_instance(self::env(20).live.get().unwrap())
             .unwrap();
         assert_eq!(
             serde_json::to_value(row.render(80)).unwrap(),

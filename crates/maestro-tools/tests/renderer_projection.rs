@@ -995,3 +995,34 @@ fn projected_renderers_resolve_the_live_theme_per_invocation() {
         );
     }
 }
+
+#[test]
+fn theme_free_native_results_draw_without_a_published_theme() {
+    use maestro_tools::ToolRendererBinding;
+    let (env, setup) = environment();
+    let args = json!({"path": "notes.txt"});
+    let row = context::<maestro_tools::ToolRendererState>(&args, &setup, &env, None);
+    let write = maestro_tools::create_write_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::WriteToolOptions::default(),
+    );
+    let binding = ToolRendererBinding::from_raw(&write).unwrap();
+    let prepared = binding
+        .render_result
+        .as_ref()
+        .unwrap()
+        .prepare(ToolRenderResultLike {
+            content: &[],
+            details: None,
+            terminate: Some(false),
+            is_error: Some(false),
+        })
+        .unwrap();
+    assert!(
+        prepared
+            .render(settled(false), &maestro_theme::LiveTheme::default(), &row)
+            .unwrap()
+            .render(20)
+            .is_empty()
+    );
+}

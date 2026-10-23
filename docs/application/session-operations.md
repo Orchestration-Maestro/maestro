@@ -111,9 +111,10 @@ blocks of the newest answer, skipping an aborted empty one, and trims the result
 `export_to_html` writes the session through the export owner with the agent's
 system prompt and tools, the saved theme name and custom tool rendering. The
 caller supplies the export assets and the rendering environment whose published
-theme the renderers use. Without a published theme, tools keep their standard
-rendering. It refuses a session that is only in memory before it renders or
-writes anything.
+theme the renderers use. A renderer resolves that theme only when it reads a
+color: without a published theme, one that never reads it still draws, and one
+that reads it keeps its standard rendering. It refuses a session that is only in
+memory before it renders or writes anything.
 
 `export_to_jsonl` writes a fresh session header followed by the current branch,
 each entry's `parentId` replaced by the previous entry's identity. Without a path

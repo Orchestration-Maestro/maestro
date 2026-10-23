@@ -54,8 +54,6 @@ pub(super) fn render_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let view = ListingView {
         count: number(result.details, "resultLimitReached"),
         truncation: TruncationView::selected(result.details),

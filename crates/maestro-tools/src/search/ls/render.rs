@@ -65,8 +65,6 @@ pub(super) fn render_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let text = render_listing(
         result,
         options,

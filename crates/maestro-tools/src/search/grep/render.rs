@@ -56,8 +56,6 @@ pub(super) fn render_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let details = result.details;
     let view = ListingView {
         count: number(details, "matchLimitReached"),

@@ -278,12 +278,11 @@ pub(super) fn render_call(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let args = render_args(args);
     let component = call_component(context);
     admit_preview(&component, preview_input(args), context)?;
-    build_call(&component, args, theme, context)?;
+    let resolved = themed(theme.get())?;
+    build_call(&component, args, &resolved, context)?;
     Ok(component)
 }
 
@@ -291,7 +290,7 @@ pub(super) fn render_call(
 fn format_result(
     preview: Option<&EditPreview>,
     result: &ToolRenderResultLike<'_, Value>,
-    theme: &Theme,
+    theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<Option<String>> {
     if context.is_error {
@@ -306,7 +305,8 @@ fn format_result(
         {
             return Ok(None);
         }
-        return paint(theme, &ThemeColor::Error, &text).map(Some);
+        let resolved = themed(theme.get())?;
+        return paint(&resolved, &ThemeColor::Error, &text).map(Some);
     }
     let Some(details) = result
         .details
@@ -369,13 +369,12 @@ pub(super) fn render_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let call = context.state.borrow().call_component.clone();
     if let Some(call) = &call
         && settle(call, result, context)
     {
-        build_call(call, render_args(context.args), theme, context)?;
+        let resolved = themed(theme.get())?;
+        build_call(call, render_args(context.args), &resolved, context)?;
     }
     let output = match &call {
         Some(call) => format_result(call.state.borrow().preview.as_ref(), result, theme, context)?,

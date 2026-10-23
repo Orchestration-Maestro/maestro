@@ -231,11 +231,11 @@ fn read_highlighting_reads_the_current_published_theme() {
     check_rows("read_highlighting_reads_the_current_published_theme", true);
     let keyword = color("syntaxKeyword");
     let probe = Probe::new(true);
-    let mut env = Env::with(
+    let env = Env::with(
         Rc::new(display_support::palette(0)),
         Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
     );
-    let before_theme = maestro_theme::LiveTheme::from_theme(Rc::clone(&env.theme));
+    let before_theme = maestro_theme::LiveTheme::from_theme(env.live.get().unwrap());
     let args = json!({"path": "main.rs"});
     let render = |env: &Env| {
         let ctx = context(&args, &setup(), env, None);
@@ -264,8 +264,8 @@ fn read_highlighting_reads_the_current_published_theme() {
             keyword + 40
         ))
     );
-    let mut native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
-    let original = maestro_theme::LiveTheme::from_theme(Rc::clone(&native.theme));
+    let native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
+    let original = maestro_theme::LiveTheme::from_theme(native.live.get().unwrap());
     assert_eq!(
         native_row(
             &json!({"path": "main.rs"}),

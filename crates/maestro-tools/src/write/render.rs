@@ -146,8 +146,6 @@ pub(super) fn render_call(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let args = render_args(args);
     let component = call_component(context.last_component.as_ref());
     let raw_path = str(selected_path(args)).unwrap_or_default();
@@ -158,7 +156,12 @@ pub(super) fn render_call(
         Some(body) => update(previous, raw_path, body, context),
     };
     component.cache.replace(cache);
-    let text = format_call(args, component.cache.borrow().as_ref(), (theme, context))?;
+    let resolved = themed(theme.get())?;
+    let text = format_call(
+        args,
+        component.cache.borrow().as_ref(),
+        (&resolved, context),
+    )?;
     component.text.set_text(text);
     Ok(component)
 }
@@ -173,11 +176,10 @@ pub(super) fn render_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
-    let resolved = themed(theme.get())?;
-    let theme = &*resolved;
     let output = UserBlock::text_output(result.content);
     if context.is_error && !output.is_empty() {
-        let error = paint(theme, &ThemeColor::Error, &output)?;
+        let resolved = themed(theme.get())?;
+        let error = paint(&resolved, &ThemeColor::Error, &output)?;
         return Ok(into_text(
             context.last_component.as_ref(),
             format!("\n{error}"),
