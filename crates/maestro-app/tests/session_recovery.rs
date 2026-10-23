@@ -1906,3 +1906,35 @@ fn aborting_a_compaction_left_unobserved_cancels_it() {
         assert!(!h.session.is_compacting());
     });
 }
+
+#[test]
+fn an_automatic_compaction_whose_task_is_discarded_reports_it() {
+    on_paused_task_set(|_| async {
+        let tasks = Rc::new(RefCell::new(Vec::new()));
+        let queue = Rc::clone(&tasks);
+        let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
+        let h = harness(HarnessOptions {
+            settings: keep_recent(json!({})),
+            factories: vec![gated(supplied_summary(), Some(gate))],
+            context_window: Some(WINDOW),
+            spawn: Some(Rc::new(move |task| queue.borrow_mut().push(task))),
+            ..HarnessOptions::default()
+        })
+        .await;
+        seed_history(&h);
+        let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
+        let mut check = std::pin::pin!(h.session.check_compaction(&message, true));
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(check.as_mut().poll(&mut context).is_pending());
+        assert_eq!(
+            tasks.borrow().len(),
+            1,
+            "the agent's own facility holds the work"
+        );
+        tasks.borrow_mut().clear();
+        let std::task::Poll::Ready(outcome) = check.as_mut().poll(&mut context) else {
+            panic!("the discarded compaction is reported at once");
+        };
+        assert_eq!(outcome.unwrap_err().message, "channel closed");
+    });
+}

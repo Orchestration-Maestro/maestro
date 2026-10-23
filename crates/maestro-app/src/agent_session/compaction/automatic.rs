@@ -24,8 +24,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// checks before a prompt.
     ///
     /// # Errors
-    /// Returns a failure reading the stored branch or the response's usage; a failing
-    /// compaction reports its failure through `compaction_end` instead.
+    /// Returns a failure reading the stored branch or the response's usage, or the failure
+    /// when the compaction's task ended before it did; a failing compaction reports its
+    /// failure through `compaction_end` instead.
     pub async fn check_compaction(
         self: &Rc<Self>,
         message: &AssistantMessage,
@@ -64,27 +65,34 @@ impl<E: ExtensionExecution> AgentSession<E> {
             }
             self.state.borrow_mut().overflow_recovery_attempted = true;
             self.drop_trailing_assistant(|_| true);
-            self.run_auto_compaction(CompactionReason::Overflow, true)
+            return self
+                .run_auto_compaction(CompactionReason::Overflow, true)
                 .await;
-            return Ok(());
         }
         let tokens = self.context_tokens(message, boundary.as_deref())?;
         let Some(tokens) = tokens else {
             return Ok(());
         };
         if should_compact(tokens, window, &self.compaction_policy()) {
-            self.run_auto_compaction(CompactionReason::Threshold, false)
+            return self
+                .run_auto_compaction(CompactionReason::Threshold, false)
                 .await;
         }
         Ok(())
     }
 
     /// Starts one automatic compaction on the session and waits for it to end.
-    async fn run_auto_compaction(self: &Rc<Self>, reason: CompactionReason, will_retry: bool) {
+    ///
+    /// # Errors
+    /// Returns the failure when the compaction's task ended before it did.
+    async fn run_auto_compaction(
+        self: &Rc<Self>,
+        reason: CompactionReason,
+        will_retry: bool,
+    ) -> Result<(), DiagnosticErrorInfo> {
         let session = Rc::clone(self);
         let run = async move { session.auto_compaction(reason, will_retry).await };
-        // A closed receiver means the agent had no task facility to finish the compaction.
-        drop(self.start_operation(run).await);
+        self.start_operation(run).await.map_err(thrown)
     }
 
     /// Runs one automatic compaction, reporting every outcome through `compaction_end`.

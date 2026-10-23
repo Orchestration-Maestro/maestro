@@ -233,8 +233,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Starts the selection notification now and lets it finish on the agent's task facility;
-    /// without one, a notification that does not finish at once is dropped.
+    /// Starts the selection notification now and lets it finish on the session's task
+    /// facility.
     fn emit_thinking_level_select(&self, mut event: ThinkingLevelSelectEvent) {
         let runner = Rc::clone(&self.extension_runner);
         drop(self.start_operation(async move {

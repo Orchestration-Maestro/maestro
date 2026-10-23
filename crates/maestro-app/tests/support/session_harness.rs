@@ -92,6 +92,8 @@ pub struct HarnessOptions {
     pub system_prompt: Option<&'static str>,
     /// The loader's appended prompt texts.
     pub append_system_prompt: Vec<String>,
+    /// The agent's own task facility; the session supplies its default when absent.
+    pub spawn: Option<maestro_agent::AgentSpawner<Local>>,
 }
 
 impl Default for HarnessOptions {
@@ -105,6 +107,7 @@ impl Default for HarnessOptions {
             session_manager: None,
             system_prompt: None,
             append_system_prompt: Vec::new(),
+            spawn: None,
         }
     }
 }
@@ -484,11 +487,15 @@ pub fn build_tree(manager: &mut SessionManager) -> Names {
 }
 
 /// A local agent on the first scripted model, with the window replaced when given.
-fn agent(model: &Model, window: Option<f64>) -> Rc<Agent<CustomAgentMessages, Local>> {
+fn agent(
+    model: &Model,
+    window: Option<f64>,
+    spawn: Option<maestro_agent::AgentSpawner<Local>>,
+) -> Rc<Agent<CustomAgentMessages, Local>> {
     let mut initial = model.clone();
     initial.context_window = window.unwrap_or(initial.context_window);
     Rc::new(Agent::new_local(AgentOptions {
-        spawn: Some(spawn_local()),
+        spawn,
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
@@ -537,7 +544,7 @@ pub async fn harness(options: HarnessOptions) -> Harness {
         ..RegisterFauxProviderOptions::default()
     });
     let registry = Arc::new(catalog(&faux, options.auth, options.context_window));
-    let agent = agent(&faux.models[0], options.context_window);
+    let agent = agent(&faux.models[0], options.context_window, options.spawn);
     let session_manager =
         Rc::new(RefCell::new(options.session_manager.unwrap_or_else(|| {
             SessionManager::in_memory(Some(&cwd)).unwrap()
