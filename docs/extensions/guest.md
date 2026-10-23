@@ -554,14 +554,13 @@ option again. Loading it into an application is opt-in, and
 `examples/extensions/README.md` gives the build and controlled-run commands.
 ### A duration tool with its own dependency
 
-`examples/extensions/with-deps/main.rs` is the shipped example whose extension
-declares its own parsing dependency: a regular expression for the accepted
-duration text, declared as a development dependency of the example crate, so
-that crate's examples and tests share it while the guest library itself stays
-free of any parsing library. It registers one `parse_duration` tool whose schema
-requires the string member `duration`, returns
-`<duration> = <milliseconds> milliseconds`, and leaves the details an empty
-document with optional metadata and termination absent.
+`examples/extensions/with-deps/main.rs` is the shipped example that parses
+durations with a regular expression. The dependency is the workspace pin,
+declared once as a development dependency of the example crate, so its examples
+and tests share it and the guest library never depends on a parsing library. It
+registers one `parse_duration` tool whose schema requires the string member
+`duration`, returns `<duration> = <milliseconds> milliseconds`, and leaves the
+details an empty document with optional metadata and termination absent.
 
 Units run from milliseconds to years, each with its short and long aliases and
 matched case-insensitively over ASCII. A bare number means milliseconds, and a

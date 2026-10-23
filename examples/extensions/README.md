@@ -77,10 +77,10 @@ an application is opt-in.
 ### Building with-deps
 
 The [`with-deps/main.rs`](with-deps/main.rs) example parses a duration string
-with a regular-expression dependency it declares itself. The dependency is the
-workspace pin, declared as a development dependency of this crate, so it reaches
-the crate's examples and tests without entering the guest library; only the
-pinned toolchain and the `wasm32-wasip2` target are needed:
+with a regular expression. The dependency is the workspace pin, declared once as
+a development dependency of this crate, so it reaches the crate's examples and
+tests without entering the guest library; only the pinned toolchain and the
+`wasm32-wasip2` target are needed:
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
