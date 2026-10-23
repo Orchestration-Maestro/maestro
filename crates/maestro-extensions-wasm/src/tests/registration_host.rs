@@ -7,6 +7,10 @@ use std::collections::HashMap;
 pub(crate) struct Bank {
     /// Explicit host rejection applied before registration state changes.
     pub error: Option<String>,
+    /// Registration number to refuse, counted from zero, with the host's message.
+    pub refuse_at: Option<(usize, String)>,
+    /// Registrations admitted while a refusal was armed.
+    admitted: usize,
     /// Command names, descriptions and independent completion presence.
     pub commands: Vec<(String, Option<String>, bool)>,
     /// Literal shortcut keys and descriptions.
@@ -18,6 +22,20 @@ pub(crate) struct Bank {
 }
 
 impl Bank {
+    /// The message refusing this registration, after admitting the configured prefix.
+    pub fn refusal(&mut self) -> Option<String> {
+        if let Some(error) = &self.error {
+            return Some(error.clone());
+        }
+        match &self.refuse_at {
+            Some((position, message)) if *position == self.admitted => Some(message.clone()),
+            _ => {
+                self.admitted += 1;
+                None
+            }
+        }
+    }
+
     /// Returns the currently configured host reply without resolving defaults.
     pub fn value(&self, name: &str) -> Result<Option<crate::FlagValue>, String> {
         self.values

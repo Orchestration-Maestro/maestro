@@ -134,12 +134,7 @@ impl host::HostToolUpdate for State {
         partial: String,
     ) -> wasmtime::Result<Result<(), String>> {
         let value: serde_json::Value = serde_json::from_str(&partial)?;
-        self.observed.updates.push(partial);
-        Ok(if value["details"] == "fail update" {
-            Err("failed update: Ω".into())
-        } else {
-            Ok(())
-        })
+        Ok(self.observed.update(&partial, &value["details"]))
     }
     fn drop(&mut self, this: Resource<Update>) -> wasmtime::Result<()> {
         self.release(this)
@@ -404,8 +399,8 @@ impl host::Host for State {
         custom_type: String,
         handler: Resource<Identity>,
     ) -> wasmtime::Result<Result<(), String>> {
-        if let Some(error) = &self.observed.registrations.error {
-            return Ok(Err(error.clone()));
+        if let Some(error) = self.observed.registrations.refusal() {
+            return Ok(Err(error));
         }
         self.observed
             .register(format!("renderer {custom_type}"), handler.rep());
@@ -544,8 +539,8 @@ impl host::Host for State {
         completions: Option<Resource<Identity>>,
         handler: Resource<Identity>,
     ) -> wasmtime::Result<Result<(), String>> {
-        if let Some(error) = &self.observed.registrations.error {
-            return Ok(Err(error.clone()));
+        if let Some(error) = self.observed.registrations.refusal() {
+            return Ok(Err(error));
         }
         self.observed.register_command(&name, handler.rep());
         self.observed.registrations.commands.push((
@@ -565,8 +560,8 @@ impl host::Host for State {
         description: Option<String>,
         handler: Resource<Identity>,
     ) -> wasmtime::Result<Result<(), String>> {
-        if let Some(error) = &self.observed.registrations.error {
-            return Ok(Err(error.clone()));
+        if let Some(error) = self.observed.registrations.refusal() {
+            return Ok(Err(error));
         }
         self.observed
             .registrations
@@ -581,8 +576,8 @@ impl host::Host for State {
         name: String,
         options: host::FlagOptions,
     ) -> wasmtime::Result<Result<(), String>> {
-        if let Some(error) = &self.observed.registrations.error {
-            return Ok(Err(error.clone()));
+        if let Some(error) = self.observed.registrations.refusal() {
+            return Ok(Err(error));
         }
         let options = crate::FlagOptions {
             description: options.description,
