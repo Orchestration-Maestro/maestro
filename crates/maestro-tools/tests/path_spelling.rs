@@ -365,7 +365,12 @@ fn path_resolution_normalizes_only_the_part_without_a_counterpart() {
         let parent = Scratch::new().unwrap();
         parent.enter_removed("gone").unwrap();
         assert_eq!(
-            resolve_existing_spelling("up\u{a0}down/new.txt", |path| Ok(path.to_owned())).unwrap(),
+            resolve_existing_spelling(
+                "up\u{a0}down/new.txt",
+                |path| Ok(path.to_owned()),
+                |path| Ok(path.to_owned()),
+            )
+            .unwrap(),
             "up down/new.txt"
         );
     }
@@ -585,4 +590,88 @@ fn climbing_out_of_the_supplied_directory_normalizes_what_it_re_authors() {
         );
         assert!(!parent.path().join("a\u{a0}b").exists());
     }
+}
+
+/// Embedded climbs discard the supplied components they cancel on every tool route.
+#[cfg(unix)]
+#[test]
+fn embedded_climbs_normalize_the_components_they_re_author() {
+    let test = "embedded_climbs_normalize_the_components_they_re_author";
+    if isolated(test, "removed-cwd", &[]) {
+        let parent = Scratch::new().unwrap();
+        let removed = parent.enter_removed("a\u{a0}b").unwrap();
+        let cwd = removed.to_str().unwrap();
+        let expected = format!("{}/a b/x y.txt", parent.text());
+        for prefix in [
+            "sub/../../",
+            "./sub/../../",
+            "@sub/../../",
+            "sub/other/../../../",
+        ] {
+            let ask = format!("{prefix}a\u{a0}b/x\u{a0}y.txt");
+            assert_eq!(
+                resolve_existing_path(&ask, cwd).unwrap(),
+                expected,
+                "{ask:?}"
+            );
+            assert_eq!(resolve_read_path(&ask, cwd).unwrap(), expected, "{ask:?}");
+        }
+    }
+}
+
+/// Climbing above the root keeps an existing written ancestor instead of dropping it.
+#[cfg(unix)]
+#[test]
+fn climbing_above_the_root_keeps_an_existing_written_ancestor() {
+    let parent = Scratch::new().unwrap();
+    std::fs::create_dir(parent.path().join("a\u{a0}b")).unwrap();
+    let suffix = parent.text();
+    let suffix = suffix.trim_start_matches('/');
+    for prefix in ["../", "../../../", "sub/../../"] {
+        let ask = format!("{prefix}{suffix}/a\u{a0}b/new\u{a0}file");
+        let expected = format!("{}/a\u{a0}b/new file", parent.text());
+        assert_eq!(
+            resolve_existing_path(&ask, "/").unwrap(),
+            expected,
+            "{ask:?}"
+        );
+        assert_eq!(resolve_read_path(&ask, "/").unwrap(), expected, "{ask:?}");
+    }
+}
+
+/// A write after an embedded climb reaches only the re-authored directory.
+#[cfg(unix)]
+#[test]
+fn embedded_climb_writes_only_to_the_re_authoring_directory() {
+    let test = "embedded_climb_writes_only_to_the_re_authoring_directory";
+    if isolated(test, "removed-cwd", &[]) {
+        let parent = Scratch::new().unwrap();
+        let removed = parent.enter_removed("a\u{a0}b").unwrap();
+        let cwd = removed.to_str().unwrap();
+        write_through_tool(cwd, "sub/../../a\u{a0}b/new\u{a0}file.txt", "body");
+        assert_eq!(
+            std::fs::read(parent.path().join("a b/new file.txt")).unwrap(),
+            b"body"
+        );
+        assert!(!parent.path().join("a\u{a0}b").exists());
+    }
+}
+
+/// A write that climbs above the root stays under the existing written ancestor.
+#[cfg(unix)]
+#[test]
+fn root_clamped_write_preserves_the_existing_ancestor() {
+    let parent = Scratch::new().unwrap();
+    std::fs::create_dir(parent.path().join("a\u{a0}b")).unwrap();
+    let suffix = parent.text();
+    let ask = format!(
+        "../{}/a\u{a0}b/new\u{a0}file",
+        suffix.trim_start_matches('/')
+    );
+    write_through_tool("/", &ask, "body");
+    assert_eq!(
+        std::fs::read(parent.path().join("a\u{a0}b/new file")).unwrap(),
+        b"body"
+    );
+    assert!(!parent.path().join("a b").exists());
 }

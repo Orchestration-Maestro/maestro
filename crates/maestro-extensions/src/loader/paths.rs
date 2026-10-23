@@ -43,9 +43,11 @@ fn expand_extension_path(
 /// [`resolve_existing_spelling`], which keeps the spelling of the directories the file
 /// system holds.
 pub(super) fn resolve_path(extension_path: &str, cwd: &str) -> io::Result<String> {
-    resolve_existing_spelling(extension_path, |path| {
-        anchor_path(path, cwd, home_directory)
-    })
+    resolve_existing_spelling(
+        extension_path,
+        |path| expand_extension_path(path, home_directory),
+        |path| anchor_path(path, cwd, home_directory),
+    )
 }
 /// Loads `paths` in order through `module_loader`, with one shared runtime and one bus
 /// identity per path. A failed path is recorded with its supplied spelling and loading

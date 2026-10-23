@@ -204,3 +204,52 @@ fn tilde_paths_keep_the_written_file_name() {
         ],
     );
 }
+
+/// Every leading `~` form loads without reading a removed working directory.
+#[test]
+fn leading_home_paths_load_without_a_working_directory() {
+    use crate::local_support::{LocalBus, local};
+    use maestro_extensions::{ModuleLoader, load_extensions};
+    use maestro_models::Local;
+    use maestro_test_directory::Scratch;
+    use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+
+    let test = "leading_home_paths_load_without_a_working_directory";
+    let home = Scratch::new().unwrap();
+    let home_text = home.path().to_str().unwrap().to_owned();
+    let environment = |_case: &&str| BTreeMap::from([("HOME", home_text.clone())]);
+    let selected = maestro_test_process::run_per_environment(test, ["home"], environment);
+    for _home in selected.unwrap().into_iter().flatten() {
+        let parent = Scratch::new().unwrap();
+        parent.enter_removed("gone").unwrap();
+        assert!(std::env::current_dir().is_err());
+        let resolved: Rc<RefCell<Vec<String>>> = Rc::default();
+        let record = Rc::clone(&resolved);
+        let loader: ModuleLoader<Local> = Rc::new(move |path: &str| {
+            record.borrow_mut().push(path.to_owned());
+            Box::pin(std::future::ready(Ok(None)))
+        });
+        let bus = LocalBus::new();
+        let paths = vec![
+            "~missing\u{a0}extension.wasm".to_owned(),
+            "~/other\u{a0}extension.wasm".to_owned(),
+        ];
+        let mut errors = 0;
+        local(async {
+            errors = load_extensions(paths, ".", &bus.controller, &loader)
+                .await
+                .unwrap()
+                .errors
+                .len();
+        });
+        let home = std::env::var("HOME").unwrap();
+        assert_eq!(
+            *resolved.borrow(),
+            [
+                format!("{home}/missing extension.wasm"),
+                format!("{home}/other extension.wasm")
+            ]
+        );
+        assert_eq!(errors, 2);
+    }
+}

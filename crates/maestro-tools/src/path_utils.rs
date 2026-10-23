@@ -144,22 +144,26 @@ fn narrow_space_before_meridiem(path: &str) -> String {
 /// The directory that supplies that spelling is the deepest existing ancestor of the
 /// written path, or else the directory the path was resolved against, which the caller
 /// wrote: its spelling survives when the file system no longer holds it, as after the
-/// working directory is removed. The parent segments the authored path climbs cancel
-/// components of that directory, and a component written after them takes the
-/// space-replaced spelling, because only the directory itself was supplied. A path that
-/// expansion makes absolute was resolved against no directory, so only a directory the
-/// file system holds supplies a spelling for it.
+/// working directory is removed. Once the whole authored path is reduced lexically, each
+/// parent segment it still climbs cancels one component of that directory, and a
+/// component the path re-authors after a climb takes the space-replaced spelling,
+/// because only the directory itself was supplied. A climb that would pass the root
+/// stops there. A path that expansion makes absolute was resolved against no
+/// directory, so only a directory the file system holds supplies a spelling for it.
 ///
-/// `resolve` turns one authored spelling into a resolved path and must keep the
-/// spelling it is given; the home and working directories are read exactly as it
-/// reads them, and its spelling of the empty path is read only for an authored path
-/// that stays relative after expansion.
+/// `expand` is the caller's own expansion policy, the one `resolve` applies, and decides
+/// whether the result needs a directory to be resolved against. `resolve` turns one
+/// authored spelling into a resolved path and must keep the spelling it is given; the
+/// home and working directories are read exactly as it reads them, and its spelling of
+/// the empty path is read only for an authored path that stays relative after that
+/// expansion.
 ///
 /// # Errors
-/// Returns the error of `resolve` for the spelling it was finally called with, and for
-/// its spelling of the empty path when that read is needed.
-pub fn resolve_existing_spelling<F>(file_path: &str, resolve: F) -> io::Result<String>
+/// Returns an expansion error, or the error of `resolve` for the spelling it was finally
+/// called with, including the empty path when that read is needed.
+pub fn resolve_existing_spelling<E, F>(file_path: &str, expand: E, resolve: F) -> io::Result<String>
 where
+    E: Fn(&str) -> io::Result<String>,
     F: Fn(&str) -> io::Result<String>,
 {
     let as_written = resolve(file_path)?;
@@ -171,7 +175,7 @@ where
     if Path::new(&normalized).exists() {
         return Ok(normalized);
     }
-    let expanded = expand_written_path(file_path)?;
+    let expanded = expand(file_path)?;
     let base = (!is_absolute(&expanded)).then(|| resolve("")).transpose()?;
     let directory = written_directory(&as_written, base.as_deref(), &expanded)
         .filter(|directory| at_least_as_deep(directory, &normalized));
@@ -185,7 +189,8 @@ where
 
 /// The directory whose written spelling is kept: the deepest existing ancestor of
 /// `path`, or else the part of the directory `path` was resolved against that
-/// `authored` still stands on.
+/// `authored` still stands on after full lexical reduction cancels authored components.
+/// Unmatched parent segments consume supplied components without climbing above root.
 ///
 /// `base` is that directory and `authored` the spelling it was resolved from. The caller
 /// wrote `base`'s spelling, so it survives even when the file system no longer holds the
@@ -195,11 +200,12 @@ fn written_directory<'a>(path: &'a str, base: Option<&'a str>, authored: &str) -
     let Some(base) = base else {
         return held;
     };
+    let reduced = maestro_path::normalize(authored);
     let mut supplied = Path::new(base);
-    for component in Path::new(authored).components() {
+    for component in Path::new(&reduced).components() {
         match component {
             Component::CurDir => {}
-            Component::ParentDir => supplied = supplied.parent()?,
+            Component::ParentDir => supplied = supplied.parent().unwrap_or(supplied),
             Component::Normal(_) | Component::RootDir | Component::Prefix(_) => break,
         }
     }
@@ -241,7 +247,9 @@ fn at_least_as_deep(directory: &str, normalized: &str) -> bool {
 /// Returns the home-directory or working-directory error of the spelling the path was
 /// finally resolved with.
 pub fn resolve_existing_path(file_path: &str, cwd: &str) -> io::Result<String> {
-    resolve_existing_spelling(file_path, |path| resolve_written_path(path, cwd))
+    resolve_existing_spelling(file_path, expand_written_path, |path| {
+        resolve_written_path(path, cwd)
+    })
 }
 
 /// The first existing spelling among `resolved` and its macOS variants.

@@ -22,10 +22,10 @@ loaded extensions share that runtime.
 
 Each path is resolved before its module loads:
 
-1. A leading `~` or `~/` is replaced by the home directory, and the rest is
-   joined to it lexically. A `~` anywhere else is literal.
-2. An absolute result is kept as written. A relative result is resolved
-   lexically against `cwd`.
+1. Every leading `~`, `~name` included, is replaced by the home directory,
+   and the rest is joined to it lexically. A `~` anywhere else is literal.
+2. An absolute result is kept as written and reads no working directory. A
+   relative result is resolved lexically against `cwd`.
 3. The path is resolved through
    [`resolve_existing_spelling`](../../crates/maestro-tools/src/path_utils.rs).
    A broken link counts as missing, because the check follows links.

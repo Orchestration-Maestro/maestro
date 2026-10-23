@@ -255,8 +255,11 @@ space-replaced path reaches deeper, a new file lands inside the directory named 
 one of those spaces, not in a space-replaced twin. A relative path keeps the
 spelling of the directory it was resolved against, even when the file system no
 longer holds that directory (as after the working directory is removed), and that
-directory bounds the search. Each parent segment the path climbs drops that
-directory's last component, and a name written after the climb takes plain spaces.
+directory bounds the search. The whole path is reduced lexically first, and each
+parent segment it climbs then drops that directory's last component wherever the
+climb stands, while a name written after the climb takes plain spaces. A climb that
+would pass the root stops there, so an existing directory under the written spelling
+still supplies it.
 Expansion through `@` or `~` can make a path absolute; such a path was resolved
 against no directory, so nothing in its spelling comes from one. A directory the
 file system holds under the written spelling keeps it for absolute paths too.
