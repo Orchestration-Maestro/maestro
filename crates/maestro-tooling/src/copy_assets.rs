@@ -85,17 +85,6 @@ fn copy_standalone(
         &destination.join("assets"),
         "png",
     )?;
-    let populated = viewer.is_dir()
-        && fs::read_dir(viewer)
-            .map_err(|error| input_error(viewer, &error))?
-            .next()
-            .is_some();
-    if !populated {
-        return Err(io::Error::other(format!(
-            "viewer parameter must name a nonempty directory: {}",
-            viewer.display()
-        )));
-    }
     copy_tree(viewer, &destination.join("export-html"))?;
     for name in ["docs", "examples"] {
         copy_tree(&package.join(name), &destination.join(name))?;

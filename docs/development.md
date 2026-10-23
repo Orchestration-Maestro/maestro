@@ -381,7 +381,8 @@ resolves the `maestro` manifest through Cargo metadata and copies metadata, READ
 release-generated history, themes, images, the supplied viewer, docs and examples.
 Themes and images come from `SOURCE`, the `export-html` directory from `VIEWER`,
 and the README, history, documentation and examples from the package directory
-`PACKAGE`, which defaults to the justfile directory.
+`PACKAGE`, which defaults to the justfile directory. An empty `VIEWER` directory
+copies as an empty `export-html` directory.
 These commands do not generate a viewer or regenerate assets. A missing or unusable
 input fails with a message naming the path it could not read; already copied groups
 and unrelated destination files remain. `app-build` compiles

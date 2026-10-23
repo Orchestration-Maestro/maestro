@@ -1230,29 +1230,151 @@ fn package_inputs(package: &Path) {
     }
 }
 
-/// Assert the copy rejects an absent or empty viewer with its own message.
-fn assert_viewer_required(source: &Path, destination: &Path, package: &Path) {
-    for viewer in [source.join("absent-viewer"), source.join("empty-viewer")] {
-        if viewer.ends_with("empty-viewer") {
-            fs::create_dir(&viewer).unwrap();
+/// Assert that a viewer directory with no entries copies as an empty export directory.
+#[test]
+fn maestro_empty_viewer_copies_an_empty_directory() {
+    for (existing, prior) in [(false, None), (true, None), (true, Some("prior"))] {
+        let fixture = Fixture::new();
+        let (source, package, metadata, viewer) = split_inputs(&fixture);
+        fs::remove_file(viewer.join("index.html")).unwrap();
+        let destination = fixture.root.path().join("standalone");
+        if existing {
+            fs::create_dir_all(destination.join("export-html")).unwrap();
+            fs::write(destination.join("unrelated"), "kept").unwrap();
         }
-        let error = tooling::copy_assets::copy(
-            source,
-            destination,
+        if let Some(bytes) = prior {
+            fs::write(destination.join("export-html").join("kept"), bytes).unwrap();
+        }
+        tooling::copy_assets::copy(
+            &source,
+            &destination,
             tooling::copy_assets::Layout::Standalone {
-                metadata: &source.join("Cargo.toml"),
+                metadata: &metadata,
                 viewer: &viewer,
-                package,
+                package: &package,
             },
         )
-        .unwrap_err();
+        .unwrap();
+        let copied = destination.join("export-html");
+        assert!(copied.is_dir());
         assert_eq!(
-            error.to_string(),
-            format!(
-                "viewer parameter must name a nonempty directory: {}",
-                viewer.display()
-            )
+            fs::read_dir(&copied).unwrap().count(),
+            usize::from(prior.is_some())
         );
+        if let Some(bytes) = prior {
+            assert_eq!(fs::read(copied.join("kept")).unwrap(), bytes.as_bytes());
+        }
+        assert_eq!(fs::read(destination.join("README.md")).unwrap(), b"readme");
+        assert_eq!(
+            fs::read(destination.join("docs/guide.md")).unwrap(),
+            b"guide"
+        );
+        assert_eq!(
+            fs::read(destination.join("examples/nested/demo.rs")).unwrap(),
+            b"example"
+        );
+        if existing {
+            assert_eq!(fs::read(destination.join("unrelated")).unwrap(), b"kept");
+        }
+    }
+}
+
+/// Assert that an absent viewer path fails as an unreadable input, not as a policy.
+#[test]
+fn maestro_missing_viewer_names_the_absent_path() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, _) = split_inputs(&fixture);
+    let viewer = fixture.root.path().join("absent-viewer");
+    let destination = fixture.root.path().join("standalone");
+    let error = tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_names_input(&error, &viewer);
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: {}",
+            viewer.display(),
+            fs::symlink_metadata(&viewer).unwrap_err()
+        )
+    );
+    for name in [
+        "Cargo.toml",
+        "README.md",
+        "CHANGELOG.md",
+        "theme/schema.json",
+        "assets/mark.png",
+    ] {
+        assert!(destination.join(name).is_file(), "{name} was not copied");
+    }
+    for name in ["export-html", "docs", "examples"] {
+        assert!(!destination.join(name).exists(), "{name} was created");
+    }
+}
+
+/// Assert that a viewer of another filesystem kind keeps that kind at the destination.
+#[test]
+fn maestro_viewer_entries_keep_recursive_copy_semantics() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, _) = split_inputs(&fixture);
+    let viewer = fixture.root.path().join("viewer-file");
+    fs::write(&viewer, "viewer-file").unwrap();
+    let destination = fixture.root.path().join("file-destination");
+    tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap();
+    let copied = destination.join("export-html");
+    assert!(fs::symlink_metadata(&copied).unwrap().is_file());
+    assert_eq!(fs::read(copied).unwrap(), b"viewer-file");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::symlink;
+        let empty = fixture.root.path().join("empty-target");
+        fs::create_dir(&empty).unwrap();
+        let populated = fixture.root.path().join("populated-target");
+        write_input(&populated, "index.html", "viewer");
+        let file = fixture.root.path().join("file-target");
+        fs::write(&file, "target-file").unwrap();
+        for (name, target) in [
+            ("linked-empty", "empty-target"),
+            ("linked-populated", "populated-target"),
+            ("linked-file", "file-target"),
+            ("dangling", "absent-target"),
+        ] {
+            let link = fixture.root.path().join(name);
+            symlink(target, &link).unwrap();
+            let destination = fixture.root.path().join(format!("{name}-destination"));
+            tooling::copy_assets::copy(
+                &source,
+                &destination,
+                tooling::copy_assets::Layout::Standalone {
+                    metadata: &metadata,
+                    viewer: &link,
+                    package: &package,
+                },
+            )
+            .unwrap();
+            let copied = destination.join("export-html");
+            assert!(
+                fs::symlink_metadata(&copied).unwrap().is_symlink(),
+                "{name}"
+            );
+            assert_eq!(fs::read_link(&copied).unwrap(), Path::new(target), "{name}");
+        }
     }
 }
 
@@ -1309,13 +1431,41 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     for (name, bytes) in shipped_examples() {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
-    assert_viewer_required(&source, &destination, &package);
+    assert_empty_viewer_copy(&fixture, &source, &package);
     fs::write(
         source.join("Cargo.toml"),
         "[package]\nname = 'not-the-binary'\nversion = '0.1.0'\n",
     )
     .unwrap();
     assert!(tooling::run(&args, Path::new(env!("CARGO")), fixture.root.path()).is_err());
+}
+
+/// Assert that the command route copies an empty viewer and the later groups.
+fn assert_empty_viewer_copy(fixture: &Fixture, source: &Path, package: &Path) {
+    let viewer = fixture.root.path().join("empty-viewer");
+    fs::create_dir(&viewer).unwrap();
+    let destination = fixture.root.path().join("standalone-empty");
+    let args = [
+        "copy-binary-assets".into(),
+        source.to_path_buf().into_os_string(),
+        destination.clone().into_os_string(),
+        viewer.into_os_string(),
+        package.to_path_buf().into_os_string(),
+    ];
+    assert_eq!(
+        tooling::run(&args, Path::new(env!("CARGO")), fixture.root.path()).unwrap(),
+        std::process::ExitCode::SUCCESS
+    );
+    let copied = destination.join("export-html");
+    assert!(copied.is_dir());
+    assert_eq!(fs::read_dir(copied).unwrap().count(), 0);
+    for (name, bytes) in [
+        ("README.md", "readme"),
+        ("docs/guide.md", "guide"),
+        ("examples/nested/demo.rs", "example"),
+    ] {
+        assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
+    }
 }
 
 /// Build a crate-shaped source, a separate package directory and the metadata.
@@ -1532,9 +1682,10 @@ fn maestro_unreadable_viewer_names_its_path() {
     let Some(_denied) = maestro_test_directory::deny(&viewer, 0o000).unwrap() else {
         return;
     };
+    let destination = fixture.root.path().join("standalone");
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.path().join("standalone"),
+        &destination,
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1550,6 +1701,8 @@ fn maestro_unreadable_viewer_names_its_path() {
             fs::read_dir(&viewer).unwrap_err()
         )
     );
+    assert!(destination.join("export-html").is_dir());
+    assert!(!destination.join("docs").exists());
 }
 
 /// Assert that a requested source file this process cannot read names its own path.
