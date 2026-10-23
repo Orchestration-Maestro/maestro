@@ -1,5 +1,6 @@
 //! Controlled summary generation through registered model adapters.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 #[test]
 fn initial_prompt_preserves_full_request() {

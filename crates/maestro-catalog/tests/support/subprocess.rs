@@ -1,4 +1,5 @@
 //! Completed exact-test subprocesses.
+#![cfg(not(target_arch = "wasm32"))]
 
 /// Complete the exact test with supplied environment presence and absence.
 /// # Panics

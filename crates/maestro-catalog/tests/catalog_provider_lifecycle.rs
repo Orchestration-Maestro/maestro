@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 //! Dynamic provider retention and catalog replay.
 use crate::dynamic;
 use crate::support;

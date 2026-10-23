@@ -52,7 +52,7 @@ fn repeated_conversion_is_inert_after_current_version() {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn converted_context_uses_existing_local_timestamp_policy() {
     if maestro_test_process::selection().is_child() {
@@ -103,6 +103,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
 }
 
 /// Compare converted timestamps against the platform's local-time expectation.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_converted_timestamps(local: i64) {
     for case in
         support::session_files::cases("converted_context_uses_existing_local_timestamp_policy")

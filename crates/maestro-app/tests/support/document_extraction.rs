@@ -1,6 +1,6 @@
 use maestro_agent::{AgentToolResult, ExecuteTool};
 use maestro_app::{DiagnosticErrorInfo, Fetch, FetchError, HttpResponse};
-use maestro_models::Cancellation;
+use maestro_models::{Cancellation, SharedHandle};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock, Weak};
@@ -202,7 +202,7 @@ pub async fn check(case: Case, execute: ExecuteTool, effects: Arc<Mutex<Effects>
             String::new(),
             json!({"url":case.input.url}),
             Some(signal.clone()),
-            Some(Arc::new(|_| panic!("unexpected progress update"))),
+            Some(SharedHandle::new(|_| panic!("unexpected progress update"))),
         )
         .await,
     );

@@ -102,21 +102,27 @@ fn cors_classifier_distinguishes_failure_classes() {
     assert!(!is_cors_error(&std::io::Error::other("Failed to fetch")));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{
     AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ProviderStreamOptions,
     SimpleStreamOptions,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::support;
+#[cfg(not(target_arch = "wasm32"))]
 use support::run_io as run;
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Load a complete controlled model.
 fn model() -> Model {
     let cases: Vec<RewriteCase> =
         serde_json::from_str(include_str!("fixtures/browser_providers/rewrite.json")).unwrap();
     cases.into_iter().next().unwrap().model
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Construct distinguishable invocation context.
 fn context() -> Context {
     Context {
@@ -126,6 +132,7 @@ fn context() -> Context {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Read one queued setting per invocation.
 fn settings_getter(
     reads: Arc<std::sync::atomic::AtomicUsize>,
@@ -147,8 +154,10 @@ fn settings_getter(
         Box::pin(async move { Ok(setting) })
     })
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Inputs retained by the controlled simple provider.
 type Invocation = (Model, Context, AssistantMessageEventStream);
+#[cfg(not(target_arch = "wasm32"))]
 /// Register a uniquely owned provider and retain the exact forwarded values.
 fn recording_provider(
     observations: Arc<Mutex<Vec<Invocation>>>,
@@ -167,6 +176,7 @@ fn recording_provider(
         Some("browser-proxy-current".into()),
     );
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert scalar options and identity-bearing callbacks from the same invocation.
 fn forwarded_options<E: maestro_models::ProviderExecution>(
     actual: &SimpleStreamOptions<E>,
@@ -196,6 +206,7 @@ fn forwarded_options<E: maestro_models::ProviderExecution>(
         expected.common.fetch.as_ref().unwrap()
     ));
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Construct distinguishable simple options with retained callback handles.
 fn simple_options(key: Option<&str>) -> SimpleStreamOptions {
     use maestro_models::{StreamOptions, ThinkingLevel, ToolChoice};
@@ -217,6 +228,7 @@ fn simple_options(key: Option<&str>) -> SimpleStreamOptions {
         ..SimpleStreamOptions::default()
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Proxy stream reads current settings and forwards inputs.
 fn proxy_stream_reads_current_settings_and_forwards_inputs() {
@@ -264,6 +276,7 @@ fn proxy_stream_reads_current_settings_and_forwards_inputs() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Proxy stream does not dispatch after setting failure.
 fn proxy_stream_does_not_dispatch_after_setting_failure() {
@@ -310,8 +323,10 @@ fn proxy_stream_does_not_dispatch_after_setting_failure() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct UnexpectedRaw;
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
 {
@@ -322,8 +337,10 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct CountingProxy(Arc<std::sync::atomic::AtomicUsize>);
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution, O>
     maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for CountingProxy
 {
@@ -335,11 +352,13 @@ impl<E: maestro_models::ProviderExecution, O>
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct ProxyRecorder {
     observations: Arc<Mutex<Vec<Invocation>>>,
     expected: Arc<Mutex<Option<SimpleStreamOptions>>>,
 }
+#[cfg(not(target_arch = "wasm32"))]
 impl<E: maestro_models::ProviderExecution>
     maestro_models::Invoke<
         E,

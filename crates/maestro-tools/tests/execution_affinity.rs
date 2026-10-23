@@ -632,10 +632,9 @@ fn local_renderer_binding_drops_executable_owners() {
         crate::display_support::shipped_theme("dark", None),
         Rc::new(crate::display_support::NoLanguages),
     );
-    let setup = crate::display_support::Setup::from(
-        &json!({"readme":"/opt/maestro/README.md","bindings":[]}),
-    );
-    let _bindings = crate::display_support::bind(&setup.bindings);
+    let recorded = json!({"readme":"/opt/maestro/README.md","bindings":[]});
+    let setup = crate::display_support::Setup::from(&recorded);
+    let _bindings = crate::display_support::bind(&crate::display_support::expand_keys(&recorded));
     let args = json!({});
     let row = crate::display_support::context::<ToolRendererState>(&args, &setup, &env, None);
     check_custom_projection(&env.live, &row);

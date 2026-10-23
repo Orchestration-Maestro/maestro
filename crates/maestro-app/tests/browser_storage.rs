@@ -1,16 +1,23 @@
 //! Browser collection behavior through application-owned stores.
 #![cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 use crate::browser_storage_support as support;
-use crate::support::run_io;
-use maestro_app::{
-    CustomProvidersStore, IndexedDBConfig, ProviderKeysStore, SettingsStore, Store, StoreConfig,
-};
-use serde_json::{Value, json};
+use crate::support::browser_storage_records::{equal, rows};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_app::IndexedDBConfig;
+use maestro_app::{CustomProvidersStore, ProviderKeysStore, SettingsStore, Store, StoreConfig};
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::Value;
+use serde_json::json;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{io, rc::Rc};
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "support/browser_storage_cases.rs"]
 mod cases;
-use cases::rows;
-use support::{Backend, equal, provider_equal};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::browser_storage_support::{Backend, provider_equal};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::support::run_io;
 
 /// A named store using the same public operations as SDK consumers.
 enum Named {
@@ -70,6 +77,7 @@ fn schema_reads_return_independent_owned_records() {
     snapshot.indices.as_mut().unwrap().clear();
     assert_eq!(store.get_config(), config);
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Store backend required for each operation.
 fn store_backend_required_for_each_operation() {
@@ -85,6 +93,7 @@ fn store_backend_required_for_each_operation() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Settings values roundtrip without normalization.
 fn settings_values_roundtrip_without_normalization() {
@@ -103,6 +112,7 @@ fn settings_values_roundtrip_without_normalization() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Settings missing delete list and clear use only settings.
 fn settings_missing_delete_list_and_clear_use_only_settings() {
@@ -127,6 +137,7 @@ fn settings_missing_delete_list_and_clear_use_only_settings() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Storage config records preserve optional settings.
 fn storage_config_records_preserve_optional_settings() {
@@ -146,6 +157,7 @@ fn storage_config_records_preserve_optional_settings() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Provider keys keep empty and unicode secrets.
 fn provider_keys_keep_empty_and_unicode_secrets() {
@@ -165,6 +177,7 @@ fn provider_keys_keep_empty_and_unicode_secrets() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Provider key overwrite list delete and presence use named store.
 fn provider_key_overwrite_list_delete_and_presence_use_named_store() {
@@ -197,6 +210,7 @@ fn provider_key_overwrite_list_delete_and_presence_use_named_store() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Custom provider records keep types optional values and models.
 fn custom_provider_records_keep_types_optional_values_and_models() {
@@ -216,6 +230,7 @@ fn custom_provider_records_keep_types_optional_values_and_models() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Thinking maps retain insertion order through reads, writes and listing.
 fn custom_provider_thinking_maps_keep_insertion_order() {
@@ -259,6 +274,7 @@ fn custom_provider_thinking_maps_keep_insertion_order() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Custom provider overwrite delete and presence use named store.
 fn custom_provider_overwrite_delete_and_presence_use_named_store() {
@@ -290,10 +306,12 @@ fn custom_provider_overwrite_delete_and_presence_use_named_store() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Full provider with a distinguishable identifier and name.
 fn provider(id: &str, name: &str) -> Value {
     json!({"id":id,"name":name,"type":"ollama","baseUrl":"http://localhost"})
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Custom provider listing keeps key order and skips removed rows.
 fn custom_provider_listing_keeps_key_order_and_skips_removed_rows() {
@@ -312,6 +330,7 @@ fn custom_provider_listing_keeps_key_order_and_skips_removed_rows() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Named {
     /// Invoke the source operation using its declared operands.
     async fn invoke(&self, op: &str) -> io::Result<Value> {
@@ -326,6 +345,7 @@ impl Named {
         self.invoke("get").await
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 /// Assert the original error object survived delegation.
 fn same_cause(error: &io::Error, b: &Backend) {
     let cause = error
@@ -335,6 +355,7 @@ fn same_cause(error: &io::Error, b: &Backend) {
         .unwrap();
     assert!(std::sync::Arc::ptr_eq(&cause.0, &b.cause));
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Store failures keep operation phase and adapter cause.
 fn store_failures_keep_operation_phase_and_adapter_cause() {
@@ -356,6 +377,7 @@ fn store_failures_keep_operation_phase_and_adapter_cause() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Custom provider listing stops at first read failure.
 fn custom_provider_listing_stops_at_first_read_failure() {
@@ -377,6 +399,7 @@ fn custom_provider_listing_stops_at_first_read_failure() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Store binding replaces shared backend and retains inflight operation.
 fn store_binding_replaces_shared_backend_and_retains_inflight_operation() {
@@ -427,6 +450,7 @@ fn store_binding_replaces_shared_backend_and_retains_inflight_operation() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 /// Custom provider listing resolves backend for each read.
 fn custom_provider_listing_resolves_backend_for_each_read() {
@@ -465,6 +489,7 @@ fn custom_provider_listing_resolves_backend_for_each_read() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke one settings operation at its public boundary.
 async fn settings_operation(s: &SettingsStore, op: &str) -> io::Result<Value> {
     match op {
@@ -486,6 +511,7 @@ async fn settings_operation(s: &SettingsStore, op: &str) -> io::Result<Value> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke one keys operation at its public boundary.
 async fn key_operation(s: &ProviderKeysStore, op: &str) -> io::Result<Value> {
     match op {
@@ -504,6 +530,7 @@ async fn key_operation(s: &ProviderKeysStore, op: &str) -> io::Result<Value> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Invoke one providers operation at its public boundary.
 async fn provider_operation(s: &CustomProvidersStore, op: &str) -> io::Result<Value> {
     match op {

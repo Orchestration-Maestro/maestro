@@ -85,6 +85,7 @@ fn cases(name: &str) -> Vec<Case> {
 }
 
 /// Run date cases in a fresh process with the selected timezone.
+#[cfg(not(target_arch = "wasm32"))]
 fn in_timezone(name: &str, timezone: &str) -> bool {
     if maestro_test_process::selection().is_child()
         && maestro_test_process::selection().runs_case(name)
@@ -120,6 +121,7 @@ fn assert_constructor(case: &Case, actual: Value, timestamp: f64) {
     assert_eq!(decode(actual), expected, "{}", case.id);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn summary_constructors_preserve_fields_and_time() {
     let name = "summary_constructors_preserve_fields_and_time";
@@ -185,6 +187,7 @@ fn custom_factory_group(name: &str) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn constructors_use_local_datetimes_and_utc_dates() {
     let name = "constructors_use_local_datetimes_and_utc_dates";
@@ -222,6 +225,7 @@ fn constructors_use_local_datetimes_and_utc_dates() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn custom_constructor_preserves_time() {
     let name = "custom_constructor_preserves_time";
@@ -383,6 +387,7 @@ fn conversion_observes_changes_through_retained_inputs() {
 }
 
 /// Recorded calendar parsing across isolated local time zones.
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn parse_timestamp_millis_preserves_native_date_forms() {
     #[derive(Deserialize)]

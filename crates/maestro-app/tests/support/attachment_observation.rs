@@ -1,5 +1,6 @@
 //! Complete attachment observations through the public boundary.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::docx_preview::DocxError;
 use maestro_app::browser::ssf::WorkbookError;
 use maestro_app::browser::utils::attachment_utils::{Attachment, AttachmentError};

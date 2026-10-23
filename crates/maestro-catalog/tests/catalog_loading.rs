@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! File loading through the public registry.
 use maestro_catalog::{ModelFileOperations, ModelRegistry};
-use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_models::{get_models, get_providers};
 use std::sync::Arc;
 
@@ -18,7 +17,7 @@ impl ModelFileOperations for Missing {
 }
 #[test]
 fn memory_and_missing_files_use_complete_offline_catalog() {
-    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
+    let auth = support::auth();
     let expected: Vec<_> = get_providers().iter().flat_map(|p| get_models(p)).collect();
     assert_eq!(expected.len(), 970);
     for registry in [
@@ -63,11 +62,15 @@ fn loading_never_resolves_keys_or_headers() {
     let marker = support::File::new(b"untouched");
     let command = format!("!printf changed > '{}'", marker.path());
     let input = serde_json::json!({"providers":{"custom":{"baseUrl":"u","api":"a","apiKey":command,"headers":{"X-Provider":command},"models":[{"id":"marker","headers":{"X-Model":command}}]}}}).to_string();
+    #[cfg(not(target_arch = "wasm32"))]
     let file = support::File::new(input.as_bytes());
-    for registry in [
-        support::registry(&input),
-        ModelRegistry::create(support::auth(), file.path()).unwrap(),
-    ] {
+    let registries = vec![support::registry(&input)];
+    #[cfg(not(target_arch = "wasm32"))]
+    let registries =
+        registries
+            .into_iter()
+            .chain([ModelRegistry::create(support::auth(), file.path()).unwrap()]);
+    for registry in registries {
         assert_eq!(registry.get_error(), None);
         assert!(
             registry
@@ -92,7 +95,9 @@ fn schema_diagnostics_keep_distinct_errors_in_source_order() {
     support::corpus("schema_diagnostics_keep_distinct_errors_in_source_order");
 }
 /// File disappears after existence is observed.
+#[cfg(not(target_arch = "wasm32"))]
 struct Disappearing(Arc<std::sync::atomic::AtomicBool>);
+#[cfg(not(target_arch = "wasm32"))]
 impl ModelFileOperations for Disappearing {
     fn exists(&self, _: &str) -> bool {
         true
@@ -105,6 +110,7 @@ impl ModelFileOperations for Disappearing {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_and_controlled_reads_share_failure_boundaries() {
     let initial = r#"{"providers":{}}"#;
@@ -164,6 +170,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     native_replacement_decodes_utf8();
 }
 /// Check native replacement decoding before JSON admission.
+#[cfg(not(target_arch = "wasm32"))]
 fn native_replacement_decodes_utf8() {
     let mut invalid =
         r#"{"providers":{"custom":{"baseUrl":"u","apiKey":"unused","api":"a","models":[{"id":""#

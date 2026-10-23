@@ -90,9 +90,28 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
-Native socket, process and runtime fixtures stay with their native tests. Portable
-assertions remain in browser targets, with strictly parsed fixture records owned
-by their readers. Compilation does not replace the browser assertions below.
+Native socket, process and runtime fixtures stay with their native tests.
+Portable assertions remain in browser targets, with strictly parsed fixture
+records owned by their readers. A test that needs a Tokio runtime, a checked
+child process, a disposable directory or a repository file read at run time is
+native-only: the browser target has no Tokio runtime, no filesystem and no test
+binary run, so these tests never execute there. Such a module carries
+`#![cfg(not(target_arch = "wasm32"))]`. Classify each witness by the operation it
+reaches, not by its file's imports: ungate it, build the browser target and read
+what the compiler names. A module-wide condition may cover only native items,
+so where a file mixes both kinds only its native items are conditioned and the
+portable witnesses keep compiling; a shared support module whose records both
+targets read moves its portable slice into its own module. A corpus
+whose readers differ per target keeps one fixture and record set per reader
+group, so a portable reader never parses a file whose members only native
+readers consume. An isolation guard that only reports whether a child was
+started keeps its signature on both targets: the native body starts the child,
+and the browser body reports that none is available, so the group runs in one
+process with every assertion intact. A portable fixture that builds a shared
+pointer uses the owner's declared platform alias, so identity comparisons hold
+on both targets; a native-only fixture keeps the native pointer type.
+
+Compilation does not replace the browser assertions below.
 The theme examples `brand_themes` and `browser_author_inputs` run their author
 work on native targets; their browser entrypoints do nothing. Native usage
 messages and generated filenames are unchanged.

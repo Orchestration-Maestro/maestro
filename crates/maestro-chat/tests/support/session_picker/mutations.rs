@@ -287,12 +287,17 @@ pub fn run(name: &str) {
         "session_rename_panel_keeps_prepared_text_and_live_borders" => palette_replay(name),
         "session_stale_rename_input_submission_does_not_save" => stale_input(name),
         "session_file_delete_passes_literal_trash_arguments" => literal(name),
+        #[cfg(not(target_arch = "wasm32"))]
         "session_file_delete_selects_trash_or_unlink" => policy(name),
+        #[cfg(not(target_arch = "wasm32"))]
         "session_file_delete_failure_combines_bounded_first_line_hint" => diagnostic(name),
+        #[cfg(not(target_arch = "wasm32"))]
         "session_delete_success_updates_both_caches_and_status" => deleted(name),
+        #[cfg(not(target_arch = "wasm32"))]
         "session_delete_failure_keeps_records_without_refresh" => delete_failed(name),
         "session_delete_refresh_failure_retains_local_removal" => refresh_failed(name),
         "session_rename_settles_callback_and_refresh_before_exit" => settled(name),
+        #[cfg(not(target_arch = "wasm32"))]
         "session_mutation_refresh_uses_scope_at_effect_completion" => effect_scope(name),
         "session_mutation_refresh_rejects_obsolete_writers" => obsolete(name),
         "session_retained_list_keeps_mutation_callbacks" => retained_mutation(name),
@@ -692,6 +697,7 @@ fn calls(port: &Effects, expected: Vec<RecordedCall>, (from, to): (&str, &str)) 
 }
 /// A real session file named like the recorded `name`, created unless it should be
 /// absent, with the tree that owns it.
+#[cfg(not(target_arch = "wasm32"))]
 fn session_file(name: &str, present: bool) -> (maestro_test_directory::Scratch, String) {
     let dir = maestro_test_directory::Scratch::new().unwrap();
     let path = dir.path().join(name);
@@ -744,6 +750,7 @@ fn literal(name: &str) {
         finish_pending(&h);
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn policy(name: &str) {
     replay_cases(name, |i: EffectInput, e: DeleteExpected| {
         let port = Rc::new(Effects {
@@ -761,6 +768,7 @@ fn policy(name: &str) {
         finish_pending(&h);
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn diagnostic(name: &str) {
     replay_cases(name, |i: EffectInput, e: DeleteExpected| {
         assert!(i.status.is_none());
@@ -780,6 +788,7 @@ fn diagnostic(name: &str) {
         check_delete(&h, e.result);
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn deleted(name: &str) {
     replay_cases(name, |i: Method, e: Deleted| {
         let port = Rc::new(Effects {
@@ -809,6 +818,7 @@ fn deleted(name: &str) {
         assert_eq!(h.all.loads.borrow().len(), e.all_loads);
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn delete_failed(name: &str) {
     replay_cases(name, |_: Empty, e: DeleteFailed| {
         let port = Rc::new(Effects {
@@ -900,6 +910,7 @@ fn scope_records(mutation: &str, path: &str) -> Vec<maestro_app::SessionInfo> {
         records()
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn effect_scope(name: &str) {
     replay_cases(name, |i: Mutation, e: ScopeCompletion| {
         let (sender, receiver) = tokio::sync::oneshot::channel::<()>();

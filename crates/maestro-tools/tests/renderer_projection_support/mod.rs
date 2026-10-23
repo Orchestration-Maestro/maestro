@@ -1,5 +1,6 @@
 //! Strict source-observation corpus and the renderer-only public driver.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::display_support::{Env, Setup, context};
 use maestro_models::UserBlock;
 use maestro_tools::{

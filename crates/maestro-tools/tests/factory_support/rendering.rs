@@ -21,10 +21,9 @@ fn compare<P, D: serde::Serialize, S>(
         display_support::shipped_theme("dark", None),
         display_support::native_highlighter(),
     );
-    let setup = display_support::Setup::from(
-        &json!({"readme":"/opt/maestro/README.md","bindings":["ctrl+o"],"expanded":true,"argsComplete":true}),
-    );
-    let _bindings = display_support::bind(&setup.bindings);
+    let recorded = json!({"readme":"/opt/maestro/README.md","bindings":["ctrl+o"],"expanded":true,"argsComplete":true});
+    let setup = display_support::Setup::from(&recorded);
+    let _bindings = display_support::bind(&display_support::expand_keys(&recorded));
     let draw = |tool: &ToolDefinition<(), P, D, S>| {
         let context = display_support::context::<S>(&args, &setup, &env, None);
         let call = (tool.render_call.as_ref().unwrap())(Some(&args), &env.live, &context).unwrap();

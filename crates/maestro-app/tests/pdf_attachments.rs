@@ -1,5 +1,6 @@
 //! PDF loading through the application boundary.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_app::browser::utils::attachment_utils::{
     AttachmentSource, AttachmentType, load_attachment,

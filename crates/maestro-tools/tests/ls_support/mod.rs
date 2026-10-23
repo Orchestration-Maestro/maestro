@@ -601,6 +601,13 @@ struct ContextInput {
 }
 
 impl ContextInput {
+    /// The expand keys this context binds.
+    fn keys(&self) -> Vec<String> {
+        self.binding
+            .clone()
+            .unwrap_or_else(|| vec!["ctrl+o".to_owned()])
+    }
+
     /// The renderer setup this context describes.
     fn setup(&self) -> Setup {
         let images = match self.images.as_deref() {
@@ -610,10 +617,6 @@ impl ContextInput {
         };
         Setup {
             readme: String::new(),
-            bindings: self
-                .binding
-                .clone()
-                .unwrap_or_else(|| vec!["ctrl+o".to_owned()]),
             expanded: self.expanded,
             cwd: "/work".into(),
             images,
@@ -746,7 +749,7 @@ pub fn render_case_as<D: serde::Serialize>(
     if case.op == "call" {
         let input: CallInput = serde_json::from_value(case.input.clone()).unwrap();
         let (setup, env) = environment(&input.context, keys);
-        let _bindings = bind(&setup.bindings);
+        let _bindings = bind(&input.context.keys());
         let args = with_home(&input.args);
         let ctx = context(&args, &setup, &env, None);
         let row = (tool.render_call.unwrap())(Some(&args), &env.live, &ctx).unwrap();
@@ -754,7 +757,7 @@ pub fn render_case_as<D: serde::Serialize>(
     }
     let input: RenderInput = serde_json::from_value(case.input.clone()).unwrap();
     let (setup, env) = environment(&input.context, keys);
-    let _bindings = bind(&setup.bindings);
+    let _bindings = bind(&input.context.keys());
     let options = ToolRenderResultOptions {
         expanded: input.options.expanded,
         is_partial: input.options.is_partial,

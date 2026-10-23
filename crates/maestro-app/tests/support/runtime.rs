@@ -1,5 +1,6 @@
 //! Test-owned Tokio runtimes shared by the library, example and integration tests.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 /// Complete `future` on a fresh current-thread runtime without I/O or time drivers.
 pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {

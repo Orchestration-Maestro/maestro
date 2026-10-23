@@ -1,5 +1,6 @@
 //! Recorded edit inputs and expectations.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 pub use crate::write_support::Row;
 use serde::Deserialize;
 use std::collections::BTreeMap;

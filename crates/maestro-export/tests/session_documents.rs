@@ -1,5 +1,6 @@
 //! Session-document behavior through public export operations.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_export::*;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
