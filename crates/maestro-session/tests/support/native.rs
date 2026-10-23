@@ -9,6 +9,12 @@ pub fn below(root: &std::path::Path, name: &str) -> String {
     root.join(name).to_str().unwrap().to_owned()
 }
 
+/// A disposable root spelled as the temporary directory spells it, not canonicalized,
+/// so a fixture can supply a spelling whose dot segments survive joining.
+pub fn uncanonicalized_scratch() -> Scratch {
+    Scratch::new_in(&std::env::temp_dir()).unwrap()
+}
+
 /// A published history whose session file was replaced by a directory, so every
 /// further append fails natively; returns the manager and its first entry identity.
 pub fn broken_history(scratch: &Scratch) -> (SessionManager, String) {

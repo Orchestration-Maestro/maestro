@@ -9,7 +9,7 @@ use maestro_session::session_manager::{ReadonlySessionManager, parse_session_ent
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::fs;
-use support::native::{below, broken_history};
+use support::native::{below, broken_history, uncanonicalized_scratch};
 
 /// Message record with a fixed timestamp.
 fn message(id: &str, parent: Option<&str>, role: &str) -> Value {
@@ -803,12 +803,16 @@ fn fork_uses_target_cwd_and_explicit_or_default_directory() {
 
 #[test]
 fn fork_preserves_authored_source_parent_spelling() {
-    let scratch = Scratch::new().unwrap();
+    let scratch = uncanonicalized_scratch();
     fs::create_dir(below(scratch.path(), "sub")).unwrap();
     let header =
         json!({"type": "session", "id": "s", "version": 3, "cwd": "/src", "timestamp": "t"});
     legacy(&scratch, "s.jsonl", &header, &[]);
     let source = below(scratch.path(), "sub/../s.jsonl");
+    assert!(
+        source.contains("sub/.."),
+        "the supplied spelling keeps its dot segment: {source}"
+    );
     let manager = fork(&scratch, &source);
     assert_eq!(manager.get_header().unwrap()["parentSession"], source);
 }
