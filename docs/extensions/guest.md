@@ -539,6 +539,20 @@ the component into an interactive host is opt-in and asks that host to shut
 down; `examples/extensions/README.md` gives the build and controlled-run
 commands.
 
+### Tool-aware prompt guidance
+
+`examples/extensions/prompt_customizer.rs` is the shipped prompt-guidance
+extension. It handles `before_agent_start` and returns a replacement
+`systemPrompt`: the supplied prompt, the guidance for each active built-in tool
+in read, bash, edit and write order, the supplied skill names in their original
+order, and this extension's own context section.
+
+It reads only the assembled options, so it discovers no resources and builds no
+prompt. A supplied user append is already part of the event's `systemPrompt`,
+including any edit an earlier handler made; the example never appends that
+option again. Loading it into an application is opt-in, and
+`examples/extensions/README.md` gives the build and controlled-run commands.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes
