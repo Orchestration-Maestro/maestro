@@ -245,29 +245,7 @@ fn check_declarations(
     declarations: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     for (name, kind, line) in &records.declarations {
-        let owner = if selector(name) {
-            "maestro-chat"
-        } else if matches!(
-            name.as_str(),
-            "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
-        ) {
-            "maestro-tools"
-        } else if matches!(
-            name.as_str(),
-            "ToolInfo"
-                | "SlashCommandInfo"
-                | "SlashCommandSource"
-                | "MessageRenderOptions"
-                | "MessageDelivery"
-                | "UserMessageDelivery"
-                | "SendMessageOptions"
-                | "SendUserMessageOptions"
-        ) || (shared_event_record(name) && kind != "type")
-        {
-            "maestro-request"
-        } else if matches!(name.as_str(), "ForkPosition" | "NavigateTreeOptions") {
-            "maestro-entry"
-        } else {
+        let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
         let guest_tool = name == "ToolDefinition"
@@ -289,8 +267,10 @@ fn check_declarations(
                 member.name
             ));
         }
-        if matches!(owner, "maestro-tools" | "maestro-request" | "maestro-entry")
-            && !declarations.insert(format!("{}::{name}", member.name))
+        if matches!(
+            owner,
+            "maestro-tools" | "maestro-request" | "maestro-entry" | "maestro-app"
+        ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
                 "{}:{line}: duplicate declaration {name}",
@@ -299,6 +279,55 @@ fn check_declarations(
         }
     }
     Ok(())
+}
+
+/// The crate that owns one declaration, for the names the workspace scopes.
+fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
+    let owner = if selector(name) {
+        "maestro-chat"
+    } else if matches!(
+        name,
+        "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
+    ) {
+        "maestro-tools"
+    } else if matches!(
+        name,
+        "ToolInfo"
+            | "SlashCommandInfo"
+            | "SlashCommandSource"
+            | "MessageRenderOptions"
+            | "MessageDelivery"
+            | "UserMessageDelivery"
+            | "SendMessageOptions"
+            | "SendUserMessageOptions"
+    ) || (shared_event_record(name) && kind != "type")
+    {
+        "maestro-request"
+    } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
+        "maestro-entry"
+    } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
+        "maestro-test-terminal"
+    } else if input_presenter_record(name) {
+        "maestro-app"
+    } else {
+        return None;
+    };
+    Some(owner)
+}
+
+/// Presenter records the application shares with both command-line and interactive callers.
+fn input_presenter_record(name: &str) -> bool {
+    matches!(
+        name,
+        "PresentedSelector"
+            | "ConfigSelectorCallbacks"
+            | "ConfigSelectorFactory"
+            | "SessionSelectorCallbacks"
+            | "SessionSelectorRequest"
+            | "SessionSelectorFactory"
+            | "SessionsFuture"
+            | "SessionsLoader"
+    )
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.

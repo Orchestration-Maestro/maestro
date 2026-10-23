@@ -26,7 +26,8 @@ pub enum FlagType {
     String,
 }
 /// A flag value, independent of its declared kind.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(untagged)]
 pub enum FlagValue {
     /// A boolean value.
     Boolean(bool),

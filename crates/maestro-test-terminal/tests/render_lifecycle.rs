@@ -211,12 +211,12 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
             writer.request_render(false);
         }
     });
-    runtime.advance_to(ms(100));
+    let _ = runtime.advance_to(ms(100));
     succeeds(tui.start());
-    runtime.run_due();
+    let _ = runtime.run_due();
     tui.request_render(false);
     tui.request_render(false);
-    runtime.advance_to(ms(115));
+    let _ = runtime.advance_to(ms(115));
     events
         .borrow_mut()
         .push(Event::Observed(115, probe.renders.get()));
@@ -234,12 +234,12 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
         }
         _ => {}
     }
-    runtime.run_due();
-    runtime.advance_to(ms(116));
+    let _ = runtime.run_due();
+    let _ = runtime.advance_to(ms(116));
     events
         .borrow_mut()
         .push(Event::Observed(116, probe.renders.get()));
-    runtime.advance_to(ms(132));
+    let _ = runtime.advance_to(ms(132));
     probe.clear_callbacks();
     let seen = events.take();
     (seen, runtime.pending())

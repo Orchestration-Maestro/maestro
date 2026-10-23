@@ -118,7 +118,7 @@ The browser build uses the same application crate with capability-selected nativ
 
 ## R09 — Terminal toolkit and interactive frontend
 
-Provide a reusable terminal library with no UI framework and internal dependencies limited to shared cancellation, shared text operations and the optional path utility, as defined in the [crate graph](#crates-and-delivery-order). Port the owned retained-line frame writer and all twelve components: box, cancellable loader, editor, image, input, loader, markdown, select list, settings list, spacer, text and truncated text. Preserve normal scrollback, differential redraw/resize/clear/purge, synchronized updates, raw OSC8/image escapes and hardware cursor/IME location. Use the terminal adapter crate through the terminal port, which on Unix drives the standard descriptors directly; inject a clock for the 16 ms render throttle. Preserve async raw input, Kitty keyboard, bracketed paste and COLUMNS/LINES fallback. The standalone virtual-terminal harness depends only on the toolkit; no crate depends on that harness. Require the complete source scenarios plus a real Linux tmux cross-check.
+Provide a reusable terminal library with no UI framework and internal dependencies limited to shared cancellation, shared text operations and the optional path utility, as defined in the [crate graph](#crates-and-delivery-order). Port the owned retained-line frame writer and all twelve components: box, cancellable loader, editor, image, input, loader, markdown, select list, settings list, spacer, text and truncated text. Preserve normal scrollback, differential redraw/resize/clear/purge, synchronized updates, raw OSC8/image escapes and hardware cursor/IME location. Use the terminal adapter crate through the terminal port, which on Unix drives the standard descriptors directly; inject a clock for the 16 ms render throttle. Preserve async raw input, Kitty keyboard, bracketed paste and COLUMNS/LINES fallback. The standalone virtual-terminal harness depends only on the toolkit, and the command-line frontend is its only development consumer, for the selector presentation effects. Require the complete source scenarios plus a real Linux tmux cross-check.
 
 Preserve synchronous component render/input/invalidate, retained component state, focus routing, live input listeners, overlay positioning/z-order/capture/disposal, background/style boundaries and custom editors. Port raw/Kitty/legacy key decoding, release filtering, fragmented escapes and bracketed paste. The editor preserves actions, grapheme movement, sticky visual-column movement, history, atomic paste markers, kill/yank, undo, completion cancellation, fuzzy ranking and file/slash completions using native segmentation and width libraries with Rust-valid string boundaries under the common contract. Do not introduce a UTF-16 string/event substrate. Port every widget, Markdown block/inline behavior, image protocol, theme/palette, watcher and image fallback. Highlighting belongs to the shared theme library and uses syntect 5.3.0 with two-face 0.5.2+bat-0.26.1, defaults disabled and syntect-fancy enabled, never the onig C library. Keep the theme format and its nine syntax color keys, mapped from scopes. Every terminal/browser/viewer consumer uses that interface, with an injected callback keeping the terminal toolkit independent of highlighting libraries. In the terminal, resolve only explicit language names/extensions and data-defined aliases in the selected syntax set; disambiguate collisions and never auto-detect. Absent/fancy-excluded languages using the terminal plain fallback are recorded accepted differences. The terminal highlight path admits only the labels its own language table names, aliases included: an unnamed or empty label colors every row with mdCodeBlock through the published theme and fails without one, while a named label whose grammar is absent keeps that color through the published theme, returns its rows unstyled without one and does not fail. Preserve the distinct direct-helper raw-line error fallback and the Markdown callback's mdCodeBlock-colored error fallback. Token colors may differ; no old-engine token-parity requirement remains.
 
@@ -612,8 +612,8 @@ from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
 non-native declaration, no other consumer and no other `maestro-test-*` crate is
-admitted by this rule, and the terminal scenario harness is not a reusable
-dependency. The edge is checked in declared metadata (native placement) and in
+admitted by this rule. The terminal scenario owner below states its own single
+declared caller. The edge is checked in declared metadata (native placement) and in
 host-resolved metadata, before the dependency-free and core-to-dedicated rules, and
 remains subject to both cycle checks. A live pipe-closure transaction first uses
 `run_alone` to run in a fresh single-test process, avoiding sibling forks that
@@ -710,6 +710,20 @@ feature unifier and these development-only exceptions. The
 checks the table against the enforced dependency policy, including permitted
 utility edges and leaves. The below-layer-0 owners are delivered before their
 consumers; the utility is delivered before its first consumer.
+
+### Terminal scenario owner
+
+`maestro-test-terminal` is a dedicated, unpublished, native crate that drives the
+toolkit through its public interface. Its library owns the recording terminal and
+the manual runtime a controlled terminal scenario needs; its integration tests own
+the virtual terminal and the written scenarios. It requires `maestro-tui` and
+nothing else from the workspace, and it is excluded from the foundation utility
+permission. Its only incoming edge is a non-optional native development
+dependency from
+`maestro-cli`, which presents the configuration and session selectors under
+controlled effects; a caller
+declares it only when it uses it. The directory owner's declaration, alias and
+cycle rules apply, and the required-toolkit rule keeps `maestro-text` out of it.
 
 ### Workspace daemon
 

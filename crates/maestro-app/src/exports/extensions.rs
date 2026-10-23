@@ -10,6 +10,7 @@ pub use maestro_extensions::{
 };
 
 pub use maestro_extensions::types::events::*;
+pub use maestro_extensions::types::{ExtensionFlag, FlagType};
 pub use maestro_extensions::{
     Extension, ExtensionAPI, ExtensionExecution, ExtensionFactory, ExtensionHandler,
     ExtensionRunner, RegisteredTool, RegisteredToolInput, load_extension_from_factory,
@@ -28,8 +29,7 @@ pub use maestro_extensions::MessageRendererCall;
 pub use maestro_extensions::create_event_bus;
 
 pub use maestro_extensions::{
-    EventBus, EventBusController, ExtensionFlag, ExtensionShortcut, RegisteredCommand,
-    ResolvedCommand,
+    EventBus, EventBusController, ExtensionShortcut, RegisteredCommand, ResolvedCommand,
 };
 
 #[cfg(not(target_arch = "wasm32"))]

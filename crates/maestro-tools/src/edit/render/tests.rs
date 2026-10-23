@@ -2,7 +2,7 @@
 
 use super::*;
 use maestro_agent::AgentToolResult;
-#[path = "../../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../../../maestro-test-terminal/src/manual_runtime.rs"]
 #[allow(dead_code)] // shared host exposes operations unused by pure witnesses
 mod manual_runtime;
 #[path = "../../../tests/edit_render_support/mod.rs"]

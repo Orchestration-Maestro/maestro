@@ -98,8 +98,10 @@ exact caller list of its
 [directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
 domain or utility edge. The tracing owner
 follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
-is not a reusable test-support dependency. Both production
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness's
+recording terminal and manual runtime are the one shared test-effect owner, with
+`maestro-cli` as their only declared caller under the same native development
+rules. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 

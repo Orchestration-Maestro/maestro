@@ -6,7 +6,7 @@
     dead_code,
     reason = "This program uses part of the shared terminal runtime."
 )]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
 pub mod manual_runtime;
 
 use crate::display_palette::palette_keys;
