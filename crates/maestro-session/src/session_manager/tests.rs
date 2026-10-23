@@ -1,6 +1,8 @@
 //! Deterministic whole-UUID collision witnesses.
 #![cfg(test)]
 use super::{ReadonlySessionManager, generate_id};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_test_directory::Scratch;
 use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;
@@ -166,7 +168,8 @@ fn failed_probe_releases_its_owned_file() {
 #[test]
 fn append_failure_keeps_memory_and_partial_bytes() {
     use std::io::Write;
-    let directory = std::env::temp_dir().join(format!("maestro-partial-{}", Uuid::new_v4()));
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path().join("sessions");
     let mut manager =
         super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
     let path = manager.get_session_file().unwrap().to_owned();
@@ -196,7 +199,6 @@ fn append_failure_keeps_memory_and_partial_bytes() {
     let bytes = std::fs::read_to_string(&path).unwrap();
     assert!(bytes.starts_with("{\"type\"{\"type\":\"session\""));
     assert_eq!(super::parse_session_entries(&bytes).len(), 2);
-    std::fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]
@@ -223,14 +225,6 @@ fn new_session_clears_resolved_labels_and_timestamps() {
     assert_eq!(tree[0].entry["id"], old);
     assert_eq!(tree[0].label, None);
     assert_eq!(tree[0].label_timestamp, None);
-}
-
-/// Fresh scratch directory path, created empty.
-#[cfg(not(target_arch = "wasm32"))]
-fn scratch(prefix: &str) -> std::path::PathBuf {
-    let path = std::env::temp_dir().join(format!("{prefix}-{}", Uuid::new_v4()));
-    std::fs::create_dir_all(&path).unwrap();
-    path
 }
 
 #[test]
@@ -283,7 +277,8 @@ fn extraction_generates_unique_chained_label_ids() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn failed_extraction_keeps_a_consistent_owner() {
-    let directory = scratch("maestro-extract-fail");
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path();
     let mut manager =
         super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
     manager
@@ -309,7 +304,7 @@ fn failed_extraction_keeps_a_consistent_owner() {
     assert!(bytes.starts_with("{\"type\"{\"type\":\"message\""));
     assert_eq!(bytes.lines().count(), 1);
     assert!(!bytes.contains("\"type\":\"session\""));
-    std::fs::remove_dir_all(&directory).unwrap();
+    std::fs::remove_dir_all(directory).unwrap();
     let error = manager.create_branched_session(&leaf).unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert_ne!(manager.get_session_file().unwrap(), path);
@@ -318,8 +313,8 @@ fn failed_extraction_keeps_a_consistent_owner() {
 /// A readable source below a scratch root, forked into chosen directories.
 #[cfg(not(target_arch = "wasm32"))]
 struct ForkRig {
-    /// Scratch root removed by the owning test.
-    root: std::path::PathBuf,
+    /// Scratch root, removed on drop.
+    root: Scratch,
     /// Source file with a header and two records.
     source: String,
     /// The two record lines of the source.
@@ -333,12 +328,12 @@ impl ForkRig {
         r#"{"type":"session","id":"s","version":3,"cwd":"/src","timestamp":"t"}"#;
 
     fn new() -> Self {
-        let root = scratch("maestro-fork-order");
+        let root = Scratch::new().unwrap();
         let records = [
             r#"{"type":"custom","id":"a","parentId":null,"customType":"k"}"#,
             r#"{"type":"custom","id":"b","parentId":"a","customType":"k"}"#,
         ];
-        let source = format!("{}/source.jsonl", root.display());
+        let source = format!("{}/source.jsonl", root.path().display());
         let text = format!("{}\n{}\n{}\n", Self::HEADER, records[0], records[1]);
         std::fs::write(&source, text).unwrap();
         Self {
@@ -349,7 +344,7 @@ impl ForkRig {
     }
 
     fn path(&self, name: &str) -> String {
-        format!("{}/{name}", self.root.display())
+        format!("{}/{name}", self.root.path().display())
     }
 
     fn fork(
@@ -431,7 +426,6 @@ fn fork_preserves_write_and_returned_owner_failure_order() {
     let snapshot = String::from_utf8(snapshot).unwrap();
     assert_eq!(super::parse_session_entries(&snapshot).len(), 3);
     invalid_later_id_fails_after_all_writes(&rig);
-    std::fs::remove_dir_all(&rig.root).unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -451,7 +445,6 @@ fn fork_stops_at_a_null_record_before_writing_it_or_later_records() {
     let written = ForkRig::only_file(&dir);
     assert_eq!(written.lines().count(), 2);
     assert!(written.ends_with(&format!("{}\n", rig.records[0])));
-    std::fs::remove_dir_all(&rig.root).unwrap();
 }
 
 /// A later numeric identity fails the returned owner's index after every write.
