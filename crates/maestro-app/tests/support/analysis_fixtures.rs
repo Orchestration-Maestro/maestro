@@ -1,7 +1,7 @@
 //! Fixtures and report runners shared by the native analysis reports.
 
 use chrono::TimeZone;
-use maestro_app::developer_tools::{cost, stats};
+use maestro_app::developer_tools::{cost, session_transcripts, stats, tool_stats};
 use std::path::Path;
 use std::process::ExitCode;
 
@@ -107,4 +107,57 @@ fn encode(cwd: &str) -> String {
 /// Replace the `{BASE}` placeholder in a recorded expectation.
 pub fn expected(template: &str, base: &str) -> String {
     template.replace("{BASE}", base)
+}
+
+/// Run the tool report with the fixture clock.
+///
+/// # Errors
+/// Returns the report's own rejection.
+pub fn run_tools(values: &[&str]) -> std::io::Result<Run> {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    let outcome = tool_stats::main(&arguments(values), &clock, &mut stdout, &mut stderr)?;
+    Ok(Run {
+        code: outcome,
+        stdout: String::from_utf8(stdout).expect("report output is UTF-8"),
+        stderr: String::from_utf8(stderr).expect("report errors are UTF-8"),
+    })
+}
+
+/// Run the transcript command with the fixture clock and the selected painting.
+///
+/// # Errors
+/// Returns the command's own rejection.
+pub fn run_transcripts(values: &[&str], color: bool) -> std::io::Result<Run> {
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    let outcome = crate::support::run_io(async {
+        session_transcripts::main(&arguments(values), color, &mut stdout, &mut stderr).await
+    })?;
+    Ok(Run {
+        code: outcome,
+        stdout: String::from_utf8(stdout).expect("command output is UTF-8"),
+        stderr: String::from_utf8(stderr).expect("command errors are UTF-8"),
+    })
+}
+
+/// The report data a written page embeds.
+pub fn page_data(page: &str) -> serde_json::Value {
+    let embedded = page
+        .split_once("const data=")
+        .expect("the page embeds its data")
+        .1;
+    let document = embedded
+        .split_once(";\n")
+        .expect("the embedded data ends before the page script")
+        .0;
+    serde_json::from_str(document).expect("the embedded data is JSON")
+}
+
+/// A fresh disposable directory.
+pub fn scratch() -> maestro_test_directory::Scratch {
+    maestro_test_directory::Scratch::new().expect("a scratch directory is creatable")
+}
+
+/// The directory text of `scratch`.
+pub fn root(scratch: &maestro_test_directory::Scratch) -> String {
+    scratch.path().display().to_string()
 }

@@ -10,18 +10,28 @@ pub(crate) mod calendar;
 pub mod cost;
 pub(crate) mod formatting;
 pub(crate) mod jsonl;
+pub mod session_transcripts;
 pub mod stats;
+pub mod tool_stats;
 
 use std::io;
+
+/// The agent directory beneath the home directory.
+///
+/// # Errors
+/// Returns a native error when the environment names no home directory.
+pub(crate) fn agent_base() -> io::Result<String> {
+    let home = std::env::var("HOME")
+        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "no home directory"))?;
+    Ok(maestro_path::join(&[&home, ".maestro/agent"]))
+}
 
 /// The session root beneath the home directory.
 ///
 /// # Errors
 /// Returns a native error when the environment names no home directory.
 pub(crate) fn session_base() -> io::Result<String> {
-    let home = std::env::var("HOME")
-        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "no home directory"))?;
-    Ok(maestro_path::join(&[&home, ".maestro/agent/sessions"]))
+    Ok(maestro_path::join(&[&agent_base()?, "sessions"]))
 }
 
 /// Resolve an authored path against the process working directory.

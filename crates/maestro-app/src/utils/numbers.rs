@@ -3,6 +3,7 @@
 use maestro_text::is_whitespace_scalar;
 
 /// Read a base-ten integer prefix, as an explicit decimal argument does.
+#[cfg(not(target_arch = "wasm32"))]
 #[must_use]
 pub(crate) fn decimal_integer_prefix(value: &str) -> f64 {
     integer(value, 10, false)

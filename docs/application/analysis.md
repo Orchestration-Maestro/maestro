@@ -1,0 +1,133 @@
+# Session analysis reports
+
+Four developer reports read the journals Maestro already writes under the home
+session root. Two print totals for one project, one writes transcript files with
+an optional analysis run, and one writes an interactive tool report. They are
+checkout-run example programs: they read recorded journals and write nothing
+except their own output. No background collection, telemetry or network access is
+involved.
+
+Every program accepts its arguments after `--` and decodes them lossily, so a
+non-UTF-8 argument reaches the report as replacement text instead of aborting
+the process.
+
+## Cost totals
+
+```sh
+cargo run --locked -p maestro-app --example cost_report -- -d /work/project -n 7
+```
+
+`-d`/`--dir` selects the project and `-n`/`--days` the window; both are
+required. The day count is read as an integer prefix, so `7suffix` means 7, an
+empty value counts as absent, and `0` or text fails with the same diagnostic as
+a missing argument. `-h`/`--help` prints the usage text before anything is read.
+Unknown arguments are ignored.
+
+The report keeps the directory under the home session root, `~/.maestro/agent/sessions/<project>--<name>--`,
+where the project path is spelled with one leading separator removed and every
+other separator or drive colon replaced by a dash. A missing directory fails
+with the path it looked for; an empty or fully filtered directory reports that
+no sessions were found.
+
+Each journal whose own filename instant is at or after the local midnight `-n`
+days before today contributes its assistant messages that report a cost. Days
+are UTC calendar days of the message instant, providers keep their recorded
+names including ones that collide with inherited object properties, and every
+amount is spelled with four fractional digits. Days, providers and the grand
+total are listed in UTF-16 order, and amounts the record omits count as zero.
+
+## Usage totals
+
+```sh
+cargo run --locked -p maestro-app --example usage_report -- --cwd /work/project --days 7
+```
+
+`-d`, `--dir` and `--cwd` select the project; `--days`/`-n` select the local
+calendar days, defaulting to seven, and `--sessions-base` overrides the session
+root. Relative paths resolve against the working directory. An empty option
+value counts as absent, which leaves that option's default in place. A missing
+value keeps the default as well. A day count that is not a positive integer is
+rejected.
+
+The window starts at local midnight `days - 1` dates before today and ends at
+local midnight tomorrow, so it follows daylight-saving changes rather than a
+fixed number of hours. A message's own timestamp wins over the entry's, and a
+present `null` timestamp is epoch zero rather than a fallback. Reported token
+and cost members are summed as recorded; `totalTokens` and `cost.total` are
+never recomputed from their components. Session counts are distinct journal
+names.
+
+Counts are rounded to the nearest integer, a half toward positive infinity, and
+grouped in en-US spelling; a rounded negative zero stays visible as `-0`. Costs
+keep four fractional digits. Days and providers are listed in UTF-16 order.
+
+## Transcript files
+
+```sh
+cargo run --locked -p maestro-app --example transcript_report -- --output ./session-transcripts --analyze /work/project
+```
+
+`--output` selects the output directory, defaulting to `./session-transcripts`,
+and the first value wins. Any argument that is not a flag and not an output
+value selects the project, defaulting to the working directory; `--help` is
+ignored and `-h` is an ordinary path. The output directory is created before the
+session directory is looked up. A missing session directory and an empty one
+each report their own outcome and exit one.
+
+Sessions are named in UTF-16 order and each becomes one wrapper holding its
+stored user and assistant messages in file order, split by `---`. Message text
+keeps string content as authored and joins the nonempty text blocks of an array
+with a line feed; other blocks are ignored, and a message whose text is only
+whitespace is dropped.
+
+Wrappers are packed into `session-transcripts-NNN.txt` files up to 100,000 UTF-16
+units, separated by a blank line. A wrapper larger than that goes to its own
+numbered file and is reported as oversized.
+
+`--analyze` runs one child per written file and then one aggregating child in
+the output directory, with the `read` and `write` tools only. Each child receives
+the paths of any existing instruction files, the transcript or summary paths and
+the line count, and its JSON event stream is rendered as text. Analysis outcomes
+are reported but do not change the command's successful exit; a rejected
+operation is printed and the command still exits zero.
+
+## Tool report
+
+```sh
+cargo run --locked -p maestro-app --example tool_report -- --sessions-dir ./sessions --output ./tool-stats.html
+```
+
+`--sessions-dir` defaults to the home session root and `--output`/`-o` to
+`maestro-tool-stats.html` in the temporary directory. Every `.jsonl` file
+beneath the chosen directory is read, directories included, in file-name order.
+The page is written before the platform viewer is started, and it names no other
+program.
+
+Tool calls, results and errors are counted per tool, the reported result text
+size is estimated as a quarter of its UTF-16 units rounded up, and each result's
+estimate is also attributed to the bash command of the call it answers, keyed by
+the first command word, an optional non-option second word, and the leading
+program with its environment assignments and one `sudo` removed. At most fifty
+bash rows are listed.
+
+The generated page keeps the report layout, selectors, charts and histogram
+canvases. Its colors and font stacks come from the shared brand pack as CSS
+custom properties, and the two chart and style libraries stay the script source
+URLs the reference writes, so nothing is bundled.
+
+## Reading the journals
+
+Every report reads each selected journal once and aggregates it in one pass. Cost
+and transcript parsing remove outer whitespace from the whole file before
+splitting lines, while usage and tool parsing keep the authored lines so a
+leading byte-order mark reaches the parser and the line is counted as malformed.
+Blank lines are skipped, never counted as malformed, and entries of another type
+or role are ignored rather than rejected.
+
+## Timestamps
+
+Report days come from the session library's local-time resolver, which is also
+where stored timestamps are read. A local time that occurs twice resolves to the
+earlier instant, and a local time skipped by a daylight-saving change keeps the
+offset in force at that reading, so it advances by the change the zone actually
+made instead of being rejected.

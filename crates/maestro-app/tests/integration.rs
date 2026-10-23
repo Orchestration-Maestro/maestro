@@ -10,6 +10,9 @@ mod analysis_cost;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/analysis_fixtures.rs"]
 mod analysis_fixtures;
+mod analysis_shared;
+mod analysis_tools;
+mod analysis_transcripts;
 mod analysis_usage;
 mod application_keybindings;
 mod artifact_runtime_access;
