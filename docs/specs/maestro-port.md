@@ -681,7 +681,8 @@ cycle rules apply.
 registered for the life of the test process, then runs the action under
 `tracing::subscriber::with_default`. `with_subscriber(future, subscriber)`
 keeps the same subscriber registered and makes `subscriber` the default
-whenever the future is polled; dropping the future drops the subscriber.
+whenever the future is polled. Dropping the future releases its dispatcher
+handle; the subscriber lives until its last retained handle drops.
 Callsite interest is cached process-wide and rebuilt when dispatchers register
 or the interest cache is explicitly rebuilt. While only one subscriber is
 registered, `tracing` decides a callsite's

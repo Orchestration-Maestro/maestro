@@ -72,7 +72,9 @@ pub fn with_default<T>(
 /// Make `subscriber` the default subscriber whenever `future` is polled.
 ///
 /// As with [`with_default`], `subscriber` receives the future's events even from
-/// callsites another thread reached first. It is dropped with the returned future.
+/// callsites another thread reached first. Dropping the returned future releases
+/// its dispatcher handle; the subscriber lives until its last retained handle
+/// drops, so a dispatcher cloned while the future ran keeps it alive.
 pub fn with_subscriber<F>(
     future: F,
     subscriber: impl tracing::Subscriber + Send + Sync + 'static,
