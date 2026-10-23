@@ -534,3 +534,55 @@ fn write_recreates_a_removed_working_directory_under_its_written_spelling() {
         assert!(!parent.path().join("a b").exists());
     }
 }
+
+/// A path expansion made absolute resolves without the supplied working directory.
+#[cfg(unix)]
+#[test]
+fn expanded_absolute_paths_resolve_without_the_working_directory() {
+    let test = "expanded_absolute_paths_resolve_without_the_working_directory";
+    let home = Scratch::new().unwrap();
+    let home_text = home.text();
+    if isolated(test, "removed-cwd", &[("HOME", Some(home_text.as_str()))]) {
+        let scratch = Scratch::new().unwrap();
+        scratch.enter_removed("gone").unwrap();
+        assert!(std::env::current_dir().is_err());
+        let home_text = std::env::var("HOME").unwrap();
+        let bare =
+            resolve_existing_path(&format!("{home_text}/new\u{a0}file"), "relative").unwrap();
+        assert_eq!(bare, format!("{home_text}/new file"));
+        let marked =
+            resolve_existing_path(&format!("@{home_text}/new\u{a0}file"), "relative").unwrap();
+        assert_eq!(marked, bare);
+        assert_eq!(
+            resolve_existing_path("~/new\u{a0}file", "relative").unwrap(),
+            bare
+        );
+    }
+}
+
+/// A component written after climbing out of the supplied directory is normalized.
+#[cfg(unix)]
+#[test]
+fn climbing_out_of_the_supplied_directory_normalizes_what_it_re_authors() {
+    let test = "climbing_out_of_the_supplied_directory_normalizes_what_it_re_authors";
+    if isolated(test, "removed-cwd", &[]) {
+        let parent = Scratch::new().unwrap();
+        let removed = parent.enter_removed("a\u{a0}b").unwrap();
+        let cwd = removed.to_str().unwrap().to_owned();
+        let spelled = format!("{}/a b/x y.txt", parent.text());
+        for ask in ["../a\u{a0}b/x\u{a0}y.txt", "./../a\u{a0}b/x\u{a0}y.txt"] {
+            assert_eq!(
+                resolve_existing_path(ask, &cwd).unwrap(),
+                spelled,
+                "{ask:?}"
+            );
+            assert_eq!(resolve_read_path(ask, &cwd).unwrap(), spelled, "{ask:?}");
+        }
+        write_through_tool(&cwd, "../a\u{a0}b/new\u{a0}file.txt", "body");
+        assert_eq!(
+            std::fs::read(parent.path().join("a b/new file.txt")).unwrap(),
+            b"body"
+        );
+        assert!(!parent.path().join("a\u{a0}b").exists());
+    }
+}

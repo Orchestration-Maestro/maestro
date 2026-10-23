@@ -5,7 +5,7 @@ use maestro_path::is_absolute;
 use maestro_resources::paths::{home_directory, resolve_groups_with};
 use std::{
     io::{self, ErrorKind},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 
 /// The no-break space that precedes AM and PM in screenshot names.
@@ -144,13 +144,16 @@ fn narrow_space_before_meridiem(path: &str) -> String {
 /// The directory that supplies that spelling is the deepest existing ancestor of the
 /// written path, or else the directory the path was resolved against, which the caller
 /// wrote: its spelling survives when the file system no longer holds it, as after the
-/// working directory is removed, and the directory bounds that search. An authored
-/// absolute path was resolved against no directory, so none supplies a spelling.
+/// working directory is removed. The parent segments the authored path climbs cancel
+/// components of that directory, and a component written after them takes the
+/// space-replaced spelling, because only the directory itself was supplied. A path that
+/// expansion makes absolute was resolved against no directory, so only a directory the
+/// file system holds supplies a spelling for it.
 ///
 /// `resolve` turns one authored spelling into a resolved path and must keep the
 /// spelling it is given; the home and working directories are read exactly as it
-/// reads them, and its spelling of the empty path is read for a relative written path
-/// only.
+/// reads them, and its spelling of the empty path is read only for an authored path
+/// that stays relative after expansion.
 ///
 /// # Errors
 /// Returns the error of `resolve` for the spelling it was finally called with, and for
@@ -168,35 +171,46 @@ where
     if Path::new(&normalized).exists() {
         return Ok(normalized);
     }
-    let base = if is_absolute(file_path) {
-        None
-    } else {
-        Some(resolve("")?)
-    };
-    Ok(match written_directory(&as_written, base.as_deref()) {
-        Some(directory) if at_least_as_deep(directory, &normalized) => {
+    let expanded = expand_written_path(file_path)?;
+    let base = (!is_absolute(&expanded)).then(|| resolve("")).transpose()?;
+    let directory = written_directory(&as_written, base.as_deref(), &expanded)
+        .filter(|directory| at_least_as_deep(directory, &normalized));
+    Ok(match directory {
+        Some(directory) => {
             directory.to_owned() + &normalize_unicode_spaces(&as_written[directory.len()..])
         }
-        _ => normalized,
+        None => normalized,
     })
 }
 
 /// The directory whose written spelling is kept: the deepest existing ancestor of
-/// `path`, or `base` when the file system holds no such ancestor inside it.
+/// `path`, or else the part of the directory `path` was resolved against that
+/// `authored` still stands on.
 ///
-/// `base` is the directory `path` was resolved against. The caller wrote that spelling,
-/// so it survives even when the file system no longer holds the directory, as after the
-/// working directory is removed, and no ancestor above it supplies a spelling.
-fn written_directory<'a>(path: &'a str, base: Option<&'a str>) -> Option<&'a str> {
+/// `base` is that directory and `authored` the spelling it was resolved from. The caller
+/// wrote `base`'s spelling, so it survives even when the file system no longer holds the
+/// directory, as after the working directory is removed.
+fn written_directory<'a>(path: &'a str, base: Option<&'a str>, authored: &str) -> Option<&'a str> {
     let held = deepest_existing_directory(path);
-    let Some(base) = base.filter(|base| !base.is_empty() && Path::new(path).starts_with(base))
+    let Some(base) = base else {
+        return held;
+    };
+    let mut supplied = Path::new(base);
+    for component in Path::new(authored).components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => supplied = supplied.parent()?,
+            Component::Normal(_) | Component::RootDir | Component::Prefix(_) => break,
+        }
+    }
+    let Some(supplied) = supplied
+        .to_str()
+        .filter(|base| Path::new(path).starts_with(base))
     else {
         return held;
     };
-    match held.filter(|directory| Path::new(directory).starts_with(base)) {
-        Some(directory) => Some(directory),
-        None => Some(base),
-    }
+    held.filter(|directory| Path::new(directory).starts_with(supplied))
+        .or(Some(supplied))
 }
 
 /// The deepest ancestor of `path` that is an existing directory.
