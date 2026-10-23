@@ -333,18 +333,18 @@ impl ForkRig {
             r#"{"type":"custom","id":"a","parentId":null,"customType":"k"}"#,
             r#"{"type":"custom","id":"b","parentId":"a","customType":"k"}"#,
         ];
-        let source = format!("{}/source.jsonl", root.path().display());
+        let source = root.path().join("source.jsonl");
         let text = format!("{}\n{}\n{}\n", Self::HEADER, records[0], records[1]);
         std::fs::write(&source, text).unwrap();
         Self {
             root,
-            source,
+            source: source.to_str().unwrap().to_owned(),
             records,
         }
     }
 
     fn path(&self, name: &str) -> String {
-        format!("{}/{name}", self.root.path().display())
+        self.root.path().join(name).to_str().unwrap().to_owned()
     }
 
     fn fork(
@@ -387,7 +387,8 @@ fn fork_preserves_write_and_returned_owner_failure_order() {
     let file_target = rig.path("file-target");
     std::fs::write(&file_target, "keep").unwrap();
     assert!(rig.fork(&file_target, real).is_err());
-    assert!(rig.fork(&format!("{file_target}/child"), real).is_err());
+    let child = std::path::Path::new(&file_target).join("child");
+    assert!(rig.fork(child.to_str().unwrap(), real).is_err());
     assert_eq!(std::fs::read_to_string(&file_target).unwrap(), "keep");
 
     let first = rig.path("first");

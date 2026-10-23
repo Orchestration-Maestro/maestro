@@ -9,7 +9,7 @@ use maestro_session::session_manager::{ReadonlySessionManager, parse_session_ent
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::fs;
-use support::native::broken_history;
+use support::native::{below, below_keeping_dots, broken_history, uncanonicalized_scratch};
 
 /// Message record with a fixed timestamp.
 fn message(id: &str, parent: Option<&str>, role: &str) -> Value {
@@ -41,7 +41,7 @@ fn legacy(scratch: &Scratch, name: &str, header: &Value, lines: &[Value]) -> Str
         .chain(lines)
         .map(|record| record.to_string() + "\n")
         .collect();
-    let path = format!("{}/{name}", scratch.path().to_str().unwrap());
+    let path = below(scratch.path(), name);
     fs::write(&path, text).unwrap();
     path
 }
@@ -97,10 +97,7 @@ fn extraction_selects_only_the_requested_ancestry() {
     let scratch = Scratch::new().unwrap();
     let mut manager = SessionManager::in_memory(Some("/work")).unwrap();
     manager
-        .set_session_file(&format!(
-            "{}/absent.jsonl",
-            scratch.path().to_str().unwrap()
-        ))
+        .set_session_file(&below(scratch.path(), "absent.jsonl"))
         .unwrap();
     let a = manager
         .append_message(json!({"role": "user", "content": "a", "timestamp": 1}))
@@ -496,7 +493,7 @@ fn observe(manager: &SessionManager, target: &str) -> Observed {
 fn populated_memory_rejects_extraction_without_losing_history() {
     let scratch = Scratch::new().unwrap();
     let mut manager = SessionManager::in_memory(Some("/work")).unwrap();
-    let selected = format!("{}/absent.jsonl", scratch.path().to_str().unwrap());
+    let selected = below(scratch.path(), "absent.jsonl");
     manager.set_session_file(&selected).unwrap();
     let user = manager
         .append_message(json!({"role": "user", "content": "question", "timestamp": 1}))
@@ -670,7 +667,7 @@ fn extraction_defers_role_reads_to_native_publication() {
 
 /// Fork into the scratch directory.
 fn fork(scratch: &Scratch, source: &str) -> SessionManager {
-    let target = format!("{}/target", scratch.path().to_str().unwrap());
+    let target = below(scratch.path(), "target");
     SessionManager::fork_from(source, "/target-cwd", Some(&target), "unused").unwrap()
 }
 
@@ -779,14 +776,14 @@ fn fork_uses_target_cwd_and_explicit_or_default_directory() {
     let header =
         json!({"type": "session", "id": "s", "version": 3, "cwd": "/src", "timestamp": "t"});
     let source = legacy(&scratch, "s.jsonl", &header, &[message("u", None, "user")]);
-    let agent = format!("{}/agent", scratch.path().to_str().unwrap());
-    let explicit = format!("{}/explicit", scratch.path().to_str().unwrap());
+    let agent = below(scratch.path(), "agent");
+    let explicit = below(scratch.path(), "explicit");
     let manager =
         SessionManager::fork_from(&source, "/work/target", Some(&explicit), &agent).unwrap();
     assert_eq!(manager.get_session_dir(), explicit);
     assert!(!fs::exists(&agent).unwrap());
     let default = SessionManager::fork_from(&source, "/work/target", None, &agent).unwrap();
-    let directory = format!("{agent}/sessions/--work-target--");
+    let directory = below(scratch.path(), "agent/sessions/--work-target--");
     assert_eq!(default.get_session_dir(), directory);
     for (manager, directory) in [
         (&manager, explicit.as_str()),
@@ -806,12 +803,12 @@ fn fork_uses_target_cwd_and_explicit_or_default_directory() {
 
 #[test]
 fn fork_preserves_authored_source_parent_spelling() {
-    let scratch = Scratch::new().unwrap();
-    fs::create_dir(format!("{}/sub", scratch.path().to_str().unwrap())).unwrap();
+    let scratch = uncanonicalized_scratch();
+    fs::create_dir(below(scratch.path(), "sub")).unwrap();
     let header =
         json!({"type": "session", "id": "s", "version": 3, "cwd": "/src", "timestamp": "t"});
     legacy(&scratch, "s.jsonl", &header, &[]);
-    let source = format!("{}/sub/../s.jsonl", scratch.path().to_str().unwrap());
+    let source = below_keeping_dots(scratch.path(), "sub/../s.jsonl");
     let manager = fork(&scratch, &source);
     assert_eq!(manager.get_header().unwrap()["parentSession"], source);
 }
@@ -819,7 +816,7 @@ fn fork_preserves_authored_source_parent_spelling() {
 #[test]
 fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
     let scratch = Scratch::new().unwrap();
-    let target = format!("{}/never", scratch.path().to_str().unwrap());
+    let target = below(scratch.path(), "never");
     let header = r#"{"type":"session","id":"s","version":3,"cwd":"/src","timestamp":"t"}"#;
     let user = message("u", None, "user").to_string();
     let invalid = [
@@ -830,7 +827,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         ("null-first", Some(format!("null\n{header}\n"))),
     ];
     for (name, text) in invalid {
-        let source = format!("{}/{name}.jsonl", scratch.path().to_str().unwrap());
+        let source = below(scratch.path(), &format!("{name}.jsonl"));
         if let Some(text) = text {
             fs::write(&source, text).unwrap();
         }
@@ -850,7 +847,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
         ("bom", format!("\u{feff}{header}\n")),
     ];
     for (name, text) in tolerant {
-        let source = format!("{}/{name}.jsonl", scratch.path().to_str().unwrap());
+        let source = below(scratch.path(), &format!("{name}.jsonl"));
         fs::write(&source, &text).unwrap();
         let manager = SessionManager::fork_from(&source, "/t", Some(&target), "unused").unwrap();
         assert_eq!(
@@ -870,7 +867,7 @@ fn fork_uses_existing_compact_json_number_spelling() {
         r#""data":[1.0,-0.0,1e-7,1e-6,1e20,1e21,0.125],"text":"a\nb \u00e9 \"q\"","dup":1,"dup":2,"#,
         r#""list":[{"x":1},{"x":1}]}"#
     );
-    let source = format!("{}/numbers.jsonl", scratch.path().to_str().unwrap());
+    let source = below(scratch.path(), "numbers.jsonl");
     fs::write(&source, format!("{header}\n{record}\n")).unwrap();
     let manager = fork(&scratch, &source);
     let text = fs::read_to_string(manager.get_session_file().unwrap()).unwrap();

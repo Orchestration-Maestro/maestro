@@ -145,7 +145,7 @@ pub fn group(name: &str) {
 #[cfg(not(target_arch = "wasm32"))]
 fn collect(row: &NativeRow) {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let path = format!("{}/history.jsonl", scratch.path().to_str().unwrap());
+    let path = super::native::below(scratch.path(), "history.jsonl");
     let mut lines = vec![json!({"type":"session","version":3,"id":"branch-fixture","cwd":"/fixture","timestamp":"2024-03-09T16:00:00.000Z"}).to_string()];
     lines.extend(
         row.args["entries"]

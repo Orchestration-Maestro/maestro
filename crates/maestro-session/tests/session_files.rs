@@ -12,6 +12,7 @@ use maestro_session::{NewSessionOptions, SessionManager};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
+use support::native::{below, below_keeping_dots, uncanonicalized_scratch};
 use support::session_files::cases;
 
 #[test]
@@ -654,8 +655,8 @@ fn opening_resolves_once_before_loading_the_selected_file() {
 
 #[test]
 fn session_paths_keep_authored_spelling_until_explicit_resolution() {
-    let directory = Directory::new();
-    let authored = format!("{}/./nested/../", directory.text());
+    let directory = Directory(uncanonicalized_scratch());
+    let authored = below_keeping_dots(directory.path(), "./nested/..");
     let manager =
         SessionManager::create("relative/../authored", Some(&authored), "unused").unwrap();
     assert_eq!(manager.get_session_dir(), authored);
@@ -696,7 +697,7 @@ fn default_directory_creates_only_the_encoded_location() {
 fn directory_creation_errors_propagate_without_publishing() {
     let directory = Directory::new();
     let file = directory.file("parent", "unchanged");
-    let child = format!("{file}/child");
+    let child = below(directory.path(), "parent/child");
     let original = fs::create_dir_all(&child).unwrap_err();
     let actual = SessionManager::create("cwd", Some(&child), "unused")
         .err()
