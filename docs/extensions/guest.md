@@ -510,11 +510,11 @@ both hosts with the probe handler. `src/tests/session_events.rs` and
 
 ### A greeting tool
 
-`examples/extensions/hello.rs` is the shipped greeting extension: it registers
-one `hello` tool whose schema requires the string member `name`, and answers
-with `Hello, <name>!` while returning the same name as `greeted` details. It
-keeps the name byte-for-byte, writes no progress updates and leaves optional
-metadata and termination absent.
+[`examples/extensions/hello.rs`](../../examples/extensions/hello.rs) is the
+shipped greeting extension: it registers one `hello` tool whose schema requires
+the string member `name`, and answers with `Hello, <name>!` while returning the
+same name as `greeted` details. It keeps the name byte-for-byte, writes no
+progress updates and leaves optional metadata and termination absent.
 
 Loading it into an application requires a host that enables the component
 runtime, so the extension stays opt-in. The extension crate's tests instantiate
