@@ -17,7 +17,7 @@ serde = { workspace = true, features = ["rc"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-process.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "macros", "net", "time"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "macros", "net", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

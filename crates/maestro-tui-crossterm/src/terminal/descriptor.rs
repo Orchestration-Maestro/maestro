@@ -33,7 +33,13 @@ impl Source {
             .is_writable()
             .then(|| fcntl_getfl(&duplicate))
             .transpose()?;
-        let kind = match AsyncFd::try_with_interest(duplicate, interest) {
+        // The advisory covers a descriptor the registration does not own; this one owns it.
+        #[expect(
+            deprecated,
+            reason = "owns its descriptor; the advisory concerns unowned ones"
+        )]
+        let registration = AsyncFd::try_with_interest(duplicate, interest);
+        let kind = match registration {
             Ok(descriptor) => Kind::Reactor(descriptor),
             Err(refused) => match refused.into_parts() {
                 (descriptor, error) if error.kind() == io::ErrorKind::PermissionDenied => {

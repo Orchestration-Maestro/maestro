@@ -12,7 +12,7 @@ maestro-path = { path = "../maestro-path" }
 maestro-resources = { path = "../maestro-resources" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "=0.4.79"
@@ -26,7 +26,7 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["sync", "rt"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["sync", "rt"] }
 
 [lints]
 workspace = true

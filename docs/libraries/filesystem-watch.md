@@ -1,7 +1,7 @@
 ## Approved filesystem-watch libraries
 
 Outside browser targets, `maestro-watch` uses `notify =8.2.0` with defaults (CC0-1.0) for
-non-recursive directory notifications and Tokio `=1.53.2`, defaults off, with `rt`, `time`
+non-recursive directory notifications and Tokio `=1.53.3`, defaults off, with `rt`, `time`
 and `sync` for the caller-driven local task set, timer and notification channel.
 The added closure is `notify-types 2.1.0`, `inotify 0.11.5` and `inotify-sys 0.1.8` (ISC),
 `mio 1.2.4`, `bitflags 2.13.2`, `log 0.4.34`, `pin-project-lite 0.2.17`, `same-file 1.0.6`

@@ -1,6 +1,6 @@
 ## Approved native terminal libraries
 
-On every non-browser target, `maestro-tui-crossterm` uses Tokio `=1.53.2` (defaults off; `rt`,
+On every non-browser target, `maestro-tui-crossterm` uses Tokio `=1.53.3` (defaults off; `rt`,
 `time`) for its caller-driven local task set, `chrono =0.4.45` (defaults off; `clock`) for log
 file names and the runtime host's UTC time, and `rand =0.10.3` (defaults) for the host's log
 nonce. On Unix it adds rustix `=1.1.5` (defaults off; `std`, `event`, `fs`, `stdio`,

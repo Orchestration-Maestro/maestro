@@ -101,7 +101,7 @@ Production file logging uses approved `tracing-subscriber =0.3.23` with default
 features and `env-filter`. Controlled warning tests reuse it for thread-scoped
 capture. Logging promotes the already-locked subscriber to a normal dependency;
 no new package identity is added.
-The tests drive settings futures with the already-locked `tokio =1.53.2` runtime
+The tests drive settings futures with the already-locked `tokio =1.53.3` runtime
 feature. No production runtime is introduced by preference loading.
 
 The subscriber adds these approved locked identities:

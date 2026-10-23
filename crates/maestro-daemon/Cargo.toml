@@ -6,7 +6,7 @@ license = "Apache-2.0"
 repository.workspace = true
 
 [dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "time", "macros"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "time", "macros"] }
 regex.workspace = true
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"] }
 tracing-subscriber = { version = "=0.3.23", features = ["env-filter"] }
@@ -34,7 +34,7 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "test-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "test-util"] }
 
 [lints]
 workspace = true

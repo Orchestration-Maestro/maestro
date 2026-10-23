@@ -13,11 +13,11 @@ is used. Ordinary captured spawning and synchronous probes do not install the ho
 Tools use the existing `indexmap =2.14.2` (MIT OR Apache-2.0) to retain native
 environment entry order and detached-PID insertion order.
 
-Synchronous bounded capture uses the existing Tokio 1.53.2 `sync` feature for
+Synchronous bounded capture uses the existing Tokio 1.53.3 `sync` feature for
 one-shot termination requests through the shared waiter. The byte bound covers
 combined retained stdout and stderr; it adds no separate process lifecycle.
 
-Native `maestro-chat` external editing directly uses Tokio `=1.53.2`, with default
+Native `maestro-chat` external editing directly uses Tokio `=1.53.3`, with default
 features disabled and `process` enabled, for the caller-built command accepted by
 the application's inherited-terminal process bridge. This reuses the existing
 locked Tokio process dependency closure; it adds no runtime or deadline policy.

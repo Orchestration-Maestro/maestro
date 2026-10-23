@@ -11,7 +11,7 @@ name = "integration"
 path = "tests/integration.rs"
 
 [dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 url = "=2.5.8"
 percent-encoding = "=2.3.2"

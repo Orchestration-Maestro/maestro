@@ -18,12 +18,12 @@ serde_json.workspace = true
 maestro-dependencies.workspace = true
 maestro-lock = { path = "../maestro-lock" }
 maestro-process = { path = "../maestro-process" }
-tokio = { version = "=1.53.2", default-features = false, features = ["time", "process"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["time", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "macros", "test-util"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time", "macros", "test-util"] }
 
 [lints]
 workspace = true

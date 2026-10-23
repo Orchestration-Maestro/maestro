@@ -44,8 +44,14 @@ impl Runner {
         admission: Arc<Admission>,
         controls: Arc<super::controls::Controls>,
     ) -> io::Result<Self> {
+        // The advisory covers a descriptor the registration does not own; this one owns the file.
+        #[expect(
+            deprecated,
+            reason = "owns its descriptor; the advisory concerns unowned ones"
+        )]
+        let fd = AsyncFd::new(File::from(config.master_fd))?;
         Ok(Self {
-            fd: AsyncFd::new(File::from(config.master_fd))?,
+            fd,
             pane: config.pane_id,
             data,
             control,
