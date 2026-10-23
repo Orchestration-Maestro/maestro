@@ -19,14 +19,10 @@ advisory_exceptions = [
   { id = "RUSTSEC-2025-0141", package = "bincode", version = "2.0.1", reason = "daemon protocol encoding; owner-approved despite unmaintained status" },
 ]
 
-# OD-182: only these exact packages in the clipboard Windows backend.
 license_exceptions = [
   # Owner-approved local-socket dependency licences.
   { package = "doctest-file", version = "1.1.1", licenses = ["0BSD"] },
   { package = "recvmsg", version = "1.0.0", licenses = ["0BSD"] },
   # OD-185: test-only egui default fonts
   { package = "epaint_default_fonts", version = "0.36.2", licenses = ["MIT", "OFL-1.1", "Ubuntu-font-1.0"] },
-  { package = "clipboard-win", version = "5.4.1", licenses = ["BSL-1.0"] },
-  { package = "error-code", version = "3.4.0", licenses = ["BSL-1.0"] },
-  { package = "windows-win", version = "3.0.0", licenses = ["BSL-1.0"] },
 ]

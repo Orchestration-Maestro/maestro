@@ -29,6 +29,6 @@ Windows backend packages under BSL-1.0:
 | error-code | 3.4.0 |
 | windows-win | 3.0.0 |
 
-The shared-CI exceptions are package/version scoped, not a general BSL-1.0
-allowance. Attribution and the full license text are in
+Shared CI's default license allow list includes BSL-1.0, so these packages need
+no exception. Attribution and the full license text are in
 [third-party notices](../../THIRD-PARTY-NOTICES.md#native-clipboard-windows-backend).
