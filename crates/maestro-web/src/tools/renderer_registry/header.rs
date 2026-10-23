@@ -52,6 +52,8 @@ pub(crate) fn render_inline_header(
 }
 
 pub(crate) mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
 use browser::{NativeText, TextKind};
 
 /// Literal text or independently executable rich caption content.

@@ -35,11 +35,49 @@ pub fn render_tool<P: 'static, D: 'static>(
     result: Option<&maestro_app::ToolResultMessage<D>>,
     is_streaming: bool,
 ) -> Result<ToolRenderResult, ToolUiError> {
+    dispatch::<P, D, Box<dyn types::ToolContent>>(tool_name, params, result, is_streaming)
+}
+/// Content representation selected by the shared dispatcher.
+///
+/// The canvas implementation leaves with the canvas renderer family.
+pub(crate) trait ContentKind: Sized + 'static {
+    /// The registered handle for these operands.
+    fn renderer<P: 'static, D: 'static>(
+        binding: &types::ToolRendererBinding,
+    ) -> Option<std::rc::Rc<dyn types::ToolRenderer<P, D, Self>>>;
+    /// The default renderer's prepared result.
+    fn default_result(
+        state: renderer_registry::ToolHeaderState,
+        params: Option<String>,
+        output: Option<String>,
+    ) -> ToolRenderResult<Self>;
+}
+impl ContentKind for Box<dyn types::ToolContent> {
+    fn renderer<P: 'static, D: 'static>(
+        binding: &types::ToolRendererBinding,
+    ) -> Option<std::rc::Rc<dyn types::ToolRenderer<P, D, Self>>> {
+        binding.renderer::<P, D>()
+    }
+    fn default_result(
+        state: renderer_registry::ToolHeaderState,
+        params: Option<String>,
+        output: Option<String>,
+    ) -> ToolRenderResult<Self> {
+        DefaultRenderer::render_prepared(state, params, output)
+    }
+}
+/// Route original operands to the selected custom or default renderer.
+fn dispatch<P: 'static, D: 'static, C: ContentKind>(
+    tool_name: &str,
+    params: Option<ToolParams<'_, P>>,
+    result: Option<&maestro_app::ToolResultMessage<D>>,
+    is_streaming: bool,
+) -> Result<ToolRenderResult<C>, ToolUiError> {
     if !SHOW_JSON_MODE.get() {
         let binding =
             renderer_registry::TOOL_RENDERERS.with(|all| all.borrow().get(tool_name).cloned());
         if let Some(binding) = binding {
-            let renderer = binding.renderer::<P, D>().ok_or_else(|| {
+            let renderer = C::renderer::<P, D>(&binding).ok_or_else(|| {
                 ToolUiError::Presentation("Renderer operand types do not match".into())
             })?;
             return renderer.render(
@@ -58,5 +96,36 @@ pub fn render_tool<P: 'static, D: 'static>(
     let output = result
         .as_ref()
         .map(|result| renderer_registry::get_text_output(Some(result)));
-    Ok(DefaultRenderer::render_prepared(state, formatted, output))
+    Ok(C::default_result(state, formatted, output))
+}
+/// Page-content tool rendering.
+#[cfg(target_arch = "wasm32")]
+pub mod dom {
+    use super::{ContentKind, ToolParams, ToolRenderResult, ToolUiError, dispatch, types};
+    use crate::dom::DomContent;
+    impl ContentKind for Box<dyn DomContent> {
+        fn renderer<P: 'static, D: 'static>(
+            binding: &types::ToolRendererBinding,
+        ) -> Option<std::rc::Rc<dyn types::ToolRenderer<P, D, Self>>> {
+            binding.slot::<P, D, Self>()
+        }
+        fn default_result(
+            state: super::renderer_registry::ToolHeaderState,
+            params: Option<String>,
+            output: Option<String>,
+        ) -> ToolRenderResult<Self> {
+            super::renderers::default_renderer::dom::render_prepared(state, params, output)
+        }
+    }
+    /// Route original operands to the selected page-content or default renderer.
+    /// # Errors
+    /// Returns an operand-type mismatch, decoder, formatter or custom renderer failure.
+    pub fn render_tool<P: 'static, D: 'static>(
+        tool_name: &str,
+        params: Option<ToolParams<'_, P>>,
+        result: Option<&maestro_app::ToolResultMessage<D>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult<Box<dyn DomContent>>, ToolUiError> {
+        dispatch(tool_name, params, result, is_streaming)
+    }
 }

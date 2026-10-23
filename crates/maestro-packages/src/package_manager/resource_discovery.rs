@@ -15,10 +15,18 @@ pub(super) enum ResourceType {
     Prompts,
     /// Theme files.
     Themes,
+    /// Browser contribution files.
+    Contributions,
 }
 impl ResourceType {
     /// Discovery order.
-    pub(super) const ALL: [Self; 4] = [Self::Extensions, Self::Skills, Self::Prompts, Self::Themes];
+    pub(super) const ALL: [Self; 5] = [
+        Self::Extensions,
+        Self::Skills,
+        Self::Prompts,
+        Self::Themes,
+        Self::Contributions,
+    ];
     /// The directory for this kind.
     pub(super) fn name(self) -> &'static str {
         match self {
@@ -26,6 +34,7 @@ impl ResourceType {
             Self::Skills => "skills",
             Self::Prompts => "prompts",
             Self::Themes => "themes",
+            Self::Contributions => "contributions",
         }
     }
 }
@@ -106,7 +115,7 @@ impl ResourceType {
             Self::Skills | Self::Prompts => name
                 .rsplit_once('.')
                 .is_some_and(|(_, extension)| extension == "md"),
-            Self::Themes => name
+            Self::Themes | Self::Contributions => name
                 .rsplit_once('.')
                 .is_some_and(|(_, extension)| extension == "json"),
         }

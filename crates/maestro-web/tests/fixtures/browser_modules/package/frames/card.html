@@ -1,0 +1,15 @@
+<!doctype html>
+<p id="frame-card">frame card</p>
+<script>
+const card = document.getElementById('frame-card');
+card.textContent = 'frame:' + window.maestroInput.title;
+// Each probe names the error the isolated document meets, or "allowed".
+const probe = read => { try { read(); return 'allowed'; } catch (error) { return error.name; } };
+const report = type => parent.postMessage({
+  sandboxId: window.sandboxId, type, text: card.textContent, origin: self.origin,
+  cookie: probe(() => document.cookie), storage: probe(() => localStorage.length),
+  parent: probe(() => parent.document.title),
+}, '*');
+addEventListener('message', event => { if (event.data?.type === 'qa-ping') report('qa-pong'); });
+report('qa-frame');
+</script>

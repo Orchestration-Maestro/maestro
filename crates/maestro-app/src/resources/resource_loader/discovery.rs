@@ -8,7 +8,7 @@ use maestro_resources::{
     PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
     paths::{expand_tilde, resolve},
 };
-use std::{collections::HashSet, io, path::Path};
+use std::{collections::HashSet, io, path::Path, rc::Rc};
 
 /// Paths in insertion order; lookups walk a path's separator-bounded prefixes, so their
 /// cost follows the path's depth rather than the number of entries.
@@ -145,16 +145,18 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let flushed = self.settings_manager.borrow().flush();
         flushed.await;
         self.settings_manager.borrow_mut().reload_from_storage();
-        let resolved = self.package_manager.resolve(None).await?;
-        let explicit = self
+        let mut resolved = self.package_manager.resolve(None).await?;
+        let mut explicit = self
             .package_manager
             .resolve_extension_sources(
                 &self.options.additional_extension_paths,
                 Some(SourceScope::Temporary),
             )
             .await?;
+        let contributions = self.merge_contributions(&mut explicit, &mut resolved)?;
         let (configured, explicit) = {
             let mut state = self.state.borrow_mut();
+            state.contributions = Rc::new(crate::contributions::load_contributions(&contributions));
             state.skill_sources.sources = super::PathIndex::default();
             state.prompt_sources.sources = super::PathIndex::default();
             state.theme_sources.sources = super::PathIndex::default();
@@ -197,6 +199,30 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             self.update(collection, additional)?;
         }
         self.load_prompt_files()
+    }
+
+    /// Merge enabled contribution files canonically, retaining the first source's metadata.
+    fn merge_contributions(
+        &self,
+        explicit: &mut ResolvedPaths,
+        configured: &mut ResolvedPaths,
+    ) -> io::Result<Vec<ResolvedResource>> {
+        let mut resources = IndexMap::new();
+        for mut resource in explicit
+            .contributions
+            .drain(..)
+            .chain(configured.contributions.drain(..))
+            .filter(|r| r.enabled)
+        {
+            resource.path = self.resolve_resource_path(&resource.path)?;
+            resources.entry(resource.path.clone()).or_insert(resource);
+        }
+        let paths: Vec<_> = resources.keys().cloned().collect();
+        Ok(self
+            .merge_paths(&paths, [])?
+            .into_iter()
+            .filter_map(|path| resources.swap_remove(&path))
+            .collect())
     }
 
     /// Explicit paths, then configured ones unless `kind` is disabled, then `additional`,

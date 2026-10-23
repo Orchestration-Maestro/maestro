@@ -1,0 +1,10 @@
+{
+  "id": "fixture-broken",
+  "kind": "card",
+  "target": "home",
+  "module": {
+    "entry": "modules/missing/module.js",
+    "wasm": "modules/missing/module_bg.wasm",
+    "register": "register"
+  }
+}

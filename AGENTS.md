@@ -198,6 +198,13 @@ The read-only footer contract, its live status view and the generic live map beh
 them belong to `maestro-extensions::footer_data_provider`; the application footer
 owner keeps its policy and re-exports them at its existing paths.
 
+Browser page content (`maestro-web::dom`) and runtime contributions
+(`maestro-web::contributions`) stay inside the web frontend. Contribution records
+belong to `maestro-protocol::contributions` and are re-exported by
+`maestro-app::contributions`, whose native reader loads the enabled files the
+package manager resolves as its fifth resource kind. `custom-element =0.1.5` is the
+browser-only element bridge; see [browser libraries](docs/libraries/browser-frontend.md).
+
 Pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`,
 re-exported through `maestro-app`; frontend filter, fold and selection state stay
 with their frontend.

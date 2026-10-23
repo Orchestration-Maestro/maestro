@@ -1,0 +1,17 @@
+{
+  "id": "fixture-page",
+  "kind": "page",
+  "target": "pages",
+  "route": "fixture-page",
+  "slots": [
+    {
+      "name": "fixture-page.tabs",
+      "input": "fixture.tab"
+    }
+  ],
+  "module": {
+    "entry": "modules/b/module.js",
+    "wasm": "modules/b/module_bg.wasm",
+    "register": "register"
+  }
+}

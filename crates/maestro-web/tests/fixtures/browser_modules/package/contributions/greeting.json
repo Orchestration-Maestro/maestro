@@ -1,0 +1,10 @@
+{
+  "id": "fixture-greeting",
+  "kind": "api",
+  "target": "fixture.greeting",
+  "module": {
+    "entry": "modules/b/module.js",
+    "wasm": "modules/b/module_bg.wasm",
+    "register": "register"
+  }
+}

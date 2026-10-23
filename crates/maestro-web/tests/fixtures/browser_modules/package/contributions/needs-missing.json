@@ -1,0 +1,13 @@
+{
+  "id": "fixture-needs-missing",
+  "kind": "card",
+  "target": "home",
+  "requires": [
+    "absent.api"
+  ],
+  "module": {
+    "entry": "modules/b/module.js",
+    "wasm": "modules/b/module_bg.wasm",
+    "register": "register"
+  }
+}

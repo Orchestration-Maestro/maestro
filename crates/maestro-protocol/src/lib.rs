@@ -2,6 +2,8 @@
 //! Adapted for Maestro: names, module layout and Rust documentation changed.
 /// Build info.
 pub mod build_info;
+/// Browser contribution records.
+pub mod contributions;
 /// Events.
 pub mod events;
 /// Frames.

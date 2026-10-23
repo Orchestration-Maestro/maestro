@@ -1579,6 +1579,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "custom-element"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11eb110d361fb12bcc4c024406b9bfe2900c7d250af2df4a9b061aa63f480a92"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "darling"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3798,6 +3809,7 @@ dependencies = [
  "maestro-packages",
  "maestro-path",
  "maestro-process",
+ "maestro-protocol",
  "maestro-resources",
  "maestro-session",
  "maestro-settings",
@@ -4602,6 +4614,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
+ "custom-element",
  "egui",
  "indexmap 2.14.2",
  "js-sys",

@@ -1,4 +1,6 @@
 //! Retained original-text copy control with success feedback.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
 mod ui_error;
 use crate::{
     I18n, I18nError,

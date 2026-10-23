@@ -1,0 +1,15 @@
+[package]
+name = "contribution-module-a"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[lib]
+crate-type = ["cdylib"]
+[workspace]
+[dependencies]
+custom-element = "=0.1.5"
+wasm-bindgen = "=0.2.129"
+js-sys = "=0.3.106"
+web-sys = { version = "=0.3.106", features = ["Window", "Document", "HtmlElement", "Element", "Node", "Event", "EventTarget", "CustomElementRegistry", "AddEventListenerOptions"] }
+[profile.dev]
+debug = "line-tables-only"

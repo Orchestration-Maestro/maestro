@@ -1,6 +1,8 @@
 //! Default browser tool input and output preparation.
 use crate::tools::types::ToolUiError;
 mod content;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod dom;
 use super::super::{
     renderer_registry::{ToolHeaderState, get_text_output},
     types::ToolResultMessageView,

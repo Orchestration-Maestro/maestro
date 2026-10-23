@@ -73,6 +73,7 @@ impl Resolved {
             skills: self.skills.into_iter().map(Resource::resolved).collect(),
             prompts: self.prompts.into_iter().map(Resource::resolved).collect(),
             themes: self.themes.into_iter().map(Resource::resolved).collect(),
+            ..ResolvedPaths::default()
         }
     }
 }

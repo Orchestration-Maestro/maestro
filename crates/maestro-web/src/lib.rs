@@ -2,8 +2,10 @@
 
 pub mod browser;
 pub mod components;
+pub mod contributions;
 pub mod dialogs;
 pub mod docx_preview;
+pub mod dom;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::input::Input;
 pub use components::message_renderer_registry::{

@@ -8,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 maestro-markdown = { path = "../maestro-markdown" }
+maestro-protocol = { path = "../maestro-protocol" }
 hayro = "=0.8.0"
 hayro-interpret = "=0.8.0"
 maestro-resources = { path = "../maestro-resources" }

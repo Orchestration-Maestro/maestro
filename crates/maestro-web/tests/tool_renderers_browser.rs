@@ -258,7 +258,7 @@ mod tests {
             false,
         )
         .unwrap();
-        let recipe = ToolRenderResult {
+        let recipe: ToolRenderResult = ToolRenderResult {
             content: Box::new(Aliased {
                 inner: inner.content,
                 alias: alias.clone(),
@@ -271,7 +271,7 @@ mod tests {
             "globalThis.oldToolRoot=document.querySelector('.maestro-code'); if (!oldToolRoot) throw new Error('missing native listing')",
         );
         drop(recipe);
-        let replacement = ToolRenderResult {
+        let replacement: ToolRenderResult = ToolRenderResult {
             content: Box::new(Replacement),
             is_custom: true,
         };
@@ -318,7 +318,7 @@ mod tests {
             false,
         )
         .unwrap();
-        let recipe = ToolRenderResult {
+        let recipe: ToolRenderResult = ToolRenderResult {
             content: Box::new(Nested {
                 recipe: inner,
                 row: std::cell::RefCell::default(),
@@ -330,7 +330,7 @@ mod tests {
         let _ = js(
             "globalThis.nestedToolRoot=document.querySelector('.maestro-code'); if (!nestedToolRoot) throw new Error('missing nested listing')",
         );
-        let replacement = ToolRenderResult {
+        let replacement: ToolRenderResult = ToolRenderResult {
             content: Box::new(Replacement),
             is_custom: true,
         };
@@ -353,7 +353,7 @@ mod tests {
         use maestro_web::tools::types::ToolRenderResult;
         let mut surface = surface();
         let input = serde_json::json!({"nested":42});
-        let recipe = ToolRenderResult {
+        let recipe: ToolRenderResult = ToolRenderResult {
             content: Box::new(Nested {
                 recipe: render_tool::<Value, Value>(
                     "unknown",
@@ -371,7 +371,7 @@ mod tests {
         let _ = js(
             "globalThis.detachedRoot=document.querySelector('.maestro-tool-caption'); globalThis.detachedFrame=detachedRoot.closest('.maestro-reading-frame')",
         );
-        let replacement = ToolRenderResult {
+        let replacement: ToolRenderResult = ToolRenderResult {
             content: Box::new(Replacement),
             is_custom: true,
         };
@@ -425,11 +425,11 @@ mod tests {
             .unwrap(),
             row: std::cell::RefCell::default(),
         });
-        let first = ToolRenderResult {
+        let first: ToolRenderResult = ToolRenderResult {
             content: Box::new(SharedNested(nested.clone())),
             is_custom: true,
         };
-        let second = ToolRenderResult {
+        let second: ToolRenderResult = ToolRenderResult {
             content: Box::new(SharedNested(nested.clone())),
             is_custom: true,
         };

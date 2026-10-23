@@ -22,6 +22,7 @@ font bundle; native tests enable the dev-only egui default fonts.
 | js-sys | 0.3.106 | wasm-only, default/std | MIT |
 | web-sys | 0.3.106 | public native event/element types; wasm-only platform effects | MIT |
 | wasm-bindgen-futures | 0.4.79 | wasm-only, default/std request promises and local future dispatch | MIT |
+| custom-element | 0.1.5 | wasm-only; autonomous light-DOM element classes and their shipped 43-line subclass shim | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
 Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
@@ -29,7 +30,8 @@ BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement, DomRect, DomException,
 DomStringList, IdbDatabase, IdbFactory, IdbIndex, IdbIndexParameters, IdbObjectStore,
 IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction,
 IdbTransactionMode, IdbKeyRange, IdbCursor, IdbCursorWithValue, IdbCursorDirection,
-StorageManager, StorageEstimate, HtmlInputElement, HtmlTextAreaElement, Event, EventTarget and KeyboardEvent.
+StorageManager, StorageEstimate, HtmlInputElement, HtmlTextAreaElement, Event, EventTarget, KeyboardEvent,
+CustomElementRegistry, HtmlButtonElement and Response.
 Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
@@ -55,6 +57,16 @@ or runtime dependency is bundled.
 Lucide 0.544.0 icon geometry uses ISC with Feather MIT portions. Browser
 translation data uses MIT. Their full texts are retained in
 [third-party notices](../../THIRD-PARTY-NOTICES.md).
+
+custom-element 0.1.5 is the browser element bridge: it defines classes whose
+lifecycle callbacks reach Rust state, through its fixed `createCustomElement.js`
+shim (43 lines), which binding generation emits beside the module. It depends only
+on the locked wasm-bindgen, js-sys and web-sys and adds no other package to the
+workspace lock. Its whole browser closure is 25 packages under MIT or Apache-2.0
+where a choice exists, plus Unicode-3.0 for unicode-ident. The crate is
+dual-licensed MIT OR Apache-2.0 and used under MIT. The two runtime-module test
+fixtures are separate crates with their own lockfiles, checked by shared CI's
+locked-manifest check. See [third-party notices](../../THIRD-PARTY-NOTICES.md#browser-element-bridge).
 
 See [browser utility use](../browser/frontend.md) and
 [browser-native record storage](../browser/storage.md) for the delivered API boundaries.

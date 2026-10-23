@@ -1,0 +1,10 @@
+{
+  "id": "fixture-card",
+  "kind": "card",
+  "target": "home",
+  "module": {
+    "entry": "modules/b/module.js",
+    "wasm": "modules/b/module_bg.wasm",
+    "register": "register"
+  }
+}

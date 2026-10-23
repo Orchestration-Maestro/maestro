@@ -2,7 +2,7 @@
 
 ## Purpose and authority
 
-Build the complete model, agent, application, terminal, command-line, RPC and browser foundation in Rust. Deliver the existing behavior through Rust APIs, an owned normal-scrollback terminal interface and an egui/eframe browser interface. A toolkit substitution does not authorize a missing capability. Replace contradictory implementations at their owning modules; do not add compensating caller-side policies.
+Build the complete model, agent, application, terminal, command-line, RPC and browser foundation in Rust. Deliver the existing behavior through Rust APIs, an owned normal-scrollback terminal interface and a Rust browser interface built from native page elements. A toolkit substitution does not authorize a missing capability. Replace contradictory implementations at their owning modules; do not add compensating caller-side policies.
 
 This specification is the single current foundation contract. Earlier model/engine specifications and conflicting ticket appendices are retired when it lands. Public requirements R01–R12 organize delivery; they do not narrow exported APIs, accepted inputs, documentation, examples, fixture coverage or platform behavior within those areas. The source-derived acceptance matrices attached to each implementation review decide fine-grained semantics. An unresolved library or service destination blocks the affected delivery, not its inclusion in scope.
 
@@ -70,7 +70,7 @@ Native sessions use the established JSONL files, project-path encoding, identifi
 
 Support branch traversal, names/labels, custom entries/messages, tool pairing, recorded model/thinking changes, compaction context, abandoned-branch summaries, usage/statistics and selected-branch JSONL export. Compaction preserves cut-point/token-estimate/image/tool-pair rules, exact prompts, retained-budget behavior and event/queue ordering. Import is current-session interchange, not a general migration framework.
 
-Deliver the complete self-contained offline session viewer: escaped data, tree navigation, filtering/search, deep links, collapsed details, syntax/Markdown/image/custom-tool rendering, statistics and JSONL download. Implement its behavior in Rust, with an egui web viewer and embedded assets rather than relying on a network service or dropping browser controls. The document serializer accepts data, render capabilities and a prebuilt viewer asset bundle; it does not import a frontend. Shared retained occurrences, stable active-first ordering, physical/visible tree projection, content extraction/search and raw-record ancestry live in `maestro-session::export_html::template`, reached by frontends through `maestro-app::export_html`. Filter, search, fold and selection state remain frontend-owned. The viewer itself belongs to the web frontend and calls the application's read-only session-view interface. Build packaging injects its bundle into the serializer, avoiding an application-to-frontend dependency. User-triggered online sharing is a separate operation with an owner-chosen destination.
+Deliver the complete self-contained offline session viewer: escaped data, tree navigation, filtering/search, deep links, collapsed details, syntax/Markdown/image/custom-tool rendering, statistics and JSONL download. Implement its behavior in Rust with a light-DOM browser viewer and embedded assets; opening the exported file requires neither a network service nor consumer compilation. The document serializer accepts data, render capabilities and a prebuilt viewer asset bundle; it does not import a frontend. Shared retained occurrences, stable active-first ordering, physical/visible tree projection, content extraction/search and raw-record ancestry live in `maestro-session::export_html::template`, reached by frontends through `maestro-app::export_html`. Filter, search, fold and selection state remain frontend-owned. The viewer itself belongs to the web frontend and calls the application's read-only session-view interface. Build packaging injects its bundle into the serializer, avoiding an application-to-frontend dependency. User-triggered online sharing is a separate operation with an owner-chosen destination.
 
 ## R05 — Tools and process operations
 
@@ -144,7 +144,15 @@ Preserve omitted/null field distinctions, empty last-assistant data `{}`, parse 
 
 ## R11 — Browser frontend, documents and sandbox tools
 
-Deliver an embeddable Rust egui/eframe web application, not a native-only GUI. Preserve chat/editor/attachments, responsive split/overlay layout, streaming updates, scroll behavior, abort/steer/follow-up actions, model/thinking controls, custom message/tool renderers, selection/copy/download/links, localized text and embedding lifecycle/callbacks. Maintain browser-visible text/focus/accessibility and DOM integration where canvas widgets alone cannot reproduce them.
+### Browser problem statement
+
+The browser application needs selectable, searchable and accessible page content with native text entry and independently replaceable views. A renderer-specific geometry interface must not constrain chat, documents, installed package views or the control-plane shell.
+
+### Browser solution
+
+Deliver an embeddable Rust browser application using `web-sys`, `js-sys` and Rust-authored light-DOM Custom Elements through `custom-element = "=0.1.5"`. Build page content in the browser. Use native HTML controls, CSS layout and native SVG where appropriate. Do not introduce a general application framework or server rendering.
+
+Preserve chat, the editor, attachments, artifacts, streaming, reader-follow behavior, abort/steer/follow-up, model/thinking controls, localized text, copy/download/links and embedding callbacks. The same component layer supports Home, Chat, Catalog, Graph, Workspaces, Docs, Settings and personal records. The desktop host loads the same web bundle; it does not supply a second renderer.
 
 The model library owns replaceable, library-type-free WebSocket effects beside its HTTP effects. The native adapter owns the shared socket-upgrade primitive; response-session caching, cancellation and lifetime policy remain provider-owned. The browser frontend supplies its browser socket adapter through the application facade, reusing its event-subscription owner. One-shot model discovery owns authentication, RPC admission and connection release, without a retry policy or cache.
 
@@ -178,17 +186,107 @@ Recreate DOM iframe sandboxing, injected runtime providers, postMessage bridges/
 
 Provide the browser embedding example, Rust build/asset pipeline, supplied transcript fixtures, developer prompt measurement, localization and browser smoke/interaction tests. There were no automated browser test-suffix files in the inventory; therefore new source-derived browser tests are required, not optional.
 
-### Browser drawing and DOM ownership
-
-Use egui for shell layout/drawing, the 800 px split/overlay breakpoint, IME editor, attachment chips/notices/drop highlight, tool-card controls and dialogs. Rust web-sys adapters behind SandboxHost, OverlayPlacer, AttachmentIntake and Transcript ports own real DOM objects. The web Transcript is a DOM text overlay, preserving native find-in-page, screen-reader text, context menus, touch selection, links/copy and the exact >50/<10 px auto-follow guards. Use the selected native Markdown HTML library, syntect HTML and katex-rs HTML under the common contract. Keep one message model and preserve source selection/stream replacement behavior.
-
-User, tool and assistant rows and their nested tool content return one `ToolContentOutput`: a drawing `Result<Response, ToolUiError>` plus independently owned opened attachment overlays. Every containing receiver transfers overlays before inspecting the drawing result, including rich headers and expandable children. Opened overlays belong to the containing receiver, not a row; row removal or a later drawing failure does not close them. Attachment tiles allocate one fixed 64-by-64-point item before painting; the containing wrapping layout owns line breaks. Preparation remains fallible separately from drawing.
-
-Overlay placement follows the egui rectangle each frame with exact fractional-DPR alignment. Hide or move DOM elements whenever an egui overlay needs their area; restore retained state afterward. Attachment intake supplies focused image paste, a hidden file picker and drop forwarding for DOM-covered editor regions. Retain source validation and the IME Enter-while-composing/Process-key guard.
-
 The sandbox's already-injected in-iframe runtime remains a build-time embedded JavaScript asset. Its Rust host preserves srcdoc flags, router, console, timeout/abort and source cleanup, with sender validation and per-sandbox external-link listener cleanup corrected at the owning adapter. This is not a JavaScript UI or an extension host; a busy loop may block the parent process and timers, so no hard-interruption guarantee is added.
 
-Browser smoke covers Firefox/Safari, real touch/IME and real HiDPI devicePixelContentBoxSize behavior, not only an emulated fallback. Cull long egui lists without removing searchable DOM transcript text. The author build preserves whole brand fonts with their notices and a symbol fallback, and runs pinned wasm-opt, recording bundle/glyph/behavior evidence without a new numeric budget; consumers never build these assets. An isolated editable author fixture qualifies the shared build path before product activation; it is not a distributable application or complete embedding example.
+Browser smoke covers Firefox/Safari, real touch/IME and real HiDPI behavior, not only an emulated fallback. The author build preserves whole brand fonts with their notices and a symbol fallback, and runs pinned wasm-opt, recording bundle/glyph/behavior evidence without a new numeric budget; consumers never build these assets. An isolated editable author fixture qualifies the shared build path before product activation; it is not a distributable application or complete embedding example.
+
+### Browser user stories
+
+#### Chat and reading
+
+1. As a reader, I can find and select transcript and document text using the browser, including offscreen transcript text.
+2. As a chat user, I can compose with my input method, attach supported files, stream responses, stop work and keep reading when I scroll away.
+3. As an embedder, I can replace tool and message rendering without converting my in-process callback-bearing values to JSON.
+4. As a document user, I can preview, inspect, copy, download and export every supported artifact without exposing the host to generated scripts.
+5. As an offline reader, I can open one exported file, navigate branches, search, inspect details and download JSONL without a server.
+
+#### Control plane and packages
+
+1. As a user, I can navigate one responsive shell and retain the approved Home card layout and settings.
+2. As a package author, I can add data/template views or separately built browser views without rebuilding the application.
+3. As a catalog user, I can inspect sources, locks, problems and relations, with edits going through the real owner.
+4. As a workspace user, I can inspect and control authorized panes through their existing terminal/session owners.
+5. As a signed-in identity, I receive only my own layout, inbox, stars, recents and subscriptions.
+
+### Browser DOM components
+
+Each component owns its root and connected view state. It mounts native nodes once, updates the affected properties/text/children and disconnects its subscriptions when detached. Reconnection attaches exactly one live binding. Keep class-definition callbacks for the lifetime of the registered class; an element's disconnected view is a different lifetime. The layer supplies only repeated, proven element/lifecycle operations, not a template compiler, virtual DOM, reactive dependency graph or global scheduler.
+
+Keep file-mapped component names and exports in Rust casing. Small function components may return native nodes without defining a custom tag. Components with custom-element lifecycles use autonomous tags and light DOM. Use explicit properties/update operations for structured values, not attribute-string serialization of the whole model. Preserve focus, edited input, selection and unaffected row identity across unrelated changes. Ordinary buttons, inputs, textareas, headings, navigation, links and dialogs retain native semantics and accessible names.
+
+The current brand projection supplies semantic CSS values once. Keep existing Markdown parsing, safe HTML preparation, syntax highlighting, math output/fonts, formatting, document decoding and storage owners where they already belong. Untrusted source text is never a component template or host-DOM executable module. Intentional sandbox execution remains separate from host markup rendering.
+
+The stable transcript and streaming subtree are separate. Pair tool results by exact call identifier, using the last result for a duplicate identifier. Preserve emitted row order and positional keys. Filter persistence-only artifact records before custom-message dispatch; registered roles otherwise take precedence over built-ins. Keep all searchable transcript text attached. Batch only streaming publication at the next animation frame using the existing callback owner; clear synchronously and retire only that update. A subsequent response must publish on its first frame. No JSON cloning is required for change detection.
+
+Reader-follow uses the native scroll element and fractional CSS observations. Disable only for nonzero upward movement with distance from bottom strictly greater than 50 px; resume strictly below 10 px. Equality does not cross either boundary. A shrinking editor viewport updates remembered height without changing follow state or remembered top. Follow content growth only when enabled; explicit caller override remains available.
+
+### Three registration interfaces
+
+Keep three separate domain interfaces:
+
+| Interface | Identity and behavior |
+|---|---|
+| Tool renderers | Open tool-name map with explicit replacement, built-in registration, unknown-tool fallback and forced JSON presentation. Rendering receives original params, optional result and streaming state; content retains the custom-card choice. |
+| Message renderers | Open role-name map with explicit replacement and custom-before-built-in selection, except persistence-only artifact records are never rendered. Rendering is independent of message-to-model conversion. |
+| Shell contributions | Package/session-owned pages, Home cards, named child slots, route references and declared host API references. The shell projects enabled contributions into navigation, headers, tabs and content. Contribution kinds and identifiers are extensible data. |
+
+Share registration lifetime handling and adapters where necessary, not one universal registry. Same-module Rust callers retain typed operands and callbacks, including non-serializable values. Separate browser modules exchange explicit serializable values and standard DOM events/host calls. Rust trait objects, type identifiers, reference-counted handles and heap pointers are not an inter-module interface.
+
+### Runtime browser modules
+
+Use the package manifest's existing `maestro.contributions` resource. Data/template pages and cards remain supported. Add a renderer reference and optional browser-module descriptor to those contribution records; do not add another plugin manifest, installer or package-resolution path.
+
+The contribution record supplies its stable package/contribution identity, attachment-point reference, consumed/provided data contract, required host API references and route references when routable. A browser module descriptor locates a prepared module entry, its matching WebAssembly/binding assets and its registration export within the resolved package. The entry initializes the matched browser module and registers its elements and contributions against the supplied host interface. Installation/use never compiles Rust. Backend extension artifacts are not browser module artifacts.
+
+Package resolution owns ordering, provenance, enabled state, manifest locks and reload. Package pages work without a running chat; session-only contributions keep their session lifetime. The application's resource loader reads the accepted descriptors on each reload, and the shell exposes them and their operations through the existing protocol. The frontend loads only accepted enabled modules and mounts their declared elements at compatible slots. A module may supply child slots and narrow host API implementations. Required missing APIs, incompatible inputs, failed initialization and conflicting route/slot attachment are visible contribution failures, not silent empty pages. Resolve declared API references only; do not expose application internals or a general service locator.
+
+A registration invocation returns owned registrations and mounted-view cleanup. Disabling unmounts views and removes only registrations still owned by that invocation; it cannot erase a later explicit replacement. Tool/role maps retain their replacement semantics; package contribution collision/order rules remain package-owned. Failed loading releases acquired registrations/listeners without claiming to unload executable code.
+
+Custom-element definitions cannot be undefined or redefined. Use unique element names for new definitions, with stable contribution/renderer aliases. A changed definition uses a fresh element name or reloads the page. Do not promise safe unloading of executed WebAssembly. Keep the class constructor closure alive after individual views disconnect. Reuse existing listener/frame/timer ownership, not another event bus, watch loop or retry scheduler.
+
+### Trust split
+
+Built-ins and vetted installed UI modules may run as host light-DOM elements. They are trusted page code: they can read the host DOM and share page authority. Manifest API declarations are composition contracts, not a sandbox or an access-control boundary.
+
+Generated and untrusted UI stays in isolated sandboxed iframes using the existing runtime-provider interface, without same-origin permission. Match each message to its registered frame source; an origin string or guessed sandbox identifier is insufficient. Preserve permitted attachment/artifact access, console, downloads and actions through explicit providers. Never pass credentials, arbitrary desktop invocation, filesystem handles or the protocol socket into an isolated frame. Main-page find covers host transcript and reading pages; isolated content remains separately accessible inside its frame.
+
+Use one authentication interface, with the local one-time-key adapter now and a hosted adapter later. Enforce origin/authentication/authorization at the command owner, including module assets, data and terminal actions. Hiding navigation is not authorization. Home layout, inbox, stars and recents are server-side per-identity records; a browser-local preference is not their authoritative store. Theme, language and sidebar preference retain their existing local behavior. Do not introduce an identity provider library or a hosted deployment as part of rendering replacement.
+
+### Control-plane composition
+
+The shell owns navigation, route resolution, page headers/tabs and Home composition. Catalog pages/cards read the one graph through the application. Kinds and relations are data; actions reach their original owner and respect manifest locks. Read graph sources on demand without another graph store, cache or watcher. Docs reuse safe Markdown rendering and in-app links/heading anchors. Search reuses existing matching/session search; this is not a new search engine.
+
+The relationship page uses the existing diagram layout and native SVG with DOM text labels. Workspace pages mount a terminal-view element over the existing terminal screen/input protocol; the terminal engine and daemon retain emulation, ownership and control arbitration. Do not add a browser terminal emulator or an immediate-mode painter.
+
+Home retains full drag/resize and per-card settings with keyboard-accessible operations. The selected page/card/route can be supplied by a built-in element, a separately built trusted module or an isolated adapter without changing its application caller. Later collaboration and IDE views use this seam but retain their own scope, protocol and permission designs.
+
+### Browser crate graph
+
+The web frontend remains one library, `maestro-web`, with required `maestro-app` and optional-used `maestro-theme` edges. No new workspace UI crate or frontend-to-frontend edge is introduced. The DOM component layer, browser-module loader, three renderer/contribution adapters, shell and offline viewer remain inside that frontend.
+
+Package descriptor resolution remains `maestro-packages` work, coordinated by `maestro-app`; domain-neutral browser contribution records cross `maestro-protocol`. Native package code is not linked into the browser merely to expose a descriptor. Graph, workspace, terminal, identity and per-person record operations are reached through the application/protocol interfaces, never by importing a sibling frontend or a native service into a browser view. The daemon must not gain a reverse dependency on the application; its composed operation handlers are injected through the existing interface.
+
+The executable and desktop roots only wire adapters. Export serialization still accepts a prepared viewer bundle; the serializer never imports the web frontend. Update dependency-policy tests, metadata checks and documentation together if an owning prerequisite changes an allowed edge. This amendment itself adds no internal Cargo edge and creates no placeholder crate.
+
+Pin the browser bridge and bindings exactly: `custom-element = "=0.1.5"`, `web-sys = "=0.3.106"`, `js-sys = "=0.3.106"`, `wasm-bindgen = "=0.2.129"` and `wasm-bindgen-futures = "=0.4.79"`; enable only used browser interfaces. Gate new executable browser dependencies and browser effects to the browser target while retaining any browser declaration dependency needed for native type-checking of public interfaces. The fixed subclass shim and generated bindings are interop, not an authored JavaScript application. Retain one native feature unifier and qualify the complete resolved dependency/license closure.
+
+### Removed implementation
+
+Remove immediate-mode browser painting and all its dependencies, default test fonts, textures, paint commands, canvas contexts, layer transforms, hit-rectangle apertures, native-control slots, placement/measurement/publication transactions, repaint coupling, rasterized UI glyphs and canvas paint probes. Do not retain color, geometry or identity types from the retired renderer. CSS, native controls, native SVG and DOM ownership replace them.
+
+Keep only framework-independent code already in its appropriate form, with a per-file justification. Rewrite or delete the remaining wrappers even when they compile without a direct renderer import. Preserve supported document image/raster outputs where they are content, not a UI painter. Remove stale source, test, docs, lock, feature-unifier and CI/font-exception references. Prepared author fixtures and distributions use the same DOM model.
+
+### Browser testing decisions
+
+Test through the real renderer/contribution interfaces and application callers. The initial qualification builds two independent browser modules, registers a new renderer and a new page/card/route after host startup without rebuilding the host, and replays identical streaming inputs through the built-in and module adapters in Chromium. It also exercises the isolated adapter and same-module non-serializable operands. Record actual initialization, reentrancy, class/view lifetime, disable/reload/replacement and cleanup observations before accepting the chosen bridge.
+
+Use the one approved Chromium job and existing Rust browser exports, alongside native behavioral tests. Test accessible roles/names, keyboard/focus, selection/find, composition input, scrolling, copy/download, sandbox source checks, standalone offline export and two-identity record/subscription isolation. Measure DOM mutations, browser frame time, initial load, repeated mount/unmount memory and complete raw/compressed distribution size. No new numeric performance threshold is introduced. Require the existing meaningful 80% line-coverage standard with explicit covered/eligible counts; runtime success alone is not a coverage measurement.
+
+Keep the previous runnable path until each replacement passes, then switch that surface and remove its old implementation. Temporary co-existence during replacement is not a permanent hybrid or a published second component interface. The final removal verifies the full dependency closure and all authored files contain no retired renderer-family dependency or reference. Browser/device smoke obligations remain separate from headless Chromium qualification.
+
+### Browser out of scope
+
+Server rendering/hydration; another application framework; a new package manager or protocol; background reconnect/retry/watch machinery; new graph/layout or terminal-emulation libraries; hosted sign-in implementation; collaborative editing and the browser IDE. These are not implicit consequences of adopting native page elements.
 
 ## R12 — Documentation, examples, repository tooling and release
 
@@ -214,86 +312,6 @@ CI must be equal or stronger step by step. Install rg and fd and require real-bi
 Define the caller-driven wasm32-unknown-unknown build gate in foundation tooling and activate it for the model library at its first re-port; every later browser-used crate opts in when created. The first real web application slice builds its actual wasm application and a working embedding example immediately. Full browser application/example builds remain required thereafter; cargo check, native-only compilation and empty examples do not qualify. Release builds cover darwin arm64/x64, linux x64/arm64 and windows x64, with matching notes/assets.
 
 Shared-workflow changes require one separate issue and clone in maestro-rust-workflows. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Its initial real-tool and wasm-job release plus caller/ruleset re-pin precede foundation/models acceptance; the caller later supplies its real browser build and its own tag-triggered release workflow; the shared companion supplies only generic configurable checks. Keep the application lane out of that repository. Every mapped CI step needs observed evidence before final qualification; a plan or skipped job is not proof of delivered parity.
-
-## Native browser reading ownership
-
-`maestro-web` extends its existing attachment-surface registry with owned reading
-content. Feature modules prepare literal native text; the shared browser host
-owns admission, placement, live natural-height readback, modal visibility and
-teardown. Reading factories receive the canvas's actual document and return the
-native root with identified empty canvas-control slots. Placements supply actual
-control sizes by identity; live readback returns full slot rectangles in frame-local
-canvas points alongside unclipped natural height. The retained native tree is
-frame → viewport → feature root. The outer frame owns position, size, separate-axis
-transform, opacity and external clipping; it never scrolls. Its paint extent is
-the ancestor clip intersected with finite drawable canvas bounds, minus control
-occluders, without intersection with its own rectangle. A zero-size viewport is empty.
-The retained host-created viewport owns an explicit border-box clip and is the
-only host-created scroller; the frame never scrolls. Content-owned scrollers,
-such as individual spreadsheet sheet containers, remain with their feature.
-Feature styles own decoration: the PDF overlay's background and
-border stay on the viewport, its outer shadow stays on the frame, and page-local
-shadows stay on pages. Other reading features gain no frame shadow.
-Measurement uses bounded hidden auto-height frame/viewport placement, reads natural
-height from the feature root and stages the viewport's clamped fractional offsets.
-It does not assign height to feature roots or depend on percentage height beneath
-an indefinite measurement parent. One shared transaction restores optional
-frame/viewport/slot styles and both viewport scroll axes after measurement or
-failed publication, attempting every restoration and preserving the operation error,
-or the first cleanup error when the operation succeeded.
-Publication applies the same sizes and staged offsets before committing the root.
-Canvas paint retains full control geometry through the final clip. Pointer activation
-requires a press inside the control's current positive visible intersection and a
-release inside that same control's then-current visible intersection. At both
-endpoints the control must be enabled and its layer must own the input. Keyboard
-activation is unchanged. Unchanged content retains its native root and selection.
-The existing event-subscription owner retains scroll/resize callbacks; no second
-registry, listener runtime or painted reading-text fallback is introduced.
-A reading root may carry an opaque `owner: Option<Box<dyn std::any::Any>>`
-for mounted feature lifetimes. This owner retains feature listener guards, whose
-callbacks capture it weakly; factories never retain mounted state. Dropping a root
-attempts listener detachment through the existing subscription policy, and expired
-weak callbacks are harmless even if native removal fails. Unchanged roots retain
-expansion; successful replacements start collapsed. Passive roots carry no owner.
-Native viewport projection and inverse readback share the canvas axis transform.
-Canvas controls remain feature-owned; native text remains selectable and findable.
-Measurement stages a hidden candidate; publication replaces the retained owner
-only after complete placement succeeds. Failed readback or publication retains
-the old root, selection, scroll and placement without remounting it. An explicit
-phase distinguishes measurement from a valid zero-sized final viewport.
-
-Browser errors follow the existing operation interfaces. `AttachmentHostError`
-contains native Host, Presentation and BorrowConflict failures. Shared glyph and
-control drawing uses `ControlError` (Icon, Host and Presentation). Attachment,
-artifact and generic-dialog operations own `AttachmentUiError`, `ArtifactUiError`
-and `DialogUiError`; each composes localization, control, host, presentation and
-local borrow failures. Input owns `InputUiError` for localization, host and
-presentation failures. Leaf conversions wrap only the named operation variant;
-there is no generic I/O conversion or cross-feature conversion.
-
-Code, Markdown and console rendering share `ReadingUiError`, owned by the
-code-block interface, for highlighting, localization, localized-control, native
-and outer-style presentation failures. Reading presentation keeps its I/O cause.
-Copy and preview/source controls share `LocalizedControlError`, owned by the
-copy-button interface, for localization, shared-control and color failures.
-These owners add no crate edges. Highlighting retains the theme interface's
-boxed error; color failures retain their original I/O error. Artifact presentation
-uses a closed `PresentationCause` with Message, Reading and Control cases so
-preparation failures keep their typed causes. Display delegates without prefixes;
-source traversal retains the original localization, icon and native errors.
-
-The tool-rendering interface owns `tools::types::ToolUiError` for localization,
-shared controls, native effects, reading preparation and literal presentation
-failures. Its explicit boundary mappings retain native and leaf variants; only
-reading preparation enters Reading. Console and tool native factories remain
-host-owned, and every typed cause remains reachable through `Error::source`.
-
-Viewer header, history-download and copy-link operations use `io::Result`, wrapping
-control and host failures with their actual typed payloads. Native reading helpers
-remain host-owned. The attachment overlay catches host Presentation at the body
-boundary before wrapping other host failures. Existing recovery, messages, native
-lifetimes and download bytes are unchanged. These return types intentionally
-change Rust source interfaces; there is no compatibility alias.
 
 ## Crates and delivery order
 
@@ -734,7 +752,7 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 
 **Reference defects.** Correct known and encountered defects in their owning mapped files; list each correction once with a regression. Correct stale documentation to the delivered behavior. Do not mark an affected file complete until its fixes pass; an example or adapter without a mapped owner is a coverage gap, not completed delivery.
 
-**Replaceable visual identity.** One design-token data file supplies Maestro colors, font and mark metadata to browser canvas, DOM overlays, the exported viewer and shipped terminal dark/light defaults. Embed whole Barlow, Barlow Condensed, JetBrains Mono and Space Grotesk fonts with OFL notices for browser/viewer text; Noto Sans Symbols 2 supplies missing symbols without replacing a text role. Use the Maestro M mark. A same-format user override replaces the identity without code changes. Preserve layout, behavior, terminal theme format/names/keys and custom themes; the terminal font remains user-controlled.
+**Replaceable visual identity.** One design-token data file supplies Maestro colors, font and mark metadata to browser pages, the exported viewer and shipped terminal dark/light defaults. Embed whole Barlow, Barlow Condensed, JetBrains Mono and Space Grotesk fonts with OFL notices for browser/viewer text; Noto Sans Symbols 2 supplies missing symbols without replacing a text role. Use the Maestro M mark. A same-format user override replaces the identity without code changes. Preserve layout, behavior, terminal theme format/names/keys and custom themes; the terminal font remains user-controlled.
 
 **CI placement.** Shared CI is the whole merge check. The caller's `.github/ci.toml` lists `wasm_crates`, four platform `check_targets` and optional `browser_build`; absent configuration skips only optional jobs, invalid configuration fails. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Required shared jobs use real rg/fd, wasm builds and foreign-target checks. Enabling the browser application runs the caller's mise-pinned `just browser-build` recipe for real app/example assets. Release binaries, notes, checksums, SBOM/attestation and smoke belong to this repository's tag workflow. macOS/Windows runtime tests return before first release. No separate gate program or extra required repository workflow is added.
 
