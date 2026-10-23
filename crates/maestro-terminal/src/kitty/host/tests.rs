@@ -1,8 +1,6 @@
 //! Behaviour of the host graphics cache and its wire encoding.
 
 use std::collections::HashSet;
-#[cfg(not(target_arch = "wasm32"))]
-use std::sync::{Arc, Mutex};
 
 #[cfg(not(target_arch = "wasm32"))]
 use super::ClippedPlacement;
@@ -732,28 +730,11 @@ const ORIGIN_VIEWPORT_CHECK: &str = "clipped_placement: viewport check viewport_
      viewport_row=0 area_w=20 area_h=10 scrollback_offset=0 raw_viewport_row=0 \
      cond1=false cond2=false";
 
-/// Buffer one captured debug stream appends to.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Clone, Default)]
-struct Buffer(Arc<Mutex<Vec<u8>>>);
-
-#[cfg(not(target_arch = "wasm32"))]
-impl std::io::Write for Buffer {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0.lock().unwrap().extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
 /// Debug lines one clipping call emits, without the event header, and its result.
 #[cfg(not(target_arch = "wasm32"))]
 fn clipping_events(placement: &HostPlacement) -> (Option<(ClippedPlacement, u32)>, Vec<String>) {
-    let buffer = Buffer::default();
-    let writer = buffer.clone();
+    let output = maestro_test_tracing::Output::default();
+    let writer = output.clone();
     let subscriber = tracing_subscriber::fmt()
         .without_time()
         .with_ansi(false)
@@ -763,8 +744,7 @@ fn clipping_events(placement: &HostPlacement) -> (Option<(ClippedPlacement, u32)
         .with_writer(move || writer.clone())
         .finish();
     let clipped = maestro_test_tracing::with_default(subscriber, || clipped_placement(placement));
-    let text = String::from_utf8(buffer.0.lock().unwrap().clone()).unwrap();
-    (clipped, text.lines().map(str::to_owned).collect())
+    (clipped, output.text().lines().map(str::to_owned).collect())
 }
 
 /// Assert one clipping call's emitted debug lines and whether it kept a placement.

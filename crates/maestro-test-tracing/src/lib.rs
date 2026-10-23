@@ -6,10 +6,48 @@
 //! subscriber. A sibling test thread without a subscriber can therefore cache
 //! disabled interest for a callsite and prevent scoped capture until a rebuild.
 //! [`with_default`] keeps a second subscriber registered, so every live
-//! subscriber is asked.
+//! subscriber is asked. A formatting subscriber writes into an [`Output`].
 
-use std::sync::LazyLock;
+use std::{
+    io::{self, Write},
+    sync::{Arc, LazyLock, Mutex, MutexGuard, PoisonError},
+};
 use tracing::{Dispatch, subscriber::NoSubscriber};
+
+/// Bytes a formatting subscriber writes, shared by every clone.
+///
+/// Give the subscriber's writer a clone and read the capture with [`Output::text`].
+#[derive(Clone, Default)]
+pub struct Output(Arc<Mutex<Vec<u8>>>);
+
+impl Output {
+    /// Text written so far.
+    #[must_use]
+    pub fn text(&self) -> String {
+        String::from_utf8_lossy(&self.bytes()).into_owned()
+    }
+
+    /// Forget everything written so far.
+    pub fn clear(&self) {
+        self.bytes().clear();
+    }
+
+    /// Captured bytes, still readable after a writer panicked.
+    fn bytes(&self) -> MutexGuard<'_, Vec<u8>> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl Write for Output {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.bytes().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
 
 /// Run `action` with `subscriber` as this thread's default subscriber.
 ///

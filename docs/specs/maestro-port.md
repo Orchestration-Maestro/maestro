@@ -659,6 +659,9 @@ interest from the registering thread's own subscriber. Without the kept
 subscriber, a sibling test thread with no subscriber can cache disabled interest
 for the capturing thread too, until a rebuild.
 
+`Output` is the byte sink a formatting subscriber writes to. Every clone
+appends to the same capture; `text` reads it and `clear` empties it.
+
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
