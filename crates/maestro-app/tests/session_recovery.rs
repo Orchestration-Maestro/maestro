@@ -10,7 +10,7 @@ use maestro_app::agent_session::CompactionReason;
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionAPI, ExtensionFactory, SessionBeforeCompactEvent, SessionBeforeCompactResult,
-    SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionCompactEvent,
+    SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionCompactEvent, SessionTreeEvent,
 };
 use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, FauxAssistantMessageOptions, Local, StopReason,
@@ -310,15 +310,29 @@ fn assert_refused(outcome: &Result<CompactionResult, DiagnosticErrorInfo>, expec
 /// A before-compaction handler the recorded cases install.
 type Handler = Rc<dyn Fn(&mut SessionBeforeCompactEvent) -> Option<SessionBeforeCompactResult>>;
 
+/// A handler's checkpoint: it reports reaching the first notifier, then answers once the
+/// second is notified.
+type Gate = (Rc<Notify>, Rc<Notify>);
+
 /// The extension the recorded cases install to supply or refuse a compaction.
 fn handled(handler: Handler) -> ExtensionFactory<Local> {
+    gated(handler, None)
+}
+
+/// The extension answering with `handler`, after passing `gate` when one is supplied.
+fn gated(handler: Handler, gate: Option<Gate>) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let handler = Rc::clone(&handler);
+        let gate = gate.clone();
         let registered = api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
             "session_before_compact".into(),
             Rc::new(move |event, _| {
                 let result = handler(event);
-                Box::pin(std::future::ready(Ok(result)))
+                let gate = gate.clone();
+                Box::pin(async move {
+                    pass(gate).await;
+                    Ok(result)
+                })
             }),
         );
         drop(registered);
@@ -326,9 +340,17 @@ fn handled(handler: Handler) -> ExtensionFactory<Local> {
     })
 }
 
-/// The extension the recorded cases install to supply the preparation's summary.
-fn summary_provider() -> ExtensionFactory<Local> {
-    handled(Rc::new(|event| {
+/// Reports reaching `gate` and waits for its release; without a gate it passes at once.
+async fn pass(gate: Option<Gate>) {
+    if let Some((reached, release)) = gate {
+        reached.notify_one();
+        release.notified().await;
+    }
+}
+
+/// The handler the recorded cases install to supply the preparation's summary.
+fn supplied_summary() -> Handler {
+    Rc::new(|event| {
         let data = &event.data;
         Some(SessionBeforeCompactResult {
             cancel: Presence::Missing,
@@ -339,7 +361,12 @@ fn summary_provider() -> ExtensionFactory<Local> {
                 details: Presence::Present(json!({})),
             }),
         })
-    }))
+    })
+}
+
+/// The extension the recorded cases install to supply the preparation's summary.
+fn summary_provider() -> ExtensionFactory<Local> {
+    handled(supplied_summary())
 }
 
 /// The extension the recorded cases install to refuse a compaction.
@@ -382,6 +409,39 @@ fn waiting_tree_extension(reached: Rc<Notify>) -> ExtensionFactory<Local> {
             }),
         );
         drop(registered);
+        Box::pin(std::future::ready(Ok(())))
+    })
+}
+
+/// The extension whose before-tree handler passes `gate` and lets the move go on; it counts
+/// the announced moves and notifies `announced` after each.
+fn gated_tree_extension(
+    gate: Gate,
+    moves: Rc<Cell<u32>>,
+    announced: Rc<Notify>,
+) -> ExtensionFactory<Local> {
+    Rc::new(move |api: ExtensionAPI<Local>| {
+        let gate = gate.clone();
+        let before = api.on::<SessionBeforeTreeEvent, SessionBeforeTreeResult>(
+            "session_before_tree".into(),
+            Rc::new(move |_, _| {
+                let gate = Some(gate.clone());
+                Box::pin(async move {
+                    pass(gate).await;
+                    Ok(None)
+                })
+            }),
+        );
+        let (moves, announced) = (Rc::clone(&moves), Rc::clone(&announced));
+        let after = api.on::<SessionTreeEvent, ()>(
+            "session_tree".into(),
+            Rc::new(move |_, _| {
+                moves.set(moves.get() + 1);
+                announced.notify_one();
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        drop((before, after));
         Box::pin(std::future::ready(Ok(())))
     })
 }
@@ -441,7 +501,7 @@ fn first_entry_id(h: &Harness) -> String {
         .to_owned()
 }
 
-/// Navigation that summarizes the branch it leaves.
+/// Navigation that leaves the branch without summarizing it.
 fn navigate_options() -> maestro_session::session_manager::NavigateTreeOptions {
     maestro_session::session_manager::NavigateTreeOptions {
         summarize: Some(false),
@@ -466,16 +526,43 @@ fn announced(ids: Rc<RefCell<Vec<String>>>) -> ExtensionFactory<Local> {
     })
 }
 
-/// Notified once the session announces a retry attempt.
-fn retry_started(h: &Harness) -> Rc<Notify> {
-    let started = Rc::new(Notify::new());
-    let notify = Rc::clone(&started);
+/// Notified each time the session announces an event `wanted` accepts.
+fn announced_event(h: &Harness, wanted: fn(&AgentSessionEvent) -> bool) -> Rc<Notify> {
+    let announced = Rc::new(Notify::new());
+    let notify = Rc::clone(&announced);
     drop(h.session.subscribe(Rc::new(move |event| {
-        if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+        if wanted(event) {
             notify.notify_one();
         }
     })));
-    started
+    announced
+}
+
+/// Notified once the session announces a retry attempt.
+fn retry_started(h: &Harness) -> Rc<Notify> {
+    announced_event(h, |event| {
+        matches!(event, AgentSessionEvent::AutoRetryStart { .. })
+    })
+}
+
+/// Notified once the session announces the end of a compaction.
+fn compaction_ended(h: &Harness) -> Rc<Notify> {
+    announced_event(h, |event| {
+        matches!(event, AgentSessionEvent::CompactionEnd { .. })
+    })
+}
+
+/// The paused-clock instant each agent run starts, newest last.
+fn agent_starts(h: &Harness) -> Rc<RefCell<Vec<tokio::time::Instant>>> {
+    let starts = Rc::new(RefCell::new(Vec::new()));
+    let record = Rc::clone(&starts);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        if matches!(*event.read().unwrap(), AgentEvent::AgentStart) {
+            record.borrow_mut().push(tokio::time::Instant::now());
+        }
+        Box::pin(std::future::ready(Ok(())))
+    })));
+    starts
 }
 
 /// Notified once an agent run ends.
@@ -491,10 +578,12 @@ fn agent_ended(h: &Harness) -> Rc<Notify> {
     ended
 }
 
-/// Drops the operation `task` runs mid-flight, returning once it is gone.
-async fn drop_mid_flight<T: 'static>(task: tokio::task::JoinHandle<T>) {
-    task.abort();
-    assert!(task.await.err().is_some_and(|error| error.is_cancelled()));
+/// Starts `operation` with one poll and drops it unfinished, as a caller that stops
+/// observing it.
+fn start_and_abandon(operation: impl std::future::Future) {
+    let mut operation = std::pin::pin!(operation);
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(operation.as_mut().poll(&mut context).is_pending());
 }
 
 // -------------------------------------------------------------- classification
@@ -612,8 +701,9 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
                 serde_json::to_value(&overflow).unwrap(),
             ],
         );
-        let ended = agent_ended(&h);
+        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
         h.session.check_compaction(&overflow, true).await.unwrap();
+        let compacted = tokio::time::Instant::now();
         assert_observation(&h, &expected["before"]);
         tokio::time::advance(std::time::Duration::from_millis(99)).await;
         assert_eq!(messages_view(&h), expected["before"]["messages"]);
@@ -624,6 +714,8 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
         ended.notified().await;
         assert_eq!(messages_view(&h), expected["after"]["messages"]);
+        let continued = compacted + std::time::Duration::from_millis(100);
+        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -788,9 +880,10 @@ fn queued_messages_resume_after_the_compaction() {
         h.session
             .agent()
             .follow_up(AgentMessage::Custom(Arc::new(RwLock::new(queued))));
-        let ended = agent_ended(&h);
+        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
+        let compacted = tokio::time::Instant::now();
         assert_observation(&h, &expected["before"]);
         tokio::time::advance(std::time::Duration::from_millis(99)).await;
         assert_eq!(messages_view(&h), expected["before"]["messages"]);
@@ -801,6 +894,8 @@ fn queued_messages_resume_after_the_compaction() {
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
         ended.notified().await;
         assert_eq!(messages_view(&h), expected["after"]["messages"]);
+        let continued = compacted + std::time::Duration::from_millis(100);
+        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -1011,7 +1106,10 @@ fn manual_compaction_uses_the_extension_summary() {
             recorded_number(result.tokens_before),
             expected["result"]["tokensBefore"]
         );
-        assert_eq!(result.details.present().unwrap(), &json!({}));
+        assert_eq!(
+            result.details.present().unwrap(),
+            &expected["result"]["details"]
+        );
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
     });
@@ -1024,7 +1122,10 @@ fn manual_compaction_generates_and_stores_a_summary() {
         let h = seeded(json!({}), Vec::new()).await;
         let prompts = script_responses(&h, vec![answer("generated summary", None, None)]);
         let result = h.session.compact(Some("focus on files")).await.unwrap();
-        assert_eq!(result.summary, "generated summary");
+        assert_eq!(
+            result.summary,
+            expected["result"]["summary"].as_str().unwrap()
+        );
         assert_eq!(
             recorded_number(result.tokens_before),
             expected["result"]["tokensBefore"]
@@ -1106,6 +1207,8 @@ fn manual_compaction_without_credentials_reports_the_key_message() {
             serde_json::from_str::<Value>(&observed).unwrap(),
             without_kept_identity(&expected["events"])
         );
+        assert_eq!(messages_view(&h), expected["messages"]);
+        assert_eq!(entries_view(&h), expected["entries"]);
     });
 }
 
@@ -1301,7 +1404,8 @@ fn a_retry_continues_immediately_after_the_backoff() {
                 serde_json::to_value(&failing).unwrap(),
             ],
         );
-        let ended = agent_ended(&h);
+        let (ended, starts) = (agent_ended(&h), agent_starts(&h));
+        let failed = tokio::time::Instant::now();
         let mut work = Box::pin(h.session.handle_retryable_error(&failing));
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
@@ -1312,15 +1416,13 @@ fn a_retry_continues_immediately_after_the_backoff() {
             vec![answer("retried answer", None, None)],
         ));
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        let std::task::Poll::Ready(returned) =
-            std::future::Future::poll(work.as_mut(), &mut context)
-        else {
-            panic!("the backoff ends after 2000 ms");
-        };
+        let returned = work.await;
         assert_eq!(returned.unwrap(), expected["returned"].as_bool().unwrap());
         assert_eq!(events_view(&h), expected["events"]);
         ended.notified().await;
         assert_eq!(messages_view(&h), expected["messages"]);
+        let continued = failed + std::time::Duration::from_millis(2_000);
+        assert_eq!(*starts.borrow(), [continued]);
     });
 }
 
@@ -1686,11 +1788,8 @@ fn repeated_summaries_announce_the_newest_entry() {
 }
 
 #[test]
-fn dropping_a_waiting_retry_cancels_it() {
-    let expected = case(
-        "retry_behaviour",
-        "abort_during_backoff_cancels_the_attempt",
-    );
+fn a_retry_left_unobserved_still_continues() {
+    let expected = case("retry_behaviour", "retry_schedules_continuation");
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
             settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
@@ -1699,22 +1798,97 @@ fn dropping_a_waiting_retry_cancels_it() {
         .await;
         let failing = response(
             400,
-            &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
+            &answer_extra(&StopReason::Error, Some("connection lost"), 0),
         );
-        let started = retry_started(&h);
-        let session = Rc::clone(&h.session);
-        let task =
-            tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
-        started.notified().await;
-        drop_mid_flight(task).await;
-        assert_observation(&h, &expected);
-        assert_eq!(h.session.retry_attempt(), 0);
-        assert!(!h.session.is_retrying());
+        set_agent_messages(
+            &h,
+            &[
+                user(&json!([{"type": "text", "text": "hello"}]), 100),
+                serde_json::to_value(&failing).unwrap(),
+            ],
+        );
+        let ended = agent_ended(&h);
+        drop(script_responses(
+            &h,
+            vec![answer("retried answer", None, None)],
+        ));
+        start_and_abandon(h.session.handle_retryable_error(&failing));
+        assert!(h.session.is_retrying(), "the retry still waits");
+        tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
+        ended.notified().await;
+        assert_eq!(events_view(&h), expected["events"]);
+        assert_eq!(messages_view(&h), expected["messages"]);
     });
 }
 
 #[test]
-fn dropping_a_manual_compaction_ends_it_as_aborted() {
+fn a_manual_compaction_left_unobserved_still_completes() {
+    let expected = case(
+        "manual_compaction",
+        "manual_compaction_uses_extension_summary",
+    );
+    on_paused_task_set(|_| async {
+        let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
+        let provider = gated(supplied_summary(), Some(gate.clone()));
+        let h = seeded(json!({}), vec![provider]).await;
+        let ended = compaction_ended(&h);
+        start_and_abandon(h.session.compact(None));
+        gate.0.notified().await;
+        assert!(h.session.is_compacting(), "the compaction still runs");
+        gate.1.notify_one();
+        ended.notified().await;
+        assert_observation(&h, &expected);
+        assert_kept_starts_the_history(&h, &expected["messages"]);
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn an_automatic_compaction_left_unobserved_still_completes() {
+    let expected = case("compaction_checks", "threshold_compacts_without_retry");
+    on_paused_task_set(|_| async {
+        let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
+        let provider = gated(supplied_summary(), Some(gate.clone()));
+        let h = seeded(json!({}), vec![provider]).await;
+        let ended = compaction_ended(&h);
+        let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
+        start_and_abandon(h.session.check_compaction(&message, true));
+        gate.0.notified().await;
+        assert!(h.session.is_compacting(), "the compaction still runs");
+        gate.1.notify_one();
+        ended.notified().await;
+        assert_observation(&h, &expected);
+        assert_kept_starts_the_history(&h, &expected["messages"]);
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn a_tree_navigation_left_unobserved_still_moves() {
+    on_paused_task_set(|_| async {
+        let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
+        let (moves, announced) = (Rc::new(Cell::new(0)), Rc::new(Notify::new()));
+        let extension =
+            gated_tree_extension(gate.clone(), Rc::clone(&moves), Rc::clone(&announced));
+        let h = seeded(json!({}), vec![extension]).await;
+        let manager = h.session.session_manager();
+        let target = manager.borrow().get_entries()[1]["id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        start_and_abandon(h.session.navigate_tree(&target, navigate_options()));
+        gate.0.notified().await;
+        assert!(h.session.is_compacting(), "the navigation still runs");
+        gate.1.notify_one();
+        announced.notified().await;
+        assert_eq!(moves.get(), 1);
+        assert_eq!(manager.borrow().get_leaf_id(), Some(target.as_str()));
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn aborting_a_compaction_left_unobserved_cancels_it() {
     let expected = case(
         "manual_compaction",
         "abort_compaction_cancels_manual_compaction",
@@ -1722,52 +1896,13 @@ fn dropping_a_manual_compaction_ends_it_as_aborted() {
     on_paused_task_set(|_| async {
         let reached = Rc::new(Notify::new());
         let h = seeded(json!({}), vec![waiting_extension(Rc::clone(&reached))]).await;
-        let session = Rc::clone(&h.session);
-        let task = tokio::task::spawn_local(async move { session.compact(None).await });
+        let ended = compaction_ended(&h);
+        start_and_abandon(h.session.compact(None));
         reached.notified().await;
-        drop_mid_flight(task).await;
+        assert!(h.session.is_compacting(), "the compaction still runs");
+        h.session.abort_compaction();
+        ended.notified().await;
         assert_observation(&h, &expected);
-        assert!(!h.session.is_compacting());
-    });
-}
-
-#[test]
-fn dropping_an_automatic_compaction_ends_it_as_aborted() {
-    let expected = case(
-        "compaction_checks",
-        "auto_compaction_cancelled_by_extension",
-    );
-    on_paused_task_set(|_| async {
-        let reached = Rc::new(Notify::new());
-        let h = seeded(json!({}), vec![waiting_extension(Rc::clone(&reached))]).await;
-        let overflow = overflow_response();
-        push_agent_message(&h, &overflow);
-        let session = Rc::clone(&h.session);
-        let task =
-            tokio::task::spawn_local(
-                async move { session.check_compaction(&overflow, true).await },
-            );
-        reached.notified().await;
-        drop_mid_flight(task).await;
-        assert_observation(&h, &expected);
-        assert!(!h.session.is_compacting());
-    });
-}
-
-#[test]
-fn dropping_a_tree_navigation_clears_its_branch_summary() {
-    on_paused_task_set(|_| async {
-        let reached = Rc::new(Notify::new());
-        let h = seeded(json!({}), vec![waiting_tree_extension(Rc::clone(&reached))]).await;
-        append_user(&h, "three", 400);
-        let target = first_entry_id(&h);
-        let session = Rc::clone(&h.session);
-        let task = tokio::task::spawn_local(async move {
-            session.navigate_tree(&target, navigate_options()).await
-        });
-        reached.notified().await;
-        assert!(h.session.is_compacting());
-        drop_mid_flight(task).await;
         assert!(!h.session.is_compacting());
     });
 }

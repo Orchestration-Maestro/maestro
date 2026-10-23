@@ -1,11 +1,12 @@
 //! Retrying a failed response with a visible, cancellable backoff.
-use super::state::Settlement;
+use super::state::thrown;
 use super::{AgentSession, AgentSessionEvent};
 use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
 use maestro_models::{
     AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
 };
+use std::rc::Rc;
 use std::sync::LazyLock;
 use std::time::Duration;
 
@@ -39,11 +40,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Waits out the backoff and schedules one continuation, reporting whether it will run.
+    /// Once started, the wait belongs to the session: dropping the returned future leaves it
+    /// running, and `abort_retry` stops it.
     ///
     /// # Errors
-    /// Returns a listener failure raised while announcing the attempt.
+    /// Returns an error when the wait was dropped unfinished because the agent has no task
+    /// facility.
     pub async fn handle_retryable_error(
-        &self,
+        self: &Rc<Self>,
         message: &AssistantMessage,
     ) -> Result<bool, DiagnosticErrorInfo> {
         let settings = self.settings_manager.borrow().get_retry_settings();
@@ -82,18 +86,25 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.drop_trailing_assistant(|_| true);
         let signal = Cancellation::new();
         self.state.borrow_mut().retry_signal = Some(signal.clone());
-        let cancelled = Settlement::new(|| self.cancel_retry(attempt));
-        if maestro_tools::process::sleep::sleep(millis(delay), Some(&signal))
+        let session = Rc::clone(self);
+        self.start_operation(async move { session.wait_out_backoff(attempt, delay, &signal).await })
+            .await
+            .map_err(thrown)
+    }
+
+    /// Sleeps `delay` milliseconds under `signal`, then schedules the continuation; an abort
+    /// ends the attempt instead.
+    async fn wait_out_backoff(&self, attempt: u32, delay: f64, signal: &Cancellation) -> bool {
+        if maestro_tools::process::sleep::sleep(millis(delay), Some(signal))
             .await
             .is_err()
         {
-            drop(cancelled);
-            return Ok(false);
+            self.cancel_retry(attempt);
+            return false;
         }
-        cancelled.disarm();
         self.state.borrow_mut().retry_signal = None;
         self.schedule_continuation(Duration::ZERO);
-        Ok(true)
+        true
     }
 
     /// Stops a waiting retry without clearing the attempt it was making.
@@ -152,7 +163,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         state.retry_open = Some(open);
     }
 
-    /// Ends a retry whose wait was aborted or dropped, clearing its attempts.
+    /// Ends a retry whose wait was aborted, clearing its attempts.
     fn cancel_retry(&self, attempt: u32) {
         {
             let mut state = self.state.borrow_mut();

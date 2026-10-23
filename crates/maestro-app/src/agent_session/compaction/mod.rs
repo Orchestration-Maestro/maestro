@@ -205,17 +205,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 }
 
-/// The end of a compaction a handler, an abort or a dropped caller stopped.
-fn aborted_end(reason: CompactionReason) -> AgentSessionEvent {
-    AgentSessionEvent::CompactionEnd {
-        reason,
-        result: None,
-        aborted: true,
-        will_retry: false,
-        error_message: None,
-    }
-}
-
 /// The compaction a generated summary stores.
 fn stored_result(result: CompactionResult<maestro_session::CompactionDetails>) -> CompactionResult {
     CompactionResult {

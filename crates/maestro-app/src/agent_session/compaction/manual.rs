@@ -1,19 +1,38 @@
 //! The compaction a caller asks for.
-use super::super::state::Settlement;
+use super::super::state::thrown;
 use super::super::{AgentSession, AgentSessionEvent, CompactionReason};
-use super::{BeforeCompaction, aborted_end};
+use super::BeforeCompaction;
 use maestro_extensions::ExtensionExecution;
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
 use maestro_session::CompactionResult;
+use std::rc::Rc;
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// Compacts the session context now, after stopping the running turn.
+    /// Compacts the session context now, after stopping the running turn. Once started, the
+    /// compaction belongs to the session: dropping the returned future leaves it running, and
+    /// `abort_compaction` stops it.
     ///
     /// # Errors
     /// Returns `Already compacted` or `Nothing to compact (session too small)` when the branch
     /// cannot be cut, `Compaction cancelled` when a handler or caller stopped it, and the
     /// authentication or summarizer failure otherwise.
     pub async fn compact(
+        self: &Rc<Self>,
+        custom_instructions: Option<&str>,
+    ) -> Result<CompactionResult, DiagnosticErrorInfo> {
+        let session = Rc::clone(self);
+        let custom_instructions = custom_instructions.map(str::to_owned);
+        self.start_operation(async move {
+            session
+                .manual_compaction(custom_instructions.as_deref())
+                .await
+        })
+        .await
+        .map_err(thrown)?
+    }
+
+    /// The manual compaction the session runs, announced from start to end.
+    async fn manual_compaction(
         &self,
         custom_instructions: Option<&str>,
     ) -> Result<CompactionResult, DiagnosticErrorInfo> {
@@ -23,10 +42,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.emit(&AgentSessionEvent::CompactionStart {
             reason: CompactionReason::Manual,
         });
-        let abandoned =
-            Settlement::new(|| self.close_compaction(&aborted_end(CompactionReason::Manual)));
         let outcome = self.compact_context(&signal, custom_instructions).await;
-        abandoned.disarm();
         let end = match &outcome {
             Ok(result) => AgentSessionEvent::CompactionEnd {
                 reason: CompactionReason::Manual,

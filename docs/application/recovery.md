@@ -94,7 +94,12 @@ the error text, whether a retry succeeded and the final failure.
 
 No borrow of the session state, the history or an agent lock is held across a
 wait or a listener call, so a handler that aborts, toggles a preference or
-subscribes is safe. A caller that drops a waiting retry, a compaction or a tree
-navigation ends it as cancelled: the retry announces `Retry cancelled`, a
-compaction announces `compaction_end` with `aborted`, and no running flag stays
-set. To let one of them finish unobserved, spawn it on a shared session instead.
+subscribes is safe.
+
+A retry wait, a compaction and a tree navigation run as the session's own work
+on the agent's task facility, so these methods take the session behind an `Rc`.
+The returned future only watches the result. Dropping it leaves the work
+running to its normal end: it still announces its end event and clears its
+running flag. Only `abort()`, `abort_retry()`, `abort_compaction()` and
+`abort_branch_summary()` stop the work. An agent without a task facility drops
+work that cannot finish at once, and the future reports the drop as an error.

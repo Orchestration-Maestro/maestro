@@ -1,7 +1,7 @@
 //! Compaction the session decides on after a response.
-use super::super::state::{Settlement, message_records, thrown};
+use super::super::state::{message_records, thrown};
 use super::super::{AgentSession, AgentSessionEvent, CompactionReason};
-use super::{BeforeCompaction, aborted_end};
+use super::BeforeCompaction;
 use crate::utils::lock::read;
 use indexmap::IndexMap;
 use maestro_extensions::ExtensionExecution;
@@ -13,10 +13,12 @@ use maestro_session::compaction::{
     CompactionSettings, calculate_context_tokens, estimate_context_tokens, should_compact,
 };
 use maestro_session::session_manager::{ReadonlySessionManager, get_latest_compaction_entry};
+use std::rc::Rc;
 use std::time::Duration;
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// Compacts when the finished response overflowed or passed the reserve.
+    /// Compacts when the finished response overflowed or passed the reserve. A started
+    /// compaction belongs to the session: dropping the returned future leaves it running.
     ///
     /// `skip_aborted_check` keeps an aborted response out of the check unless the caller
     /// checks before a prompt.
@@ -25,7 +27,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Returns a failure reading the stored branch or the response's usage; a failing
     /// compaction reports its failure through `compaction_end` instead.
     pub async fn check_compaction(
-        &self,
+        self: &Rc<Self>,
         message: &AssistantMessage,
         skip_aborted_check: bool,
     ) -> Result<(), DiagnosticErrorInfo> {
@@ -77,20 +79,26 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
+    /// Starts one automatic compaction on the session and waits for it to end.
+    async fn run_auto_compaction(self: &Rc<Self>, reason: CompactionReason, will_retry: bool) {
+        let session = Rc::clone(self);
+        let run = async move { session.auto_compaction(reason, will_retry).await };
+        // A closed receiver means the agent had no task facility to finish the compaction.
+        drop(self.start_operation(run).await);
+    }
+
     /// Runs one automatic compaction, reporting every outcome through `compaction_end`.
-    pub(super) async fn run_auto_compaction(&self, reason: CompactionReason, will_retry: bool) {
+    async fn auto_compaction(&self, reason: CompactionReason, will_retry: bool) {
         let settings = self.compaction_policy();
         self.emit(&AgentSessionEvent::CompactionStart { reason });
         let signal = Cancellation::new();
         self.state.borrow_mut().auto_compaction_signal = Some(signal.clone());
-        let abandoned = Settlement::new(|| self.close_compaction(&aborted_end(reason)));
         let outcome = self
             .auto_compaction_content(&settings, &signal)
             .await
             .unwrap_or_else(|error| Outcome::Failed {
                 message: error.message,
             });
-        abandoned.disarm();
         let compacted = matches!(outcome, Outcome::Compacted { .. });
         let end = match outcome {
             Outcome::Skipped { aborted } => AgentSessionEvent::CompactionEnd {

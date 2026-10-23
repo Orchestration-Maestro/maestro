@@ -1,7 +1,7 @@
 //! Session names, tree navigation and fork points.
 use super::{
     AgentSession, AgentSessionEvent, ForkMessage, NavigateTreeResult,
-    state::{Settlement, agent_messages, content_text, thrown},
+    state::{agent_messages, content_text, thrown},
 };
 use crate::configuration::config::get_docs_path;
 use crate::utils::lock::{read, write};
@@ -20,6 +20,7 @@ use maestro_session::{
 };
 use serde::Deserialize as _;
 use serde_json::{Value, json};
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 /// Summary text and details chosen for the branch left behind.
@@ -104,22 +105,30 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Moves to `target_id` in the same session, optionally summarizing the branch left.
+    /// Moves to `target_id` in the same session, optionally summarizing the branch left. Once
+    /// started, the move belongs to the session: dropping the returned future leaves it
+    /// running, and `abort_branch_summary` stops its summary.
     ///
     /// # Errors
     /// Returns `Entry <id> not found`, or an authentication, summary, recording or
     /// extension failure.
     pub async fn navigate_tree(
-        &self,
+        self: &Rc<Self>,
         target_id: &str,
         options: NavigateTreeOptions,
     ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
-        // Clears the summary signal on every outcome, a dropped caller included.
-        let _cleared = Settlement::new(|| self.state.borrow_mut().branch_summary_signal = None);
-        self.navigate(target_id, options).await
+        let session = Rc::clone(self);
+        let target_id = target_id.to_owned();
+        self.start_operation(async move {
+            let navigated = session.navigate(&target_id, options).await;
+            session.state.borrow_mut().branch_summary_signal = None;
+            navigated
+        })
+        .await
+        .map_err(thrown)?
     }
 
-    /// The navigation a caller requested, before its summary signal is cleared.
+    /// The navigation the session runs, before its summary signal is cleared.
     async fn navigate(
         &self,
         target_id: &str,

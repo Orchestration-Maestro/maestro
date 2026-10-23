@@ -211,6 +211,28 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.agent.wait_for_idle().await;
     }
 
+    /// Runs `operation` as the session's own work: polled once now, then finished on the
+    /// agent's task facility. The receiver only observes the result, so dropping it leaves the
+    /// operation running; without a facility, an operation that does not finish at once is
+    /// dropped and the receiver reports it closed.
+    pub(super) fn start_operation<T: 'static>(
+        &self,
+        operation: impl std::future::Future<Output = T> + 'static,
+    ) -> tokio::sync::oneshot::Receiver<T> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let mut task: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> =
+            Box::pin(async move {
+                drop(sender.send(operation.await));
+            });
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        if task.as_mut().poll(&mut context).is_pending()
+            && let Some(spawn) = read(&self.agent.spawn).clone()
+        {
+            spawn(task);
+        }
+        receiver
+    }
+
     /// Runs one continuation after `delay` on the agent's own task facility.
     pub(super) fn schedule_continuation(&self, delay: std::time::Duration) {
         let Some(spawn) = read(&self.agent.spawn).clone() else {
