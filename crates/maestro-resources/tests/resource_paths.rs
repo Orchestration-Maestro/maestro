@@ -304,24 +304,44 @@ fn native_directory_entries_follow_platform_order() {
 fn maestro_tilde_expansion_keeps_the_written_segments() {
     let home = || Ok(std::path::PathBuf::from("/home/sample"));
     let expanded = |path| expand_tilde(std::path::Path::new(path), home).unwrap();
-    assert_eq!(
-        expanded("~/link/../f"),
-        std::path::Path::new("/home/sample/link/../f")
-    );
-    assert_eq!(expanded("~"), std::path::Path::new("/home/sample"));
-    assert_eq!(
-        expanded("~child"),
-        std::path::Path::new("/home/sample/child")
-    );
-    assert_eq!(expanded("plain"), std::path::Path::new("plain"));
+    for (written, expected) in [
+        ("~/link/../f", "/home/sample/link/../f"),
+        ("~", "/home/sample"),
+        ("~/", "/home/sample/"),
+        ("~//note", "/home/sample//note"),
+        ("~/a/../f", "/home/sample/a/../f"),
+        ("~//x", "/home/sample//x"),
+        ("~child", "~child"),
+        ("plain", "plain"),
+    ] {
+        assert_eq!(expanded(written).to_string_lossy(), expected, "{written:?}");
+    }
     let text = || Ok("/home/sample".to_owned());
-    assert_eq!(
-        expand_tilde_text("~/link/../f", text).unwrap(),
-        "/home/sample/f"
-    );
+    for (written, expected) in [
+        ("~/link/../f", "/home/sample/f"),
+        ("~/", "/home/sample"),
+        ("~//note", "/home/sample/note"),
+        ("~child", "/home/sample/child"),
+    ] {
+        assert_eq!(
+            expand_tilde_text(written, text).unwrap(),
+            expected,
+            "{written:?}"
+        );
+    }
     assert_eq!(
         expand_tilde_text("/extra/../extra/q.md", || unreachable!()).unwrap(),
         "/extra/../extra/q.md"
     );
+}
+
+/// An empty home spelling keeps the written rest, its separator included.
+#[test]
+fn shared_expander_keeps_an_empty_home_spelling() {
+    assert_eq!(
+        expand_tilde(std::path::Path::new("~/"), || Ok(std::path::PathBuf::new())).unwrap(),
+        std::path::Path::new("/")
+    );
+    assert_eq!(expand_tilde_text("~/", || Ok(String::new())).unwrap(), "/");
     assert_eq!(expand_tilde_text("~", || Ok(String::new())).unwrap(), "");
 }

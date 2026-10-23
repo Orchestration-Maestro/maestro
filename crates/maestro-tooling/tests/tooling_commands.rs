@@ -1342,7 +1342,7 @@ fn maestro_missing_package_input_names_the_absent_path() {
         let (source, package, metadata, viewer) = split_inputs(&fixture);
         let input = package.join(name);
         remove_input(&input);
-        let destination = fixture.root.join("incomplete");
+        let destination = fixture.root.path().join("incomplete");
         let error = tooling::copy_assets::copy(
             &source,
             &destination,
@@ -1380,7 +1380,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
         remove_input(&input);
         let error = tooling::copy_assets::copy(
             &source,
-            &fixture.root.join("dist"),
+            &fixture.root.path().join("dist"),
             tooling::copy_assets::Layout::Library,
         )
         .unwrap_err();
@@ -1392,7 +1392,7 @@ fn maestro_missing_crate_input_names_the_absent_path() {
     remove_input(&input);
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1407,10 +1407,10 @@ fn maestro_missing_crate_input_names_the_absent_path() {
 fn maestro_missing_metadata_names_the_absent_path() {
     let fixture = Fixture::new();
     let (source, package, _, viewer) = split_inputs(&fixture);
-    let metadata = fixture.root.join("absent/Cargo.toml");
+    let metadata = fixture.root.path().join("absent/Cargo.toml");
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1432,7 +1432,7 @@ fn maestro_unreadable_viewer_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1462,7 +1462,7 @@ fn maestro_unreadable_source_file_names_its_path() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1493,7 +1493,7 @@ fn maestro_unreadable_tree_entry_names_that_entry() {
     };
     let error = tooling::copy_assets::copy(
         &source,
-        &fixture.root.join("standalone"),
+        &fixture.root.path().join("standalone"),
         tooling::copy_assets::Layout::Standalone {
             metadata: &metadata,
             viewer: &viewer,
@@ -1525,7 +1525,7 @@ fn maestro_failed_copy_keeps_the_source_permissions() {
         fs::metadata(private).unwrap().permissions().mode() & 0o777,
         0o600
     );
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     let error = tooling::copy_assets::copy(
         &source,
         &destination,
@@ -1555,7 +1555,7 @@ fn maestro_failed_copy_keeps_the_source_permissions() {
 fn maestro_destination_failure_keeps_its_native_error() {
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
-    let destination = fixture.root.join("standalone");
+    let destination = fixture.root.path().join("standalone");
     fs::create_dir_all(destination.join("README.md")).unwrap();
     let error = tooling::copy_assets::copy(
         &source,

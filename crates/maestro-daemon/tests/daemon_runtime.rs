@@ -789,6 +789,40 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
     );
 }
 
+/// A `~` path's written rest joins the home directory as a native path, so an absolute rest
+/// replaces it.
+#[cfg(unix)]
+#[test]
+fn daemon_tilde_paths_join_their_rest_natively() {
+    let Some(home) = isolated_home("daemon_tilde_paths_join_their_rest_natively", |root| {
+        root.to_path_buf()
+    }) else {
+        return;
+    };
+    let home = home.to_string_lossy().into_owned();
+    let cases = [
+        ("~", home.clone()),
+        ("~/", format!("{home}/")),
+        ("~//note", "/note".to_owned()),
+        ("~/a/../f", format!("{home}/a/../f")),
+        ("~//x", "/x".to_owned()),
+    ];
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            for (policy, expected) in cases {
+                let cwd = pending_cwd(
+                    maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into()),
+                    None,
+                )
+                .await;
+                assert_eq!(cwd.to_string_lossy(), expected, "{policy:?}");
+            }
+        });
+}
+
 /// A home directory that text cannot hold stays the created workspace directory.
 #[cfg(unix)]
 #[test]

@@ -270,8 +270,44 @@ fn empty_home_is_used_verbatim() {
     ) {
         assert_eq!(expand_path("plain").unwrap(), "plain");
         assert_eq!(expand_path("~/x").unwrap(), "/x");
+        assert_eq!(expand_path("~/").unwrap(), "/");
         assert_eq!(expand_path("~").unwrap(), "");
     }
+}
+
+/// A tools `~` path keeps its written suffix exactly, separators and parent segments included.
+#[test]
+fn tools_tilde_paths_keep_the_written_suffix() {
+    let envs = [("HOME", Some("/h")), ("USERPROFILE", Some("/h"))];
+    if !isolated("tools_tilde_paths_keep_the_written_suffix", "rows", &envs) {
+        return;
+    }
+    for (written, expected) in [
+        ("~", "/h"),
+        ("~/", "/h/"),
+        ("~//note", "/h//note"),
+        ("~/a/../f", "/h/a/../f"),
+        ("~//x", "/h//x"),
+        ("~child", "~child"),
+    ] {
+        assert_eq!(expand_path(written).unwrap(), expected, "{written:?}");
+    }
+}
+
+/// A tools `~` path keeps the `/` its author wrote, on every platform including Windows.
+#[test]
+fn tools_tilde_paths_keep_the_written_separator() {
+    let envs = [("HOME", Some("/h")), ("USERPROFILE", Some("/h"))];
+    if !isolated(
+        "tools_tilde_paths_keep_the_written_separator",
+        "separator",
+        &envs,
+    ) {
+        return;
+    }
+    let expanded = expand_path("~/notes").unwrap();
+    assert_eq!(expanded, "/h/notes");
+    assert!(!expanded.contains('\\'));
 }
 
 #[cfg(unix)]

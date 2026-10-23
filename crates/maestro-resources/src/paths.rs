@@ -56,37 +56,32 @@ pub fn resolve(paths: &[&str]) -> io::Result<String> {
     resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
-/// Join the rest of a leading `~` of `path` to the home directory, which `home` reads only
-/// then, and answer with its text spelling; any other path is returned as written.
+/// The home directory and the rest written after a leading `~` of `path`, reading `home` only
+/// for a path that starts with `~`; `None` for any other path.
 ///
-/// The spelling is normalized lexically, and text cannot hold a home directory's native
-/// bytes, so it replaces those bytes. A caller that needs the written segments or the
-/// native directory reads [`expand_tilde`] itself.
+/// The rest has to be text, so a path whose bytes text cannot hold is not a home path.
 ///
 /// # Errors
 /// Returns the error of `home`.
-pub fn expand_tilde_text(
-    path: &str,
-    home: impl FnOnce() -> io::Result<String>,
-) -> io::Result<String> {
-    if !path.starts_with('~') {
-        return Ok(path.to_owned());
+pub fn tilde_parts(
+    path: &Path,
+    home: impl FnOnce() -> io::Result<PathBuf>,
+) -> io::Result<Option<(PathBuf, &str)>> {
+    match path
+        .as_os_str()
+        .to_str()
+        .and_then(|text| text.strip_prefix('~'))
+    {
+        Some(rest) => Ok(Some((home()?, rest))),
+        None => Ok(None),
     }
-    let home = || home().map(PathBuf::from);
-    let expanded = expand_tilde(Path::new(path), home)?;
-    let spelling = expanded.to_string_lossy();
-    Ok(if spelling.is_empty() {
-        String::new()
-    } else {
-        maestro_path::normalize(&spelling)
-    })
 }
 
-/// Join the rest of a leading `~` of `path` to the home directory, which `home` reads only
-/// then; any other path is returned as written.
+/// Join the rest of a leading `~` of `path` to the home directory exactly as written: an exact
+/// `~` gives the home directory, and a `~/` rest gives the home followed by every byte it was
+/// written with, separators and parent segments included.
 ///
-/// The rest keeps every segment it was written with, so a written parent segment still
-/// crosses the link the file system holds there.
+/// Any other path, a `~` followed by text included, is returned as written.
 ///
 /// # Errors
 /// Returns the error of `home`.
@@ -94,26 +89,38 @@ pub fn expand_tilde(
     path: &Path,
     home: impl FnOnce() -> io::Result<PathBuf>,
 ) -> io::Result<PathBuf> {
-    match path
-        .as_os_str()
-        .to_str()
-        .and_then(|text| text.strip_prefix('~'))
-    {
-        Some(rest) => Ok(append(home()?, rest)),
-        None => Ok(path.to_owned()),
+    match tilde_parts(path, home)? {
+        Some((home, rest)) if rest.is_empty() || rest.starts_with('/') => {
+            let mut expanded = OsString::from(home);
+            expanded.push(rest);
+            Ok(PathBuf::from(expanded))
+        }
+        _ => Ok(path.to_owned()),
     }
 }
 
-/// Append `rest` to `home` behind one separator, keeping every segment it was written with.
-fn append(home: PathBuf, rest: &str) -> PathBuf {
-    let rest = rest.trim_start_matches(maestro_path::is_separator);
-    if rest.is_empty() {
-        return home;
+/// Join the rest of a leading `~` of `path` to the home directory as text: the rest drops the
+/// separator that introduced it, joins below the home, and the result is normalized lexically,
+/// so `.`, `..` and repeated separators resolve.
+///
+/// An empty home spelling keeps the written rest, its separator included; any other path is
+/// returned as written.
+///
+/// # Errors
+/// Returns the error of `home`.
+pub fn expand_tilde_text(
+    path: &str,
+    home: impl FnOnce() -> io::Result<String>,
+) -> io::Result<String> {
+    let Some((home, rest)) = tilde_parts(Path::new(path), || home().map(PathBuf::from))? else {
+        return Ok(path.to_owned());
+    };
+    let home = home.to_string_lossy();
+    if home.is_empty() {
+        return Ok(rest.to_owned());
     }
-    let mut expanded = OsString::from(home);
-    expanded.push(std::path::MAIN_SEPARATOR_STR);
-    expanded.push(rest);
-    PathBuf::from(expanded)
+    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    Ok(maestro_path::join(&[home.as_ref(), rest]))
 }
 
 /// Compare preserved target spelling against a root resolved from the process

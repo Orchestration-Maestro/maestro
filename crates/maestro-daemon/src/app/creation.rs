@@ -9,18 +9,36 @@ use crate::{
 use maestro_workspace::workspace::{public_pane_id_for_number, public_tab_id_for_number};
 use std::{io, path::PathBuf};
 
-/// Expands only an exact `~` or a leading `~/`, keeping every other spelling.
+/// Expands only an exact `~` or a leading `~/` (`~\` on Windows), joining the rest as a
+/// native path and keeping every other spelling.
 fn expand_home_path(path: &str) -> PathBuf {
-    if !matches!(path.strip_prefix('~'), Some(rest) if rest.is_empty() || rest.starts_with('/')) {
-        return path.into();
-    }
     let home = || {
         std::env::var_os("HOME")
             .map(PathBuf::from)
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     };
-    maestro_resources::paths::expand_tilde(std::path::Path::new(path), home)
-        .unwrap_or_else(|_| path.into())
+    let Ok(Some((home, rest))) =
+        maestro_resources::paths::tilde_parts(std::path::Path::new(path), home)
+    else {
+        return path.into();
+    };
+    if rest.is_empty() {
+        return home;
+    }
+    rest.strip_prefix(std::path::is_separator)
+        .map_or_else(|| path.into(), |rest| join_tilde_rest(home, rest))
+}
+
+/// Joins `rest` below `home` natively: on Windows every separator splits the rest and empty
+/// components are dropped; elsewhere an absolute rest replaces the home.
+fn join_tilde_rest(home: PathBuf, rest: &str) -> PathBuf {
+    if cfg!(windows) {
+        rest.split(['/', '\\'])
+            .filter(|component| !component.is_empty())
+            .fold(home, |path, component| path.join(component))
+    } else {
+        home.join(rest)
+    }
 }
 
 /// Resolves the configured cwd policy against one observed focused directory.
