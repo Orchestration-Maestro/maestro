@@ -1,0 +1,400 @@
+{
+  "cwd_from_supplied_session_manager": {
+    "ok": {
+      "manager_cwd": "$ROOT/session-cwd",
+      "session_cwd": "$ROOT/session-cwd",
+      "model_fallback_message": null
+    }
+  },
+  "cwd_explicit_option_wins": {
+    "ok": {
+      "manager_cwd": "$ROOT/ignored-cwd",
+      "session_cwd": "$ROOT/explicit-cwd"
+    }
+  },
+  "recorded_model_restored": {
+    "ok": {
+      "model": "faux/faux-1",
+      "model_fallback_message": null
+    }
+  },
+  "recorded_model_without_credentials_falls_back": {
+    "ok": {
+      "model": "faux",
+      "model_fallback_message": "Could not restore model gone-provider/gone-model. Using faux/faux-1"
+    }
+  },
+  "explicit_model_wins": {
+    "ok": {
+      "model": "faux/faux-1",
+      "model_fallback_message": null
+    }
+  },
+  "thinking_explicit_clamped": {
+    "ok": {
+      "thinking_level": "high",
+      "entry_types": [
+        "model_change",
+        "thinking_level_change"
+      ]
+    }
+  },
+  "thinking_recorded_entry": {
+    "ok": {
+      "thinking_level": "low",
+      "entry_types": [
+        "message",
+        "message",
+        "model_change",
+        "thinking_level_change"
+      ]
+    }
+  },
+  "thinking_recorded_without_entry_uses_settings": {
+    "ok": {
+      "thinking_level": "minimal",
+      "entry_types": [
+        "message",
+        "message",
+        "model_change",
+        "thinking_level_change"
+      ]
+    }
+  },
+  "thinking_settings_default": {
+    "ok": {
+      "thinking_level": "low",
+      "entry_types": [
+        "model_change",
+        "thinking_level_change"
+      ]
+    }
+  },
+  "thinking_defaults_to_medium": {
+    "ok": {
+      "thinking_level": "medium",
+      "entry_types": [
+        "model_change",
+        "thinking_level_change"
+      ]
+    }
+  },
+  "request_options_from_provider_retry_settings": {
+    "ok": {
+      "stream_options": [
+        {
+          "api_key": "faux-key",
+          "timeout_ms": 1234,
+          "max_retries": 7,
+          "max_retry_delay_ms": 4321,
+          "headers": null
+        }
+      ]
+    }
+  },
+  "block_images_filters_per_conversion": {
+    "ok": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "look"
+            },
+            {
+              "type": "text",
+              "text": "Image reading is disabled."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "block_images_off_keeps_images": {
+    "ok": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "look"
+            },
+            {
+              "type": "image",
+              "source": {
+                "type": "base64",
+                "mediaType": "image/png",
+                "data": "AA=="
+              }
+            },
+            {
+              "type": "image",
+              "source": {
+                "type": "base64",
+                "mediaType": "image/png",
+                "data": "BB=="
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "runtime_new_session": {
+    "ok": {
+      "outcome": {
+        "cancelled": false
+      },
+      "order": [
+        "before_invalidate",
+        "rebind",
+        "with_session:function"
+      ],
+      "replaced": true,
+      "factory_calls": [
+        {
+          "cwd": "$ROOT/new-session",
+          "session_file": "<SESSION_FILE_1>",
+          "session_start_event": null
+        },
+        {
+          "cwd": "$ROOT/new-session",
+          "session_file": "<SESSION_FILE_2>",
+          "session_start_event": {
+            "type": "session_start",
+            "reason": "new",
+            "previousSessionFile": "<SESSION_FILE_3>"
+          }
+        }
+      ]
+    }
+  },
+  "runtime_new_session_setup_applies_history": {
+    "ok": {
+      "outcome": {
+        "cancelled": false
+      },
+      "order": [],
+      "message_count": 0,
+      "entry_types": [
+        "model_change",
+        "thinking_level_change",
+        "custom"
+      ],
+      "factory_calls": [
+        {
+          "cwd": "$ROOT/new-session-setup",
+          "session_file": "<SESSION_FILE_4>",
+          "session_start_event": null
+        },
+        {
+          "cwd": "$ROOT/new-session-setup",
+          "session_file": "<SESSION_FILE_5>",
+          "session_start_event": {
+            "type": "session_start",
+            "reason": "new",
+            "previousSessionFile": "<SESSION_FILE_6>"
+          }
+        }
+      ]
+    }
+  },
+  "runtime_fork_before": {
+    "ok": {
+      "outcome": {
+        "cancelled": false,
+        "selectedText": "second question"
+      },
+      "order": [],
+      "entry_types": [
+        "model_change",
+        "thinking_level_change",
+        "model_change",
+        "thinking_level_change",
+        "message",
+        "message"
+      ],
+      "message_roles": [
+        "user",
+        "assistant"
+      ]
+    }
+  },
+  "runtime_fork_at": {
+    "ok": {
+      "outcome": {
+        "cancelled": false
+      },
+      "order": [],
+      "entry_types": [
+        "model_change",
+        "thinking_level_change",
+        "model_change",
+        "thinking_level_change",
+        "message",
+        "message",
+        "message"
+      ],
+      "message_roles": [
+        "user",
+        "assistant",
+        "user"
+      ]
+    }
+  },
+  "runtime_fork_invalid_entry": {
+    "ok": {
+      "invalid": {
+        "error": "Invalid entry ID for forking"
+      }
+    }
+  },
+  "runtime_import_jsonl": {
+    "ok": {
+      "missing": {
+        "error": "File not found: $ROOT/absent.jsonl"
+      },
+      "empty": {
+        "ok": {
+          "cancelled": false
+        }
+      },
+      "copied": true
+    }
+  },
+  "runtime_dispose": {
+    "ok": {
+      "shutdown": [
+        {
+          "reason": "quit"
+        }
+      ],
+      "order": [
+        "before_invalidate"
+      ]
+    }
+  },
+  "bindings_and_reload": {
+    "ok": {
+      "before": {
+        "seen": [],
+        "active": [
+          "read",
+          "alpha-tool"
+        ]
+      },
+      "after_bind": {
+        "seen": [
+          {
+            "event": "session_start",
+            "reason": "startup"
+          },
+          {
+            "event": "resources_discover",
+            "reason": "startup"
+          }
+        ],
+        "active": [
+          "read",
+          "alpha-tool"
+        ],
+        "extended": 1,
+        "system_prompt_has_alpha": true
+      },
+      "after_reload": {
+        "seen": [
+          {
+            "event": "session_start",
+            "reason": "startup"
+          },
+          {
+            "event": "resources_discover",
+            "reason": "startup"
+          },
+          {
+            "event": "session_shutdown",
+            "reason": "reload"
+          }
+        ],
+        "active": [
+          "read",
+          "alpha-tool"
+        ],
+        "extended": 1
+      }
+    }
+  },
+  "reload_without_bindings": {
+    "ok": {
+      "before": [],
+      "after": [
+        {
+          "event": "session_shutdown",
+          "reason": "reload"
+        }
+      ]
+    }
+  },
+  "tool_registry_without_allowlist": {
+    "ok": {
+      "tools": [
+        {
+          "name": "read",
+          "source": "builtin",
+          "path": "<builtin:read>"
+        },
+        {
+          "name": "bash",
+          "source": "builtin",
+          "path": "<builtin:bash>"
+        },
+        {
+          "name": "edit",
+          "source": "builtin",
+          "path": "<builtin:edit>"
+        },
+        {
+          "name": "write",
+          "source": "builtin",
+          "path": "<builtin:write>"
+        },
+        {
+          "name": "grep",
+          "source": "builtin",
+          "path": "<builtin:grep>"
+        },
+        {
+          "name": "find",
+          "source": "builtin",
+          "path": "<builtin:find>"
+        },
+        {
+          "name": "ls",
+          "source": "builtin",
+          "path": "<builtin:ls>"
+        },
+        {
+          "name": "alpha-tool",
+          "source": "alpha",
+          "path": "<alpha>"
+        }
+      ],
+      "active": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "alpha-tool"
+      ],
+      "commands": [
+        {
+          "invocationName": "alpha-cmd",
+          "source": "alpha"
+        }
+      ],
+      "has_resources_discover": true
+    }
+  }
+}

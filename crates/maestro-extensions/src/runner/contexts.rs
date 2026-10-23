@@ -250,3 +250,13 @@ impl ExtensionCommandContext {
         self.start(|actions| &actions.reload, |reload| reload())
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+impl maestro_tools::ReadContext for ExtensionContext {
+    /// The current model read through the captured reader; a stale context knows none.
+    fn model(&self) -> Option<Arc<Model>> {
+        let model = ExtensionContext::model(self).ok().flatten()?;
+        let model = crate::types::read(&model).clone();
+        Some(Arc::new(model))
+    }
+}

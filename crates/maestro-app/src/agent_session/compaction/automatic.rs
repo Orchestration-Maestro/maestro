@@ -27,7 +27,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Returns a failure reading the stored branch or the response's usage, or the failure
     /// when the compaction's task ended before it did; a failing compaction reports its
     /// failure through `compaction_end` instead.
-    pub async fn check_compaction(
+    pub(crate) async fn check_compaction(
         self: &Rc<Self>,
         message: &AssistantMessage,
         skip_aborted_check: bool,
@@ -148,7 +148,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Clears the one-recovery-per-turn mark after a response succeeds.
-    pub fn clear_overflow_recovery_attempt(&self) {
+    pub(crate) fn clear_overflow_recovery_attempt(&self) {
         self.state.borrow_mut().overflow_recovery_attempted = false;
     }
 

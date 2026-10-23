@@ -114,9 +114,9 @@ pub struct ExtensionContext {
 /// The local future returned by command and replacement operations.
 pub(crate) type ContextFuture<T> = <Local as Execution>::Future<'static, Result<T, EventError>>;
 /// Prepares a new session through its writable history.
-type SetupSession = Rc<dyn Fn(Rc<RefCell<SessionManager>>) -> ContextFuture<()>>;
+pub type SetupSession = Rc<dyn Fn(Rc<RefCell<SessionManager>>) -> ContextFuture<()>>;
 /// Continues against the replacement session.
-type WithSession = Rc<dyn Fn(ReplacedSessionContext) -> ContextFuture<()>>;
+pub type WithSession = Rc<dyn Fn(ReplacedSessionContext) -> ContextFuture<()>>;
 /// Sends a custom message to the creating session.
 type SendCustomMessage =
     Rc<dyn Fn(CustomMessageInput, Option<SendMessageOptions>) -> ContextFuture<()>>;
@@ -175,6 +175,7 @@ pub type ReloadHandler = Rc<dyn Fn() -> ContextFuture<()>>;
 pub type ShutdownHandler = Rc<dyn Fn() -> Result<(), EventError>>;
 
 /// Application operations behind every command context.
+#[derive(Clone)]
 pub struct ExtensionCommandContextActions {
     /// Waits for the agent to finish streaming.
     pub wait_for_idle: Rc<dyn Fn() -> ContextFuture<()>>,

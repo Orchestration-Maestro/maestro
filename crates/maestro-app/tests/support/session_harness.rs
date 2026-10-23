@@ -4,6 +4,7 @@
 use indexmap::IndexMap;
 use maestro_agent::{Agent, AgentInitialState, AgentOptions};
 use maestro_app::agent_session::CompactionReason;
+use maestro_app::agent_session::ToolDefinitionHandle;
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::resources::resource_loader::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
@@ -15,8 +16,8 @@ use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionContext, ExtensionExecution,
     ExtensionFactory, ExtensionRunner, InputEvent, InputEventResult, LoadExtensionsResult,
-    RegisteredTool, RegisteredToolInput, create_event_bus_for, create_extension_runtime,
-    load_extension_from_factory, runner::ExtensionRunnerSession,
+    RegisteredToolInput, create_event_bus_for, create_extension_runtime,
+    load_extension_from_factory,
 };
 use maestro_models::system_prompt::ContextFile;
 use maestro_models::{
@@ -83,6 +84,8 @@ pub struct HarnessOptions {
     pub models: Vec<(&'static str, bool)>,
     /// Inline extensions.
     pub factories: Vec<ExtensionFactory<Local>>,
+    /// Inline extensions at their own paths, loaded after the others.
+    pub labelled_factories: Vec<(&'static str, ExtensionFactory<Local>)>,
     /// Credentials.
     pub auth: Auth,
     /// The context window replacing the scripted one.
@@ -101,6 +104,16 @@ pub struct HarnessOptions {
     pub prompts: Vec<maestro_resources::PromptTemplate>,
     /// The disposable root holding the project; a fresh one when absent.
     pub scratch: Option<maestro_test_directory::Scratch>,
+    /// SDK tool definitions.
+    pub custom_tools: Vec<ToolDefinitionHandle>,
+    /// The tools activated first; the default built-in ones when absent.
+    pub initial_active_tool_names: Option<Vec<String>>,
+    /// The only tool names exposed, when present.
+    pub allowed_tool_names: Option<Vec<String>>,
+    /// Executable tools in place of the built-in ones.
+    pub base_tools_override: Option<IndexMap<String, maestro_agent::SharedAgentTool<Local>>>,
+    /// Answers of the scripted stream, which then replaces the scripted provider.
+    pub responses: Option<Vec<Scripted>>,
 }
 
 impl Default for HarnessOptions {
@@ -109,6 +122,7 @@ impl Default for HarnessOptions {
             settings: json!({}),
             models: vec![("plain", false), ("think", true), ("extra", true)],
             factories: Vec::new(),
+            labelled_factories: Vec::new(),
             auth: Auth::Key,
             context_window: None,
             session_manager: None,
@@ -118,6 +132,11 @@ impl Default for HarnessOptions {
             skills: Vec::new(),
             prompts: Vec::new(),
             scratch: None,
+            custom_tools: Vec::new(),
+            initial_active_tool_names: None,
+            allowed_tool_names: None,
+            base_tools_override: None,
+            responses: None,
         }
     }
 }
@@ -130,10 +149,12 @@ pub struct Harness {
     pub session: Rc<AgentSession<Local>>,
     /// The catalog the session was given.
     pub registry: Arc<ModelRegistry>,
-    /// The extensions' runner the session was given.
-    pub runner: Rc<ExtensionRunner<Local>>,
     /// Thinking and name events the session announced.
     pub events: Rc<RefCell<Vec<Value>>>,
+    /// The requests the scripted stream received.
+    pub requests: ScriptedRequests,
+    /// Each set of extension resource paths handed to the loader, in order.
+    pub extended: Rc<RefCell<Vec<ResourceExtensionPaths>>>,
     /// The session working directory, below the scratch root.
     pub cwd: String,
     /// The disposable root removed with the harness.
@@ -147,6 +168,11 @@ impl Drop for Harness {
 }
 
 impl Harness {
+    /// The extensions' runner now in effect.
+    pub fn runner(&self) -> Rc<ExtensionRunner<Local>> {
+        self.session.extension_runner()
+    }
+
     /// A shared copy of the scripted model `id`.
     pub fn model(&self, id: &str) -> Arc<RwLock<Model>> {
         Arc::new(RwLock::new(self.faux.get_model(Some(id)).unwrap().clone()))
@@ -210,6 +236,8 @@ pub struct TestResourceLoader {
     pub skills: Rc<LoadSkillsResult>,
     /// The loaded prompt templates.
     pub prompts: Rc<LoadPromptsResult>,
+    /// Each set of extension resource paths handed to the loader, in order.
+    pub extended: Rc<RefCell<Vec<ResourceExtensionPaths>>>,
 }
 
 /// A loader returning `extensions` and empty resources.
@@ -227,6 +255,7 @@ pub fn create_test_resource_loader(
         append_system_prompt: Rc::from(Vec::new()),
         skills: Rc::default(),
         prompts: Rc::default(),
+        extended: Rc::default(),
     }
 }
 
@@ -255,7 +284,8 @@ impl ResourceLoader<Local> for TestResourceLoader {
     fn get_append_system_prompt(&self) -> Rc<[String]> {
         Rc::clone(&self.append_system_prompt)
     }
-    fn extend_resources(&self, _: ResourceExtensionPaths) -> io::Result<()> {
+    fn extend_resources(&self, paths: ResourceExtensionPaths) -> io::Result<()> {
+        self.extended.borrow_mut().push(paths);
         Ok(())
     }
     fn reload(&self) -> <Local as Execution>::Future<'_, io::Result<()>> {
@@ -263,16 +293,16 @@ impl ResourceLoader<Local> for TestResourceLoader {
     }
 }
 
-/// Loads `factories` as one extension set, each at `<inline:N>`.
+/// Loads `factories` as one extension set, each at its supplied path or `<inline:N>`.
 pub async fn create_test_extensions_result(
-    factories: Vec<ExtensionFactory<Local>>,
+    factories: Vec<(Option<&str>, ExtensionFactory<Local>)>,
     cwd: &str,
 ) -> LoadExtensionsResult<Local> {
     let runtime = create_extension_runtime::<Local>();
     let bus = create_event_bus_for::<Local>(spawn_local(), Rc::new(|_| {}));
     let mut extensions = Vec::new();
-    for (index, factory) in factories.into_iter().enumerate() {
-        let path = format!("<inline:{}>", index + 1);
+    for (index, (path, factory)) in factories.into_iter().enumerate() {
+        let path = path.map_or_else(|| format!("<inline:{}>", index + 1), str::to_owned);
         let loaded = load_extension_from_factory(
             factory,
             cwd.to_owned(),
@@ -390,26 +420,14 @@ pub fn tool_definition(
     }
 }
 
-/// `definition` registered as supplied by the SDK, under `<sdk:name>`.
-pub fn sdk_registered(definition: Definition) -> RegisteredTool<Local> {
-    let source = create_synthetic_source_info(
-        format!("<sdk:{}>", definition.definition.name),
-        SyntheticSourceOptions {
-            source: "sdk".into(),
-            scope: None,
-            origin: None,
-            base_dir: None,
-        },
-    );
-    RegisteredTool {
-        definition: Local::retain_definition(RegisteredToolInput::from(definition)),
-        source_info: Arc::new(RwLock::new(source)),
-    }
+/// `definition` retained as an SDK tool definition.
+pub fn sdk_definition(definition: Definition) -> ToolDefinitionHandle {
+    Local::retain_definition(RegisteredToolInput::from(definition))
 }
 
 /// The recorded tools: whitespace-heavy snippets, blank and repeated guidelines.
-pub fn sdk_tools() -> IndexMap<String, RegisteredTool<Local>> {
-    let tools = [
+pub fn sdk_tools() -> Vec<ToolDefinitionHandle> {
+    [
         tool_definition(
             "alpha",
             Some("  Read\n  files\r\n quickly  "),
@@ -418,16 +436,10 @@ pub fn sdk_tools() -> IndexMap<String, RegisteredTool<Local>> {
         tool_definition("beta", Some("   "), None),
         tool_definition("gamma", Some("\u{feff}x\u{85}y"), Some(&["Use gamma"])),
         tool_definition("delta", None, Some(&[])),
-    ];
-    tools
-        .into_iter()
-        .map(|definition| {
-            (
-                definition.definition.name.clone(),
-                sdk_registered(definition),
-            )
-        })
-        .collect()
+    ]
+    .into_iter()
+    .map(sdk_definition)
+    .collect()
 }
 
 /// Base time of the recorded messages.
@@ -509,16 +521,19 @@ pub fn build_tree(manager: &mut SessionManager) -> Names {
     names
 }
 
-/// A local agent on the first scripted model, with the window replaced when given.
+/// A local agent on the first scripted model, with the window replaced when given and the
+/// stream replaced when given.
 fn agent(
     model: &Model,
     window: Option<f64>,
     spawn: Option<maestro_agent::AgentSpawner<Local>>,
+    stream_fn: Option<maestro_agent::StreamFn<Local>>,
 ) -> Rc<Agent<CustomAgentMessages, Local>> {
     let mut initial = model.clone();
     initial.context_window = window.unwrap_or(initial.context_window);
     Rc::new(Agent::new_local(AgentOptions {
         spawn,
+        stream_fn,
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
@@ -526,26 +541,6 @@ fn agent(
         },
         ..AgentOptions::default()
     }))
-}
-
-/// The runner over the loaded extensions, the session history and the catalog.
-fn runner(
-    extensions: &LoadExtensionsResult<Local>,
-    cwd: &str,
-    session_manager: &Rc<RefCell<SessionManager>>,
-    registry: &Arc<ModelRegistry>,
-) -> Rc<ExtensionRunner<Local>> {
-    Rc::new(ExtensionRunner::<Local>::new(
-        Local::share(RwLock::new(extensions.extensions.clone())),
-        extensions.runtime.clone(),
-        ExtensionRunnerSession {
-            cwd: cwd.to_owned(),
-            session_manager: session_manager.clone(),
-            model_registry: Arc::clone(registry),
-        },
-        Rc::new(|_| {}),
-        maestro_theme::LiveTheme::default(),
-    ))
 }
 
 /// The scripted provider serving `models` as identity and reasoning support.
@@ -565,56 +560,86 @@ fn scripted_provider(models: &[(&'static str, bool)]) -> FauxProviderRegistratio
     })
 }
 
+/// A loader over the extensions, prompt texts, skills and templates `options` supply, with
+/// the extensions loaded in `cwd`; those fields are left empty.
+async fn harness_loader(cwd: &str, options: &mut HarnessOptions) -> TestResourceLoader {
+    let factories = std::mem::take(&mut options.factories)
+        .into_iter()
+        .map(|factory| (None, factory));
+    let labelled = std::mem::take(&mut options.labelled_factories)
+        .into_iter()
+        .map(|(path, factory)| (Some(path), factory));
+    let extensions = create_test_extensions_result(factories.chain(labelled).collect(), cwd).await;
+    TestResourceLoader {
+        system_prompt: options.system_prompt.map(Rc::from),
+        append_system_prompt: Rc::from(std::mem::take(&mut options.append_system_prompt)),
+        skills: Rc::new(LoadSkillsResult {
+            skills: std::mem::take(&mut options.skills),
+            ..LoadSkillsResult::default()
+        }),
+        prompts: Rc::new(LoadPromptsResult {
+            prompts: std::mem::take(&mut options.prompts),
+            ..LoadPromptsResult::default()
+        }),
+        ..create_test_resource_loader(Some(extensions))
+    }
+}
+
 /// A session over the scripted provider as `options` describe it.
-pub async fn harness(options: HarnessOptions) -> Harness {
+pub async fn harness(mut options: HarnessOptions) -> Harness {
     let scratch = options
         .scratch
+        .take()
         .unwrap_or_else(|| maestro_test_directory::Scratch::new().unwrap());
     let cwd = format!("{}/project", scratch.path().display());
     let faux = scripted_provider(&options.models);
     let registry = Arc::new(catalog(&faux, options.auth, options.context_window));
-    let agent = agent(&faux.models[0], options.context_window, options.spawn);
-    let session_manager =
-        Rc::new(RefCell::new(options.session_manager.unwrap_or_else(|| {
-            SessionManager::in_memory(Some(&cwd)).unwrap()
-        })));
-    let extensions = create_test_extensions_result(options.factories, &cwd).await;
-    let runner = runner(&extensions, &cwd, &session_manager, &registry);
-    let loader = TestResourceLoader {
-        system_prompt: options.system_prompt.map(Rc::from),
-        append_system_prompt: Rc::from(options.append_system_prompt),
-        skills: Rc::new(LoadSkillsResult {
-            skills: options.skills,
-            ..LoadSkillsResult::default()
-        }),
-        prompts: Rc::new(LoadPromptsResult {
-            prompts: options.prompts,
-            ..LoadPromptsResult::default()
-        }),
-        ..create_test_resource_loader(Some(extensions))
-    };
-    let settings: maestro_settings::Settings = serde_json::from_value(options.settings).unwrap();
-    let session = Rc::new(
-        AgentSession::new(AgentSessionConfig {
-            agent,
-            session_manager,
-            settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
-            cwd: cwd.clone(),
-            bin_dir: format!("{}/bin", scratch.path().display()),
-            scoped_models: Vec::new(),
-            resource_loader: Rc::new(loader),
-            model_registry: Arc::clone(&registry),
-            extension_runner: Rc::clone(&runner),
-        })
-        .unwrap(),
+    let requests = ScriptedRequests::default();
+    let stream = options
+        .responses
+        .take()
+        .map(|responses| scripted_stream(responses, requests.clone()));
+    let agent = agent(
+        &faux.models[0],
+        options.context_window,
+        options.spawn.take(),
+        stream,
     );
+    let session_manager = options
+        .session_manager
+        .take()
+        .unwrap_or_else(|| SessionManager::in_memory(Some(&cwd)).unwrap());
+    let loader = harness_loader(&cwd, &mut options).await;
+    let extended = Rc::clone(&loader.extended);
+    let settings: maestro_settings::Settings = serde_json::from_value(options.settings).unwrap();
+    let bin_dir = format!("{}/bin", scratch.path().display());
+    let session = AgentSession::new(AgentSessionConfig {
+        agent,
+        session_manager: Rc::new(RefCell::new(session_manager)),
+        settings_manager: Rc::new(RefCell::new(SettingsManager::in_memory(settings))),
+        cwd: cwd.clone(),
+        bin_dir: bin_dir.clone(),
+        scoped_models: Vec::new(),
+        resource_loader: Rc::new(loader),
+        custom_tools: options.custom_tools,
+        model_registry: Arc::clone(&registry),
+        initial_active_tool_names: options.initial_active_tool_names,
+        allowed_tool_names: options.allowed_tool_names,
+        base_tools_override: options.base_tools_override,
+        extension_runner_ref: None,
+        session_start_event: None,
+        tools_manager: Arc::new(maestro_tools::ToolsManager::new(bin_dir, None)),
+        theme: maestro_theme::LiveTheme::default(),
+    })
+    .unwrap();
     let events = recorded_session_events(&session);
     Harness {
         faux,
         session,
         registry,
-        runner,
         events,
+        requests,
+        extended,
         cwd,
         scratch,
     }
@@ -970,19 +995,12 @@ pub async fn transcribed(options: HarnessOptions) -> (Harness, Transcript) {
     .await;
     *transcript.base.borrow_mut() = h.session.system_prompt();
     let errors = Rc::clone(&transcript.errors);
-    let _unsubscribe = h.runner.on_error(Rc::new(move |error| {
+    let _unsubscribe = h.runner().on_error(Rc::new(move |error| {
         errors.borrow_mut().push(json!({
             "extensionPath": error.extension_path, "event": error.event, "error": error.error,
         }));
         Ok(())
     }));
-    let events = Rc::clone(&transcript.events);
-    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
-        events
-            .borrow_mut()
-            .push(agent_event_view(&event.read().unwrap()));
-        Box::pin(std::future::ready(Ok(())))
-    })));
     let events = Rc::clone(&transcript.events);
     let _unsubscribe = h.session.subscribe(Rc::new(move |event| match event {
         AgentSessionEvent::QueueUpdate {
@@ -1483,4 +1501,294 @@ pub fn supplied_failure() -> DiagnosticErrorInfo {
         stack: Some("RemoteError: connection reset\n    at remote".into()),
         code: Some(maestro_models::DiagnosticCode::Text("ECONNRESET".into())),
     }
+}
+
+/// One answer of the scripted stream: optional thinking, text and tool calls, a failure
+/// and input and output usage.
+#[derive(Clone, Default)]
+pub struct Scripted {
+    /// Thinking content.
+    pub thinking: Option<String>,
+    /// Text content.
+    pub text: Option<String>,
+    /// Tool calls by name and arguments.
+    pub tool_calls: Vec<(String, Value)>,
+    /// The failure text; the answer then stops with an error.
+    pub error: Option<String>,
+    /// Input and output tokens; 100 and 50 when absent.
+    pub usage: Option<(f64, f64)>,
+}
+
+impl Scripted {
+    /// A text answer.
+    pub fn text(text: &str) -> Self {
+        Self {
+            text: Some(text.into()),
+            ..Self::default()
+        }
+    }
+}
+
+/// The requests the scripted stream received, in order.
+#[derive(Clone, Default)]
+pub struct ScriptedRequests(pub Rc<RefCell<Vec<maestro_models::Context>>>);
+
+/// The stream answering request `n` with `responses[n % len]`, each block streamed with its
+/// start, its deltas and its end.
+fn scripted_stream(
+    responses: Vec<Scripted>,
+    requests: ScriptedRequests,
+) -> maestro_agent::StreamFn<Local> {
+    Rc::new(move |_, context, _, _| {
+        let index = requests.0.borrow().len() % responses.len();
+        requests.0.borrow_mut().push(context);
+        let stream = maestro_models::AssistantMessageEventStream::new();
+        stream_with_deltas(&stream, scripted_message(&responses[index]));
+        Box::pin(std::future::ready(Ok(stream)))
+    })
+}
+
+/// The answer `response` describes.
+fn scripted_message(response: &Scripted) -> AssistantMessage {
+    use maestro_models::{AssistantContent, TextContent, ThinkingContent, ToolCall};
+    static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let mut content = Vec::new();
+    if let Some(thinking) = &response.thinking {
+        content.push(AssistantContent::Thinking(ThinkingContent {
+            thinking: thinking.clone(),
+            thinking_signature: None,
+            redacted: None,
+        }));
+    }
+    if let Some(text) = &response.text {
+        content.push(AssistantContent::Text(TextContent::new(text.clone())));
+    }
+    for (name, arguments) in &response.tool_calls {
+        let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+        content.push(AssistantContent::ToolCall(ToolCall {
+            id: format!("faux_tc_{call}"),
+            name: name.clone(),
+            arguments: arguments.as_object().unwrap().clone(),
+            thought_signature: None,
+        }));
+    }
+    if content.is_empty() && response.error.is_none() {
+        content.push(AssistantContent::Text(TextContent::new(String::new())));
+    }
+    let stop = match (&response.error, response.tool_calls.is_empty()) {
+        (Some(_), _) => "error",
+        (None, false) => "toolUse",
+        (None, true) => "stop",
+    };
+    let (input, output) = response.usage.unwrap_or((100.0, 50.0));
+    serde_json::from_value(json!({
+        "role": "assistant", "content": content, "api": "anthropic-messages",
+        "provider": "faux", "model": "faux-1", "stopReason": stop,
+        "errorMessage": response.error, "timestamp": maestro_models::timestamp_now(),
+        "usage": {"input": input, "output": output, "cacheRead": 0, "cacheWrite": 0,
+            "totalTokens": input + output,
+            "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}},
+    }))
+    .unwrap()
+}
+
+/// Pushes `message` onto `stream` block by block, each with its start, deltas of up to four
+/// characters and its end, then its terminal event.
+fn stream_with_deltas(
+    stream: &maestro_models::AssistantMessageEventStream,
+    message: AssistantMessage,
+) {
+    use maestro_models::{AssistantContent, AssistantMessageEvent as Event};
+    let mut partial = AssistantMessage {
+        content: Vec::new(),
+        ..message.clone()
+    };
+    let snapshot = |partial: &AssistantMessage| Arc::new(RwLock::new(partial.clone()));
+    stream.push(Event::Start {
+        partial: snapshot(&partial),
+    });
+    for (index, block) in message.content.iter().enumerate() {
+        partial.content.push(block.clone());
+        let text = match block {
+            AssistantContent::Thinking(thinking) => thinking.thinking.clone(),
+            AssistantContent::Text(text) => text.text.clone(),
+            AssistantContent::ToolCall(call) => serde_json::to_string(&call.arguments).unwrap(),
+        };
+        let characters: Vec<char> = text.chars().collect();
+        let mut chunks: Vec<String> = characters
+            .chunks(4)
+            .map(|chunk| chunk.iter().collect())
+            .collect();
+        if chunks.is_empty() {
+            chunks.push(String::new());
+        }
+        stream.push(block_event(block, index, None, &snapshot(&partial)));
+        for chunk in chunks {
+            stream.push(block_event(block, index, Some(chunk), &snapshot(&partial)));
+        }
+        stream.push(block_end(block, index, &snapshot(&partial)));
+    }
+    let failed = matches!(message.stop_reason, StopReason::Error | StopReason::Aborted);
+    let reason = message.stop_reason.clone();
+    let message = Arc::new(RwLock::new(message));
+    stream.push(if failed {
+        let reason = if reason == StopReason::Aborted {
+            maestro_models::ErrorReason::Aborted
+        } else {
+            maestro_models::ErrorReason::Error
+        };
+        Event::Error {
+            reason,
+            error: message,
+        }
+    } else {
+        let reason = match reason {
+            StopReason::ToolUse => maestro_models::DoneReason::ToolUse,
+            StopReason::Length => maestro_models::DoneReason::Length,
+            _ => maestro_models::DoneReason::Stop,
+        };
+        Event::Done { reason, message }
+    });
+}
+
+/// The start of `block`, or one of its deltas.
+fn block_event(
+    block: &maestro_models::AssistantContent,
+    content_index: usize,
+    delta: Option<String>,
+    partial: &maestro_models::SharedAssistantMessage,
+) -> maestro_models::AssistantMessageEvent {
+    use maestro_models::{AssistantContent as Block, AssistantMessageEvent as Event};
+    let partial = Arc::clone(partial);
+    match (block, delta) {
+        (Block::Thinking(_), None) => Event::ThinkingStart {
+            content_index,
+            partial,
+        },
+        (Block::Thinking(_), Some(delta)) => Event::ThinkingDelta {
+            content_index,
+            delta,
+            partial,
+        },
+        (Block::Text(_), None) => Event::TextStart {
+            content_index,
+            partial,
+        },
+        (Block::Text(_), Some(delta)) => Event::TextDelta {
+            content_index,
+            delta,
+            partial,
+        },
+        (Block::ToolCall(_), None) => Event::ToolcallStart {
+            content_index,
+            partial,
+        },
+        (Block::ToolCall(_), Some(delta)) => Event::ToolcallDelta {
+            content_index,
+            delta,
+            partial,
+        },
+    }
+}
+
+/// The end of `block`.
+fn block_end(
+    block: &maestro_models::AssistantContent,
+    content_index: usize,
+    partial: &maestro_models::SharedAssistantMessage,
+) -> maestro_models::AssistantMessageEvent {
+    use maestro_models::{AssistantContent as Block, AssistantMessageEvent as Event};
+    let partial = Arc::clone(partial);
+    match block {
+        Block::Thinking(thinking) => Event::ThinkingEnd {
+            content_index,
+            content: thinking.thinking.clone(),
+            partial,
+        },
+        Block::Text(text) => Event::TextEnd {
+            content_index,
+            content: text.text.clone(),
+            partial,
+        },
+        Block::ToolCall(call) => Event::ToolcallEnd {
+            content_index,
+            tool_call: call.clone(),
+            partial,
+        },
+    }
+}
+
+/// The event type of an agent event, as the session's listeners name it.
+pub fn agent_event_type(event: &maestro_agent::AgentEvent<CustomAgentMessages>) -> &'static str {
+    use maestro_agent::AgentEvent;
+    match event {
+        AgentEvent::AgentStart => "agent_start",
+        AgentEvent::AgentEnd { .. } => "agent_end",
+        AgentEvent::TurnStart => "turn_start",
+        AgentEvent::TurnEnd { .. } => "turn_end",
+        AgentEvent::MessageStart { .. } => "message_start",
+        AgentEvent::MessageUpdate { .. } => "message_update",
+        AgentEvent::MessageEnd { .. } => "message_end",
+        AgentEvent::ToolExecutionStart { .. } => "tool_execution_start",
+        AgentEvent::ToolExecutionUpdate { .. } => "tool_execution_update",
+        AgentEvent::ToolExecutionEnd { .. } => "tool_execution_end",
+    }
+}
+
+/// Every session event `session` delivers from now on, in order: agent events by type, with
+/// a stream update's own type and delta, and the session's announcements in their recorded
+/// form.
+pub fn delivered_events(session: &AgentSession<Local>) -> Rc<RefCell<Vec<Value>>> {
+    let events = Rc::new(RefCell::new(Vec::new()));
+    let recorded = Rc::clone(&events);
+    drop(session.subscribe(Rc::new(move |event| {
+        let view = match event {
+            AgentSessionEvent::Agent(event) => Some(delivered_agent_event(&event.read().unwrap())),
+            other => session_event_view(other),
+        };
+        recorded.borrow_mut().extend(view);
+    })));
+    events
+}
+
+/// The delivered form of an agent event.
+fn delivered_agent_event(event: &maestro_agent::AgentEvent<CustomAgentMessages>) -> Value {
+    let mut view = json!({"type": agent_event_type(event)});
+    if let maestro_agent::AgentEvent::MessageUpdate {
+        assistant_message_event,
+        ..
+    } = event
+    {
+        let update = serde_json::to_value(assistant_message_event).unwrap();
+        view["update"] = update["type"].clone();
+        view["delta"] = update.get("delta").cloned().unwrap_or(Value::Null);
+    }
+    view
+}
+
+/// The echo tool, in place of the built-in tools: it marks `executed` and answers `echoed`.
+pub fn echo_tools(
+    executed: Rc<RefCell<bool>>,
+) -> IndexMap<String, maestro_agent::SharedAgentTool<Local>> {
+    let tool = maestro_agent::AgentToolRecord::<Local> {
+        definition: Tool {
+            name: "echo".into(),
+            description: "Echo back".into(),
+            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+        },
+        description: None,
+        label: "Echo".into(),
+        prepare_arguments: None,
+        execute: Rc::new(move |_, _, _, _| {
+            *executed.borrow_mut() = true;
+            let echoed = maestro_models::TextContent::new("echoed".into());
+            Box::pin(std::future::ready(Ok(maestro_agent::AgentToolResult {
+                content: vec![maestro_models::UserBlock::Text(echoed)],
+                details: Some(json!({})),
+                terminate: None,
+            })))
+        }),
+        execution_mode: None,
+    };
+    IndexMap::from([("echo".to_owned(), Rc::new(RwLock::new(tool)))])
 }

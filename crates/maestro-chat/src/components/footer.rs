@@ -1,8 +1,8 @@
 //! The footer that shows the working directory, cumulative usage and the selected model.
 use super::{shorten_path_with_home, thinking_selector::thinking_text};
 use maestro_app::{
-    AgentSession, DiagnosticErrorInfo, ExtensionExecution, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, ThinkingLevel, Threaded, is_whitespace_scalar,
+    AgentSession, DiagnosticErrorInfo, ExtensionExecution, Local, ReadonlyFooterDataProvider,
+    ReadonlySessionManager, ThinkingLevel, is_whitespace_scalar,
 };
 use maestro_theme::{Collator, LiveTheme, ThemeColor, paint};
 use maestro_tui::{Component, TruncateOptions, truncate_to_width, visible_width};
@@ -66,7 +66,7 @@ impl Totals {
 }
 
 /// The footer over a session, its read-only metadata, the published theme and the environment.
-pub struct FooterComponent<E: ExtensionExecution = Threaded> {
+pub struct FooterComponent<E: ExtensionExecution = Local> {
     /// The session whose history and selections are rendered.
     session: RefCell<Rc<AgentSession<E>>>,
     /// The branch, provider count and extension statuses.

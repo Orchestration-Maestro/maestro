@@ -26,7 +26,7 @@ pub trait DefaultEventBus: ExtensionExecution {
 }
 
 /// Writes a bus diagnostic, which carries its own final newline, to standard error.
-fn report(text: &str) {
+pub(crate) fn report(text: &str) {
     eprint!("{text}");
 }
 

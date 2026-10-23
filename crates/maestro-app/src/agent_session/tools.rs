@@ -1,11 +1,14 @@
 //! Tool registry, active tools and the rebuilt system prompt.
-use super::{AgentSession, RefreshToolRegistryOptions, state::thrown};
+use super::{AgentSession, ToolDefinitionHandle, state::thrown};
 use crate::resources::resource_loader::ResourceLoader;
 use crate::resources::system_prompt::{BuildSystemPromptOptions, build_system_prompt};
 use crate::utils::lock::{read, write};
 use indexmap::{IndexMap, IndexSet};
-use maestro_extensions::{ExtensionExecution, RegisteredTool, wrap_registered_tool};
+use maestro_extensions::{
+    ExtensionExecution, ExtensionRunner, RegisteredTool, wrap_registered_tool,
+};
 use maestro_models::{DiagnosticErrorInfo, ToolInfo};
+use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::Presence;
 use std::{rc::Rc, sync::RwLock};
 
@@ -46,24 +49,26 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.state.borrow().tool_definitions.get(name).cloned()
     }
 
-    /// The session's tool-registry refresh: replaces the definitions by name in registry
-    /// order, their normalized prompt snippets and guidelines and one executable tool per
-    /// definition, then activates the tools `options` select and rebuilds the system prompt.
+    /// Rebuilds the definitions from the built-in ones, then the extension and SDK tools by
+    /// name, keeping only allowed names; replaces their normalized prompt snippets and
+    /// guidelines and one executable tool per definition; then activates the tools `options`
+    /// select and rebuilds the system prompt.
     ///
-    /// Requested names replace the active tools, which otherwise stay active. When `options`
-    /// include every extension tool, the tools named in `extension_tool_names` are added;
-    /// otherwise, without requested names, the tools new to the registry are. Repeated
-    /// names are dropped.
+    /// Requested names replace the active tools, which otherwise stay active; unallowed names
+    /// are dropped. With an allowlist every allowed registry tool is activated; otherwise,
+    /// when `options` include every extension tool, the extension and SDK tools are added,
+    /// and without requested names the tools new to the registry are. Repeated names are
+    /// dropped.
     ///
     /// # Errors
-    /// Returns the documentation-path failure of the default prompt.
-    pub fn refresh_tool_registry(
+    /// Returns the documentation-path failure of the base prompt.
+    pub(super) fn refresh_tool_registry(
         &self,
-        definitions: IndexMap<String, RegisteredTool<E>>,
-        extension_tool_names: &[String],
         options: RefreshToolRegistryOptions,
     ) -> Result<(), DiagnosticErrorInfo> {
         let previous_active_tool_names = self.get_active_tool_names();
+        let runner = self.extension_runner();
+        let (definitions, extension_tool_names) = self.tool_definitions(&runner);
         let mut snippets = IndexMap::new();
         let mut guidelines = IndexMap::new();
         let mut registry = IndexMap::new();
@@ -76,7 +81,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             if !normalized.is_empty() {
                 guidelines.insert(name.clone(), normalized);
             }
-            let wrapped = wrap_registered_tool(tool, Rc::clone(&self.extension_runner));
+            let wrapped = wrap_registered_tool(tool, Rc::clone(&runner));
             registry.insert(name.clone(), Rc::new(RwLock::new(wrapped)));
         }
         let mut state = self.state.borrow_mut();
@@ -88,8 +93,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let mut next = options
             .active_tool_names
             .unwrap_or(previous_active_tool_names);
-        if options.include_all_extension_tools {
-            next.extend_from_slice(extension_tool_names);
+        next.retain(|name| self.is_allowed_tool(name));
+        if self.allowed_tool_names.is_some() {
+            next.extend(state.tool_registry.keys().cloned());
+        } else if options.include_all_extension_tools {
+            next.extend(extension_tool_names);
         } else if !requested {
             let added = state.tool_registry.keys();
             next.extend(
@@ -101,6 +109,46 @@ impl<E: ExtensionExecution> AgentSession<E> {
         drop(state);
         let next: IndexSet<String> = next.into_iter().collect();
         self.set_active_tools_by_name(&Vec::from_iter(next))
+    }
+
+    /// The allowed built-in definitions with their built-in sources, then the allowed
+    /// extension and SDK tools replacing them by name; with the names of those tools.
+    fn tool_definitions(
+        &self,
+        runner: &ExtensionRunner<E>,
+    ) -> (IndexMap<String, RegisteredTool<E>>, Vec<String>) {
+        let state = self.state.borrow();
+        let custom_tools: Vec<RegisteredTool<E>> = runner
+            .get_all_registered_tools()
+            .into_iter()
+            .chain(
+                state
+                    .custom_tools
+                    .iter()
+                    .map(|definition| sourced(definition, "sdk")),
+            )
+            .filter(|tool| self.is_allowed_tool(&tool.metadata().definition.name))
+            .collect();
+        let mut definitions: IndexMap<String, RegisteredTool<E>> = state
+            .base_tool_definitions
+            .iter()
+            .filter(|(name, _)| self.is_allowed_tool(name))
+            .map(|(name, definition)| (name.clone(), sourced(definition, "builtin")))
+            .collect();
+        drop(state);
+        let names: Vec<String> = custom_tools
+            .iter()
+            .map(|tool| tool.metadata().definition.name)
+            .collect();
+        definitions.extend(names.iter().cloned().zip(custom_tools));
+        (definitions, names)
+    }
+
+    /// Whether `name` passes the allowlist, when there is one.
+    fn is_allowed_tool(&self, name: &str) -> bool {
+        self.allowed_tool_names
+            .as_ref()
+            .is_none_or(|allowed| allowed.contains(name))
     }
 
     /// Activates the registered tools among `tool_names`, in order, and rebuilds the system
@@ -125,7 +173,19 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 .unzip()
         };
         write(self.agent.state()).set_tools(tools);
-        let prompt = self.rebuild_system_prompt(&valid).map_err(thrown)?;
+        self.install_base_system_prompt(&valid)
+    }
+
+    /// Rebuilds the base system prompt for the registered tools among `tool_names` and makes
+    /// it the agent's prompt.
+    ///
+    /// # Errors
+    /// Returns the documentation-path failure of the base prompt.
+    pub(super) fn install_base_system_prompt(
+        &self,
+        tool_names: &[String],
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let prompt = self.rebuild_system_prompt(tool_names).map_err(thrown)?;
         self.state
             .borrow_mut()
             .base_system_prompt
@@ -222,4 +282,43 @@ fn normalize_prompt_guidelines(guidelines: Option<&[String]>) -> Vec<String> {
         .into_iter()
         .map(str::to_owned)
         .collect()
+}
+
+/// What a tool-registry refresh activates.
+#[derive(Default)]
+pub(super) struct RefreshToolRegistryOptions {
+    /// The tools to activate in place of the active ones.
+    pub(super) active_tool_names: Option<Vec<String>>,
+    /// Whether every extension and SDK tool is activated as well.
+    pub(super) include_all_extension_tools: bool,
+}
+
+/// `definition` with the synthetic source `<source:name>` of the kind `source`.
+fn sourced<E: ExtensionExecution>(
+    definition: &ToolDefinitionHandle<E>,
+    source: &str,
+) -> RegisteredTool<E> {
+    let tool = RegisteredTool {
+        definition: definition.clone(),
+        source_info: synthetic(String::new(), source),
+    };
+    let name = tool.metadata().definition.name;
+    RegisteredTool {
+        source_info: synthetic(format!("<{source}:{name}>"), source),
+        ..tool
+    }
+}
+
+/// The synthetic source `path` of the kind `source`.
+fn synthetic(path: String, source: &str) -> std::sync::Arc<RwLock<maestro_resources::SourceInfo>> {
+    let info = create_synthetic_source_info(
+        path,
+        SyntheticSourceOptions {
+            source: source.to_owned(),
+            scope: None,
+            origin: None,
+            base_dir: None,
+        },
+    );
+    std::sync::Arc::new(RwLock::new(info))
 }

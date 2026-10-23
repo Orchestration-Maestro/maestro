@@ -196,7 +196,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Publishes both mirrors.
-    fn emit_queue_update(&self) {
+    pub(super) fn emit_queue_update(&self) {
         let event = {
             let state = self.state.borrow();
             AgentSessionEvent::QueueUpdate {
@@ -213,7 +213,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Ok(());
         }
         let (name, _) = split_command(text);
-        if self.extension_runner.get_command(name).is_none() {
+        if self.extension_runner().get_command(name).is_none() {
             return Ok(());
         }
         Err(DiagnosticErrorInfo::error(format!(

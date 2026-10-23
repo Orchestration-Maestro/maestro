@@ -34,6 +34,7 @@ mod model_scopes;
 #[path = "support/request.rs"]
 #[cfg(not(target_arch = "wasm32"))]
 mod request_support;
+mod saved_model_owner;
 #[path = "selection/scopes.rs"]
 mod scopes;
 mod selection;

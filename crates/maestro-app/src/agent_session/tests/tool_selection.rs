@@ -1,10 +1,10 @@
-//! The tool registry, active-tool selection and the rebuilt system prompt.
-#![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    Harness, HarnessOptions, case, harness, on_task_set, sdk_registered, tool_definition,
+//! The tool registry, active-tool selection and the rebuilt system prompt, with the SDK
+//! tools replaced before each refresh as the recorded cases did.
+use crate::agent_session::tools::RefreshToolRegistryOptions;
+use crate::resources::system_prompt::build_system_prompt;
+use crate::tests::session_harness::{
+    Harness, HarnessOptions, case, harness, on_task_set, sdk_definition, sdk_tools, tool_definition,
 };
-use maestro_app::agent_session::RefreshToolRegistryOptions;
-use maestro_app::resources::system_prompt::build_system_prompt;
 use maestro_models::system_prompt::BuildSystemPromptOptions;
 use maestro_session::Presence;
 use serde_json::{Value, json};
@@ -35,11 +35,11 @@ fn expected_prompt(cwd: &str, options: &Value) -> String {
     .unwrap()
 }
 
-/// Refreshes the registry with the recorded tools, all supplied as extension tools.
+/// Replaces the SDK tools with the recorded ones and refreshes the registry with the
+/// recorded options.
 fn refresh(h: &Harness, refresh: &Value) {
     let text = |value: &Value| value.as_str().map(str::to_owned);
-    let mut names = Vec::new();
-    let mut definitions = indexmap::IndexMap::new();
+    let mut tools = Vec::new();
     for spec in refresh["tools"].as_array().unwrap() {
         let name = spec["name"].as_str().unwrap();
         let guidelines: Option<Vec<String>> =
@@ -48,17 +48,18 @@ fn refresh(h: &Harness, refresh: &Value) {
             .as_ref()
             .map(|lines| lines.iter().map(String::as_str).collect());
         let snippet = text(&spec["promptSnippet"]);
-        let definition = tool_definition(name, snippet.as_deref(), guidelines.as_deref());
-        definitions.insert(name.to_owned(), sdk_registered(definition));
-        names.push(name.to_owned());
+        tools.push(sdk_definition(tool_definition(
+            name,
+            snippet.as_deref(),
+            guidelines.as_deref(),
+        )));
     }
+    h.session.state.borrow_mut().custom_tools = tools;
     let options = RefreshToolRegistryOptions {
         active_tool_names: serde_json::from_value(refresh["activeToolNames"].clone()).unwrap(),
         include_all_extension_tools: refresh["includeAllExtensionTools"].as_bool().unwrap(),
     };
-    h.session
-        .refresh_tool_registry(definitions, &names, options)
-        .unwrap();
+    h.session.refresh_tool_registry(options).unwrap();
 }
 
 /// Runs each recorded refresh or selection and compares the active names, the rebuilt
@@ -93,12 +94,14 @@ fn check_case(h: &Harness, name: &str) {
     );
 }
 
-/// A session with the loader prompt texts.
+/// A session with the loader prompt texts, no built-in tools and the recorded SDK tools.
 async fn tool_session(system_prompt: Option<&'static str>, append: &[&str]) -> Harness {
     harness(HarnessOptions {
         models: vec![("plain", false)],
         system_prompt,
         append_system_prompt: append.iter().map(|text| (*text).to_owned()).collect(),
+        custom_tools: sdk_tools(),
+        base_tools_override: Some(indexmap::IndexMap::new()),
         ..HarnessOptions::default()
     })
     .await

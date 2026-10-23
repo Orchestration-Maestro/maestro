@@ -1,12 +1,11 @@
 //! JSONL and HTML exports of the session.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, assistant, build_tree, corpus, harness, on_task_set, sdk_registered,
+    Harness, HarnessOptions, assistant, build_tree, corpus, harness, on_task_set, sdk_definition,
     sdk_tools, tool_definition, user,
 };
 use base64::Engine as _;
 use maestro_app::AgentSession;
-use maestro_app::agent_session::RefreshToolRegistryOptions;
 use maestro_app::configuration::config::get_theme_directories;
 use maestro_export::{ExportAsset, ExportOperations, NativeExportOperations};
 use maestro_models::Local;
@@ -155,11 +154,6 @@ async fn painted_harness(root: &str) -> Harness {
         {"type": "toolCall", "id": "call-2", "name": "reader", "arguments": {}},
     ]);
     let answer = assistant("", 2, &json!({"content": calls, "stopReason": "toolUse"}));
-    let h = harness(HarnessOptions {
-        session_manager: Some(file_session(root, &[user(&json!("paint"), 1), answer])),
-        ..HarnessOptions::default()
-    })
-    .await;
     let mut painted = tool_definition("painted", None, None);
     painted.render_call = Some(Rc::new(|_, _, _| {
         Ok(Rc::new(Text::new("Painted call".into(), 0, 0, None)) as ComponentHandle)
@@ -172,19 +166,13 @@ async fn painted_harness(root: &str) -> Harness {
             .map_err(|error| themed(&error))?;
         Ok(Rc::new(Text::new(text, 0, 0, None)) as ComponentHandle)
     }));
-    h.session
-        .refresh_tool_registry(
-            [
-                ("painted".to_owned(), sdk_registered(painted)),
-                ("reader".to_owned(), sdk_registered(reader)),
-            ]
-            .into_iter()
-            .collect(),
-            &["painted".to_owned(), "reader".to_owned()],
-            RefreshToolRegistryOptions::default(),
-        )
-        .unwrap();
-    h
+    harness(HarnessOptions {
+        session_manager: Some(file_session(root, &[user(&json!("paint"), 1), answer])),
+        custom_tools: vec![sdk_definition(painted), sdk_definition(reader)],
+        base_tools_override: Some(indexmap::IndexMap::new()),
+        ..HarnessOptions::default()
+    })
+    .await
 }
 
 /// The diagnostic a theme failure becomes at a renderer boundary.
@@ -216,19 +204,6 @@ fn entry_position(manager: &SessionManager, id: &Value) -> Value {
         "e{}",
         entries.iter().position(|entry| entry["id"] == *id).unwrap()
     ))
-}
-
-/// Every recorded tool as an extension tool, all of them activated.
-fn activate_sdk_tools(session: &AgentSession<Local>) {
-    let tools = sdk_tools();
-    let names: Vec<String> = tools.keys().cloned().collect();
-    let options = RefreshToolRegistryOptions {
-        active_tool_names: Some(Vec::new()),
-        include_all_extension_tools: true,
-    };
-    session
-        .refresh_tool_registry(tools, &names, options)
-        .unwrap();
 }
 
 /// A file session holding a short exchange.
@@ -298,10 +273,11 @@ fn html_export_carries_prompt_tools_and_theme() {
             models: vec![("plain", false)],
             settings: json!({"theme": "light"}),
             session_manager: Some(manager),
+            custom_tools: sdk_tools(),
+            base_tools_override: Some(indexmap::IndexMap::new()),
             ..HarnessOptions::default()
         })
         .await;
-        activate_sdk_tools(&h.session);
         h.session
             .set_active_tools_by_name(&["gamma".into(), "alpha".into()])
             .unwrap();
@@ -381,10 +357,11 @@ fn html_export_resolves_tool_descriptions_outside_locks() {
         let exchange = [user(&json!("hello"), 1), assistant("hi", 2, &json!({}))];
         let h = harness(HarnessOptions {
             session_manager: Some(file_session(&root, &exchange)),
+            custom_tools: sdk_tools(),
+            base_tools_override: Some(indexmap::IndexMap::new()),
             ..HarnessOptions::default()
         })
         .await;
-        activate_sdk_tools(&h.session);
         let state = Rc::clone(h.session.state());
         let history = Rc::clone(h.session.session_manager());
         let tool = Rc::clone(&state.read().unwrap().tools().read().unwrap()[0]);

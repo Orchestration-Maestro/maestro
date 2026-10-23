@@ -1,7 +1,7 @@
 //! Compacting a conversation and retrying a failed response, compared with the recorded
 //! recovery cases: the announced events, the rebuilt history and the stored entries.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
+use super::session_harness::{
     Auth, Harness, HarnessOptions, agent_ended, answer, assistant, case, harness, load_history,
     message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon, usage,
     user,
@@ -570,7 +570,7 @@ fn agent_starts(h: &Harness) -> Rc<RefCell<Vec<tokio::time::Instant>>> {
 
 #[test]
 fn retry_classification_follows_the_reference_table() {
-    let expected = crate::support::session_harness::corpus("retry_classification");
+    let expected = super::session_harness::corpus("retry_classification");
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
         for row in expected.as_array().unwrap() {
@@ -1796,7 +1796,11 @@ fn a_retry_left_unobserved_still_continues() {
         assert!(h.session.is_retrying(), "the retry still waits");
         tokio::time::advance(std::time::Duration::from_millis(2_000)).await;
         ended.notified().await;
-        assert_eq!(events_view(&h), expected["events"]);
+        // The recording ends when the wait returns; the continuation's successful answer
+        // then ends the retry.
+        let mut events = expected["events"].as_array().unwrap().clone();
+        events.push(json!({"type": "auto_retry_end", "attempt": 1, "success": true}));
+        assert_eq!(events_view(&h), json!(events));
         assert_eq!(messages_view(&h), expected["messages"]);
     });
 }

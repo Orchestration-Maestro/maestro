@@ -5,10 +5,10 @@ pub mod corpus;
 
 use maestro_app::{
     AgentSession, AgentSessionConfig, AuthStorage, CompactionOptions, ConfigValues,
-    DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionRunner, ExtensionRunnerSession,
-    ExtensionStatuses, Model, ModelRegistry, ModuleLoader, Presence, ProcessConfigValueOperations,
-    ReadonlyFooterDataProvider, ResourceLoader, ResourceLoaderOptions, SessionManager, Settings,
-    SettingsManager, ThinkingLevel, Threaded,
+    DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionStatuses, Local, Model,
+    ModelRegistry, ModuleLoader, Presence, ProcessConfigValueOperations,
+    ReadonlyFooterDataProvider, ResourceLoaderOptions, SessionManager, Settings, SettingsManager,
+    ThinkingLevel,
 };
 use maestro_chat::FooterComponent;
 use maestro_chat::components::footer::Environment;
@@ -136,7 +136,7 @@ fn add(
 /// A footer over a controlled session, its metadata and a published theme.
 pub struct World {
     /// The session the footer renders.
-    pub session: Rc<AgentSession<Threaded>>,
+    pub session: Rc<AgentSession<Local>>,
     /// The metadata the footer reads.
     pub metadata: Rc<Metadata>,
     /// The live slot the published theme sits in.
@@ -173,7 +173,7 @@ impl World {
     }
 
     /// Builds a footer over this world.
-    pub fn footer(&self) -> FooterComponent<Threaded> {
+    pub fn footer(&self) -> FooterComponent<Local> {
         FooterComponent::new(
             Rc::clone(&self.session),
             Rc::clone(&self.metadata) as Rc<dyn ReadonlyFooterDataProvider>,
@@ -326,7 +326,7 @@ fn text(value: Option<&Value>) -> Option<String> {
 }
 
 /// A memory session over an in-memory catalog, settings and loader.
-fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>> {
+fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Local>> {
     let settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));
@@ -343,8 +343,8 @@ fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>
         )
         .expect("an in-memory catalog"),
     );
-    let module_loader: ModuleLoader = Arc::new(|_| Box::pin(async { Err("unused".into()) }));
-    let loader: Rc<DefaultResourceLoader> =
+    let module_loader: ModuleLoader<Local> = Rc::new(|_| Box::pin(async { Err("unused".into()) }));
+    let loader: Rc<DefaultResourceLoader<Local>> =
         Rc::new(DefaultResourceLoader::new(DefaultResourceLoaderOptions {
             cwd: cwd.to_owned(),
             agent_dir: cwd.to_owned(),
@@ -354,32 +354,28 @@ fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>
                 module_loader,
             ),
         }));
-    let warning: Arc<dyn Fn(&str) + Send + Sync> = Arc::new(|_| {});
-    let runner = Rc::new(ExtensionRunner::new(
-        Arc::default(),
-        ResourceLoader::get_extensions(&*loader).runtime.clone(),
-        ExtensionRunnerSession {
-            cwd: cwd.to_owned(),
-            session_manager: history.clone(),
-            model_registry: Arc::clone(&registry),
-        },
-        warning,
-        LiveTheme::default(),
-    ));
-    Rc::new(
-        AgentSession::new(AgentSessionConfig {
-            agent: Rc::default(),
-            session_manager: history,
-            settings_manager: settings,
-            cwd: cwd.to_owned(),
-            bin_dir: String::new(),
-            scoped_models: Vec::new(),
-            resource_loader: loader,
-            model_registry: registry,
-            extension_runner: runner,
-        })
-        .expect("a memory session"),
-    )
+    AgentSession::new(AgentSessionConfig {
+        agent: Rc::default(),
+        session_manager: history,
+        settings_manager: settings,
+        cwd: cwd.to_owned(),
+        bin_dir: String::new(),
+        scoped_models: Vec::new(),
+        resource_loader: loader,
+        custom_tools: Vec::new(),
+        model_registry: registry,
+        initial_active_tool_names: None,
+        allowed_tool_names: None,
+        base_tools_override: None,
+        extension_runner_ref: None,
+        session_start_event: None,
+        tools_manager: Arc::new(maestro_app::agent_session::ToolsManager::new(
+            String::new(),
+            None,
+        )),
+        theme: LiveTheme::default(),
+    })
+    .expect("a memory session")
 }
 
 /// Stored credentials, with a subscription for `provider` when supplied.

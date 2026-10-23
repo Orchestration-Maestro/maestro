@@ -1,0 +1,218 @@
+{
+  "simple_text_response": {
+    "call_count": 1,
+    "assistant_count": 1,
+    "content": [
+      {
+        "type": "text",
+        "text": "hello world"
+      }
+    ],
+    "stop_reason": "stop",
+    "message_roles": [
+      "user",
+      "assistant"
+    ],
+    "event_types": [
+      "agent_start",
+      "turn_start",
+      "message_start",
+      "message_end",
+      "message_start",
+      "message_update",
+      "message_update",
+      "message_update",
+      "message_update",
+      "message_update",
+      "message_end",
+      "turn_end",
+      "agent_end"
+    ]
+  },
+  "response_sequence": {
+    "call_count": 3,
+    "assistant_texts": [
+      "first",
+      "second",
+      "third"
+    ]
+  },
+  "tool_call_triggers_execution": {
+    "tool_executed": true,
+    "call_count": 2,
+    "tool_result_count": 1,
+    "message_roles": [
+      "user",
+      "assistant",
+      "toolResult",
+      "assistant"
+    ]
+  },
+  "error_response": {
+    "assistant_count": 1,
+    "stop_reason": "error",
+    "error_message": "something broke"
+  },
+  "retry_on_transient_error": {
+    "call_count": 2,
+    "retry_start_count": 1,
+    "retry_end_count": 1,
+    "retry_end_success": true,
+    "retry_start_attempt": 1,
+    "retry_start_delay_ms": 1,
+    "assistant_texts": [
+      "recovered"
+    ]
+  },
+  "custom_usage_numbers": {
+    "usage_input": 100000,
+    "usage_output": 5000,
+    "usage_total": 105000
+  },
+  "event_capture": {
+    "agent_start_count": 1,
+    "agent_end_count": 1,
+    "message_end_count": 2,
+    "event_types": [
+      "agent_start",
+      "turn_start",
+      "message_start",
+      "message_end",
+      "message_start",
+      "message_update",
+      "message_update",
+      "message_update",
+      "message_end",
+      "turn_end",
+      "agent_end"
+    ]
+  },
+  "context_capture": {
+    "context_count": 1,
+    "message_roles": [
+      "user"
+    ],
+    "user_text": [
+      {
+        "type": "text",
+        "text": "my question"
+      }
+    ],
+    "tool_names": [
+      "read",
+      "bash",
+      "edit",
+      "write"
+    ]
+  },
+  "wraps_around": {
+    "call_count": 3,
+    "texts": [
+      "a",
+      "b",
+      "a"
+    ]
+  },
+  "streams_text_deltas": {
+    "text_delta_count": 3,
+    "reconstructed": "hello world",
+    "stream_types": [
+      "text_start",
+      "text_delta",
+      "text_delta",
+      "text_delta",
+      "text_end"
+    ]
+  },
+  "streams_thinking_deltas": {
+    "thinking_start_count": 1,
+    "thinking_delta_count": 6,
+    "thinking_end_count": 1,
+    "reconstructed": "let me think about this",
+    "stream_types": [
+      "thinking_start",
+      "thinking_delta",
+      "thinking_delta",
+      "thinking_delta",
+      "thinking_delta",
+      "thinking_delta",
+      "thinking_delta",
+      "thinking_end",
+      "text_start",
+      "text_delta",
+      "text_delta",
+      "text_end"
+    ]
+  },
+  "streams_tool_call_deltas": {
+    "toolcall_start_count": 1,
+    "toolcall_delta_count": 3,
+    "toolcall_end_count": 1,
+    "stream_types": [
+      "toolcall_start",
+      "toolcall_delta",
+      "toolcall_delta",
+      "toolcall_delta",
+      "toolcall_end",
+      "text_start",
+      "text_delta",
+      "text_end"
+    ]
+  },
+  "streams_thinking_then_text_then_tool_call": {
+    "first_thinking": 0,
+    "first_text": 3,
+    "first_toolcall": 10,
+    "stream_types": [
+      "thinking_start",
+      "thinking_delta",
+      "thinking_end",
+      "text_start",
+      "text_delta",
+      "text_delta",
+      "text_delta",
+      "text_delta",
+      "text_delta",
+      "text_end",
+      "toolcall_start",
+      "toolcall_delta",
+      "toolcall_delta",
+      "toolcall_delta",
+      "toolcall_delta",
+      "toolcall_end",
+      "text_start",
+      "text_delta",
+      "text_delta",
+      "text_end"
+    ]
+  },
+  "inline_extension_factories": {
+    "commands": [
+      {
+        "name": "shared-cmd",
+        "invocation_name": "shared-cmd:1",
+        "description": "Alpha command",
+        "path": "<alpha>"
+      },
+      {
+        "name": "shared-cmd",
+        "invocation_name": "shared-cmd:2",
+        "description": "Beta command",
+        "path": "<beta>"
+      }
+    ],
+    "calls": [
+      "alpha:first",
+      "beta:second"
+    ],
+    "has_extension_handlers_agent_start": false,
+    "has_extension_handlers_unregistered": false
+  },
+  "session_persistence": {
+    "message_entry_count": 2,
+    "entry_types": [
+      "message",
+      "message"
+    ]
+  }
+}

@@ -44,6 +44,33 @@
         "errorMessage": null
       }
     ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -140,6 +167,7 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
+    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [
       {
@@ -191,6 +219,37 @@
         "text": "reply",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "transformed original"
+              },
+              {
+                "type": "image",
+                "mimeType": "image/png"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -309,6 +368,33 @@
         "errorMessage": null
       }
     ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>\n\nplease look at main.rs"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -415,6 +501,33 @@
         "text": "reply",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "<skill name=\"review\" location=\"$ROOT/project/skills/review/SKILL.md\">\nReferences are relative to $ROOT/project/skills/review.\n\nCheck the diff.\n</skill>"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -525,6 +638,33 @@
         "errorMessage": null
       }
     ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/skill:unknown keep me"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -631,6 +771,33 @@
         "text": "reply",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "/skill:gone keep me"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -746,6 +913,33 @@
         "errorMessage": null
       }
     ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Plan for alpha with beta"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -858,6 +1052,33 @@
         "errorMessage": null
       }
     ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -958,6 +1179,13 @@
         }
       }
     ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
     "messages": [
       {
         "role": "user",
@@ -992,6 +1220,58 @@
         "text": "second",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "later"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -1050,6 +1330,11 @@
           "stopReason": "stop",
           "errorMessage": null
         }
+      },
+      {
+        "type": "queue_update",
+        "steering": [],
+        "followUp": []
       },
       {
         "type": "message_start",
@@ -1147,6 +1432,13 @@
         }
       }
     ],
+    "queue": {
+      "steering": [],
+      "followUp": [],
+      "pendingMessageCount": 0,
+      "isStreaming": false,
+      "systemPrompt": "$BASE"
+    },
     "messages": [
       {
         "role": "user",
@@ -1185,6 +1477,62 @@
         "text": "second",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "look"
+              },
+              {
+                "type": "image",
+                "mimeType": "image/png"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -1243,6 +1591,11 @@
           "stopReason": "stop",
           "errorMessage": null
         }
+      },
+      {
+        "type": "queue_update",
+        "steering": [],
+        "followUp": []
       },
       {
         "type": "message_start",
@@ -1387,6 +1740,57 @@
         "text": "reply",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "question"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "custom_message",
+        "id": "e1",
+        "customType": "note",
+        "content": {
+          "text": "next turn"
+        },
+        "display": true,
+        "details": {
+          "a": 1
+        }
+      },
+      {
+        "type": "custom_message",
+        "id": "e2",
+        "customType": "aside",
+        "content": {
+          "text": "hook text"
+        },
+        "display": true,
+        "details": {
+          "from": "hook"
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -1583,6 +1987,58 @@
         "errorMessage": null
       }
     ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "replace"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "first",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      },
+      {
+        "type": "message",
+        "id": "e2",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "plain"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e3",
+        "message": {
+          "role": "assistant",
+          "text": "second",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
+      }
+    ],
     "sessionEvents": [
       {
         "type": "agent_start"
@@ -1741,6 +2197,7 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
+    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [
       {
@@ -1794,6 +2251,33 @@
         "text": "reply",
         "stopReason": "stop",
         "errorMessage": null
+      }
+    ],
+    "entries": [
+      {
+        "type": "message",
+        "id": "e0",
+        "message": {
+          "role": "user",
+          "content": {
+            "blocks": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "message",
+        "id": "e1",
+        "message": {
+          "role": "assistant",
+          "text": "reply",
+          "stopReason": "stop",
+          "errorMessage": null
+        }
       }
     ],
     "sessionEvents": [
@@ -1898,6 +2382,7 @@
       "systemPrompt": "$BASE"
     },
     "messages": [],
+    "entries": [],
     "sessionEvents": [],
     "extensionEvents": [],
     "errorEvents": [

@@ -9,6 +9,7 @@ mod themes;
 
 pub use context::load_project_context_files;
 pub use extensions::DefaultEventBus;
+pub(crate) use extensions::report;
 pub use maestro_models::system_prompt::ContextFile;
 pub use maestro_resources::{ResourceCollision, ResourceDiagnostic};
 

@@ -25,12 +25,14 @@ fn expected(name: &str) -> Value {
     case("prompt_preflight", name)
 }
 
-/// Asserts the observations every prompt case shares, with the session storing no entry of
-/// its own: the turn messages are stored by the agent-event persistence.
+/// Asserts the observations every prompt case shares, the stored turn entries included.
 fn assert_prompt_case(h: &Harness, t: &Transcript, case: &Value) {
     assert_transcript(h, t, case);
     assert_eq!(queue_view(h, t), case["queue"]);
-    assert_eq!(entries_view(h), Vec::<Value>::new());
+    assert_eq!(
+        with_placeholders(json!(entries_view(h)), h),
+        case["entries"]
+    );
 }
 
 /// The image every recorded case attaches.
@@ -264,9 +266,7 @@ async fn queued_prompt_case(name: &str, behavior: UserMessageDelivery, images: V
     running.await.unwrap().unwrap();
     let results = json!([outcome(queued), labelled("queueWhileStreaming", streaming)]);
     assert_eq!(results, expected["results"]);
-    assert_transcript(&h, &t, &expected);
-    // The mirror keeps the delivered text until the agent-event dispatcher removes it on
-    // delivery; this queue update is the session's own announcement.
+    assert_prompt_case(&h, &t, &expected);
     let updates = t.events_of(&["queue_update"]);
     let recorded = crate::support::session_harness::of_kinds(
         expected["sessionEvents"].as_array().unwrap(),
@@ -597,7 +597,7 @@ fn failing_error_listener_keeps_its_supplied_fields() {
         })
         .await;
         let _unsubscribe = h
-            .runner
+            .runner()
             .on_error(Rc::new(|_| Err(Box::new(supplied_failure()))));
         let failure = h.session.prompt("/boom", PromptOptions::default()).await;
         assert_eq!(failure.unwrap_err(), supplied_failure());

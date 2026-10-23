@@ -54,3 +54,19 @@ pub use maestro_tools::{
 pub use maestro_tools::types::local;
 
 pub use maestro_tools::define_tool;
+
+pub use maestro_tools::{
+    DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, format_size, truncate_head, truncate_line,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{
+    BashExecutorOptions, BashResult, EditOperations, EditToolDetails, EditToolInput,
+    FindOperations, FindToolDetails, FindToolInput, FindToolOptions, GrepOperations,
+    GrepToolDetails, GrepToolInput, GrepToolOptions, LsOperations, LsToolDetails, LsToolInput,
+    LsToolOptions, ReadOperations, ReadToolDetails, ReadToolInput, ToolsOptions, WriteOperations,
+    WriteToolInput, create_coding_tools, create_edit_tool, create_find_tool,
+    create_find_tool_definition, create_grep_tool, create_grep_tool_definition, create_ls_tool,
+    create_ls_tool_definition, create_read_only_tools, create_read_tool, create_write_tool,
+    execute_bash_with_operations, with_file_mutation_queue,
+};

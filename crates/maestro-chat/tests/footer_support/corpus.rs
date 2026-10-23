@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 //! The recorded footer rows and the controlled world each one describes.
 use crate::footer_support::{Roles, World};
-use maestro_app::Threaded;
+use maestro_app::Local;
 use maestro_chat::FooterComponent;
 use maestro_tui::visible_width;
 use serde::Deserialize;
@@ -222,7 +222,7 @@ impl Render {
     }
 
     /// Applies the row's auto-compaction setting to the footer under test.
-    pub fn apply_auto(&self, footer: &FooterComponent<Threaded>) {
+    pub fn apply_auto(&self, footer: &FooterComponent<Local>) {
         if let Some(auto) = self.auto {
             footer.set_auto_compact_enabled(auto);
         }

@@ -1,0 +1,552 @@
+//! Replacing the session: the first runtime, a new session with its setup, a vetoed or
+//! re-checked switch, forks before and at an entry, imports and the final shutdown,
+//! compared with the recorded runtime cases.
+#![cfg(not(target_arch = "wasm32"))]
+use crate::support::session_harness::{
+    Auth, Harness, HarnessOptions, TestResourceLoader, answer, create_test_extensions_result,
+    create_test_resource_loader, harness, on_task_set, script_responses,
+};
+use maestro_app::{
+    AgentSessionRuntime, AgentSessionRuntimeError, AgentSessionServices, CreateAgentSessionOptions,
+    CreateAgentSessionRuntimeFactory, CreateAgentSessionRuntimeOptions,
+    CreateAgentSessionRuntimeResult, PromptOptions, SessionResources, create_agent_session,
+    create_agent_session_runtime,
+};
+use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
+use maestro_extensions::{
+    ExtensionFactory, ForkPosition, LoadExtensionsResult, SessionBeforeSwitchEvent,
+    SessionBeforeSwitchResult, SessionShutdownEvent,
+};
+use maestro_models::Local;
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_session::{Presence, SessionManager};
+use maestro_settings::SettingsManager;
+use serde_json::{Value, json};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+
+/// The recorded runtime case `name`.
+fn expected(name: &str) -> Value {
+    crate::support::session_harness::corpus("sdk")[name]["ok"].clone()
+}
+
+/// What a runtime under test records: replacement steps and factory calls.
+#[derive(Clone, Default)]
+struct Recorded {
+    /// Invalidation, rebinding and continuation steps, in order.
+    order: Rc<RefCell<Vec<String>>>,
+    /// Each factory call's directory, session file and start event.
+    factory_calls: Rc<RefCell<Vec<Value>>>,
+}
+
+/// The recorded form of a start event, with its event type.
+fn start_event_view(event: &maestro_extensions::SessionStartEvent) -> Value {
+    let mut view = json!({"type": "session_start"});
+    for (key, value) in serde_json::to_value(event).unwrap().as_object().unwrap() {
+        view[key] = value.clone();
+    }
+    view
+}
+
+/// The factory creating each runtime over the fixture's catalog with `extensions` loaded.
+fn factory(
+    h: &Harness,
+    extensions: &Rc<LoadExtensionsResult<Local>>,
+    recorded: &Recorded,
+) -> CreateAgentSessionRuntimeFactory {
+    let (registry, model) = (Arc::clone(&h.registry), h.model("faux-1"));
+    let (extensions, calls) = (Rc::clone(extensions), Rc::clone(&recorded.factory_calls));
+    Rc::new(move |options: CreateAgentSessionRuntimeOptions| {
+        let (registry, model, extensions) = (
+            Arc::clone(&registry),
+            Arc::clone(&model),
+            Rc::clone(&extensions),
+        );
+        calls.borrow_mut().push(json!({
+            "cwd": options.cwd,
+            "session_file": options.session_manager.borrow().get_session_file(),
+            "session_start_event": options.session_start_event.as_ref().map(start_event_view),
+        }));
+        Box::pin(async move {
+            let settings = Rc::new(RefCell::new(SettingsManager::in_memory(
+                maestro_settings::Settings::default(),
+            )));
+            let loader: Rc<dyn maestro_app::resources::resource_loader::ResourceLoader<Local>> =
+                Rc::new(TestResourceLoader {
+                    extensions,
+                    ..create_test_resource_loader(None)
+                });
+            let created = create_agent_session(CreateAgentSessionOptions {
+                cwd: Some(options.cwd.clone()),
+                agent_dir: Some(options.agent_dir.clone()),
+                auth_storage: None,
+                model_registry: Some(Arc::clone(&registry)),
+                model: Some(model),
+                thinking_level: None,
+                scoped_models: Vec::new(),
+                no_tools: None,
+                tools: None,
+                custom_tools: Vec::new(),
+                resources: SessionResources::Loader(Rc::clone(&loader)),
+                session_manager: Some(options.session_manager),
+                settings_manager: Some(Rc::clone(&settings)),
+                session_start_event: options.session_start_event,
+                theme: maestro_theme::LiveTheme::default(),
+            })
+            .await?;
+            Ok(CreateAgentSessionRuntimeResult {
+                session: created.session,
+                services: Rc::new(AgentSessionServices {
+                    cwd: options.cwd,
+                    agent_dir: options.agent_dir,
+                    auth_storage: Arc::new(AuthStorage::in_memory(AuthStorageData::default())),
+                    settings_manager: settings,
+                    model_registry: registry,
+                    resource_loader: loader,
+                    diagnostics: Vec::new(),
+                }),
+                diagnostics: Vec::new(),
+                extensions_result: created.extensions_result,
+                model_fallback_message: created.model_fallback_message,
+            })
+        })
+    })
+}
+
+/// A runtime over a persisted session at `<root>/<label>` with `factories` loaded, and what
+/// it records.
+async fn runtime_for(
+    label: &str,
+    factories: Vec<(Option<&str>, ExtensionFactory<Local>)>,
+) -> (Harness, AgentSessionRuntime, Recorded) {
+    let h = harness(HarnessOptions {
+        models: vec![("faux-1", true)],
+        auth: Auth::Key,
+        ..HarnessOptions::default()
+    })
+    .await;
+    let root = h.scratch.path().display().to_string();
+    let cwd = format!("{root}/{label}");
+    std::fs::create_dir_all(&cwd).unwrap();
+    let extensions = Rc::new(create_test_extensions_result(factories, &cwd).await);
+    let recorded = Recorded::default();
+    let manager = SessionManager::create(&cwd, Some(&format!("{cwd}/sessions")), &root).unwrap();
+    let manager = Rc::new(RefCell::new(manager));
+    let create = factory(&h, &extensions, &recorded);
+    let options = |manager: &Rc<RefCell<SessionManager>>| CreateAgentSessionRuntimeOptions {
+        cwd: cwd.clone(),
+        agent_dir: root.clone(),
+        session_manager: Rc::clone(manager),
+        session_start_event: None,
+    };
+    // The recorded cases created a session over the history before the runtime took it.
+    drop(create(options(&manager)).await.unwrap());
+    recorded.factory_calls.borrow_mut().clear();
+    let runtime = create_agent_session_runtime(create, options(&manager))
+        .await
+        .unwrap();
+    (h, runtime, recorded)
+}
+
+/// `value` with the scratch root as `$ROOT` and each session file as its recorded label.
+fn normalized(h: &Harness, value: &Value, files: &[(String, &str)]) -> Value {
+    let mut text = value
+        .to_string()
+        .replace(&h.scratch.path().display().to_string(), "$ROOT");
+    for (file, label) in files {
+        text = text.replace(
+            &file.replace(&h.scratch.path().display().to_string(), "$ROOT"),
+            label,
+        );
+    }
+    serde_json::from_str(&text).unwrap()
+}
+
+/// A stored session whose working directory `<root>/gone` no longer exists.
+fn stored_elsewhere(root: &str, sessions: &str) -> SessionManager {
+    let gone = format!("{root}/gone");
+    std::fs::create_dir_all(&gone).unwrap();
+    let mut manager =
+        SessionManager::create(&gone, Some(&format!("{root}/{sessions}")), root).unwrap();
+    manager
+        .append_message(json!({"role": "user", "content": "kept", "timestamp": 0}))
+        .unwrap();
+    manager
+        .append_message(serde_json::to_value(answer("stored", None, None)).unwrap())
+        .unwrap();
+    std::fs::remove_dir_all(&gone).unwrap();
+    manager
+}
+
+/// Records the invalidation, rebind and continuation steps of `runtime` into `recorded`.
+fn record_steps(runtime: &AgentSessionRuntime, recorded: &Recorded) {
+    let order = Rc::clone(&recorded.order);
+    runtime.set_before_session_invalidate(Some(Rc::new(move || {
+        order.borrow_mut().push("before_invalidate".into());
+    })));
+    let order = Rc::clone(&recorded.order);
+    runtime.set_rebind_session(Some(Rc::new(move |_| {
+        order.borrow_mut().push("rebind".into());
+        Box::pin(std::future::ready(Ok(())))
+    })));
+}
+
+#[test]
+fn creates_the_first_runtime_after_the_working_directory_check() {
+    let expected = expected("runtime_new_session");
+    on_task_set(|_| async {
+        let (h, runtime, recorded) = runtime_for("new-session", Vec::new()).await;
+        let first = runtime.session().session_file().unwrap();
+        let calls = json!(recorded.factory_calls.borrow()[..1]);
+        let files = [(first, "<SESSION_FILE_1>")];
+        assert_eq!(
+            normalized(&h, &calls, &files)[0],
+            expected["factory_calls"][0]
+        );
+        assert_eq!(
+            runtime.cwd(),
+            format!("{}/new-session", h.scratch.path().display())
+        );
+    });
+}
+
+#[test]
+fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            models: vec![("faux-1", true)],
+            ..HarnessOptions::default()
+        })
+        .await;
+        let root = h.scratch.path().display().to_string();
+        let manager = stored_elsewhere(&root, "sessions");
+        let manager =
+            SessionManager::open(manager.get_session_file().unwrap(), None, None).unwrap();
+        let recorded = Recorded::default();
+        let extensions = Rc::new(create_test_extensions_result(Vec::new(), &root).await);
+        let created = create_agent_session_runtime(
+            factory(&h, &extensions, &recorded),
+            CreateAgentSessionRuntimeOptions {
+                cwd: root.clone(),
+                agent_dir: root,
+                session_manager: Rc::new(RefCell::new(manager)),
+                session_start_event: None,
+            },
+        )
+        .await;
+        assert!(matches!(
+            created,
+            Err(AgentSessionRuntimeError::MissingSessionCwd(_))
+        ));
+        assert!(
+            recorded.factory_calls.borrow().is_empty(),
+            "the factory never ran"
+        );
+    });
+}
+
+#[test]
+fn replaces_the_session_and_rebinds_before_with_session() {
+    let expected = expected("runtime_new_session");
+    on_task_set(|_| async {
+        let (_h, runtime, recorded) = runtime_for("new-session", Vec::new()).await;
+        let first = runtime.session();
+        record_steps(&runtime, &recorded);
+        let order = Rc::clone(&recorded.order);
+        let options = NewSessionCommandOptions {
+            with_session: Some(Rc::new(move |context| {
+                drop(context.send_message(
+                    maestro_session::messages::CustomMessageInput {
+                        custom_type: "probe".into(),
+                        content: maestro_models::UserContent::Text("probe".into()),
+                        display: false,
+                        details: Presence::Missing,
+                    },
+                    None,
+                ));
+                order.borrow_mut().push("with_session:function".into());
+                Box::pin(std::future::ready(Ok(())))
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        let outcome = runtime.new_session(options).await.unwrap();
+        assert_eq!(json!({"cancelled": outcome.cancelled}), expected["outcome"]);
+        assert_eq!(json!(*recorded.order.borrow()), expected["order"]);
+        assert_eq!(
+            json!(!Rc::ptr_eq(&first, &runtime.session())),
+            expected["replaced"]
+        );
+    });
+}
+
+#[test]
+fn applies_setup_entries_to_the_new_session() {
+    let expected = expected("runtime_new_session_setup_applies_history");
+    on_task_set(|_| async {
+        let (_h, runtime, recorded) = runtime_for("new-session-setup", Vec::new()).await;
+        let options = NewSessionCommandOptions {
+            setup: Some(Rc::new(|manager| {
+                manager
+                    .borrow_mut()
+                    .append_custom_entry("demo", Presence::Present(json!({"value": 1})))
+                    .unwrap();
+                Box::pin(std::future::ready(Ok(())))
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        let outcome = runtime.new_session(options).await.unwrap();
+        assert_eq!(json!({"cancelled": outcome.cancelled}), expected["outcome"]);
+        assert_eq!(json!(*recorded.order.borrow()), expected["order"]);
+        let session = runtime.session();
+        assert_eq!(
+            json!(session.messages().read().unwrap().len()),
+            expected["message_count"]
+        );
+        let manager = session.session_manager().borrow();
+        let types: Vec<Value> = manager
+            .get_entries()
+            .into_iter()
+            .map(|entry| entry["type"].clone())
+            .collect();
+        assert_eq!(json!(types), expected["entry_types"]);
+    });
+}
+
+/// An extension cancelling every switch.
+fn vetoing() -> ExtensionFactory<Local> {
+    Rc::new(|api| {
+        let registered = api.on::<SessionBeforeSwitchEvent, SessionBeforeSwitchResult>(
+            "session_before_switch".into(),
+            Rc::new(|_, _| {
+                Box::pin(std::future::ready(Ok(Some(SessionBeforeSwitchResult {
+                    cancel: Presence::Present(true),
+                }))))
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+#[test]
+fn reports_a_cancelled_switch() {
+    on_task_set(|_| async {
+        let (_h, runtime, recorded) = runtime_for("vetoed", vec![(None, vetoing())]).await;
+        let first = runtime.session();
+        let outcome = runtime
+            .new_session(NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        assert!(outcome.cancelled);
+        assert!(Rc::ptr_eq(&first, &runtime.session()));
+        assert_eq!(
+            recorded.factory_calls.borrow().len(),
+            1,
+            "nothing was created"
+        );
+    });
+}
+
+#[test]
+fn keeps_the_previous_session_file_in_the_start_event() {
+    let expected = expected("runtime_new_session");
+    on_task_set(|_| async {
+        let (h, runtime, recorded) = runtime_for("new-session", Vec::new()).await;
+        let previous = runtime.session().session_file().unwrap();
+        runtime
+            .new_session(NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        let next = runtime.session().session_file().unwrap();
+        let calls = json!(*recorded.factory_calls.borrow());
+        let files = [(next, "<SESSION_FILE_2>"), (previous, "<SESSION_FILE_3>")];
+        assert_eq!(
+            normalized(&h, &calls[1], &files),
+            expected["factory_calls"][1]
+        );
+    });
+}
+
+#[test]
+fn rechecks_the_stored_working_directory_when_switching() {
+    on_task_set(|_| async {
+        let (h, runtime, _recorded) = runtime_for("switch", Vec::new()).await;
+        let root = h.scratch.path().display().to_string();
+        let other = stored_elsewhere(&root, "other");
+        let path = other.get_session_file().unwrap().to_owned();
+        let switched = runtime
+            .switch_session(&path, None, SwitchSessionOptions::default())
+            .await;
+        assert!(matches!(
+            switched,
+            Err(AgentSessionRuntimeError::MissingSessionCwd(_))
+        ));
+    });
+}
+
+/// Runs two prompts on the runtime's session and forks at the second user message.
+async fn fork_case(label: &str, position: ForkPosition) -> (AgentSessionRuntime, Value) {
+    let (h, runtime, _recorded) = runtime_for(label, Vec::new()).await;
+    drop(script_responses(
+        &h,
+        vec![
+            answer("first answer", None, None),
+            answer("second answer", None, None),
+        ],
+    ));
+    let session = runtime.session();
+    session
+        .prompt("first question", PromptOptions::default())
+        .await
+        .unwrap();
+    session
+        .prompt("second question", PromptOptions::default())
+        .await
+        .unwrap();
+    let target = {
+        let manager = session.session_manager().borrow();
+        let users: Vec<&Value> = manager
+            .get_entries()
+            .into_iter()
+            .filter(|entry| entry["type"] == "message" && entry["message"]["role"] == "user")
+            .collect();
+        users.last().unwrap()["id"].as_str().unwrap().to_owned()
+    };
+    let options = ForkOptions {
+        position: Some(position),
+        with_session: None,
+    };
+    let outcome = runtime.fork(&target, options).await.unwrap();
+    let forked = runtime.session();
+    let manager = forked.session_manager().borrow();
+    let types: Vec<Value> = manager
+        .get_entries()
+        .into_iter()
+        .map(|entry| entry["type"].clone())
+        .collect();
+    let roles: Vec<Value> = forked
+        .messages()
+        .read()
+        .unwrap()
+        .iter()
+        .map(|message| serde_json::to_value(message).unwrap()["role"].clone())
+        .collect();
+    let mut view = json!({"cancelled": outcome.cancelled});
+    if let Some(text) = outcome.selected_text {
+        view["selectedText"] = json!(text);
+    }
+    drop(manager);
+    (
+        runtime,
+        json!({"outcome": view, "order": [], "entry_types": types, "message_roles": roles}),
+    )
+}
+
+#[test]
+fn forks_before_a_user_message_and_selects_its_text() {
+    on_task_set(|_| async {
+        let (_runtime, observed) = fork_case("fork-before", ForkPosition::Before).await;
+        assert_eq!(observed, expected("runtime_fork_before"));
+    });
+}
+
+#[test]
+fn forks_at_an_entry() {
+    on_task_set(|_| async {
+        let (_runtime, observed) = fork_case("fork-at", ForkPosition::At).await;
+        assert_eq!(observed, expected("runtime_fork_at"));
+    });
+}
+
+#[test]
+fn refuses_an_unknown_fork_entry() {
+    let expected = expected("runtime_fork_invalid_entry");
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("fork-invalid", Vec::new()).await;
+        let refused = runtime.fork("no-such-entry", ForkOptions::default()).await;
+        let Err(error) = refused else {
+            panic!("the fork was expected to fail");
+        };
+        assert_eq!(json!({"invalid": {"error": error.to_string()}}), expected);
+    });
+}
+
+#[test]
+fn reports_a_missing_import_file() {
+    let expected = expected("runtime_import_jsonl");
+    on_task_set(|_| async {
+        let (h, runtime, _recorded) = runtime_for("import", Vec::new()).await;
+        let root = h.scratch.path().display().to_string();
+        let missing = runtime
+            .import_from_jsonl(&format!("{root}/absent.jsonl"), None)
+            .await;
+        let Err(AgentSessionRuntimeError::SessionImportFileNotFound(error)) = missing else {
+            panic!("the import was expected to miss its file");
+        };
+        let observed = json!({"error": error.to_string()});
+        assert_eq!(normalized(&h, &observed, &[]), expected["missing"]);
+    });
+}
+
+#[test]
+fn copies_an_imported_file_into_the_session_directory() {
+    let expected = expected("runtime_import_jsonl");
+    on_task_set(|_| async {
+        let (h, runtime, _recorded) = runtime_for("import", Vec::new()).await;
+        let root = h.scratch.path().display().to_string();
+        let source = format!("{root}/import-source.jsonl");
+        std::fs::write(&source, "").unwrap();
+        let imported = runtime.import_from_jsonl(&source, None).await.unwrap();
+        assert_eq!(
+            json!({"ok": {"cancelled": imported.cancelled}}),
+            expected["empty"]
+        );
+        let session_dir = runtime
+            .session()
+            .session_manager()
+            .borrow()
+            .get_session_dir()
+            .to_owned();
+        let copied = std::path::Path::new(&format!("{session_dir}/import-source.jsonl")).exists();
+        assert_eq!(json!(copied), expected["copied"]);
+    });
+}
+
+/// An extension recording each shutdown reason into `shutdowns`.
+fn shutdown_watch(shutdowns: Rc<RefCell<Vec<Value>>>) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let shutdowns = Rc::clone(&shutdowns);
+        let registered = api.on::<SessionShutdownEvent, ()>(
+            "session_shutdown".into(),
+            Rc::new(move |event, _| {
+                shutdowns.borrow_mut().push(json!({"reason": event.reason}));
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+#[test]
+fn shuts_down_with_quit_and_invalidates_before_dispose() {
+    let expected = expected("runtime_dispose");
+    on_task_set(|_| async {
+        let shutdowns = Rc::new(RefCell::new(Vec::new()));
+        let watch = shutdown_watch(Rc::clone(&shutdowns));
+        let (_h, runtime, recorded) =
+            runtime_for("dispose", vec![(Some("<shutdown-watch>"), watch)]).await;
+        let order = Rc::clone(&recorded.order);
+        runtime.set_before_session_invalidate(Some(Rc::new(move || {
+            order.borrow_mut().push("before_invalidate".into());
+        })));
+        let context = runtime.session().extension_runner().create_context();
+        runtime.dispose().await.unwrap();
+        assert_eq!(
+            json!({"shutdown": *shutdowns.borrow(), "order": *recorded.order.borrow()}),
+            expected
+        );
+        assert!(
+            context.cwd().is_err(),
+            "the disposed session's contexts are stale"
+        );
+    });
+}
