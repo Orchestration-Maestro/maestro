@@ -1236,9 +1236,17 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
 
 #[test]
 fn maestro_package_assets_come_from_the_package_directory() {
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
     let destination = fixture.root.join("standalone");
+    #[cfg(unix)]
+    fs::set_permissions(
+        source.join("src/modes/interactive/theme/schema.json"),
+        fs::Permissions::from_mode(0o640),
+    )
+    .unwrap();
     tooling::copy_assets::copy(
         &source,
         &destination,
@@ -1262,6 +1270,16 @@ fn maestro_package_assets_come_from_the_package_directory() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
+    // The copy carries the source's permission bits to the destination.
+    #[cfg(unix)]
+    assert_eq!(
+        fs::metadata(destination.join("theme/schema.json"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o640
+    );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
 }
