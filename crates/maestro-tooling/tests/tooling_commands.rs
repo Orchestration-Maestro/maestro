@@ -4,6 +4,7 @@ use crate::recipe_support::write_input;
 use crate::toolchain_support;
 
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -1048,9 +1049,7 @@ fn asset_inputs(fixture: &Fixture) -> PathBuf {
         ("src/core/export-html/template.js", "runtime"),
         ("src/core/export-html/vendor/highlight.js", "vendor"),
     ] {
-        let path = source.join(path);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, bytes).unwrap();
+        write_input(&source, path, bytes);
     }
     source
 }
@@ -1135,22 +1134,28 @@ fn package_inputs(package: &Path) {
     }
 }
 
+/// Assert the copy rejects an absent or empty viewer with its own message.
 fn assert_viewer_required(source: &Path, destination: &Path, package: &Path) {
     for viewer in [source.join("absent-viewer"), source.join("empty-viewer")] {
         if viewer.ends_with("empty-viewer") {
             fs::create_dir(&viewer).unwrap();
         }
-        assert!(
-            tooling::copy_assets::copy(
-                source,
-                destination,
-                tooling::copy_assets::Layout::Standalone {
-                    metadata: &source.join("Cargo.toml"),
-                    viewer: &viewer,
-                    package,
-                }
+        let error = tooling::copy_assets::copy(
+            source,
+            destination,
+            tooling::copy_assets::Layout::Standalone {
+                metadata: &source.join("Cargo.toml"),
+                viewer: &viewer,
+                package,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "viewer parameter must name a nonempty directory: {}",
+                viewer.display()
             )
-            .is_err()
         );
     }
 }
@@ -1236,9 +1241,17 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
 
 #[test]
 fn maestro_package_assets_come_from_the_package_directory() {
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
     let destination = fixture.root.join("standalone");
+    #[cfg(unix)]
+    fs::set_permissions(
+        source.join("src/modes/interactive/theme/schema.json"),
+        fs::Permissions::from_mode(0o640),
+    )
+    .unwrap();
     tooling::copy_assets::copy(
         &source,
         &destination,
@@ -1262,6 +1275,16 @@ fn maestro_package_assets_come_from_the_package_directory() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
+    // The copy carries the source's permission bits to the destination.
+    #[cfg(unix)]
+    assert_eq!(
+        fs::metadata(destination.join("theme/schema.json"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o640
+    );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
 }
@@ -1292,6 +1315,264 @@ fn maestro_missing_package_input_keeps_completed_groups() {
     assert!(!destination.join("examples").exists());
 }
 
+/// Remove one input file or directory, whichever the path names.
+fn remove_input(path: &Path) {
+    if path.is_dir() {
+        fs::remove_dir_all(path).unwrap();
+    } else {
+        fs::remove_file(path).unwrap();
+    }
+}
+
+/// Assert that a failed copy names the input it could not read.
+fn assert_names_input(error: &io::Error, input: &Path) {
+    assert!(
+        error.to_string().contains(&input.display().to_string()),
+        "{error} does not name {}",
+        input.display()
+    );
+    assert_eq!(error.kind(), io::ErrorKind::NotFound, "{error}");
+}
+
+#[test]
+fn maestro_missing_package_input_names_the_absent_path() {
+    for name in ["README.md", "CHANGELOG.md", "docs", "examples"] {
+        let fixture = Fixture::new();
+        let (source, package, metadata, viewer) = split_inputs(&fixture);
+        let input = package.join(name);
+        remove_input(&input);
+        let destination = fixture.root.join("incomplete");
+        let error = tooling::copy_assets::copy(
+            &source,
+            &destination,
+            tooling::copy_assets::Layout::Standalone {
+                metadata: &metadata,
+                viewer: &viewer,
+                package: &package,
+            },
+        )
+        .unwrap_err();
+        assert_names_input(&error, &input);
+        // The whole message is one input clause; a nested wrap would repeat it.
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "cannot copy {}: {}",
+                input.display(),
+                fs::symlink_metadata(&input).unwrap_err()
+            )
+        );
+        assert!(destination.join("Cargo.toml").is_file());
+    }
+}
+
+#[test]
+fn maestro_missing_crate_input_names_the_absent_path() {
+    for name in [
+        "src/modes/interactive/theme",
+        "src/modes/interactive/assets",
+        "src/core/export-html/template.css",
+    ] {
+        let fixture = Fixture::new();
+        let source = asset_inputs(&fixture);
+        let input = source.join(name);
+        remove_input(&input);
+        let error = tooling::copy_assets::copy(
+            &source,
+            &fixture.root.join("dist"),
+            tooling::copy_assets::Layout::Library,
+        )
+        .unwrap_err();
+        assert_names_input(&error, &input);
+    }
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let input = source.join("src/modes/interactive/theme");
+    remove_input(&input);
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_names_input(&error, &input);
+}
+
+#[test]
+fn maestro_missing_metadata_names_the_absent_path() {
+    let fixture = Fixture::new();
+    let (source, package, _, viewer) = split_inputs(&fixture);
+    let metadata = fixture.root.join("absent/Cargo.toml");
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_names_input(&error, &metadata);
+}
+
+/// Assert that a viewer directory this process cannot list is named.
+#[cfg(unix)]
+#[test]
+fn maestro_unreadable_viewer_names_its_path() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let Some(_denied) = maestro_test_directory::deny(&viewer, 0o000).unwrap() else {
+        return;
+    };
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: {}",
+            viewer.display(),
+            fs::read_dir(&viewer).unwrap_err()
+        )
+    );
+}
+
+/// Assert that a requested source file this process cannot read names its own path.
+#[cfg(unix)]
+#[test]
+fn maestro_unreadable_source_file_names_its_path() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let input = package.join("README.md");
+    let Some(_denied) = maestro_test_directory::deny(&input, 0o000).unwrap() else {
+        return;
+    };
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: {}",
+            input.display(),
+            fs::File::open(&input).unwrap_err()
+        )
+    );
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+}
+
+/// Assert that an entry this process cannot read inside a copied tree is named.
+#[cfg(unix)]
+#[test]
+fn maestro_unreadable_tree_entry_names_that_entry() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let entry = package.join("docs/guide.md");
+    let Some(_denied) = maestro_test_directory::deny(&entry, 0o000).unwrap() else {
+        return;
+    };
+    let error = tooling::copy_assets::copy(
+        &source,
+        &fixture.root.join("standalone"),
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: {}",
+            entry.display(),
+            fs::File::open(&entry).unwrap_err()
+        )
+    );
+}
+
+/// Assert that a failed copy leaves no destination more permissive than its source.
+#[cfg(target_os = "linux")]
+#[test]
+fn maestro_failed_copy_keeps_the_source_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    let (source, package, _metadata, viewer) = split_inputs(&fixture);
+    // This process's memory is a private regular file whose first read fails, so the
+    // copy stops after the destination exists and before a single byte is written.
+    let private = Path::new("/proc/self/mem");
+    assert_eq!(
+        fs::metadata(private).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    let destination = fixture.root.join("standalone");
+    let error = tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: private,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .starts_with(&format!("cannot copy {}: ", private.display())),
+        "{error}"
+    );
+    let mode = fs::metadata(destination.join("Cargo.toml"))
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(mode, 0o600, "a failed copy exposed its destination");
+}
+
+/// Assert that a destination-side failure keeps its native error without an input name.
+#[test]
+fn maestro_destination_failure_keeps_its_native_error() {
+    let fixture = Fixture::new();
+    let (source, package, metadata, viewer) = split_inputs(&fixture);
+    let destination = fixture.root.join("standalone");
+    fs::create_dir_all(destination.join("README.md")).unwrap();
+    let error = tooling::copy_assets::copy(
+        &source,
+        &destination,
+        tooling::copy_assets::Layout::Standalone {
+            metadata: &metadata,
+            viewer: &viewer,
+            package: &package,
+        },
+    )
+    .unwrap_err();
+    let message = error.to_string();
+    assert!(
+        !message.contains("cannot copy") && !message.contains(&package.display().to_string()),
+        "{message}"
+    );
+}
+
 fn assert_asset_match_order() {
     let fixture = Fixture::new();
     let source = asset_inputs(&fixture);
@@ -1300,10 +1581,17 @@ fn assert_asset_match_order() {
     fs::create_dir(themes.join("b.json")).unwrap();
     fs::write(themes.join("c.json"), "later").unwrap();
     let destination = fixture.root.join("dist");
-    assert!(
+    let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
-            .is_err()
+            .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "cannot copy {}: not a regular file",
+            themes.join("b.json").display()
+        )
     );
+    assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
     assert_eq!(
         fs::read(destination.join("modes/interactive/theme/a.json")).unwrap(),
         b"first"
@@ -1343,9 +1631,12 @@ fn maestro_asset_errors_keep_prior_copies() {
             .is_err()
     );
     fs::create_dir(&image).unwrap();
-    assert!(
+    let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
-            .is_err()
+            .unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!("cannot copy {}: not a regular file", image.display())
     );
     for args in [vec![], vec!["unknown".into()], vec!["copy-assets".into()]] {
         assert!(tooling::run(&args, &fixture.child, &fixture.root).is_err());
