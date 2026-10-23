@@ -4,14 +4,14 @@ use crate::{
     EventBusController, ExtensionExecution, create_extension_runtime,
     types::{ExtensionAPI, ExtensionLoadError, LoadExtensionsResult, ModuleLoader},
 };
-use maestro_resources::paths::{expand_tilde, resolve};
+use maestro_resources::paths::{expand_tilde_text, resolve};
 use maestro_tools::path_utils::resolve_existing_spelling;
 use std::io;
 
 /// Joins the rest of a leading `~` or `~/` of `path` to the home directory, then keeps an
 /// absolute result as written and resolves a relative one against `cwd`.
 fn anchor_path(path: &str, cwd: &str) -> io::Result<String> {
-    let expanded = expand_tilde(path, || maestro_tools::expand_path("~"))?;
+    let expanded = expand_tilde_text(path, || maestro_tools::expand_path("~"))?;
     if maestro_path::is_absolute(&expanded) {
         return Ok(expanded);
     }

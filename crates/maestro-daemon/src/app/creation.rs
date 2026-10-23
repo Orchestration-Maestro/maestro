@@ -16,10 +16,11 @@ fn expand_home_path(path: &str) -> PathBuf {
     }
     let home = || {
         std::env::var_os("HOME")
-            .map(|text| text.to_string_lossy().into_owned())
+            .map(PathBuf::from)
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     };
-    maestro_resources::paths::expand_tilde(path, home).map_or_else(|_| path.into(), PathBuf::from)
+    maestro_resources::paths::expand_tilde(std::path::Path::new(path), home)
+        .unwrap_or_else(|_| path.into())
 }
 
 /// Resolves the configured cwd policy against one observed focused directory.

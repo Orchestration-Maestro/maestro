@@ -1,5 +1,8 @@
 use crate::support;
-use maestro_resources::{canonicalize_path, is_local_path};
+use maestro_resources::{
+    canonicalize_path, is_local_path,
+    paths::{expand_tilde, expand_tilde_text},
+};
 use support::text;
 
 /// Classify only the six exact lowercase source prefixes.
@@ -294,4 +297,31 @@ fn native_directory_entries_follow_platform_order() {
     let entries = maestro_resources::read_entries(dir.0.path()).unwrap();
     let names: Vec<_> = entries.into_iter().map(|e| e.name).collect();
     assert_eq!(names, ["C.md", "_x.md", "a.md", "b.md"]);
+}
+
+/// A leading `~` keeps every segment its author wrote below the home directory.
+#[test]
+fn maestro_tilde_expansion_keeps_the_written_segments() {
+    let home = || Ok(std::path::PathBuf::from("/home/sample"));
+    let expanded = |path| expand_tilde(std::path::Path::new(path), home).unwrap();
+    assert_eq!(
+        expanded("~/link/../f"),
+        std::path::Path::new("/home/sample/link/../f")
+    );
+    assert_eq!(expanded("~"), std::path::Path::new("/home/sample"));
+    assert_eq!(
+        expanded("~child"),
+        std::path::Path::new("/home/sample/child")
+    );
+    assert_eq!(expanded("plain"), std::path::Path::new("plain"));
+    let text = || Ok("/home/sample".to_owned());
+    assert_eq!(
+        expand_tilde_text("~/link/../f", text).unwrap(),
+        "/home/sample/f"
+    );
+    assert_eq!(
+        expand_tilde_text("/extra/../extra/q.md", || unreachable!()).unwrap(),
+        "/extra/../extra/q.md"
+    );
+    assert_eq!(expand_tilde_text("~", || Ok(String::new())).unwrap(), "");
 }

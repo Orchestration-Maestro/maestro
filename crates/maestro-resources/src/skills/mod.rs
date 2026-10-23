@@ -11,7 +11,7 @@ mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
     parse_frontmatter,
-    paths::{expand_tilde, is_under_path, resolve},
+    paths::{expand_tilde_text, is_under_path, resolve},
 };
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
@@ -187,7 +187,7 @@ fn load_skills_in(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult
     for path in options.skill_paths {
         let path = path.trim_matches(crate::frontmatter::text_whitespace);
         let path = if path.starts_with('~') {
-            expand_tilde(path, || Ok(options.home.to_owned()))?
+            expand_tilde_text(path, || Ok(options.home.to_owned()))?
         } else if is_absolute(path) {
             path.to_owned()
         } else {

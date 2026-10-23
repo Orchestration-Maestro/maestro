@@ -4,7 +4,7 @@
 use crate::{
     FrontmatterValue, ResourceFileType, SourceInfo, SourceScope, SyntheticSourceOptions,
     create_synthetic_source_info, frontmatter::text_whitespace, metadata, parse_frontmatter,
-    paths::expand_tilde, paths::resolve, read_entries, read_text,
+    paths::expand_tilde_text, paths::resolve, read_entries, read_text,
 };
 use maestro_path::{basename, dirname, is_absolute, join};
 use std::{io, path::Path};
@@ -320,7 +320,7 @@ pub fn load_prompt_templates(
 /// Normalize tilde spelling before resolving an unanchored explicit path.
 fn resolve_prompt_path(path: &str, options: LoadPromptTemplatesOptions<'_>) -> io::Result<String> {
     let path = path.trim_matches(text_whitespace);
-    let normalized = expand_tilde(path, || Ok(options.home.to_owned()))?;
+    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {

@@ -343,17 +343,24 @@ fn assert_profile_counters(profile: &Path) {
 struct Fixture {
     root: maestro_test_directory::Scratch,
     child: PathBuf,
+    /// Retains the deliberately spaced and apostrophe-containing parent of `root`.
+    _parent: maestro_test_directory::Scratch,
 }
 
 impl Fixture {
     fn new() -> Self {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
-        let root = scratch.path().to_path_buf();
-        toolchain_support::declare_toolchain(&root, include_str!("../../../rust-toolchain.toml"))
-            .unwrap();
-        fs::create_dir(root.join("receipt")).unwrap();
-        fs::create_dir_all(root.join(".maestro/agent")).unwrap();
-        let source = root.join("child.rs");
+        let parent = maestro_test_directory::Scratch::new().unwrap();
+        let spelled = parent.path().join("Maestro's tooling fixture");
+        fs::create_dir(&spelled).unwrap();
+        let root = maestro_test_directory::Scratch::new_in(&spelled).unwrap();
+        toolchain_support::declare_toolchain(
+            root.path(),
+            include_str!("../../../rust-toolchain.toml"),
+        )
+        .unwrap();
+        fs::create_dir(root.path().join("receipt")).unwrap();
+        fs::create_dir_all(root.path().join(".maestro/agent")).unwrap();
+        let source = root.path().join("child.rs");
         fs::write(&source, r#"
 use std::{env, fs, path::PathBuf};
 fn main() {
@@ -393,11 +400,14 @@ fn main() {
     std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
 }
 "#).unwrap();
-        let child = root.join(format!("just{}", std::env::consts::EXE_SUFFIX));
-        compile_fixture(&root, &source, &child);
+        let child = root
+            .path()
+            .join(format!("just{}", std::env::consts::EXE_SUFFIX));
+        compile_fixture(root.path(), &source, &child);
         Self {
-            root: scratch,
+            root,
             child,
+            _parent: parent,
         }
     }
 

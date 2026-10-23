@@ -196,7 +196,8 @@ fn literal_query() {
             .skip("literal & | ; $HOME %PATH% ^ < >")
     };
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let directory = scratch.path().to_path_buf();
+    let directory = scratch.path().join("maestro query");
+    std::fs::create_dir(&directory).unwrap();
     let executable = directory.join(format!("npm{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
     // Omitting the Windows suffix exercises the package-manager command spelling.

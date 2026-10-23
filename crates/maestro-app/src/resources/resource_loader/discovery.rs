@@ -6,7 +6,7 @@ use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};
 use maestro_path::{SEP, join};
 use maestro_resources::{
     PathMetadata, SourceOrigin, SourceScope, canonicalize_path,
-    paths::{expand_tilde, resolve},
+    paths::{expand_tilde_text, resolve},
 };
 use std::{collections::HashSet, io, path::Path, rc::Rc};
 
@@ -281,7 +281,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
     /// the loader's working directory.
     pub(super) fn resolve_resource_path(&self, path: &str) -> io::Result<String> {
         let trimmed = path.trim_matches(maestro_text::is_whitespace_scalar);
-        let expanded = expand_tilde(trimmed, || maestro_tools::expand_path("~"))?;
+        let expanded = expand_tilde_text(trimmed, || maestro_tools::expand_path("~"))?;
         resolve(&[&self.cwd, &expanded])
     }
 }

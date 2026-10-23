@@ -1,6 +1,6 @@
 //! Terminal, image, editor and session-directory preferences.
 
-use maestro_resources::paths::expand_tilde;
+use maestro_resources::paths::expand_tilde_text;
 use serde_json::Value;
 use std::io;
 
@@ -31,7 +31,7 @@ fn expand_session_dir(configured: &str) -> String {
     if !supported {
         return configured.to_owned();
     }
-    expand_tilde(configured, || {
+    expand_tilde_text(configured, || {
         home_dir()
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     })

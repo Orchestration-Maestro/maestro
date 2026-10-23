@@ -2,7 +2,7 @@
 
 use icu_normalizer::DecomposingNormalizer;
 use maestro_path::{homedir, is_absolute};
-use maestro_resources::paths::{expand_tilde, resolve};
+use maestro_resources::paths::{expand_tilde, resolve_groups_with};
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -48,23 +48,22 @@ fn expand_written_path(file_path: &str) -> io::Result<String> {
         _ => return Ok(file_path.to_owned()),
     };
     let home = home_directory()?;
-    if home.is_empty() {
+    if home.as_os_str().is_empty() {
         // An empty home spelling keeps the authored rest, its separator included.
         return Ok(rest.to_owned());
     }
-    expand_tilde(file_path, || Ok(home))
+    expand_tilde(Path::new(file_path), || Ok(home)).and_then(|path| utf8(path, "home directory"))
 }
 
-/// Read the home directory, refusing one that text cannot hold.
-fn home_directory() -> io::Result<String> {
-    let home = homedir(
+/// Read the home directory as native bytes.
+fn home_directory() -> io::Result<PathBuf> {
+    homedir(
         std::env::var_os("HOME")
             .filter(|_| cfg!(unix))
             .map(PathBuf::from),
         std::env::home_dir,
     )
-    .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
-    utf8(home, "home directory")
+    .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))
 }
 
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
@@ -109,7 +108,9 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
 /// # Errors
 /// Returns an error when a needed host directory is unavailable or not UTF-8.
 pub(crate) fn resolve_path(parts: &[&str]) -> io::Result<String> {
-    resolve(parts)
+    let current_directory = || utf8(std::env::current_dir()?, "working directory");
+    resolve_groups_with(&[parts], current_directory)
+        .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Insert the narrow no-break space before a case-insensitive ` AM.` or ` PM.`.

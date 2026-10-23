@@ -335,3 +335,25 @@ fn read_paths_bind_before_future_poll() {
     let fresh = call(&tool, input("f.txt", None, None), None, None).unwrap();
     assert_eq!(only_text(&fresh), "decoy");
 }
+
+/// A working directory text cannot hold is refused instead of replaced.
+#[cfg(unix)]
+#[test]
+fn resolve_rejects_a_working_directory_that_is_not_utf8() {
+    use std::os::unix::ffi::OsStrExt;
+    if isolated(
+        "resolve_rejects_a_working_directory_that_is_not_utf8",
+        "bytes",
+        &[],
+    ) {
+        let dir = Scratch::new().unwrap();
+        let raw = dir
+            .path()
+            .join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"cwd-\xff"));
+        std::fs::create_dir(&raw).unwrap();
+        std::env::set_current_dir(&raw).unwrap();
+        let error = resolve_to_cwd("x.txt", ".").unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        assert_eq!(error.to_string(), "working directory is not valid UTF-8");
+    }
+}

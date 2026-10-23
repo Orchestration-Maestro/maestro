@@ -441,3 +441,35 @@ fn unmatched_paths_keep_the_space_replaced_text() {
     .collect();
     assert!(mismatched.is_empty(), "{mismatched:?}");
 }
+
+/// Every route reaches the directory a `~` path's written parent segment names.
+#[cfg(unix)]
+#[test]
+fn tilde_routes_follow_the_link_their_parent_segment_names() {
+    let test = "tilde_routes_follow_the_link_their_parent_segment_names";
+    let farm = Scratch::new().unwrap();
+    std::fs::create_dir_all(farm.path().join("elsewhere/child")).unwrap();
+    std::fs::create_dir(farm.path().join("elsewhere/f")).unwrap();
+    std::fs::create_dir(farm.path().join("f")).unwrap();
+    std::os::unix::fs::symlink(
+        farm.path().join("elsewhere/child"),
+        farm.path().join("link"),
+    )
+    .unwrap();
+    let farm_text = farm.text();
+    if isolated(test, "link", &[("HOME", Some(farm_text.as_str()))]) {
+        // The child inherits the farm the parent prepared as its home directory.
+        let home = std::env::var("HOME").unwrap();
+        let written = format!("{home}/elsewhere/f/new.txt");
+        write_through_tool(&farm, "~/link/../f/new.txt", "body");
+        assert_eq!(std::fs::read(&written).unwrap(), b"body");
+        let read = create_read_tool_definition::<()>(home.clone(), ReadToolOptions::default());
+        let opened = call(&read, input("~/link/../f/new.txt", None, None), None, None).unwrap();
+        assert_eq!(only_text(&opened), "body");
+        let edit = create_edit_tool_definition::<()>(home.clone(), EditToolOptions::default());
+        let arguments = edit_support::input("~/link/../f/new.txt", "body", "edited");
+        run((edit.execute)("call".into(), arguments, None, None, None)).unwrap();
+        assert_eq!(std::fs::read(&written).unwrap(), b"edited");
+        assert!(!std::path::Path::new(&home).join("f/new.txt").exists());
+    }
+}

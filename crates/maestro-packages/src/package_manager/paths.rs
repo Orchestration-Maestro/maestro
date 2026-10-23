@@ -6,7 +6,7 @@ use super::{
 use maestro_path::{Cwd, dirname, join, relative};
 use maestro_resources::{
     SourceScope,
-    paths::{CONFIG_DIR_NAME, expand_tilde, resolve},
+    paths::{CONFIG_DIR_NAME, expand_tilde_text, resolve},
 };
 use sha2::{Digest, Sha256};
 use std::{io, path::Path};
@@ -127,7 +127,7 @@ fn temporary_dir(prefix: &str, suffix: &str) -> String {
 pub(super) fn resolve_local(source: &str, base: &str) -> io::Result<String> {
     let source = crate::trim(source);
     if source.starts_with('~') {
-        return expand_tilde(source, super::operations::home_dir);
+        return expand_tilde_text(source, super::operations::home_dir);
     }
     resolve(&[base, source])
 }
