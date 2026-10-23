@@ -112,11 +112,11 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
-    /// Steps a label preparation takes, plus one per label query and per rule window.
+    /// Label preparation steps, one per label query, plus each attempted rule window's byte length.
     pub(crate) link_bytes: usize,
-    /// Sources a code-span preparation reads plus one per reached-opener lookup.
+    /// Source bytes each code-span preparation reads, plus one per reached-opener lookup.
     pub(crate) inline_code_bytes: usize,
-    /// Sources a deletion preparation reads plus one per reached-opener lookup.
+    /// Source bytes each deletion preparation reads, plus one per reached-opener lookup.
     pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
@@ -573,6 +573,13 @@ fn paragraph_work(source: String, options: crate::MarkedOptions) -> Work {
 /// Whether work measured at N, 2N and 4N units grows by the same amount per unit.
 fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
     large - medium == 2 * (medium - small)
+}
+
+/// Whether work measured at N, 2N and 4N units grows by at most the same amount per unit.
+///
+/// The step from 2N to 4N may add at most twice the step from N to 2N.
+fn grows_at_most_linearly([small, medium, large]: [usize; 3]) -> bool {
+    large + 2 * small <= 3 * medium
 }
 
 /// Require only text and line breaks, spelled exactly as the source.
