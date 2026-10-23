@@ -1,4 +1,11 @@
 //! Strict recorded inputs and public-output projections.
+#![cfg_attr(
+    target_arch = "wasm32",
+    allow(
+        dead_code,
+        reason = "Only the browser target's selector witnesses consume these records."
+    )
+)]
 use maestro_app::ThinkingLevel;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, SelectList};
@@ -6,7 +13,9 @@ use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 
-pub use super::selector::{Empty, Frame, Frames, input, levels};
+#[cfg(not(target_arch = "wasm32"))]
+pub use super::selector::{Empty, Frame, Frames};
+pub use super::selector::{input, levels};
 /// Decode one nonempty locally owned corpus group.
 pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
     let rows = super::selector::load(include_str!("../fixtures/simple_selectors.json"));
@@ -187,6 +196,7 @@ pub struct Rows {
     pub lines: Vec<String>,
 }
 /// A native registry over disposable files, using the directory owner.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn registry(
     names: &[String],
 ) -> (
@@ -375,7 +385,7 @@ pub fn message_selector(
     initial: Option<String>,
     events: &Events,
     theme: maestro_theme::LiveTheme,
-    runtime: &super::manual_runtime::ManualRuntime,
+    runtime: &crate::manual_runtime::ManualRuntime,
 ) -> maestro_chat::UserMessageSelectorComponent {
     maestro_chat::UserMessageSelectorComponent::new(
         records,
@@ -397,7 +407,7 @@ pub struct Navigation {
     /// Input bytes.
     pub ops: Vec<String>,
 }
-pub use super::keybindings::bindings_guard;
+pub use crate::keybindings::bindings_guard;
 /// Cross-selector kind query.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -442,7 +452,7 @@ pub fn picker(
     message_count: usize,
     state: &maestro_theme::ThemeState,
     events: &Events,
-    runtime: &super::manual_runtime::ManualRuntime,
+    runtime: &crate::manual_runtime::ManualRuntime,
 ) -> Picker {
     match kind {
         Kind::Thinking => Picker::Thinking(maestro_chat::ThinkingSelectorComponent::new(
@@ -549,8 +559,8 @@ pub struct TimerOutput {
 }
 
 /// Drive the controlled clock and surface each continuation failure.
-pub fn advance(runtime: &super::manual_runtime::ManualRuntime, millis: u64) {
-    for result in runtime.advance_to(super::manual_runtime::ms(millis)) {
+pub fn advance(runtime: &crate::manual_runtime::ManualRuntime, millis: u64) {
+    for result in runtime.advance_to(crate::manual_runtime::ms(millis)) {
         result.unwrap();
     }
 }

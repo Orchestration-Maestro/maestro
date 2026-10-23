@@ -1,8 +1,20 @@
 //! Recorded branch scenarios.
+#![cfg_attr(
+    target_arch = "wasm32",
+    allow(
+        dead_code,
+        reason = "Only the native collection and generation rows read these corpus members."
+    )
+)]
+use maestro_session::prepare_branch_entries;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_session::{SessionManager, collect_entries_for_branch_summary, prepare_branch_entries};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_session::{SessionManager, collect_entries_for_branch_summary};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::Value;
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::json;
 /// Complete consumed fixture.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,40 +47,60 @@ struct Row {
 fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../../fixtures/branch_summary.json")).unwrap()
 }
-/// Run every row belonging to one public witness.
-pub fn group(name: &str) {
+/// Every row of one public witness, after the canonical-input sign observation.
+fn rows(name: &str) -> Vec<Row> {
     let rows: Vec<_> = corpus()
         .rows
         .into_iter()
         .filter(|row| row.test == name)
         .collect();
     assert!(!rows.is_empty());
-    for row in rows {
+    for row in &rows {
         if row.id == "untrimmed-canonical-input" {
             let zero = row.args["entries"][1]["message"]["content"][1]["arguments"]["n"]
                 .as_f64()
                 .unwrap();
             assert!(zero == 0.0 && zero.is_sign_negative());
         }
+    }
+    rows
+}
+
+/// Prepare one recorded row through the pure preparation operation.
+fn prepare(row: &Row) {
+    let result = prepare_branch_entries(
+        row.args["entries"].as_array().unwrap(),
+        row.args.get("budget").and_then(Value::as_f64),
+    );
+    compare(
+        result.map(|value| serde_json::to_value(value).unwrap()),
+        row,
+    );
+    assert!(row.calls.is_empty());
+}
+
+/// Run every preparation row of one public witness.
+pub fn prepare_group(name: &str) {
+    for row in rows(name) {
+        assert_eq!(row.operation, "prepare");
+        prepare(&row);
+    }
+}
+
+/// Run every row belonging to one public witness.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn group(name: &str) {
+    for row in rows(name) {
         match row.operation.as_str() {
             "collect" => collect(&row),
-            "prepare" => {
-                let result = prepare_branch_entries(
-                    row.args["entries"].as_array().unwrap(),
-                    row.args.get("budget").and_then(Value::as_f64),
-                );
-                compare(
-                    result.map(|value| serde_json::to_value(value).unwrap()),
-                    &row,
-                );
-                assert!(row.calls.is_empty());
-            }
+            "prepare" => prepare(&row),
             "generate" => generation::run(&row),
             _ => panic!("unknown operation"),
         }
     }
 }
 /// Load real history and compare borrowed collection identities and retained state.
+#[cfg(not(target_arch = "wasm32"))]
 fn collect(row: &Row) {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/history.jsonl", scratch.path().to_str().unwrap());
@@ -123,6 +155,7 @@ fn compare<E: std::fmt::Debug>(actual: Result<Value, E>, row: &Row) {
 }
 
 /// Controlled generation and retained completion.
+#[cfg(not(target_arch = "wasm32"))]
 mod generation;
 
 /// Controlled ownership observations.
@@ -137,6 +170,7 @@ struct Lifetime {
     result: Value,
 }
 /// Complete a pending producer after releasing all caller inputs.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn lifetime() {
     generation::lifetime();
 }

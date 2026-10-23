@@ -1,23 +1,27 @@
 //! Shared display operations: escape removal, binary-output cleaning, string selection,
 //! path abbreviation, key hints and result text.
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 
-use crate::display_support;
+use crate::display_cases::{cases, search_cases, search_keys};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::display_support::{Env, bind};
+use maestro_tools::output::render_utils::{normalize_display_text, replace_tabs, str, strip_ansi};
+use maestro_tools::utils::shell::sanitize_binary_output;
+use maestro_tui::{TruncateOptions, truncate_to_width, visible_width};
+use serde_json::json;
 
-use display_support::{Env, bind, cases};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_agent::AgentToolResult;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::UserBlock;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_tools::{
     key_hint, key_text,
-    output::render_utils::{
-        get_text_output, normalize_display_text, replace_tabs, shorten_path, str, strip_ansi,
-    },
+    output::render_utils::{get_text_output, shorten_path},
     raw_key_hint,
-    utils::shell::sanitize_binary_output,
 };
-use maestro_tui::{TruncateOptions, truncate_to_width, visible_width};
-use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::Value;
 
 const STRIP: &str = "display_stripping_matches_complete_escape_sequences";
 
@@ -68,6 +72,7 @@ fn display_literal_transforms_preserve_other_whitespace() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn display_paths_abbreviate_only_home_and_descendants() {
     let home = maestro_tools::expand_path("~").unwrap();
@@ -84,6 +89,7 @@ fn display_paths_abbreviate_only_home_and_descendants() {
     assert_eq!(shorten_path(None).unwrap(), "");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn key_hints_use_current_bindings_order_and_separate_styles() {
     for case in cases("key_hints_use_current_bindings_order_and_separate_styles") {
@@ -118,6 +124,7 @@ fn display_width_cases_use_shared_toolkit_boundaries() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn display_output_handles_absence_and_orders_content_by_kind() {
     let env = Env::new(0);
@@ -202,7 +209,6 @@ fn borrowed_result_view_preserves_termination_hint() {
 
 #[test]
 fn search_corpus_loading_preserves_validation_and_palette() {
-    use display_support::{search_cases, search_keys};
     let keys = json!(["z", "a", "c", "d", "e", "f", "g"]);
     let first =
         json!({"test":"selected","id":"first","op":"call","input":{"n":2},"expected":"one"});

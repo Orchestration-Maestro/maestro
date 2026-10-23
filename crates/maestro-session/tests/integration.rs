@@ -22,7 +22,6 @@ mod summary_text;
 /// Recorded corpus support shared by the test modules.
 mod support {
     /// Branch scenarios.
-    #[cfg(not(target_arch = "wasm32"))]
     pub mod branch_summary;
     /// Compaction corpus consumer.
     pub mod compaction_cases;

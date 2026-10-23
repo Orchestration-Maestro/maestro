@@ -78,7 +78,6 @@ use maestro_app::browser::{
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_arch = "wasm32"))]
 use serde_json::Value;
-#[cfg(not(target_arch = "wasm32"))]
 /// Open custom record for persisted application messages.
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Serialize, Deserialize)]
@@ -95,15 +94,15 @@ impl CustomAgentMessages for Open {
         &self.role
     }
 }
-#[cfg(not(target_arch = "wasm32"))]
 /// Load the strict recorded session envelope.
-#[cfg(not(target_arch = "wasm32"))]
-fn session_rows(name: &str) -> Vec<storage::Row> {
+fn session_rows(name: &str) -> Vec<crate::support::browser_storage_records::Row> {
+    use serde::Deserialize;
+
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Corpus {
         clock: Vec<String>,
-        rows: Vec<storage::Row>,
+        rows: Vec<crate::support::browser_storage_records::Row>,
     }
     let corpus: Corpus =
         serde_json::from_str(include_str!("fixtures/browser_sessions.json")).unwrap();
@@ -115,7 +114,6 @@ fn session_rows(name: &str) -> Vec<storage::Row> {
 }
 #[cfg(not(target_arch = "wasm32"))]
 use storage::provider_equal as records_equal;
-#[cfg(not(target_arch = "wasm32"))]
 /// Bound adapter initialized from this case's recorded inputs.
 #[cfg(not(target_arch = "wasm32"))]
 fn setup(row: &storage::Row) -> (std::rc::Rc<SessionsStore>, std::rc::Rc<storage::Backend>) {
@@ -136,7 +134,6 @@ fn setup(row: &storage::Row) -> (std::rc::Rc<SessionsStore>, std::rc::Rc<storage
     store.set_backend(backend.clone());
     (store, backend)
 }
-#[cfg(not(target_arch = "wasm32"))]
 /// Observe the original cause, transcript and committed records after an operation.
 #[cfg(not(target_arch = "wasm32"))]
 fn observation<T: Serialize>(result: std::io::Result<T>, backend: &storage::Backend) -> Value {
@@ -428,14 +425,14 @@ fn latest_session_propagates_index_failure() {
     latest("latest_session_propagates_index_failure");
 }
 
+use maestro_app::browser::storage::get_app_storage;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::storage::{
     AppStorage, CustomProvidersStore, ProviderKeysStore, SettingsStore, StorageBackend,
-    get_app_storage, set_app_storage,
+    set_app_storage,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use std::rc::Rc;
-#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn app_storage_reports_uninitialized_access() {
     let row = session_rows("app_storage_reports_uninitialized_access").remove(0);

@@ -96,8 +96,12 @@ records owned by their readers. A test that needs a Tokio runtime, a checked
 child process, a disposable directory or a repository file read at run time is
 native-only: the browser target has no Tokio runtime, no filesystem and no test
 binary run, so these tests never execute there. Such a module carries
-`#![cfg(not(target_arch = "wasm32"))]`. Where a file mixes both kinds, only its
-native items are conditioned and the portable witnesses keep compiling. A corpus
+`#![cfg(not(target_arch = "wasm32"))]`. Classify each witness by the operation it
+reaches, not by its file's imports: ungate it, build the browser target and read
+what the compiler names. A module-wide condition may cover only native items,
+so where a file mixes both kinds only its native items are conditioned and the
+portable witnesses keep compiling; a shared support module whose records both
+targets read moves its portable slice into its own module. A corpus
 whose readers differ per target keeps one fixture and record set per reader
 group, so a portable reader never parses a file whose members only native
 readers consume. An isolation guard that only reports whether a child was

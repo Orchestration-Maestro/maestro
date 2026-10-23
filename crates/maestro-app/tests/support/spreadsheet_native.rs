@@ -1,7 +1,6 @@
 //! Native spreadsheet recordings: attachment calls, retained workbook projections and
 //! repository worksheet bytes.
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 use super::spreadsheet::Cell;
 use serde::Deserialize;
 use serde_json::Value;

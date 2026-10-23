@@ -65,6 +65,14 @@ use display_support::manual_runtime;
 mod recording_terminal;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[path = "../../maestro-tools/tests/display_cases.rs"]
+#[allow(
+    dead_code,
+    reason = "This program uses part of the tools display cases."
+)]
+mod display_cases;
+
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../../maestro-tools/tests/display_support/mod.rs"]
 #[allow(
     dead_code,

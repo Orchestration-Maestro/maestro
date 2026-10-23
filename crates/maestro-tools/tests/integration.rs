@@ -10,6 +10,7 @@ mod command_execution;
 mod diff_rendering;
 mod diff_support;
 mod direct_shell_execution;
+mod display_cases;
 mod display_helpers;
 mod display_support;
 mod edit_execution;
