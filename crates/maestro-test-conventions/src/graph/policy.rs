@@ -48,7 +48,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-json",
             "maestro-text",
-            "maestro-resources",
         ],
     ),
     // Common text operations include CSS string serialization for brand and application callers.

@@ -16,7 +16,6 @@ maestro-path = { path = "../maestro-path" }
 serde.workspace = true
 serde_json.workspace = true
 maestro-settings = { path = "../maestro-settings" }
-maestro-resources = { path = "../maestro-resources" }
 tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 time = { version = "=0.3.55", features = ["formatting"] }
 maestro-detection = { path = "../maestro-detection" }
