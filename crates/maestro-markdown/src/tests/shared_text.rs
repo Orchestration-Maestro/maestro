@@ -172,8 +172,7 @@ fn segmented_quote_body_keeps_one_atomic_list_projection() {
 
 #[test]
 fn flat_container_text_keeps_logarithmic_storage_depth() {
-    // Public list parsing still performs per-line setext suffix recognition.
-    for lines in [2_000, 4_000] {
+    for lines in [2_000, 4_000, 8_000, 16_000] {
         let source = "- a\n".to_owned() + &"  a\n".repeat(lines);
         let document = parse(source.clone());
         assert_eq!(document.nodes[0].authored.to_owned_string(), source);
