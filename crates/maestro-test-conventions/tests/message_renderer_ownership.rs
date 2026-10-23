@@ -3,21 +3,7 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
-use support::Workspace;
-
-/// Writes one chat production source and returns its path.
-fn chat_source(workspace: &Workspace, name: &str, contents: &str) -> std::path::PathBuf {
-    let path = workspace
-        .root
-        .path()
-        .join("crates/maestro-chat/src")
-        .join(name);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).unwrap();
-    }
-    std::fs::write(&path, contents).unwrap();
-    path
-}
+use support::{Workspace, source};
 
 /// A chat workspace with the owner crate and its required edges.
 fn workspace() -> Workspace {
@@ -144,7 +130,7 @@ fn message_renderer_owner_rejects_raw_chat_bypasses() {
     let workspace = workspace();
     let mut accepted = Vec::new();
     for (name, contents, expected) in BYPASSES {
-        let path = chat_source(&workspace, name, contents);
+        let path = source(&workspace, "maestro-chat", &format!("src/{name}"), contents);
         match check_workspace(workspace.root.path()) {
             Ok(()) => accepted.push(*name),
             Err(error) => {
@@ -164,38 +150,20 @@ fn message_renderer_owner_rejects_raw_chat_bypasses() {
     assert!(accepted.is_empty(), "accepted bypasses: {accepted:?}");
 }
 
-/// Writes one extensions production source and returns its path.
-fn owner_source(workspace: &Workspace, name: &str, contents: &str) -> std::path::PathBuf {
-    let path = workspace
-        .root
-        .path()
-        .join("crates/maestro-extensions/src")
-        .join(name);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).unwrap();
-    }
-    std::fs::write(&path, contents).unwrap();
-    path
-}
-
 #[test]
 fn message_renderer_owner_requires_one_declaration_in_its_owner_file() {
     let workspace = workspace();
-    let owner = workspace
-        .root
-        .path()
-        .join("crates/maestro-extensions/src/types");
-    std::fs::create_dir_all(&owner).unwrap();
-    let declaration = owner.join("renderers.rs");
-    std::fs::write(
-        &declaration,
-        "//! Renderers.\n/// Record.\npub struct MessageRendererCall<T = u8>(T);\n",
-    )
-    .unwrap();
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    let nested = owner_source(
+    let declaration = source(
         &workspace,
-        "nested/types/renderers.rs",
+        "maestro-extensions",
+        "src/types/renderers.rs",
+        "//! Renderers.\n/// Record.\npub struct MessageRendererCall<T = u8>(T);\n",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    let nested = source(
+        &workspace,
+        "maestro-extensions",
+        "src/nested/types/renderers.rs",
         "//! Nested.\n/// Record.\npub struct MessageRendererCall;\n",
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
@@ -221,7 +189,7 @@ fn message_renderer_owner_requires_one_declaration_in_its_owner_file() {
 fn message_renderer_owner_accepts_projected_calls_and_test_scopes() {
     let workspace = workspace();
     for (name, contents) in ACCEPTED {
-        let path = chat_source(&workspace, name, contents);
+        let path = source(&workspace, "maestro-chat", &format!("src/{name}"), contents);
         assert_eq!(
             check_workspace(workspace.root.path()),
             Ok(()),
@@ -230,24 +198,19 @@ fn message_renderer_owner_accepts_projected_calls_and_test_scopes() {
         );
         std::fs::remove_file(path).unwrap();
     }
-    let owner = workspace
-        .root
-        .path()
-        .join("crates/maestro-extensions/src/types");
-    std::fs::create_dir_all(&owner).unwrap();
-    let declaration = owner.join("renderers.rs");
-    std::fs::write(
-        &declaration,
+    source(
+        &workspace,
+        "maestro-extensions",
+        "src/types/renderers.rs",
         "//! Renderers.\n/// Record.\npub struct MessageRendererCall<T = u8>(T);\n",
-    )
-    .unwrap();
+    );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    let duplicate = owner.join("duplicate.rs");
-    std::fs::write(
-        &duplicate,
+    source(
+        &workspace,
+        "maestro-extensions",
+        "src/types/duplicate.rs",
         "//! Duplicate.\n/// Record.\npub struct MessageRendererCall;\n",
-    )
-    .unwrap();
+    );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains("duplicate MessageRendererCall declaration"),
