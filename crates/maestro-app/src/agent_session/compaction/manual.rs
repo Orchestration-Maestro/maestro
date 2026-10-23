@@ -14,8 +14,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ///
     /// # Errors
     /// Returns `Already compacted` or `Nothing to compact (session too small)` when the branch
-    /// cannot be cut, `Compaction cancelled` when a handler or caller stopped it, and the
-    /// authentication or summarizer failure otherwise.
+    /// cannot be cut, `Compaction cancelled` when a handler or caller stopped it, the
+    /// authentication or summarizer failure otherwise, or the failure when the compaction's
+    /// task ended before it did.
     pub async fn compact(
         self: &Rc<Self>,
         custom_instructions: Option<&str>,
