@@ -12,6 +12,7 @@ use maestro_models::{DiagnosticErrorInfo, Local};
 use maestro_session::{Presence, messages::CustomAgentMessages};
 use maestro_settings::SettingsManager;
 use maestro_tools::{ToolsManager, local::ToolDef};
+use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
@@ -112,7 +113,7 @@ async fn after_tool_call(
 /// # Errors
 /// Returns an override tool's description failure.
 pub(super) fn base_tool_definitions(
-    settings: &SettingsManager,
+    settings: &RefCell<SettingsManager>,
     cwd: &str,
     bin_dir: &str,
     tools_manager: &Arc<ToolsManager>,
@@ -122,13 +123,14 @@ pub(super) fn base_tool_definitions(
         return tools
             .iter()
             .map(|(name, tool)| {
-                let definition = maestro_tools::local::create_tool_definition_from_agent_tool(
-                    copy_tool(&read(tool)),
-                )?;
+                let copied = copy_tool(&read(tool));
+                let definition =
+                    maestro_tools::local::create_tool_definition_from_agent_tool(copied)?;
                 Ok((name.clone(), retain(definition)))
             })
             .collect();
     }
+    let settings = settings.borrow();
     let options = maestro_tools::local::ToolsOptions {
         read: maestro_tools::ReadToolOptions {
             auto_resize_images: Some(settings.get_image_auto_resize()),
@@ -141,6 +143,7 @@ pub(super) fn base_tool_definitions(
         },
         ..maestro_tools::local::ToolsOptions::default()
     };
+    drop(settings);
     let definitions = maestro_tools::local::create_all_tool_definitions(
         cwd.to_owned(),
         options,

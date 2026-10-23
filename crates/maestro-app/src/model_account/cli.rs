@@ -1,6 +1,5 @@
 //! The standalone account file: stored credentials by provider, as one JSON object.
-use indexmap::IndexMap;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 /// Why an account file was not saved.
 #[derive(Debug)]
@@ -34,23 +33,24 @@ impl std::error::Error for AccountFileError {
 /// The stored credentials of the account file at `path`, by provider, in stored order; a
 /// missing, unreadable or unparsable file, or one whose root is not an object, gives none.
 #[must_use]
-pub fn load_auth(path: &str) -> IndexMap<String, Value> {
+pub fn load_auth(path: &str) -> Map<String, Value> {
     match stored(path) {
-        Some(Value::Object(members)) => members.into_iter().collect(),
-        _ => IndexMap::new(),
+        Some(Value::Object(members)) => members,
+        _ => Map::new(),
     }
 }
 
-/// Writes `auth` to the account file at `path` as two-space JSON with no final newline.
+/// Writes `auth` to the account file at `path` as two-space JSON with no final newline, in
+/// the canonical member order and number spelling.
 ///
 /// # Errors
 /// Returns [`AccountFileError::NotAnObject`] without writing when the file holds valid JSON
 /// whose root is not an object, and the write failure otherwise.
-pub fn save_auth(path: &str, auth: &IndexMap<String, Value>) -> Result<(), AccountFileError> {
+pub fn save_auth(path: &str, auth: &Map<String, Value>) -> Result<(), AccountFileError> {
     if stored(path).is_some_and(|root| !root.is_object()) {
         return Err(AccountFileError::NotAnObject);
     }
-    let text = serde_json::to_string_pretty(auth)
+    let text = maestro_json::pretty_object(auth)
         .map_err(|error| AccountFileError::Write(std::io::Error::other(error)))?;
     std::fs::write(path, text).map_err(AccountFileError::Write)
 }

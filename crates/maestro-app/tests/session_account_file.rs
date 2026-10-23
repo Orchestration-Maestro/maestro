@@ -3,9 +3,8 @@
 //! failures, compared with the recorded account cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::corpus;
-use indexmap::IndexMap;
 use maestro_app::model_account::cli::{AccountFileError, load_auth, save_auth};
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
 /// The recorded account case `name`.
 fn expected(name: &str) -> Value {
@@ -17,7 +16,7 @@ fn expected(name: &str) -> Value {
 fn run(
     seed: Option<&str>,
 ) -> (
-    IndexMap<String, Value>,
+    Map<String, Value>,
     Result<(), AccountFileError>,
     Option<String>,
 ) {
@@ -77,6 +76,24 @@ fn writes_two_space_json_without_a_trailing_newline() {
 }
 
 #[test]
+fn writes_integral_expiries_as_integers() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/auth.json", scratch.path().display());
+    std::fs::write(&path, r#"{"gamma": {"type": "oauth"}}"#).unwrap();
+    let mut auth = load_auth(&path);
+    let expires = 1_700_000_000_000.0_f64;
+    auth.insert(
+        "alpha".into(),
+        json!({"type": "oauth", "refresh": "r", "expires": expires}),
+    );
+    save_auth(&path, &auth).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        "{\n  \"gamma\": {\n    \"type\": \"oauth\"\n  },\n  \"alpha\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"r\",\n    \"expires\": 1700000000000\n  }\n}"
+    );
+}
+
+#[test]
 fn refuses_a_non_object_root_without_overwriting_it() {
     for (name, seed) in [
         ("array_root", "[\n  {\n    \"type\": \"oauth\"\n  }\n]"),
@@ -104,7 +121,7 @@ fn propagates_write_failures() {
     let Some(_restore) = maestro_test_directory::deny(scratch.path(), 0o500).unwrap() else {
         return;
     };
-    let auth = IndexMap::from([("alpha".to_owned(), json!({"type": "oauth"}))]);
+    let auth = Map::from_iter([("alpha".to_owned(), json!({"type": "oauth"}))]);
     let saved = save_auth(&format!("{root}/auth.json"), &auth);
     assert!(
         matches!(&saved, Err(AccountFileError::Write(error)) if error.kind() == std::io::ErrorKind::PermissionDenied),

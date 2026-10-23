@@ -78,8 +78,9 @@ turn and waits for the agent to settle.
 
 A prompt returns after its run and, when a retry is in flight, after the retry
 and the agent settle. A successful response after retries announces
-`auto_retry_end` with success `true`. Dropping the prompt never aborts the
-retry. `is_retrying()` reports a retry in flight and
+`auto_retry_end` with success `true`; its listeners still read the completed
+attempt from `retry_attempt()`, which returns to 0 afterwards. Dropping the
+prompt never aborts the retry. `is_retrying()` reports a retry in flight and
 `retry_attempt()` the attempts it has made. `auto_retry_enabled()`,
 `set_auto_retry_enabled`, `auto_compaction_enabled()` and
 `set_auto_compaction_enabled` read and write the saved preferences.

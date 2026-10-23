@@ -15,8 +15,8 @@ use maestro_app::{
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{
-    ExtensionFactory, ForkPosition, LoadExtensionsResult, SessionBeforeSwitchEvent,
-    SessionBeforeSwitchResult, SessionShutdownEvent,
+    ExtensionFactory, ForkPosition, LoadExtensionsResult, MessageEndEvent, MessageEndEventResult,
+    NativeAgentMessage, SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionShutdownEvent,
 };
 use maestro_models::Local;
 use maestro_session::session_manager::ReadonlySessionManager;
@@ -166,15 +166,20 @@ fn normalized(h: &Harness, value: &Value, files: &[(String, &str)]) -> Value {
 fn stored_elsewhere(root: &str, sessions: &str) -> SessionManager {
     let gone = format!("{root}/gone");
     std::fs::create_dir_all(&gone).unwrap();
-    let mut manager =
-        SessionManager::create(&gone, Some(&format!("{root}/{sessions}")), root).unwrap();
+    let manager = stored_in(&gone, &format!("{root}/{sessions}"), root);
+    std::fs::remove_dir_all(&gone).unwrap();
+    manager
+}
+
+/// A session stored in `sessions` for `cwd`, holding one exchange.
+fn stored_in(cwd: &str, sessions: &str, root: &str) -> SessionManager {
+    let mut manager = SessionManager::create(cwd, Some(sessions), root).unwrap();
     manager
         .append_message(json!({"role": "user", "content": "kept", "timestamp": 0}))
         .unwrap();
     manager
         .append_message(serde_json::to_value(answer("stored", None, None)).unwrap())
         .unwrap();
-    std::fs::remove_dir_all(&gone).unwrap();
     manager
 }
 
@@ -255,17 +260,12 @@ fn replaces_the_session_and_rebinds_before_with_session() {
         let order = Rc::clone(&recorded.order);
         let options = NewSessionCommandOptions {
             with_session: Some(Rc::new(move |context| {
-                drop(context.send_message(
-                    maestro_session::messages::CustomMessageInput {
-                        custom_type: "probe".into(),
-                        content: maestro_models::UserContent::Text("probe".into()),
-                        display: false,
-                        details: Presence::Missing,
-                    },
-                    None,
-                ));
-                order.borrow_mut().push("with_session:function".into());
-                Box::pin(std::future::ready(Ok(())))
+                let order = Rc::clone(&order);
+                Box::pin(async move {
+                    context.send_message(probe_message(), None).await?;
+                    order.borrow_mut().push("with_session:function".into());
+                    Ok(())
+                })
             })),
             ..NewSessionCommandOptions::default()
         };
@@ -276,7 +276,29 @@ fn replaces_the_session_and_rebinds_before_with_session() {
             json!(!Rc::ptr_eq(&first, &runtime.session())),
             expected["replaced"]
         );
+        assert_eq!(custom_types(&runtime.session()), ["probe"]);
     });
+}
+
+/// A hidden custom message of type `probe`.
+fn probe_message() -> maestro_session::messages::CustomMessageInput {
+    maestro_session::messages::CustomMessageInput {
+        custom_type: "probe".into(),
+        content: maestro_models::UserContent::Text("probe".into()),
+        display: false,
+        details: Presence::Missing,
+    }
+}
+
+/// The types of the custom messages `session` stored.
+fn custom_types(session: &maestro_app::AgentSession<Local>) -> Vec<Value> {
+    let manager = session.session_manager().borrow();
+    manager
+        .get_entries()
+        .into_iter()
+        .filter(|entry| entry["type"] == "custom_message")
+        .map(|entry| entry["customType"].clone())
+        .collect()
 }
 
 #[test]
@@ -380,6 +402,59 @@ fn rechecks_the_stored_working_directory_when_switching() {
             switched,
             Err(AgentSessionRuntimeError::MissingSessionCwd(_))
         ));
+    });
+}
+
+/// The file of a session stored beside the runtime's sessions in `cwd`.
+fn stored_file(h: &Harness, cwd: &str) -> String {
+    let root = h.scratch.path().display().to_string();
+    let manager = stored_in(cwd, &format!("{cwd}/sessions"), &root);
+    manager.get_session_file().unwrap().to_owned()
+}
+
+#[test]
+fn switches_to_a_stored_session_with_the_previous_file_in_its_start_event() {
+    on_task_set(|_| async {
+        let (h, runtime, recorded) = runtime_for("switch-stored", Vec::new()).await;
+        let previous = runtime.session().session_file().unwrap();
+        let cwd = runtime
+            .session()
+            .session_manager()
+            .borrow()
+            .get_cwd()
+            .to_owned();
+        let target = stored_file(&h, &cwd);
+        let outcome = runtime
+            .switch_session(&target, None, SwitchSessionOptions::default())
+            .await
+            .unwrap();
+        assert!(!outcome.cancelled);
+        assert_eq!(runtime.session().session_file().unwrap(), target);
+        assert_eq!(
+            recorded.factory_calls.borrow()[1]["session_start_event"],
+            json!({"type": "session_start", "reason": "resume", "previousSessionFile": previous})
+        );
+    });
+}
+
+#[test]
+fn reports_a_vetoed_switch_to_a_stored_session() {
+    on_task_set(|_| async {
+        let (h, runtime, recorded) = runtime_for("switch-vetoed", vec![(None, vetoing())]).await;
+        let first = runtime.session();
+        let cwd = first.session_manager().borrow().get_cwd().to_owned();
+        let target = stored_file(&h, &cwd);
+        let outcome = runtime
+            .switch_session(&target, None, SwitchSessionOptions::default())
+            .await
+            .unwrap();
+        assert!(outcome.cancelled);
+        assert!(Rc::ptr_eq(&first, &runtime.session()));
+        assert_eq!(
+            recorded.factory_calls.borrow().len(),
+            1,
+            "nothing was created"
+        );
     });
 }
 
@@ -548,5 +623,141 @@ fn shuts_down_with_quit_and_invalidates_before_dispose() {
             context.cwd().is_err(),
             "the disposed session's contexts are stale"
         );
+    });
+}
+
+/// An inline extension registering the `probe` tool, which counts its runs in `runs`, and
+/// rewriting each finished answer's total cost to 7.
+fn probing(runs: Rc<std::cell::Cell<usize>>) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let mut tool = crate::support::session_harness::tool_definition("probe", None, None);
+        let counted = Rc::clone(&runs);
+        tool.execute = Rc::new(move |_, _, _, _, _| {
+            counted.set(counted.get() + 1);
+            Box::pin(std::future::ready(Ok(maestro_agent::AgentToolResult {
+                content: Vec::new(),
+                details: None,
+                terminate: None,
+            })))
+        });
+        let registered = api.register_tool(tool).and_then(|()| {
+            api.on::<MessageEndEvent, MessageEndEventResult<NativeAgentMessage>>(
+                "message_end".into(),
+                Rc::new(|event, _| Box::pin(std::future::ready(Ok(costed(&event.message))))),
+            )
+        });
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// `message` with a total cost of 7 when it is an answer.
+fn costed(message: &NativeAgentMessage) -> Option<MessageEndEventResult<NativeAgentMessage>> {
+    let maestro_agent::AgentMessage::Assistant(answer) = message else {
+        return None;
+    };
+    let mut rewritten = answer.read().unwrap().clone();
+    rewritten.usage.cost.total = 7.0;
+    Some(MessageEndEventResult {
+        message: Presence::Present(maestro_agent::AgentMessage::Assistant(Arc::new(
+            std::sync::RwLock::new(rewritten),
+        ))),
+    })
+}
+
+/// A scripted answer calling the `probe` tool.
+fn probe_call() -> maestro_models::AssistantMessage {
+    let call = maestro_models::faux_tool_call(
+        "probe",
+        serde_json::Map::new(),
+        maestro_models::FauxToolCallOptions::default(),
+    );
+    maestro_models::faux_assistant_message(
+        maestro_models::FauxAssistantContent::Block(maestro_models::AssistantContent::ToolCall(
+            call,
+        )),
+        maestro_models::FauxAssistantMessageOptions {
+            stop_reason: Some(maestro_models::StopReason::ToolUse),
+            ..maestro_models::FauxAssistantMessageOptions::default()
+        },
+    )
+}
+
+/// The source paths of the `probe` tools `session` registers.
+fn probe_source(session: &maestro_app::AgentSession<Local>) -> Vec<String> {
+    session
+        .get_all_tools()
+        .into_iter()
+        .filter(|tool| tool.name == "probe")
+        .map(|tool| tool.source_info.path)
+        .collect()
+}
+
+/// The total cost each answer `session` stored carries.
+fn stored_costs(session: &maestro_app::AgentSession<Local>) -> Vec<Value> {
+    let manager = session.session_manager().borrow();
+    manager
+        .get_entries()
+        .into_iter()
+        .filter(|entry| entry["message"]["role"] == "assistant")
+        .map(|entry| entry["message"]["usage"]["cost"]["total"].clone())
+        .collect()
+}
+
+#[test]
+fn completes_a_tool_turn_then_reloads_and_replaces_with_fresh_contexts() {
+    on_task_set(|_| async {
+        let runs = Rc::new(std::cell::Cell::new(0));
+        let probe = probing(Rc::clone(&runs));
+        let (h, runtime, _recorded) = runtime_for("smoke", vec![(Some("<probe>"), probe)]).await;
+        let session = runtime.session();
+        drop(script_responses(
+            &h,
+            vec![probe_call(), answer("probed", None, None)],
+        ));
+        session
+            .prompt("use the probe", PromptOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(runs.get(), 1, "the tool turn ran the tool");
+        assert_eq!(stored_costs(&session), [json!(7.0), json!(7.0)]);
+        assert!((session.get_session_stats().unwrap().cost - 14.0).abs() < f64::EPSILON);
+
+        let before_reload = session.extension_runner().create_context();
+        session.reload().await.unwrap();
+        assert_eq!(
+            probe_source(&session),
+            ["<probe>"],
+            "the reload kept the inline tool"
+        );
+        assert!(
+            session
+                .get_active_tool_names()
+                .contains(&"probe".to_owned())
+        );
+        assert_eq!(
+            before_reload.cwd().unwrap(),
+            session.session_manager().borrow().get_cwd()
+        );
+        let before_replacement = session.extension_runner().create_context();
+
+        let sent = Rc::new(std::cell::Cell::new(false));
+        let marked = Rc::clone(&sent);
+        let options = NewSessionCommandOptions {
+            with_session: Some(Rc::new(move |context| {
+                let marked = Rc::clone(&marked);
+                Box::pin(async move {
+                    context.send_message(probe_message(), None).await?;
+                    marked.set(true);
+                    Ok(())
+                })
+            })),
+            ..NewSessionCommandOptions::default()
+        };
+        runtime.new_session(options).await.unwrap();
+        assert!(sent.get(), "the fresh context sent its message");
+        assert_eq!(custom_types(&runtime.session()), ["probe"]);
+        let stale = before_replacement.cwd().unwrap_err().to_string();
+        assert!(stale.starts_with("This extension ctx is stale"), "{stale}");
+        assert_eq!(probe_source(&runtime.session()), ["<probe>"]);
     });
 }

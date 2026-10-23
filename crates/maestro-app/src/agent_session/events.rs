@@ -101,7 +101,8 @@ impl AgentSession<Local> {
         };
         if let Some(user) = started_user {
             self.clear_overflow_recovery_attempt();
-            self.remove_delivered_text(&user_message_text(&read(&user)));
+            let text = user_message_text(&read(&user));
+            self.remove_delivered_text(&text);
         }
         self.emit_extension_event(event).await?;
         self.emit(&AgentSessionEvent::Agent(Arc::clone(event)));
@@ -203,9 +204,6 @@ impl AgentSession<Local> {
             let mut state = self.state.borrow_mut();
             state.last_assistant_message = Some(Arc::clone(response));
             let attempt = state.retry_attempt;
-            if !failed && attempt > 0 {
-                state.retry_attempt = 0;
-            }
             (!failed && attempt > 0).then_some(attempt)
         };
         if let Some(attempt) = ended_retry {
@@ -214,6 +212,7 @@ impl AgentSession<Local> {
                 attempt,
                 final_error: None,
             });
+            self.state.borrow_mut().retry_attempt = 0;
         }
     }
 
@@ -261,10 +260,10 @@ impl AgentSession<Local> {
                     message: NativeAgentMessage::Assistant(message),
                     tool_results,
                 };
-                let result = runner.emit(&mut turn).await;
+                runner.emit(&mut turn).await.map_err(thrown)?;
                 let mut state = self.state.borrow_mut();
                 state.turn_index = state.turn_index.saturating_add(1);
-                result.map(drop).map_err(thrown)
+                Ok(())
             }
             other => emit_untracked_event(&runner, other).await,
         }

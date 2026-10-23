@@ -315,6 +315,56 @@ fn increments_the_turn_index_across_turns() {
 }
 
 #[test]
+fn keeps_the_turn_index_when_the_turn_end_emission_fails() {
+    on_task_set(|_| async {
+        let starts = Rc::new(RefCell::new(Vec::new()));
+        let seen = Rc::clone(&starts);
+        let start = handling::<TurnStartEvent, ()>("turn_start", move |event| {
+            seen.borrow_mut().push(event.turn_index);
+            Ok(None)
+        });
+        let failing = handling::<TurnEndEvent, ()>("turn_end", |_| Err("turn end failed"));
+        let responses = vec![echo_call(), Scripted::text("done")];
+        let h = echo_session(vec![start, failing], responses).await;
+        let _unsubscribe = h
+            .runner()
+            .on_error(Rc::new(|_| Err("error listener failed".into())));
+        prompt(&h, "use the tool").await;
+        assert_eq!(*starts.borrow(), [0.0, 0.0]);
+    });
+}
+
+#[test]
+fn keeps_the_retry_attempt_while_successful_retry_listeners_run() {
+    on_task_set(|_| async {
+        let failure = Scripted {
+            error: Some("503 service unavailable".into()),
+            ..Scripted::default()
+        };
+        let h = harness(HarnessOptions {
+            responses: Some(vec![failure, Scripted::text("recovered")]),
+            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let seen = Rc::new(RefCell::new(Vec::new()));
+        let (session, observed) = (Rc::downgrade(&h.session), Rc::clone(&seen));
+        drop(h.session.subscribe(Rc::new(move |event| {
+            if let AgentSessionEvent::AutoRetryEnd { attempt, .. } = event
+                && let Some(session) = session.upgrade()
+            {
+                observed
+                    .borrow_mut()
+                    .push((*attempt, session.retry_attempt()));
+            }
+        })));
+        prompt(&h, "question").await;
+        assert_eq!(*seen.borrow(), [(1, 1)]);
+        assert_eq!(h.session.retry_attempt(), 0);
+    });
+}
+
+#[test]
 fn reports_extension_handler_failures_without_stopping_the_queue() {
     on_task_set(|_| async {
         let failing = handling::<TurnStartEvent, ()>("turn_start", |_| Err("turn handler failed"));

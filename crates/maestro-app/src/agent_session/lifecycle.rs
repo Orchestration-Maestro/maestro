@@ -80,7 +80,7 @@ impl AgentSession<Local> {
         include_all_extension_tools: bool,
     ) -> Result<(), DiagnosticErrorInfo> {
         let base = super::tool_runtime::base_tool_definitions(
-            &self.settings_manager.borrow(),
+            &self.settings_manager,
             &self.cwd,
             &self.bin_dir,
             &self.tools_manager,

@@ -465,6 +465,20 @@ fn binds_every_extension_capability() {
 }
 
 #[test]
+fn keeps_captured_contexts_usable_across_a_direct_reload() {
+    on_task_set(|_| async {
+        let (h, api) = kept_session().await;
+        let context = h.runner().create_context();
+        h.session.reload().await.unwrap();
+        assert_eq!(context.cwd().unwrap(), h.cwd);
+        assert_eq!(
+            api.get_active_tools().unwrap(),
+            h.session.get_active_tool_names()
+        );
+    });
+}
+
+#[test]
 fn routes_shutdown_requests_to_the_bound_handler() {
     on_task_set(|_| async {
         let (h, _api) = kept_session().await;
@@ -588,5 +602,55 @@ fn reload_keeps_extension_flag_values() {
         session.reload().await.unwrap();
         let values = session.extension_runner().get_flag_values();
         assert_eq!(values.get("verbose"), Some(&FlagValue::Boolean(true)));
+    });
+}
+
+/// What a live tool description could change while it resolved: its own tool, and the
+/// session settings once a session is supplied.
+type Changes = Rc<RefCell<Vec<(bool, Option<bool>)>>>;
+
+/// Where a test puts the session a callback reaches once it exists.
+type SessionSlot = Rc<RefCell<std::rc::Weak<maestro_app::AgentSession<Local>>>>;
+
+/// The echo tool, its description recording what it could change while resolving, and the
+/// slot the session goes into.
+fn self_updating_tools(
+    changes: &Changes,
+) -> (
+    indexmap::IndexMap<String, maestro_agent::SharedAgentTool<Local>>,
+    SessionSlot,
+) {
+    let tools = echo_tools(Rc::default());
+    let tool = Rc::downgrade(&tools["echo"]);
+    let session = SessionSlot::default();
+    let (changes, live) = (Rc::clone(changes), Rc::clone(&session));
+    tools["echo"].write().unwrap().description = Some(Rc::new(move || {
+        let tool_writable = tool.upgrade().unwrap().try_write().is_ok();
+        let settings_writable = live
+            .borrow()
+            .upgrade()
+            .map(|session| session.settings_manager().try_borrow_mut().is_ok());
+        changes
+            .borrow_mut()
+            .push((tool_writable, settings_writable));
+        Ok("Echo back".into())
+    }));
+    (tools, session)
+}
+
+#[test]
+fn resolves_tool_descriptions_with_no_guard_held() {
+    on_task_set(|_| async {
+        let changes = Changes::default();
+        let (tools, slot) = self_updating_tools(&changes);
+        let h = harness(HarnessOptions {
+            base_tools_override: Some(tools),
+            ..HarnessOptions::default()
+        })
+        .await;
+        assert_eq!(*changes.borrow(), [(true, None)]);
+        *slot.borrow_mut() = Rc::downgrade(&h.session);
+        h.session.reload().await.unwrap();
+        assert_eq!(*changes.borrow(), [(true, None), (true, Some(true))]);
     });
 }

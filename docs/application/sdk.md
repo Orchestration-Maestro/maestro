@@ -91,9 +91,9 @@ without `.ts` or `.js`, with its directory as their base.
 settings, resets the provider routes and reloads the resources. It then rebuilds
 the runtime with the captured flags and the active tools. Only when a binding is
 present does it send a fresh `session_start` with `reload` and discover
-resources again. `dispose` invalidates every extension context, stops agent
-delivery, drops every listener and releases the session's provider resources.
-It aborts nothing.
+resources again. Contexts captured before a reload stay usable. `dispose`
+invalidates every extension context, stops agent delivery, drops every listener
+and releases the session's provider resources. It aborts nothing.
 
 ## Replacing the session
 
@@ -128,6 +128,7 @@ file. A failure after the teardown restores nothing.
 `model_account::cli::load_auth` reads the account file at a path the caller
 chooses. A missing, unreadable or unparsable file, or one whose root is not an
 object, yields no entries. `save_auth` writes the entries as two-space JSON with
-no final newline. It refuses with `AccountFileError::NotAnObject`, leaving the
-file unchanged, when the stored root is valid JSON but not an object, and
-returns write failures as `AccountFileError::Write`.
+no final newline, and integral numbers without a fraction. It refuses with
+`AccountFileError::NotAnObject`, leaving the file unchanged, when the stored
+root is valid JSON but not an object, and returns write failures as
+`AccountFileError::Write`.
