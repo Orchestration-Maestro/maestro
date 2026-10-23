@@ -63,6 +63,37 @@ fn maestro_workspace_recipes_keep_phase_order() {
     ));
 }
 
+#[test]
+fn maestro_scoped_check_consumes_package_selection() {
+    let workspace = Workspace::new();
+    let result = workspace
+        .command("_check")
+        .args(["-p", "maestro-models", "-p", "maestro-agent"])
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+    );
+    fs::remove_file(workspace.path().join("log")).unwrap();
+    let result = workspace
+        .command("_check")
+        .args(["-p", "maestro-models"])
+        .env("MAESTRO_FAIL", "clippy")
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert_eq!(
+        workspace.log(),
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|--all-targets|--locked|--|-D|warnings\n"
+    );
+}
+
 /// Checks that test phases stop on failure.
 fn assert_test_phase_failures(workspace: &Workspace) {
     for (phase, expected) in [
@@ -761,7 +792,11 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
-    for owner in ["maestro-test-process", "maestro-test-directory"] {
+    for owner in [
+        "maestro-test-process",
+        "maestro-test-directory",
+        "maestro-path",
+    ] {
         let dependency = workspace.path().join("crates").join(owner);
         copy_tree(
             &source.join("..").join(owner).join("src"),

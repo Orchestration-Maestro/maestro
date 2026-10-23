@@ -32,11 +32,18 @@ Run `cargo hakari generate` after changing dependencies, their features or
 [development](docs/development.md#feature-unification)).
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
-The commit hook formats the code, re-stages the staged files and runs
-`just check`, then the full conventions suite when a staged path is under
-`crates/maestro-test-conventions/`; unformatted code is fixed, never rejected. It also rejects
+The commit hook formats the code, re-stages the staged files and names the
+selection, then runs the shared check recipe for the staged crates and every
+workspace crate that depends on them. A staged workspace-wide input runs the full
+workspace check instead: a manifest, the lockfile, `.cargo/`, the toolchain, the
+justfile, Clippy or mise settings, the hook configuration, the workspace
+inventory, CI files, root documentation or assets, or the conventions crate. The
+hook runs the full conventions suite when a staged path is under
+`crates/maestro-test-conventions/`, and the browser smoke check only when the
+selection compiles the browser entry. Unformatted code is fixed, never rejected. It also rejects
 merge-conflict markers and invalid TOML or YAML. Commit messages need a
-conventional header and every line must be at most 80 columns.
+conventional header and every line must be at most 80 columns. `just check` and
+shared CI stay the full workspace checks.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,

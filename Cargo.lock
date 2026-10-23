@@ -4523,6 +4523,7 @@ version = "0.1.0"
 dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
+ "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",
  "serde",
