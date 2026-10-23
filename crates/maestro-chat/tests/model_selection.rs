@@ -630,7 +630,7 @@ fn failing_registry(
     registry
         .register_provider(
             "maestro-unconfigured",
-            Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
+            SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
                 oauth: Some(SharedHandle::new(RejectingModels)),
                 models: Some(vec![
                     Descriptor {
@@ -780,14 +780,14 @@ impl maestro_app::OAuthProviderInterface for RejectingModels {
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
 fn rejecting_registry() -> maestro_app::ModelRegistry {
-    let registry = maestro_app::ModelRegistry::in_memory(Arc::new(
+    let registry = maestro_app::ModelRegistry::in_memory(SharedHandle::new(
         maestro_app::AuthStorage::in_memory(std::iter::empty().collect()),
     ))
     .unwrap();
     registry
         .register_provider(
             "maestro-refresh-failure",
-            Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
+            SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
                 oauth: Some(SharedHandle::new(RejectingModels)),
                 models: Some(vec![
                     Descriptor {

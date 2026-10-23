@@ -4,7 +4,7 @@ use maestro_catalog::{
     find_exact_model_reference_match, model_id_comparator, parse_model_pattern, resolve_cli_model,
 };
 use maestro_credentials::{AuthStorage, AuthStorageData};
-use maestro_models::Model;
+use maestro_models::{Model, SharedHandle};
 use serde::Deserialize;
 use std::sync::{Arc, RwLock};
 /// Shared descriptor identity.
@@ -72,8 +72,10 @@ fn optional_descriptor<'de, D: serde::Deserializer<'de>>(
 }
 /// Construct the real registry over controlled shared descriptors.
 pub fn registry(handles: &[Handle]) -> ModelRegistry {
-    let registry =
-        ModelRegistry::in_memory(Arc::new(AuthStorage::in_memory(AuthStorageData::new()))).unwrap();
+    let registry = ModelRegistry::in_memory(SharedHandle::new(AuthStorage::in_memory(
+        AuthStorageData::new(),
+    )))
+    .unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry
 }

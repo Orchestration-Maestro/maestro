@@ -16,7 +16,7 @@ use maestro_extensions::{
     ExtensionExecution, LoadExtensionsResult,
     types::{FlagType, FlagValue},
 };
-use maestro_models::Threaded;
+use maestro_models::{SharedHandle, Threaded};
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_settings::SettingsManager;
 use std::{cell::RefCell, collections::HashMap, io, rc::Rc, sync::Arc};
@@ -167,7 +167,7 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
     };
     let auth_storage = options
         .auth_storage
-        .unwrap_or_else(|| Arc::new(AuthStorage::create(&get_auth_path(&agent_dir))));
+        .unwrap_or_else(|| SharedHandle::new(AuthStorage::create(&get_auth_path(&agent_dir))));
     let settings_manager = options.settings_manager.unwrap_or_else(|| {
         Rc::new(RefCell::new(SettingsManager::create(
             &cwd,

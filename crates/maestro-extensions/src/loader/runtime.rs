@@ -41,10 +41,13 @@ pub(crate) struct BoundProviders<E: ExtensionExecution> {
 
 impl<E: ExtensionExecution> BoundProviders<E> {
     /// Registers through the bound operation, or through the catalog when absent.
+    ///
+    /// The configuration is the platform handle, retained as the browser's local owner or
+    /// the native shared one.
     pub(crate) fn register_provider(
         &self,
         name: String,
-        config: Arc<RwLock<ProviderConfig>>,
+        config: SharedHandle<RwLock<ProviderConfig>>,
     ) -> Result<(), EventError> {
         match &self.actions.register_provider {
             Some(register) => register(name, config),
@@ -85,14 +88,15 @@ impl<E: ExtensionExecution> ExtensionRuntime<E> {
     }
     /// Queues a registration before binding; afterwards registers it immediately.
     ///
-    /// `None` attributes a queued registration to `<unknown>`.
+    /// `None` attributes a queued registration to `<unknown>`. The configuration is the
+    /// platform handle, retained as the browser's local owner or the native shared one.
     ///
     /// # Errors
     /// Returns the bound operation's or the catalog's error after binding.
     pub fn register_provider(
         &self,
         name: String,
-        config: Arc<RwLock<ProviderConfig>>,
+        config: SharedHandle<RwLock<ProviderConfig>>,
         extension_path: Option<String>,
     ) -> Result<(), EventError> {
         let mut route = write(&self.providers);

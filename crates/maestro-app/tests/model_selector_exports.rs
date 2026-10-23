@@ -1,7 +1,8 @@
 //! Application paths retain their model-selection owners.
 use maestro_app::{
     AuthStorage, CatalogError, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput,
-    ProviderModelInput, ScopedModel, SettingsManager, model_id_comparator, models_are_equal,
+    ProviderModelInput, ScopedModel, SettingsManager, SharedHandle, model_id_comparator,
+    models_are_equal,
 };
 
 #[test]
@@ -12,9 +13,9 @@ fn application_exports_share_model_catalog_settings_and_locale_owners() {
     let _: Option<ProviderModelInput> = None;
     let _: Option<ScopedModel> = None;
     let _ = ProviderConfigInput::default();
-    let auth = std::sync::Arc::new(AuthStorage::in_memory(std::iter::empty().collect()));
+    let auth = SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect()));
     let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
-    assert!(std::sync::Arc::ptr_eq(registry.auth_storage(), &auth));
+    assert!(SharedHandle::ptr_eq(registry.auth_storage(), &auth));
     let model = registry.find("anthropic", "claude-sonnet-4-5").unwrap();
     assert!(std::sync::Arc::ptr_eq(
         &model,

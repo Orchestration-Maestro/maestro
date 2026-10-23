@@ -100,7 +100,7 @@ fn consumer_config(
     registry: &Arc<maestro_catalog::ModelRegistry>,
     original: &Arc<original_options::OptionsProvider>,
     events: &Arc<Mutex<Vec<&'static str>>>,
-) -> Arc<std::sync::RwLock<maestro_extensions::ProviderConfig>> {
+) -> SharedHandle<std::sync::RwLock<maestro_extensions::ProviderConfig>> {
     let config = tests::good("m");
     {
         let mut input = config.write().unwrap();
@@ -304,7 +304,7 @@ fn assert_descriptor(model: &Arc<std::sync::RwLock<Model>>) {
 
 fn request_variants(
     registry: &maestro_catalog::ModelRegistry,
-    config: &Arc<std::sync::RwLock<maestro_extensions::ProviderConfig>>,
+    config: &SharedHandle<std::sync::RwLock<maestro_extensions::ProviderConfig>>,
 ) {
     for (auth, maps) in [(false, false), (true, false), (false, true), (true, true)] {
         {

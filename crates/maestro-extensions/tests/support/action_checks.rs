@@ -4,6 +4,7 @@ use super::model_support::model;
 use super::*;
 use crate::runtime_support;
 use maestro_extensions::types::ExtensionErrorListener;
+use maestro_models::SharedHandle;
 use maestro_models::UserContent;
 use maestro_session::{
     Presence,
@@ -557,11 +558,13 @@ fn check_provider_mode((register_override, unregister_override): (bool, bool)) {
         let expected = config.clone();
         let overrides = ProviderActions {
             register_provider: register_override.then(|| {
-                Rc::new(move |name: String, config: Arc<RwLock<ProviderConfig>>| {
-                    assert!(Arc::ptr_eq(&config, &expected));
-                    registrations.borrow_mut().push(format!("register:{name}"));
-                    Ok(())
-                }) as maestro_extensions::types::RegisterProviderHandler<Local>
+                Rc::new(
+                    move |name: String, config: SharedHandle<RwLock<ProviderConfig>>| {
+                        assert!(SharedHandle::ptr_eq(&config, &expected));
+                        registrations.borrow_mut().push(format!("register:{name}"));
+                        Ok(())
+                    },
+                ) as maestro_extensions::types::RegisterProviderHandler<Local>
             }),
             unregister_provider: unregister_override.then(|| {
                 Rc::new(move |name| {
@@ -768,7 +771,7 @@ pub fn queue_edits() {
         let work = runtime.clone();
         let provider = ProviderActions::<Local> {
             register_provider: Some(Rc::new(
-                move |name: String, config: Arc<RwLock<ProviderConfig>>| {
+                move |name: String, config: SharedHandle<RwLock<ProviderConfig>>| {
                     seen.borrow_mut().push((
                         name.clone(),
                         config.read().unwrap().models.as_ref().unwrap()[0]
@@ -811,7 +814,11 @@ pub fn queue_edits() {
     }
 }
 
-fn apply_queue_edit(work: &ExtensionRuntime<Local>, later: &Arc<RwLock<ProviderConfig>>, edit: u8) {
+fn apply_queue_edit(
+    work: &ExtensionRuntime<Local>,
+    later: &SharedHandle<RwLock<ProviderConfig>>,
+    edit: u8,
+) {
     match edit {
         0 => later.write().unwrap().models.as_mut().unwrap()[0].id = "mutated".into(),
         1 => {
@@ -863,7 +870,7 @@ fn provider_immediate_failures() {
     assert_eq!(errors.get(), 0);
 }
 
-fn invalid_stream() -> Arc<RwLock<ProviderConfig>> {
+fn invalid_stream() -> SharedHandle<RwLock<ProviderConfig>> {
     let stream = good("m");
     {
         let mut c = stream.write().unwrap();

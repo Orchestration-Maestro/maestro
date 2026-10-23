@@ -42,12 +42,17 @@ impl Drop for CatalogProvider {
     }
 }
 /// Construct the actual public input, with no provider work during configuration.
-fn config(released: &Arc<AtomicUsize>) -> (Arc<RwLock<ProviderConfigInput>>, Arc<CatalogProvider>) {
+fn config(
+    released: &Arc<AtomicUsize>,
+) -> (
+    SharedHandle<RwLock<ProviderConfigInput>>,
+    Arc<CatalogProvider>,
+) {
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api = Some("catalog-affinity".into());
     let owner = Arc::new(CatalogProvider {
         options: original_options::OptionsProvider::default(),
-        config: Arc::downgrade(&config),
+        config: SharedHandle::downgrade(&config),
         released: released.clone(),
     });
     config.write().unwrap().stream_simple = Some(owner.clone());

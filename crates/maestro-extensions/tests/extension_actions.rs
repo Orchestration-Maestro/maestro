@@ -27,12 +27,12 @@ const NOT_INITIALIZED: &str =
     "Extension runtime not initialized. Action methods cannot be called during extension loading.";
 
 pub(crate) fn catalog() -> SharedHandle<ModelRegistry> {
-    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
+    let auth = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::default()));
     SharedHandle::new(ModelRegistry::in_memory(auth).unwrap())
 }
 
-pub(crate) fn good(id: &str) -> Arc<RwLock<ProviderConfig>> {
-    Arc::new(RwLock::new(ProviderConfig {
+pub(crate) fn good(id: &str) -> SharedHandle<RwLock<ProviderConfig>> {
+    SharedHandle::new(RwLock::new(ProviderConfig {
         base_url: Some("https://provider.test/v1".into()),
         api_key: Some("PROVIDER_TEST_KEY".into()),
         api: Some("openai-completions".into()),

@@ -4,8 +4,8 @@ use super::ExtensionExecution;
 pub use maestro_catalog::ProviderConfigInput as ProviderConfig;
 /// Configuration for a model within a provider.
 pub use maestro_catalog::ProviderModelInput as ProviderModelConfig;
-use maestro_models::{Execution, Threaded};
-use std::sync::{Arc, RwLock};
+use maestro_models::{Execution, SharedHandle, Threaded};
+use std::sync::RwLock;
 
 /// Registers a provider in place of the catalog.
 pub type RegisterProviderHandler<E = Threaded> =
@@ -28,8 +28,8 @@ pub struct ProviderActions<E: ExtensionExecution = Threaded> {
 pub struct PendingProviderRegistration {
     /// Provider name.
     pub name: String,
-    /// The registered configuration.
-    pub config: Arc<RwLock<ProviderConfig>>,
+    /// The registered configuration: the platform handle, browser-local or natively shared.
+    pub config: SharedHandle<RwLock<ProviderConfig>>,
     /// Path of the registering extension.
     pub extension_path: String,
 }

@@ -8,7 +8,7 @@ use crate::{
     CallbackEmitter, EventBus, EventError, EventTail,
     types::{ExtensionCommandContext, ExtensionContext, MessageRenderer},
 };
-use maestro_models::{Execution, Local, Threaded};
+use maestro_models::{Execution, Local, SharedHandle, Threaded};
 use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
 use maestro_resources::SlashCommandInfo;
 use maestro_session::messages::{CustomMessage, MessageRenderOptions};
@@ -123,8 +123,9 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
     type GetThinkingLevel: Fn() -> Result<ThinkingLevel, EventError> + ?Sized;
     /// Sets the thinking level.
     type SetThinkingLevel: Fn(ThinkingLevel) -> Result<(), EventError> + ?Sized;
-    /// Registers a provider.
-    type RegisterProvider: Fn(String, Arc<RwLock<ProviderConfig>>) -> Result<(), EventError>
+    /// Registers a provider; the configuration is the platform handle, browser-local or
+    /// natively shared.
+    type RegisterProvider: Fn(String, SharedHandle<RwLock<ProviderConfig>>) -> Result<(), EventError>
         + ?Sized;
     /// Unregisters a provider.
     type UnregisterProvider: Fn(String) -> Result<(), EventError> + ?Sized;
@@ -207,7 +208,7 @@ macro_rules! family {
             type SetModel = dyn Fn(Arc<RwLock<Model>>) -> Self::Future<'static, Result<bool, EventError>> $($bound)*;
             type GetThinkingLevel = dyn Fn() -> Result<ThinkingLevel, EventError> $($bound)*;
             type SetThinkingLevel = dyn Fn(ThinkingLevel) -> Result<(), EventError> $($bound)*;
-            type RegisterProvider = dyn Fn(String, Arc<RwLock<ProviderConfig>>) -> Result<(), EventError> $($bound)*;
+            type RegisterProvider = dyn Fn(String, SharedHandle<RwLock<ProviderConfig>>) -> Result<(), EventError> $($bound)*;
             type UnregisterProvider = dyn Fn(String) -> Result<(), EventError> $($bound)*;
             fn unbound_actions() -> ExtensionActions<Self> {
                 ExtensionActions {

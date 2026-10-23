@@ -7,7 +7,7 @@ use maestro_catalog::{
     model_id_comparator, resolve_model_scope, restore_model_from_session,
 };
 use maestro_credentials::{AuthStorage, AuthStorageData};
-use maestro_models::{Model, ModelThinkingLevel};
+use maestro_models::{Model, ModelThinkingLevel, SharedHandle};
 use serde::Deserialize;
 use std::{
     cell::RefCell,
@@ -152,7 +152,7 @@ impl ModelFileOperations for Json {
 }
 /// A real registry over the shared handles with presence-only credentials.
 pub fn registry(handles: &[Handle], authenticated: &[String]) -> ModelRegistry {
-    let storage = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
+    let storage = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()));
     for provider in authenticated {
         storage.set_runtime_api_key(provider, "present");
     }
@@ -179,7 +179,7 @@ fn registry_with_commands(
         })
         .collect();
     let text = serde_json::json!({ "providers": providers }).to_string();
-    let storage = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
+    let storage = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()));
     let registry = ModelRegistry::with_operations(storage, "<models>", Json(text)).unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry

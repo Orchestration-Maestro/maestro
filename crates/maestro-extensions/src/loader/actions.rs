@@ -3,7 +3,9 @@ use crate::{
     EventError, ExtensionExecution,
     types::{ExtensionAPI, ExtensionActions, ProviderConfig, read},
 };
-use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
+use maestro_models::{
+    Model, ModelThinkingLevel as ThinkingLevel, SharedHandle, ToolInfo, UserContent,
+};
 use maestro_resources::SlashCommandInfo;
 use maestro_session::messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions};
 #[cfg(not(target_arch = "wasm32"))]
@@ -144,12 +146,15 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     }
     /// Registers a provider attributed to this extension.
     ///
+    /// The configuration is the platform handle, retained as the browser's local owner or
+    /// the native shared one.
+    ///
     /// # Errors
     /// Returns the stale error, or the bound route's error after binding.
     pub fn register_provider(
         &self,
         name: String,
-        config: Arc<RwLock<ProviderConfig>>,
+        config: SharedHandle<RwLock<ProviderConfig>>,
     ) -> Result<(), EventError> {
         let owner = self.owner()?;
         let path = read(&owner).path.clone();

@@ -1,6 +1,7 @@
 //! Shared controlled and native catalog files.
 use maestro_catalog::{ModelFileOperations, ModelRegistry};
 use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_models::SharedHandle;
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -22,8 +23,8 @@ impl ModelFileOperations for Text {
 }
 /// Empty stored credentials.
 #[must_use]
-pub fn auth() -> Arc<AuthStorage> {
-    Arc::new(AuthStorage::in_memory(AuthStorageData::new()))
+pub fn auth() -> SharedHandle<AuthStorage> {
+    SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()))
 }
 /// Registry over controlled text.
 #[must_use]

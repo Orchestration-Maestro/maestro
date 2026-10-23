@@ -1,7 +1,8 @@
 #![cfg(test)]
 //! File loading through the public registry.
 use maestro_catalog::{ModelFileOperations, ModelRegistry};
-use maestro_models::{get_models, get_providers};
+use maestro_models::{SharedHandle, get_models, get_providers};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
 /// Adapter that rejects any unexpected read.
@@ -25,7 +26,7 @@ fn memory_and_missing_files_use_complete_offline_catalog() {
         ModelRegistry::with_operations(auth.clone(), "absent", Missing).unwrap(),
         ModelRegistry::with_operations(auth.clone(), "", Missing).unwrap(),
     ] {
-        assert!(Arc::ptr_eq(registry.auth_storage(), &auth));
+        assert!(SharedHandle::ptr_eq(registry.auth_storage(), &auth));
         assert_eq!(registry.get_error(), None);
         let all = registry.get_all();
         let actual: Vec<_> = all

@@ -3,6 +3,7 @@
 //! Public callback re-entry and phase-specific catalog observations.
 use crate::{dynamic, request_support, support};
 use maestro_catalog::ModelRegistry;
+use maestro_models::SharedHandle;
 use std::sync::{Arc, Mutex};
 
 #[test]
@@ -145,7 +146,7 @@ fn selected_transform_return_wins_over_reentrant_writes() {
         for model in config.write().unwrap().models.as_mut().unwrap() {
             model.name.clone_from(&model.id);
         }
-        let retained = Arc::downgrade(&config);
+        let retained = SharedHandle::downgrade(&config);
         let error = registry
             .register_provider("outer", config)
             .err()
@@ -321,7 +322,7 @@ fn refresh_stops_at_first_reentrant_transform_failure() {
         .auth_storage()
         .set("later", request_support::tokens(f64::MAX));
     let later = recording(&events, "later");
-    let retained = Arc::downgrade(&later);
+    let retained = SharedHandle::downgrade(&later);
     registry.register_provider("outer", outer).unwrap();
     registry.register_provider("later", later).unwrap();
     events.lock().unwrap().clear();
