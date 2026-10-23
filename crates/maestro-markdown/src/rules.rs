@@ -164,13 +164,15 @@ fn compile_item_stops(prefix: usize, literal_html: bool) -> ItemStops {
     } else {
         HTML_BEGIN
     };
-    let compile = |sources: &[&str]| {
-        let alternation = sources.join("|");
-        Regex::with_flags(&format!("^ {{0,{prefix}}}(?:{alternation})"), "i").ok()
-    };
+    // Case-insensitivity is only needed in the HTML openers, so it is scoped to that branch
+    // rather than paid on every rule the item admits.
+    let interrupts = format!(
+        "^ {{0,{prefix}}}(?:{FENCES_BEGIN}|{HEADING_BEGIN}|(?i:{html})|{NEXT_BULLET}|{HR_BEGIN})"
+    );
+    let lazy = format!("^ {{0,{prefix}}}(?:{FENCES_BEGIN}|{HEADING_BEGIN}|{HR_BEGIN})");
     ItemStops {
-        interrupts: compile(&[FENCES_BEGIN, HEADING_BEGIN, html, NEXT_BULLET, HR_BEGIN]),
-        lazy: compile(&[FENCES_BEGIN, HEADING_BEGIN, HR_BEGIN]),
+        interrupts: Regex::with_flags(&interrupts, "").ok(),
+        lazy: Regex::with_flags(&lazy, "").ok(),
     }
 }
 

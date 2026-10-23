@@ -246,6 +246,9 @@ impl ScopeSource {
 
     /// Replace native spelling units without rebuilding earlier transformation spans.
     pub(crate) fn replace(&self, from: &str, to: &str) -> Self {
+        if !self.text.contains(from) {
+            return self.clone();
+        }
         let mut output = Cursor::default();
         let mut start = 0;
         for (offset, _) in self.text.match_indices(from) {
