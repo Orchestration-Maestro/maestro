@@ -1108,8 +1108,8 @@ fn browser_author_preparation_is_route_local() {
         );
         let directory = browser.path(&format!("target/maestro-browser/.author/{route}"));
         retained.push((
-            directory.join("inputs/text.txt"),
-            fs::read(directory.join("inputs/text.txt")).unwrap(),
+            directory.join("inputs/brand.css"),
+            fs::read(directory.join("inputs/brand.css")).unwrap(),
         ));
         for (path, bytes) in &retained {
             assert_eq!(&fs::read(path).unwrap(), bytes);
@@ -1203,7 +1203,7 @@ fn assert_authored_watch_routes(
         }
         let (child, receive, thread) = start_output(command);
         wait_for(&receive, "✅ success");
-        for file in ["Trunk.json", "inputs/text.txt"] {
+        for file in ["Trunk.json", "inputs/brand.css"] {
             let relative = format!("target/maestro-browser/.author/{route}/{file}");
             let path = browser.path(&relative);
             crate::recipe_support::record(format!("phase: generated edit {path:?}"));
@@ -1712,7 +1712,7 @@ fn browser_native_checks_keep_inputs_and_refuse_bad_sources() {
     success(&check("example-check"));
     let directory = browser.path("target/maestro-browser/.author/example");
     assert_authored_target(&browser, &directory.join("Trunk.json"), "index.html");
-    for file in ["wordmark.txt", "text.txt", "watch-dirs.json"] {
+    for file in ["wordmark.txt", "brand.css", "watch-dirs.json"] {
         assert!(
             !fs::read(directory.join("inputs").join(file))
                 .unwrap()
@@ -1800,7 +1800,7 @@ fn browser_native_build_routes_preserve_authored_configuration() {
         let bytes = browser_support::wasm(&browser, route);
         assert_eq!(&bytes[..8], b"\0asm\x01\0\0\0");
         assert!(bytes.windows(wordmark.len()).any(|part| part == wordmark));
-        let inputs = directory.join("inputs/text.txt");
+        let inputs = directory.join("inputs/brand.css");
         retained.push((inputs.clone(), fs::read(inputs).unwrap()));
         for (path, bytes) in &retained {
             assert_eq!(&fs::read(path).unwrap(), bytes);

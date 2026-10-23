@@ -49,7 +49,7 @@ operation prepares and dispatches all author checks, builds and watch routes.
 The launcher selects the invoking checkout from Cargo's runtime manifest directory,
 falling back to its build-time checkout when that variable is absent.
 A locked native `maestro-theme` example uses the existing loader/projection and writes
-eleven presentation files plus pack/mark directory observations; the fixture has
+three presentation files plus pack/mark directory observations; the fixture has
 no native path dependency or build script.
 
 Root `dev` composes `native-dev` with `browser-dev` using just's native parallel
