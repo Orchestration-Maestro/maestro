@@ -1230,7 +1230,8 @@ fn package_inputs(package: &Path) {
     }
 }
 
-/// Assert that a viewer directory with no entries copies as an empty export directory.
+/// Assert that a viewer directory with no entries copies as an empty export directory in a fresh
+/// destination, while an existing destination export directory keeps the entries it holds.
 #[test]
 fn maestro_empty_viewer_copies_an_empty_directory() {
     for (existing, prior) in [(false, None), (true, None), (true, Some("prior"))] {
