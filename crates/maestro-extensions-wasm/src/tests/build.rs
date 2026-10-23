@@ -26,11 +26,19 @@ fn build() -> Result<PathBuf, String> {
     if let Some(path) = std::env::var_os("MAESTRO_AUTHOR_COMPONENT") {
         return Ok(PathBuf::from(path));
     }
+    example_component("author_component")
+}
+
+/// Builds one registered example and finds the component artifact it reports.
+///
+/// # Errors
+/// Returns the build's failure, which names the target to install when it is missing.
+pub fn example_component(name: &str) -> Result<PathBuf, String> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let output = Command::new(cargo)
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .env_remove("RUSTC_WRAPPER")
-        .args(["build", "--example", "author_component", "--target", TARGET])
+        .args(["build", "--example", name, "--target", TARGET])
         .args(["--release", "--locked", "--message-format=json"])
         .output()
         .map_err(|error| format!("cannot run cargo: {error}"))?;
@@ -45,7 +53,7 @@ fn build() -> Result<PathBuf, String> {
         .lines()
         .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
         .filter(|message| message["reason"] == "compiler-artifact")
-        .filter(|message| message["target"]["name"] == "author_component")
+        .filter(|message| message["target"]["name"] == name)
         .flat_map(|message| message["filenames"].as_array().cloned().unwrap_or_default())
         .filter_map(|file| file.as_str().map(PathBuf::from))
         .find(|file| {

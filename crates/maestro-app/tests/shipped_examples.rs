@@ -74,6 +74,22 @@ fn index_entries(index: &str) -> Vec<String> {
     entries
 }
 
+/// Both rejection branches run against disposable files, without changing shipped inputs.
+#[test]
+fn shipped_examples_index_rejects_unlisted_and_missing_files() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    fs::write(root.join("hello.rs"), "").unwrap();
+    fs::write(root.join("README.md"), "# Examples\n").unwrap();
+    let unlisted = std::panic::catch_unwind(|| assert_index_lists(root, &["hello.rs".to_owned()]));
+    assert!(unlisted.is_err(), "an unlisted shipped file must fail");
+    fs::write(root.join("README.md"), "| `missing.rs` |\n").unwrap();
+    let missing = std::panic::catch_unwind(|| assert_index_lists(root, &[]));
+    assert!(missing.is_err(), "a listed missing file must fail");
+    fs::write(root.join("README.md"), "| `hello.rs` |\n").unwrap();
+    assert_index_lists(root, &["hello.rs".to_owned()]);
+}
+
 /// List one directory's entry names in name order.
 fn directory_names(directory: &Path) -> Vec<String> {
     let mut names: Vec<String> = fs::read_dir(directory)

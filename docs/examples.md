@@ -8,9 +8,10 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. No example ships yet; the
+`sdk/`, and each folder has its own index page. The shipped
+`extensions/hello.rs` builds a greeting component; the
 [examples tracking issue](https://github.com/Orchestration-Maestro/maestro/issues/2074)
-lists each one with its owner.
+lists the examples still to come with their owners.
 
 A test checks both directions: every entry of a folder is listed in that
 folder's index, and every relative link or table row an index carries names a
