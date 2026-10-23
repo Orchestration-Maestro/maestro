@@ -291,14 +291,14 @@ Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or
 Duplicate assertions are a review judgement.
 
 Conventions reject a second or foreign declaration of `MessageRendererCall`:
-`maestro-extensions` declares it once in `src/types/renderers.rs`. Chat production
-syntax may not name the raw extension machinery: `MessageRenderer`,
+`maestro-extensions` declares it exactly once in `src/types/renderers.rs`. Chat
+production syntax may not name the raw extension machinery: `MessageRenderer`,
 `CallbackEmitter`, `EventBus`, `get_message_renderer` or `invoke_callback`.
-Imported aliases, qualified paths and method calls count as well; the frontend
-uses the projected call and `get_message_renderer_call` instead. Test layouts, `cfg(test)`
-scopes, ordinary comments and string literals are exempt. The scan reads parsed
-syntax, so it does not expand macros, resolve arbitrary re-exports or follow
-unparsed fragments.
+Import declarations, imported aliases, every segment of a qualified path and
+method calls also count; the frontend uses the projected call and
+`get_message_renderer_call` instead. Test layouts, `cfg(test)` scopes, ordinary
+comments and string literals are exempt. The scan reads parsed syntax, so it does
+not expand macros, resolve arbitrary re-exports or follow unparsed fragments.
 
 The root manifest must forbid every protected quality lint; member manifests
 are parsed as TOML and must set the boolean `lints.workspace` to `true`,

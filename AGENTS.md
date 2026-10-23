@@ -89,8 +89,8 @@ are not evaluated. There are no suppressions or baseline. See
 Duplicate assertions are a review judgement.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or
-`invoke_callback` identifiers in chat production syntax, aliases and qualified
-calls included; comments, string literals and test scopes are exempt.
+`invoke_callback` identifiers in chat production syntax, imports, aliases and
+qualified calls included; comments, string literals and test scopes are exempt.
 
 ## Documentation
 

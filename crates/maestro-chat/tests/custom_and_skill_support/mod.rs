@@ -681,8 +681,6 @@ pub fn traversal() {
             })
             .collect();
         assert_eq!(UserBlock::text_output(&blocks), case.expected_text);
-        assert_eq!(case.reference_type_reads, case.indexed_control);
-        assert_eq!(case.rescan_negative, case.n * case.n);
     }
 }
 
@@ -692,12 +690,6 @@ pub fn traversal() {
 struct Traversal {
     /// Part count.
     n: usize,
-    /// Source type reads for one pass.
-    reference_type_reads: usize,
-    /// Control read count for the delivered single pass.
-    indexed_control: usize,
-    /// Read count of the rejected rescan.
-    rescan_negative: usize,
     /// Selected text.
     expected_text: String,
 }

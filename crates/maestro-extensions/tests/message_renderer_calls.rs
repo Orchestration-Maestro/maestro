@@ -105,21 +105,25 @@ fn theme() -> LiveTheme {
 /// Registers a renderer that records what it receives and selects one outcome.
 fn recording(
     trace: &Trace,
-    theme_color: &Arc<Mutex<Vec<String>>>,
+    observable: &Observable,
     outcome: Outcome,
 ) -> MessageRenderer<Value, Local> {
     let trace = trace.clone();
-    let sampled = Arc::clone(theme_color);
+    let observable = Arc::clone(observable);
     Rc::new(
         move |message: Rc<CustomMessage<Value>>,
               options: MessageRenderOptions,
               theme: LiveTheme,
               _: CallbackEmitter<'_, Local>| {
-            sampled.lock().expect("sample").push(paint(
+            let color = paint(
                 theme.get().ok().as_deref(),
                 &ThemeColor::CustomMessageText,
                 "sample",
-            ));
+            );
+            observable
+                .lock()
+                .expect("observation")
+                .push(observation(&message, options, &color));
             mark(
                 &trace,
                 format!(
@@ -149,6 +153,34 @@ enum Outcome {
     Error,
 }
 
+/// Everything the callback received, recorded in call order.
+type Observable = Arc<Mutex<Vec<Value>>>;
+
+/// The observation one renderer invocation made from its own arguments.
+fn observation(
+    message: &CustomMessage<Value>,
+    options: MessageRenderOptions,
+    theme_color: &str,
+) -> Value {
+    let seen = match &message.details {
+        Presence::Present(value) => value.clone(),
+        Presence::Missing | Presence::Null => Value::Null,
+    };
+    let negative_zero = seen
+        .as_f64()
+        .is_some_and(|value| value == 0.0 && value.is_sign_negative());
+    serde_json::json!({
+        "present": !message.details.is_missing(),
+        "details": if negative_zero { Value::from(0) } else { seen },
+        "negative_zero": negative_zero,
+        "custom_type": message.custom_type,
+        "display": message.display,
+        "timestamp": message.timestamp,
+        "expanded": options.expanded,
+        "theme_color": theme_color,
+    })
+}
+
 /// Real registration to runner lookup keeps details, options, theme and original errors.
 #[test]
 fn registered_calls_keep_typed_details_theme_and_original_errors() {
@@ -167,26 +199,25 @@ fn registered_calls_keep_typed_details_theme_and_original_errors() {
 /// Replays one recorded details-domain case through a real registration.
 fn check_domain(case: &Domain, live: &LiveTheme) {
     let (bus, trace) = (LocalBus::new(), Trace::default());
-    let sampled = Arc::new(Mutex::new(Vec::new()));
+    let observable = Observable::default();
     let owner = loaded("/domain", bus.controller.for_extension());
     let runner = runner(&owner.owners);
     owner
         .api
-        .register_message_renderer("note".into(), recording(&trace, &sampled, Outcome::None))
+        .register_message_renderer("note".into(), recording(&trace, &observable, Outcome::None))
         .expect("registration");
     let call = runner
         .get_message_renderer_call::<Value>("note")
         .expect("registered call");
-    let message = Rc::new(message(details(&case.input)));
     let rendered = call
         .call(
-            message.clone(),
+            Rc::new(message(details(&case.input))),
             MessageRenderOptions { expanded: false },
             live.clone(),
         )
         .expect("rendered");
     assert!(rendered.is_none(), "{} keeps the default body", case.kind);
-    check_observation(case, &message.details, &sampled);
+    check_observation(case, &observable.lock().expect("observation"));
     assert_eq!(
         *trace.borrow(),
         [format!(
@@ -199,27 +230,12 @@ fn check_domain(case: &Domain, live: &LiveTheme) {
     );
 }
 
-/// Compares what the callback observed with the recorded observation.
-fn check_observation(case: &Domain, presence: &Presence<Value>, sampled: &Arc<Mutex<Vec<String>>>) {
-    let seen = match presence {
-        Presence::Present(value) => value.clone(),
-        Presence::Missing | Presence::Null => Value::Null,
+/// Compares the observation the callback recorded with the recorded case.
+fn check_observation(case: &Domain, records: &[Value]) {
+    let mut observed = match records {
+        [only] => only.clone(),
+        other => panic!("{}: one observation, saw {}", case.kind, other.len()),
     };
-    let mut observed = serde_json::json!({
-        "present": !presence.is_missing(),
-        "details": seen,
-        "negative_zero": seen
-            .as_f64()
-            .is_some_and(|value| value == 0.0 && value.is_sign_negative()),
-        "custom_type": case.expected["custom_type"],
-        "display": case.expected["display"],
-        "timestamp": case.expected["timestamp"],
-        "expanded": case.expected["expanded"],
-        "theme_color": sampled.lock().expect("sample").first().cloned(),
-    });
-    if observed["negative_zero"] == Value::Bool(true) {
-        observed["details"] = Value::from(0);
-    }
     if !case
         .expected
         .as_object()
@@ -242,7 +258,7 @@ fn check_observation(case: &Domain, presence: &Presence<Value>, sampled: &Arc<Mu
 /// Forwarding preserves the remaining supplied fields and returns the original error.
 fn registration_outcomes() {
     let (bus, trace) = (LocalBus::new(), Trace::default());
-    let sampled = Arc::new(Mutex::new(Vec::new()));
+    let observable = Observable::default();
     let owner = loaded("/outcomes", bus.controller.for_extension());
     let runner = runner(&owner.owners);
     for (kind, outcome) in [
@@ -252,7 +268,7 @@ fn registration_outcomes() {
     ] {
         owner
             .api
-            .register_message_renderer(kind.into(), recording(&trace, &sampled, outcome))
+            .register_message_renderer(kind.into(), recording(&trace, &observable, outcome))
             .expect("registration");
         let call = runner
             .get_message_renderer_call::<Value>(kind)
@@ -281,6 +297,12 @@ fn registration_outcomes() {
             "note true false 1.5"
         ]
     );
+    let observed = observable.lock().expect("observation");
+    assert_eq!(observed.len(), 3, "one observation per callback");
+    for record in observed.iter() {
+        assert_eq!(record["present"], Value::Bool(true), "a null stays present");
+        assert_eq!(record["details"], Value::Null);
+    }
     let live = theme();
     assert!(live.get().is_ok());
 }

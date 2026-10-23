@@ -20,6 +20,9 @@ const RAW: &[&str] = &[
     "invoke_callback",
 ];
 
+/// Relative path of the file that declares the projected record.
+const OWNER_FILE: &str = "src/types/renderers.rs";
+
 /// Reject raw renderer plumbing in frontend production syntax and foreign declarations.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
@@ -37,6 +40,11 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                     || test_layout(&source.path, &member.directory)
                     || cfg_test(&syntax.attrs),
                 aliases: aliases.0,
+                owner_file: source
+                    .path
+                    .strip_prefix(&member.directory)
+                    .is_ok_and(|relative| relative == std::path::Path::new(OWNER_FILE)),
+                declarations: 0,
                 found: Vec::new(),
             };
             guard.visit_file(syntax);
@@ -47,6 +55,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         Ok(())
     } else {
         diagnostics.sort_by(|left, right| (&left.0, left.1).cmp(&(&right.0, right.1)));
+        diagnostics.dedup();
         Err(diagnostics
             .into_iter()
             .map(|(file, (line, _), message)| format!("{file}:{line}: {message}"))
@@ -100,6 +109,10 @@ struct Guard<'a> {
     testing: bool,
     /// Raw identifiers imported under another local name.
     aliases: BTreeMap<String, String>,
+    /// Whether this source is the file that must hold the single declaration.
+    owner_file: bool,
+    /// Production declarations of the projected record seen in this source.
+    declarations: usize,
     /// Located messages in source order.
     found: Vec<(String, (usize, usize), String)>,
 }
@@ -126,22 +139,32 @@ impl Guard<'_> {
         ));
     }
 
+    /// Records a raw identifier named by an import.
+    fn imported(&mut self, tree: &syn::UseTree) {
+        match tree {
+            syn::UseTree::Path(path) => self.imported(&path.tree),
+            syn::UseTree::Name(name) => {
+                self.raw(&name.ident.unraw().to_string(), name.ident.span());
+            }
+            syn::UseTree::Rename(name) => {
+                self.raw(&name.ident.unraw().to_string(), name.ident.span());
+            }
+            syn::UseTree::Group(group) => {
+                for tree in &group.items {
+                    self.imported(tree);
+                }
+            }
+            syn::UseTree::Glob(_) => {}
+        }
+    }
+
     /// Records a foreign declaration of the projected record.
     fn declaration(&mut self, name: &syn::Ident) {
         if name.unraw() != PROJECTED {
             return;
         }
-        if self.member == OWNER && !self.source.path.ends_with("types/renderers.rs") {
-            let position = name.span().start();
-            self.found.push((
-                self.source.path.display().to_string(),
-                (position.line, position.column),
-                format!("duplicate {PROJECTED} declaration; {OWNER} declares it once in types/renderers.rs"),
-            ));
-            return;
-        }
+        let position = name.span().start();
         if self.member != OWNER {
-            let position = name.span().start();
             self.found.push((
                 self.source.path.display().to_string(),
                 (position.line, position.column),
@@ -150,11 +173,30 @@ impl Guard<'_> {
                     self.member
                 ),
             ));
+            return;
         }
+        self.declarations += 1;
+        let message = if !self.owner_file {
+            format!("duplicate {PROJECTED} declaration; {OWNER} declares it once in {OWNER_FILE}")
+        } else if self.declarations > 1 {
+            format!("second {PROJECTED} declaration; {OWNER} declares it once in {OWNER_FILE}")
+        } else {
+            return;
+        };
+        self.found.push((
+            self.source.path.display().to_string(),
+            (position.line, position.column),
+            message,
+        ));
     }
 }
 
 impl<'ast> Visit<'ast> for Guard<'_> {
+    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
+        self.imported(&item.tree);
+        syn::visit::visit_item_use(self, item);
+    }
+
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
         let name = call.method.unraw().to_string();
         self.raw(&name, call.method.span());
@@ -162,8 +204,8 @@ impl<'ast> Visit<'ast> for Guard<'_> {
     }
 
     fn visit_path(&mut self, path: &'ast syn::Path) {
-        if let Some(last) = path.segments.last() {
-            self.raw(&last.ident.unraw().to_string(), last.ident.span());
+        for segment in &path.segments {
+            self.raw(&segment.ident.unraw().to_string(), segment.ident.span());
         }
         syn::visit::visit_path(self, path);
     }

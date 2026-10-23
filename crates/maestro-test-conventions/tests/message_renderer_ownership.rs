@@ -60,6 +60,16 @@ fn message_renderer_owner_rejects_raw_chat_bypasses() {
             "//! Duplicate.\n/// Record.\npub struct MessageRendererCall;\n",
             "MessageRendererCall declaration belongs to maestro-extensions",
         ),
+        (
+            "imported.rs",
+            "//! Imported.\nuse maestro_app::MessageRenderer as Raw;\n/// Item.\npub struct Holder;\n",
+            "raw MessageRenderer outside maestro-extensions",
+        ),
+        (
+            "segment.rs",
+            "//! Segment.\n/// Item.\npub fn clone_of(value: &u8) -> u8 {\n    maestro_app::MessageRenderer::clone(value)\n}\n",
+            "raw MessageRenderer outside maestro-extensions",
+        ),
     ];
     for (name, contents, expected) in cases {
         let path = chat_source(&workspace, name, contents);
@@ -75,6 +85,59 @@ fn message_renderer_owner_rejects_raw_chat_bypasses() {
         std::fs::remove_file(path).unwrap();
         assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{name}");
     }
+}
+
+/// Writes one extensions production source and returns its path.
+fn owner_source(workspace: &Workspace, name: &str, contents: &str) -> std::path::PathBuf {
+    let path = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions/src")
+        .join(name);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).unwrap();
+    }
+    std::fs::write(&path, contents).unwrap();
+    path
+}
+
+#[test]
+fn message_renderer_owner_requires_one_declaration_in_its_owner_file() {
+    let workspace = workspace();
+    let owner = workspace
+        .root
+        .path()
+        .join("crates/maestro-extensions/src/types");
+    std::fs::create_dir_all(&owner).unwrap();
+    let declaration = owner.join("renderers.rs");
+    std::fs::write(
+        &declaration,
+        "//! Renderers.\n/// Record.\npub struct MessageRendererCall<T = u8>(T);\n",
+    )
+    .unwrap();
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    let nested = owner_source(
+        &workspace,
+        "nested/types/renderers.rs",
+        "//! Nested.\n/// Record.\npub struct MessageRendererCall;\n",
+    );
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("duplicate MessageRendererCall declaration"),
+        "{error}"
+    );
+    assert!(error.contains(&nested.display().to_string()), "{error}");
+    std::fs::remove_file(nested).unwrap();
+    std::fs::write(
+        &declaration,
+        "//! Renderers.\n/// Record.\npub struct MessageRendererCall<T = u8>(T);\n/// Inner.\npub mod inner {\n    /// Record.\n    pub struct MessageRendererCall;\n}\n",
+    )
+    .unwrap();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("second MessageRendererCall declaration"),
+        "{error}"
+    );
 }
 
 #[test]
