@@ -269,6 +269,12 @@ impl<E: ExtensionExecution> AgentSession<E> {
         &self.model_registry
     }
 
+    /// The loader of the session's skills, prompt templates, extensions and context files.
+    #[must_use]
+    pub fn resource_loader(&self) -> &Rc<dyn ResourceLoader<E>> {
+        &self.resource_loader
+    }
+
     /// Adds a listener; the returned operation removes it.
     pub fn subscribe(&self, listener: AgentSessionEventListener) -> impl Fn() + use<E> {
         Listeners::subscribe(&self.event_listeners, listener)

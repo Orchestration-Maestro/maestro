@@ -1,0 +1,252 @@
+{
+  "busy": {
+    "during": {
+      "streaming": true,
+      "pending": 0,
+      "steering": [],
+      "follow_up": [],
+      "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message."
+    },
+    "after": {
+      "streaming": false,
+      "signal_aborted": true,
+      "users": [
+        "First message"
+      ],
+      "assistants": [
+        ""
+      ],
+      "roles": [
+        "user",
+        "assistant"
+      ],
+      "calls": 1
+    }
+  },
+  "steer": {
+    "during": {
+      "streaming": true,
+      "pending": 1,
+      "steering": [
+        "Steering message"
+      ],
+      "follow_up": []
+    },
+    "after": {
+      "streaming": false,
+      "signal_aborted": true,
+      "users": [
+        "First message"
+      ],
+      "assistants": [
+        ""
+      ],
+      "roles": [
+        "user",
+        "assistant"
+      ],
+      "calls": 1
+    }
+  },
+  "follow_up": {
+    "during": {
+      "streaming": true,
+      "pending": 1,
+      "steering": [],
+      "follow_up": [
+        "Follow-up message"
+      ]
+    },
+    "after": {
+      "streaming": false,
+      "signal_aborted": true,
+      "users": [
+        "First message"
+      ],
+      "assistants": [
+        ""
+      ],
+      "roles": [
+        "user",
+        "assistant"
+      ],
+      "calls": 1
+    }
+  },
+  "extension": {
+    "during": {
+      "streaming": true,
+      "pending": 1,
+      "steering": [
+        "Steer from extension"
+      ],
+      "follow_up": [],
+      "source": "extension",
+      "updates": [
+        {
+          "steering": [
+            "Steer from extension"
+          ],
+          "followUp": []
+        }
+      ]
+    },
+    "after": {
+      "streaming": false,
+      "signal_aborted": true,
+      "users": [
+        "First message",
+        "Steer from extension"
+      ],
+      "assistants": [
+        "Aborted",
+        "Steered"
+      ],
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+        "assistant"
+      ],
+      "requests": [
+        [
+          "First message"
+        ],
+        [
+          "First message",
+          "Steer from extension"
+        ]
+      ]
+    }
+  },
+  "sequential": {
+    "streaming": false,
+    "users": [
+      "First message",
+      "Second message",
+      "Third message"
+    ],
+    "assistants": [
+      "Done",
+      "Again",
+      "\n﻿😀\né\n"
+    ],
+    "roles": [
+      "user",
+      "assistant",
+      "user",
+      "assistant",
+      "user",
+      "assistant"
+    ]
+  },
+  "tool_queue": {
+    "snapshots": [
+      [
+        "user",
+        "assistant"
+      ],
+      [
+        "user",
+        "assistant"
+      ]
+    ],
+    "roles": [
+      "user",
+      "assistant",
+      "toolResult",
+      "toolResult",
+      "assistant"
+    ]
+  },
+  "slow_handler": {
+    "before": [
+      "user"
+    ],
+    "after": [
+      "user",
+      "assistant",
+      "toolResult",
+      "assistant"
+    ]
+  },
+  "exchange": {
+    "queued": 2,
+    "pending": 0,
+    "contexts": [
+      [
+        "user"
+      ],
+      [
+        "user",
+        "assistant",
+        "toolResult",
+        "toolResult"
+      ]
+    ],
+    "roles": [
+      "user",
+      "assistant",
+      "toolResult",
+      "toolResult",
+      "assistant"
+    ],
+    "results": [
+      {
+        "id": "toolu_1",
+        "content": [
+          {
+            "type": "text",
+            "text": "result:x"
+          }
+        ],
+        "is_error": false
+      },
+      {
+        "id": "toolu_2",
+        "content": [
+          {
+            "type": "text",
+            "text": "tool failed"
+          }
+        ],
+        "is_error": true
+      }
+    ],
+    "progress": [
+      {
+        "id": "toolu_1",
+        "content": [
+          {
+            "type": "text",
+            "text": "working:x"
+          }
+        ],
+        "details": {
+          "phase": "working"
+        }
+      },
+      {
+        "id": "toolu_2",
+        "content": [
+          {
+            "type": "text",
+            "text": "working:y"
+          }
+        ],
+        "details": {
+          "phase": "working"
+        }
+      }
+    ],
+    "users": [
+      "hi"
+    ]
+  },
+  "empty_roots": {
+    "skills": 0,
+    "prompts": 0,
+    "extensions": 0,
+    "context_files": 0
+  }
+}
