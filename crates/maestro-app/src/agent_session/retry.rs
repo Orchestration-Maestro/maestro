@@ -44,8 +44,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// running, and `abort_retry` stops it.
     ///
     /// # Errors
-    /// Returns an error when the wait was dropped unfinished because the agent has no task
-    /// facility.
+    /// Returns the failure when the wait's task ended before the wait did, for example when
+    /// the caller's task set was dropped mid-operation.
     pub async fn handle_retryable_error(
         self: &Rc<Self>,
         message: &AssistantMessage,
