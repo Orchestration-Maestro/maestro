@@ -1,14 +1,14 @@
 //! Note references and the note lists that close a page.
 use super::HtmlRenderer;
 use crate::docx_preview::html_element::HtmlElement;
-use crate::docx_preview::{Notes, WordPreview};
+use crate::docx_preview::{PartRecords, WordPreview};
 use maestro_app::browser::docx_preview::{Part, WmlBaseNote};
 use std::collections::HashMap;
 
 /// One kind of notes by identifier, a repeated identifier keeping its last note, and the part
 /// holding them.
 pub(super) struct NoteMap<'a> {
-    /// Notes part, whose relationships the notes' links resolve against.
+    /// Notes part, whose relationships the notes' links and images resolve against.
     pub(super) part: Option<&'a Part>,
     /// Notes by identifier.
     notes: HashMap<Option<&'a str>, &'a WmlBaseNote>,
@@ -16,12 +16,15 @@ pub(super) struct NoteMap<'a> {
 
 impl<'a> NoteMap<'a> {
     /// Index the prepared notes of one kind.
-    pub(super) fn new(preview: &'a WordPreview, notes: Option<&'a Notes>) -> Self {
+    pub(super) fn new(
+        preview: &'a WordPreview,
+        notes: Option<&'a PartRecords<WmlBaseNote>>,
+    ) -> Self {
         Self {
-            part: notes.and_then(|notes| preview.document.parts().get(notes.part)),
+            part: preview.part(notes),
             notes: notes
                 .into_iter()
-                .flat_map(|notes| &notes.notes)
+                .flat_map(|notes| &notes.records)
                 .map(|note| (note.id.as_deref(), note))
                 .collect(),
         }

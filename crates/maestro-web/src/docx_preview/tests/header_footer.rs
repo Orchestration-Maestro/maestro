@@ -1,5 +1,5 @@
 //! Header and footer reference selection and placement.
-use super::{check, render};
+use super::{check, markup, render};
 
 #[test]
 fn default_headers_and_footers_use_page_margins() {
@@ -35,7 +35,7 @@ fn a_missing_header_reference_renders_nothing() {
 #[test]
 fn calc_offsets_keep_the_reference_operands() {
     let pages = render("header-footer-default");
-    let html = pages[0].to_html();
+    let html = markup(&pages[0]);
     assert!(
         html.starts_with("<section class=\"docx\" style=\"min-height:841.90pt;padding-bottom:108.00pt;padding-left:72.00pt;padding-right:72.00pt;padding-top:72.00pt;width:595.30pt\"><header style=\"margin-top:calc(36.00pt - 72.00pt);min-height:calc(72.00pt - 36.00pt)\">"),
         "{html}"

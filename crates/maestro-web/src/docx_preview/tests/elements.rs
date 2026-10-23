@@ -1,5 +1,5 @@
 //! Element text, attribute and declaration serialization, and style lookup.
-use super::{HtmlElement, check, render};
+use super::{HtmlElement, check, markup, render};
 use crate::docx_preview::html_renderer::Styles;
 use maestro_app::browser::docx_preview::{StylesPart, parse_xml_string};
 
@@ -7,7 +7,7 @@ use maestro_app::browser::docx_preview::{StylesPart, parse_xml_string};
 fn hostile_text_and_attribute_values_stay_literal() {
     check("inline-hostile-values");
     assert_eq!(
-        render("inline-hostile-values")[0].to_html(),
+        markup(&render("inline-hostile-values")[0]),
         "<section class=\"docx\"><article><p><span>&lt;tag&gt; &amp; &quot;quoted&quot; \
          &#39;single&#39;</span><span id=\"a&quot;b&amp;c\"></span><span>\
          <span style=\"font-family:&quot;Quo\\&quot;te&amp;&quot;\">A</span></span>\
@@ -16,7 +16,7 @@ fn hostile_text_and_attribute_values_stay_literal() {
 }
 
 #[test]
-fn text_and_attribute_values_are_escaped() {
+fn text_and_attribute_values_stay_literal_and_declarations_are_contained() {
     let mut element = HtmlElement::new("span");
     element.set_attribute("title", "x\" onmouseover=\"alert(1)");
     element.set_style("font-family", Some("'Times \"New\" Roman'"));
@@ -34,7 +34,15 @@ fn text_and_attribute_values_are_escaped() {
     child.set_attribute("id", "<br>");
     element.push_element(child);
     assert_eq!(
-        element.to_html(),
+        element.declarations().collect::<Vec<_>>(),
+        [("font-family", "'Times \"New\" Roman'")]
+    );
+    assert_eq!(
+        element.attributes().collect::<Vec<_>>(),
+        [("title", "x\" onmouseover=\"alert(1)")]
+    );
+    assert_eq!(
+        markup(&element),
         "<span title=\"x&quot; onmouseover=&quot;alert(1)\" \
          style=\"font-family:&#39;Times &quot;New&quot; Roman&#39;\">\
          &lt;/span&gt;&lt;script&gt;alert(&#39;&amp;amp;&#39;)&lt;/script&gt;\
@@ -54,20 +62,20 @@ fn style_declarations_are_sorted_and_keep_the_last_value() {
     element.set_style("color", Some(""));
     element.set_style("border", Some("none"));
     assert_eq!(
-        element.to_html(),
+        markup(&element),
         "<p style=\"background-color:#EEFFEE;border:none;width:2pt\"></p>"
     );
     element.set_style("border", None::<&str>);
     element.set_style("background-color", None::<&str>);
     element.set_style("width", None::<&str>);
-    assert_eq!(element.to_html(), "<p></p>");
+    assert_eq!(markup(&element), "<p></p>");
 }
 
 /// Page margins, page size and column layout reach the style attribute as sorted CSS
 /// declarations.
 #[test]
 fn page_and_column_geometry_reach_the_style_attribute() {
-    let html = render("columns")[0].to_html();
+    let html = markup(&render("columns")[0]);
     assert_eq!(
         html,
         "<section class=\"docx\" style=\"min-height:841.90pt;padding-bottom:72.00pt;\

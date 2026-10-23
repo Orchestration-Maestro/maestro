@@ -218,4 +218,13 @@ impl WordDocument {
         self.get_path_by_id(part, id)
             .map_or(Ok(None), |path| self.package.read(&path))
     }
+    /// Read an alternate format chunk's text by relationship identifier, decoded as package
+    /// text is; `None` when the relationship or the entry is missing.
+    ///
+    /// # Errors
+    /// Returns an archive error if the selected entry cannot be read.
+    pub fn load_alt_chunk(&self, part: &Part, id: &str) -> Result<Option<String>, DocxError> {
+        self.get_path_by_id(part, id)
+            .map_or(Ok(None), |path| self.package.text(&path))
+    }
 }
