@@ -6,6 +6,7 @@
     clippy::excessive_nesting
 )]
 
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
@@ -39,15 +40,20 @@ const GUIDANCE: [(&str, &str); 4] = [
 /// Adds guidance for the supplied tools and skills to an assembled prompt.
 fn add_tool_guidance(options: &BuildSystemPromptOptions, base_prompt: &str) -> String {
     let selected = options.selected_tools.present();
-    let mut parts: Vec<String> = GUIDANCE
+    let mut parts: Vec<Cow<'static, str>> = GUIDANCE
         .iter()
         .filter(|(name, _)| selected.is_some_and(|tools| tools.iter().any(|tool| tool == name)))
-        .map(|(_, guidance)| (*guidance).to_owned())
+        .map(|(_, guidance)| Cow::Borrowed(*guidance))
         .collect();
     if let Some(skills) = options.skills.present().filter(|skills| !skills.is_empty()) {
         let names: Vec<&str> = skills.iter().map(|skill| skill.name.as_str()).collect();
-        parts.push(format!("\nAvailable skills: {}", names.join(", ")));
-        parts.push("Use skill documentation for best practices on specific tools.".to_owned());
+        parts.push(Cow::Owned(format!(
+            "\nAvailable skills: {}",
+            names.join(", ")
+        )));
+        parts.push(Cow::Borrowed(
+            "Use skill documentation for best practices on specific tools.",
+        ));
     }
     if parts.is_empty() {
         return base_prompt.to_owned();
