@@ -1,5 +1,6 @@
 //! The examples folder the default system prompt names.
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::configuration::config;
 use std::fs;
