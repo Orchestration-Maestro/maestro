@@ -50,6 +50,7 @@ pub(crate) mod host;
 mod host_family;
 mod join;
 mod observed;
+mod prompt_customizer_example;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
