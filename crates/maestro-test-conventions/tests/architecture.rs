@@ -2751,24 +2751,8 @@ fn pattern_owners(label: &str, source: &str) -> Vec<PatternOwner> {
     owners
 }
 
-/// A call forwarding to the shared owner, as its label, the enclosing function and the
-/// argument spellings.
-type ForwardingCall = (String, String, Vec<String>);
-
-/// The arguments a caller forwards to the shared owner with.
+/// The arguments a delegating loader forwards to the shared owner with.
 const FORWARDED_ARGUMENTS: [&str; 3] = ["path", "options.cwd", "options.home"];
-
-/// The call `function` makes to the shared owner, labeled `label`.
-fn forwarded(label: &str, function: &str) -> ForwardingCall {
-    (
-        label.to_owned(),
-        function.to_owned(),
-        FORWARDED_ARGUMENTS
-            .iter()
-            .map(|argument| (*argument).to_owned())
-            .collect(),
-    )
-}
 
 /// The spelling of one call argument, with its field accesses joined by `.`.
 fn argument_spelling(expression: &syn::Expr) -> Option<String> {
@@ -2792,63 +2776,10 @@ fn argument_spelling(expression: &syn::Expr) -> Option<String> {
     }
 }
 
-/// Records every call to the shared owner with its enclosing function and argument spellings.
-struct ForwardingVisitor<'a> {
-    /// Tracked path or control label used in the comparison.
-    label: &'a str,
-    /// The function whose body is being read.
-    enclosing: Option<String>,
-    /// Calls found so far.
-    calls: Vec<ForwardingCall>,
-}
-
-impl<'ast> syn::visit::Visit<'ast> for ForwardingVisitor<'_> {
-    fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
-        let previous = self.enclosing.replace(node.sig.ident.to_string());
-        syn::visit::visit_item_fn(self, node);
-        self.enclosing = previous;
-    }
-
-    fn visit_impl_item_fn(&mut self, node: &'ast syn::ImplItemFn) {
-        let previous = self.enclosing.replace(node.sig.ident.to_string());
-        syn::visit::visit_impl_item_fn(self, node);
-        self.enclosing = previous;
-    }
-
-    fn visit_expr_call(&mut self, node: &'ast syn::ExprCall) {
-        if let (Some(enclosing), syn::Expr::Path(path)) = (&self.enclosing, &*node.func)
-            && path
-                .path
-                .segments
-                .last()
-                .is_some_and(|segment| segment.ident == "resolve_explicit_path")
-        {
-            let arguments = node.args.iter().filter_map(argument_spelling).collect();
-            self.calls
-                .push((self.label.to_owned(), enclosing.clone(), arguments));
-        }
-        syn::visit::visit_expr_call(self, node);
-    }
-}
-
-/// Every call of `source` that forwards to the shared owner, labeled `label`.
-fn forwarding_calls(label: &str, source: &str) -> Vec<ForwardingCall> {
-    let Ok(file) = syn::parse_file(source) else {
-        return Vec::new();
-    };
-    let mut visitor = ForwardingVisitor {
-        label,
-        enclosing: None,
-        calls: Vec::new(),
-    };
-    syn::visit::visit_file(&mut visitor, &file);
-    visitor.calls
-}
-
 /// The path and text of every tracked Rust source below `root`.
 ///
 /// Every tracked file is enumerated and the Rust sources are read, since only a parsed function
-/// body can make a call.
+/// body can delegate.
 fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
     let listed = std::process::Command::new("git")
         .args(["ls-files", "-z"])
@@ -2888,61 +2819,93 @@ fn pattern_owners_in(sources: &[(String, String)]) -> Vec<PatternOwner> {
     owners
 }
 
-/// Every call in the tracked `sources` that forwards to the shared owner.
-fn forwarding_calls_in(sources: &[(String, String)]) -> Vec<ForwardingCall> {
-    let mut calls: Vec<ForwardingCall> = sources
-        .iter()
-        .filter(|(_, source)| source.contains("resolve_explicit_path"))
-        .flat_map(|(path, source)| forwarding_calls(path, source))
-        .collect();
-    calls.sort();
-    calls
+/// Whether `function` in `source` is exactly one tail expression that returns the shared owner's
+/// result, called with the authored path, the caller's working directory and its home spelling.
+fn delegates_directly(source: &str, function: &str) -> bool {
+    let Ok(file) = syn::parse_file(source) else {
+        return false;
+    };
+    let Some(body) = file.items.iter().find_map(|item| match item {
+        syn::Item::Fn(item) if item.sig.ident == function => Some(&item.block),
+        _ => None,
+    }) else {
+        return false;
+    };
+    let [syn::Stmt::Expr(syn::Expr::Call(call), None)] = body.stmts.as_slice() else {
+        return false;
+    };
+    let syn::Expr::Path(target) = &*call.func else {
+        return false;
+    };
+    target
+        .path
+        .segments
+        .last()
+        .is_some_and(|segment| segment.ident == "resolve_explicit_path")
+        && call
+            .args
+            .iter()
+            .filter_map(argument_spelling)
+            .eq(FORWARDED_ARGUMENTS)
 }
 
-/// Assert that a delegating loader is accepted and that a body returning the path, or forwarding
-/// the working directory and the home spelling in the wrong order, is rejected.
+/// Assert that a directly delegating loader is accepted and that a body returning the path,
+/// discarding the shared result or forwarding its operands in the wrong order is rejected.
 fn assert_forwarding_controls() {
-    assert_eq!(
-        forwarding_calls("skills", DELEGATE_BODY),
-        [forwarded("skills", "normalize_skill_path")]
-    );
-    assert_eq!(
-        forwarding_calls("prompts", PROMPT_DELEGATE_BODY),
-        [forwarded("prompts", "resolve_prompt_path")]
-    );
+    for (label, source, function) in [
+        ("skills delegate", DELEGATE_BODY, "normalize_skill_path"),
+        (
+            "prompts delegate",
+            PROMPT_DELEGATE_BODY,
+            "resolve_prompt_path",
+        ),
+    ] {
+        assert!(delegates_directly(source, function), "{label}");
+    }
     for (label, source, function) in [
         ("skills bypass", SKILL_BYPASS_BODY, "normalize_skill_path"),
         ("prompts bypass", PROMPT_BYPASS_BODY, "resolve_prompt_path"),
+        (
+            "skills discarded result",
+            SKILL_DISCARDED_RESULT_BODY,
+            "normalize_skill_path",
+        ),
+        (
+            "prompts discarded result",
+            PROMPT_DISCARDED_RESULT_BODY,
+            "resolve_prompt_path",
+        ),
         (
             "swapped operands",
             SWAPPED_OPERANDS_BODY,
             "normalize_skill_path",
         ),
     ] {
-        assert_ne!(
-            forwarding_calls(label, source),
-            [forwarded(label, function)],
-            "{label}"
-        );
+        assert!(!delegates_directly(source, function), "{label}");
     }
 }
 
-/// Assert that the checkout forwards to the shared owner from both instruction loaders only, with
-/// the authored path, the caller's working directory and its home spelling.
-fn assert_tracked_forwarding(sources: &[(String, String)]) {
-    assert_eq!(
-        forwarding_calls_in(sources),
-        [
-            forwarded(
-                "crates/maestro-resources/src/prompt_templates.rs",
-                "resolve_prompt_path"
-            ),
-            forwarded(
-                "crates/maestro-resources/src/skills/mod.rs",
-                "normalize_skill_path"
-            ),
-        ]
-    );
+/// Assert that each instruction loader's body is the direct delegation to the shared owner.
+fn assert_tracked_delegation(sources: &[(String, String)]) {
+    for (path, function) in [
+        (
+            "crates/maestro-resources/src/prompt_templates.rs",
+            "resolve_prompt_path",
+        ),
+        (
+            "crates/maestro-resources/src/skills/mod.rs",
+            "normalize_skill_path",
+        ),
+    ] {
+        let source = sources
+            .iter()
+            .find(|(tracked, _)| tracked == path)
+            .map(|(_, source)| source.as_str());
+        assert!(
+            source.is_some_and(|source| delegates_directly(source, function)),
+            "{path}: {function}"
+        );
+    }
 }
 
 /// A shared owner holding the expansion, the absoluteness check and the resolution.
@@ -3009,6 +2972,22 @@ fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<Stri
 /// A skill loader that returns the path unchanged instead of delegating.
 const SKILL_BYPASS_BODY: &str = "\
 fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    Ok(path.to_owned())
+}
+";
+
+/// A skill loader that calls the shared owner and discards its result.
+const SKILL_DISCARDED_RESULT_BODY: &str = "\
+fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
+    let _ = resolve_explicit_path(path, options.cwd, options.home);
+    Ok(path.to_owned())
+}
+";
+
+/// A prompt loader that calls the shared owner and discards its result.
+const PROMPT_DISCARDED_RESULT_BODY: &str = "\
+fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
+    let _ = resolve_explicit_path(path, options.cwd, options.home);
     Ok(path.to_owned())
 }
 ";
@@ -3087,5 +3066,5 @@ fn explicit_instruction_paths_share_their_resolver() {
         )]
     );
     assert_forwarding_controls();
-    assert_tracked_forwarding(&sources);
+    assert_tracked_delegation(&sources);
 }

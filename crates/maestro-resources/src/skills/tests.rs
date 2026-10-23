@@ -636,8 +636,8 @@ fn native_nofollow_metadata_distinguishes_links() {
 }
 
 /// Each explicit skill form returns the reference's result for the five supplied homes, spelled
-/// in the host's path flavor; an empty Unix home leaves the expansion empty, which names the
-/// working directory, and a relative Unix home resolves below it.
+/// in the host's path flavor; a bare `~` with an empty Unix home leaves the expansion empty,
+/// which names the working directory, and a relative Unix home resolves below it.
 #[test]
 fn explicit_skill_paths_follow_the_reference_table() {
     let rows: &[(&str, &str, &str)] = if cfg!(windows) {
@@ -694,8 +694,8 @@ enum ExplicitOutcome {
 }
 
 /// An expanded tilde resolves against the caller directory, so an empty home names the working
-/// directory and a relative home resolves below it, while every other explicit form and
-/// diagnostic stays the reference's.
+/// directory for a bare `~` while a suffixed form keeps its text, and a relative home resolves
+/// below it, while every other explicit form and diagnostic stays the reference's.
 #[cfg(not(windows))]
 #[test]
 fn explicit_tilde_paths_use_the_supplied_cwd_after_expansion() {
