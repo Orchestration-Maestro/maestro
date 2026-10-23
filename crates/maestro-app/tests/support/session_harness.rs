@@ -1197,22 +1197,17 @@ pub const MESSAGE_EVENTS: [&str; 4] = ["agent_start", "message_start", "message_
 
 /// Asserts what the session produced against `case`: the history, the run and message
 /// events, the extension events, the reported errors and the number of provider requests.
+/// A run end's messages are compared through the history, since their timestamps are the
+/// clock's.
 pub fn assert_transcript(h: &Harness, t: &Transcript, case: &Value) {
     assert_eq!(
         with_placeholders(json!(messages_view(h)), h),
         case["messages"]
     );
-    // A run end's messages are compared through the history, since their timestamps are
-    // the clock's.
-    let recorded = of_kinds(case["sessionEvents"].as_array().unwrap(), &MESSAGE_EVENTS)
-        .into_iter()
-        .map(|event| match event["type"].as_str() {
-            Some("agent_end") => json!({"type": "agent_end"}),
-            _ => event,
-        });
+    let recorded = of_kinds(case["sessionEvents"].as_array().unwrap(), &MESSAGE_EVENTS);
     assert_eq!(
         with_placeholders(json!(t.events_of(&MESSAGE_EVENTS)), h),
-        json!(recorded.collect::<Vec<_>>())
+        json!(recorded)
     );
     assert_eq!(
         with_placeholders(json!(*t.extension.borrow()), h),

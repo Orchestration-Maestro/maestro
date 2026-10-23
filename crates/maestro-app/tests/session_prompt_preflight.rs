@@ -272,7 +272,7 @@ async fn queued_prompt_case(name: &str, behavior: UserMessageDelivery, images: V
         expected["sessionEvents"].as_array().unwrap(),
         &["queue_update"],
     );
-    assert_eq!(updates, recorded[..1]);
+    assert_eq!(updates, recorded);
 }
 
 #[test]
@@ -465,8 +465,7 @@ fn deferred_shell_result_flushes_before_the_next_prompt() {
         assert_eq!(results, expected["results"]);
         assert_transcript(&h, &t, &expected);
         assert_eq!(queue_view(&h, &t), expected["queue"]);
-        let recorded = shell_entries(expected["entries"].as_array().unwrap());
-        assert_eq!(shell_entries(&entries_view(&h)), recorded);
+        assert_eq!(json!(shell_entries(&entries_view(&h))), expected["entries"]);
     });
 }
 
