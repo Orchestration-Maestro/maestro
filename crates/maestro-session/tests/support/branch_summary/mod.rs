@@ -72,9 +72,19 @@ struct NativeRow {
 fn recording() -> Recording {
     serde_json::from_str(include_str!("../../fixtures/branch_summary.json")).unwrap()
 }
-/// Every preparation row of one public witness, after the canonical-input sign observation.
+/// Every preparation row of one public witness.
 fn rows(name: &str) -> Vec<Row> {
-    let rows: Vec<_> = preparation()
+    preparation()
+        .rows
+        .into_iter()
+        .filter(|row| row.test == name)
+        .collect()
+}
+/// Every collection, generation or completion row of one public witness, after the
+/// canonical-input sign observation.
+#[cfg(not(target_arch = "wasm32"))]
+fn native_rows(name: &str) -> Vec<NativeRow> {
+    let rows: Vec<_> = recording()
         .rows
         .into_iter()
         .filter(|row| row.test == name)
@@ -88,15 +98,6 @@ fn rows(name: &str) -> Vec<Row> {
         }
     }
     rows
-}
-/// Every collection, generation or completion row of one public witness.
-#[cfg(not(target_arch = "wasm32"))]
-fn native_rows(name: &str) -> Vec<NativeRow> {
-    recording()
-        .rows
-        .into_iter()
-        .filter(|row| row.test == name)
-        .collect()
 }
 
 /// Prepare one recorded row through the pure preparation operation.
