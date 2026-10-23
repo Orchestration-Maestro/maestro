@@ -146,7 +146,7 @@ async fn delivered_queue(queue: fn(&Harness, &str)) -> (Harness, Vec<String>) {
     requested.notified().await;
     queue(&h, "later");
     log_events(&h, "listener", &log);
-    let mirrors = Rc::clone(&h.session);
+    let mirrors = Rc::downgrade(&h.session);
     let seen = Rc::clone(&log);
     drop(h.session.subscribe(Rc::new(move |event| {
         if let AgentSessionEvent::Agent(event) = event
@@ -154,10 +154,13 @@ async fn delivered_queue(queue: fn(&Harness, &str)) -> (Harness, Vec<String>) {
                 message: AgentMessage::User(_),
             } = &*event.read().unwrap()
         {
+            let session = mirrors
+                .upgrade()
+                .expect("the session outlives its listener");
             seen.borrow_mut().push(format!(
                 "mirrors {:?} {:?}",
-                mirrors.get_steering_messages(),
-                mirrors.get_follow_up_messages()
+                session.get_steering_messages(),
+                session.get_follow_up_messages()
             ));
         }
     })));
@@ -466,13 +469,16 @@ fn creates_the_retry_observation_synchronously() {
             ..HarnessOptions::default()
         })
         .await;
-        let session = Rc::clone(&h.session);
+        let session = Rc::downgrade(&h.session);
         let observed = Rc::new(RefCell::new(None));
         let ended = Rc::new(Notify::new());
         let (at_end, notify) = (Rc::clone(&observed), Rc::clone(&ended));
         drop(h.session.agent().subscribe(Rc::new(move |event, _| {
             let ending = matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. });
             if ending && at_end.borrow().is_none() {
+                let session = session
+                    .upgrade()
+                    .expect("the session outlives its listener");
                 *at_end.borrow_mut() = Some(session.is_retrying());
                 notify.notify_one();
             }

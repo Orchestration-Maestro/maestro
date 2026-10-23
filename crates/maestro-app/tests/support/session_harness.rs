@@ -11,7 +11,7 @@ use maestro_app::resources::resource_loader::{
 };
 use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};
 use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, ScopedModel};
-use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData, ConfigValueOperations};
+use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionContext, ExtensionExecution,
@@ -215,19 +215,8 @@ pub fn model_view(model: &Arc<RwLock<Model>>) -> String {
     format!("{}/{}", model.provider, model.id)
 }
 
-/// Commands that never produce a value, as a failing shell command does.
-pub struct FailingCommands;
-
-impl ConfigValueOperations for FailingCommands {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        None
-    }
-}
-
-/// Configured-value commands no application test reaches.
-pub fn no_commands() -> maestro_catalog::ConfigValues {
-    Arc::new(FailingCommands)
-}
+/// Configured-value commands for native tests, shared with the browser-safe fixture.
+pub use super::no_commands::no_commands;
 
 /// A loader returning the supplied extensions and no other resources.
 pub struct TestResourceLoader {

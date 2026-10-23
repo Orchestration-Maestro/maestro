@@ -5,6 +5,9 @@
 pub(crate) mod runtime;
 pub(crate) use runtime::io_runtime;
 
+#[path = "../tests/support/no_commands.rs"]
+pub(crate) mod no_commands;
+
 #[path = "../tests/support/session_harness.rs"]
 #[allow(
     dead_code,

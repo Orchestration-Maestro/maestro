@@ -155,6 +155,7 @@ mod support {
     pub mod document_extraction;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
+    pub mod no_commands;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod pdf;
     pub mod session_harness;

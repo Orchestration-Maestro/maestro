@@ -67,12 +67,12 @@ fn loading_never_resolves_keys_or_headers() {
     let input = serde_json::json!({"providers":{"custom":{"baseUrl":"u","api":"a","apiKey":command,"headers":{"X-Provider":command},"models":[{"id":"marker","headers":{"X-Model":command}}]}}}).to_string();
     #[cfg(not(target_arch = "wasm32"))]
     let file = support::File::new(input.as_bytes());
-    let registries = vec![support::registry(&input)];
+    let registries = vec![support::registry_with(&input, crate::support::forbidden())];
     #[cfg(not(target_arch = "wasm32"))]
     let registries = registries.into_iter().chain([ModelRegistry::create(
         support::auth(),
         file.path(),
-        crate::support::values(),
+        crate::support::forbidden(),
     )
     .unwrap()]);
     for registry in registries {

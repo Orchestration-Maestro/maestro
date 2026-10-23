@@ -417,8 +417,9 @@ fn footer_public_type_uses_the_default_execution() {
     assert_eq!(footer.render(80).len(), 2, "a path row and a stats row");
 }
 
+/// One metadata read and one totals walk per frame.
 #[test]
-fn footer_history_and_status_work_has_no_per_item_rescan() {
+fn footer_reads_metadata_once_per_frame() {
     for count in [0_usize, 1, 4] {
         let (world, pairs) = world_with_items(count);
         let branch = crate::footer_support::counter();
@@ -449,7 +450,7 @@ fn footer_history_and_status_work_has_no_per_item_rescan() {
             Rc::new(|_| None),
         );
         let lines = footer.try_render(200).expect("a rendered frame");
-        assert_eq!(statuses.get(), 1, "one status walk for {count} items");
+        assert_eq!(statuses.get(), 1, "one status read for {count} items");
         assert_eq!(branch.get(), 1, "one branch read for {count} items");
         assert_eq!(providers.get(), 1, "one provider read for {count} items");
         if count > 0 {
