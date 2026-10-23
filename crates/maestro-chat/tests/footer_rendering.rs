@@ -416,6 +416,14 @@ fn footer_uninitialized_theme_fails_at_first_paint() {
 }
 
 #[test]
+fn footer_public_type_uses_the_default_execution() {
+    let world = World::new("/tmp/project", None);
+    world.set_model("test-model", "test", false, 200_000.0);
+    let footer: FooterComponent = world.footer();
+    assert_eq!(footer.render(80).len(), 2, "a path row and a stats row");
+}
+
+#[test]
 fn footer_history_and_status_work_has_no_per_item_rescan() {
     for count in [0_usize, 1, 4] {
         let world = World::new("/tmp/project", None);

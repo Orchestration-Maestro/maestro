@@ -1,8 +1,8 @@
 //! The footer that shows the working directory, cumulative usage and the selected model.
-use super::shorten_path_with_home;
+use super::{shorten_path_with_home, thinking_selector::thinking_text};
 use maestro_app::{
     AgentSession, DiagnosticErrorInfo, ExtensionExecution, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, ThinkingLevel, is_whitespace_scalar,
+    ReadonlySessionManager, ThinkingLevel, Threaded, is_whitespace_scalar,
 };
 use maestro_theme::{Collator, LiveTheme, ThemeColor, paint};
 use maestro_tui::{Component, TruncateOptions, truncate_to_width, visible_width};
@@ -66,7 +66,7 @@ impl Totals {
 }
 
 /// The footer over a session, its read-only metadata, the published theme and the environment.
-pub struct FooterComponent<E: ExtensionExecution> {
+pub struct FooterComponent<E: ExtensionExecution = Threaded> {
     /// The session whose history and selections are rendered.
     session: RefCell<Rc<AgentSession<E>>>,
     /// The branch, provider count and extension statuses.
@@ -126,14 +126,16 @@ impl<E: ExtensionExecution> FooterComponent<E> {
         if let Some(branch) = self.footer_data.get_git_branch().filter(|b| !b.is_empty()) {
             pwd = format!("{pwd} ({branch})");
         }
-        let name = session
-            .session_manager()
-            .borrow()
+        let manager = session.session_manager();
+        let manager = manager.borrow();
+        let name = manager
             .get_session_name()
             .map_err(Box::new)?
-            .filter(|name| !name.is_empty())
-            .map(str::to_owned);
-        Ok(name.map_or(pwd.clone(), |name| format!("{pwd} • {name}")))
+            .filter(|name| !name.is_empty());
+        match name {
+            Some(name) => Ok(format!("{pwd} • {name}")),
+            None => Ok(pwd),
+        }
     }
 
     /// The path row: dim, shortened with a dim ellipsis and never wider than the viewport.
@@ -178,7 +180,7 @@ impl<E: ExtensionExecution> FooterComponent<E> {
         }
         match session.thinking_level() {
             ThinkingLevel::Off => format!("{name} • thinking off"),
-            level => format!("{name} • {}", level_name(&level)),
+            level => format!("{name} • {}", thinking_text(&level).0),
         }
     }
 
@@ -194,12 +196,10 @@ impl<E: ExtensionExecution> FooterComponent<E> {
             return right;
         }
         let model = session.model();
-        let provider = model
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .provider
-            .clone();
-        let prefixed = format!("({provider}) {right}");
+        let prefixed = {
+            let descriptor = model.read().unwrap_or_else(PoisonError::into_inner);
+            format!("({}) {right}", descriptor.provider)
+        };
         if left + MIN_PADDING + visible_width(&prefixed) > width {
             right
         } else {
@@ -244,8 +244,8 @@ impl<E: ExtensionExecution> FooterComponent<E> {
             left_width = visible_width(&left);
         }
         let right = self.provider_side(session, Self::model_side(session), left_width, width);
-        let (head, remainder) = layout(width, left_width, &left, &right);
-        Ok(format!("{}{}", self.dim(&head)?, self.dim(&remainder)?))
+        let remainder = layout(width, left_width, &right);
+        Ok(format!("{}{}", self.dim(&left)?, self.dim(&remainder)?))
     }
 
     /// The context display, colored by its reached threshold role.
@@ -374,19 +374,19 @@ fn cost_part<E: ExtensionExecution>(session: &AgentSession<E>, cost: f64) -> Opt
     Some(format!("${}{marker}", fixed(cost, 3)))
 }
 
-/// Splits the stats row into its left text and its remainder, keeping the minimum gap.
-fn layout(width: usize, left_width: usize, left: &str, right: &str) -> (String, String) {
+/// The stats row after its left text: the padding and the room left for the right side.
+fn layout(width: usize, left_width: usize, right: &str) -> String {
     let right_width = visible_width(right);
     if left_width + MIN_PADDING + right_width <= width {
         let padding = " ".repeat(width - left_width - right_width);
-        return (left.to_owned(), format!("{padding}{right}"));
+        return format!("{padding}{right}");
     }
-    let Some(available) = width.checked_sub(left_width + MIN_PADDING) else {
-        return (left.to_owned(), String::new());
+    let Some(available) = width
+        .checked_sub(left_width + MIN_PADDING)
+        .filter(|available| *available > 0)
+    else {
+        return String::new();
     };
-    if available == 0 {
-        return (left.to_owned(), String::new());
-    }
     let truncated = truncate_to_width(
         right,
         available,
@@ -397,7 +397,7 @@ fn layout(width: usize, left_width: usize, left: &str, right: &str) -> (String, 
     );
     let truncated_width = visible_width(&truncated);
     let padding = " ".repeat(width.saturating_sub(left_width + truncated_width));
-    (left.to_owned(), format!("{padding}{truncated}"))
+    format!("{padding}{truncated}")
 }
 
 /// A stored numeric field: absent or non-numeric poisons the total, null contributes zero.
@@ -441,18 +441,6 @@ fn fixed(value: f64, digits: u8) -> String {
 /// The nearest whole number, with halves rounded towards the larger value.
 fn half_up(value: f64) -> f64 {
     (value + 0.5).floor()
-}
-
-/// The declared thinking level's spelling.
-fn level_name(level: &ThinkingLevel) -> &'static str {
-    match level {
-        ThinkingLevel::Off => "off",
-        ThinkingLevel::Minimal => "minimal",
-        ThinkingLevel::Low => "low",
-        ThinkingLevel::Medium => "medium",
-        ThinkingLevel::High => "high",
-        ThinkingLevel::Xhigh => "xhigh",
-    }
 }
 
 /// Replaces tabs and line breaks with spaces, collapses space runs and trims outer whitespace.
