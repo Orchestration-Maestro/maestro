@@ -808,11 +808,14 @@ fn image_data_limits_are_enforced_at_the_owner() {
 fn assert_native_file_bytes() {
     use std::os::unix::ffi::OsStrExt as _;
     let scratch = Scratch::new().unwrap();
-    let path = fixture_file(
-        &scratch,
-        std::ffi::OsStr::from_bytes(b"pixels-\xff.rgb"),
-        b"ABC",
-    );
+    let name = std::ffi::OsStr::from_bytes(b"pixels-\xff.rgb");
+    // A host may refuse names that are not valid UTF-8; the range and path-failure
+    // observations over storable names stay unconditional.
+    if !scratch.keeps_distinct(&[name]).unwrap() {
+        eprintln!("host refuses the name bytes {:?}", name.as_bytes());
+        return;
+    }
+    let path = fixture_file(&scratch, name, b"ABC");
     assert_eq!(complete(&local(&path, Medium::File)).unwrap().data, b"ABC");
     assert_eq!(fs::read(path).unwrap(), b"ABC");
 }

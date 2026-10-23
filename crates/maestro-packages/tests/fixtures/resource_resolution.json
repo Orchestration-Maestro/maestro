@@ -1275,9 +1275,9 @@
       "pkg/skills/node_modules/SKILL.md": "fixture",
       "pkg/prompts/.hidden.md": "fixture",
       "pkg/prompts/node_modules/skip.md": "fixture",
-      "pkg/prompts/a.MD": "fixture",
+      "pkg/prompts/b.MD": "fixture",
       "pkg/prompts/a.md": "fixture",
-      "pkg/themes/a.JSON": "fixture",
+      "pkg/themes/b.JSON": "fixture",
       "pkg/themes/a.json": "fixture"
     },
     "dirs": [],

@@ -1,6 +1,7 @@
-//! Collision and creation-failure observations at the allocator.
+//! Collision, creation-failure and name-admission observations at the owner.
 use super::{Scratch, allocate};
 use std::{
+    ffi::OsStr,
     fs,
     sync::atomic::{AtomicU64, Ordering},
 };
@@ -38,4 +39,74 @@ fn existing_candidates_survive_exclusive_allocation() {
             assert_eq!(fs::read_to_string(file).unwrap(), "original");
         }
     }
+}
+
+/// A host that folds case answers the same question the independent probe does.
+#[test]
+fn folded_spellings_report_the_host_answer() {
+    let scratch = Scratch::new().unwrap();
+    let probe = scratch.path().join("independent");
+    fs::create_dir(&probe).unwrap();
+    fs::write(probe.join("A.readme"), "").unwrap();
+    let folded = probe.join("a.readme").exists();
+    assert_eq!(
+        scratch
+            .keeps_distinct(&[OsStr::new("A.readme"), OsStr::new("a.readme")])
+            .unwrap(),
+        !folded,
+        "folded case spellings"
+    );
+}
+
+/// A name stored once is never two entries, so a repeated name is refused everywhere.
+#[test]
+fn repeated_names_report_a_refusal() {
+    let scratch = Scratch::new().unwrap();
+    assert!(
+        !scratch
+            .keeps_distinct(&[OsStr::new("same"), OsStr::new("same")])
+            .unwrap(),
+        "repeated name"
+    );
+}
+
+/// A name the host cannot store is refused everywhere while its control name is stored.
+#[test]
+fn unstoreable_names_report_a_refusal() {
+    let scratch = Scratch::new().unwrap();
+    let name = "n".repeat(300);
+    assert!(
+        !scratch.keeps_distinct(&[OsStr::new(&name)]).unwrap(),
+        "long name"
+    );
+}
+
+/// Every path component answers the host question, not only the leaf.
+#[test]
+fn refused_components_outside_the_leaf_are_reported() {
+    let scratch = Scratch::new().unwrap();
+    let directory = "d".repeat(300);
+    let path = format!("{directory}/file");
+    assert_eq!(
+        scratch.folded_names(&[&path]).unwrap(),
+        vec![vec![directory]],
+        "refused directory component"
+    );
+}
+
+/// A host that refuses native name bytes answers the same question the write does.
+#[cfg(unix)]
+#[test]
+fn refused_names_report_the_host_answer() {
+    use std::os::unix::ffi::OsStrExt as _;
+    let scratch = Scratch::new().unwrap();
+    let probe = scratch.path().join("independent");
+    fs::create_dir(&probe).unwrap();
+    let name = OsStr::from_bytes(b"n\xff");
+    let stored = fs::write(probe.join(name), "").is_ok();
+    assert_eq!(
+        scratch.keeps_distinct(&[name]).unwrap(),
+        stored,
+        "refused name bytes"
+    );
 }

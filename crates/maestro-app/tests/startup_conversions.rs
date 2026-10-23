@@ -429,13 +429,16 @@ fn check_resolution_orders(depth: usize, payload: &str, moving: &str) {
     let mut orders = std::collections::BTreeSet::new();
     for arrangement in 0..2 * (depth + 1) {
         let (scratch, paths) = resolution_chain(depth, payload, moving, arrangement);
+        // The mixed-case chain links an upper-cased spelling of a name the same chain also
+        // converts: a host that keeps the spellings apart holds no such entry to resolve, and a
+        // host that folds them converts the twin, so neither answer states this expectation.
+        let name = paths[1].file_name().unwrap();
+        let upper = name.to_ascii_uppercase();
         if payload == "mixed-case"
-            && !scratch
-                .0
-                .path()
-                .join(paths[1].file_name().unwrap().to_ascii_uppercase())
-                .exists()
+            && (!scratch.0.path().join(&upper).exists()
+                || !scratch.0.keeps_distinct(&[name, &upper]).unwrap())
         {
+            eprintln!("host cannot resolve and tell apart {name:?} and {upper:?}");
             return;
         }
         let entries: Vec<_> = std::fs::read_dir(scratch.0.path())

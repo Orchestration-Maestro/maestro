@@ -245,7 +245,11 @@ canonicalizes its chosen root; `Scratch::new_in` keeps native supplied-parent
 spelling. On Unix, `enter_removed` and `enter_unreadable` put a test process in a
 removed or unreadable working directory, and `deny(path, mode)` sets a mode and
 returns its restoring guard, or `None` when the process is not refused, as in a
-privileged run. Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
+privileged run. `keeps_distinct(names)` reports whether the running host keeps a set of
+leaf names apart, and `folded_names(paths)` reports every name group it does not keep
+apart across all components of the supplied relative paths, so a fixture can state a
+premise the host can exercise.
+Both graph cycle checks still apply. See the [directory contract](docs/specs/maestro-port.md#test-directory-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
 scoped tracing subscriber that sees every callsite. Only daemon, terminal and

@@ -78,6 +78,18 @@ struct ExpectedDiagnostic {
     /// Associated instruction path.
     path: String,
 }
+/// The authored name groups this host does not keep apart, one per parent directory.
+fn folded_names(dir: &Directory, recipe: &Recipe) -> Vec<Vec<String>> {
+    let paths: Vec<&str> = recipe
+        .files
+        .keys()
+        .chain(&recipe.directories)
+        .chain(recipe.links.keys())
+        .map(String::as_str)
+        .collect();
+    dir.0.folded_names(&paths).unwrap()
+}
+
 /// Execute one group, rejecting repeated input recipes and comparing complete ordered trees.
 fn check_group(group: &str) {
     let groups: BTreeMap<String, Vec<Recipe>> =
@@ -94,6 +106,11 @@ fn check_group(group: &str) {
             "duplicate recipe {index}"
         );
         let dir = Directory::new();
+        let folded = folded_names(&dir, recipe);
+        if !folded.is_empty() {
+            eprintln!("{group} recipe {index} needs leaf names this host keeps apart: {folded:?}");
+            continue;
+        }
         let root = dir.0.path().join("skills");
         std::fs::create_dir(&root).unwrap();
         for directory in &recipe.directories {

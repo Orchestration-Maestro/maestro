@@ -4,6 +4,7 @@ use maestro_app::configuration::migrations::{MigrationStyle, run_migrations};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
+    ffi::OsStr,
     fs, io,
     os::unix::fs::{PermissionsExt, symlink},
     path::Path,
@@ -239,7 +240,9 @@ fn operation() {
     );
 }
 fn replay(name: &str, case: Case<Input, Expected>) {
-    let scratch = child::Scratch::new();
+    let Some(scratch) = admitted_scenario(name, &case) else {
+        return;
+    };
     setup(scratch.0.path(), &case.input);
     let authored = case.input.root.as_deref().unwrap_or("agent");
     let agent = if case.input.relative_root {
@@ -297,6 +300,28 @@ fn replay(name: &str, case: Case<Input, Expected>) {
             fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
         }
     }
+}
+
+/// A scratch directory for a scenario this host can author, with the spellings it cannot store
+/// apart reported. The migration resolves managed names by their lower-case spelling through the
+/// host's own lookup, so an authored upper-case spelling is exercisable only where the host
+/// keeps it apart from its lower-case twin.
+fn admitted_scenario(name: &str, case: &Case<Input, Expected>) -> Option<child::Scratch> {
+    let scratch = child::Scratch::new();
+    for entry in case.input.entries.keys() {
+        let leaf = entry.rsplit('/').next().unwrap_or(entry.as_str());
+        let lower = leaf.to_ascii_lowercase();
+        if lower != leaf
+            && !scratch
+                .0
+                .keeps_distinct(&[OsStr::new(leaf), OsStr::new(&lower)])
+                .unwrap()
+        {
+            eprintln!("{name}: host folds {leaf:?} and {lower:?}");
+            return None;
+        }
+    }
+    Some(scratch)
 }
 
 pub fn run(name: &str) {

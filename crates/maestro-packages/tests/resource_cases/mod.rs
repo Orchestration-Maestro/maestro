@@ -37,11 +37,9 @@ pub async fn cases(names: &[&str]) {
         serde_json::from_str(include_str!("../fixtures/resource_resolution.json")).unwrap();
     for name in names {
         let case = cases.iter().find(|c| c.case == *name).unwrap();
-        let dir = Scratch::new().unwrap();
-        #[cfg(not(unix))]
-        if !case.denied.is_empty() {
+        let Some(dir) = admit(case) else {
             continue;
-        }
+        };
         setup(case, &dir);
         // A privileged run reads denied entries anyway, so such a case has nothing to check.
         #[cfg(unix)]
@@ -89,6 +87,32 @@ pub async fn cases(names: &[&str]) {
         assert_eq!(effects.spawns.get(), 0);
         assert_calls(case, &effects);
     }
+}
+
+/// A fixture directory for one recipe, or `None` when this host cannot store the names the
+/// recipe authors, with the folded names reported.
+fn admit(case: &Recipe) -> Option<Scratch> {
+    #[cfg(not(unix))]
+    if !case.denied.is_empty() {
+        return None;
+    }
+    let dir = Scratch::new().unwrap();
+    let paths: Vec<&str> = case
+        .files
+        .keys()
+        .chain(&case.dirs)
+        .chain(case.links.keys())
+        .map(String::as_str)
+        .collect();
+    let folded = dir.folded_names(&paths).unwrap();
+    if folded.is_empty() {
+        return Some(dir);
+    }
+    eprintln!(
+        "{} needs names this host keeps apart: {folded:?}",
+        case.case
+    );
+    None
 }
 
 /// Creates only the filesystem inputs selected by the recipe.

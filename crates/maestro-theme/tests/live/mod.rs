@@ -29,6 +29,11 @@ impl Scratch {
         fs::create_dir_all(std::path::Path::new(&path).parent().unwrap()).unwrap();
         fs::write(path, content).unwrap();
     }
+
+    /// Whether this host stores the supplied leaf names as distinct entries.
+    pub fn keeps_distinct(&self, names: &[&std::ffi::OsStr]) -> bool {
+        self.0.keeps_distinct(names).unwrap()
+    }
 }
 
 /// A state over shipped themes and the scratch's `custom` directory, created if needed
