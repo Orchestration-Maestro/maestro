@@ -53,6 +53,7 @@ mod shared_components;
 mod shared_session_content;
 mod shared_tree_projection;
 mod shell_rows;
+mod simple_selector_cases;
 mod simple_selectors;
 #[path = "../../maestro-catalog/tests/support/subprocess.rs"]
 mod subprocess;

@@ -1,19 +1,21 @@
 //! Public selector behavior against recorded terminal rows.
 #![cfg(test)]
 use crate::published;
-use crate::selector;
 #[path = "simple_selector_support/mod.rs"]
 mod simple_selector_support;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::keybindings;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::manual_runtime;
+#[cfg(target_arch = "wasm32")]
+use crate::simple_selector_cases::*;
 #[cfg(not(target_arch = "wasm32"))]
 use keybindings::bindings;
 use maestro_app::ThinkingLevel;
 use maestro_chat::ThinkingSelectorComponent;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_tui::Component;
+#[cfg(not(target_arch = "wasm32"))]
 use simple_selector_support::*;
 #[cfg(not(target_arch = "wasm32"))]
 use std::{error::Error, rc::Rc};
