@@ -146,9 +146,14 @@ After each native sandbox click completes, the driver checks the selected
 fixture document for a fresh trusted click whose composed path contains its
 `#target`. Missing, untrusted or wrong-target delivery fails with
 `native click did not reach mounted target <id>` before waiting for the pointer
-message. This detects misrouting rather than preventing it: the pinned browser
-exposes no hit-test-ready barrier, and the original stall's compositor cause
-remains unknown. The check does not bound a native click that never completes.
+message. An isolated frame receives its input through its own browser session:
+the driver scrolls `#target` into that document's view immediately, then sends
+move, press and release there. A frame that shares its parent's renderer keeps
+the locator click, because the pinned browser gives it no separate session. This
+keeps the containing page's coordinates out of an isolated frame's input path,
+which is where a native click used to land; it is not a hit-test-ready barrier,
+and the compositor cause of the original stall remains unknown. The check does
+not bound a native click that never completes.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
 page crashes and unexpected browser disconnection fail the command. One deliberate

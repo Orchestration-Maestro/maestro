@@ -496,6 +496,8 @@ test('sandbox_inspection_propagates_target_errors', async t => {
             frame.locator = (...args) => {
               const target = locator(...args), click = target.click.bind(target);
               target.click = async () => { await remove(); return click(); };
+              const evaluate = target.evaluate.bind(target);
+              target.evaluate = async (...args) => { await remove(); return evaluate(...args); };
               return target;
             };
           }
@@ -621,7 +623,7 @@ window.prepareDelivery = async function(nested, svg) {
         separate = true; await own.detach();
       } catch (error) { assert.match(error.message, /does not have a separate CDP session/); }
       assert.equal(separate, !shared, 'actual selected-frame session route');
-      const session = await page.context().newCDPSession(page);
+      const session = await page.context().newCDPSession(shared ? page : child);
       const suppressed = scenario === 'ignored' || scenario === 'stale';
       try {
         if (scenario === 'stale') {
@@ -639,6 +641,7 @@ window.prepareDelivery = async function(nested, svg) {
           if (scenario === 'other-target') await child.evaluate(() => {
             const other = document.createElement('button'); other.id = 'other'; other.textContent = 'other'; document.body.append(other);
           });
+          if (shared) {
           const acquire = child.locator.bind(child);
           child.locator = (...args) => {
             const locator = acquire(...args);
@@ -647,6 +650,26 @@ window.prepareDelivery = async function(nested, svg) {
               : () => locator.evaluate(node => node.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, composed: true})));
             return locator;
           };
+          } else {
+            const context = page.context(), create = context.newCDPSession.bind(context);
+            context.newCDPSession = async frame => {
+              const selectedSession = await create(frame), send = selectedSession.send.bind(selectedSession);
+              selectedSession.send = async (method, params) => {
+                if (method !== 'Input.dispatchMouseEvent') return send(method, params);
+                if (scenario === 'containing') {
+                  if (params.type === 'mouseReleased') await page.mouse.click(1, 1);
+                  return;
+                }
+                if (scenario === 'untrusted') {
+                  if (params.type === 'mouseReleased') await child.locator('#target').evaluate(node => node.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, composed: true})));
+                  return;
+                }
+                const point = await child.locator('#other').evaluate(node => { const b = node.getBoundingClientRect(); return {x:b.x+b.width/2,y:b.y+b.height/2}; });
+                return send(method, {...params, ...point});
+              };
+              return selectedSession;
+            };
+          }
         }
         let caught;
         try { await inspect(); } catch (error) { caught = error; }
@@ -699,4 +722,72 @@ test('sandbox_click_does_not_reuse_an_earlier_receipt', async t => {
 
 test('sandbox_click_confirms_native_delivery_before_receipt_wait', async t => {
   await clickDelivery(t, 'control');
+});
+
+test('sandbox_click_bypasses_containing_page_coordinate_dispatch', async t => {
+  for (const nested of [false, true]) for (const svg of [false, true]) {
+    let parentDispatches = 0, selected;
+    const lines = await sandboxFixture(t, `await mountWitness(${nested}, 0, ${svg});
+      await window.inspectSandbox(${JSON.stringify(sandboxId)}, 'click');`, async (page, inspect, action) => {
+      if (action !== 'click') return inspect();
+      observeLookup(page, handle => {
+        const element = handle.asElement(), resolve = element.contentFrame.bind(element);
+        element.contentFrame = async () => {
+          const child = await resolve(), acquire = child.locator.bind(child);
+          selected = child;
+          child.locator = (...args) => {
+            const target = acquire(...args);
+            target.click = async () => { parentDispatches++; await page.mouse.click(1, 1); };
+            return target;
+          };
+          return child;
+        };
+      });
+      const result = await inspect();
+      assert.deepEqual(await selected.evaluate(() => window.pointerDone), {
+        type: 'pointer-done', prevented: false, trusted: true, atTarget: true,
+      }, 'same selected document received fresh trusted native input');
+      return result;
+    });
+    assert.equal(parentDispatches, 0, 'isolated target uses its own native input session');
+    assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
+    assert.equal(lines.at(-1), 'COMPLETE 45/45');
+  }
+});
+
+test('sandbox_click_cleans_selected_session_after_native_operations', async t => {
+  for (const outcome of ['success', 'prepare', 'send', 'create', 'detach']) {
+    let created = 0, detached = 0;
+    const sentinel = 'native-session-' + outcome;
+    const body = `await mountWitness(false); await window.inspectSandbox(${JSON.stringify(sandboxId)}, 'click');`;
+    const running = sandboxFixture(t, body, (page, inspect) => {
+      const context = page.context(), create = context.newCDPSession.bind(context);
+      context.newCDPSession = async frame => {
+        if (outcome === 'create') throw Error(sentinel);
+        const session = await create(frame); created++;
+        const detach = session.detach.bind(session), send = session.send.bind(session);
+        session.detach = async () => {
+          await detach(); detached++;
+          if (outcome === 'detach') throw Error(sentinel);
+        };
+        if (outcome === 'send') session.send = async (method, params) => {
+          if (method === 'Input.dispatchMouseEvent') throw Error(sentinel);
+          return send(method, params);
+        };
+        if (outcome === 'prepare') {
+          const locate = frame.locator.bind(frame);
+          frame.locator = (...args) => {
+            const target = locate(...args); target.evaluate = async () => { throw Error(sentinel); };
+            return target;
+          };
+        }
+        return session;
+      };
+      return inspect();
+    });
+    if (outcome === 'success') assert.equal((await running).at(-1), 'COMPLETE 45/45');
+    else await assert.rejects(running, error => { assert(error.cause.message.includes(sentinel)); return true; });
+    assert.equal(created, outcome === 'create' ? 0 : 1, outcome);
+    assert.equal(detached, created, outcome + ' releases every acquired native session');
+  }
 });
