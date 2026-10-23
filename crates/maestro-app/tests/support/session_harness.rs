@@ -684,8 +684,8 @@ pub fn recorded_number(value: f64) -> Value {
     json!(value)
 }
 
-/// Completes `body` on a fresh current-thread runtime whose clock advances only when a
-/// test asks, inside a task set it receives.
+/// Completes `body` on a fresh current-thread runtime with a paused clock, inside a task set
+/// it receives; the clock moves when a test advances it or when every task waits on a timer.
 pub fn on_paused_task_set<F: std::future::Future>(
     body: impl FnOnce(Rc<tokio::task::LocalSet>) -> F,
 ) -> F::Output {

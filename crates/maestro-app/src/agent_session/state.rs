@@ -99,3 +99,27 @@ pub(super) fn content_text(content: Option<&Value>) -> String {
 pub(super) fn thrown(error: impl std::fmt::Display) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo::error(error.to_string())
 }
+
+/// Settles a started operation once, when dropped, unless the operation settled itself:
+/// a caller that drops the operation mid-flight leaves no running flag, gate or signal set.
+pub(super) struct Settlement<F: FnOnce()>(Option<F>);
+
+impl<F: FnOnce()> Settlement<F> {
+    /// Arms `settle` for the operation now running.
+    pub(super) fn new(settle: F) -> Self {
+        Self(Some(settle))
+    }
+
+    /// Disarms the settlement once the operation completed and settles itself.
+    pub(super) fn disarm(mut self) {
+        self.0 = None;
+    }
+}
+
+impl<F: FnOnce()> Drop for Settlement<F> {
+    fn drop(&mut self) {
+        if let Some(settle) = self.0.take() {
+            settle();
+        }
+    }
+}

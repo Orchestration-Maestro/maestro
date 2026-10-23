@@ -1,17 +1,19 @@
 //! Manual and automatic compaction over the supplied history.
-use super::AgentSession;
+use super::navigation::presence;
 use super::state::{agent_messages, thrown};
-use crate::utils::lock::write;
+use super::{AgentSession, AgentSessionEvent, CompactionReason};
+use crate::utils::lock::{read, write};
+use indexmap::IndexMap;
 use maestro_extensions::{ExtensionExecution, SessionBeforeCompactEvent, SessionCompactEvent};
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
 use maestro_session::compaction::{
-    CompactionPreparation, CompactionResult, CompactionSettings, prepare_compaction,
+    CompactionPreparation, CompactionResult, CompactionSettings, SummaryOptions, prepare_compaction,
 };
 use maestro_session::{
     CompactionEntry, Presence, SessionEntry,
     session_manager::{CompactionOptions, ReadonlySessionManager},
 };
-use maestro_settings::ResolvedCompactionSettings;
+use serde::Deserialize;
 use serde_json::Value;
 
 mod automatic;
@@ -24,8 +26,11 @@ enum BeforeCompaction {
         /// The authored compaction.
         result: CompactionResult,
     },
-    /// No handler supplied content.
-    Continue,
+    /// No handler supplied content; generation reads the preparation handlers saw.
+    Continue {
+        /// The preparation as the handlers left it.
+        preparation: Box<CompactionPreparation>,
+    },
     /// A handler refused the compaction.
     Cancelled,
 }
@@ -39,8 +44,21 @@ struct PreparedBranch {
 }
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// The branch entries, the policy and the prepared compaction.
-    fn prepared_branch(&self) -> Result<PreparedBranch, DiagnosticErrorInfo> {
+    /// The compaction policy the saved preferences describe now.
+    fn compaction_policy(&self) -> CompactionSettings {
+        let settings = self.settings_manager.borrow().get_compaction_settings();
+        CompactionSettings {
+            enabled: settings.enabled,
+            reserve_tokens: settings.reserve_tokens,
+            keep_recent_tokens: settings.keep_recent_tokens,
+        }
+    }
+
+    /// The branch entries and the compaction `settings` prepare over them.
+    fn prepared_branch(
+        &self,
+        settings: &CompactionSettings,
+    ) -> Result<PreparedBranch, DiagnosticErrorInfo> {
         let manager = self.session_manager.borrow();
         let entries: Vec<SessionEntry> = manager
             .get_branch(None)
@@ -48,10 +66,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .into_iter()
             .cloned()
             .collect();
-        let settings =
-            compaction_settings(&self.settings_manager.borrow().get_compaction_settings());
-        let preparation = prepare_compaction(&entries, &settings).map_err(thrown)?;
         drop(manager);
+        let preparation = prepare_compaction(&entries, settings).map_err(thrown)?;
         Ok(PreparedBranch {
             entries,
             preparation,
@@ -61,42 +77,68 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Offers the pending compaction to handlers before any summary is requested.
     async fn before_compaction(
         &self,
-        preparation: &CompactionPreparation,
+        preparation: CompactionPreparation,
         branch_entries: Vec<SessionEntry>,
         custom_instructions: Option<String>,
         signal: &Cancellation,
     ) -> Result<BeforeCompaction, DiagnosticErrorInfo> {
         if !self.extension_runner.has_handlers("session_before_compact") {
-            return Ok(BeforeCompaction::Continue);
+            return Ok(BeforeCompaction::Continue {
+                preparation: Box::new(preparation),
+            });
         }
         let mut event = SessionBeforeCompactEvent {
             data: maestro_extensions::SessionBeforeCompactEventData {
-                preparation: preparation.clone(),
+                preparation,
                 branch_entries,
                 custom_instructions: presence(custom_instructions),
             },
             signal: signal.clone(),
         };
-        let Some(result) = self
+        let result = self
             .extension_runner
             .emit(&mut event)
             .await
-            .map_err(thrown)?
-        else {
-            return Ok(BeforeCompaction::Continue);
+            .map_err(thrown)?;
+        let preparation = event.data.preparation;
+        let Some(result) = result else {
+            return Ok(BeforeCompaction::Continue {
+                preparation: Box::new(preparation),
+            });
         };
         if matches!(result.cancel, Presence::Present(true)) {
             return Ok(BeforeCompaction::Cancelled);
         }
-        Ok(match result.compaction.present() {
-            Some(result) => BeforeCompaction::Supplied {
-                result: result.clone(),
+        Ok(match result.compaction {
+            Presence::Present(result) => BeforeCompaction::Supplied { result },
+            Presence::Missing | Presence::Null => BeforeCompaction::Continue {
+                preparation: Box::new(preparation),
             },
-            None => BeforeCompaction::Continue,
         })
     }
 
-    /// Stores the compaction, rebuilds the context and returns the stored entry.
+    /// Generates the summary of `preparation` with the selected model and thinking level.
+    async fn summarize(
+        &self,
+        preparation: &CompactionPreparation,
+        (api_key, headers): (String, Option<IndexMap<String, String>>),
+        custom_instructions: Option<String>,
+        signal: &Cancellation,
+    ) -> Result<CompactionResult, DiagnosticErrorInfo> {
+        let options = SummaryOptions {
+            api_key,
+            headers,
+            signal: Some(signal.clone()),
+            custom_instructions,
+            thinking_level: Some(self.thinking_level()),
+        };
+        let model = read(&self.model()).clone();
+        maestro_session::compaction::compact(preparation, &model, &options)
+            .await
+            .map(stored_result)
+    }
+
+    /// Stores the compaction, rebuilds the context and returns the entry just stored.
     fn store_compaction(
         &self,
         result: &CompactionResult,
@@ -107,7 +149,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             from_hook: Presence::Present(from_extension),
         };
         let mut manager = self.session_manager.borrow_mut();
-        manager
+        let id = manager
             .append_compaction(
                 &result.summary,
                 &result.first_kept_entry_id,
@@ -115,13 +157,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 options,
             )
             .map_err(thrown)?;
-        let entry = manager.get_entries().into_iter().find_map(|entry| {
-            let is_match = entry.get("type").and_then(Value::as_str) == Some("compaction")
-                && entry.get("summary").and_then(Value::as_str) == Some(&result.summary);
-            is_match
-                .then(|| serde_json::from_value::<CompactionEntry>(entry.clone()).ok())
-                .flatten()
-        });
+        let entry = manager
+            .get_entry(&id)
+            .and_then(|entry| CompactionEntry::deserialize(entry).ok());
         let context = manager.build_session_context().map_err(thrown)?;
         drop(manager);
         let messages = agent_messages(context.messages)?;
@@ -148,26 +186,38 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .map_err(thrown)?;
         Ok(())
     }
-}
 
-/// The compaction policy the resolved settings describe.
-fn compaction_settings(settings: &ResolvedCompactionSettings) -> CompactionSettings {
-    CompactionSettings {
-        enabled: settings.enabled,
-        reserve_tokens: settings.reserve_tokens,
-        keep_recent_tokens: settings.keep_recent_tokens,
+    /// Announces a compaction's end, then clears its running signal.
+    fn close_compaction(&self, end: &AgentSessionEvent) {
+        self.emit(end);
+        let mut state = self.state.borrow_mut();
+        if matches!(
+            end,
+            AgentSessionEvent::CompactionEnd {
+                reason: CompactionReason::Manual,
+                ..
+            }
+        ) {
+            state.compaction_signal = None;
+        } else {
+            state.auto_compaction_signal = None;
+        }
     }
 }
 
-/// A supplied optional text as an absent-or-present property.
-fn presence(value: Option<String>) -> Presence<String> {
-    value.map_or(Presence::Missing, Presence::Present)
+/// The end of a compaction a handler, an abort or a dropped caller stopped.
+fn aborted_end(reason: CompactionReason) -> AgentSessionEvent {
+    AgentSessionEvent::CompactionEnd {
+        reason,
+        result: None,
+        aborted: true,
+        will_retry: false,
+        error_message: None,
+    }
 }
 
 /// The compaction a generated summary stores.
-pub(super) fn stored_result(
-    result: CompactionResult<maestro_session::CompactionDetails>,
-) -> CompactionResult {
+fn stored_result(result: CompactionResult<maestro_session::CompactionDetails>) -> CompactionResult {
     CompactionResult {
         summary: result.summary,
         first_kept_entry_id: result.first_kept_entry_id,

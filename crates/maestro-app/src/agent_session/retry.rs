@@ -1,4 +1,5 @@
 //! Retrying a failed response with a visible, cancellable backoff.
+use super::state::Settlement;
 use super::{AgentSession, AgentSessionEvent};
 use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
@@ -78,23 +79,18 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 .clone()
                 .unwrap_or_else(|| "Unknown error".to_owned()),
         });
-        self.drop_trailing_assistant();
+        self.drop_trailing_assistant(|_| true);
         let signal = Cancellation::new();
         self.state.borrow_mut().retry_signal = Some(signal.clone());
+        let cancelled = Settlement::new(|| self.cancel_retry(attempt));
         if maestro_tools::process::sleep::sleep(millis(delay), Some(&signal))
             .await
             .is_err()
         {
-            self.state.borrow_mut().retry_signal = None;
-            self.state.borrow_mut().retry_attempt = 0;
-            self.emit(&AgentSessionEvent::AutoRetryEnd {
-                success: false,
-                attempt,
-                final_error: Some("Retry cancelled".to_owned()),
-            });
-            self.resolve_retry();
+            drop(cancelled);
             return Ok(false);
         }
+        cancelled.disarm();
         self.state.borrow_mut().retry_signal = None;
         self.schedule_continuation(Duration::ZERO);
         Ok(true)
@@ -109,12 +105,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.resolve_retry();
     }
 
-    /// Waits for a retry in flight and for the agent to settle again.
+    /// Waits for a retry in flight and then for the agent to settle; returns at once when no
+    /// retry is in flight.
     pub async fn wait_for_retry(&self) {
         let gate = self.state.borrow().retry_gate.clone();
-        if let Some(gate) = gate {
-            drop(gate.await);
-        }
+        let Some(gate) = gate else {
+            return;
+        };
+        drop(gate.await);
         self.agent.wait_for_idle().await;
     }
 
@@ -152,6 +150,21 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let (open, closed) = tokio::sync::oneshot::channel();
         state.retry_gate = Some(futures_util::future::FutureExt::shared(closed));
         state.retry_open = Some(open);
+    }
+
+    /// Ends a retry whose wait was aborted or dropped, clearing its attempts.
+    fn cancel_retry(&self, attempt: u32) {
+        {
+            let mut state = self.state.borrow_mut();
+            state.retry_signal = None;
+            state.retry_attempt = 0;
+        }
+        self.emit(&AgentSessionEvent::AutoRetryEnd {
+            success: false,
+            attempt,
+            final_error: Some("Retry cancelled".to_owned()),
+        });
+        self.resolve_retry();
     }
 
     /// Releases every observer of the retry in flight.

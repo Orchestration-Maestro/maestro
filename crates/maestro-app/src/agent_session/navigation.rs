@@ -1,7 +1,7 @@
 //! Session names, tree navigation and fork points.
 use super::{
     AgentSession, AgentSessionEvent, ForkMessage, NavigateTreeResult,
-    state::{agent_messages, content_text, thrown},
+    state::{Settlement, agent_messages, content_text, thrown},
 };
 use crate::configuration::config::get_docs_path;
 use crate::utils::lock::{read, write};
@@ -65,7 +65,7 @@ fn replace<T>(slot: &mut Option<T>, value: Presence<T>) {
 }
 
 /// An optional choice as an event field: absent stays omitted.
-fn presence<T>(value: Option<T>) -> Presence<T> {
+pub(super) fn presence<T>(value: Option<T>) -> Presence<T> {
     value.map_or(Presence::Missing, Presence::Present)
 }
 
@@ -114,9 +114,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
         target_id: &str,
         options: NavigateTreeOptions,
     ) -> Result<NavigateTreeResult, DiagnosticErrorInfo> {
-        let outcome = self.navigate(target_id, options).await;
-        self.state.borrow_mut().branch_summary_signal = None;
-        outcome
+        // Clears the summary signal on every outcome, a dropped caller included.
+        let _cleared = Settlement::new(|| self.state.borrow_mut().branch_summary_signal = None);
+        self.navigate(target_id, options).await
     }
 
     /// The navigation a caller requested, before its summary signal is cleared.

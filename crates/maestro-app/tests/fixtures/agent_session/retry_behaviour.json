@@ -13,16 +13,6 @@
       ],
       "messages": [],
       "entries": [],
-      "scheduled": [
-        {
-          "delay_ms": 2000,
-          "fired": true
-        },
-        {
-          "delay_ms": 0,
-          "fired": true
-        }
-      ],
       "returned": true
     },
     "second": true,
@@ -52,33 +42,14 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": [
-      {
-        "delay_ms": 2000,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      },
-      {
-        "delay_ms": 4000,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      }
-    ]
+    "entries": []
   },
   {
     "name": "retry_disabled_returns_false",
     "returned": false,
     "events": [],
     "messages": [],
-    "entries": [],
-    "scheduled": []
+    "entries": []
   },
   {
     "name": "abort_during_backoff_cancels_the_attempt",
@@ -101,22 +72,10 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": [
-      {
-        "delay_ms": 2000,
-        "fired": false
-      }
-    ]
+    "entries": []
   },
   {
     "name": "retry_schedules_continuation",
-    "beforeDelay": [
-      {
-        "delay_ms": 2000,
-        "fired": false
-      }
-    ],
     "returned": true,
     "events": [
       {
@@ -127,16 +86,15 @@
         "delayMs": 2000
       }
     ],
-    "messages": [],
-    "entries": [],
-    "scheduled": [
+    "messages": [
       {
-        "delay_ms": 2000,
-        "fired": true
+        "role": "user",
+        "text": "hello"
       },
       {
-        "delay_ms": 0,
-        "fired": true
+        "role": "assistant",
+        "text": "retried answer",
+        "stopReason": "stop"
       }
     ]
   },
@@ -186,41 +144,7 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": [
-      {
-        "delay_ms": 1,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      },
-      {
-        "delay_ms": 2,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      },
-      {
-        "delay_ms": 1,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      },
-      {
-        "delay_ms": 2,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      }
-    ]
+    "entries": []
   },
   {
     "name": "zero_base_delay_retries_immediately",
@@ -235,17 +159,7 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": [
-      {
-        "delay_ms": 0,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      }
-    ]
+    "entries": []
   },
   {
     "name": "wait_for_retry_releases_on_abort",
@@ -265,17 +179,7 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": [
-      {
-        "delay_ms": -5,
-        "fired": true
-      },
-      {
-        "delay_ms": 0,
-        "fired": true
-      }
-    ]
+    "entries": []
   },
   {
     "name": "toggles_write_settings",

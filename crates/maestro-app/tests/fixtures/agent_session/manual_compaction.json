@@ -3,7 +3,6 @@
     "name": "manual_compaction_uses_extension_summary",
     "result": {
       "summary": "auto compacted",
-      "firstKeptEntryId": "e1",
       "tokensBefore": 11,
       "details": {}
     },
@@ -70,8 +69,7 @@
         "fromHook": true,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "manual_compaction_generates_summary",
@@ -152,8 +150,7 @@
         "fromHook": false,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "manual_compaction_twice_reports_already_compacted",
@@ -219,8 +216,7 @@
         "fromHook": true,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "manual_compaction_over_empty_history_reports_nothing",
@@ -242,8 +238,7 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": []
+    "entries": []
   },
   {
     "name": "manual_start_event_precedes_the_abort_controller",
@@ -304,8 +299,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "manual_compaction_without_auth_reports_key_message",
@@ -367,8 +361,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "manual_compaction_vetoed_by_extension",
@@ -429,8 +422,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "abort_compaction_cancels_manual_compaction",
@@ -491,8 +483,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "manual_compaction_failure_reports_prefixed_error",
@@ -554,7 +545,6 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   }
 ]

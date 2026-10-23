@@ -1,6 +1,7 @@
 //! Compaction the session decides on after a response.
+use super::super::state::{Settlement, message_records, thrown};
 use super::super::{AgentSession, AgentSessionEvent, CompactionReason};
-use super::BeforeCompaction;
+use super::{BeforeCompaction, aborted_end};
 use crate::utils::lock::read;
 use indexmap::IndexMap;
 use maestro_extensions::ExtensionExecution;
@@ -8,9 +9,8 @@ use maestro_models::{
     AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
 };
 use maestro_session::CompactionResult;
-use maestro_session::compaction::SummaryOptions;
 use maestro_session::compaction::{
-    calculate_context_tokens, estimate_context_tokens, should_compact,
+    CompactionSettings, calculate_context_tokens, estimate_context_tokens, should_compact,
 };
 use maestro_session::session_manager::{ReadonlySessionManager, get_latest_compaction_entry};
 use std::time::Duration;
@@ -22,7 +22,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// checks before a prompt.
     ///
     /// # Errors
-    /// Returns a storing, handler or listener failure.
+    /// Returns a failure reading the stored branch or the response's usage; a failing
+    /// compaction reports its failure through `compaction_end` instead.
     pub async fn check_compaction(
         &self,
         message: &AssistantMessage,
@@ -60,9 +61,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 return Ok(());
             }
             self.state.borrow_mut().overflow_recovery_attempted = true;
-            self.drop_trailing_assistant();
+            self.drop_trailing_assistant(|_| true);
             self.run_auto_compaction(CompactionReason::Overflow, true)
-                .await?;
+                .await;
             return Ok(());
         }
         let tokens = self.context_tokens(message, boundary.as_deref())?;
@@ -71,66 +72,63 @@ impl<E: ExtensionExecution> AgentSession<E> {
         };
         if should_compact(tokens, window, &self.compaction_policy()) {
             self.run_auto_compaction(CompactionReason::Threshold, false)
-                .await?;
+                .await;
         }
         Ok(())
     }
 
-    /// Runs one automatic compaction, reporting every outcome through the session events.
-    ///
-    /// # Errors
-    /// Returns a listener failure raised while announcing an outcome.
-    pub(super) async fn run_auto_compaction(
-        &self,
-        reason: CompactionReason,
-        will_retry: bool,
-    ) -> Result<(), DiagnosticErrorInfo> {
+    /// Runs one automatic compaction, reporting every outcome through `compaction_end`.
+    pub(super) async fn run_auto_compaction(&self, reason: CompactionReason, will_retry: bool) {
+        let settings = self.compaction_policy();
         self.emit(&AgentSessionEvent::CompactionStart { reason });
         let signal = Cancellation::new();
         self.state.borrow_mut().auto_compaction_signal = Some(signal.clone());
-        let outcome = self.auto_compaction_content(&signal).await;
-        self.state.borrow_mut().auto_compaction_signal = None;
-        match outcome {
-            Ok(Outcome::Skipped { aborted }) => {
-                self.emit(&AgentSessionEvent::CompactionEnd {
-                    reason,
-                    result: None,
-                    aborted,
-                    will_retry: false,
-                    error_message: None,
-                });
-            }
-            Ok(Outcome::Failed { message }) => {
-                self.emit(&AgentSessionEvent::CompactionEnd {
-                    reason,
-                    result: None,
-                    aborted: false,
-                    will_retry: false,
-                    error_message: Some(if reason == CompactionReason::Overflow {
-                        format!("Context overflow recovery failed: {message}")
-                    } else {
-                        format!("Auto-compaction failed: {message}")
-                    }),
-                });
-            }
-            Ok(Outcome::Compacted { result }) => {
-                self.emit(&AgentSessionEvent::CompactionEnd {
-                    reason,
-                    result: Some(result),
-                    aborted: false,
-                    will_retry,
-                    error_message: None,
-                });
-                if will_retry {
-                    self.drop_trailing_assistant();
-                    self.schedule_continuation(Duration::from_millis(100));
-                } else if self.agent.has_queued_messages() {
-                    self.schedule_continuation(Duration::from_millis(100));
-                }
-            }
-            Err(error) => return Err(error),
+        let abandoned = Settlement::new(|| self.close_compaction(&aborted_end(reason)));
+        let outcome = self
+            .auto_compaction_content(&settings, &signal)
+            .await
+            .unwrap_or_else(|error| Outcome::Failed {
+                message: error.message,
+            });
+        abandoned.disarm();
+        let compacted = matches!(outcome, Outcome::Compacted { .. });
+        let end = match outcome {
+            Outcome::Skipped { aborted } => AgentSessionEvent::CompactionEnd {
+                reason,
+                result: None,
+                aborted,
+                will_retry: false,
+                error_message: None,
+            },
+            Outcome::Failed { message } => AgentSessionEvent::CompactionEnd {
+                reason,
+                result: None,
+                aborted: false,
+                will_retry: false,
+                error_message: Some(if reason == CompactionReason::Overflow {
+                    format!("Context overflow recovery failed: {message}")
+                } else {
+                    format!("Auto-compaction failed: {message}")
+                }),
+            },
+            Outcome::Compacted { result } => AgentSessionEvent::CompactionEnd {
+                reason,
+                result: Some(result),
+                aborted: false,
+                will_retry,
+                error_message: None,
+            },
+        };
+        self.close_compaction(&end);
+        if !compacted {
+            return;
         }
-        Ok(())
+        if will_retry {
+            self.drop_trailing_assistant(|message| message.stop_reason == StopReason::Error);
+            self.schedule_continuation(Duration::from_millis(100));
+        } else if self.agent.has_queued_messages() {
+            self.schedule_continuation(Duration::from_millis(100));
+        }
     }
 
     /// Clears the one-recovery-per-turn mark after a response succeeds.
@@ -138,53 +136,35 @@ impl<E: ExtensionExecution> AgentSession<E> {
         self.state.borrow_mut().overflow_recovery_attempted = false;
     }
 
-    /// The automatic compaction body, reporting the outcomes a caller announces.
+    /// The automatic compaction body over the policy `settings` captured before its start.
     async fn auto_compaction_content(
         &self,
+        settings: &CompactionSettings,
         signal: &Cancellation,
     ) -> Result<Outcome, DiagnosticErrorInfo> {
-        let Some((api_key, headers)) = self.configured_auth().await else {
+        let Some(auth) = self.configured_auth().await else {
             return Ok(Outcome::Skipped { aborted: false });
         };
-        let prepared = self.prepared_branch().map_err(failed)?;
+        let prepared = self.prepared_branch(settings)?;
         let Some(preparation) = prepared.preparation else {
             return Ok(Outcome::Skipped { aborted: false });
         };
         let supplied = self
-            .before_compaction(&preparation, prepared.entries.clone(), None, signal)
-            .await
-            .map_err(failed)?;
+            .before_compaction(preparation, prepared.entries, None, signal)
+            .await?;
         let (result, from_extension) = match supplied {
             BeforeCompaction::Cancelled => return Ok(Outcome::Skipped { aborted: true }),
             BeforeCompaction::Supplied { result } => (result, true),
-            BeforeCompaction::Continue => {
-                let options = SummaryOptions {
-                    api_key,
-                    headers,
-                    signal: Some(signal.clone()),
-                    custom_instructions: None,
-                    thinking_level: Some(self.thinking_level()),
-                };
-                let model = read(&self.model()).clone();
-                match maestro_session::compaction::compact(&preparation, &model, &options).await {
-                    Ok(result) => (super::stored_result(result), false),
-                    Err(error) => {
-                        return Ok(Outcome::Failed {
-                            message: error.message,
-                        });
-                    }
-                }
-            }
+            BeforeCompaction::Continue { preparation } => (
+                self.summarize(&preparation, auth, None, signal).await?,
+                false,
+            ),
         };
         if signal.is_aborted() {
             return Ok(Outcome::Skipped { aborted: true });
         }
-        let entry = self
-            .store_compaction(&result, from_extension)
-            .map_err(failed)?;
-        self.announce_compaction(entry, from_extension)
-            .await
-            .map_err(failed)?;
+        let entry = self.store_compaction(&result, from_extension)?;
+        self.announce_compaction(entry, from_extension).await?;
         Ok(Outcome::Compacted { result })
     }
 
@@ -212,11 +192,11 @@ impl<E: ExtensionExecution> AgentSession<E> {
         boundary: Option<&str>,
     ) -> Result<Option<f64>, DiagnosticErrorInfo> {
         if message.stop_reason != StopReason::Error {
-            let usage = serde_json::to_value(&message.usage).map_err(failed)?;
-            return calculate_context_tokens(&usage).map(Some).map_err(failed);
+            let usage = serde_json::to_value(&message.usage).map_err(thrown)?;
+            return calculate_context_tokens(&usage).map(Some).map_err(thrown);
         }
-        let records = crate::agent_session::state::message_records(&read(&self.messages()))?;
-        let estimate = estimate_context_tokens(&records).map_err(failed)?;
+        let records = message_records(&read(&self.messages()))?;
+        let estimate = estimate_context_tokens(&records).map_err(thrown)?;
         let Some(index) = estimate.last_usage_index else {
             return Ok(None);
         };
@@ -240,11 +220,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// The creation time of the newest compaction entry on the branch.
     fn compaction_boundary(&self) -> Result<Option<String>, DiagnosticErrorInfo> {
         let manager = self.session_manager.borrow();
-        let branch = manager
-            .get_branch(None)
-            .map_err(crate::agent_session::state::thrown)?;
+        let branch = manager.get_branch(None).map_err(thrown)?;
         let boundary = get_latest_compaction_entry(&branch)
-            .map_err(crate::agent_session::state::thrown)?
+            .map_err(thrown)?
             .and_then(|entry| entry.get("timestamp"))
             .and_then(serde_json::Value::as_str)
             .map(str::to_owned);
@@ -257,11 +235,6 @@ impl<E: ExtensionExecution> AgentSession<E> {
             .and_then(maestro_session::messages::parse_timestamp_millis)
             .and_then(num_traits::cast::cast::<i64, f64>)
             .is_some_and(|boundary| timestamp <= boundary)
-    }
-
-    /// Whether automatic compaction runs once the context passes its reserve.
-    fn compaction_policy(&self) -> maestro_session::compaction::CompactionSettings {
-        super::compaction_settings(&self.settings_manager.borrow().get_compaction_settings())
     }
 }
 
@@ -282,9 +255,4 @@ enum Outcome {
         /// The stored compaction.
         result: CompactionResult,
     },
-}
-
-/// The thrown form of a lower failure.
-fn failed(error: impl std::fmt::Display) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo::error(error.to_string())
 }

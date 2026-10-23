@@ -5,12 +5,12 @@ use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, answer, assistant, case, harness, load_history, message_text,
     on_paused_task_set, recorded_number, script_responses, usage, user,
 };
-use maestro_agent::AgentMessage;
+use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionAPI, ExtensionFactory, SessionBeforeCompactEvent, SessionBeforeCompactResult,
-    SessionBeforeTreeEvent, SessionBeforeTreeResult,
+    SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionCompactEvent,
 };
 use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, FauxAssistantMessageOptions, Local, StopReason,
@@ -18,14 +18,16 @@ use maestro_models::{
 };
 use maestro_session::CompactionResult;
 use maestro_session::Presence;
+use maestro_session::SessionManager;
 use maestro_session::messages::CustomAgentMessages;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use serde_json::{Value, json};
 use std::{
-    cell::Cell,
-    rc::Rc,
+    cell::{Cell, RefCell},
+    rc::{Rc, Weak},
     sync::{Arc, RwLock},
 };
+use tokio::sync::Notify;
 
 /// The context window every recorded case ran with.
 const WINDOW: f64 = 200_000.0;
@@ -364,14 +366,14 @@ fn failing() -> ExtensionFactory<Local> {
 }
 
 /// The extension the branch-summary case installs: it answers once the event is cancelled.
-fn waiting_tree_extension(reached: Rc<Cell<bool>>) -> ExtensionFactory<Local> {
+fn waiting_tree_extension(reached: Rc<Notify>) -> ExtensionFactory<Local> {
     Rc::new(move |api: ExtensionAPI<Local>| {
         let reached = Rc::clone(&reached);
         let registered = api.on::<SessionBeforeTreeEvent, SessionBeforeTreeResult>(
             "session_before_tree".into(),
             Rc::new(move |event, _| {
                 let signal = event.signal.clone();
-                reached.set(true);
+                reached.notify_one();
                 Box::pin(async move {
                     signal.cancelled().await;
                     let result = serde_json::from_value(json!({"cancel": true})).unwrap();
@@ -387,7 +389,7 @@ fn waiting_tree_extension(reached: Rc<Cell<bool>>) -> ExtensionFactory<Local> {
 /// An extension whose handler reports whether a compaction is in progress.
 fn probing_tree_extension(
     during: Rc<Cell<bool>>,
-    session: Rc<std::cell::RefCell<Option<Rc<AgentSession<Local>>>>>,
+    session: Rc<RefCell<Weak<AgentSession<Local>>>>,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api: ExtensionAPI<Local>| {
         let during = Rc::clone(&during);
@@ -395,7 +397,7 @@ fn probing_tree_extension(
         let registered = api.on::<SessionBeforeTreeEvent, SessionBeforeTreeResult>(
             "session_before_tree".into(),
             Rc::new(move |_, _| {
-                let session = session.borrow().clone();
+                let session = session.borrow().upgrade();
                 if let Some(session) = session {
                     during.set(session.is_compacting());
                 }
@@ -408,14 +410,14 @@ fn probing_tree_extension(
 }
 
 /// An extension whose handler waits for the event's signal before refusing.
-fn waiting_extension(reached: Rc<Cell<bool>>) -> ExtensionFactory<Local> {
+fn waiting_extension(reached: Rc<Notify>) -> ExtensionFactory<Local> {
     Rc::new(move |api: ExtensionAPI<Local>| {
         let reached = Rc::clone(&reached);
         let registered = api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
             "session_before_compact".into(),
             Rc::new(move |event, _| {
                 let signal = event.signal.clone();
-                reached.set(true);
+                reached.notify_one();
                 Box::pin(async move {
                     signal.cancelled().await;
                     Ok(Some(SessionBeforeCompactResult {
@@ -447,15 +449,52 @@ fn navigate_options() -> maestro_session::session_manager::NavigateTreeOptions {
     }
 }
 
-/// Yields until `done` reports true, failing rather than waiting forever.
-async fn until(done: impl Fn() -> bool) {
-    for _ in 0..1_000 {
-        if done() {
-            return;
+/// The extension that records the identity of every announced compaction entry.
+fn announced(ids: Rc<RefCell<Vec<String>>>) -> ExtensionFactory<Local> {
+    Rc::new(move |api: ExtensionAPI<Local>| {
+        let ids = Rc::clone(&ids);
+        let registered = api.on::<SessionCompactEvent, ()>(
+            "session_compact".into(),
+            Rc::new(move |event, _| {
+                ids.borrow_mut()
+                    .push(event.compaction_entry.base.id.clone());
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        drop(registered);
+        Box::pin(std::future::ready(Ok(())))
+    })
+}
+
+/// Notified once the session announces a retry attempt.
+fn retry_started(h: &Harness) -> Rc<Notify> {
+    let started = Rc::new(Notify::new());
+    let notify = Rc::clone(&started);
+    drop(h.session.subscribe(Rc::new(move |event| {
+        if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+            notify.notify_one();
         }
-        tokio::task::yield_now().await;
-    }
-    assert!(done(), "the session never reached the expected state");
+    })));
+    started
+}
+
+/// Notified once an agent run ends.
+fn agent_ended(h: &Harness) -> Rc<Notify> {
+    let ended = Rc::new(Notify::new());
+    let notify = Rc::clone(&ended);
+    drop(h.session.agent().subscribe(Rc::new(move |event, _| {
+        if matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. }) {
+            notify.notify_one();
+        }
+        Box::pin(std::future::ready(Ok(())))
+    })));
+    ended
+}
+
+/// Drops the operation `task` runs mid-flight, returning once it is gone.
+async fn drop_mid_flight<T: 'static>(task: tokio::task::JoinHandle<T>) {
+    task.abort();
+    assert!(task.await.err().is_some_and(|error| error.is_cancelled()));
 }
 
 // -------------------------------------------------------------- classification
@@ -573,6 +612,7 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
                 serde_json::to_value(&overflow).unwrap(),
             ],
         );
+        let ended = agent_ended(&h);
         h.session.check_compaction(&overflow, true).await.unwrap();
         assert_observation(&h, &expected["before"]);
         tokio::time::advance(std::time::Duration::from_millis(99)).await;
@@ -582,14 +622,8 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
             vec![answer("after recovery", None, None)],
         ));
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        until(|| messages_view(&h).as_array().unwrap().len() == 3).await;
-        let after = messages_view(&h);
-        let after = after.as_array().unwrap().clone();
-        let expected_after = expected["after"]["messages"].as_array().unwrap().clone();
-        assert_eq!(after[2..], expected_after[2..]);
-        // The continued answer reaches the agent history; its stored entry arrives with the
-        // agent-event subscription.
-        assert_eq!(entries_view(&h).as_array().unwrap().len(), 4);
+        ended.notified().await;
+        assert_eq!(messages_view(&h), expected["after"]["messages"]);
     });
 }
 
@@ -754,6 +788,7 @@ fn queued_messages_resume_after_the_compaction() {
         h.session
             .agent()
             .follow_up(AgentMessage::Custom(Arc::new(RwLock::new(queued))));
+        let ended = agent_ended(&h);
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected["before"]);
@@ -764,11 +799,8 @@ fn queued_messages_resume_after_the_compaction() {
             vec![answer("queued answer", None, None)],
         ));
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        until(|| messages_view(&h).as_array().unwrap().len() >= 3).await;
-        let after = messages_view(&h);
-        let after = after.as_array().unwrap();
-        assert_eq!(after[2], expected["after"]["messages"][2]);
-        assert_eq!(after[3], expected["after"]["messages"][3]);
+        ended.notified().await;
+        assert_eq!(messages_view(&h), expected["after"]["messages"]);
     });
 }
 
@@ -878,7 +910,7 @@ fn branch_summary_reports_a_running_compaction() {
     );
     on_paused_task_set(|_| async {
         let during = Rc::new(Cell::new(false));
-        let probe = Rc::new(std::cell::RefCell::new(None));
+        let probe = Rc::new(RefCell::new(Weak::new()));
         let h = seeded(
             json!({}),
             vec![probing_tree_extension(
@@ -887,7 +919,7 @@ fn branch_summary_reports_a_running_compaction() {
             )],
         )
         .await;
-        *probe.borrow_mut() = Some(Rc::clone(&h.session));
+        *probe.borrow_mut() = Rc::downgrade(&h.session);
         drop(
             h.session
                 .session_manager()
@@ -921,7 +953,7 @@ fn abort_branch_summary_reaches_the_navigation_handler() {
         "abort_branch_summary_reaches_the_navigation_handler",
     );
     on_paused_task_set(|_| async {
-        let reached = Rc::new(Cell::new(false));
+        let reached = Rc::new(Notify::new());
         let h = seeded(json!({}), vec![waiting_tree_extension(Rc::clone(&reached))]).await;
         let manager = h.session.session_manager();
         drop(
@@ -937,18 +969,26 @@ fn abort_branch_summary_reaches_the_navigation_handler() {
         let task = tokio::task::spawn_local(async move {
             session.navigate_tree(&target, navigate_options()).await
         });
-        until(|| reached.get()).await;
-        assert!(
+        reached.notified().await;
+        assert_eq!(
             h.session.is_compacting(),
-            "a branch summary reports compaction"
+            expected["compactingDuring"] == true
         );
         h.session.abort_branch_summary();
         let outcome = task.await.unwrap().unwrap();
         assert_eq!(
+            outcome.editor_text.as_deref(),
+            expected["outcome"]["editorText"].as_str()
+        );
+        assert_eq!(
             outcome.cancelled,
             expected["outcome"]["cancelled"].as_bool().unwrap()
         );
-        assert!(!h.session.is_compacting());
+        assert_eq!(outcome.aborted, expected["outcome"]["aborted"] == true);
+        assert_eq!(
+            h.session.is_compacting(),
+            expected["isCompactingAfter"] == true
+        );
     });
 }
 
@@ -1087,11 +1127,11 @@ fn aborting_during_an_extension_handler_cancels_the_compaction() {
         "abort_compaction_cancels_manual_compaction",
     );
     on_paused_task_set(|_| async {
-        let reached = Rc::new(Cell::new(false));
+        let reached = Rc::new(Notify::new());
         let h = seeded(json!({}), vec![waiting_extension(Rc::clone(&reached))]).await;
         let session = Rc::clone(&h.session);
         let task = tokio::task::spawn_local(async move { session.compact(None).await });
-        until(|| reached.get()).await;
+        reached.notified().await;
         h.session.abort_compaction();
         let outcome = task.await.unwrap();
         assert_refused(&outcome, &expected["outcome"]);
@@ -1167,6 +1207,7 @@ fn retries_exhaust_their_attempts_with_doubling_delays() {
             h.session.handle_retryable_error(&failing).await.unwrap(),
             expected["afterFirst"]["returned"].as_bool().unwrap()
         );
+        assert_observation(&h, &expected["afterFirst"]);
         assert_eq!(
             h.session.handle_retryable_error(&failing).await.unwrap(),
             expected["second"].as_bool().unwrap()
@@ -1175,9 +1216,7 @@ fn retries_exhaust_their_attempts_with_doubling_delays() {
             h.session.handle_retryable_error(&failing).await.unwrap(),
             expected["third"].as_bool().unwrap()
         );
-        assert_eq!(messages_view(&h), expected["messages"]);
-        assert_eq!(entries_view(&h), expected["entries"]);
-        assert_eq!(events_view(&h), expected["events"]);
+        assert_observation(&h, &expected);
         assert_eq!(
             h.session.retry_attempt(),
             u32::try_from(expected["retryAttemptAfter"].as_u64().unwrap()).unwrap()
@@ -1203,8 +1242,7 @@ fn disabled_retries_do_nothing() {
             h.session.handle_retryable_error(&failing).await.unwrap(),
             expected["returned"].as_bool().unwrap()
         );
-        assert_eq!(events_view(&h), expected["events"]);
-        assert_eq!(messages_view(&h), expected["messages"]);
+        assert_observation(&h, &expected);
     });
 }
 
@@ -1224,16 +1262,17 @@ fn aborting_during_backoff_ends_the_retry() {
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
+        let started = retry_started(&h);
         let session = Rc::clone(&h.session);
         let task =
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
-        until(|| h.session.is_retrying()).await;
+        started.notified().await;
         h.session.abort_retry();
         assert_eq!(
             task.await.unwrap().unwrap(),
             expected["returned"].as_bool().unwrap()
         );
-        assert_eq!(events_view(&h), expected["events"]);
+        assert_observation(&h, &expected);
         assert_eq!(
             h.session.retry_attempt(),
             u32::try_from(expected["retryAttemptAfter"].as_u64().unwrap()).unwrap()
@@ -1255,18 +1294,33 @@ fn a_retry_continues_immediately_after_the_backoff() {
             400,
             &answer_extra(&StopReason::Error, Some("connection lost"), 0),
         );
+        set_agent_messages(
+            &h,
+            &[
+                user(&json!([{"type": "text", "text": "hello"}]), 100),
+                serde_json::to_value(&failing).unwrap(),
+            ],
+        );
+        let ended = agent_ended(&h);
         let mut work = Box::pin(h.session.handle_retryable_error(&failing));
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
         tokio::time::advance(std::time::Duration::from_millis(1_999)).await;
         assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
+        drop(script_responses(
+            &h,
+            vec![answer("retried answer", None, None)],
+        ));
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        let returned = std::future::Future::poll(work.as_mut(), &mut context);
-        assert!(returned.is_ready(), "the backoff ends after 2000 ms");
-        assert_eq!(
-            events_view(&h),
-            Value::Array(expected["events"].as_array().unwrap()[..1].to_vec())
-        );
+        let std::task::Poll::Ready(returned) =
+            std::future::Future::poll(work.as_mut(), &mut context)
+        else {
+            panic!("the backoff ends after 2000 ms");
+        };
+        assert_eq!(returned.unwrap(), expected["returned"].as_bool().unwrap());
+        assert_eq!(events_view(&h), expected["events"]);
+        ended.notified().await;
+        assert_eq!(messages_view(&h), expected["messages"]);
     });
 }
 
@@ -1285,7 +1339,7 @@ fn fractional_attempt_limits_compare_as_numbers() {
             outcomes.push(h.session.handle_retryable_error(&failing).await.unwrap());
         }
         assert_eq!(json!(outcomes), expected["outcomes"]);
-        assert_eq!(events_view(&h), expected["events"]);
+        assert_observation(&h, &expected);
     });
 }
 
@@ -1303,7 +1357,7 @@ fn zero_base_delay_retries_without_waiting() {
             h.session.handle_retryable_error(&failing).await.unwrap(),
             expected["returned"].as_bool().unwrap()
         );
-        assert_eq!(events_view(&h), expected["events"]);
+        assert_observation(&h, &expected);
     });
 }
 
@@ -1321,7 +1375,7 @@ fn negative_base_delays_fire_immediately() {
             h.session.handle_retryable_error(&failing).await.unwrap(),
             expected["returned"].as_bool().unwrap()
         );
-        assert_eq!(events_view(&h), expected["events"]);
+        assert_observation(&h, &expected);
     });
 }
 
@@ -1338,17 +1392,18 @@ fn waiting_for_a_retry_releases_on_abort() {
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
+        let started = retry_started(&h);
         let session = Rc::clone(&h.session);
         let retry =
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
-        until(|| h.session.is_retrying()).await;
+        started.notified().await;
         let mut waiting = Box::pin(h.session.wait_for_retry());
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         let before = std::future::Future::poll(waiting.as_mut(), &mut context).is_ready();
         assert_eq!(before, expected["beforeRelease"].as_bool().unwrap());
         h.session.abort_retry();
-        assert!(std::future::Future::poll(waiting.as_mut(), &mut context).is_ready());
-        assert_eq!(expected["after"], true);
+        let after = std::future::Future::poll(waiting.as_mut(), &mut context).is_ready();
+        assert_eq!(after, expected["after"].as_bool().unwrap());
         drop(retry.await);
     });
 }
@@ -1398,16 +1453,321 @@ fn aborting_cancels_a_retry_in_flight() {
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
         );
+        let started = retry_started(&h);
         let session = Rc::clone(&h.session);
         let task =
             tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
-        until(|| h.session.is_retrying()).await;
+        started.notified().await;
         h.session.abort().await;
         assert_eq!(
             task.await.unwrap().unwrap(),
             expected["returned"].as_bool().unwrap()
         );
-        assert_eq!(events_view(&h), expected["events"]);
+        assert_observation(&h, &expected);
+        assert_eq!(h.session.is_retrying(), expected["isRetryingAfter"] == true);
+    });
+}
+
+// -------------------------------------------------------------- settlement
+
+/// The before-compaction extension that edits the preparation and lets generation continue.
+fn editing_preparation(tokens_before: f64) -> ExtensionFactory<Local> {
+    handled(Rc::new(move |event| {
+        event.data.preparation.tokens_before = tokens_before;
+        None
+    }))
+}
+
+#[test]
+fn automatic_storage_failures_end_the_compaction() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path().display().to_string();
+    let sessions = format!("{root}/sessions");
+    on_paused_task_set(|_| async {
+        let manager =
+            SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
+        let h = harness(HarnessOptions {
+            settings: keep_recent(json!({})),
+            factories: vec![summary_provider()],
+            context_window: Some(WINDOW),
+            session_manager: Some(manager),
+            ..HarnessOptions::default()
+        })
+        .await;
+        seed_history(&h);
+        std::fs::remove_dir_all(&sessions).unwrap();
+        let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
+        h.session.check_compaction(&message, true).await.unwrap();
+        let events = events_view(&h);
+        let [start, end] = events.as_array().unwrap().as_slice() else {
+            panic!("one start and one end event: {events}");
+        };
+        assert_eq!(
+            start,
+            &json!({"type": "compaction_start", "reason": "threshold"})
+        );
+        let message = end["errorMessage"].as_str().unwrap();
+        assert!(message.starts_with("Auto-compaction failed: "), "{message}");
+        assert_eq!(end["aborted"], false);
+        assert_eq!(end["willRetry"], false);
+        assert_eq!(end["result"], Value::Null);
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn end_listeners_see_the_compaction_running() {
+    on_paused_task_set(|_| async {
+        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let session = Rc::downgrade(&h.session);
+        let running = Rc::new(RefCell::new(Vec::new()));
+        let seen = Rc::clone(&running);
+        drop(h.session.subscribe(Rc::new(move |event| {
+            if let AgentSessionEvent::CompactionEnd { reason, .. } = event
+                && let Some(session) = session.upgrade()
+            {
+                seen.borrow_mut().push((*reason, session.is_compacting()));
+            }
+        })));
+        let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
+        h.session.check_compaction(&message, true).await.unwrap();
+        drop(h.session.compact(None).await);
+        assert_eq!(
+            *running.borrow(),
+            [
+                (CompactionReason::Threshold, true),
+                (CompactionReason::Manual, true)
+            ]
+        );
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn overflow_recovery_keeps_a_successful_stored_tail() {
+    on_paused_task_set(|_| async {
+        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let kept = assistant(
+            "kept answer",
+            350,
+            &answer_extra(&StopReason::Stop, None, 10),
+        );
+        drop(
+            h.session
+                .session_manager()
+                .borrow_mut()
+                .append_message(kept.clone()),
+        );
+        let overflow = overflow_response();
+        set_agent_messages(
+            &h,
+            &[
+                user(&json!([{"type": "text", "text": "two"}]), 300),
+                kept,
+                serde_json::to_value(&overflow).unwrap(),
+            ],
+        );
+        h.session.check_compaction(&overflow, true).await.unwrap();
+        let messages = messages_view(&h);
+        assert_eq!(
+            messages.as_array().unwrap().last(),
+            Some(&json!({"role": "assistant", "text": "kept answer", "stopReason": "stop"}))
+        );
+    });
+}
+
+#[test]
+fn handler_edits_to_the_preparation_reach_the_summarizer() {
+    on_paused_task_set(|_| async {
+        let manual = seeded(json!({}), vec![editing_preparation(4242.0)]).await;
+        drop(script_responses(
+            &manual,
+            vec![answer("generated summary", None, None)],
+        ));
+        let result = manual.session.compact(None).await.unwrap();
+        assert_eq!(recorded_number(result.tokens_before), json!(4242));
+        let automatic = seeded(json!({}), vec![editing_preparation(4242.0)]).await;
+        drop(script_responses(
+            &automatic,
+            vec![answer("generated summary", None, None)],
+        ));
+        let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
+        automatic
+            .session
+            .check_compaction(&message, true)
+            .await
+            .unwrap();
+        assert_eq!(events_view(&automatic)[1]["result"]["tokensBefore"], 4242);
+    });
+}
+
+#[test]
+fn automatic_compaction_uses_the_preferences_from_before_its_start() {
+    on_paused_task_set(|_| async {
+        let observed = Rc::new(Cell::new(0.0));
+        let seen = Rc::clone(&observed);
+        let recording = handled(Rc::new(move |event| {
+            seen.set(event.data.preparation.settings.keep_recent_tokens);
+            None
+        }));
+        let h = seeded(json!({}), vec![recording]).await;
+        drop(script_responses(
+            &h,
+            vec![answer("generated summary", None, None)],
+        ));
+        let session = Rc::downgrade(&h.session);
+        drop(h.session.subscribe(Rc::new(move |event| {
+            if matches!(event, AgentSessionEvent::CompactionStart { .. })
+                && let Some(session) = session.upgrade()
+            {
+                let changed = json!({"compaction": {"keepRecentTokens": 5}});
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .apply_overrides(serde_json::from_value(changed).unwrap());
+            }
+        })));
+        let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
+        h.session.check_compaction(&message, true).await.unwrap();
+        assert_eq!(recorded_number(observed.get()), json!(1));
+    });
+}
+
+#[test]
+fn waiting_without_a_retry_returns_while_the_agent_runs() {
+    on_paused_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        drop(script_responses(&h, vec![answer("busy", None, None)]));
+        let run = h.session.agent().prompt(PromptInput::Text {
+            text: "hello".to_owned(),
+            images: Vec::new(),
+        });
+        let mut waiting = Box::pin(h.session.wait_for_retry());
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(std::future::Future::poll(waiting.as_mut(), &mut context).is_ready());
+        run.await.unwrap();
+    });
+}
+
+#[test]
+fn repeated_summaries_announce_the_newest_entry() {
+    on_paused_task_set(|_| async {
+        let ids = Rc::new(RefCell::new(Vec::new()));
+        let h = seeded(
+            json!({}),
+            vec![summary_provider(), announced(Rc::clone(&ids))],
+        )
+        .await;
+        drop(h.session.compact(None).await.unwrap());
+        append_user(&h, "three", 400);
+        drop(
+            h.session
+                .session_manager()
+                .borrow_mut()
+                .append_message(assistant(
+                    "",
+                    500,
+                    &answer_extra(&StopReason::Stop, None, 10),
+                )),
+        );
+        drop(h.session.compact(None).await.unwrap());
+        let stored: Vec<String> = h
+            .session
+            .session_manager()
+            .borrow()
+            .get_entries()
+            .into_iter()
+            .filter(|entry| entry["type"] == "compaction")
+            .map(|entry| entry["id"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(stored.len(), 2);
+        assert_eq!(*ids.borrow(), stored);
+    });
+}
+
+#[test]
+fn dropping_a_waiting_retry_cancels_it() {
+    let expected = case(
+        "retry_behaviour",
+        "abort_during_backoff_cancels_the_attempt",
+    );
+    on_paused_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let failing = response(
+            400,
+            &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
+        );
+        let started = retry_started(&h);
+        let session = Rc::clone(&h.session);
+        let task =
+            tokio::task::spawn_local(async move { session.handle_retryable_error(&failing).await });
+        started.notified().await;
+        drop_mid_flight(task).await;
+        assert_observation(&h, &expected);
+        assert_eq!(h.session.retry_attempt(), 0);
         assert!(!h.session.is_retrying());
+    });
+}
+
+#[test]
+fn dropping_a_manual_compaction_ends_it_as_aborted() {
+    let expected = case(
+        "manual_compaction",
+        "abort_compaction_cancels_manual_compaction",
+    );
+    on_paused_task_set(|_| async {
+        let reached = Rc::new(Notify::new());
+        let h = seeded(json!({}), vec![waiting_extension(Rc::clone(&reached))]).await;
+        let session = Rc::clone(&h.session);
+        let task = tokio::task::spawn_local(async move { session.compact(None).await });
+        reached.notified().await;
+        drop_mid_flight(task).await;
+        assert_observation(&h, &expected);
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn dropping_an_automatic_compaction_ends_it_as_aborted() {
+    let expected = case(
+        "compaction_checks",
+        "auto_compaction_cancelled_by_extension",
+    );
+    on_paused_task_set(|_| async {
+        let reached = Rc::new(Notify::new());
+        let h = seeded(json!({}), vec![waiting_extension(Rc::clone(&reached))]).await;
+        let overflow = overflow_response();
+        push_agent_message(&h, &overflow);
+        let session = Rc::clone(&h.session);
+        let task =
+            tokio::task::spawn_local(
+                async move { session.check_compaction(&overflow, true).await },
+            );
+        reached.notified().await;
+        drop_mid_flight(task).await;
+        assert_observation(&h, &expected);
+        assert!(!h.session.is_compacting());
+    });
+}
+
+#[test]
+fn dropping_a_tree_navigation_clears_its_branch_summary() {
+    on_paused_task_set(|_| async {
+        let reached = Rc::new(Notify::new());
+        let h = seeded(json!({}), vec![waiting_tree_extension(Rc::clone(&reached))]).await;
+        append_user(&h, "three", 400);
+        let target = first_entry_id(&h);
+        let session = Rc::clone(&h.session);
+        let task = tokio::task::spawn_local(async move {
+            session.navigate_tree(&target, navigate_options()).await
+        });
+        reached.notified().await;
+        assert!(h.session.is_compacting());
+        drop_mid_flight(task).await;
+        assert!(!h.session.is_compacting());
     });
 }

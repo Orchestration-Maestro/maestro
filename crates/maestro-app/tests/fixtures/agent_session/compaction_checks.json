@@ -43,8 +43,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "aborted_message_skipped_unless_included",
@@ -91,8 +90,7 @@
           },
           "timestamp": "$ISO"
         }
-      ],
-      "scheduled": []
+      ]
     },
     "included": {
       "events": [
@@ -158,8 +156,7 @@
           "fromHook": true,
           "timestamp": "$ISO"
         }
-      ],
-      "scheduled": []
+      ]
     }
   },
   {
@@ -228,20 +225,8 @@
           "fromHook": true,
           "timestamp": "$ISO"
         }
-      ],
-      "scheduled": [
-        {
-          "delay_ms": 100,
-          "fired": false
-        }
       ]
     },
-    "beforeHundred": [
-      {
-        "delay_ms": 100,
-        "fired": false
-      }
-    ],
     "second": {
       "events": [
         {
@@ -314,12 +299,6 @@
           "fromHook": true,
           "timestamp": "$ISO"
         }
-      ],
-      "scheduled": [
-        {
-          "delay_ms": 100,
-          "fired": false
-        }
       ]
     }
   },
@@ -389,66 +368,9 @@
           "fromHook": true,
           "timestamp": "$ISO"
         }
-      ],
-      "scheduled": [
-        {
-          "delay_ms": 100,
-          "fired": false
-        }
       ]
     },
-    "beforeHundred": [
-      {
-        "delay_ms": 100,
-        "fired": false
-      }
-    ],
     "after": {
-      "events": [
-        {
-          "type": "compaction_start",
-          "reason": "overflow"
-        },
-        {
-          "type": "compaction_end",
-          "reason": "overflow",
-          "aborted": false,
-          "willRetry": true,
-          "result": {
-            "summary": "auto compacted",
-            "firstKeptEntryId": "e3",
-            "tokensBefore": 11,
-            "details": {}
-          }
-        },
-        {
-          "type": "agent_start"
-        },
-        {
-          "type": "turn_start"
-        },
-        {
-          "type": "message_start"
-        },
-        {
-          "type": "message_update"
-        },
-        {
-          "type": "message_update"
-        },
-        {
-          "type": "message_update"
-        },
-        {
-          "type": "message_end"
-        },
-        {
-          "type": "turn_end"
-        },
-        {
-          "type": "agent_end"
-        }
-      ],
       "messages": [
         {
           "role": "compactionSummary",
@@ -462,57 +384,6 @@
           "role": "assistant",
           "text": "after recovery",
           "stopReason": "stop"
-        }
-      ],
-      "entries": [
-        {
-          "type": "message",
-          "message": {
-            "role": "user",
-            "text": "one"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "text": "",
-            "stopReason": "stop"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "user",
-            "text": "two"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "compaction",
-          "summary": "auto compacted",
-          "firstKeptEntryId": "e3",
-          "tokensBefore": 11,
-          "details": {},
-          "fromHook": true,
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "text": "after recovery",
-            "stopReason": "stop"
-          },
-          "timestamp": "$ISO"
-        }
-      ],
-      "scheduled": [
-        {
-          "delay_ms": 100,
-          "fired": true
         }
       ]
     }
@@ -595,8 +466,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "threshold_compacts_without_retry",
@@ -663,8 +533,7 @@
         "fromHook": true,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "below_threshold_does_nothing",
@@ -710,8 +579,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "error_message_uses_last_successful_usage",
@@ -778,8 +646,7 @@
         "fromHook": true,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "error_without_usage_does_nothing",
@@ -822,8 +689,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "post_compaction_error_ignores_kept_usage",
@@ -901,8 +767,7 @@
         "fromHook": false,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "foreign_model_overflow_is_not_overflow",
@@ -948,8 +813,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "queue_only_compaction_resumes_at_100ms",
@@ -1017,84 +881,9 @@
           "fromHook": true,
           "timestamp": "$ISO"
         }
-      ],
-      "scheduled": [
-        {
-          "delay_ms": 100,
-          "fired": false
-        }
       ]
     },
-    "beforeHundred": [
-      {
-        "delay_ms": 100,
-        "fired": false
-      }
-    ],
     "after": {
-      "events": [
-        {
-          "type": "compaction_start",
-          "reason": "threshold"
-        },
-        {
-          "type": "compaction_end",
-          "reason": "threshold",
-          "aborted": false,
-          "willRetry": false,
-          "result": {
-            "summary": "auto compacted",
-            "firstKeptEntryId": "e8",
-            "tokensBefore": 11,
-            "details": {}
-          }
-        },
-        {
-          "type": "agent_start"
-        },
-        {
-          "type": "turn_start"
-        },
-        {
-          "type": "message_start"
-        },
-        {
-          "type": "message_update"
-        },
-        {
-          "type": "message_update"
-        },
-        {
-          "type": "message_update"
-        },
-        {
-          "type": "message_end"
-        },
-        {
-          "type": "turn_end"
-        },
-        {
-          "type": "turn_start"
-        },
-        {
-          "type": "message_start"
-        },
-        {
-          "type": "message_end"
-        },
-        {
-          "type": "message_start"
-        },
-        {
-          "type": "message_end"
-        },
-        {
-          "type": "turn_end"
-        },
-        {
-          "type": "agent_end"
-        }
-      ],
       "messages": [
         {
           "role": "compactionSummary",
@@ -1118,71 +907,6 @@
           "text": "",
           "stopReason": "error",
           "errorMessage": "No more faux responses queued"
-        }
-      ],
-      "entries": [
-        {
-          "type": "message",
-          "message": {
-            "role": "user",
-            "text": "one"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "text": "",
-            "stopReason": "stop"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "user",
-            "text": "two"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "compaction",
-          "summary": "auto compacted",
-          "firstKeptEntryId": "e8",
-          "tokensBefore": 11,
-          "details": {},
-          "fromHook": true,
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "text": "queued answer",
-            "stopReason": "stop"
-          },
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "custom_message",
-          "timestamp": "$ISO"
-        },
-        {
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "text": "",
-            "stopReason": "error",
-            "errorMessage": "No more faux responses queued"
-          },
-          "timestamp": "$ISO"
-        }
-      ],
-      "scheduled": [
-        {
-          "delay_ms": 100,
-          "fired": true
         }
       ]
     }
@@ -1243,8 +967,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "auto_compaction_cancelled_by_extension",
@@ -1302,8 +1025,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "auto_compaction_over_empty_history_ends_silently",
@@ -1321,8 +1043,7 @@
       }
     ],
     "messages": [],
-    "entries": [],
-    "scheduled": []
+    "entries": []
   },
   {
     "name": "auto_compaction_failures_report_reason",
@@ -1393,8 +1114,7 @@
         },
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "auto_start_event_precedes_the_abort_controller",
@@ -1461,8 +1181,7 @@
         "fromHook": true,
         "timestamp": "$ISO"
       }
-    ],
-    "scheduled": []
+    ]
   },
   {
     "name": "abort_branch_summary_reaches_the_navigation_handler",

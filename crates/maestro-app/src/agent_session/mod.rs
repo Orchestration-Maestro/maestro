@@ -226,14 +226,19 @@ impl<E: ExtensionExecution> AgentSession<E> {
         }));
     }
 
-    /// Removes the failed response a retry or recovery replaces, keeping the stored history.
-    pub(super) fn drop_trailing_assistant(&self) {
+    /// Removes the newest agent message when it is a response `removable` accepts, keeping
+    /// the stored history.
+    pub(super) fn drop_trailing_assistant(
+        &self,
+        removable: impl Fn(&maestro_models::AssistantMessage) -> bool,
+    ) {
         let messages = self.messages();
         let mut messages = crate::utils::lock::write(&messages);
-        if matches!(
+        let remove = matches!(
             messages.last(),
-            Some(maestro_extensions::NativeAgentMessage::Assistant(_))
-        ) {
+            Some(maestro_extensions::NativeAgentMessage::Assistant(last)) if removable(&read(last))
+        );
+        if remove {
             messages.pop();
         }
     }
