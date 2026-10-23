@@ -2435,7 +2435,8 @@ fn tracing_support_owner_has_no_domain_dependencies() {
     support_owner_has_no_domain_dependencies(TRACING);
 }
 
-/// `owner` may declare no workspace crate in any table; only the dependency unifier is accepted.
+/// `owner` rejects the text, path and tooling crates in every dependency table and accepts
+/// the dependency unifier.
 fn support_owner_has_no_domain_dependencies(owner: &str) {
     let targets = ["maestro-text", "maestro-path", "maestro-tooling"];
     let workspace = Workspace::new();
@@ -2528,8 +2529,12 @@ fn directory_support_edges_keep_cycle_checks() {
         let declaration = format!(
             "[dev-dependencies]\nsupport = {{ package = {helper:?}, path = \"../{helper}\" }}"
         );
-        let error = caller_declares(&workspace, owner, &declaration).unwrap_err();
-        assert!(error.contains("test dependency cycle"), "{error}");
+        assert_eq!(
+            caller_declares(&workspace, owner, &declaration),
+            Err(format!(
+                "test dependency cycle: {helper} -> {owner} -> {helper}"
+            ))
+        );
     }
 }
 
@@ -2549,8 +2554,12 @@ fn support_edges_keep_cycle_checks(owner: &str, caller: &str) {
     );
     let native =
         format!("[{NATIVE_DEV}]\nsupport = {{ package = {owner:?}, path = \"../{owner}\" }}");
-    let error = caller_declares(&workspace, caller, &native).unwrap_err();
-    assert!(error.contains("test dependency cycle"), "{error}");
+    assert_eq!(
+        caller_declares(&workspace, caller, &native),
+        Err(format!(
+            "test dependency cycle: {caller} -> {owner} -> {caller}"
+        ))
+    );
 }
 
 #[test]
