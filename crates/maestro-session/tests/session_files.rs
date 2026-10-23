@@ -655,7 +655,14 @@ fn opening_resolves_once_before_loading_the_selected_file() {
 #[test]
 fn session_paths_keep_authored_spelling_until_explicit_resolution() {
     let directory = Directory::new();
-    let authored = format!("{}/./nested/../", directory.text());
+    let authored = directory
+        .path()
+        .join(".")
+        .join("nested")
+        .join("..")
+        .to_str()
+        .unwrap()
+        .to_owned();
     let manager =
         SessionManager::create("relative/../authored", Some(&authored), "unused").unwrap();
     assert_eq!(manager.get_session_dir(), authored);
