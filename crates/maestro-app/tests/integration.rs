@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_concurrent_checks;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;

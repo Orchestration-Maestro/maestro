@@ -793,6 +793,46 @@ pub fn message_text(record: &Value) -> Value {
     }
 }
 
+/// The text a message shows: string content unchanged, or its text blocks in order joined
+/// by one newline each; anything without content shows nothing, not its summary.
+pub fn get_message_text(message: &Value) -> String {
+    match message.get("content") {
+        Some(Value::String(text)) => text.clone(),
+        Some(Value::Array(blocks)) => blocks
+            .iter()
+            .filter(|block| block["type"] == "text")
+            .map(|block| block["text"].as_str().unwrap_or_default())
+            .collect::<Vec<_>>()
+            .join("\n"),
+        _ => String::new(),
+    }
+}
+
+/// The text of each user message in the session history, in order.
+pub fn get_user_texts(harness: &Harness) -> Vec<String> {
+    texts_matching(harness, |message| {
+        matches!(message, maestro_agent::AgentMessage::User(_))
+    })
+}
+
+/// The text of each assistant message in the session history, in order.
+pub fn get_assistant_texts(harness: &Harness) -> Vec<String> {
+    texts_matching(harness, |message| {
+        matches!(message, maestro_agent::AgentMessage::Assistant(_))
+    })
+}
+
+/// The text of each history message `keep` selects, in order.
+fn texts_matching(harness: &Harness, keep: fn(&NativeAgentMessage) -> bool) -> Vec<String> {
+    let messages = harness.session.messages();
+    let messages = messages.read().unwrap();
+    messages
+        .iter()
+        .filter(|message| keep(message))
+        .map(|message| get_message_text(&serde_json::to_value(message).unwrap()))
+        .collect()
+}
+
 /// A scripted answer with an optional stop reason and error text.
 pub fn answer(text: &str, stop: Option<StopReason>, error: Option<&str>) -> AssistantMessage {
     faux_assistant_message(
