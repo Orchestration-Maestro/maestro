@@ -1,6 +1,7 @@
 //! Native adapter: notification projection and error delivery.
 use super::native::{NativeWatchOperations, entry_names};
 use super::{FsWatcher, WatchOperations};
+use maestro_test_directory::Scratch;
 use notify::event::{
     AccessKind, CreateKind, DataChange, MetadataKind, ModifyKind, RemoveKind, RenameMode,
 };
@@ -105,8 +106,8 @@ impl Harness {
 
 #[test]
 fn native_relative_root_projects_absolute_event_paths_to_names() {
-    let dir = format!("maestro-watch-relative-{}", std::process::id());
-    std::fs::create_dir_all(&dir).unwrap();
+    let scratch = Scratch::new_in(Path::new(".")).unwrap();
+    let dir = scratch.path().to_str().unwrap();
     let harness = Harness::new();
     let names = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&names);
@@ -115,7 +116,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
     let (mut watcher, results) = harness
         .operations
         .open(
-            &dir,
+            dir,
             Rc::new(move |name| {
                 seen.borrow_mut().push(name);
                 if seen.borrow().len() == 2 {
@@ -125,7 +126,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
             Rc::new(|| {}),
         )
         .unwrap();
-    let root = std::path::absolute(&dir).unwrap();
+    let root = std::path::absolute(dir).unwrap();
     for file in ["theme.json", "decoy.json"] {
         let path = root.join(file);
         results
@@ -142,13 +143,12 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
     assert_eq!(*names.borrow(), names_of(&["theme.json", "decoy.json"]));
     super::FsWatcher::close(&mut watcher).unwrap();
     harness.local.block_on(&harness.runtime, closed(&results));
-    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]
 fn native_close_inside_callback_stops_queued_notifications() {
-    let dir = std::env::temp_dir().join(format!("maestro-watch-close-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let delivered = Rc::new(Cell::new(0));
@@ -188,13 +188,12 @@ fn native_close_inside_callback_stops_queued_notifications() {
     }
     harness.local.block_on(&harness.runtime, closed(&results));
     assert_eq!(delivered.get(), 1);
-    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]
 fn native_drop_inside_callback_stops_queued_notifications() {
-    let dir = std::env::temp_dir().join(format!("maestro-watch-drop-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let delivered = Rc::new(Cell::new(0));
@@ -232,13 +231,12 @@ fn native_drop_inside_callback_stops_queued_notifications() {
     }
     harness.local.block_on(&harness.runtime, closed(&results));
     assert_eq!(delivered.get(), 1);
-    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]
 fn native_error_callback_can_close_and_releases_listener() {
-    let dir = std::env::temp_dir().join(format!("maestro-watch-error-{}", std::process::id()));
-    std::fs::create_dir(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let slot: Rc<RefCell<Option<super::native::NativeWatcher>>> = Rc::default();
     let errors = Rc::new(Cell::new(0));
@@ -291,14 +289,12 @@ fn native_error_callback_can_close_and_releases_listener() {
     assert_eq!(delivered.get(), 0);
     assert!(slot.borrow().is_none());
     assert!(weak_listener.upgrade().is_none());
-    std::fs::remove_dir(dir).unwrap();
 }
 
 #[test]
 fn native_registration_teardown_leaves_other_watch_active() {
-    let dir =
-        std::env::temp_dir().join(format!("maestro-watch-independent-{}", std::process::id()));
-    std::fs::create_dir(&dir).unwrap();
+    let scratch = Scratch::new().unwrap();
+    let dir = scratch.path();
     let harness = Harness::new();
     let (observed, mut observations) = tokio::sync::mpsc::unbounded_channel();
     let (b, b_results) = harness
@@ -342,7 +338,6 @@ fn native_registration_teardown_leaves_other_watch_active() {
     }
     drop(b);
     harness.local.block_on(&harness.runtime, closed(&b_results));
-    std::fs::remove_dir(dir).unwrap();
 }
 
 #[test]
