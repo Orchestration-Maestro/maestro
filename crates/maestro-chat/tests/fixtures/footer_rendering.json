@@ -6,7 +6,6 @@
     },
     "expected": {
       "error": {
-        "name": "Error",
         "message": "Theme not initialized. Call initTheme() first."
       }
     }
@@ -3455,9 +3454,7 @@
             }
           }
         }
-      ],
-      "field": "input",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -3491,9 +3488,7 @@
             }
           }
         }
-      ],
-      "field": "input",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -3527,9 +3522,7 @@
             }
           }
         }
-      ],
-      "field": "input",
-      "kind": "number"
+      ]
     },
     "expected": {
       "lines": [
@@ -3562,9 +3555,7 @@
             }
           }
         }
-      ],
-      "field": "output",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -3598,9 +3589,7 @@
             }
           }
         }
-      ],
-      "field": "output",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -3634,9 +3623,7 @@
             }
           }
         }
-      ],
-      "field": "output",
-      "kind": "number"
+      ]
     },
     "expected": {
       "lines": [
@@ -3669,9 +3656,7 @@
             }
           }
         }
-      ],
-      "field": "cacheRead",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -3705,9 +3690,7 @@
             }
           }
         }
-      ],
-      "field": "cacheRead",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -3741,9 +3724,7 @@
             }
           }
         }
-      ],
-      "field": "cacheRead",
-      "kind": "number"
+      ]
     },
     "expected": {
       "lines": [
@@ -3776,9 +3757,7 @@
             }
           }
         }
-      ],
-      "field": "cacheWrite",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -3812,9 +3791,7 @@
             }
           }
         }
-      ],
-      "field": "cacheWrite",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -3848,9 +3825,7 @@
             }
           }
         }
-      ],
-      "field": "cacheWrite",
-      "kind": "number"
+      ]
     },
     "expected": {
       "lines": [
@@ -3882,8 +3857,7 @@
             }
           }
         }
-      ],
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -3917,8 +3891,7 @@
             }
           }
         }
-      ],
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -3952,8 +3925,7 @@
             }
           }
         }
-      ],
-      "kind": "number"
+      ]
     },
     "expected": {
       "lines": [
@@ -3978,13 +3950,11 @@
             "role": "assistant"
           }
         }
-      ],
-      "kind": "missing"
+      ]
     },
     "expected": {
       "error": {
-        "name": "TypeError",
-        "message": "Cannot read properties of undefined (reading 'input')"
+        "name": "TypeError"
       }
     }
   },
@@ -4006,13 +3976,11 @@
             }
           }
         }
-      ],
-      "kind": "missing"
+      ]
     },
     "expected": {
       "error": {
-        "name": "TypeError",
-        "message": "Cannot read properties of undefined (reading 'total')"
+        "name": "TypeError"
       }
     }
   },
@@ -4029,13 +3997,11 @@
             "usage": null
           }
         }
-      ],
-      "kind": "null"
+      ]
     },
     "expected": {
       "error": {
-        "name": "TypeError",
-        "message": "Cannot read properties of null (reading 'input')"
+        "name": "TypeError"
       }
     }
   },
@@ -4058,13 +4024,11 @@
             }
           }
         }
-      ],
-      "kind": "null"
+      ]
     },
     "expected": {
       "error": {
-        "name": "TypeError",
-        "message": "Cannot read properties of null (reading 'total')"
+        "name": "TypeError"
       }
     }
   },
@@ -4127,9 +4091,7 @@
             }
           }
         }
-      ],
-      "field": "input",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -4178,9 +4140,7 @@
             }
           }
         }
-      ],
-      "field": "input",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -4228,9 +4188,7 @@
             }
           }
         }
-      ],
-      "field": "output",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -4279,9 +4237,7 @@
             }
           }
         }
-      ],
-      "field": "output",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -4329,9 +4285,7 @@
             }
           }
         }
-      ],
-      "field": "cacheRead",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -4380,9 +4334,7 @@
             }
           }
         }
-      ],
-      "field": "cacheRead",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
@@ -4430,9 +4382,7 @@
             }
           }
         }
-      ],
-      "field": "cacheWrite",
-      "kind": "missing"
+      ]
     },
     "expected": {
       "lines": [
@@ -4481,9 +4431,7 @@
             }
           }
         }
-      ],
-      "field": "cacheWrite",
-      "kind": "null"
+      ]
     },
     "expected": {
       "lines": [
