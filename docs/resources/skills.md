@@ -65,7 +65,9 @@ ends with the skills gathered before the failure, and `load_skills` goes on with
 its other roots. A
 user skills root that needs the unreadable directory makes the classification of
 an existing explicit path that path's warning. `~`, `~/suffix` and `~suffix`
-expand against supplied `home`, including repeated slashes after the tilde. Joined
+expand against supplied `home`, including repeated slashes after the tilde, and an
+expansion that is not absolute resolves against `cwd`: an empty or relative `home`
+still names the working directory. Joined
 user configuration and scanned child paths concatenate their parts before lexical
 normalization; later rooted parts do not replace the earlier root. Project
 configuration paths instead resolve against `cwd`; an absolute configuration

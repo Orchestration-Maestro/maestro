@@ -77,6 +77,22 @@ pub fn expand_tilde_text(
     Ok(maestro_path::join(&[&home()?, rest]))
 }
 
+/// Resolve an explicit instruction path: trim it, expand a leading `~` below `home`, keep an
+/// absolute result and resolve any other result against `cwd`.
+///
+/// # Errors
+/// Returns the error of `home` when the path needs the home directory, or the working-directory
+/// error of a resolution that needed it.
+pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Result<String> {
+    let path = path.trim_matches(text_whitespace);
+    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    if maestro_path::is_absolute(&normalized) {
+        Ok(normalized)
+    } else {
+        resolve(&[cwd, &normalized])
+    }
+}
+
 /// The home directory as a native path: on Unix the `HOME` variable as set, an empty one
 /// included, otherwise the account entry.
 #[must_use]

@@ -11,13 +11,13 @@ mod validation;
 use crate::{
     ResourceDiagnostic, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
     parse_frontmatter,
-    paths::{expand_tilde_text, is_under_path, resolve},
+    paths::{is_under_path, resolve, resolve_explicit_path},
 };
 pub use files::{
     ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
     read_text, symlink_metadata,
 };
-use maestro_path::{basename, dirname, is_absolute, join};
+use maestro_path::{basename, dirname, join};
 use std::{io, path::Path};
 pub use validation::SkillFrontmatter;
 
@@ -193,17 +193,9 @@ fn load_skills_in(options: LoadSkillsOptions<'_>) -> io::Result<LoadSkillsResult
     Ok(result)
 }
 
-/// Expand a leading `~` below the home directory; keep an absolute path and resolve a relative
-/// one against the working directory.
+/// Resolve an explicit skill path through the shared instruction-path resolver.
 fn normalize_skill_path(path: &str, options: &LoadSkillsOptions<'_>) -> io::Result<String> {
-    let path = path.trim_matches(crate::frontmatter::text_whitespace);
-    if path.starts_with('~') {
-        return expand_tilde_text(path, || Ok(options.home.to_owned()));
-    }
-    if is_absolute(path) {
-        return Ok(path.to_owned());
-    }
-    resolve(&[options.cwd, path])
+    resolve_explicit_path(path, options.cwd, options.home)
 }
 /// Merge discoveries, retaining the first name and delaying collision messages.
 fn add_skills(

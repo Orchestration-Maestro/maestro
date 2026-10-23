@@ -6,10 +6,10 @@ use crate::{
     create_synthetic_source_info,
     frontmatter::text_whitespace,
     metadata, parse_frontmatter,
-    paths::{expand_tilde_text, resolve},
+    paths::{resolve, resolve_explicit_path},
     read_entries, read_text,
 };
-use maestro_path::{basename, dirname, is_absolute, join};
+use maestro_path::{basename, dirname, join};
 use std::{io, path::Path};
 
 /// Replace original positional and wildcard markers with literal arguments.
@@ -320,15 +320,9 @@ pub fn load_prompt_templates(
     Ok(templates)
 }
 
-/// Normalize tilde spelling before resolving an unanchored explicit path.
+/// Normalize tilde spelling and resolve an unanchored explicit path.
 fn resolve_prompt_path(path: &str, options: LoadPromptTemplatesOptions<'_>) -> io::Result<String> {
-    let path = path.trim_matches(text_whitespace);
-    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
-    if is_absolute(&normalized) {
-        Ok(normalized)
-    } else {
-        resolve(&[options.cwd, &normalized])
-    }
+    resolve_explicit_path(path, options.cwd, options.home)
 }
 
 #[cfg(test)]

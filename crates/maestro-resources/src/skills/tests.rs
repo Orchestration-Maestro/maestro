@@ -6,7 +6,7 @@ use super::real_path::real_path;
 #[cfg(unix)]
 use super::{LoadSkillsFromDirOptions, ResourceFileType, load_skills_from_dir};
 use super::{LoadSkillsOptions, LoadSkillsResult, load_skills};
-use crate::paths::resolve;
+use crate::{SourceOrigin, SourceScope, paths::resolve};
 use maestro_test_directory::Scratch;
 use std::{
     fs, io,
@@ -380,24 +380,27 @@ fn relative_user_root_continues_from_the_process_directory_not_the_cwd() {
     });
 }
 
-/// Failed canonicalization compares authored spellings, not native path equality.
+/// Two files sharing a skill name collide with their resolved spellings, while a repeated path
+/// canonicalizes to one skill.
 #[cfg(unix)]
 #[test]
-fn maestro_skills_keep_authored_collision_keys() {
-    let name = "maestro_skills_keep_authored_collision_keys";
-    in_child(name, "unreadable", Cwd::Unreadable, |f| {
-        write("home/calendar/SKILL.md", "---\ndescription: Useful\n---");
-        fs::create_dir_all("home/other").unwrap();
-        std::os::unix::fs::symlink("../calendar", "home/other/calendar").unwrap();
+fn maestro_skills_collide_on_a_shared_name() {
+    let name = "maestro_skills_collide_on_a_shared_name";
+    in_child(name, "readable", Cwd::Readable, |f| {
+        let work = f.below_process("work");
+        for calendar in ["calendar", "other/calendar"] {
+            let file = format!("{work}/home/{calendar}/SKILL.md");
+            write(&file, SKILL);
+        }
         let paths = [
             "~/calendar/SKILL.md",
             "~/calendar/SKILL.md",
             "~/other/calendar/SKILL.md",
         ];
         let result = load_skills(LoadSkillsOptions {
-            cwd: &f.path("work"),
+            cwd: &work,
             home: "home",
-            agent_dir: &f.path("agent"),
+            agent_dir: &f.below_process("agent"),
             config_dir_name: ".maestro",
             skill_paths: &paths.map(str::to_owned),
             include_defaults: false,
@@ -406,8 +409,14 @@ fn maestro_skills_keep_authored_collision_keys() {
         assert_eq!(result.skills.len(), 1);
         assert_eq!(result.diagnostics.len(), 1);
         let collision = result.diagnostics[0].collision.as_ref().unwrap();
-        assert_eq!(collision.winner_path, "home/calendar/SKILL.md");
-        assert_eq!(collision.loser_path, "home/other/calendar/SKILL.md");
+        assert_eq!(
+            collision.winner_path,
+            f.below_process("work/home/calendar/SKILL.md")
+        );
+        assert_eq!(
+            collision.loser_path,
+            f.below_process("work/home/other/calendar/SKILL.md")
+        );
         assert_eq!(result.diagnostics[0].message, "name \"calendar\" collision");
     });
 }
@@ -625,11 +634,12 @@ fn native_nofollow_metadata_distinguishes_links() {
 }
 
 /// Each explicit skill form returns the reference's result for the five supplied homes, spelled
-/// in the host's path flavor.
+/// in the host's path flavor; an empty or relative Unix home leaves the expansion relative, so it
+/// resolves against the working directory.
 #[test]
 fn explicit_skill_paths_follow_the_reference_table() {
-    let rows = if cfg!(windows) {
-        [
+    let rows: &[(&str, &str, &str)] = if cfg!(windows) {
+        &[
             ("~", r"C:\h", r"C:\h"),
             ("~/", r"C:\h", r"C:\h"),
             ("~/x", r"C:\h", r"C:\h\x"),
@@ -637,21 +647,246 @@ fn explicit_skill_paths_follow_the_reference_table() {
             ("~", r"C:\h\.", r"C:\h\."),
         ]
     } else {
-        [
+        &[
             ("~", "/h", "/h"),
             ("~/", "/h", "/h"),
             ("~/x", "/h", "/h/x"),
             ("~x", "/h", "/h/x"),
             ("~", "/h/.", "/h/."),
+            ("~", "", "/w"),
+            ("~", "home", "/w/home"),
         ]
     };
-    for (written, home, expected) in rows {
+    for &(written, home, expected) in rows {
         assert_eq!(
             super::normalize_skill_path(written, &options(home)).unwrap(),
             expected,
             "{written:?} with home {home:?}"
         );
     }
+}
+
+/// Described skill files of the explicit-path tree below the fixture root, with their descriptions.
+#[cfg(not(windows))]
+const EXPLICIT_TREE: [(&str, &str); 8] = [
+    ("work/SKILL.md", "Working directory"),
+    ("work/calendar/SKILL.md", "Meetings"),
+    ("work/home/SKILL.md", "Relative home"),
+    ("work/home/calendar/SKILL.md", "Meetings"),
+    ("home-absolute/SKILL.md", "Absolute home"),
+    ("home-absolute/calendar/SKILL.md", "Meetings"),
+    ("work/.maestro/skills/SKILL.md", "Project root"),
+    ("work/upper.MD", "Upper case"),
+];
+
+/// What one explicit path case selects.
+#[cfg(not(windows))]
+#[derive(Clone, Copy)]
+enum ExplicitOutcome {
+    /// The described skill file at this tree-relative path.
+    Skill(&'static str),
+    /// A missing-path warning at this tree-relative spelling.
+    Missing(&'static str),
+    /// A not-markdown warning at this tree-relative path.
+    NotMarkdown(&'static str),
+}
+
+/// An expanded tilde resolves against the caller directory, so an empty or relative home still
+/// loads the working directory's skills, while every other explicit form and diagnostic stays the
+/// reference's.
+#[cfg(not(windows))]
+#[test]
+fn explicit_tilde_paths_use_the_supplied_cwd_after_expansion() {
+    let name = "explicit_tilde_paths_use_the_supplied_cwd_after_expansion";
+    in_child(name, "readable", Cwd::Readable, |f| {
+        write_explicit_tree(f);
+        let work = f.below_process("work");
+        for (home, input, expected) in explicit_cases(f) {
+            let result = explicit_load(&work, &home, &input);
+            assert_explicit_outcome(f, &result, expected);
+        }
+        let project = explicit_load(&work, "", "~/.maestro/skills");
+        assert_explicit_skill(
+            f,
+            &project,
+            "work/.maestro/skills/SKILL.md",
+            SourceScope::Project,
+        );
+        let relative = explicit_load("work", "", "~");
+        assert_explicit_skill(f, &relative, "work/SKILL.md", SourceScope::Temporary);
+    });
+}
+
+/// The explicit path cases: the supplied home, the written path and the result it selects.
+#[cfg(not(windows))]
+fn explicit_cases(f: &Fixture) -> Vec<(String, String, ExplicitOutcome)> {
+    let absolute = f.below_process("home-absolute");
+    let dotted = format!("{absolute}/.");
+    let expanded = format!("~/{absolute}/calendar");
+    let rows = [
+        ("", "~"),
+        ("", "~/"),
+        ("", "~/calendar"),
+        ("", "~calendar"),
+        ("", expanded.as_str()),
+        ("", "\u{feff} ~/calendar \u{feff}"),
+        ("", "~/calendar/../calendar"),
+        ("", "~/missing"),
+        ("", "~/upper.MD"),
+        ("", "\u{85}~/calendar"),
+        ("", "calendar"),
+        ("", ""),
+        ("home", "~"),
+        ("home", "~/calendar"),
+        ("home", "~calendar"),
+        ("home/.", "~"),
+        ("home/.", "~/calendar"),
+        ("home/.", "~calendar"),
+        (absolute.as_str(), "~"),
+        (absolute.as_str(), "~/calendar"),
+        (absolute.as_str(), "~calendar"),
+        (dotted.as_str(), "~"),
+        (dotted.as_str(), "~/calendar"),
+        (dotted.as_str(), "~calendar"),
+    ];
+    let expected = explicit_outcomes();
+    assert_eq!(expected.len(), rows.len());
+    rows.into_iter()
+        .zip(expected)
+        .map(|((home, input), expected)| (home.to_owned(), input.to_owned(), expected))
+        .collect()
+}
+
+/// The result each explicit path case selects, in the order [`explicit_cases`] writes the paths.
+#[cfg(not(windows))]
+fn explicit_outcomes() -> [ExplicitOutcome; 24] {
+    use ExplicitOutcome::{Missing, NotMarkdown, Skill};
+    let calendar = Skill("work/calendar/SKILL.md");
+    let root = Skill("work/SKILL.md");
+    let relative_home = Skill("work/home/SKILL.md");
+    let relative_home_calendar = Skill("work/home/calendar/SKILL.md");
+    let absolute_root = Skill("home-absolute/SKILL.md");
+    let absolute_calendar = Skill("home-absolute/calendar/SKILL.md");
+    [
+        root,
+        root,
+        calendar,
+        calendar,
+        absolute_calendar,
+        calendar,
+        calendar,
+        Missing("work/missing"),
+        NotMarkdown("work/upper.MD"),
+        Missing("work/\u{85}~/calendar"),
+        calendar,
+        root,
+        relative_home,
+        relative_home_calendar,
+        relative_home_calendar,
+        relative_home,
+        relative_home_calendar,
+        relative_home_calendar,
+        absolute_root,
+        absolute_calendar,
+        absolute_calendar,
+        absolute_root,
+        absolute_calendar,
+        absolute_calendar,
+    ]
+}
+
+/// Write the described skill files of the explicit-path tree below the fixture root.
+#[cfg(not(windows))]
+fn write_explicit_tree(f: &Fixture) {
+    for (relative, description) in EXPLICIT_TREE {
+        let text = format!("---\ndescription: {description}\n---");
+        write(f.below_process(relative), &text);
+    }
+}
+
+/// Load one explicit path for caller directory `cwd` and the supplied home spelling.
+#[cfg(not(windows))]
+fn explicit_load(cwd: &str, home: &str, input: &str) -> LoadSkillsResult {
+    let paths = [input.to_owned()];
+    load_skills(LoadSkillsOptions {
+        cwd,
+        home,
+        agent_dir: "/agent",
+        config_dir_name: ".maestro",
+        skill_paths: &paths,
+        include_defaults: false,
+    })
+    .unwrap()
+}
+
+/// Assert the outcome one case selects.
+#[cfg(not(windows))]
+fn assert_explicit_outcome(f: &Fixture, result: &LoadSkillsResult, expected: ExplicitOutcome) {
+    match expected {
+        ExplicitOutcome::Skill(relative) => {
+            assert_explicit_skill(f, result, relative, SourceScope::Temporary);
+        }
+        ExplicitOutcome::Missing(relative) => {
+            assert_explicit_warning(f, result, relative, "skill path does not exist");
+        }
+        ExplicitOutcome::NotMarkdown(relative) => {
+            assert_explicit_warning(f, result, relative, "skill path is not a markdown file");
+        }
+    }
+}
+
+/// Assert the single loaded skill at `relative`, its complete provenance and no diagnostics.
+#[cfg(not(windows))]
+fn assert_explicit_skill(
+    f: &Fixture,
+    result: &LoadSkillsResult,
+    relative: &str,
+    scope: SourceScope,
+) {
+    assert!(
+        result.diagnostics.is_empty(),
+        "{relative}: {:?}",
+        result.diagnostics
+    );
+    let [skill] = result.skills.as_slice() else {
+        panic!(
+            "{relative}: expected one skill, found {}",
+            result.skills.len()
+        );
+    };
+    let file = f.below_process(relative);
+    let (parent, _) = relative.rsplit_once('/').unwrap();
+    let base = f.below_process(parent);
+    let description = EXPLICIT_TREE
+        .iter()
+        .find_map(|(path, description)| (*path == relative).then_some(description))
+        .unwrap();
+    assert_eq!(skill.file_path, file);
+    assert_eq!(skill.base_dir, base);
+    assert_eq!(skill.name, parent.rsplit('/').next().unwrap());
+    assert_eq!(skill.description, *description);
+    assert!(!skill.disable_model_invocation);
+    assert_eq!(skill.source_info.path, file);
+    assert_eq!(skill.source_info.source, "local");
+    assert_eq!(skill.source_info.scope, scope);
+    assert_eq!(skill.source_info.origin, SourceOrigin::TopLevel);
+    assert_eq!(skill.source_info.base_dir.as_deref(), Some(base.as_str()));
+}
+
+/// Assert the single warning at `relative` with `message` and no loaded skill.
+#[cfg(not(windows))]
+fn assert_explicit_warning(f: &Fixture, result: &LoadSkillsResult, relative: &str, message: &str) {
+    assert!(result.skills.is_empty(), "{relative}: {:?}", result.skills);
+    let [diagnostic] = result.diagnostics.as_slice() else {
+        panic!(
+            "{relative}: expected one warning, found {}",
+            result.diagnostics.len()
+        );
+    };
+    let expected = f.below_process(relative);
+    assert_eq!(diagnostic.path.as_deref(), Some(expected.as_str()));
+    assert_eq!(diagnostic.message, message);
+    assert!(diagnostic.collision.is_none());
 }
 
 /// Options with the supplied home spelling and the working directory `/w`.
