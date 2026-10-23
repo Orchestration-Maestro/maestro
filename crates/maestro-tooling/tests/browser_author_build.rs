@@ -1141,6 +1141,21 @@ fn assert_authored_target(browser: &Browser, config: &std::path::Path, target: &
     );
 }
 
+/// State the prepared inputs are exactly the files the author fixture reads.
+fn assert_prepared_inputs(directory: &std::path::Path) {
+    let mut prepared: Vec<String> = fs::read_dir(directory.join("inputs"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .collect();
+    prepared.sort();
+    assert_eq!(
+        prepared,
+        ["brand.css", "mark.svg", "watch-dirs.json", "wordmark.txt"],
+        "{}",
+        directory.join("inputs").display()
+    );
+}
+
 /// Install a native authored hook whose filesystem effect the real bundler observes.
 fn install_authored_hook(browser: &Browser) -> std::path::PathBuf {
     let marker = browser.fixture("hook.css");
@@ -1800,6 +1815,7 @@ fn browser_native_build_routes_preserve_authored_configuration() {
         let bytes = browser_support::wasm(&browser, route);
         assert_eq!(&bytes[..8], b"\0asm\x01\0\0\0");
         assert!(bytes.windows(wordmark.len()).any(|part| part == wordmark));
+        assert_prepared_inputs(&directory);
         let inputs = directory.join("inputs/brand.css");
         retained.push((inputs.clone(), fs::read(inputs).unwrap()));
         for (path, bytes) in &retained {
