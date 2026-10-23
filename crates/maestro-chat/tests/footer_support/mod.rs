@@ -366,17 +366,21 @@ fn session(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSession<Threaded>
         Arc::new(ProcessConfigValueOperations::new(|| {
             Err(std::io::Error::other("not invoked"))
         }));
-    Rc::new(AgentSession::new(AgentSessionConfig {
-        agent: Rc::default(),
-        session_manager: history,
-        settings_manager: settings,
-        cwd: cwd.to_owned(),
-        scoped_models: Vec::new(),
-        resource_loader: loader,
-        model_registry: registry,
-        extension_runner: runner,
-        config_value_operations: commands,
-    }))
+    Rc::new(
+        AgentSession::new(AgentSessionConfig {
+            agent: Rc::default(),
+            session_manager: history,
+            settings_manager: settings,
+            cwd: cwd.to_owned(),
+            bin_dir: String::new(),
+            scoped_models: Vec::new(),
+            resource_loader: loader,
+            model_registry: registry,
+            extension_runner: runner,
+            config_value_operations: commands,
+        })
+        .expect("a memory session"),
+    )
 }
 
 /// Stored credentials, with a subscription for `provider` when supplied.
