@@ -16,6 +16,7 @@ use maestro_extensions::{
 };
 use maestro_models::Local;
 use maestro_session::Presence;
+use maestro_theme::LiveTheme;
 use serde_json::{Value, json};
 use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
 use tokio::sync::mpsc;
@@ -130,13 +131,23 @@ impl Client {
 
 /// Serves `runtime` over memory with `workspace` answering workspace commands.
 pub fn connect_with(runtime: Rc<AgentSessionRuntime>, workspace: WorkspaceAnswer) -> Client {
+    serve(runtime, workspace, published())
+}
+
+/// Serves `runtime` over memory with `workspace` answering workspace commands and `theme`
+/// as the live theme.
+pub fn serve(
+    runtime: Rc<AgentSessionRuntime>,
+    workspace: WorkspaceAnswer,
+    theme: LiveTheme,
+) -> Client {
     let (inputs, received) = mpsc::unbounded_channel();
     let (written, lines) = mpsc::unbounded_channel::<String>();
     let signals = Rc::new(Signals::default());
     let options = RpcModeOptions {
         workspace: Rc::new(ClosureWorkspace(workspace)),
         process: signals,
-        theme: published(),
+        theme,
         export_operations: Rc::new(Recording::default()),
         render_environment: environment(published()),
     };
@@ -155,15 +166,17 @@ pub fn connect_with(runtime: Rc<AgentSessionRuntime>, workspace: WorkspaceAnswer
 
 /// Serves `runtime` over memory; a workspace command fails as unsupported.
 pub fn connect(runtime: Rc<AgentSessionRuntime>) -> Client {
-    connect_with(
-        runtime,
-        Rc::new(|_, _| {
-            Err(workspace_schema::ErrorBody {
-                code: "unsupported".into(),
-                message: "no workspace".into(),
-            })
-        }),
-    )
+    connect_with(runtime, no_workspace())
+}
+
+/// Workspace operations that fail every command as unsupported.
+pub fn no_workspace() -> WorkspaceAnswer {
+    Rc::new(|_, _| {
+        Err(workspace_schema::ErrorBody {
+            code: "unsupported".into(),
+            message: "no workspace".into(),
+        })
+    })
 }
 
 /// An extension that records the reason of each `session_start` into `starts` and cancels
