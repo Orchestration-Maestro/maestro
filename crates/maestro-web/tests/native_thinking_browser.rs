@@ -1,7 +1,7 @@
 //! The reasoning disclosure mounted as native page content and as its element.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    body, call, container, document, driver, host, page_module, view,
+    body, call, computed, container, document, driver, host, page_module, rgb, view,
 };
 use maestro_theme::BrandMode;
 use maestro_web::{
@@ -37,21 +37,9 @@ fn header(root: &Element) -> HtmlElement {
 fn reasoning(root: &Element) -> Option<Element> {
     root.query_selector(".maestro-markdown").unwrap()
 }
-/// One computed style property of `element`.
-fn style(element: &Element, property: &str) -> String {
-    web_sys::window()
-        .unwrap()
-        .get_computed_style(element)
-        .unwrap()
-        .unwrap()
-        .get_property_value(property)
-        .unwrap()
-}
 /// The pack's color for `role` in `mode`, as computed CSS spells it.
 fn color(view: &DomView, mode: BrandMode, role: &str) -> String {
-    let presentation = view.pack.presentation(mode).unwrap();
-    let hex = u32::from_str_radix(&presentation.colors[role][1..], 16).unwrap();
-    format!("rgb({}, {}, {})", hex >> 16, (hex >> 8) & 255, hex & 255)
+    rgb(view.pack.presentation(mode).unwrap().colors[role])
 }
 /// Move the real pointer to `point`, clicking there when `click` is set.
 async fn pointer(point: (f64, f64), click: bool) {
@@ -138,14 +126,14 @@ pub fn thinking_dom_streaming_and_instances_are_independent(import_module: &js_s
         .show(&thinking("second", false), &second_parent, &view)
         .unwrap();
     let label = header(&root(&first)).last_element_child().unwrap();
-    assert_eq!(style(&label, "animation-name"), "none");
+    assert_eq!(computed(&label, "animation-name"), "none");
     for (streaming, animation) in [(true, "maestro-shimmer"), (false, "none")] {
         first
             .show(&thinking("first", streaming), &first_parent, &view)
             .unwrap();
-        assert_eq!(style(&label, "animation-name"), animation);
+        assert_eq!(computed(&label, "animation-name"), animation);
         let other = header(&root(&second)).last_element_child().unwrap();
-        assert_eq!(style(&other, "animation-name"), "none");
+        assert_eq!(computed(&other, "animation-name"), "none");
     }
     header(&root(&first)).click();
     assert!(reasoning(&root(&first)).is_some());
@@ -162,7 +150,7 @@ pub fn thinking_dom_streaming_and_instances_are_independent(import_module: &js_s
         reasoning(&root(&second)).unwrap().text_content().unwrap(),
         "changed\n"
     );
-    assert_eq!(style(&label, "animation-name"), "none");
+    assert_eq!(computed(&label, "animation-name"), "none");
 }
 
 /// Pointer and keyboard toggle once; reconnection keeps one binding and released roots stay inert.
@@ -257,17 +245,17 @@ pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
         let label = toggle.last_element_child().unwrap();
         assert_eq!(
             (
-                style(&label, "animation-name"),
-                style(&label, "animation-duration")
+                computed(&label, "animation-name"),
+                computed(&label, "animation-duration")
             ),
             ("maestro-shimmer".to_owned(), "2s".to_owned())
         );
-        let gradient = style(&label, "background-image");
+        let gradient = computed(&label, "background-image");
         assert!(
             gradient.contains(&roles.0) && gradient.contains(&roles.1),
             "{gradient}"
         );
-        assert_eq!(style(&label, "color"), "rgba(0, 0, 0, 0)");
+        assert_eq!(computed(&label, "color"), "rgba(0, 0, 0, 0)");
         parent.remove();
     }
 }
@@ -286,36 +274,36 @@ async fn hover_moves_between_roles(
         .unwrap()
         .first_element_child()
         .unwrap();
-    assert_eq!(&style(toggle, "color"), muted);
-    assert_eq!(&style(&svg, "stroke"), muted);
+    assert_eq!(&computed(toggle, "color"), muted);
+    assert_eq!(&computed(&svg, "stroke"), muted);
     pointer(center(toggle), false).await;
     let duration = call(page, "seek", &midway(toggle, "color")).await;
     assert_eq!(duration.as_f64(), Some(150.));
-    let between = style(toggle, "color");
+    let between = computed(toggle, "color");
     assert!(&between != muted && &between != text, "{between}");
     call(page, "finish", &js_sys::Array::of1(toggle)).await;
-    assert_eq!(&style(toggle, "color"), text);
-    assert_eq!(&style(&svg, "stroke"), text);
+    assert_eq!(&computed(toggle, "color"), text);
+    assert_eq!(&computed(&svg, "stroke"), text);
     pointer((0., 0.), false).await;
     call(page, "finish", &js_sys::Array::of1(toggle)).await;
-    assert_eq!(&style(toggle, "color"), muted);
+    assert_eq!(&computed(toggle, "color"), muted);
 }
 /// Expanding turns the chevron through intermediate angles; collapsing midway reverses it.
 async fn chevron_turns_and_reverses(page: &JsValue, toggle: &HtmlElement) {
     let chevron = toggle.first_element_child().unwrap();
-    assert_eq!(style(&chevron, "transform"), "none");
+    assert_eq!(computed(&chevron, "transform"), "none");
     toggle.click();
     call(page, "seek", &midway(&chevron, "transform")).await;
-    let turning = style(&chevron, "transform");
+    let turning = computed(&chevron, "transform");
     assert!(
         turning.starts_with("matrix(") && !turning.contains(", 1, -1,"),
         "{turning}"
     );
     toggle.click();
     call(page, "finish", &js_sys::Array::of1(&chevron)).await;
-    assert_eq!(style(&chevron, "transform"), "none");
+    assert_eq!(computed(&chevron, "transform"), "none");
     toggle.click();
     call(page, "finish", &js_sys::Array::of1(&chevron)).await;
-    assert!(style(&chevron, "transform").contains(", 1, -1,"));
+    assert!(computed(&chevron, "transform").contains(", 1, -1,"));
     toggle.click();
 }

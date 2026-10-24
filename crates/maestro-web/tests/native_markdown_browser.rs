@@ -1,6 +1,8 @@
 //! Markdown mounted as native page content through its public component.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{call, container, document, host, page_module, view};
+use crate::contributions_support::{
+    call, computed, container, document, host, page_module, rgb, view,
+};
 use crate::markdown_support::{
     BlockRow, ContextRow, rows,
     walk::{self, Mounter as _},
@@ -94,21 +96,9 @@ async fn select(page: &JsValue, node: &Element) -> String {
     let selected = call(page, "select", &js_sys::Array::of1(node)).await;
     selected.as_string().unwrap()
 }
-/// One computed style property of `element`.
-fn style(element: &Element, property: &str) -> String {
-    web_sys::window()
-        .unwrap()
-        .get_computed_style(element)
-        .unwrap()
-        .unwrap()
-        .get_property_value(property)
-        .unwrap()
-}
 /// The selected pack's color for `role`, as computed CSS spells it.
 fn color(view: &DomView, role: &str) -> String {
-    let presentation = view.pack.presentation(view.mode).unwrap();
-    let hex = u32::from_str_radix(&presentation.colors[role][1..], 16).unwrap();
-    format!("rgb({}, {}, {})", hex >> 16, (hex >> 8) & 255, hex & 255)
+    rgb(view.pack.presentation(view.mode).unwrap().colors[role])
 }
 
 /// Defaults are exact, an empty document adds no text, and updates keep the root and unchanged nodes.
@@ -214,8 +204,8 @@ pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     fixture.show(&block);
     let mounted = fixture.root();
     let paragraph = mounted.first_element_child().unwrap();
-    assert_eq!(style(&paragraph, "color"), color(&fixture.view, "text"));
-    assert_eq!(style(&paragraph, "font-style"), "normal");
+    assert_eq!(computed(&paragraph, "color"), color(&fixture.view, "text"));
+    assert_eq!(computed(&paragraph, "font-style"), "normal");
     let copy = copied(&page, &mounted).await;
     let code = mounted.query_selector("code.hljs").unwrap().unwrap();
     let selected = select(&page, &code).await;
@@ -229,8 +219,8 @@ pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     assert_eq!(mounted.query_selector("code.hljs").unwrap(), Some(code));
     assert!(copy.text_content().unwrap().contains("Copied!"));
     assert_eq!(selection(&page, &mounted).await, (selected, true));
-    assert_eq!(style(&paragraph, "color"), color(&fixture.view, "muted"));
-    assert_eq!(style(&paragraph, "font-style"), "italic");
+    assert_eq!(computed(&paragraph, "color"), color(&fixture.view, "muted"));
+    assert_eq!(computed(&paragraph, "font-style"), "italic");
     supplied_adapters_reach_updates(&mut fixture, &block, &copy);
 }
 /// Click the document's copy control with a succeeding clipboard and wait for its feedback.
