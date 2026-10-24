@@ -158,7 +158,7 @@ impl InteractiveMode {
         drop(self.pending_tools.take());
         self.set_terminal_progress(true)?;
         self.stop_working_loader();
-        if self.working_visible.get() {
+        if self.working.working_visible.get() {
             self.show_working_loader();
         }
         self.ui.request_render(false);
@@ -346,7 +346,7 @@ impl InteractiveMode {
     /// Returns the terminal's progress-writing failure.
     fn handle_agent_end(&self) -> io::Result<()> {
         self.set_terminal_progress(false)?;
-        if self.loading_animation.borrow().is_some() {
+        if self.working.loading_animation.borrow().is_some() {
             self.stop_working_loader();
         }
         if let Some((component, _)) = self.streaming.take() {

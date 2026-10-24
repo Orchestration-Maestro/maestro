@@ -2,19 +2,15 @@
 //! resources, notices, transcript shortcuts, editor actions, typed input and queued
 //! input.
 
-use crate::{
-    AssistantMessageComponent, AssistantMessageOptions, BashExecutionComponent, CustomEditor,
-    FooterComponent,
-};
+use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
     ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
-    WorkingIndicatorOptions,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
-use maestro_tui::{Component, Container, EditorOptions, Loader, TUI, TerminalImage, Text};
+use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
@@ -122,18 +118,10 @@ pub struct InteractiveMode {
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
-    /// The working row while a response runs.
-    loading_animation: RefCell<Option<Loader>>,
+    /// The working row and its extension-controlled presentation.
+    working: working::WorkingState,
     /// The assistant row of the response streaming now.
     streaming: RefCell<Option<StreamingMessage>>,
-    /// The extension's working message, the default one when absent.
-    working_message: RefCell<Option<String>>,
-    /// Whether the working row is shown while a response runs.
-    working_visible: Cell<bool>,
-    /// The extension's working indicator, the toolkit's own when absent.
-    working_indicator_options: RefCell<Option<WorkingIndicatorOptions>>,
-    /// The label shown for hidden thinking.
-    hidden_thinking_label: RefCell<String>,
 }
 
 impl InteractiveMode {
@@ -203,14 +191,8 @@ impl InteractiveMode {
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
             unsubscribe: RefCell::default(),
-            loading_animation: RefCell::default(),
+            working: working::WorkingState::default(),
             streaming: RefCell::default(),
-            working_message: RefCell::default(),
-            working_visible: Cell::new(true),
-            working_indicator_options: RefCell::default(),
-            hidden_thinking_label: RefCell::new(
-                AssistantMessageOptions::default().hidden_thinking_label,
-            ),
         }))
     }
 
