@@ -1,5 +1,5 @@
 //! Typed input through the editor's installed submission and the single waiting input.
-use super::{World, cases as recorded_cases, isolated, started};
+use super::{World, cases as recorded_cases, debug::only_log, isolated, started};
 use crate::components::session_selector::list::tests::session_picker::manual_runtime::FileEffect;
 use crate::{CustomEditor, InteractiveMode};
 use maestro_tui::tui::InputHandler;
@@ -547,11 +547,7 @@ fn debug_submission_records_then_clears_editor() {
     isolated("debug_submission_records_then_clears_editor", |directory| {
         let world = started(directory);
         consumed(&world, "/debug");
-        let files = world.runtime.files();
-        let [FileEffect::Write(_, log)] = files.as_slice() else {
-            panic!("one log write");
-        };
-        assert!(log.contains("/debug"));
+        assert!(only_log(&world).contains("/debug"));
         assert!(transcript(&world).contains("Debug log written"));
         world
             .runtime

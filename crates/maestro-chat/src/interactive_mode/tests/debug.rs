@@ -167,6 +167,15 @@ fn debug_write_failure_has_no_success_notice() {
     });
 }
 
+/// The text of the one log write the host received.
+pub(super) fn only_log(world: &World) -> String {
+    let files = world.runtime.files();
+    let [FileEffect::Write(_, log)] = files.as_slice() else {
+        panic!("one log write");
+    };
+    log.clone()
+}
+
 /// The write effects of the debug log so far.
 fn writes(world: &World) -> usize {
     world.runtime.files().len()
@@ -263,10 +272,7 @@ fn debug_uses_current_session_and_pre_notice_frame() {
             world.runtime.settle().unwrap();
             world.terminal.clear_writes();
             world.mode.handle_debug_command().unwrap();
-            let files = world.runtime.files();
-            let [FileEffect::Write(_, log)] = files.as_slice() else {
-                panic!("one log write");
-            };
+            let log = only_log(&world);
             assert!(log.contains("Session name: Replacement"));
             assert!(log.contains("replacement question"));
             assert!(!log.contains("Debug log written"));
