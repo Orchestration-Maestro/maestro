@@ -80,6 +80,17 @@ impl Documentation {
 
     /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
+        // Code ranges only drop lines from the comparison, so without a
+        // repeated pair here the block passes and needs no Markdown parse.
+        let lines: Vec<&str> = self
+            .markdown
+            .lines()
+            .map(str::trim)
+            .filter(|text| !text.is_empty())
+            .collect();
+        if !lines.windows(2).any(|pair| pair[0] == pair[1]) {
+            return Ok(());
+        }
         let document = parse_with_options(self.markdown.clone(), MarkedOptions::Documentation);
         let mut code = Vec::new();
         code_ranges(&document.nodes, &mut code);
