@@ -20,20 +20,23 @@ steps.
 
 ## Examples
 
+Keep the table and the run commands below in file-name order, so a new example
+inserts at its own place instead of appending at the end of each list.
+
 | File | Registers |
 | --- | --- |
-| `hello.rs` | A `hello` tool that greets the supplied name. |
-| `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
-| `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
-| `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
-| [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
-| `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
-| `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
-| `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
-| `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
-| `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
+| `hello.rs` | A `hello` tool that greets the supplied name. |
+| `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
+| `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
+| `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
+| `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
+| `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `system_prompt_header.rs` | A `System: N chars` status holding the current system prompt's UTF-16 length, removed on shutdown. |
+| `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
+| `working_message_test.rs` | A custom working text and a one-frame indicator requested on every session start. |
 
 ### Building an example
 
@@ -52,27 +55,29 @@ the command and tools it registered:
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- bookmark_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
+  -p maestro-extensions-wasm --lib -- pirate_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- pirate_
+  -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- system_prompt_status
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- bookmark_
+  -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- working_message_
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- system_prompt_status
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -151,19 +156,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
   -p maestro-extensions-wasm --example with_deps --target wasm32-wasip2 --release
 ```
 
-### Running with-deps
-
-The controlled run instantiates the built component in the test host and calls
-the registered tool with every recorded duration text:
-
-```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
-```
-
-No provider, paid service or extension installation is required. Loading the
-built component into an application is opt-in and needs that application's
-component runtime.
+Its controlled run, listed with the others above, calls the registered tool with
+every recorded duration text.
 
 ### What the compaction trigger example does
 
