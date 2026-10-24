@@ -21,6 +21,7 @@ use std::{
 mod actions;
 mod bash;
 mod events;
+mod info;
 mod key_display;
 mod queues;
 mod replay;

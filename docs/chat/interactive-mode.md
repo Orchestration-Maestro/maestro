@@ -8,6 +8,7 @@ session events, the expansion and thinking shortcuts, thinking and model
 cycling, the editor border, external editing and image paste. Streaming messages,
 installed custom headers, the terminal title and the other integrations are
 still to come.
+[Interactive commands](commands.md) describes the session command methods.
 
 ## Construction
 

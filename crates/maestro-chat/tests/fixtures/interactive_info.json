@@ -1,0 +1,1174 @@
+[
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/name"
+    },
+    "expected": {
+      "writes": [],
+      "warning": "Usage: /name <name>",
+      "text": [
+        "\u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;7mWarning: Usage:    ",
+          " \u001b[38;5;7m/name <name>\u001b[39m       "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m                                                   "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/name   "
+    },
+    "expected": {
+      "writes": [],
+      "warning": "Usage: /name <name>",
+      "text": [
+        "\u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;7mWarning: Usage:    ",
+          " \u001b[38;5;7m/name <name>\u001b[39m       "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m                                                   "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/name new name"
+    },
+    "expected": {
+      "writes": [
+        "new name"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: new name\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mnew name\u001b[39m           "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: new name\u001b[39m                                                     "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/name﻿title﻿"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/nametitle"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/name a  b"
+    },
+    "expected": {
+      "writes": [
+        "a  b"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: a  b\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9ma  b\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: a  b\u001b[39m                                                         "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": null,
+      "text": "/name café\n二"
+    },
+    "expected": {
+      "writes": [
+        "café\n二"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: café\n二\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mcafé               ",
+          " \u001b[38;5;9m二\u001b[39m                 "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: café                                                         ",
+          " \u001b[38;5;9m二\u001b[39m                                                                             "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/name"
+    },
+    "expected": {
+      "writes": [],
+      "warning": "Usage: /name <name>",
+      "text": [
+        "\u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;7mWarning: Usage:    ",
+          " \u001b[38;5;7m/name <name>\u001b[39m       "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m                                                   "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/name   "
+    },
+    "expected": {
+      "writes": [],
+      "warning": "Usage: /name <name>",
+      "text": [
+        "\u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;7mWarning: Usage:    ",
+          " \u001b[38;5;7m/name <name>\u001b[39m       "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m                                                   "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/name new name"
+    },
+    "expected": {
+      "writes": [
+        "new name"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: new name\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mnew name\u001b[39m           "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: new name\u001b[39m                                                     "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/name﻿title﻿"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/nametitle"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/name a  b"
+    },
+    "expected": {
+      "writes": [
+        "a  b"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: a  b\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9ma  b\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: a  b\u001b[39m                                                         "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "",
+      "text": "/name café\n二"
+    },
+    "expected": {
+      "writes": [
+        "café\n二"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: café\n二\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mcafé               ",
+          " \u001b[38;5;9m二\u001b[39m                 "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: café                                                         ",
+          " \u001b[38;5;9m二\u001b[39m                                                                             "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/name"
+    },
+    "expected": {
+      "writes": [],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name: Current\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name:      ",
+          " \u001b[38;5;9mCurrent\u001b[39m            "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name: Current\u001b[39m                                                          "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/name   "
+    },
+    "expected": {
+      "writes": [],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name: Current\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name:      ",
+          " \u001b[38;5;9mCurrent\u001b[39m            "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name: Current\u001b[39m                                                          "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/name new name"
+    },
+    "expected": {
+      "writes": [
+        "new name"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: new name\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mnew name\u001b[39m           "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: new name\u001b[39m                                                     "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/name﻿title﻿"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/nametitle"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/name a  b"
+    },
+    "expected": {
+      "writes": [
+        "a  b"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: a  b\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9ma  b\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: a  b\u001b[39m                                                         "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "Current",
+      "text": "/name café\n二"
+    },
+    "expected": {
+      "writes": [
+        "café\n二"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: café\n二\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mcafé               ",
+          " \u001b[38;5;9m二\u001b[39m                 "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: café                                                         ",
+          " \u001b[38;5;9m二\u001b[39m                                                                             "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/name"
+    },
+    "expected": {
+      "writes": [],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name: current\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name:      ",
+          " \u001b[38;5;9mcurrent\u001b[39m            "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name: current\u001b[39m                                                          "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/name   "
+    },
+    "expected": {
+      "writes": [],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name: current\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name:      ",
+          " \u001b[38;5;9mcurrent\u001b[39m            "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name: current\u001b[39m                                                          "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/name new name"
+    },
+    "expected": {
+      "writes": [
+        "new name"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: new name\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mnew name\u001b[39m           "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: new name\u001b[39m                                                     "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/name﻿title﻿"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/nametitle"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/name a  b"
+    },
+    "expected": {
+      "writes": [
+        "a  b"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: a  b\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9ma  b\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: a  b\u001b[39m                                                         "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "  current  ",
+      "text": "/name café\n二"
+    },
+    "expected": {
+      "writes": [
+        "café\n二"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: café\n二\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mcafé               ",
+          " \u001b[38;5;9m二\u001b[39m                 "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: café                                                         ",
+          " \u001b[38;5;9m二\u001b[39m                                                                             "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/name"
+    },
+    "expected": {
+      "writes": [],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name: 界\nname\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name: 界   ",
+          " \u001b[38;5;9mname\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name: 界                                                               ",
+          " \u001b[38;5;9mname\u001b[39m                                                                           "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/name   "
+    },
+    "expected": {
+      "writes": [],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name: 界\nname\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name: 界   ",
+          " \u001b[38;5;9mname\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name: 界                                                               ",
+          " \u001b[38;5;9mname\u001b[39m                                                                           "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/name new name"
+    },
+    "expected": {
+      "writes": [
+        "new name"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: new name\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mnew name\u001b[39m           "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: new name\u001b[39m                                                     "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/name﻿title﻿"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/nametitle"
+    },
+    "expected": {
+      "writes": [
+        "title"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: title\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mtitle\u001b[39m              "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: title\u001b[39m                                                        "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/name a  b"
+    },
+    "expected": {
+      "writes": [
+        "a  b"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: a  b\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9ma  b\u001b[39m               "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: a  b\u001b[39m                                                         "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name",
+      "name": "界\nname",
+      "text": "/name café\n二"
+    },
+    "expected": {
+      "writes": [
+        "café\n二"
+      ],
+      "warning": null,
+      "text": [
+        "\u001b[38;5;9mSession name set: café\n二\u001b[39m"
+      ],
+      "frames": {
+        "20": [
+          "",
+          " \u001b[38;5;9mSession name set:  ",
+          " \u001b[38;5;9mcafé               ",
+          " \u001b[38;5;9m二\u001b[39m                 "
+        ],
+        "80": [
+          "",
+          " \u001b[38;5;9mSession name set: café                                                         ",
+          " \u001b[38;5;9m二\u001b[39m                                                                             "
+        ]
+      },
+      "children": 2
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "missing",
+      "value": null
+    },
+    "expected": {
+      "error": null,
+      "text": [
+        "\u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "null",
+      "value": null
+    },
+    "expected": {
+      "error": null,
+      "text": [
+        "\u001b[38;5;7mWarning: Usage: /name <name>\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "string",
+      "value": "  name  "
+    },
+    "expected": {
+      "error": null,
+      "text": [
+        "\u001b[38;5;9mSession name: name\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "number",
+      "value": 7
+    },
+    "expected": {
+      "error": "TypeError",
+      "text": []
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "boolean",
+      "value": true
+    },
+    "expected": {
+      "error": "TypeError",
+      "text": []
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "object",
+      "value": {}
+    },
+    "expected": {
+      "error": "TypeError",
+      "text": []
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-record",
+      "kind": "array",
+      "value": [
+        "name"
+      ]
+    },
+    "expected": {
+      "error": "TypeError",
+      "text": []
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-listener",
+      "edit": "mutate"
+    },
+    "expected": {
+      "text": [
+        "\u001b[38;5;9mSession name set: selected\u001b[39m"
+      ],
+      "aborted": false,
+      "storedName": "listener",
+      "editorText": "edited later"
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-listener",
+      "edit": "replace"
+    },
+    "expected": {
+      "text": [
+        "\u001b[38;5;9mSession name set: selected\u001b[39m"
+      ],
+      "aborted": false,
+      "storedName": "replacement",
+      "editorText": "edited later"
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-listener",
+      "edit": "add"
+    },
+    "expected": {
+      "text": [
+        "\u001b[38;5;9mSession name set: selected\u001b[39m"
+      ],
+      "aborted": false,
+      "storedName": "added",
+      "editorText": "edited later"
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-listener",
+      "edit": "delete"
+    },
+    "expected": {
+      "text": [
+        "\u001b[38;5;9mSession name set: selected\u001b[39m"
+      ],
+      "aborted": false,
+      "storedName": null,
+      "editorText": "edited later"
+    }
+  },
+  {
+    "test": "name_command_reads_sets_and_trims_selected_text",
+    "input": {
+      "op": "name-listener",
+      "edit": "abort"
+    },
+    "expected": {
+      "text": [],
+      "aborted": true,
+      "storedName": "selected",
+      "editorText": "edited later"
+    }
+  }
+]
