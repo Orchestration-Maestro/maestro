@@ -1,0 +1,398 @@
+[
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": ""
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "!"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": " !run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\t\r\n!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\ufeff!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\u00a0!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\u0085!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "\u200b!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "x!"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": " ! !"
+    },
+    "expected": {
+      "shell": true,
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": false,
+      "text": "ordinary"
+    },
+    "expected": {
+      "shell": false,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": ""
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "!"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": " !run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\t\r\n!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\ufeff!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\u00a0!run"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\u0085!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "\u200b!run"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "x!"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": " ! !"
+    },
+    "expected": {
+      "shell": true,
+      "border": "\u2501"
+    }
+  },
+  {
+    "test": "border_text_change_uses_the_shared_whitespace_domain",
+    "input": {
+      "op": "change",
+      "initial": true,
+      "text": "ordinary"
+    },
+    "expected": {
+      "shell": false,
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": false,
+      "level": "off"
+    },
+    "expected": {
+      "border": "@thinkingOff@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": false,
+      "level": "minimal"
+    },
+    "expected": {
+      "border": "@thinkingMinimal@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": false,
+      "level": "low"
+    },
+    "expected": {
+      "border": "@thinkingLow@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": false,
+      "level": "medium"
+    },
+    "expected": {
+      "border": "@thinkingMedium@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": false,
+      "level": "high"
+    },
+    "expected": {
+      "border": "@thinkingHigh@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": false,
+      "level": "xhigh"
+    },
+    "expected": {
+      "border": "@thinkingXhigh@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": true,
+      "level": "off"
+    },
+    "expected": {
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": true,
+      "level": "minimal"
+    },
+    "expected": {
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": true,
+      "level": "low"
+    },
+    "expected": {
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": true,
+      "level": "medium"
+    },
+    "expected": {
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": true,
+      "level": "high"
+    },
+    "expected": {
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  },
+  {
+    "test": "border_refresh_paints_every_level_and_shell_override",
+    "input": {
+      "op": "border",
+      "shell": true,
+      "level": "xhigh"
+    },
+    "expected": {
+      "border": "@bashMode@\u2501\u001b[39m"
+    }
+  }
+]

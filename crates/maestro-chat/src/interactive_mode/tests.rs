@@ -1,4 +1,5 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod actions;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod typed;
@@ -207,6 +208,13 @@ fn roles(theme: &Theme, text: &str) -> String {
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
         ("@warning@", ThemeColor::Warning),
+        ("@thinkingOff@", ThemeColor::ThinkingOff),
+        ("@thinkingMinimal@", ThemeColor::ThinkingMinimal),
+        ("@thinkingLow@", ThemeColor::ThinkingLow),
+        ("@thinkingMedium@", ThemeColor::ThinkingMedium),
+        ("@thinkingHigh@", ThemeColor::ThinkingHigh),
+        ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
+        ("@bashMode@", ThemeColor::BashMode),
     ] {
         text = text.replace(marker, theme.get_fg_ansi(&role).unwrap());
     }

@@ -46,7 +46,10 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
     decode_cases(include_str!("../fixtures/session-picker.json"), name)
 }
 /// Strict shared decoder for both session-picker corpora.
-fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(text: &str, name: &str) -> Vec<(I, E)> {
+pub(crate) fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(
+    text: &str,
+    name: &str,
+) -> Vec<(I, E)> {
     let all: Vec<Case> = serde_json::from_str(text).unwrap();
     let rows: Vec<_> = all
         .into_iter()

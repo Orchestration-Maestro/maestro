@@ -1,5 +1,5 @@
-//! The interactive terminal mode: its retained containers, startup help, notices and
-//! typed input.
+//! The interactive terminal mode: its retained containers, startup help, notices,
+//! typed input and editor actions.
 
 use crate::{CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
@@ -16,6 +16,7 @@ use std::{
     rc::Rc,
 };
 
+mod actions;
 mod startup;
 mod submit;
 
@@ -38,6 +39,8 @@ pub struct InteractiveMode {
     options: InteractiveModeOptions,
     /// The terminal user interface this mode owns.
     ui: TUI,
+    /// The host that runs the mode's deferred work and reports its errors.
+    host_runtime: Rc<dyn TuiRuntime>,
     /// The theme registry and its published theme.
     themes: Rc<ThemeState>,
     /// The startup header container.
@@ -62,6 +65,8 @@ pub struct InteractiveMode {
     footer_data_provider: FooterDataProvider,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// Whether the editor text is a shell command, which selects the shell border.
+    is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
 }
@@ -81,6 +86,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
+        let host_runtime = Rc::clone(&terminal.1);
         let ui = create_ui(&session, terminal);
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
@@ -105,6 +111,7 @@ impl InteractiveMode {
             runtime_host,
             options,
             ui,
+            host_runtime,
             themes,
             header_container: Rc::new(Container::new()),
             chat_container: Rc::new(Container::new()),
@@ -117,13 +124,14 @@ impl InteractiveMode {
             footer,
             footer_data_provider,
             is_initialized: Cell::new(false),
+            is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
         }))
     }
 
     /// Builds the header, adds every container in order, focuses the editor, installs
-    /// editor submission and starts the terminal, once; theme and branch changes then
-    /// request fresh frames.
+    /// editor submission and actions and starts the terminal, once; theme changes then
+    /// repaint the editor border and request fresh frames, as branch changes do.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours or of the terminal start.
@@ -145,6 +153,7 @@ impl InteractiveMode {
         }
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
+        self.setup_editor_actions();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
@@ -152,6 +161,7 @@ impl InteractiveMode {
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
                 mode.ui.invalidate();
+                mode.update_editor_border_color()?;
                 mode.ui.request_render(false);
             }
             Ok(())
