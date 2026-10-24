@@ -65,9 +65,10 @@ discovery order. The compact form puts them on one row, separated by commas: a f
 inside the working directory shows its relative path (`.` for the directory
 itself), and any other file its absolute path. The expanded form puts each path on
 its own row. Paths resolve lexically, without reading the filesystem. A leading
-home directory is shown as `~`; an empty home directory abbreviates nothing. The home
-directory is looked up only when a full path is shown, so a listing of prompts
-alone needs none. When that lookup fails, the listing reports the failure.
+home directory is shown as `~`; a home directory that is empty or `/` abbreviates
+nothing, so paths stay as written. The home directory is looked up only when a
+full path is shown, so a listing of prompts alone needs none. When that lookup
+fails, the listing reports the failure.
 
 `[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
 templates. The compact form is one row of skill names, or of prompt names with a
