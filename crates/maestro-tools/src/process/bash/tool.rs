@@ -90,10 +90,10 @@ pub fn create_bash_tool_definition<C: 'static>(
         definition: Tool {
             name: "bash".into(),
             description: "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.".into(),
-            parameters: json!({"type": "object", "required": ["command"], "properties": {
+            parameters: maestro_models::ParameterSchema::authored(json!({"type": "object", "required": ["command"], "properties": {
                 "command": {"type": "string", "description": "Bash command to execute"},
                 "timeout": {"type": "number", "description": "Timeout in seconds (optional, no default timeout)"}
-            }}),
+            }}), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/command".to_owned(), maestro_models::SchemaKind::String), ("/properties/timeout".to_owned(), maestro_models::SchemaKind::Number)]),
         },
         label: "bash".into(),
         prompt_snippet: Some("Execute bash commands (ls, grep, find, etc.)".into()),

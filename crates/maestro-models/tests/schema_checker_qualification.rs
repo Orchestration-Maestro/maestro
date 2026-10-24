@@ -26,7 +26,7 @@ fn check_object(
     let tool = Tool {
         name: "check".into(),
         description: String::new(),
-        parameters: schema,
+        parameters: schema.into(),
     };
     let call = ToolCall {
         id: "1".into(),
@@ -439,7 +439,7 @@ fn maestro_keeps_schema_resource_origins_distinct() {
         let tool = Tool {
             name: "check".into(),
             description: String::new(),
-            parameters: schema,
+            parameters: schema.into(),
         };
         let call = ToolCall {
             id: "1".into(),
@@ -476,6 +476,31 @@ fn maestro_rejects_nonprogressing_reference_cycles() {
     );
     assert!(check(schema, json!({"value":1,"next":{"value":"2"}})).is_err());
     assert!(check(json!({"$id":"https://cycles.example/","$defs":{"n":{"type":"number"}},"properties":{"a":{"$ref":"#/$defs/n"},"b":{"$ref":"#/$defs/n"}}}), json!({"a":1,"b":2})).is_ok());
+}
+
+#[test]
+fn maestro_resolves_pointer_references_from_the_enclosing_resource() {
+    let schema = json!({
+        "$defs": {"S": {"type": "number"}},
+        "properties": {"value": {"$defs": {"S": {"type": "string"}}, "$ref": "#/$defs/S"}}
+    });
+    assert_eq!(
+        check_object(
+            schema.clone(),
+            maestro_models::JsonObject::from_iter([("value".into(), json!(1))])
+        ),
+        Ok(maestro_models::JsonObject::from_iter([(
+            "value".into(),
+            json!(1)
+        )]))
+    );
+    assert!(
+        check_object(
+            schema,
+            maestro_models::JsonObject::from_iter([("value".into(), json!("text"))])
+        )
+        .is_err()
+    );
 }
 
 #[test]

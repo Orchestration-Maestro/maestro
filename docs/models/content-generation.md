@@ -75,7 +75,8 @@ let tools = vec![Tool {
         "required": ["value"],
         "additionalProperties": false,
         "default": null
-    }),
+    })
+    .into(),
 }];
 let declarations = convert_tools(&tools, true).expect("one tool is declared");
 assert_eq!(

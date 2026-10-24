@@ -25,11 +25,12 @@ pub use maestro_session::export_html;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_export::{ExportOperations, NativeExportOperations};
 
+pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
-    ExtensionBindings, ModelCycleResult, NavigateTreeResult, ParsedSkillBlock, PromptOptions,
-    SessionStats, parse_skill_block,
+    ExtensionBindings, ModelCycleResult, NavigateTreeResult, PromptOptions, SessionStats,
 };
 
 #[cfg(not(target_arch = "wasm32"))]

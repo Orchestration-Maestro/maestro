@@ -117,6 +117,7 @@ pub fn factory(
                 settings_manager: Some(Rc::clone(&settings)),
                 session_start_event: options.session_start_event,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await?;
             Ok(CreateAgentSessionRuntimeResult {
@@ -129,6 +130,7 @@ pub fn factory(
                     model_registry: registry,
                     resource_loader: loader,
                     diagnostics: Vec::new(),
+                    offline: None,
                 }),
                 diagnostics: Vec::new(),
                 extensions_result: created.extensions_result,
