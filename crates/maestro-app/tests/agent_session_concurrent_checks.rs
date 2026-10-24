@@ -5,7 +5,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, answer, corpus, get_assistant_texts, get_message_text, get_user_texts,
-    harness, on_task_set, session_run_ended, start_prompt,
+    harness, on_task_set, prompt_to_end, session_run_ended, start_prompt,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
@@ -199,14 +199,6 @@ fn dummy_calls(text: Option<&str>, calls: &[(&str, &str)]) -> AssistantMessage {
         ..FauxAssistantMessageOptions::default()
     };
     faux_assistant_message(content, options)
-}
-
-/// Prompts `text` and waits until the session has delivered the run's end.
-async fn prompt_to_end(h: &Harness, text: &str, options: PromptOptions) {
-    let ended = session_run_ended(h);
-    h.session.prompt(text, options).await.unwrap();
-    h.session.agent().wait_for_idle().await;
-    ended.notified().await;
 }
 
 /// The supplied thinking and code answer, as its fixture records it.
