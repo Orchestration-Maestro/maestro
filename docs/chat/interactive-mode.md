@@ -47,7 +47,7 @@ Header text keeps the colours of the theme in effect when it was built.
 ## Loaded resources
 
 The listing appends one section per kind of loaded resource that has entries, in
-the order `[Context]`, `[Skills]`, `[Prompts]`. Each section is its heading over its
+the order `[Context]`, `[Skills]`, `[Prompts]`, `[Themes]`. Each section is its heading over its
 entries, followed by an empty row; `[Context]` also gets an empty row above it.
 With `quietStartup` set and verbose off, nothing is listed.
 
@@ -69,6 +69,12 @@ entries, all sorted for the locale. A package entry is shown relative to its
 package root, or else by its path inside the npm or Git package directory. Prompts
 show their `/name`; when several templates share a file, the last one's name is
 shown.
+
+`[Themes]` lists the loaded themes that came from a file; themes without a file,
+such as the shipped ones, are left out. The compact form is one row of theme names,
+sorted like skill names. A theme without a name shows the last segment of its path
+instead, and an empty name is left off that row. The expanded form groups the
+theme files by scope and package, as for skills.
 
 Sections start expanded in verbose mode or when tool output is expanded, and compact
 otherwise. Each section keeps the text it was built with. Expanding or collapsing it

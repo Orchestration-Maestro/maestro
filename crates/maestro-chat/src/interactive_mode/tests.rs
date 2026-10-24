@@ -81,21 +81,37 @@ pub(super) struct ForwardingLoader {
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
 }
 
-/// The context files, skills and successive prompt templates a loader answers.
-type Resources = (Vec<ContextFile>, Vec<Skill>, Vec<Vec<PromptTemplate>>);
+/// The resources a loader answers.
+struct Resources {
+    /// The context files.
+    context: Vec<ContextFile>,
+    /// The skills.
+    skills: Vec<Skill>,
+    /// The prompt templates of each read; the last answers every later read.
+    prompts: Vec<Vec<PromptTemplate>>,
+    /// The loaded themes listed before the dark and light palettes.
+    themes: Vec<Rc<Theme>>,
+}
 
 impl ForwardingLoader {
-    /// A loader over `inner` answering the dark and light palettes and `resources`.
-    fn new(inner: Rc<dyn ResourceLoader<Local>>, (context, skills, prompts): Resources) -> Self {
+    /// A loader over `inner` answering `resources`, then the dark and light palettes.
+    fn new(inner: Rc<dyn ResourceLoader<Local>>, resources: Resources) -> Self {
+        let Resources {
+            context,
+            skills,
+            prompts,
+            mut themes,
+        } = resources;
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
                 prompts,
                 diagnostics: Vec::new(),
             })
         });
+        themes.extend([dark(), light()]);
         Self {
             inner,
-            themes: vec![dark(), light()],
+            themes,
             select: RefCell::default(),
             context: RefCell::new(context.into()),
             skills: Rc::new(LoadSkillsResult {
@@ -197,6 +213,8 @@ pub(super) struct Setup {
     pub(super) skills: Vec<Skill>,
     /// The prompt templates of each loader read; the last answers every later read.
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
+    /// The loaded themes the loader answers before the dark and light palettes.
+    pub(super) themes: Vec<Rc<Theme>>,
 }
 
 impl Default for Setup {
@@ -209,6 +227,7 @@ impl Default for Setup {
             context: Vec::new(),
             skills: Vec::new(),
             prompts: Vec::new(),
+            themes: Vec::new(),
         }
     }
 }
@@ -221,7 +240,12 @@ impl Setup {
             .unwrap_or_else(|| directory.to_str().unwrap().to_owned());
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
-        let resources = (self.context, self.skills, self.prompts);
+        let resources = Resources {
+            context: self.context,
+            skills: self.skills,
+            prompts: self.prompts,
+            themes: self.themes,
+        };
         let result = session::session(&cwd, None, move |inner| {
             let loader = Rc::new(ForwardingLoader::new(inner, resources));
             *created.borrow_mut() = Some(Rc::clone(&loader));
@@ -280,6 +304,7 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@warning@", ThemeColor::Warning),
         ("@mdHeading@", ThemeColor::MdHeading),
         ("@mdLink@", ThemeColor::MdLink),
+        ("@success@", ThemeColor::Success),
     ] {
         text = text.replace(marker, theme.get_fg_ansi(&role).unwrap());
     }

@@ -1,0 +1,356 @@
+[
+  {
+    "test": "compact_path_labels_keep_empty_root_and_separator_rules",
+    "input": {
+      "op": "compact-path",
+      "path": "/"
+    },
+    "expected": {
+      "value": "/"
+    }
+  },
+  {
+    "test": "compact_path_labels_keep_empty_root_and_separator_rules",
+    "input": {
+      "op": "compact-path",
+      "path": "~"
+    },
+    "expected": {
+      "value": "~"
+    }
+  },
+  {
+    "test": "compact_path_labels_keep_empty_root_and_separator_rules",
+    "input": {
+      "op": "compact-path",
+      "path": ""
+    },
+    "expected": {
+      "value": ""
+    }
+  },
+  {
+    "test": "compact_path_labels_keep_empty_root_and_separator_rules",
+    "input": {
+      "op": "compact-path",
+      "path": "a/"
+    },
+    "expected": {
+      "value": "a"
+    }
+  },
+  {
+    "test": "compact_path_labels_keep_empty_root_and_separator_rules",
+    "input": {
+      "op": "compact-path",
+      "path": "C:\\a\\b"
+    },
+    "expected": {
+      "value": "b"
+    }
+  },
+  {
+    "test": "compact_path_labels_keep_empty_root_and_separator_rules",
+    "input": {
+      "op": "compact-path",
+      "path": "//a//b/"
+    },
+    "expected": {
+      "value": "b"
+    }
+  },
+  {
+    "test": "theme_listing_omits_unlocated_and_keeps_empty_named_theme",
+    "input": {
+      "op": "listing",
+      "expanded": false,
+      "themes": [
+        {
+          "name": "dark"
+        },
+        {
+          "name": "dark",
+          "sourcePath": "/custom/dark.json"
+        },
+        {
+          "name": "light",
+          "sourcePath": ""
+        },
+        {
+          "name": "zeta",
+          "sourcePath": "/zeta.json"
+        },
+        {
+          "sourcePath": "/pkg/theme.json",
+          "sourceInfo": {
+            "source": "npm:pkg",
+            "scope": "user",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "name": "",
+          "sourcePath": "/empty-name.json"
+        },
+        {
+          "name": "\ufeff trimmed \ufeff",
+          "sourcePath": "/trim.json"
+        },
+        {
+          "name": "\u0085kept\u0085",
+          "sourcePath": "/kept.json"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "@dim@  \u0085kept\u0085, dark, theme.json, trimmed, zeta\u001b[39m                                                                                                                                                                                                         ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                                       ",
+        "@dim@    /custom/dark.json\u001b[39m                                                                                                                                                                                                                           ",
+        "@dim@    /empty-name.json\u001b[39m                                                                                                                                                                                                                            ",
+        "@dim@    /kept.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "@dim@    /trim.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "@dim@    /zeta.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                                          ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                                     ",
+        "@dim@      theme.json\u001b[39m                                                                                                                                                                                                                                ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "@dim@  \u0085kept\u0085, dark, theme.json, trimmed, zeta\u001b[39m                                                                                                                                                                                                         ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "theme_listing_omits_unlocated_and_keeps_empty_named_theme",
+    "input": {
+      "op": "listing",
+      "expanded": true,
+      "themes": [
+        {
+          "name": "dark"
+        },
+        {
+          "name": "dark",
+          "sourcePath": "/custom/dark.json"
+        },
+        {
+          "name": "light",
+          "sourcePath": ""
+        },
+        {
+          "name": "zeta",
+          "sourcePath": "/zeta.json"
+        },
+        {
+          "sourcePath": "/pkg/theme.json",
+          "sourceInfo": {
+            "source": "npm:pkg",
+            "scope": "user",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "name": "",
+          "sourcePath": "/empty-name.json"
+        },
+        {
+          "name": "\ufeff trimmed \ufeff",
+          "sourcePath": "/trim.json"
+        },
+        {
+          "name": "\u0085kept\u0085",
+          "sourcePath": "/kept.json"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                                       ",
+        "@dim@    /custom/dark.json\u001b[39m                                                                                                                                                                                                                           ",
+        "@dim@    /empty-name.json\u001b[39m                                                                                                                                                                                                                            ",
+        "@dim@    /kept.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "@dim@    /trim.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "@dim@    /zeta.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                                          ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                                     ",
+        "@dim@      theme.json\u001b[39m                                                                                                                                                                                                                                ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                                       ",
+        "@dim@    /custom/dark.json\u001b[39m                                                                                                                                                                                                                           ",
+        "@dim@    /empty-name.json\u001b[39m                                                                                                                                                                                                                            ",
+        "@dim@    /kept.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "@dim@    /trim.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "@dim@    /zeta.json\u001b[39m                                                                                                                                                                                                                                  ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                                          ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                                     ",
+        "@dim@      theme.json\u001b[39m                                                                                                                                                                                                                                ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "@dim@  \u0085kept\u0085, dark, theme.json, trimmed, zeta\u001b[39m                                                                                                                                                                                                         ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "theme_listing_uses_scope_and_package_paths",
+    "input": {
+      "op": "listing",
+      "expanded": true,
+      "themes": [
+        {
+          "name": "user",
+          "sourcePath": "/home/custom.json",
+          "sourceInfo": {
+            "source": "local",
+            "scope": "user"
+          }
+        },
+        {
+          "name": "project",
+          "sourcePath": "/pkg/themes/z.json",
+          "sourceInfo": {
+            "source": "npm:pkg",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        },
+        {
+          "sourcePath": "/tmp/custom.json",
+          "sourceInfo": {
+            "source": "cli",
+            "scope": "temporary"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                                       ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                                     ",
+        "@dim@      themes/z.json\u001b[39m                                                                                                                                                                                                                             ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                                          ",
+        "@dim@    /home/custom.json\u001b[39m                                                                                                                                                                                                                           ",
+        "  @accent@path\u001b[39m                                                                                                                                                                                                                                          ",
+        "@dim@    /tmp/custom.json\u001b[39m                                                                                                                                                                                                                            ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "  @accent@project\u001b[39m                                                                                                                                                                                                                                       ",
+        "    @mdLink@npm:pkg\u001b[39m                                                                                                                                                                                                                                     ",
+        "@dim@      themes/z.json\u001b[39m                                                                                                                                                                                                                             ",
+        "  @accent@user\u001b[39m                                                                                                                                                                                                                                          ",
+        "@dim@    /home/custom.json\u001b[39m                                                                                                                                                                                                                           ",
+        "  @accent@path\u001b[39m                                                                                                                                                                                                                                          ",
+        "@dim@    /tmp/custom.json\u001b[39m                                                                                                                                                                                                                            ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "@dim@  custom.json, project, user\u001b[39m                                                                                                                                                                                                                    ",
+        ""
+      ],
+      "children": 2
+    }
+  },
+  {
+    "test": "empty_resources_and_diagnostics_append_nothing",
+    "input": {
+      "op": "listing"
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "extension_and_theme_sections_keep_owned_content_across_theme_and_owner_changes",
+    "input": {
+      "op": "theme-toggle",
+      "kind": "theme",
+      "themes": [
+        {
+          "name": "retained",
+          "sourcePath": "/retained/theme.json"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                ",
+        "@dim@  retained\u001b[39m                                                                                                              ",
+        ""
+      ],
+      "noToggle": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                ",
+        "@dim@  retained\u001b[39m                                                                                                              ",
+        ""
+      ],
+      "expanded": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                ",
+        "  @accent@project\u001b[39m                                                                                                               ",
+        "@dim@    /retained/theme.json\u001b[39m                                                                                                ",
+        ""
+      ],
+      "collapsed": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                ",
+        "@dim@  retained\u001b[39m                                                                                                              ",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "resource_home_queries_follow_the_reached_formatting_branch",
+    "input": {
+      "op": "home-routes"
+    },
+    "expected": {
+      "needsHome": false,
+      "before": []
+    }
+  },
+  {
+    "test": "resource_home_queries_follow_the_reached_formatting_branch",
+    "input": {
+      "op": "home-routes",
+      "themes": [
+        {
+          "name": "package-theme",
+          "sourcePath": "/pkg/themes/a.json",
+          "sourceInfo": {
+            "source": "npm:pkg",
+            "scope": "project",
+            "baseDir": "/pkg"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "needsHome": false,
+      "before": [
+        "@mdHeading@[Themes]\u001b[39m                                                                                                                                                                                                                                        ",
+        "@dim@  package-theme\u001b[39m                                                                                                                                                                                                                                 ",
+        ""
+      ]
+    }
+  }
+]
