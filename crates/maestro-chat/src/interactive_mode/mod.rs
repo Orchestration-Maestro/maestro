@@ -1,5 +1,5 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts and typed input.
+//! resources, notices, transcript shortcuts, typed input and queued input.
 
 use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -17,6 +17,8 @@ use std::{
     rc::Rc,
 };
 
+mod key_display;
+mod queues;
 mod replay;
 mod resources;
 mod startup;
@@ -86,6 +88,8 @@ pub struct InteractiveMode {
     is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Messages typed while the session compacts, in the order they were typed.
+    compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
 }
 
 impl InteractiveMode {
@@ -132,6 +136,10 @@ impl InteractiveMode {
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = session.settings_manager().borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
+        let hide_thinking_block = session
+            .settings_manager()
+            .borrow()
+            .get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -151,16 +159,12 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(
-                session
-                    .settings_manager()
-                    .borrow()
-                    .get_hide_thinking_block(),
-            ),
+            hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
+            compaction_queued_messages: RefCell::default(),
         }))
     }
 
@@ -191,6 +195,7 @@ impl InteractiveMode {
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
         self.setup_key_handlers();
+        self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);

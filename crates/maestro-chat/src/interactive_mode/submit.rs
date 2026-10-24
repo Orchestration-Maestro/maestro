@@ -1,6 +1,7 @@
 //! Editor submission and the single waiting input operation.
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
+use maestro_app::messages::UserMessageDelivery;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -27,7 +28,8 @@ impl InteractiveMode {
     }
 
     /// Installs submission on the editor without keeping the mode alive: trimmed nonempty
-    /// text goes to the waiting input, if any, then into the editor's history.
+    /// text is queued as steering during a compaction or a response, and otherwise goes to
+    /// the waiting input, if any, then into the editor's history.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
@@ -35,6 +37,10 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            match mode.submit_queued_input(text, UserMessageDelivery::Steer) {
+                Ok(false) => {}
+                queued => return mode.report(queued.map(drop)),
+            }
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {
                 // A dropped waiter no longer wants the text; history still records it.
