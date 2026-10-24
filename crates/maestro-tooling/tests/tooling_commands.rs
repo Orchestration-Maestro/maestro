@@ -287,20 +287,24 @@ fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
         .output()
         .unwrap();
     assert!(lock.status.success());
+    let parent = fixture.root.path().join("parent");
+    fs::create_dir(&parent).unwrap();
+    let owner = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-test-process");
+    let manifest = format!(
+        "[package]\nname = 'toolchain-probe'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n[dependencies.maestro-test-process]\npath = {}\n[[bin]]\nname = 'parent'\npath = 'parent.rs'\n",
+        toml::Value::String(owner.to_str().unwrap().to_owned())
+    );
+    fs::write(parent.join("Cargo.toml"), manifest).unwrap();
     fs::write(
-        fixture.root.path().join("toolchain_support.rs"),
-        include_str!("fixtures/toolchain_support.rs"),
+        parent.join("parent.rs"),
+        include_str!("fixtures/child_toolchain_probe.rs"),
     )
     .unwrap();
-    let source = fixture.root.path().join("parent.rs");
-    fs::write(&source, include_str!("fixtures/child_toolchain_probe.rs")).unwrap();
-    let binary = fixture.root.path().join("parent");
-    let compile = toolchain_support::command("rustc")
-        .current_dir(fixture.root.path())
-        .args(["--cfg", "test", "-C", "instrument-coverage"])
-        .arg(&source)
-        .arg("-o")
-        .arg(&binary)
+    let compile = toolchain_support::command(env!("CARGO"))
+        .current_dir(&parent)
+        .args(["rustc", "--bin", "parent", "--target-dir"])
+        .arg(parent.join("target"))
+        .args(["--", "-C", "instrument-coverage"])
         .output()
         .unwrap();
     assert!(
@@ -308,7 +312,9 @@ fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
         "{}",
         String::from_utf8_lossy(&compile.stderr)
     );
-    binary
+    parent
+        .join("target/debug")
+        .join(format!("parent{}", std::env::consts::EXE_SUFFIX))
 }
 
 /// Inspect actual parent counters after the instrumented process exits normally.
