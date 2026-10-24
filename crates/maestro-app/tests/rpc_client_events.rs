@@ -181,8 +181,11 @@ sys.stdin.read()
         assert!(poll_once(state.as_mut()).is_pending());
         next_of(&mut events, "received").await;
         tokio::time::advance(Duration::from_millis(29_999)).await;
+        // Each turn lets a deadline that has come run before the request is looked at.
+        tokio::task::yield_now().await;
         assert!(poll_once(state.as_mut()).is_pending());
         tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::task::yield_now().await;
         let Poll::Ready(Err(error)) = poll_once(state.as_mut()) else {
             panic!("the request times out at 30 seconds");
         };
@@ -316,6 +319,117 @@ sys.stdin.read()
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
+    });
+}
+
+/// The deadline that every request and wait of the timing cases runs against.
+const DEADLINE: Duration = Duration::from_secs(30);
+
+#[test]
+fn work_expired_before_the_child_ends_keeps_its_timeout() {
+    let peer = Peer::new();
+    let script = r"
+emit({'type': 'peer_ready'})
+lines = commands()
+next(lines)
+emit({'type': 'received'})
+next(lines)
+os.write(2, b'late\n')
+os._exit(0)
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let mut idle = pin!(client.wait_for_idle(Some(DEADLINE)));
+        let mut state = pin!(client.get_state());
+        assert!(poll_once(state.as_mut()).is_pending());
+        next_of(&mut events, "received").await;
+        tokio::time::advance(DEADLINE).await;
+        assert!(
+            matches!(client.abort().await, Err(RpcClientError::Stopped)),
+            "the child ends after the deadline"
+        );
+        while !client.get_stderr().contains("late") {
+            tokio::task::yield_now().await;
+        }
+        let Poll::Ready(Err(error)) = poll_once(state.as_mut()) else {
+            panic!("the expired request has settled");
+        };
+        assert_eq!(
+            error.to_string(),
+            "Timeout waiting for response to get_state. Stderr: "
+        );
+        let Poll::Ready(Err(error)) = poll_once(idle.as_mut()) else {
+            panic!("the expired wait has settled");
+        };
+        assert_eq!(
+            error.to_string(),
+            "Timeout waiting for agent to become idle. Stderr: "
+        );
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        client.stop().await.unwrap();
+    });
+}
+
+#[test]
+fn answers_before_the_deadline_count_when_consumed_after_it() {
+    let peer = Peer::new();
+    let script = r"
+emit({'type': 'peer_ready'})
+abort = json.loads(next(commands()))
+emit({'type': 'agent_end'})
+respond(abort)
+emit({'type': 'answered'})
+sys.stdin.read()
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let mut idle = pin!(client.wait_for_idle(Some(DEADLINE)));
+        let mut answered = pin!(client.abort());
+        assert!(poll_once(answered.as_mut()).is_pending());
+        next_of(&mut events, "answered").await;
+        tokio::time::advance(DEADLINE).await;
+        assert!(matches!(poll_once(answered.as_mut()), Poll::Ready(Ok(()))));
+        assert!(matches!(poll_once(idle.as_mut()), Poll::Ready(Ok(()))));
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        client.stop().await.unwrap();
+    });
+}
+
+#[test]
+fn stops_before_the_deadline_count_when_consumed_after_it() {
+    let peer = Peer::new();
+    let script = r"
+emit({'type': 'peer_ready'})
+next(commands())
+emit({'type': 'received'})
+while True: time.sleep(1)
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let mut idle = pin!(client.wait_for_idle(Some(DEADLINE)));
+        let mut state = pin!(client.get_state());
+        assert!(poll_once(state.as_mut()).is_pending());
+        next_of(&mut events, "received").await;
+        client.stop().await.unwrap();
+        tokio::time::advance(DEADLINE).await;
+        assert!(stopped(state.as_mut()), "the request settled at the stop");
+        assert!(stopped(idle.as_mut()), "the wait settled at the stop");
+        release.send(()).unwrap();
+        hold.await.unwrap();
     });
 }
 

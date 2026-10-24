@@ -1,10 +1,10 @@
 //! Requests: their identifiers, their correlation with answers and their deadline.
-use super::{Inner, RpcClient, RpcClientError};
+use super::{Inner, RpcClient, RpcClientError, Timer};
 use crate::rpc_types::{RpcData, RpcResponse, RpcSessionCommand};
 use maestro_json::jsonl::serialize_json_line;
 use serde::Deserialize;
 use serde_json::Value;
-use std::time::Duration;
+use std::{rc::Rc, time::Duration};
 use tokio::{sync::oneshot, time::Instant};
 
 /// How long a request waits for its answer, from the moment it is sent.
@@ -13,12 +13,16 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 /// Settles one request with its answer, or with the failure to decode it.
 type Responder = oneshot::Sender<Result<RpcResponse, RpcClientError>>;
 
-/// A request awaiting its answer, until its deadline.
+/// A request awaiting its answer, until its deadline. Whatever happens first settles it:
+/// its answer, its write's failure, the end of its child or its deadline; each is decided
+/// when it happens, so the request's outcome never depends on when its caller looks.
 pub(super) struct Pending {
     /// Settles the request.
     respond: Responder,
-    /// From when an answer no longer counts.
+    /// From when only the timer settles the request.
     deadline: Instant,
+    /// Settles the request with its timeout at the deadline.
+    _timer: Timer,
 }
 
 /// Removes a request's correlation when its call ends, however it ends.
@@ -45,7 +49,6 @@ impl RpcClient {
     /// write, decoding or timeout failure, or [`RpcClientError::Stopped`] when the child is
     /// stopped or ends first.
     pub(super) async fn send(&self, command: RpcSessionCommand) -> Result<RpcData, RpcClientError> {
-        let deadline = Instant::now() + REQUEST_TIMEOUT;
         let mut record = serde_json::to_value(&command)?;
         let kind = record["type"].as_str().unwrap_or_default().to_owned();
         let (input, id, answer) = {
@@ -57,9 +60,17 @@ impl RpcClient {
             state.request_id += 1;
             let id = format!("req_{}", state.request_id);
             let (respond, answer) = oneshot::channel();
-            state
-                .pending
-                .insert(id.clone(), Pending { respond, deadline });
+            let deadline = Instant::now() + REQUEST_TIMEOUT;
+            let expiring = id.clone();
+            let timer = Timer::at(deadline, Rc::downgrade(&self.inner), move |inner| {
+                inner.expire(&expiring, kind);
+            });
+            let pending = Pending {
+                respond,
+                deadline,
+                _timer: timer,
+            };
+            state.pending.insert(id.clone(), pending);
             (input, id, answer)
         };
         let _pending = PendingRequest {
@@ -67,26 +78,13 @@ impl RpcClient {
             id: id.clone(),
         };
         if let Some(fields) = record.as_object_mut() {
-            fields.insert("id".to_owned(), Value::String(id));
+            fields.insert("id".to_owned(), Value::String(id.clone()));
         }
         let line = serialize_json_line(&record)?;
-        let exchange = async {
-            let (report, written) = oneshot::channel();
-            input
-                .send((line, report))
-                .map_err(|_| RpcClientError::Stopped)?;
-            written.await.map_err(|_| RpcClientError::Stopped)??;
-            answer.await.map_err(|_| RpcClientError::Stopped)?
-        };
-        let response = match tokio::time::timeout_at(deadline, exchange).await {
-            Ok(response) => response?,
-            Err(_) => {
-                return Err(RpcClientError::RequestTimeout {
-                    command: kind,
-                    stderr: self.get_stderr(),
-                });
-            }
-        };
+        input
+            .send((line, id))
+            .map_err(|_| RpcClientError::Stopped)?;
+        let response = answer.await.map_err(|_| RpcClientError::Stopped)??;
         match response {
             RpcResponse::Success { data, .. } => Ok(data),
             RpcResponse::Error { error, .. } => Err(RpcClientError::Response(error)),
@@ -105,7 +103,11 @@ impl Inner {
         if record.is_null() {
             return;
         }
-        match self.correlated(&record) {
+        let answered = (record["type"] == "response")
+            .then(|| record.get("id").and_then(Value::as_str))
+            .flatten()
+            .and_then(|id| self.take_before_deadline(id));
+        match answered {
             Some(respond) => {
                 let _ =
                     respond.send(RpcResponse::deserialize(record).map_err(RpcClientError::from));
@@ -114,19 +116,47 @@ impl Inner {
         }
     }
 
-    /// Removes and returns the pending request that `record` answers before its deadline;
-    /// an answer at or after the deadline goes to the event callbacks, like the answer to a
-    /// request that has already timed out.
-    fn correlated(&self, record: &Value) -> Option<Responder> {
-        if record["type"] != "response" {
-            return None;
+    /// Settles request `id` with the failure to write it, unless it has settled already.
+    pub(super) fn fail_write(&self, id: &str, error: std::io::Error) {
+        if let Some(respond) = self.take_before_deadline(id) {
+            let _ = respond.send(Err(RpcClientError::Io(error)));
         }
-        let id = record.get("id")?.as_str()?;
+    }
+
+    /// Removes and returns pending request `id` while its deadline has not come; from the
+    /// deadline on, only its timer settles it, and an answer goes to the event callbacks,
+    /// like the answer to a request that has already timed out.
+    fn take_before_deadline(&self, id: &str) -> Option<Responder> {
         let mut state = self.state.borrow_mut();
         if state.pending.get(id)?.deadline <= Instant::now() {
             return None;
         }
         state.pending.remove(id).map(|pending| pending.respond)
+    }
+
+    /// Settles request `id` of type `command` with its timeout, unless it has settled
+    /// already; the failure carries the diagnostic text of this moment.
+    fn expire(&self, id: &str, command: String) {
+        let expired = self.state.borrow_mut().pending.remove(id);
+        if let Some(pending) = expired {
+            let stderr = self.state.borrow().stderr.clone();
+            let _ = pending
+                .respond
+                .send(Err(RpcClientError::RequestTimeout { command, stderr }));
+        }
+    }
+
+    /// Ends every pending request whose deadline has not come with
+    /// [`RpcClientError::Stopped`]; the others are left to their timers.
+    pub(super) fn stop_requests(&self) {
+        let now = Instant::now();
+        let ended: Vec<_> = self
+            .state
+            .borrow_mut()
+            .pending
+            .extract_if(|_, pending| pending.deadline > now)
+            .collect();
+        drop(ended);
     }
 }
 

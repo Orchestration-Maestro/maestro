@@ -2,8 +2,8 @@
 //!
 //! [`RpcClient`] launches the child, owns its standard streams, forwards and keeps its
 //! diagnostic text, and hands every record the child writes to its event callbacks. It
-//! runs on the caller's Tokio local executor: [`RpcClient::start`] must be called inside a
-//! [`tokio::task::LocalSet`], which drives the child's readers.
+//! runs on the caller's Tokio local executor: it must be used inside a
+//! [`tokio::task::LocalSet`], which drives the child's readers and the deadlines.
 mod commands;
 mod events;
 mod process;
@@ -19,8 +19,17 @@ use events::ClientListener;
 use maestro_models::records::listeners::Listeners;
 use maestro_process::child_process::CapturedChild;
 use requests::Pending;
-use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
-use tokio::sync::{mpsc, oneshot, watch};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::{Rc, Weak},
+    time::Duration,
+};
+use tokio::{
+    sync::{mpsc, oneshot, watch},
+    task::AbortHandle,
+    time::Instant,
+};
 
 /// How long [`RpcClient::start`] lets the child run before checking that it is still alive.
 const STARTUP_OBSERVATION: Duration = Duration::from_millis(100);
@@ -57,9 +66,9 @@ struct ClientState {
 
 /// The handles of a started child.
 struct Running {
-    /// Queues a line for the child's input and reports its write; dropping it closes
-    /// the pipe once the queued lines are written.
-    input: mpsc::UnboundedSender<(String, oneshot::Sender<std::io::Result<()>>)>,
+    /// Queues a request's line, with its identifier, for the child's input; dropping it
+    /// closes the pipe once the queued lines are written.
+    input: mpsc::UnboundedSender<(String, String)>,
     /// Asks the child's driver to stop it and to report the termination; taken by the
     /// first stop.
     stop: Option<oneshot::Sender<oneshot::Sender<std::io::Result<()>>>>,
@@ -67,6 +76,33 @@ struct Running {
     done: watch::Receiver<()>,
     /// The exit status once the child has exited.
     exit: Option<std::process::ExitStatus>,
+}
+
+/// A deadline: it runs its expiry at its instant unless it is dropped first.
+struct Timer(AbortHandle);
+
+impl Timer {
+    /// Runs `expire` on `target` at `deadline`, on the local executor, while `target`
+    /// exists.
+    fn at<T: 'static>(
+        deadline: Instant,
+        target: Weak<T>,
+        expire: impl FnOnce(&T) + 'static,
+    ) -> Self {
+        let task = tokio::task::spawn_local(async move {
+            tokio::time::sleep_until(deadline).await;
+            if let Some(target) = target.upgrade() {
+                expire(&target);
+            }
+        });
+        Self(task.abort_handle())
+    }
+}
+
+impl Drop for Timer {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 impl RpcClient {

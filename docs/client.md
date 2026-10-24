@@ -32,8 +32,9 @@ deadlines. Bytes still waiting to be copied when the process exits are lost.
 kills the child if it is still running one second later, and waits until it is
 reaped. Only the direct child is signalled.
 
-The client runs on the caller's Tokio local executor: call `start` inside a
-`tokio::task::LocalSet`. The tasks that read the child's streams live there.
+The client runs on the caller's Tokio local executor, so use it inside a
+`tokio::task::LocalSet`. The tasks that read the child's streams and run the
+deadlines live there.
 
 ## Commands
 
@@ -54,7 +55,10 @@ A method fails with:
   arrives. A request sent while the client is stopping fails this way when the stop
   ends.
 
-An answer that arrives after the 30 seconds goes to the event callbacks.
+Whichever comes first decides the outcome: the answer, the stop or exit, or the
+30 seconds. A request awaited late still gets that outcome, and a timeout carries
+the diagnostic text as it stood at the deadline. An answer that arrives after the
+30 seconds goes to the event callbacks.
 
 `get_last_assistant_text` returns a `Presence<String>`: missing when the session has
 no assistant message, and `null` or the text when it answers with one of them.
@@ -81,7 +85,7 @@ seconds unless given a timeout. They fail with
 `Timeout collecting events. Stderr: <text>`, and with `Client stopped` when the
 child is stopped or exits first. A wait registered while the client is stopping
 fails this way when the stop ends. Nothing that arrives after the deadline counts,
-even when the wait is awaited later.
+and a stop or an `agent_end` before it still counts when the wait is awaited later.
 
 `prompt_and_wait` starts collecting before it sends the prompt, so events the
 session writes before its answer are kept. When the prompt fails, the collection

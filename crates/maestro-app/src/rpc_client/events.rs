@@ -1,5 +1,5 @@
 //! Event callbacks, their registrations and the waits for the end of a run.
-use super::{Inner, RpcClient, RpcClientError, RpcEventListener};
+use super::{Inner, RpcClient, RpcClientError, RpcEventListener, Timer};
 use maestro_models::{ImageContent, records::listeners::Listeners};
 use serde_json::Value;
 use std::{cell::RefCell, convert::Infallible, future::Future, rc::Rc, time::Duration};
@@ -32,21 +32,20 @@ enum WaitKind {
     Collect,
 }
 
-/// A wait registered from its creation; dropping it removes the registration.
+/// A wait registered from its creation; dropping it removes the registration and its
+/// deadline.
 struct EventWait {
     /// The registration that settles `outcome`.
     _registration: Registration,
+    /// Settles `outcome` with the timeout; none when the chosen timeout does not fit the
+    /// clock.
+    _timer: Option<Timer>,
     /// The kept events, or the failure that ended the wait.
     outcome: oneshot::Receiver<WaitOutcome>,
-    /// When the wait gives up; never when the chosen timeout does not fit the clock.
-    deadline: Option<Instant>,
-    /// What the wait keeps.
-    kind: WaitKind,
-    /// The state holding the diagnostic text a timeout reports.
-    inner: Rc<Inner>,
 }
 
-/// What a wait's registration keeps until the wait settles.
+/// What a wait keeps until it settles. Whatever happens first settles it: its terminal
+/// event, the end of its child or its deadline; each is decided when it happens.
 struct WaitState {
     /// What the wait keeps.
     kind: WaitKind,
@@ -79,6 +78,20 @@ impl WaitState {
                 Ok(self.events.take())
             }
         };
+        self.finish(outcome);
+    }
+
+    /// Settles the wait with its timeout, carrying `inner`'s diagnostic text of this moment.
+    fn expire(&self, inner: &Inner) {
+        let stderr = inner.state.borrow().stderr.clone();
+        self.finish(Err(match self.kind {
+            WaitKind::Idle => RpcClientError::IdleTimeout { stderr },
+            WaitKind::Collect => RpcClientError::CollectionTimeout { stderr },
+        }));
+    }
+
+    /// Settles the wait with `outcome` unless it has settled already.
+    fn finish(&self, outcome: WaitOutcome) {
         if let Some(settle) = self.settle.take() {
             let _ = settle.send(outcome);
         }
@@ -154,12 +167,18 @@ impl RpcClient {
     fn prepare_wait(&self, timeout: Option<Duration>, kind: WaitKind) -> EventWait {
         let deadline = Instant::now().checked_add(timeout.unwrap_or(WAIT_TIMEOUT));
         let (settle, outcome) = oneshot::channel();
-        let state = WaitState {
+        let state = Rc::new(WaitState {
             kind,
             deadline,
             settle: RefCell::new(Some(settle)),
             events: RefCell::new(Vec::new()),
-        };
+        });
+        let timer = deadline.map(|deadline| {
+            let inner = Rc::clone(&self.inner);
+            Timer::at(deadline, Rc::downgrade(&state), move |state| {
+                state.expire(&inner);
+            })
+        });
         let listener: ClientListener = Rc::new(move |input: &ClientInput<'_>| {
             state.observe(input);
             Ok(())
@@ -167,31 +186,15 @@ impl RpcClient {
         let remove = Listeners::subscribe(&self.inner.listeners, listener);
         EventWait {
             _registration: Registration(Box::new(remove)),
+            _timer: timer,
             outcome,
-            deadline,
-            kind,
-            inner: Rc::clone(&self.inner),
         }
     }
 }
 
-/// Waits for `wait`'s outcome or its deadline, then removes its registration.
+/// Waits for `wait`'s outcome, then removes its registration and its deadline.
 async fn finish_wait(wait: EventWait) -> Result<Vec<Value>, RpcClientError> {
-    let settled = match wait.deadline {
-        Some(deadline) => tokio::time::timeout_at(deadline, wait.outcome).await.ok(),
-        None => Some(wait.outcome.await),
-    };
-    match settled {
-        Some(Ok(outcome)) => outcome,
-        Some(Err(_)) => Err(RpcClientError::Stopped),
-        None => {
-            let stderr = wait.inner.state.borrow().stderr.clone();
-            Err(match wait.kind {
-                WaitKind::Idle => RpcClientError::IdleTimeout { stderr },
-                WaitKind::Collect => RpcClientError::CollectionTimeout { stderr },
-            })
-        }
-    }
+    wait.outcome.await.unwrap_or(Err(RpcClientError::Stopped))
 }
 
 impl Inner {
@@ -203,11 +206,10 @@ impl Inner {
         });
     }
 
-    /// Ends every pending request and wait of the current child with
-    /// [`RpcClientError::Stopped`].
+    /// Ends every pending request and wait of the current child whose deadline has not
+    /// come with [`RpcClientError::Stopped`].
     pub(super) fn fail_owned(&self) {
-        let pending = std::mem::take(&mut self.state.borrow_mut().pending);
-        drop(pending);
+        self.stop_requests();
         let _ = Listeners::try_for_each_live(&self.listeners, |listener| {
             let _ = listener(&ClientInput::Ended);
             Ok::<(), Infallible>(())

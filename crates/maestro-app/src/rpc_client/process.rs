@@ -69,20 +69,25 @@ pub(super) fn launch(
     });
     let forward = forward_stderr()?;
     let weak = Rc::downgrade(inner);
-    tokio::task::spawn_local(write_lines(input, queue));
+    tokio::task::spawn_local(write_lines(input, queue, weak.clone()));
     tokio::task::spawn_local(record_stderr(errors, forward, weak.clone()));
     tokio::task::spawn_local(drive_child(child, output, stopped, weak, finished));
     Ok(done)
 }
 
-/// Writes each queued line to the child's input and reports the outcome, until the client
-/// drops its queue.
+/// Writes each queued request line to the child's input, settling a request whose write
+/// fails, until the client drops its queue.
 async fn write_lines(
     mut input: ChildStdin,
-    mut queue: mpsc::UnboundedReceiver<(String, oneshot::Sender<io::Result<()>>)>,
+    mut queue: mpsc::UnboundedReceiver<(String, String)>,
+    inner: Weak<Inner>,
 ) {
-    while let Some((line, report)) = queue.recv().await {
-        let _ = report.send(input.write_all(line.as_bytes()).await);
+    while let Some((line, id)) = queue.recv().await {
+        if let Err(error) = input.write_all(line.as_bytes()).await
+            && let Some(inner) = inner.upgrade()
+        {
+            inner.fail_write(&id, error);
+        }
     }
 }
 
