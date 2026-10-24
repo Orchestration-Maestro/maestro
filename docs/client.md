@@ -61,9 +61,9 @@ A method fails with:
   ends.
 
 Whichever comes first decides the outcome: the answer, the stop or exit, or the
-30 seconds. A request awaited late still gets that outcome, and a timeout carries
-the diagnostic text as it stood at the deadline. An answer that arrives after the
-30 seconds goes to the event callbacks.
+30 seconds, which count from when the request is sent. A request awaited late still
+gets that outcome, and a timeout carries the diagnostic text as it stood at the
+deadline. An answer that arrives after the 30 seconds goes to the event callbacks.
 
 `get_last_assistant_text` returns a `Presence<String>`: missing when the session has
 no assistant message, and `null` or the text when it answers with one of them.
@@ -85,7 +85,7 @@ does nothing; dropping it keeps the registration.
 `wait_for_idle` and `collect_events` register when they are called, so an
 `agent_end` that arrived before does not count. `wait_for_idle` completes at the next
 `agent_end`, and `collect_events` returns every event through it. Both wait 60
-seconds unless given a timeout. They fail with
+seconds unless given a timeout, counted from the call. They fail with
 `Timeout waiting for agent to become idle. Stderr: <text>` or
 `Timeout collecting events. Stderr: <text>`, and with `Client stopped` when the
 child is stopped or exits first. A wait registered while the client is stopping

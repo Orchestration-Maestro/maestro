@@ -17,9 +17,11 @@ Closing or dropping a watch stops its pending dispatch, including remaining path
 in a notification when closed inside a callback. Cancelling or dropping a timer
 prevents its pending callback, without cancelling other handles.
 
-`NativeTimer` is the one native one-shot timer: `on` schedules on a supplied local
-set and `after` on the local set its caller already runs in. Native deadlines and
-debounces reuse it instead of spawning a sleep of their own.
+`NativeTimer` is the one native one-shot timer: `at` runs a callback at a deadline on
+a supplied local set and `due` on the local set its caller already runs in. The
+caller fixes the deadline when it calls either, so it does not move when the task
+first runs. Native deadlines and debounces reuse it instead of spawning a sleep of
+their own.
 
 The native adapter ignores access events, projects other paths to relative names
 in their received order, and reports unknown names for rescan events, missing

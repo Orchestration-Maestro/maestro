@@ -5,6 +5,7 @@ use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{cell::Cell, io, path::Path, rc::Rc, time::Duration};
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 use tokio::task::{JoinHandle, LocalSet};
+use tokio::time::Instant;
 
 /// Notifications and timers delivered on a caller-driven [`LocalSet`].
 ///
@@ -79,33 +80,39 @@ impl WatchOperations for NativeWatchOperations {
     }
 
     fn schedule(&self, delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn WatchTimer> {
-        Box::new(NativeTimer::on(&self.local, delay, callback))
+        Box::new(NativeTimer::at(
+            &self.local,
+            Instant::now() + delay,
+            callback,
+        ))
     }
 }
 
-/// A one-shot callback that runs once its delay has passed and is cancelled when dropped.
+/// A one-shot callback that runs at its deadline and is cancelled when dropped.
 pub struct NativeTimer(Aborting);
 
 impl NativeTimer {
-    /// Run `callback` once after `delay` on `local`, never before this method returns.
+    /// Run `callback` at `deadline` on `local`, never before this method returns.
     #[must_use]
-    pub fn on(local: &LocalSet, delay: Duration, callback: Box<dyn FnOnce()>) -> Self {
-        Self(Aborting(local.spawn_local(after(delay, callback))))
+    pub fn at(local: &LocalSet, deadline: Instant, callback: Box<dyn FnOnce()>) -> Self {
+        Self(Aborting(local.spawn_local(until(deadline, callback))))
     }
 
-    /// Run `callback` once after `delay` on the local set this task runs in, never before
-    /// this method returns.
+    /// Run `callback` at `deadline` on the local set this task runs in, never before this
+    /// method returns.
     ///
     /// The caller must already run on a [`LocalSet`].
     #[must_use]
-    pub fn after(delay: Duration, callback: Box<dyn FnOnce()>) -> Self {
-        Self(Aborting(tokio::task::spawn_local(after(delay, callback))))
+    pub fn due(deadline: Instant, callback: Box<dyn FnOnce()>) -> Self {
+        Self(Aborting(tokio::task::spawn_local(until(
+            deadline, callback,
+        ))))
     }
 }
 
-/// Waits for `delay`, then runs `callback`.
-async fn after(delay: Duration, callback: Box<dyn FnOnce()>) {
-    tokio::time::sleep(delay).await;
+/// Waits for `deadline`, then runs `callback`.
+async fn until(deadline: Instant, callback: Box<dyn FnOnce()>) {
+    tokio::time::sleep_until(deadline).await;
     callback();
 }
 

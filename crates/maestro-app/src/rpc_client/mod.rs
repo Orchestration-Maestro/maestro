@@ -86,8 +86,8 @@ fn expiry_at<T: 'static>(
     target: Weak<T>,
     expire: impl FnOnce(&T) + 'static,
 ) -> NativeTimer {
-    NativeTimer::after(
-        deadline.saturating_duration_since(Instant::now()),
+    NativeTimer::due(
+        deadline,
         Box::new(move || {
             if let Some(target) = target.upgrade() {
                 expire(&target);

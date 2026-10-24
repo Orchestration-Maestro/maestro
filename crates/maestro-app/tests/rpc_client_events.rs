@@ -209,6 +209,41 @@ sys.stdin.read()
 }
 
 #[test]
+fn request_deadlines_hold_through_a_delayed_first_poll() {
+    let peer = Peer::new();
+    let script = r"
+emit({'type': 'peer_ready'})
+lines = commands()
+next(lines)
+sys.stdin.read()
+";
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(script));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        let (release, hold) = hold_clock();
+        let mut request = pin!(client.abort());
+        assert!(poll_once(request.as_mut()).is_pending());
+        // The deadline's task first runs only after the caller's own work has taken the
+        // executor past 29,999 of its 30,000 milliseconds.
+        tokio::time::advance(DEADLINE.saturating_sub(Duration::from_millis(1))).await;
+        tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::task::yield_now().await;
+        assert!(
+            matches!(
+                poll_once(request.as_mut()),
+                Poll::Ready(Err(RpcClientError::RequestTimeout { .. }))
+            ),
+            "the request expires at the deadline fixed when it was sent"
+        );
+        client.stop().await.unwrap();
+        release.send(()).unwrap();
+        hold.await.unwrap();
+    });
+}
+
+#[test]
 fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
     on_paused_task_set(|_| async {
         let client = RpcClient::new(maestro_app::RpcClientOptions::default());
@@ -235,6 +270,40 @@ fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
             assert!(matches!(collect, RpcClientError::CollectionTimeout { .. }));
             assert_eq!(collect.to_string(), "Timeout collecting events. Stderr: ");
         }
+    });
+}
+
+#[test]
+fn waits_hold_their_deadlines_through_a_delayed_first_poll() {
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(maestro_app::RpcClientOptions::default());
+        let (release, hold) = hold_clock();
+        let timeout = Some(Duration::from_millis(17));
+        let mut idle = pin!(client.wait_for_idle(timeout));
+        let mut collected = pin!(client.collect_events(timeout));
+        // Both deadline tasks first run only after 16 of their 17 milliseconds have
+        // passed, as the caller's own work makes them.
+        tokio::time::advance(Duration::from_millis(16)).await;
+        assert!(poll_once(idle.as_mut()).is_pending());
+        assert!(poll_once(collected.as_mut()).is_pending());
+        tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::task::yield_now().await;
+        assert!(
+            matches!(
+                poll_once(idle.as_mut()),
+                Poll::Ready(Err(RpcClientError::IdleTimeout { .. }))
+            ),
+            "the idle wait expires at the deadline fixed when it was registered"
+        );
+        assert!(
+            matches!(
+                poll_once(collected.as_mut()),
+                Poll::Ready(Err(RpcClientError::CollectionTimeout { .. }))
+            ),
+            "the collection expires at the deadline fixed when it was registered"
+        );
+        release.send(()).unwrap();
+        hold.await.unwrap();
     });
 }
 
