@@ -6,6 +6,7 @@ use super::jsonl::kept_lines;
 use super::{is_journal, resolve_path, session_base};
 use crate::utils::numbers::decimal_integer_prefix;
 use chrono::{Local, NaiveDate};
+use maestro_session::SessionDir;
 use maestro_text::utf16_order;
 use num_traits::ToPrimitive;
 use serde_json::Value;
@@ -80,9 +81,12 @@ pub fn main(
         return Ok(ExitCode::SUCCESS);
     };
     let sessions = maestro_session::sessions_dir(&options.sessions_base, &options.cwd);
-    let sessions = sessions.as_str();
-    if !std::path::Path::new(sessions).exists() {
-        writeln!(stderr, "Sessions directory not found: {sessions}")?;
+    if !std::path::Path::new(sessions.as_str()).exists() {
+        writeln!(
+            stderr,
+            "Sessions directory not found: {}",
+            sessions.as_str()
+        )?;
         return Ok(ExitCode::from(1));
     }
     let today = now().date_naive();
@@ -91,10 +95,10 @@ pub fn main(
         start: local_midnight(start_date),
         end: local_midnight(days_after(today, 1)),
     };
-    let (days, grand) = collect(sessions, &window)?;
+    let (days, grand) = collect(&sessions, &window)?;
     Report {
         options: &options,
-        sessions,
+        sessions: &sessions,
         start: start_date,
         today,
         days: &days,
@@ -169,10 +173,13 @@ fn parse_options(args: &[String], stdout: &mut dyn Write) -> io::Result<Option<O
 ///
 /// # Errors
 /// Returns the native directory or read failure unchanged, and rejects a null entry.
-fn collect(sessions: &str, window: &Window) -> io::Result<(BTreeMap<String, DayStats>, Totals)> {
+fn collect(
+    sessions: &SessionDir,
+    window: &Window,
+) -> io::Result<(BTreeMap<String, DayStats>, Totals)> {
     let mut days: BTreeMap<String, DayStats> = BTreeMap::new();
     let mut grand = Totals::default();
-    for entry in maestro_listing::read_dir(sessions)? {
+    for entry in maestro_listing::read_dir(sessions.as_str())? {
         let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
             continue;
         };
@@ -291,7 +298,7 @@ struct Report<'a> {
     /// The selected window and session root.
     options: &'a Options,
     /// The session directory the rows came from.
-    sessions: &'a str,
+    sessions: &'a SessionDir,
     /// The first day of the window.
     start: NaiveDate,
     /// The day the report was written.
@@ -311,7 +318,7 @@ impl Report<'_> {
     /// Returns the native write failure unchanged.
     fn write(self) -> io::Result<ExitCode> {
         writeln!(self.stdout, "Usage for {}", self.options.cwd)?;
-        writeln!(self.stdout, "Sessions: {}", self.sessions)?;
+        writeln!(self.stdout, "Sessions: {}", self.sessions.as_str())?;
         writeln!(
             self.stdout,
             "Period: {} through {} ({} local days)",

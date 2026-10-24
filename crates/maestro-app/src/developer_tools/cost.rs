@@ -6,6 +6,7 @@ use super::jsonl::trimmed_lines;
 use super::{cost_session_base, is_journal};
 use crate::utils::numbers::decimal_integer_prefix;
 use chrono::{Local, NaiveDate, TimeDelta};
+use maestro_session::SessionDir;
 use maestro_text::utf16_order;
 use num_traits::ToPrimitive;
 use serde_json::Value;
@@ -69,14 +70,17 @@ pub fn main(
         return Ok(ExitCode::from(1));
     };
     let sessions = maestro_session::sessions_dir(&cost_session_base()?, &project);
-    let sessions = sessions.as_str();
-    if !std::path::Path::new(sessions).exists() {
-        writeln!(stderr, "Sessions directory not found: {sessions}")?;
+    if !std::path::Path::new(sessions.as_str()).exists() {
+        writeln!(
+            stderr,
+            "Sessions directory not found: {}",
+            sessions.as_str()
+        )?;
         return Ok(ExitCode::from(1));
     }
     let today = now().date_naive();
     let cutoff = local_midnight(days_before(today, days));
-    let report = collect(sessions, cutoff)?;
+    let report = collect(&sessions, cutoff)?;
     if report.is_empty() {
         writeln!(
             stdout,
@@ -145,9 +149,9 @@ type Report = BTreeMap<String, BTreeMap<String, DayCost>>;
 ///
 /// # Errors
 /// Returns the native directory or read failure unchanged.
-fn collect(sessions: &str, cutoff: i64) -> io::Result<Report> {
+fn collect(sessions: &SessionDir, cutoff: i64) -> io::Result<Report> {
     let mut report = Report::new();
-    for entry in maestro_listing::read_dir(sessions)? {
+    for entry in maestro_listing::read_dir(sessions.as_str())? {
         let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
             continue;
         };

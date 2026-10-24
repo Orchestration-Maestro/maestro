@@ -4,6 +4,7 @@ mod analysis;
 mod prompts;
 
 use analysis::{Painting, Tone, paint};
+use maestro_session::SessionDir;
 use std::borrow::Cow;
 use std::io::{self, Write};
 use std::path::Path;
@@ -32,15 +33,19 @@ pub async fn main(
     };
     std::fs::create_dir_all(&options.output)?;
     let sessions = maestro_session::sessions_dir(&super::session_base()?, &options.cwd);
-    let sessions = sessions.as_str();
-    if !Path::new(sessions).exists() {
+    if !Path::new(sessions.as_str()).exists() {
         writeln!(stderr, "No sessions found for {}", options.cwd)?;
-        writeln!(stderr, "Expected: {sessions}")?;
+        writeln!(stderr, "Expected: {}", sessions.as_str())?;
         return Ok(ExitCode::from(1));
     }
-    let files = journals(sessions)?;
-    writeln!(stdout, "Found {} session files in {sessions}", files.len())?;
-    let transcripts = transcripts(sessions, &files)?;
+    let files = journals(&sessions)?;
+    writeln!(
+        stdout,
+        "Found {} session files in {}",
+        files.len(),
+        sessions.as_str()
+    )?;
+    let transcripts = transcripts(&sessions, &files)?;
     if transcripts.is_empty() {
         writeln!(stderr, "No transcripts found")?;
         return Ok(ExitCode::from(1));
@@ -121,8 +126,8 @@ fn options(args: &[String]) -> io::Result<Options> {
 ///
 /// # Errors
 /// Returns the native listing failure unchanged.
-fn journals(directory: &str) -> io::Result<Vec<String>> {
-    let mut names = maestro_listing::read_dir(directory)?
+fn journals(directory: &SessionDir) -> io::Result<Vec<String>> {
+    let mut names = maestro_listing::read_dir(directory.as_str())?
         .into_iter()
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .filter(|name| super::is_journal(name))
@@ -135,10 +140,10 @@ fn journals(directory: &str) -> io::Result<Vec<String>> {
 ///
 /// # Errors
 /// Returns the native read failure unchanged.
-fn transcripts(directory: &str, files: &[String]) -> io::Result<Vec<String>> {
+fn transcripts(directory: &SessionDir, files: &[String]) -> io::Result<Vec<String>> {
     let mut transcripts = Vec::new();
     for name in files {
-        let messages = messages(&maestro_path::join(&[directory, name]))?;
+        let messages = messages(&maestro_path::join(&[directory.as_str(), name]))?;
         if messages.is_empty() {
             continue;
         }
