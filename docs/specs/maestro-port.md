@@ -933,3 +933,21 @@ JSON-owned and the Presence adaptation belongs beside the shared records. Fork
 position stays entry-owned. One event inventory supplies author unions and the
 guest data adapter. Resources, cancellation, finite-number checks, stream snapshots
 and encoding stay adapter-owned.
+
+### Opt-in test helpers
+
+Typed test helpers may live in their type owner's non-default `test-support`
+feature. Product consumers enable it only through development dependencies.
+An owner's self development dependency may enable this feature so its integration
+program remains runnable without command-line feature flags. That feature-only
+self edge adds no separate crate to the cycle graph; all cross-crate cycle checks
+still apply.
+
+Dedicated `maestro-test-*` libraries may enable a type owner's `test-support`
+feature on a normal dependency, preserving their existing public helper paths.
+A product's own non-default `test-support` feature may forward directly to a
+normal dependency's `test-support` feature. This is one hop only: the target
+feature must not itself forward to another product's test-support feature.
+Normal/build dependency feature lists and other product features, including
+`default`, may not enable test-support. Cargo-metadata conventions enforce these
+boundaries independently of dependency aliases and target predicates.

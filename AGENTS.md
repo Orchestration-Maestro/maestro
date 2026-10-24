@@ -573,3 +573,11 @@ The native extension `ToolDefinition<P,D,S>` alias specializes the tools-owned
 record with ExtensionContext and local invocation; the application keeps its
 standalone default alias. The declaration checker permits only this native alias
 at `maestro-extensions/src/types/registration.rs`, never a second struct or enum.
+
+Typed test helpers may use their type owner's non-default `test-support` feature.
+Enable it through development dependencies, including a feature-only self
+reference for the owner's own integration tests. Dedicated `maestro-test-*`
+libraries may enable it normally to retain public helper reexports. A product's
+own `test-support` feature may forward one hop to a normal dependency's matching
+feature; default/runtime activation and cross-product forwarding chains are
+forbidden. The Cargo-metadata conventions preserve cross-crate cycle checks.

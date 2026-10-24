@@ -678,3 +678,14 @@ policies.
 
 Select individual toolkit tests through `tui-test` using their module-qualified
 names, for example `just tui-test -- ansi_wrapping::name --exact`.
+
+### Typed test helpers
+
+Shared typed helpers can use an owner's non-default `test-support` feature.
+Consumers activate it through development dependencies. Owners can use a self
+development dependency with `path = "."` and `features = ["test-support"]` to keep
+integration tests runnable by default. Dedicated test libraries can also activate
+it on normal dependencies. A product's own opt-in `test-support` feature can
+forward one hop to a dependency's matching feature, but runtime/default features
+cannot activate it. The conventions checker reads Cargo metadata to enforce
+these boundaries while retaining cross-crate cycle detection.
