@@ -79,12 +79,34 @@ impl WatchOperations for NativeWatchOperations {
     }
 
     fn schedule(&self, delay: Duration, callback: Box<dyn FnOnce()>) -> Box<dyn WatchTimer> {
-        let task = self.local.spawn_local(async move {
-            tokio::time::sleep(delay).await;
-            callback();
-        });
-        Box::new(Aborting(task))
+        Box::new(NativeTimer::on(&self.local, delay, callback))
     }
+}
+
+/// A one-shot callback that runs once its delay has passed and is cancelled when dropped.
+pub struct NativeTimer(Aborting);
+
+impl NativeTimer {
+    /// Run `callback` once after `delay` on `local`, never before this method returns.
+    #[must_use]
+    pub fn on(local: &LocalSet, delay: Duration, callback: Box<dyn FnOnce()>) -> Self {
+        Self(Aborting(local.spawn_local(after(delay, callback))))
+    }
+
+    /// Run `callback` once after `delay` on the local set this task runs in, never before
+    /// this method returns.
+    ///
+    /// The caller must already run on a [`LocalSet`].
+    #[must_use]
+    pub fn after(delay: Duration, callback: Box<dyn FnOnce()>) -> Self {
+        Self(Aborting(tokio::task::spawn_local(after(delay, callback))))
+    }
+}
+
+/// Waits for `delay`, then runs `callback`.
+async fn after(delay: Duration, callback: Box<dyn FnOnce()>) {
+    tokio::time::sleep(delay).await;
+    callback();
 }
 
 /// Entry names an event changed, excluding reads; `None` marks an unknown name.
@@ -105,12 +127,19 @@ pub(super) fn entry_names(event: &Event, dir: &Path) -> Vec<Option<String>> {
         .collect()
 }
 
-/// A native timer or receiver task that is aborted when dropped.
+/// A task that is aborted when dropped or cancelled.
 struct Aborting(JoinHandle<()>);
+
+impl Aborting {
+    /// Prevents the task from running if it has not finished yet.
+    fn cancel(&mut self) {
+        self.0.abort();
+    }
+}
 
 impl Drop for Aborting {
     fn drop(&mut self) {
-        self.0.abort();
+        self.cancel();
     }
 }
 
@@ -146,8 +175,8 @@ impl Drop for NativeWatcher {
     }
 }
 
-impl WatchTimer for Aborting {
+impl WatchTimer for NativeTimer {
     fn cancel(&mut self) {
-        self.0.abort();
+        self.0.cancel();
     }
 }

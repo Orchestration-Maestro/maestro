@@ -1,6 +1,7 @@
 //! Event callbacks, their registrations and the waits for the end of a run.
-use super::{Inner, RpcClient, RpcClientError, RpcEventListener, Timer};
+use super::{Inner, RpcClient, RpcClientError, RpcEventListener, expiry_at};
 use maestro_models::{ImageContent, records::listeners::Listeners};
+use maestro_watch::fs_watch::NativeTimer;
 use serde_json::Value;
 use std::{cell::RefCell, convert::Infallible, future::Future, rc::Rc, time::Duration};
 use tokio::{sync::oneshot, time::Instant};
@@ -39,7 +40,7 @@ struct EventWait {
     _registration: Registration,
     /// Settles `outcome` with the timeout; none when the chosen timeout does not fit the
     /// clock.
-    _timer: Option<Timer>,
+    _timer: Option<NativeTimer>,
     /// The kept events, or the failure that ended the wait.
     outcome: oneshot::Receiver<WaitOutcome>,
 }
@@ -175,7 +176,7 @@ impl RpcClient {
         });
         let timer = deadline.map(|deadline| {
             let inner = Rc::clone(&self.inner);
-            Timer::at(deadline, Rc::downgrade(&state), move |state| {
+            expiry_at(deadline, Rc::downgrade(&state), move |state| {
                 state.expire(&inner);
             })
         });

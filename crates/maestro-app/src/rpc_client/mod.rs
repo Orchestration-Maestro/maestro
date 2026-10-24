@@ -17,6 +17,7 @@ pub use types::{ModelInfo, RpcClientError, RpcClientOptions, RpcEventListener};
 
 use events::ClientListener;
 use maestro_models::records::listeners::Listeners;
+use maestro_watch::fs_watch::NativeTimer;
 use requests::Pending;
 use std::{
     cell::RefCell,
@@ -26,7 +27,6 @@ use std::{
 };
 use tokio::{
     sync::{mpsc, oneshot, watch},
-    task::AbortHandle,
     time::Instant,
 };
 
@@ -79,31 +79,21 @@ struct Running {
     exit: Option<std::process::ExitStatus>,
 }
 
-/// A deadline: it runs its expiry at its instant unless it is dropped first.
-struct Timer(AbortHandle);
-
-impl Timer {
-    /// Runs `expire` on `target` at `deadline`, on the local executor, while `target`
-    /// exists.
-    fn at<T: 'static>(
-        deadline: Instant,
-        target: Weak<T>,
-        expire: impl FnOnce(&T) + 'static,
-    ) -> Self {
-        let task = tokio::task::spawn_local(async move {
-            tokio::time::sleep_until(deadline).await;
+/// A deadline: it runs `expire` on `target` at `deadline`, on the local executor, while
+/// `target` exists; dropping it first prevents that.
+fn expiry_at<T: 'static>(
+    deadline: Instant,
+    target: Weak<T>,
+    expire: impl FnOnce(&T) + 'static,
+) -> NativeTimer {
+    NativeTimer::after(
+        deadline.saturating_duration_since(Instant::now()),
+        Box::new(move || {
             if let Some(target) = target.upgrade() {
                 expire(&target);
             }
-        });
-        Self(task.abort_handle())
-    }
-}
-
-impl Drop for Timer {
-    fn drop(&mut self) {
-        self.0.abort();
-    }
+        }),
+    )
 }
 
 impl RpcClient {

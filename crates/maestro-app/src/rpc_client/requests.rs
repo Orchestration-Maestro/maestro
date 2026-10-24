@@ -1,7 +1,8 @@
 //! Requests: their identifiers, their correlation with answers and their deadline.
-use super::{Inner, RpcClient, RpcClientError, Timer};
+use super::{Inner, RpcClient, RpcClientError, expiry_at};
 use crate::rpc_types::{RpcData, RpcResponse, RpcSessionCommand};
 use maestro_json::jsonl::serialize_json_line;
+use maestro_watch::fs_watch::NativeTimer;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{rc::Rc, time::Duration};
@@ -22,7 +23,7 @@ pub(super) struct Pending {
     /// From when only the timer settles the request.
     deadline: Instant,
     /// Settles the request with its timeout at the deadline.
-    _timer: Timer,
+    _timer: NativeTimer,
 }
 
 /// Removes a request's correlation when its call ends, however it ends.
@@ -62,7 +63,7 @@ impl RpcClient {
             let (respond, answer) = oneshot::channel();
             let deadline = Instant::now() + REQUEST_TIMEOUT;
             let expiring = id.clone();
-            let timer = Timer::at(deadline, Rc::downgrade(&self.inner), move |inner| {
+            let timer = expiry_at(deadline, Rc::downgrade(&self.inner), move |inner| {
                 inner.expire(&expiring, kind);
             });
             let pending = Pending {
