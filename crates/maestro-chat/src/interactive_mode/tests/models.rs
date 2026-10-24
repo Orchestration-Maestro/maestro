@@ -4,12 +4,14 @@ use super::actions::{install, run_action};
 use super::transcript::assistant;
 use super::{Setup, World, isolated, started};
 use crate::ModelSelectorComponent;
+use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::{
     AuthCredential, BoxFuture, DiagnosticErrorInfo, ExtensionFactory, Fetch, Local, Model,
     ModelCost, ModelInput, ModelSelectEvent, OAuthCallbacks, OAuthCredentials, OAuthError,
     OAuthProviderInterface, ProviderConfigInput, ProviderModelInput, ReadonlyFooterDataProvider,
-    ScopedModel, SessionManager, SharedHandle, ThinkingLevel, WarningSettings,
+    ScopedModel, SessionManager, Settings, SettingsListEntry, SettingsManager, SharedHandle,
+    ThinkingLevel, WarningSettings,
 };
 use maestro_tui::{Component, Input, Text, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
@@ -559,8 +561,61 @@ fn model_callbacks_read_current_session_and_release_the_mode() {
             assert!(runtime.drain_futures().is_empty());
             assert_eq!(host.session().model().read().unwrap().id, "alpha");
             assert!(weak.upgrade().is_none());
+            scope_callbacks_release_the_mode(directory);
+            model_panel_writes_its_settings_and_selects_on_the_current_session(directory);
         },
     );
+}
+
+/// A shown scope panel does not keep the mode alive; its edits and saves then do nothing.
+fn scope_callbacks_release_the_mode(directory: &Path) {
+    let world = started(directory);
+    catalog(&world);
+    world.mode.show_models_selector().unwrap();
+    let panel = scope_panel(&world).unwrap();
+    let World {
+        mode,
+        runtime,
+        host,
+        ..
+    } = world;
+    let weak = Rc::downgrade(&mode);
+    drop(mode);
+    assert!(
+        weak.upgrade().is_none(),
+        "retained callbacks release the mode"
+    );
+    for key in ["\r", "\x13", "\x1b"] {
+        panel.handle_input(key);
+    }
+    assert_eq!(runtime.futures(), 0);
+    let session = host.session();
+    assert!(session.scoped_models().is_empty());
+    assert!(
+        session
+            .settings_manager()
+            .borrow()
+            .get_enabled_models()
+            .is_none()
+    );
+}
+
+/// The model panel saves its default through the settings it was opened with, while the
+/// selection applies to the session current when it is chosen.
+fn model_panel_writes_its_settings_and_selects_on_the_current_session(directory: &Path) {
+    let world = replaceable(directory);
+    register(&world, "a", &["alpha"]);
+    let panel = open_panel(&world, SELECT_KEY);
+    let opened = world.host.session();
+    replace_session(&world);
+    register(&world, "a", &["alpha"]);
+    panel.handle_input("\r");
+    assert!(world.runtime.drain_futures().is_empty());
+    let current = world.host.session();
+    assert_eq!(current.model().read().unwrap().id, "alpha");
+    assert_ne!(opened.model().read().unwrap().id, "alpha");
+    let default = opened.settings_manager().borrow().get_default_model();
+    assert_eq!(default.as_deref(), Some("alpha"));
 }
 
 /// The common observations of a model witness.
@@ -1513,6 +1568,10 @@ fn submission(world: &World, text: &str, outcome: &Outcome) {
         panic!("the editor is cleared");
     };
     assert_eq!(world.mode.editor.get_text(), cleared.as_str().unwrap());
+    if named(&outcome.events, "scope-command").next().is_some() {
+        assert!(scope_panel(world).is_some());
+        return;
+    }
     let [search] = named(&outcome.events, "model-command").next().unwrap() else {
         panic!("one model command");
     };
@@ -1531,9 +1590,6 @@ fn model_commands_use_the_shared_whitespace_and_exact_tokens() {
     isolated(test, |directory| {
         for (input, expected) in cases::<Submission, Outcome>(test) {
             assert_eq!(input.op, "submit");
-            if named(&expected.events, "scope-command").next().is_some() {
-                continue;
-            }
             let world = started(directory);
             catalog(&world);
             submission(&world, &input.text, &expected);
@@ -1552,12 +1608,12 @@ fn model_commands_leave_waiter_and_history_untouched() {
             let waiting = world.mode.get_user_input();
             let mut waiting = std::pin::pin!(waiting);
             assert!(poll_once(waiting.as_mut()).is_pending());
-            for command in ["/model alpha", "/model"] {
+            for command in ["/model alpha", "/model", "/scoped-models"] {
                 submit(&world, command);
                 assert!(poll_once(waiting.as_mut()).is_pending());
             }
             assert!(shows(&world, "Model: alpha"));
-            assert!(model_panel(&world).is_some());
+            assert!(scope_panel(&world).is_some());
             world.mode.editor_container.clear();
             world
                 .mode
@@ -1625,6 +1681,396 @@ fn warning_lifetime_survives_rebinding_but_not_another_mode() {
             check(&other, vec![Some(subscription_model(&other))]);
             assert!(shows(&other, "Warning: "));
             assert_eq!(lookups(directory, 2), 1);
+        },
+    );
+}
+
+/// The scope panel the editor container shows, if it shows one.
+fn scope_panel(world: &World) -> Option<Rc<ScopedModelsSelectorComponent>> {
+    let shown = shown(world);
+    let [panel] = shown.as_slice() else {
+        return None;
+    };
+    (Rc::clone(panel) as Rc<dyn Any>)
+        .downcast::<ScopedModelsSelectorComponent>()
+        .ok()
+}
+
+/// The saved model patterns, absent when the setting is unset.
+fn saved_patterns(world: &World) -> Option<Vec<String>> {
+    let session = world.host.session();
+    let entries = session.settings_manager().borrow().get_enabled_models()?;
+    let patterns = entries.into_iter().map(|entry| match entry {
+        SettingsListEntry::String(pattern) => pattern,
+        SettingsListEntry::Unknown(value) => panic!("a saved pattern is text, not {value}"),
+    });
+    Some(patterns.collect())
+}
+
+/// Saves the scope panel's selection with its key and returns what it saved: the
+/// panel's enabled models in order, or none when it enables all of them.
+fn saved_by_panel(world: &World) -> Option<Vec<String>> {
+    world.terminal.send_input("\x13");
+    assert!(world.runtime.drain_futures().is_empty());
+    assert!(shows(world, "Model selection saved to settings"));
+    saved_patterns(world)
+}
+
+/// Layers `enabledModels` over the session's settings as `raw` JSON.
+fn enabled_models_setting(world: &World, raw: serde_json::Value) {
+    let mut overrides = serde_json::Map::new();
+    overrides.insert("enabledModels".into(), raw);
+    let session = world.host.session();
+    let mut settings = session.settings_manager().borrow_mut();
+    settings.apply_overrides(Settings(overrides));
+}
+
+/// One recorded opening of the scope panel.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ScopeOpen {
+    /// Always `scope-open`.
+    op: String,
+    /// The recorded scope, settings or catalog source.
+    choice: String,
+}
+
+/// An opened scope panel's observations.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Opened {
+    /// Whether the panel is shown.
+    installed: bool,
+    /// The panel's enabled models in order, absent when all are enabled.
+    enabled: Option<Vec<String>>,
+    /// The opening's failure.
+    error: Option<String>,
+    /// The recorded effects.
+    events: Vec<Event>,
+    /// The session scope afterwards.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
+    /// The footer's provider count, when it was set.
+    count: Option<f64>,
+    /// Whether the subscription notice was shown.
+    shown: bool,
+}
+
+impl Opened {
+    /// The common observations.
+    fn outcome(&self) -> Outcome {
+        Outcome {
+            events: self.events.clone(),
+            scope: self.scope.clone(),
+            count: self.count,
+            shown: self.shown,
+        }
+    }
+}
+
+/// Prepares the catalog, scope and settings of a recorded opening.
+fn scope_source(world: &World, choice: &str, scope_after: &[(String, Option<ThinkingLevel>)]) {
+    if choice != "empty-catalog" {
+        catalog(world);
+    }
+    let patterns = match choice {
+        "session" => {
+            scope(world, scope_after);
+            return;
+        }
+        "settings" => serde_json::json!(["z/tail:high", "a/alpha"]),
+        "empty-settings" => serde_json::json!([]),
+        "all-unmatched" => serde_json::json!(["absent"]),
+        "available-failure" => return refuse_availability(world),
+        "refresh-failure" => return refuse_refresh(world),
+        _ => return,
+    };
+    enabled_models_setting(world, patterns);
+}
+
+/// Checks an opening's panel, enabled models, failure and status.
+fn opened(world: &World, result: Result<(), Box<dyn std::error::Error>>, expected: &Opened) {
+    match (result, &expected.error) {
+        (Ok(()), None) => {}
+        (Err(error), Some(message)) => assert_eq!(&error.to_string(), message),
+        (result, _) => panic!("the recorded opening outcome, not {result:?}"),
+    }
+    assert_eq!(scope_panel(world).is_some(), expected.installed);
+    let status = named(&expected.events, "status").next();
+    assert_eq!(shows(world, "No models available"), status.is_some());
+    settled(world, &expected.outcome());
+    if expected.installed {
+        assert!(saved_patterns(world).is_none_or(|patterns| patterns != ["z/tail", "a/alpha"]));
+        assert_eq!(saved_by_panel(world), expected.enabled);
+    }
+}
+
+#[test]
+fn scope_selector_prefers_session_scope_then_resolved_saved_patterns() {
+    let test = "scope_selector_prefers_session_scope_then_resolved_saved_patterns";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<ScopeOpen, Opened>(test) {
+            assert_eq!(input.op, "scope-open");
+            let world = started(directory);
+            scope_source(&world, &input.choice, &expected.scope);
+            let result = world.mode.show_models_selector();
+            opened(&world, result, &expected);
+        }
+    });
+}
+
+/// One recorded preference value.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FieldDomain {
+    /// Always `scope-field-domain`.
+    op: String,
+    /// The raw `enabledModels` value.
+    raw: serde_json::Value,
+    /// Whether the setting is absent.
+    missing: bool,
+}
+
+#[test]
+fn scope_preferences_reject_unknown_members_and_default_malformed_roots() {
+    let test = "scope_preferences_reject_unknown_members_and_default_malformed_roots";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<FieldDomain, Opened>(test) {
+            assert_eq!(input.op, "scope-field-domain");
+            let world = started(directory);
+            catalog(&world);
+            if !input.missing {
+                enabled_models_setting(&world, input.raw);
+            }
+            let result = world.mode.show_models_selector();
+            let session = world.host.session();
+            let global = session.settings_manager().borrow().get_global_settings();
+            assert!(
+                !global.0.contains_key("enabledModels"),
+                "no repair is saved"
+            );
+            opened(&world, result, &expected);
+        }
+    });
+}
+
+/// One recorded live edit of the scope.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ScopeChange {
+    /// `scope-change` or `scope-change-after-catalog-growth`.
+    op: String,
+    /// The enabled models, absent for all.
+    enabled: Option<Vec<String>>,
+    /// The available models when the panel opened.
+    #[serde(default)]
+    opening: Option<usize>,
+    /// The available models when the edit arrives.
+    #[serde(default)]
+    current: Option<usize>,
+}
+
+/// Opens the scope panel over the recorded catalog and applies the recorded edit through
+/// the scope callbacks, returning those callbacks.
+fn scope_edit(world: &World, input: &ScopeChange) -> ModelsCallbacks {
+    catalog(world);
+    world.mode.show_models_selector().unwrap();
+    let opening = world
+        .host
+        .session()
+        .model_registry()
+        .get_available()
+        .unwrap()
+        .len();
+    assert_eq!(input.opening.unwrap_or(opening), opening);
+    if let Some(current) = input.current {
+        register(world, "new", &["fifth"]);
+        let session = world.host.session();
+        assert_eq!(
+            session.model_registry().get_available().unwrap().len(),
+            current
+        );
+    }
+    world.runtime.settle().unwrap();
+    let callbacks = world.mode.scope_callbacks(opening, Rc::new(|| {}));
+    let edit = (callbacks.on_change)(input.enabled.clone()).unwrap();
+    world.runtime.handle().spawn_local(edit);
+    assert!(world.runtime.drain_futures().is_empty());
+    callbacks
+}
+
+#[test]
+fn scope_changes_apply_live_without_saving_and_refresh_the_footer() {
+    let test = "scope_changes_apply_live_without_saving_and_refresh_the_footer";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<ScopeChange, Outcome>(test) {
+            assert!(input.op.starts_with("scope-change"));
+            let world = started(directory);
+            scope_edit(&world, &input);
+            let [scope] = named(&expected.events, "scope").next().unwrap() else {
+                panic!("one scope edit");
+            };
+            let ids: Vec<_> = scope_of(&world).into_iter().map(|(id, _)| id).collect();
+            let recorded: Vec<_> = scope
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|entry| entry[0].clone())
+                .collect();
+            assert_eq!(serde_json::json!(ids), serde_json::json!(recorded));
+            assert_eq!(
+                world.runtime.pending() > 0,
+                named(&expected.events, "render").count() > 0
+            );
+            assert!(saved_patterns(&world).is_none());
+            settled(&world, &expected);
+        }
+    });
+}
+
+/// A saved selection's observations.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SaveOutcome {
+    /// The saved patterns, absent when the setting is removed.
+    saved: Option<Vec<String>>,
+    /// The recorded effects.
+    events: Vec<Event>,
+    /// The session scope afterwards.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
+    /// The footer's provider count, when it was set.
+    count: Option<f64>,
+    /// Whether the subscription notice was shown.
+    shown: bool,
+}
+
+#[test]
+fn scope_save_preserves_order_and_distinguishes_none_from_all() {
+    let test = "scope_save_preserves_order_and_distinguishes_none_from_all";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<ScopeChange, SaveOutcome>(test) {
+            assert_eq!(input.op, "scope-save");
+            let world = started(directory);
+            let callbacks = scope_edit(&world, &input);
+            let [persisted] = named(&expected.events, "persist").next().unwrap() else {
+                panic!("one save");
+            };
+            let save = (callbacks.on_persist)(input.enabled.clone()).unwrap();
+            world.runtime.handle().spawn_local(save);
+            assert!(world.runtime.drain_futures().is_empty());
+            assert_eq!(serde_json::json!(saved_patterns(&world)), *persisted);
+            assert_eq!(saved_patterns(&world), expected.saved);
+            assert!(shows(&world, "Model selection saved to settings"));
+            assert!(scope_panel(&world).is_some(), "saving keeps the panel open");
+            settled(
+                &world,
+                &Outcome {
+                    events: expected.events,
+                    scope: expected.scope,
+                    count: expected.count,
+                    shown: expected.shown,
+                },
+            );
+        }
+    });
+}
+
+#[test]
+fn scope_cancel_keeps_live_edits_without_saving() {
+    let test = "scope_cancel_keeps_live_edits_without_saving";
+    isolated(test, |directory| {
+        let (input, expected) = cases::<Operation, Outcome>(test).swap_remove(0);
+        assert_eq!(input.op, "scope-cancel-after-edit");
+        let world = started(directory);
+        let edit = ScopeChange {
+            op: "scope-change".into(),
+            enabled: Some(vec!["z/tail".into()]),
+            opening: None,
+            current: None,
+        };
+        scope_edit(&world, &edit);
+        world.runtime.settle().unwrap();
+        world.terminal.send_input("\x1b");
+        let cancelled = effects(&expected.events);
+        assert!(shows_only(&world, &editor(&world)));
+        assert_eq!(cancelled.children, ["editor"]);
+        assert_eq!(world.runtime.pending() > 0, cancelled.render);
+        assert!(editor_focused(&world));
+        assert!(saved_patterns(&world).is_none());
+        settled(&world, &expected);
+    });
+}
+
+/// Clears and enables every model with their keys, saving each; the reopened storage keeps
+/// the empty selection and then has no setting, and cancelling saves nothing.
+fn bulk_saves_reopen_and_cancel_saves_nothing(world: &World, directory: &Path) {
+    world.terminal.send_input("\x18");
+    assert_eq!(saved_by_panel(world), Some(Vec::new()));
+    assert_eq!(reopened_patterns(directory, world), Some(Vec::new()));
+    world.terminal.send_input("\x01");
+    assert_eq!(saved_by_panel(world), None);
+    assert_eq!(reopened_patterns(directory, world), None);
+    world.terminal.send_input("\x18");
+    world.terminal.send_input("\x1b");
+    assert!(world.runtime.drain_futures().is_empty());
+    assert!(shows_only(world, &editor(world)));
+    assert_eq!(
+        reopened_patterns(directory, world),
+        None,
+        "cancelling saves nothing"
+    );
+}
+
+/// The patterns a reopened file-backed settings manager in `directory` reads.
+fn reopened_patterns(directory: &Path, world: &World) -> Option<Vec<String>> {
+    let session = world.host.session();
+    let flushed = session.settings_manager().borrow().flush();
+    let waiting = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    waiting.block_on(flushed);
+    let root = directory.to_str().unwrap();
+    let reopened = SettingsManager::create(root, root, root);
+    reopened.get_enabled_models().map(|entries| {
+        entries
+            .into_iter()
+            .map(|entry| match entry {
+                SettingsListEntry::String(pattern) => pattern,
+                SettingsListEntry::Unknown(value) => panic!("a saved pattern is text, not {value}"),
+            })
+            .collect()
+    })
+}
+
+#[test]
+fn model_scope_persistence_flushes_and_reopens_in_order() {
+    isolated(
+        "model_scope_persistence_flushes_and_reopens_in_order",
+        |directory| {
+            let world = started(directory);
+            let root = directory.to_str().unwrap();
+            *world.host.session().settings_manager().borrow_mut() =
+                SettingsManager::create(root, root, root);
+            let ids: Vec<_> = catalog(&world).iter().map(id_of).collect();
+            submit(&world, "/scoped-models");
+            assert!(scope_panel(&world).is_some());
+            for key in ["\r", "\x1b[B", "\r"] {
+                world.terminal.send_input(key);
+            }
+            assert!(world.runtime.drain_futures().is_empty());
+            assert_eq!(scope_of(&world).len(), 2);
+            assert_eq!(
+                reopened_patterns(directory, &world),
+                None,
+                "live edits are not saved"
+            );
+            let saved = saved_by_panel(&world).unwrap();
+            assert_eq!(saved.len(), 2);
+            assert!(
+                ids.iter().filter(|id| saved.contains(id)).eq(saved.iter()),
+                "order kept"
+            );
+            assert_eq!(reopened_patterns(directory, &world), Some(saved));
+            bulk_saves_reopen_and_cancel_saves_nothing(&world, directory);
         },
     );
 }

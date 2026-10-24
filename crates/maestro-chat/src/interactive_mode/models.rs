@@ -1,12 +1,20 @@
-//! Model selection: the `/model` command, the model panel, model candidates, the footer's
-//! provider count and the subscription billing notice.
+//! Model selection: the `/model` and `/scoped-models` commands, the model and scope
+//! panels, model candidates, the footer's provider count and the subscription billing
+//! notice.
 use super::InteractiveMode;
+use crate::components::scoped_models_selector::{
+    ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent,
+};
 use crate::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
-use maestro_app::{AuthCredential, Model, find_exact_model_reference_match};
+use maestro_app::{
+    AuthCredential, Model, ModelResolverOutput, ScopedModel, SettingsListEntry,
+    find_exact_model_reference_match, model_id_comparator, resolve_model_scope,
+};
 use maestro_tui::Component;
 use std::{
     collections::HashSet,
     error::Error,
+    io,
     rc::Rc,
     sync::{Arc, PoisonError, RwLock},
 };
@@ -224,4 +232,159 @@ impl InteractiveMode {
             Ok((selector.clone(), selector))
         })
     }
+
+    /// Shows the scope panel over the refreshed catalog's available models, starting from
+    /// the session's scope or else the saved patterns, or says no model is available.
+    ///
+    /// # Errors
+    /// Returns the catalog refresh or availability failure, a saved pattern that is not
+    /// text, or the scope resolution failure.
+    pub(super) fn show_models_selector(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+        let session = self.runtime_host.session();
+        session.model_registry().refresh()?;
+        let all_models = session.model_registry().get_available()?;
+        if all_models.is_empty() {
+            return self.show_status("No models available");
+        }
+        let enabled_model_ids = self.initial_enabled_model_ids(session.scoped_models())?;
+        let available_count = all_models.len();
+        self.show_selector(|done| {
+            let selector = Rc::new(ScopedModelsSelectorComponent::new(
+                ModelsConfig {
+                    all_models,
+                    enabled_model_ids,
+                },
+                self.scope_callbacks(available_count, done),
+                self.themes.theme(),
+                Rc::clone(&self.tool_environment.runtime),
+            ));
+            Ok((selector.clone(), selector))
+        })
+    }
+
+    /// The panel's starting models by `provider/id`: the session's scope in order, or else
+    /// the saved patterns resolved against the catalog; none when neither names any.
+    ///
+    /// # Errors
+    /// Returns a saved pattern that is not text, before any resolution, or the scope
+    /// resolution failure.
+    fn initial_enabled_model_ids(
+        &self,
+        session_scope: Vec<ScopedModel>,
+    ) -> Result<Option<Vec<String>>, Box<dyn Error>> {
+        let scope = if session_scope.is_empty() {
+            let session = self.runtime_host.session();
+            let saved = session.settings_manager().borrow().get_enabled_models();
+            let patterns = saved
+                .unwrap_or_default()
+                .into_iter()
+                .map(|entry| match entry {
+                    SettingsListEntry::String(pattern) => Ok(pattern),
+                    SettingsListEntry::Unknown(_) => Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "model patterns must be strings",
+                    )),
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            if patterns.is_empty() {
+                return Ok(None);
+            }
+            self.resolve_scope(&patterns)?
+        } else {
+            session_scope
+        };
+        Ok(Some(
+            scope.iter().map(|scoped| full_id(&scoped.model)).collect(),
+        ))
+    }
+
+    /// Resolves `patterns` against the current catalog in order; the resolver's progress
+    /// and warning lines are not shown.
+    ///
+    /// # Errors
+    /// Returns the locale, availability or pattern failure.
+    fn resolve_scope(&self, patterns: &[String]) -> Result<Vec<ScopedModel>, Box<dyn Error>> {
+        let compare = model_id_comparator(&|key| std::env::var(key).ok())?;
+        let session = self.runtime_host.session();
+        Ok(resolve_model_scope(
+            patterns,
+            session.model_registry(),
+            &compare,
+            &mut ModelResolverOutput {
+                stdout: &mut io::sink(),
+                stderr: &mut io::sink(),
+                color: false,
+            },
+        )?)
+    }
+
+    /// Applies a live scope edit to the session without saving it: a nonempty selection of
+    /// fewer than `available_count` models becomes the scope, anything else clears it.
+    /// Then the footer's provider count is refreshed and a frame requested.
+    ///
+    /// # Errors
+    /// Returns the scope resolution or catalog refresh failure.
+    fn update_session_models(
+        &self,
+        enabled_ids: Option<Vec<String>>,
+        available_count: usize,
+    ) -> Result<(), Box<dyn Error>> {
+        let scope = match enabled_ids {
+            Some(ids) if !ids.is_empty() && ids.len() < available_count => {
+                self.resolve_scope(&ids)?
+            }
+            _ => Vec::new(),
+        };
+        self.runtime_host.session().set_scoped_models(scope);
+        self.update_available_provider_count()?;
+        self.ui.request_render(false);
+        Ok(())
+    }
+
+    /// The scope panel's callbacks, which do not keep the mode alive: edits apply to the
+    /// current session on the terminal runtime; saving writes the selection, or removes the
+    /// setting when all `available_count` models are enabled; cancelling puts the editor
+    /// back and requests a frame.
+    pub(super) fn scope_callbacks(
+        self: &Rc<Self>,
+        available_count: usize,
+        done: Rc<dyn Fn()>,
+    ) -> ModelsCallbacks {
+        let changed = Rc::downgrade(self);
+        let saved = changed.clone();
+        let cancelled = changed.clone();
+        ModelsCallbacks {
+            on_change: Rc::new(move |ids| {
+                let mode = changed.upgrade()?;
+                Some(Box::pin(async move {
+                    mode.update_session_models(ids, available_count)
+                }))
+            }),
+            on_persist: Rc::new(move |ids| {
+                let mode = saved.upgrade()?;
+                let patterns = ids
+                    .filter(|ids| ids.len() != available_count)
+                    .map(|ids| ids.into_iter().map(SettingsListEntry::String).collect());
+                let session = mode.runtime_host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .set_enabled_models(patterns);
+                let shown = mode.show_status("Model selection saved to settings");
+                Some(Box::pin(std::future::ready(shown)))
+            }),
+            on_cancel: Rc::new(move || {
+                done();
+                if let Some(mode) = cancelled.upgrade() {
+                    mode.ui.request_render(false);
+                }
+            }),
+        }
+    }
+}
+
+/// A descriptor's `provider/id`.
+fn full_id(model: &Arc<RwLock<Model>>) -> String {
+    let model = model.read().unwrap_or_else(PoisonError::into_inner);
+    format!("{}/{}", model.provider, model.id)
 }
