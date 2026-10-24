@@ -450,6 +450,14 @@ fn registered(observed: &Observed) -> Registered {
     }
 }
 
+/// Asserts the factory emitted nothing while it loaded.
+fn assert_no_load_emissions(host: &dyn Host) {
+    assert!(
+        host.emissions(Mark::START).is_empty(),
+        "the factory emitted while it loaded"
+    );
+}
+
 /// Assert the recorded registrations against what the host received.
 fn assert_registrations(host: &dyn Host, metadata: &Metadata) {
     let seen = host.registrations();
@@ -590,10 +598,7 @@ fn run_cases<'a>(
 ) -> Result<(), String> {
     for row in rows {
         let mut host = open()?;
-        assert!(
-            host.emissions(Mark::START).is_empty(),
-            "the factory emitted while it loaded"
-        );
+        assert_no_load_emissions(host.as_ref());
         assert_registrations(host.as_ref(), &corpus.metadata);
         if needs_session(row) {
             host.start_session(FIRST)?;
@@ -630,11 +635,8 @@ fn corpus() -> Corpus {
 fn event_bus_registers_channels_and_command() -> Result<(), String> {
     let mut host = ControlledHost::new()?;
     let corpus = corpus();
+    assert_no_load_emissions(&host);
     assert_registrations(&host, &corpus.metadata);
-    assert!(
-        host.emissions(Mark::START).is_empty(),
-        "the factory emitted while it loaded"
-    );
     let order = registration_order(&host, &corpus.metadata);
     assert_eq!(host.release()?, order, "release order");
     assert_eq!(host.live(), 0, "the host lent nothing it kept");
