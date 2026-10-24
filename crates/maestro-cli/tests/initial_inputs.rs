@@ -13,13 +13,13 @@ fn image() -> ImageContent {
     }
 }
 
-/// Build the first message of one case and compare the whole result.
+/// Build the first message of one case and return what the operation retained.
 fn observe(
     messages: &[&str],
     stdin: Option<&str>,
     file_text: Option<&str>,
     images: Vec<ImageContent>,
-) {
+) -> (Option<String>, usize, usize) {
     let argv: Vec<String> = messages
         .iter()
         .map(|message| (*message).to_owned())
@@ -31,14 +31,11 @@ fn observe(
         file_images: images,
         stdin_content: stdin,
     });
-    println!(
-        "{}|{}|{}",
-        result
-            .initial_message
-            .unwrap_or_else(|| "<absent>".to_owned()),
+    (
+        result.initial_message,
         parsed.messages.len(),
-        result.initial_images.map_or(0, |images| images.len())
-    );
+        result.initial_images.map_or(0, |images| images.len()),
+    )
 }
 
 #[test]
@@ -51,13 +48,21 @@ fn stdin_and_first_prompt_form_one_message() {
         .iter()
         .map(|value| value.as_str().unwrap())
         .collect();
-    observe(&messages, Some(stdin), None, Vec::new());
-    let mut parsed = parse_args(&[]);
-    let _ = parsed.messages.pop_front();
+    let (message, remaining, images) = observe(&messages, Some(stdin), None, Vec::new());
     assert_eq!(
-        case.expected["initialMessage"].as_str().unwrap(),
-        format!("{stdin}{}", messages[0])
+        message.as_deref(),
+        case.expected["initialMessage"].as_str(),
+        "the assembled first message is the recorded one"
     );
+    assert_eq!(
+        remaining,
+        case.expected["remaining_messages"]
+            .as_array()
+            .expect("recorded remaining messages")
+            .len(),
+        "the prompts after the first stay queued"
+    );
+    assert_eq!(images, 0, "no attachment is built from stdin and a prompt");
 }
 
 #[test]

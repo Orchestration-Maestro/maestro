@@ -7,7 +7,6 @@ use maestro_cli::input::file_processor::{
     ProcessedFiles, process_file_arguments,
 };
 use maestro_test_directory::Scratch;
-use maestro_theme::Theme;
 use std::cell::RefCell;
 use std::io;
 
@@ -161,6 +160,90 @@ impl FileArgumentOperations for SuppliedFileOperations {
     }
 }
 
+/// The file effect one supplied route refuses.
+#[derive(Clone, Copy)]
+enum Refusal {
+    /// Report the path length.
+    Size,
+    /// Report the supported image MIME type.
+    Detect,
+    /// Read an image the MIME type already accepted.
+    Read,
+    /// Read a file whose MIME type is not an image.
+    TextRead,
+}
+
+/// A file-effect route that refuses one operation and delegates the rest.
+struct RefusingOperations {
+    /// The operation that refuses.
+    refusal: Refusal,
+    /// The operation names in their call order.
+    calls: RefCell<Vec<&'static str>>,
+    /// The native route the other operations delegate to.
+    native: NativeFileArgumentOperations,
+}
+
+impl RefusingOperations {
+    /// A supplied route refusing `refusal` with unstyled diagnostics.
+    fn new(refusal: Refusal) -> Self {
+        Self {
+            refusal,
+            calls: RefCell::new(Vec::new()),
+            native: NativeFileArgumentOperations::new(false),
+        }
+    }
+
+    /// The refusal every failing operation reports.
+    fn refused() -> io::Error {
+        io::Error::new(io::ErrorKind::PermissionDenied, "refused by the test route")
+    }
+}
+
+impl FileArgumentOperations for RefusingOperations {
+    fn resolve_path(&self, authored: &str) -> io::Result<String> {
+        self.calls.borrow_mut().push("resolve_path");
+        self.native.resolve_path(authored)
+    }
+
+    fn access(&self, absolute: &str) -> io::Result<()> {
+        self.calls.borrow_mut().push("access");
+        self.native.access(absolute)
+    }
+
+    fn size(&self, absolute: &str) -> io::Result<u64> {
+        self.calls.borrow_mut().push("size");
+        match self.refusal {
+            Refusal::Size => Err(Self::refused()),
+            _ => self.native.size(absolute),
+        }
+    }
+
+    fn detect_image_mime_type(&self, absolute: &str) -> io::Result<Option<String>> {
+        self.calls.borrow_mut().push("detect_image_mime_type");
+        match self.refusal {
+            Refusal::Detect => Err(Self::refused()),
+            Refusal::TextRead => Ok(None),
+            _ => self.native.detect_image_mime_type(absolute),
+        }
+    }
+
+    fn read_file(&self, absolute: &str) -> io::Result<Vec<u8>> {
+        self.calls.borrow_mut().push("read_file");
+        match self.refusal {
+            Refusal::Read | Refusal::TextRead => Err(Self::refused()),
+            _ => self.native.read_file(absolute),
+        }
+    }
+
+    fn resize_image(&self, image: &ImageContent) -> Option<ResizedImage> {
+        self.native.resize_image(image)
+    }
+
+    fn fatal(&self, error: FileArgumentError) -> ! {
+        self.native.fatal(error)
+    }
+}
+
 #[test]
 fn native_and_supplied_file_operations_have_the_same_contract() {
     let scratch = scratch();
@@ -249,7 +332,7 @@ fn read_path_variants_reach_the_existing_path_owner() {
 
 #[test]
 fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
-    if std::env::var_os(FIXTURE_CASE).is_some() {
+    if std::env::var_os(FIXTURE_CASE).is_some() || std::env::var_os(FIXTURE_REFUSAL).is_some() {
         fatal_child();
     }
     for case in ["files-195", "files-196"] {
@@ -260,31 +343,88 @@ fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
         .unwrap()
         .env(FIXTURE_CASE, case)
         .current_dir(scratch.path())
+        .nocapture()
         .output()
         .unwrap();
         let recorded = support::case_by_title("files", case);
         assert_eq!(output.status.code(), Some(1), "{case}");
-        // The harness captures a child's diagnostic, so its bytes are asserted
-        // through the same composition the native route writes.
         let expected = recorded.expected["stderr"].as_str().unwrap().replace(
             "missing.txt",
             &format!("{}/missing.txt", scratch.path().display()),
         );
-        let styles = recorded.input["styles_enabled"].as_bool().unwrap();
-        let error = FileArgumentError::Missing {
-            path: format!("{}/missing.txt", scratch.path().display()),
-            source: std::io::Error::from(std::io::ErrorKind::NotFound),
-        };
         assert_eq!(
-            format!("{}\n", Theme::red(&error.to_string(), styles)),
+            String::from_utf8_lossy(&output.stderr),
             expected,
-            "{case}"
+            "the child's own diagnostic bytes for {case}"
         );
     }
 }
 
+#[test]
+fn a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status() {
+    if std::env::var_os(FIXTURE_CASE).is_some() || std::env::var_os(FIXTURE_REFUSAL).is_some() {
+        fatal_child();
+    }
+    let scratch = scratch();
+    let output = maestro_test_process::TestProcess::current(
+        "a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status",
+    )
+    .unwrap()
+    .env(FIXTURE_REFUSAL, "text-read")
+    .current_dir(scratch.path())
+    .nocapture()
+    .output()
+    .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stderr),
+        format!(
+            "Error: Could not read file {}/first.txt: refused by the test route\n",
+            scratch.path().display()
+        ),
+        "a refused text read reports its path and cause"
+    );
+}
+
+#[test]
+fn file_refusals_stop_at_the_stage_that_refused() {
+    let scratch = scratch();
+    let text = vec![format!("{}/first.txt", scratch.path().display())];
+    let image = vec![format!("{}/tiny.png", scratch.path().display())];
+    for (refusal, files, stage) in [
+        (Refusal::Size, &text, "size"),
+        (Refusal::Detect, &text, "detect_image_mime_type"),
+        (Refusal::Read, &image, "read_file"),
+    ] {
+        let operations = RefusingOperations::new(refusal);
+        let Err(error) = process_file_arguments(files, ProcessFileOptions::default(), &operations)
+        else {
+            panic!("{stage} stopped the preparation");
+        };
+        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied, "{stage}");
+        assert_eq!(
+            operations.calls.borrow().last().copied(),
+            Some(stage),
+            "{stage} is the last effect the route was asked for"
+        );
+    }
+}
+
+/// Environment variable naming the supplied refusal a child replays.
+const FIXTURE_REFUSAL: &str = "MAESTRO_CLI_FIXTURE_REFUSAL";
+
 /// Run the recorded fatal case in this process, which leaves through the native exit.
 fn fatal_child() {
+    if std::env::var_os(FIXTURE_REFUSAL).is_some() {
+        let files = vec!["first.txt".to_owned()];
+        let operations = RefusingOperations::new(Refusal::TextRead);
+        let prepared: io::Result<ProcessedFiles> =
+            process_file_arguments(&files, ProcessFileOptions::default(), &operations);
+        panic!(
+            "the supplied fatal case returned a result: {}",
+            prepared.is_ok()
+        );
+    }
     let case = std::env::var(FIXTURE_CASE).unwrap();
     let recorded = support::case_by_title("files", &case);
     let styles = recorded.input["styles_enabled"].as_bool().unwrap();

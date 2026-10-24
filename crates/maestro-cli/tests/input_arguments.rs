@@ -420,14 +420,11 @@ fn argv_traversal_reads_each_token_a_bounded_number_of_times() {
     for count in [32_usize, 64, 128] {
         let argv: Vec<String> = (0..count).map(|index| format!("message-{index}")).collect();
         let parsed = parse_args(&argv);
-        assert_eq!(parsed.messages.len(), count);
+        let retained: Vec<&str> = parsed.messages.iter().map(String::as_str).collect();
+        let authored: Vec<&str> = argv.iter().map(String::as_str).collect();
         assert_eq!(
-            parsed.messages.front().map(String::as_str),
-            Some("message-0")
-        );
-        assert_eq!(
-            parsed.messages.back().map(String::as_str),
-            Some(format!("message-{}", count - 1).as_str())
+            retained, authored,
+            "every message of {count} survives once, in its authored order"
         );
         let diagnostics: Vec<_> = parsed
             .diagnostics
@@ -436,6 +433,34 @@ fn argv_traversal_reads_each_token_a_bounded_number_of_times() {
             .collect();
         assert!(diagnostics.is_empty());
     }
+}
+
+#[test]
+fn a_value_is_taken_from_the_next_token_only() {
+    let args = parse_args(&[
+        "--list-models".to_owned(),
+        "--print".to_owned(),
+        "term".to_owned(),
+    ]);
+    assert_eq!(
+        args.list_models,
+        Some(ListModels::All),
+        "a following option is not skipped for a later value"
+    );
+    assert_eq!(args.print, Some(true));
+    assert_eq!(args.messages.back().map(String::as_str), Some("term"));
+
+    let args = parse_args(&[
+        "--unknown".to_owned(),
+        "--print".to_owned(),
+        "value".to_owned(),
+    ]);
+    assert_eq!(
+        args.unknown_flags.get("unknown"),
+        Some(&maestro_app::FlagValue::Boolean(true)),
+        "an unknown flag keeps its boolean form instead of a later value"
+    );
+    assert_eq!(args.messages.back().map(String::as_str), Some("value"));
 }
 
 #[test]
