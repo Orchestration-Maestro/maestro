@@ -69,6 +69,7 @@ mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
 mod selection_events;
+mod send_user_message_example;
 mod session_actions;
 mod session_corpus;
 mod session_events;
