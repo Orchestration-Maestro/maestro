@@ -3095,7 +3095,7 @@ fn explicit_instruction_paths_share_their_resolver() {
 }
 
 /// The owner module that defines the session directory encoder.
-const ENCODER_OWNER: &str = "pub fn encode_session_dir(cwd: &str) -> String {\n    cwd.to_owned()\n}\n\npub fn default_dir(cwd: &str) -> String {\n    format!(\"{}/{}\", cwd, encode_session_dir(cwd))\n}\n";
+const ENCODER_OWNER: &str = "pub fn encode_session_dir(cwd: &str) -> String {\n    cwd.to_owned()\n}\n\npub fn default_dir(cwd: &str) -> String {\n    maestro_path::join(&[cwd, &encode_session_dir(cwd)]).concat()\n}\n";
 /// A caller that names the owner directly.
 const CALLER: &str =
     "pub fn directory(cwd: &str) -> String {\n    maestro_session::encode_session_dir(cwd)\n}\n";
@@ -3103,6 +3103,10 @@ const CALLER: &str =
 const RENAMED_CALLER: &str = "use maestro_session as session;\n\npub fn directory(cwd: &str) -> String {\n    session::encode_session_dir(cwd)\n}\n";
 /// A caller that spells the directory name itself beside its companion call.
 const COPIED: &str = "pub fn directory(cwd: &str) -> String {\n    let _ = maestro_session::encode_session_dir(cwd);\n    format!(\"--{}--\", cwd.replace('/', \"-\"))\n}\n";
+/// A caller that throws the owner's result away and returns something else.
+const DISCARDED: &str = "pub fn directory(cwd: &str) -> String {\n    let _ = maestro_session::encode_session_dir(cwd);\n    cwd.to_owned()\n}\n";
+/// A caller that only mentions the owner name in a comment.
+const COMMENTED: &str = "// maestro_session::encode_session_dir(cwd)\npub fn directory(cwd: &str) -> String {\n    cwd.to_owned()\n}\n";
 
 /// Write `source` as the crate file at `relative`.
 fn source(workspace: &Workspace, member: &str, relative: &str, source: &str) {
@@ -3161,6 +3165,9 @@ fn session_directory_encoding_has_one_owner() {
     assert_missing_selector_is_reported();
     assert_unreached_owner_is_reported();
     assert_renamed_import_is_accepted();
+    assert_discarded_result_is_rejected();
+    assert_comment_is_not_a_call();
+    assert_renamed_owner_is_rejected();
 }
 
 /// A second definition in the owner module is rejected.
@@ -3229,6 +3236,57 @@ fn assert_unreached_owner_is_reported() {
             "{}: session directory selector does not call encode_session_dir",
             crate_path(&workspace, "maestro-app", "src/developer_tools/stats.rs")
         ))
+    );
+}
+
+/// A caller that keeps the owner's result is accepted, while one that drops it is not.
+fn assert_discarded_result_is_rejected() {
+    let workspace = encoder_workspace();
+    source(
+        &workspace,
+        "maestro-app",
+        "src/developer_tools/cost.rs",
+        DISCARDED,
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err(format!(
+            "{}: session directory selector discards the encode_session_dir result",
+            crate_path(&workspace, "maestro-app", "src/developer_tools/cost.rs")
+        ))
+    );
+}
+
+/// A comment naming the owner does not satisfy the selector check.
+fn assert_comment_is_not_a_call() {
+    let workspace = encoder_workspace();
+    source(
+        &workspace,
+        "maestro-app",
+        "src/developer_tools/stats.rs",
+        COMMENTED,
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err(format!(
+            "{}: session directory selector does not call encode_session_dir",
+            crate_path(&workspace, "maestro-app", "src/developer_tools/stats.rs")
+        ))
+    );
+}
+
+/// Renaming the owner leaves no published encoder to delegate to.
+fn assert_renamed_owner_is_rejected() {
+    let workspace = encoder_workspace();
+    source(
+        &workspace,
+        "maestro-session",
+        "src/session_manager/files.rs",
+        "pub fn encode_directory(cwd: &str) -> String {\n    cwd.to_owned()\n}\n",
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-session::encode_session_dir must have exactly one definition, found 0".into())
     );
 }
 
