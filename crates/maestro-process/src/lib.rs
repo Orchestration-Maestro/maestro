@@ -7,13 +7,15 @@ pub mod byte_queue;
 pub mod child_process;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use child_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync};
+pub use child_process::{
+    OutputMode, SpawnSyncError, SpawnSyncOptions, exit_signal_name, spawn, spawn_sync,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod shell;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use shell::{Launch, LaunchContext, windows_shell_launch};
+pub use shell::{Launch, LaunchContext, needs_windows_shell, windows_shell_launch};
 
 pub mod foreground;
 

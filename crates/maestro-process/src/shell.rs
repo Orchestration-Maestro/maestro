@@ -171,6 +171,27 @@ where
     }
 }
 
+/// Package managers whose Windows shims run only through the shell.
+const WINDOWS_SHELL_COMMANDS: [&str; 6] = ["npm", "npx", "pnpm", "yarn", "yarnpkg", "corepack"];
+
+/// Whether `command` names a shim that must run through the Windows shell.
+///
+/// A `.cmd` or `.bat` shim and a package manager command are not native images.
+#[must_use]
+pub fn needs_windows_shell(command: &str) -> bool {
+    let name = command
+        .rsplit(['\\', '/'])
+        .next()
+        .unwrap_or(command)
+        .to_ascii_lowercase();
+    let shim = std::path::Path::new(&name)
+        .extension()
+        .is_some_and(|extension| {
+            extension.eq_ignore_ascii_case("cmd") || extension.eq_ignore_ascii_case("bat")
+        });
+    shim || WINDOWS_SHELL_COMMANDS.contains(&name.as_str())
+}
+
 /// Builds a Windows shell launch without parsing the caller's command text.
 #[must_use]
 pub fn windows_shell_launch(command: &str, comspec: Option<&str>) -> Launch {
