@@ -1,10 +1,11 @@
 //! Package release comparison and native hosted release requests.
+use crate::utils::changelog::{ChangelogEntry, compare_versions};
 use maestro_text::{collation::Collator, is_whitespace_scalar};
 
 /// Numeric components and the optional whole prerelease text.
 struct ParsedVersion<'a> {
-    /// Major, minor and patch numbers.
-    numbers: [f64; 3],
+    /// Numeric release order with empty section content.
+    version: ChangelogEntry,
     /// Prerelease compared under the caller's locale.
     prerelease: Option<&'a str>,
 }
@@ -42,8 +43,14 @@ fn parse_package_version(version: &str) -> Option<ParsedVersion<'_>> {
     if parts.next().is_some() {
         return None;
     }
+    let [major, minor, patch] = numbers;
     Some(ParsedVersion {
-        numbers,
+        version: ChangelogEntry {
+            major,
+            minor,
+            patch,
+            content: String::new(),
+        },
         prerelease,
     })
 }
@@ -53,10 +60,9 @@ fn parse_package_version(version: &str) -> Option<ParsedVersion<'_>> {
 pub fn compare_package_versions(left: &str, right: &str, collator: &Collator) -> Option<f64> {
     let left = parse_package_version(left)?;
     let right = parse_package_version(right)?;
-    for (left, right) in left.numbers.into_iter().zip(right.numbers) {
-        if left.partial_cmp(&right) != Some(std::cmp::Ordering::Equal) {
-            return Some(left - right);
-        }
+    let difference = compare_versions(&left.version, &right.version);
+    if difference != 0.0 {
+        return Some(difference);
     }
     Some(match (left.prerelease, right.prerelease) {
         (None, None) => 0.0,
