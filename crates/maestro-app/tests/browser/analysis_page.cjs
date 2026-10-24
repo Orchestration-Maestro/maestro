@@ -82,8 +82,11 @@ function serve(page, bodies) {
       response.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       response.end(found[1]);
     } catch (error) {
+      // Log the detail; never echo request or exception text into a response.
+      console.log(`UNEXPECTED ${request.url}: ${error.message}`);
       response.statusCode = 404;
-      response.end(String(error.message));
+      response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      response.end('not found');
     }
   });
   return new Promise((resolve, reject) => {
