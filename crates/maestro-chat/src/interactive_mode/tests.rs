@@ -1,5 +1,6 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod autocomplete;
+mod extensions;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -347,6 +348,8 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Further inline extensions beside `extension`, each under the path given.
+    pub(super) further_extensions: Vec<(String, ExtensionFactory<Local>)>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
     /// The loaded extensions by path and provenance; the default loader's when these,
@@ -375,6 +378,7 @@ impl Default for Setup {
             skills: Vec::new(),
             prompts: Vec::new(),
             extension: None,
+            further_extensions: Vec::new(),
             themes: Vec::new(),
             extensions: Vec::new(),
             errors: Vec::new(),
@@ -386,24 +390,37 @@ impl Default for Setup {
     }
 }
 
-/// Loads `factory` as the session's only extension; its initialization must finish at once.
-fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
+/// Loads `factory` and then `further` as the session's extensions; their initialization
+/// must finish at once.
+fn loaded(
+    cwd: &str,
+    factory: ExtensionFactory<Local>,
+    further: Vec<(String, ExtensionFactory<Local>)>,
+) -> Rc<LoadExtensionsResult<Local>> {
     let local = Rc::new(tokio::task::LocalSet::new());
     let bus = <Local as DefaultEventBus>::default_event_bus(&local);
     let runtime = create_extension_runtime::<Local>();
-    let loading = std::pin::pin!(load_extension_from_factory(
-        factory,
-        cwd.to_owned(),
-        bus.for_extension(),
-        Rc::clone(&runtime),
-        None,
-    ));
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
-        panic!("the inline extension initializes at once");
-    };
+    let mut extensions = Vec::new();
+    for (path, factory) in std::iter::once((None, factory)).chain(
+        further
+            .into_iter()
+            .map(|(path, factory)| (Some(path), factory)),
+    ) {
+        let loading = std::pin::pin!(load_extension_from_factory(
+            factory,
+            cwd.to_owned(),
+            bus.for_extension(),
+            Rc::clone(&runtime),
+            path,
+        ));
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
+            panic!("the inline extension initializes at once");
+        };
+        extensions.push(owner.unwrap());
+    }
     Rc::new(LoadExtensionsResult {
-        extensions: vec![owner.unwrap()],
+        extensions,
         errors: Vec::new(),
         runtime,
     })
@@ -427,7 +444,9 @@ impl Setup {
             commands: self.commands,
             diagnostics: self.diagnostics,
         };
-        let extensions = self.extension.map(|factory| loaded(&cwd, factory));
+        let extensions = self
+            .extension
+            .map(|factory| loaded(&cwd, factory, self.further_extensions));
         let result = session::session(&cwd, None, move |inner| {
             let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
             *created.borrow_mut() = Some(Rc::clone(&loader));

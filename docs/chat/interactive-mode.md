@@ -35,7 +35,9 @@ both search programs and installs [completion](extension-ui.md#completion), then
 builds the header, adds the header, transcript, pending-messages, status, upper
 widget, editor and lower widget containers and the footer in that order, focuses the
 editor, binds the transcript shortcuts and the queue keys, installs editor submission
-and starts the terminal. A failure to locate the managed binary directory or to start
+and starts the terminal. It then installs the
+[extension shortcut interceptor](extension-ui.md#shortcuts) over the shortcuts the
+current runner selects. A failure to locate the managed binary directory or to start
 the terminal is returned and leaves the mode uninitialized.
 After a successful start, a theme change invalidates the presentation, recolours the
 editor border and requests a frame, and a branch change requests a frame. Neither
@@ -260,6 +262,8 @@ a row a renderer appends during the walk is reached, and a row it removes is not
 The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock`,
 replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
 visible`. A shortcut's failure goes to the terminal runtime's error route.
+Extension shortcuts run before these actions; [extension UI](extension-ui.md#shortcuts)
+covers their selection, dispatch and failure notice.
 
 The editor border follows the session's thinking level, or the shell colour while
 the editor holds a shell command.

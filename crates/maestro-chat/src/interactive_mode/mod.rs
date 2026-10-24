@@ -18,6 +18,7 @@ use std::{
 };
 
 mod autocomplete;
+mod extensions;
 mod key_display;
 mod queues;
 mod replay;
@@ -67,6 +68,8 @@ pub struct InteractiveMode {
     editor_container: Rc<Container>,
     /// The input editor.
     editor: Rc<CustomEditor>,
+    /// The keybindings the editor reads, and the configured keys extension shortcuts use.
+    keybindings: KeybindingsManager,
     /// The footer.
     footer: Rc<FooterComponent>,
     /// The footer metadata and its branch watch.
@@ -136,12 +139,10 @@ impl InteractiveMode {
         );
         let footer = create_footer(&session, &footer_data_provider, themes.theme())?;
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
+        let settings = session.settings_manager();
+        let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -155,6 +156,7 @@ impl InteractiveMode {
             widget_container_below: Rc::new(Container::new()),
             editor_container,
             editor,
+            keybindings: keys,
             footer,
             footer_data_provider,
             is_initialized: Cell::new(false),
@@ -205,6 +207,8 @@ impl InteractiveMode {
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
+        let runner = self.runtime_host.session().extension_runner();
+        self.setup_extension_shortcuts(&runner);
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {

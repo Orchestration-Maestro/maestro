@@ -109,6 +109,35 @@ restart requests a full redraw. External editing never submits or cancels.
 
 Interactive dialog presentation and settlement are separate from this component.
 
+## Shortcuts
+
+`InteractiveMode` installs one interceptor as the editor's first input handler once the
+terminal starts, over the shortcuts the session's extension runner selects from the
+bindings in effect. Selection belongs to the runner: a key a reserved application action
+claims is skipped with a warning, a key an ordinary application action also claims stays
+with the extension and warns, and a later claim on the same key replaces the earlier
+extension's callback in that key's original slot. The runner owns those messages;
+[the resource listing](interactive-mode.md#loaded-resources) shows them beside the other
+extension issues.
+
+Input is matched against the selected keys by their lowercased spelling, in selection
+order. The first match consumes the input and starts its callback, and every other input,
+including the same key with another modifier, reaches the editor unchanged. A callback
+runs on the terminal runtime after the input returns, so a handler never blocks typing,
+and its failure appears as `Error: Shortcut handler error: <message>` through the
+transcript's error notice.
+
+Each callback receives a context built when the key is pressed, from the runner the
+session has now. It reads the current session's working directory, model, idle state,
+pending messages, context usage and system prompt, and it asks that runner to abort,
+compact or shut down. A context kept from a runner the session has discarded fails as stale
+instead of answering with old state. The interceptor holds the mode weakly, so it never
+keeps the presentation alive; a callback that already started may keep it until it
+finishes.
+
+Rebinding replaces the whole set. An empty selection removes the interceptor, and the
+retired callbacks are released without being invoked.
+
 ## Completion
 
 `InteractiveMode` installs one completion provider on its editor when startup
