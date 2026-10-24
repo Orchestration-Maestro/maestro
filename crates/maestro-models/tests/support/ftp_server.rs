@@ -422,6 +422,35 @@ fn passive(
     Ok(Some(listener))
 }
 
+/// Close the peer's write side and wait until the client closes the connection too.
+///
+/// A client that already closed its end leaves the socket unconnected or reset, which reports
+/// the closed connection the peer observes rather than a peer failure.
+fn close_data(stream: &mut TcpStream, observed: &Observed) -> std::io::Result<()> {
+    // A client that closed the connection first ends the dialogue just as surely as one that
+    // read every byte, so the observation covers both shapes.
+    observed.data_closed.store(true, Ordering::SeqCst);
+    if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
+        return if vanished(&error) { Ok(()) } else { Err(error) };
+    }
+    let mut exhausted = Vec::new();
+    match stream.read_to_end(&mut exhausted) {
+        Err(error) if vanished(&error) => Ok(()),
+        other => other.map(drop),
+    }
+}
+
+/// Whether the error reports a client that closed its end of the data connection.
+fn vanished(error: &std::io::Error) -> bool {
+    matches!(
+        error.kind(),
+        std::io::ErrorKind::BrokenPipe
+            | std::io::ErrorKind::ConnectionReset
+            | std::io::ErrorKind::ConnectionAborted
+            | std::io::ErrorKind::NotConnected
+    )
+}
+
 /// Take the data connection the client opened after a passive reply.
 fn accepted(data: &mut Option<TcpListener>) -> std::io::Result<TcpStream> {
     // The client connects before it sends the command, so the connection is already queued.
@@ -471,10 +500,7 @@ fn listed(
     reply(control, "150 here comes the listing")?;
     let mut stream = accepted(data)?;
     stream.write_all(lines.as_bytes())?;
-    stream.shutdown(std::net::Shutdown::Write)?;
-    observed.data_closed.store(true, Ordering::SeqCst);
-    let mut exhausted = Vec::new();
-    stream.read_to_end(&mut exhausted)?;
+    close_data(&mut stream, observed)?;
     reply(control, "226 listing done")
 }
 
@@ -502,7 +528,15 @@ fn transferred(
     let mut stream = accepted(data)?;
     match &announced.dribble {
         Some(pieces) => pieces.send(&mut stream, observed)?,
-        None => stream.write_all(&announced.body)?,
+        None => {
+            if let Err(error) = stream.write_all(&announced.body) {
+                if !vanished(&error) {
+                    return Err(error);
+                }
+                observed.data_closed.store(true, Ordering::SeqCst);
+                return Ok(());
+            }
+        }
     }
     if announced.completion_first {
         match (&scenario.completion, announced.completion) {
@@ -514,10 +548,7 @@ fn transferred(
         if let Some(release) = &announced.close_after {
             release.recv().ok();
         }
-        stream.shutdown(std::net::Shutdown::Write)?;
-        observed.data_closed.store(true, Ordering::SeqCst);
-        let mut exhausted = Vec::new();
-        stream.read_to_end(&mut exhausted)?;
+        close_data(&mut stream, observed)?;
         return Ok(());
     }
     if let Some(release) = &announced.close_after {
@@ -532,12 +563,7 @@ fn transferred(
     }
     // A client reading to the end of the file needs the write side closed, whether or not a
     // completion follows.
-    stream.shutdown(std::net::Shutdown::Write)?;
-    // A client that closed the connection first ends the dialogue just as surely as one that
-    // read every byte, so the observation covers both shapes.
-    observed.data_closed.store(true, Ordering::SeqCst);
-    let mut exhausted = Vec::new();
-    stream.read_to_end(&mut exhausted)?;
+    close_data(&mut stream, observed)?;
     match (&scenario.completion, announced.completion) {
         (Some(pieces), _) => pieces.send(control, observed),
         (None, Some(completion)) => reply(control, completion),
