@@ -1,0 +1,543 @@
+[
+  {
+    "test": "empty_resources_do_not_add_chat_children",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": false
+      }
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "empty_resources_do_not_add_chat_children",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      }
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "context_resources_keep_discovery_order_and_relative_paths",
+    "input": {
+      "op": "listing",
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/.maestro/agent/AGENTS.md"
+        },
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        },
+        {
+          "path": "/outside/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md, AGENTS.md, /outside/AGENTS.md\u001b[39m                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md\u001b[39m                                                                                                                                                                                                ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        "@dim@  /outside/AGENTS.md\u001b[39m                                                                                                                                                                                                        ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/.maestro/agent/AGENTS.md, AGENTS.md, /outside/AGENTS.md\u001b[39m                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resources_use_compact_defaults",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": false,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": false,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": false,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [],
+      "expanded": [],
+      "collapsed": [],
+      "children": 0
+    }
+  },
+  {
+    "test": "verbose_resources_override_quiet_startup",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": true,
+        "expanded": false
+      },
+      "force": false,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": false
+      },
+      "force": true,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "quiet_resources_require_force",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "quiet": true,
+        "verbose": false,
+        "expanded": true
+      },
+      "force": true,
+      "cwd": "/home/user/Development/maestro",
+      "context": [
+        {
+          "path": "/home/user/Development/maestro/AGENTS.md"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  ~/Development/maestro/AGENTS.md\u001b[39m                                                                                                                                                                                           ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  AGENTS.md\u001b[39m                                                                                                                                                                                                                 ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resources_keep_heading_roles_and_section_spacing",
+    "input": {
+      "op": "listing",
+      "context": [
+        {
+          "path": "/context-only"
+        }
+      ]
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context-only\u001b[39m                                                                                                                                                                                                             ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context-only\u001b[39m                                                                                                                                                                                                             ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                                                                                                                                   ",
+        "@dim@  /context-only\u001b[39m                                                                                                                                                                                                             ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "loaded_resource_sections_retain_content_across_redraws",
+    "input": {
+      "op": "listing",
+      "startup": {
+        "expanded": true
+      },
+      "context": [
+        {
+          "path": "/work/\u001b[7m \u001b[27m.md"
+        }
+      ],
+      "width": 40
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                               ",
+        "@dim@  /work/\u001b[7m \u001b[27m.md\u001b[39m                            ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                               ",
+        "@dim@  /work/\u001b[7m \u001b[27m.md\u001b[39m                            ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                               ",
+        "@dim@  /work/\u001b[7m \u001b[27m.md\u001b[39m                            ",
+        ""
+      ],
+      "children": 3
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": ".",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "."
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "nested/../AGENTS.md",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "AGENTS.md"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "./界/../a.md",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "a.md"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "../AGENTS.md",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/work/AGENTS.md"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "/outside/file",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/outside/file"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "..notes/a",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/work/project/..notes/a"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "x/../../y",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/work/y"
+    }
+  },
+  {
+    "test": "context_resources_resolve_lexically_without_touching_files",
+    "input": {
+      "op": "context",
+      "cwd": "/work/project",
+      "path": "",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "."
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user/child",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~/child"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/home/user-sibling/a",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "~-sibling/a"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "/outside/a",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "/outside/a"
+    }
+  },
+  {
+    "test": "resource_paths_abbreviate_supplied_home_prefix",
+    "input": {
+      "op": "display",
+      "path": "relative",
+      "home": "/home/user"
+    },
+    "expected": {
+      "value": "relative"
+    }
+  },
+  {
+    "test": "resource_section_heading_refreshes_on_toggle_without_restyling_body",
+    "input": {
+      "op": "theme-toggle",
+      "context": [
+        {
+          "path": "/context-theme"
+        }
+      ],
+      "width": 120
+    },
+    "expected": {
+      "before": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ],
+      "noToggle": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ],
+      "expanded": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ],
+      "collapsed": [
+        "",
+        "@mdHeading@[Context]\u001b[39m                                                                                                               ",
+        "@dim@  /context-theme\u001b[39m                                                                                                        ",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
+    "input": {
+      "op": "native-home",
+      "mode": "absent",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  },
+  {
+    "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
+    "input": {
+      "op": "native-home",
+      "mode": "supplied",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "value": "~/file"
+    }
+  },
+  {
+    "test": "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix",
+    "input": {
+      "op": "native-home",
+      "mode": "empty",
+      "path": "/tmp/supplied-home/file"
+    },
+    "expected": {
+      "value": "/tmp/supplied-home/file"
+    }
+  }
+]

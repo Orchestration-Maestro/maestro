@@ -85,13 +85,15 @@ impl InteractiveMode {
                 key("app.tools.expand")
             ),
         )?;
+        let collapsed = format!("{logo}\n{compact}\n{compact_onboarding}\n\n{onboarding}");
+        let expanded = format!("{logo}\n{expanded}\n\n{onboarding}");
         let header = ExpandableText::new(
-            format!("{logo}\n{compact}\n{compact_onboarding}\n\n{onboarding}"),
-            format!("{logo}\n{expanded}\n\n{onboarding}"),
-            self.options.verbose,
+            Box::new(move || Ok(collapsed.clone())),
+            Box::new(move || Ok(expanded.clone())),
+            self.get_startup_expansion_state(),
             1,
             0,
-        );
+        )?;
         self.header_container.add_child(Rc::new(Spacer::new(1)));
         self.header_container.add_child(Rc::new(header));
         self.header_container.add_child(Rc::new(Spacer::new(1)));
@@ -140,49 +142,57 @@ fn expanded_instructions(
     .join("\n"))
 }
 
-/// One help text with a collapsed and an expanded rendering.
-struct ExpandableText {
-    /// The text owner that paints, wraps and clips the current variant.
+/// Builds one rendering of an expandable text when it is selected.
+pub(super) type TextFactory = Box<dyn Fn() -> Result<String, Box<dyn Error>>>;
+
+/// One text with a collapsed and an expanded rendering, each built when selected.
+pub(super) struct ExpandableText {
+    /// The text owner that paints, wraps and clips the current rendering.
     text: Text,
-    /// The compact rendering.
-    collapsed: String,
-    /// The expanded rendering.
-    expanded: String,
+    /// Builds the compact rendering.
+    collapsed: TextFactory,
+    /// Builds the expanded rendering.
+    expanded: TextFactory,
 }
 
 impl ExpandableText {
     /// Builds the component and applies the initial expansion.
-    fn new(
-        collapsed: String,
-        expanded: String,
+    ///
+    /// # Errors
+    /// Returns the failure of the selected rendering.
+    pub(super) fn new(
+        collapsed: TextFactory,
+        expanded: TextFactory,
         expanded_state: bool,
         padding_x: usize,
         padding_y: usize,
-    ) -> Self {
+    ) -> Result<Self, Box<dyn Error>> {
         let value = Self {
             text: Text::new(String::new(), padding_x, padding_y, None),
             collapsed,
             expanded,
         };
-        value.set_expanded(expanded_state);
-        value
+        value.set_expanded(expanded_state)?;
+        Ok(value)
     }
 
-    /// Replaces the rendered variant.
-    fn set_expanded(&self, expanded: bool) {
-        self.text.set_text(
-            if expanded {
-                &self.expanded
-            } else {
-                &self.collapsed
-            }
-            .to_owned(),
-        );
+    /// Builds the selected rendering and replaces the text with it.
+    ///
+    /// # Errors
+    /// Returns the failure of the selected rendering, leaving the text unchanged.
+    pub(super) fn set_expanded(&self, expanded: bool) -> Result<(), Box<dyn Error>> {
+        let factory = if expanded {
+            &self.expanded
+        } else {
+            &self.collapsed
+        };
+        self.text.set_text(factory()?);
+        Ok(())
     }
 }
 
 impl Component for ExpandableText {
-    /// Renders the current variant at the supplied width.
+    /// Renders the current rendering at the supplied width.
     fn render(&self, width: usize) -> Vec<String> {
         self.text.render(width)
     }
