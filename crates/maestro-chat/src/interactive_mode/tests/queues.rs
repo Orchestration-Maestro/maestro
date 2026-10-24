@@ -255,7 +255,7 @@ fn observe(world: &World, calls: &Heard, aborts: usize) -> Observed {
 
 /// Completes the work the mode handed to the terminal host and returns the failures it
 /// reported; every handed piece finishes in one step here, as no prompt waits.
-fn settled(world: &World) -> Vec<String> {
+pub(super) fn settled(world: &World) -> Vec<String> {
     world
         .runtime
         .take_futures()

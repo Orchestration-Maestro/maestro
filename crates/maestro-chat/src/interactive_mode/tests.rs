@@ -47,6 +47,7 @@ use maestro_tui::{
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;
 use std::{
+    any::Any,
     cell::{Cell, RefCell},
     collections::VecDeque,
     future::Future,
@@ -509,6 +510,15 @@ impl Setup {
             loader,
         }
     }
+}
+
+/// The single panel the editor container shows, downcast to `T`.
+pub(super) fn shown_panel<T: Component + 'static>(world: &World) -> Option<Rc<T>> {
+    let shown = world.mode.editor_container.children().borrow().clone();
+    let [panel] = shown.as_slice() else {
+        return None;
+    };
+    (Rc::clone(panel) as Rc<dyn Any>).downcast::<T>().ok()
 }
 
 /// A mode whose session can be replaced by a fresh memory session, optionally loading

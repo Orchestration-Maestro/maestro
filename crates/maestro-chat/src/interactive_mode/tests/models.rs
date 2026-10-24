@@ -1637,13 +1637,7 @@ fn warning_lifetime_survives_rebinding_but_not_another_mode() {
 
 /// The scope panel the editor container shows, if it shows one.
 fn scope_panel(world: &World) -> Option<Rc<ScopedModelsSelectorComponent>> {
-    let shown = shown(world);
-    let [panel] = shown.as_slice() else {
-        return None;
-    };
-    (Rc::clone(panel) as Rc<dyn Any>)
-        .downcast::<ScopedModelsSelectorComponent>()
-        .ok()
+    super::shown_panel(world)
 }
 
 /// The saved model patterns, absent when the setting is unset.

@@ -1,14 +1,15 @@
 //! Forking from an earlier user message and cloning the current leaf.
 use super::actions::shows;
+use super::queues::settled;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{World, isolated_case, replaceable};
+use super::{World, isolated_case, replaceable, shown_panel};
 use crate::UserMessageSelectorComponent;
 use maestro_app::{
     ExtensionFactory, Local, Presence, ReadonlySessionManager, SessionBeforeForkEvent,
     SessionBeforeForkResult,
 };
 use maestro_tui::Component;
-use std::{any::Any, path::Path, rc::Rc};
+use std::{path::Path, rc::Rc};
 
 /// Appends a user message and returns its entry identity.
 fn append_user(world: &World, text: &str) -> String {
@@ -34,13 +35,7 @@ fn user_texts(world: &World) -> Vec<String> {
 
 /// The fork panel the editor container shows, if it shows one.
 fn fork_panel(world: &World) -> Option<Rc<UserMessageSelectorComponent>> {
-    let shown = world.mode.editor_container.children().borrow().clone();
-    let [panel] = shown.as_slice() else {
-        return None;
-    };
-    (Rc::clone(panel) as Rc<dyn Any>)
-        .downcast::<UserMessageSelectorComponent>()
-        .ok()
+    shown_panel(world)
 }
 
 /// An extension that cancels every fork.
@@ -82,22 +77,12 @@ fn clone_keeps_leaf_position_and_outcome_order() {
     );
 }
 
-/// Runs the submitted command and returns the failures the runtime handed over.
-fn settle_submission(world: &World) -> Vec<String> {
-    world
-        .runtime
-        .drain_futures()
-        .iter()
-        .map(ToString::to_string)
-        .collect()
-}
-
 /// A session without a leaf reports that nothing can be cloned and keeps its session.
 fn cloning_without_a_leaf_reports_it(directory: &Path) {
     let world = replaceable(directory, None);
     let untouched = world.host.session();
     submit(&world.mode, "/clone");
-    let errors = settle_submission(&world);
+    let errors = settled(&world);
     assert!(errors.is_empty(), "clone failed: {errors:?}");
     assert!(shows(&world.mode.chat_container, "Nothing to clone yet"));
     assert!(Rc::ptr_eq(&untouched, &world.host.session()));
@@ -112,7 +97,7 @@ fn cloning_keeps_the_exact_leaf(directory: &Path) {
     let old = world.host.session();
     world.mode.editor.set_text("/clone");
     submit(&world.mode, "/clone");
-    let errors = settle_submission(&world);
+    let errors = settled(&world);
     assert!(errors.is_empty(), "clone failed: {errors:?}");
     let new = world.host.session();
     assert!(!Rc::ptr_eq(&old, &new));
@@ -133,7 +118,7 @@ fn cancelling_a_clone_keeps_the_session(directory: &Path) {
     let old = world.host.session();
     world.mode.chat_container.clear();
     submit(&world.mode, "/clone");
-    let errors = settle_submission(&world);
+    let errors = settled(&world);
     assert!(errors.is_empty(), "clone failed: {errors:?}");
     assert!(Rc::ptr_eq(&old, &world.host.session()));
     assert!(!shows(&world.mode.chat_container, "Cloned to new session"));
