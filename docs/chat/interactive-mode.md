@@ -33,9 +33,8 @@ fallback theme is returned.
 header, transcript, pending-messages, status, upper widget, editor and lower widget
 containers and the footer, in that order. It focuses the editor, binds the
 transcript shortcuts and the queue keys, installs editor submission and starts the
-terminal. A
-terminal start failure is returned and leaves the mode uninitialized. After a
-successful start, a theme change invalidates the presentation, recolours the
+terminal. A terminal start failure is returned and leaves the mode uninitialized.
+After a successful start, a theme change invalidates the presentation, recolours the
 editor border and requests a frame, and a branch change requests a frame. Neither
 callback keeps the mode alive. Last, it lists the loaded resources in the
 transcript and then replays the session (see below).
@@ -150,12 +149,12 @@ submission it does nothing. The follow-up key reads the editor's expanded text, 
 large paste is sent in full.
 
 While the session compacts, a registered command (`/name`, with the name ending at the
-first space) still runs at once. Any other text is kept by the mode in the order it
-was typed, as steering from Enter or as a follow-up from the follow-up key, recorded
-in the history, cleared from the editor, shown in the pending rows and confirmed by
-the status line `Queued message for after compaction`. Sending the kept messages
-when the compaction ends is not delivered yet; until then they stay in the pending
-rows, and the dequeue key restores them.
+first space) still runs at once. The mode keeps any other text in the order it was
+typed, as steering from Enter or as a follow-up from the follow-up key, records it
+in the history, clears it from the editor, shows it in the pending rows and confirms
+it with the status line `Queued message for after compaction`. The mode does not
+yet send the kept messages when the compaction ends; until it does, they stay in
+the pending rows, and the dequeue key restores them.
 
 Queued messages, including those kept during a compaction, appear above the
 editor. Each steering message gets a dim `Steering: <text>` row and each follow-up
