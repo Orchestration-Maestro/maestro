@@ -19,8 +19,8 @@ pub struct Ui(pub(super) usize);
 /// Host state the UI requests are served from.
 #[derive(Default)]
 pub struct Bank {
-    /// Identity handed out by the last acquisition.
-    next_key: usize,
+    /// Identity of the binding acquisitions currently resolve.
+    binding: usize,
     /// Rejection supplied for the next request.
     error: Option<String>,
 }
@@ -31,20 +31,23 @@ pub struct Bank {
 struct Control {
     /// Message the next request is rejected with.
     error: Option<String>,
+    /// Identity of the binding later acquisitions resolve.
+    binding: Option<usize>,
 }
 
 impl Bank {
     /// Mutate the host before acknowledging the control entry.
     pub fn control(&mut self, text: &str) {
-        self.error = serde_json::from_str::<Control>(text)
-            .map(|control| control.error)
-            .unwrap();
+        let control: Control = serde_json::from_str(text).unwrap();
+        if let Some(binding) = control.binding {
+            self.binding = binding;
+        }
+        self.error = control.error;
     }
 
-    /// Hands out the identity of one independent acquisition.
-    pub fn acquire(&mut self) -> usize {
-        self.next_key += 1;
-        self.next_key
+    /// Hands out the identity of the binding current at acquisition time.
+    pub fn acquire(&self) -> usize {
+        self.binding
     }
 }
 

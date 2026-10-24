@@ -402,91 +402,67 @@ fn sole_receipt(driver: &impl Driver, from: usize) -> usize {
     seen[0].key
 }
 
-/// Retains two aliases and returns the owner both of them reached.
-async fn alias_pair(driver: &mut impl Driver) -> Result<usize, String> {
-    let base = driver.live();
-    for method in ["retain", "alias"] {
-        retained_owner(driver, method).await?;
-    }
+/// The owner reached by the acquisition made under the host's current binding.
+async fn first_acquisition(driver: &mut impl Driver, base: usize) -> Result<usize, String> {
+    retained_owner(driver, "retain").await?;
     let from = driver.transcript().len();
-    for index in [0, 1] {
-        assert_eq!(
-            retained_call(driver, index, &notify()).await?,
-            json!({"ok":"done"})
-        );
-    }
-    let seen = receipts(&driver.transcript()[from..]);
-    assert_eq!(seen.len(), 2, "both aliases issued their own request");
-    assert_eq!(seen[0].key, seen[1].key, "both aliases target one resource");
-    assert_eq!(driver.live(), base + 1, "aliases share one acquisition");
-    Ok(seen[0].key)
-}
-
-/// A new acquisition replaces the binding; the displaced handles keep their owner.
-async fn rebound(driver: &mut impl Driver, shared: usize) -> Result<usize, String> {
-    let base = driver.live();
-    let request = json!({"action":"ui","method":"rebind"});
     assert_eq!(
-        routed_event(driver, &request).await?,
+        retained_call(driver, 0, &notify()).await?,
         json!({"ok":"done"}),
-        "the binding is replaced from an event context"
+        "the acquisition answers under the binding that made it"
     );
-    let from = driver.transcript().len();
-    for index in [0, 1] {
-        assert_eq!(
-            retained_call(driver, index, &notify()).await?,
-            json!({"ok":"done"}),
-            "binding {index} answers after the rebinding"
-        );
-    }
-    let seen = receipts(&driver.transcript()[from..]);
-    assert_eq!(seen.len(), 2, "each binding issued its own request");
-    assert_ne!(
-        seen[0].key, shared,
-        "the rebound binding reaches the new acquisition"
-    );
-    assert_eq!(
-        seen[1].key, shared,
-        "the displaced handle keeps its owner after the rebinding"
-    );
-    assert_eq!(
-        driver.live(),
-        base + 1,
-        "the rebinding acquires one more owner"
-    );
-    Ok(seen[0].key)
+    assert_eq!(driver.live(), base + 1, "one acquisition is lent");
+    Ok(sole_receipt(driver, from))
 }
 
-/// Both aliases of the displaced owner still reach that one owner.
-async fn shared_aliases(driver: &mut impl Driver, shared: usize) -> Result<(), String> {
-    let from = driver.transcript().len();
-    for index in [1, 2] {
-        assert_eq!(
-            retained_call(driver, index, &notify()).await?,
-            json!({"ok":"done"}),
-            "alias {index} answers"
-        );
-    }
-    let seen = receipts(&driver.transcript()[from..]);
-    assert_eq!(seen.len(), 2, "each alias issued its own request");
-    assert_eq!(seen[0].key, shared, "the displaced owner still answers");
-    assert_eq!(seen[1].key, shared, "both aliases share one owner");
+/// Switches the host's current UI binding.
+async fn bind(driver: &mut impl Driver, binding: usize) -> Result<(), String> {
+    assert_eq!(
+        operate(driver, json!({"op":"control","binding":binding})).await?,
+        json!("controlled"),
+        "the host acknowledged the binding"
+    );
     Ok(())
 }
 
-/// The independent acquisition survives both aliases of the displaced owner being dropped.
-async fn independent_survives(
-    driver: &mut impl Driver,
-    base: usize,
-    shared: usize,
-    independent: usize,
-) -> Result<(), String> {
+/// The acquisition made after the switch reaches the new binding, and every handle of the
+/// earlier one keeps its own.
+async fn rebound(driver: &mut impl Driver, base: usize, shared: usize) -> Result<usize, String> {
+    bind(driver, 2).await?;
+    for method in ["retain", "alias", "alias"] {
+        retained_owner(driver, method).await?;
+    }
+    assert_eq!(driver.live(), base + 2, "both acquisitions are lent");
+    let from = driver.transcript().len();
     assert_eq!(
-        driver.live(),
-        base + 2,
-        "the rebinding left both acquisitions lent"
+        retained_call(driver, 1, &notify()).await?,
+        json!({"ok":"done"}),
+        "the later acquisition answers under the binding that made it"
     );
-    shared_aliases(driver, shared).await?;
+    let independent = sole_receipt(driver, from);
+    assert_ne!(
+        independent, shared,
+        "the later acquisition reaches the current binding"
+    );
+    let from = driver.transcript().len();
+    for index in [0, 2, 3] {
+        assert_eq!(
+            retained_call(driver, index, &notify()).await?,
+            json!({"ok":"done"}),
+            "handle {index} answers after the switch"
+        );
+    }
+    let seen = receipts(&driver.transcript()[from..]);
+    assert_eq!(seen.len(), 3, "every handle issued its own request");
+    assert!(
+        seen.iter().all(|seen| seen.key == shared),
+        "every handle of the earlier acquisition kept its binding"
+    );
+    Ok(independent)
+}
+
+/// Both aliases answer, and dropping them releases only what they held.
+async fn aliases_drop(driver: &mut impl Driver, base: usize, shared: usize) -> Result<(), String> {
     retained_owner(driver, "pop").await?;
     assert_eq!(
         driver.live(),
@@ -495,7 +471,7 @@ async fn independent_survives(
     );
     let from = driver.transcript().len();
     assert_eq!(
-        retained_call(driver, 1, &notify()).await?,
+        retained_call(driver, 2, &notify()).await?,
         json!({"ok":"done"}),
         "the remaining alias answers between the drops"
     );
@@ -507,32 +483,61 @@ async fn independent_survives(
     retained_owner(driver, "pop").await?;
     assert_eq!(
         driver.live(),
+        base + 2,
+        "the earlier acquisition keeps its owner"
+    );
+    Ok(())
+}
+
+/// The acquisition made under the switched binding survives both alias drops.
+async fn later_survives(
+    driver: &mut impl Driver,
+    base: usize,
+    shared: usize,
+    independent: usize,
+) -> Result<(), String> {
+    let from = driver.transcript().len();
+    assert_eq!(
+        retained_call(driver, 1, &notify()).await?,
+        json!({"ok":"done"}),
+        "the later acquisition answers after both drops"
+    );
+    assert_eq!(
+        sole_receipt(driver, from),
+        independent,
+        "neither alias drop revoked the later acquisition"
+    );
+    retained_owner(driver, "pop").await?;
+    assert_eq!(
+        driver.live(),
         base + 1,
-        "the final alias releases exactly one owner"
+        "the later acquisition releases exactly one owner"
     );
     let from = driver.transcript().len();
     assert_eq!(
         retained_call(driver, 0, &notify()).await?,
         json!({"ok":"done"}),
-        "the independent acquisition answers after both drops"
+        "the original handle answers last"
     );
     assert_eq!(
         sole_receipt(driver, from),
-        independent,
-        "neither alias drop revoked the independent acquisition"
+        shared,
+        "the original handle keeps its owner to the end"
     );
+    retained_owner(driver, "pop").await?;
+    assert_eq!(driver.live(), base, "every acquisition is released");
     Ok(())
 }
 
-/// Retained handles keep their owner across a rebinding, alias drops and a second acquisition.
+/// Retained handles keep their binding across a host rebinding, alias drops and a second
+/// acquisition.
 async fn retention(driver: &mut impl Driver) -> Result<(), String> {
     install(driver).await?;
     let base = driver.live();
-    let shared = alias_pair(driver).await?;
-    let independent = rebound(driver, shared).await?;
-    independent_survives(driver, base, shared, independent).await?;
-    retained_owner(driver, "pop").await?;
-    assert_eq!(driver.live(), base, "every acquisition is released");
+    let shared = first_acquisition(driver, base).await?;
+    let independent = rebound(driver, base, shared).await?;
+    aliases_drop(driver, base, shared).await?;
+    later_survives(driver, base, shared, independent).await?;
     driver.release_all().await;
     assert_eq!(driver.live(), 0, "no UI resource stays lent");
     Ok(())

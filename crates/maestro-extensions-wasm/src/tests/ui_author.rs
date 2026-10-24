@@ -159,10 +159,14 @@ enum Operation {
         /// Payload to emit.
         input: Value,
     },
-    /// Supplies the host rejection of the next request.
+    /// Supplies the host rejection of the next request, or the host's next UI binding.
     Control {
         /// Message the next request is rejected with.
-        error: String,
+        #[serde(default)]
+        error: Option<String>,
+        /// Identity of the binding later acquisitions resolve.
+        #[serde(default)]
+        binding: Option<usize>,
     },
 }
 
@@ -214,8 +218,11 @@ async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> Ext
             api.events().emit(&channel, input).await?;
             json!("emitted")
         }
-        Operation::Control { error } => {
-            api.append_entry("ui-control", Some(json!({ "error": error })))?;
+        Operation::Control { error, binding } => {
+            api.append_entry(
+                "ui-control",
+                Some(json!({ "error": error, "binding": binding })),
+            )?;
             json!("controlled")
         }
     };
