@@ -90,24 +90,29 @@ It supports npm, pnpm, Yarn and Bun; unconfigured npm can infer a matching
 `lib/node_modules` prefix. Configured npm argv disables that fallback. Ownership
 uses existing canonical paths with a separator-delimited strict descendant
 comparison, case-folded only on Windows. Supplied `SelfUpdateOperations` control
-filesystem, host flavor, home, access and read-only query effects. Required
-configured-query errors retain the native cause and command context. Authored
-paths use the shared flavor-explicit resolver, so supplied POSIX and Windows
-observations work independently of the compilation host. Directory observations
-remain lazy: anchored paths need neither drives nor the working directory.
+host flavor and read-only query capture; the home directory and write access are
+native observations. Required configured-query errors retain the native cause and
+command context. Authored paths use the shared flavor-explicit resolver, so
+supplied POSIX and Windows observations work independently of the compilation
+host. Directory observations remain lazy: anchored paths need neither drives nor
+the working directory.
 
 `get_update_instruction` returns a manual command without ownership/access
 probes. `get_self_update_unavailable_instruction` explains unmanaged or unwritable
 installations and gives standalone release-download guidance. These functions
 select descriptions only: no installation, removal or release lookup is run.
 
-`NativeSelfUpdateOperations` delegates query capture to the process owner without
-a deadline or buffer limit. Queries pass the executable and literal argument
-vector to the native process API, not through joined shell text. On Windows,
-executable lookup follows the [native launch rules](../../crates/maestro-process/README.md#command-preparation).
-Unix access uses the OS write-access operation;
-Windows checks existence and read-only attributes, not directory ACLs, so a later
-update may still fail with a permissions error. See the
+`NativeSelfUpdateOperations` reports host flavor and delegates query capture to
+the process owner without a deadline or buffer limit. Queries pass the executable
+and literal argument vector to the native process API, not through joined shell
+text. On Windows, executable lookup follows the
+[native launch rules](../../crates/maestro-process/README.md#command-preparation).
+
+Selection reads the home directory through the shared path expansion and checks
+write access on the package directory and its immediate parent itself. Unix access
+uses the OS write-access operation; Windows checks existence and read-only
+attributes, not directory ACLs, so a later update may still fail with a
+permissions error. See the
 [configuration library notes](../libraries/application-configuration.md).
 
 ## Workspace preferences

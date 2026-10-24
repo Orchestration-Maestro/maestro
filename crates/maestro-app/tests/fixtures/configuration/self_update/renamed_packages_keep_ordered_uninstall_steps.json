@@ -70,14 +70,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -147,14 +139,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -228,14 +212,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -248,7 +224,8 @@
         "stdout": "/opt/.bun/bin",
         "stderr": ""
       },
-      "update_package_name": "@new/maestro"
+      "update_package_name": "@new/maestro",
+      "home": "/home/sample"
     },
     "expected": {
       "value": {
@@ -300,9 +277,6 @@
         ]
       ],
       [
-        "home"
-      ],
-      [
         "exists",
         "/home/sample/.bun/install/global/node_modules"
       ],
@@ -313,14 +287,6 @@
       [
         "canonicalize",
         "/opt/.bun/install/global/node_modules"
-      ],
-      [
-        "access",
-        "/opt/.bun/install/global/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/.bun/install/global/node_modules/@old"
       ]
     ]
   }

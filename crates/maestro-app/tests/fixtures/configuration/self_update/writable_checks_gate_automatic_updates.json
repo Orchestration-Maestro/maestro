@@ -39,10 +39,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
       ]
     ]
   },
@@ -86,10 +82,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
       ]
     ]
   },
@@ -133,14 +125,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -184,14 +168,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -243,14 +219,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },
@@ -292,14 +260,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   }

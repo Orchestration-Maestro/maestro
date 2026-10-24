@@ -47,14 +47,6 @@
       [
         "canonicalize",
         "/custom/lib/node_modules"
-      ],
-      [
-        "access",
-        "/custom/lib/node_modules/agent"
-      ],
-      [
-        "access",
-        "/custom/lib/node_modules"
       ]
     ]
   },
@@ -106,14 +98,6 @@
       [
         "canonicalize",
         "/opt/tool/lib/node_modules"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "access",
-        "/opt/tool/lib/node_modules/@old"
       ]
     ]
   },

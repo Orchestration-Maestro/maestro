@@ -49,12 +49,9 @@ fn configuration_roots_flow_into_update_selection() {
 
 #[test]
 fn configured_bun_uses_both_global_roots() {
-    support::run(
-        include_str!(
-            "fixtures/configuration/self_update/configured_bun_uses_both_global_roots.json"
-        ),
-        false,
-    );
+    support::run_bun_roots(include_str!(
+        "fixtures/configuration/self_update/configured_bun_uses_both_global_roots.json"
+    ));
 }
 
 #[test]
