@@ -16,15 +16,39 @@ use web_sys::HtmlElement;
 
 /// Element tag of the copy control.
 const TAG: &str = "copy-button";
-/// Success feedback duration in milliseconds.
-const FEEDBACK_MS: i32 = 2000;
+/// Success feedback duration of a control built outside [`create`], in milliseconds.
+pub(crate) const FEEDBACK_MS: i32 = 2000;
 /// The active restoring timer while success feedback shows.
 type Feedback = Rc<RefCell<Option<Timer>>>;
 /// Localization a copy control resolves its labels through, replaceable by its creator.
 pub(crate) type Localization = Rc<RefCell<Rc<I18n>>>;
+/// Operands [`create`] hands to the constructor, which has no argument channel.
+struct Creating {
+    /// Labels' localization.
+    i18n: Localization,
+    /// Success feedback duration in milliseconds.
+    feedback: i32,
+    /// Notification after each feedback change, which a creator's own view follows.
+    changed: Option<Rc<dyn Fn()>>,
+}
 thread_local! {
-    /// Hands `create`'s localization to the constructor, which has no argument channel.
-    static CREATING: RefCell<Option<Localization>> = const { RefCell::new(None) };
+    /// Operands of the control under construction.
+    static CREATING: RefCell<Option<Creating>> = const { RefCell::new(None) };
+}
+/// One activation's retained operands, reached by the control's click subscription.
+struct Activation {
+    /// Element owning this state.
+    root: Link,
+    /// Page operands.
+    view: Rc<DomView>,
+    /// Labels' localization.
+    i18n: Localization,
+    /// Restoring timer while the success state shows.
+    feedback: Weak<RefCell<Option<Timer>>>,
+    /// Success feedback duration in milliseconds.
+    feedback_ms: i32,
+    /// Notification after each feedback change.
+    changed: Option<Rc<dyn Fn()>>,
 }
 /// Properties reflected onto the attributes; `title` is the element's own.
 const PROPERTIES: &[Property] = &[
@@ -43,6 +67,10 @@ struct CopyElement {
     click: Option<EventSubscription<Closure<dyn Fn()>>>,
     /// Restoring timer while the success state shows.
     feedback: Feedback,
+    /// Success feedback duration in milliseconds.
+    feedback_ms: i32,
+    /// Notification after each feedback change.
+    changed: Option<Rc<dyn Fn()>>,
     /// Accessors of the `text` and `showText` properties.
     _properties: Reflected,
 }
@@ -60,13 +88,15 @@ impl custom_element::CustomElement for CopyElement {
         };
         // Lifecycle callbacks have no error channel; a failed render leaves the element empty.
         let _ = render(&root, &self.view, &self.i18n.borrow(), false);
-        let (weak, view, i18n, feedback) = (
-            self.root.clone(),
-            Rc::clone(&self.view),
-            Rc::clone(&self.i18n),
-            Rc::downgrade(&self.feedback),
-        );
-        let callback = Closure::new(move || copy(&weak, (&view, &i18n), &feedback));
+        let activation = Rc::new(Activation {
+            root: self.root.clone(),
+            view: Rc::clone(&self.view),
+            i18n: Rc::clone(&self.i18n),
+            feedback: Rc::downgrade(&self.feedback),
+            feedback_ms: self.feedback_ms,
+            changed: self.changed.clone(),
+        });
+        let callback = Closure::new(move || copy(&activation));
         self.click = EventSubscription::new(root.into(), "click", callback).ok();
     }
     fn disconnected_callback(&mut self) {
@@ -76,47 +106,52 @@ impl custom_element::CustomElement for CopyElement {
     }
 }
 /// Copy the `text` attribute, then show success until the restoring timer fires.
-fn copy(
-    root: &Link,
-    (view, i18n): (&Rc<DomView>, &Localization),
-    feedback: &Weak<RefCell<Option<Timer>>>,
-) {
-    let Some(element) = live(root) else {
+fn copy(activation: &Rc<Activation>) {
+    let Some(element) = live(&activation.root) else {
         return;
     };
     let text = element.get_attribute("text").unwrap_or_default();
-    let work =
-        crate::utils::clipboard::copy_to_clipboard(&view.document, &text, ClipboardMode::Direct);
-    let (root, view, i18n, feedback) = (
-        root.clone(),
-        Rc::clone(view),
-        Rc::clone(i18n),
-        feedback.clone(),
+    let work = crate::utils::clipboard::copy_to_clipboard(
+        &activation.view.document,
+        &text,
+        ClipboardMode::Direct,
     );
+    let activation = Rc::clone(activation);
     wasm_bindgen_futures::spawn_local(async move {
-        let (true, Some(owner), Some(window)) = (work.await, feedback.upgrade(), web_sys::window())
+        let (true, Some(owner), Some(window)) =
+            (work.await, activation.feedback.upgrade(), web_sys::window())
         else {
             return;
         };
-        let (weak, restoring_view, restoring_i18n) =
-            (root.clone(), Rc::clone(&view), Rc::clone(&i18n));
-        let restore = Rc::new(move || {
-            let Some(owner) = feedback.upgrade() else {
-                return;
-            };
-            let finished = owner.borrow_mut().take();
-            drop(finished);
-            if let Some(element) = live(&weak) {
-                let _ = render(&element, &restoring_view, &restoring_i18n.borrow(), false);
-            }
-        });
-        let timer = crate::browser::timer::native(window, FEEDBACK_MS, false, restore).ok();
+        let restoring = Rc::clone(&activation);
+        let restore = Rc::new(move || restore(&restoring));
+        let timer =
+            crate::browser::timer::native(window, activation.feedback_ms, false, restore).ok();
         let replaced = owner.replace(timer);
         drop(replaced);
-        if let Some(element) = live(&root) {
-            let _ = render(&element, &view, &i18n.borrow(), true);
+        if let Some(element) = live(&activation.root) {
+            let _ = render(&element, &activation.view, &activation.i18n.borrow(), true);
+            changed(&activation);
         }
     });
+}
+/// Return the control to its idle state and tell the creator the feedback ended.
+fn restore(activation: &Activation) {
+    let Some(owner) = activation.feedback.upgrade() else {
+        return;
+    };
+    let finished = owner.borrow_mut().take();
+    drop(finished);
+    if let Some(element) = live(&activation.root) {
+        let _ = render(&element, &activation.view, &activation.i18n.borrow(), false);
+        changed(activation);
+    }
+}
+/// Notify the creator after a feedback change.
+fn changed(activation: &Activation) {
+    if let Some(changed) = &activation.changed {
+        changed();
+    }
 }
 /// Render the button with its icon and, when requested, the copied label.
 fn render(root: &HtmlElement, view: &DomView, i18n: &I18n, copied: bool) -> Result<(), JsValue> {
@@ -157,26 +192,37 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
     let observed = vec!["title".into(), "show-text".into()];
     crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
+        let creating = CREATING.take();
         CopyElement {
             root: js_sys::WeakRef::new(&root),
             view: Rc::clone(&view),
-            i18n: CREATING
-                .take()
-                .unwrap_or_else(|| Rc::new(RefCell::new(Rc::clone(&view.i18n)))),
+            i18n: creating.as_ref().map_or_else(
+                || Rc::new(RefCell::new(Rc::clone(&view.i18n))),
+                |creating| Rc::clone(&creating.i18n),
+            ),
             click: None,
             feedback: Rc::default(),
+            feedback_ms: creating.as_ref().map_or(FEEDBACK_MS, |c| c.feedback),
+            changed: creating.and_then(|creating| creating.changed),
             _properties: properties,
         }
     })
 }
-/// Create a copy control resolving its labels through `i18n`.
+/// Create a copy control resolving its labels through `i18n`, restoring after `feedback`
+/// milliseconds and notifying `changed` after each feedback change.
 /// # Errors
 /// Returns the browser's creation failure.
 pub(crate) fn create(
     document: &web_sys::Document,
     i18n: &Localization,
+    feedback: i32,
+    changed: Option<Rc<dyn Fn()>>,
 ) -> Result<web_sys::Element, JsValue> {
-    CREATING.set(Some(Rc::clone(i18n)));
+    CREATING.set(Some(Creating {
+        i18n: Rc::clone(i18n),
+        feedback,
+        changed,
+    }));
     let created = document.create_element(TAG);
     CREATING.take();
     created
