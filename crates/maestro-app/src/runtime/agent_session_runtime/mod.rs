@@ -8,17 +8,21 @@ pub use fork::ForkResult;
 use super::agent_session_services::{AgentSessionRuntimeDiagnostic, AgentSessionServices};
 use crate::agent_session::{AgentSession, thrown};
 use maestro_extensions::runner::emit_session_shutdown_event;
-use maestro_extensions::types::WithSession;
+use maestro_extensions::types::{SessionChangeResult, WithSession};
 use maestro_extensions::{
-    LoadExtensionsResult, SessionBeforeSwitchEvent, SessionBeforeSwitchReason,
-    SessionShutdownEvent, SessionShutdownReason, SessionStartEvent,
+    CommandContextOperations, EventError, ExtensionCommandContextActions, LoadExtensionsResult,
+    SessionBeforeSwitchEvent, SessionBeforeSwitchReason, SessionShutdownEvent,
+    SessionShutdownReason, SessionStartEvent,
 };
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
 use maestro_session::{
     Presence, SessionManager,
     session_cwd::{MissingSessionCwdError, assert_session_cwd_exists},
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 
 /// The local future the runtime's callbacks return.
 pub type RuntimeFuture<T> = <Local as Execution>::Future<'static, Result<T, DiagnosticErrorInfo>>;
@@ -107,6 +111,13 @@ impl std::fmt::Display for SessionImportFileNotFoundError {
 
 impl std::error::Error for SessionImportFileNotFoundError {}
 
+/// The runtime a stored command operation belongs to, while its caller keeps it.
+fn current(runtime: &Weak<AgentSessionRuntime>) -> Result<Rc<AgentSessionRuntime>, EventError> {
+    runtime
+        .upgrade()
+        .ok_or_else(|| "the session runtime has ended".into())
+}
+
 /// The session and services now in effect.
 struct Current {
     /// The session.
@@ -194,6 +205,73 @@ impl AgentSessionRuntime {
     /// detaching extension components before their context becomes stale.
     pub fn set_before_session_invalidate(&self, before_session_invalidate: Option<Rc<dyn Fn()>>) {
         *self.before_session_invalidate.borrow_mut() = before_session_invalidate;
+    }
+
+    /// The command-context operations a host binds for the current session.
+    ///
+    /// Each operation resolves the runtime and its current session when it runs, so a command
+    /// reaches the session a replacement installed.
+    #[must_use]
+    pub fn command_context_actions(self: &Rc<Self>) -> ExtensionCommandContextActions {
+        let runtime = Rc::downgrade(self);
+        let (idle, new, fork, navigate, switch, reload) = (
+            runtime.clone(),
+            runtime.clone(),
+            runtime.clone(),
+            runtime.clone(),
+            runtime.clone(),
+            runtime,
+        );
+        ExtensionCommandContextActions::new(CommandContextOperations {
+            wait_for_idle: Rc::new(move || {
+                let runtime = current(&idle);
+                Box::pin(async move {
+                    runtime?.session().agent().wait_for_idle().await;
+                    Ok(())
+                })
+            }),
+            new_session: Rc::new(move |options| {
+                let runtime = current(&new);
+                Box::pin(
+                    async move { Ok(runtime?.new_session(options.unwrap_or_default()).await?) },
+                )
+            }),
+            fork: Rc::new(move |entry_id, options| {
+                let runtime = current(&fork);
+                Box::pin(async move {
+                    let forked = runtime?
+                        .fork(&entry_id, options.unwrap_or_default())
+                        .await?;
+                    Ok(SessionChangeResult {
+                        cancelled: forked.cancelled,
+                    })
+                })
+            }),
+            navigate_tree: Rc::new(move |target_id, options| {
+                let runtime = current(&navigate);
+                Box::pin(async move {
+                    let session = runtime?.session();
+                    let navigated = session
+                        .navigate_tree(&target_id, options.unwrap_or_default())
+                        .await?;
+                    Ok(SessionChangeResult {
+                        cancelled: navigated.cancelled,
+                    })
+                })
+            }),
+            switch_session: Rc::new(move |session_path, options| {
+                let runtime = current(&switch);
+                Box::pin(async move {
+                    Ok(runtime?
+                        .switch_session(&session_path, None, options.unwrap_or_default())
+                        .await?)
+                })
+            }),
+            reload: Rc::new(move || {
+                let runtime = current(&reload);
+                Box::pin(async move { Ok(runtime?.session().reload().await?) })
+            }),
+        })
     }
 
     /// Tells the extensions about a coming switch; whether one cancelled it.
