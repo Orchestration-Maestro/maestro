@@ -1,4 +1,5 @@
-//! Editor submission, the single waiting input operation and the prompt loop.
+//! Editor submission, its session commands, the single waiting input operation and
+//! the prompt loop.
 use super::InteractiveMode;
 use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
@@ -66,13 +67,21 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs the export command when `text` is one, handing a failure beyond the transcript
-    /// to the terminal runtime, and says whether `text` was handled as a command.
+    /// Runs the session command `text` names, handing a failure beyond the transcript to
+    /// the terminal runtime, and says whether `text` was handled as a command.
     fn runs_command(&self, text: &str) -> bool {
-        if text != "/export" && !text.starts_with("/export ") {
+        let result = if text == "/name" || text.starts_with("/name ") {
+            self.handle_name_command(text)
+        } else if text == "/session" {
+            self.handle_session_command()
+        } else if text == "/debug" {
+            self.handle_debug_command()
+        } else if text == "/export" || text.starts_with("/export ") {
+            self.handle_export_command(text)
+        } else {
             return false;
-        }
-        if let Err(error) = self.handle_export_command(text) {
+        };
+        if let Err(error) = result {
             self.report(Err(error));
         }
         true

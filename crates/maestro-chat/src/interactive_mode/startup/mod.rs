@@ -37,13 +37,18 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's colour.
-    fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
-        let text = self.themes.theme().get()?.fg(color, text)?;
+    pub(super) fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
+        self.add_text(self.themes.theme().get()?.fg(color, text)?, 0);
+        Ok(())
+    }
+
+    /// Appends a spacer and one text, padded by one column and `padding_y` rows, then
+    /// schedules a frame.
+    pub(super) fn add_text(&self, text: String, padding_y: usize) {
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.chat_container
-            .add_child(Rc::new(Text::new(text, 1, 0, None)));
+            .add_child(Rc::new(Text::new(text, 1, padding_y, None)));
         self.ui.request_render(false);
-        Ok(())
     }
 
     /// Adds the startup help to the header container: nothing when startup is quiet

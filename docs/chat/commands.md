@@ -5,9 +5,20 @@ Text it recognizes as a command runs in the mode and answers on the transcript;
 every other submission reaches the [typed input](interactive-mode.md#typed-input)
 and the editor history as before.
 
-Today the mode handles shell input and one slash command, `/export`. Import, the
-offline viewer and packaged asset injection are not delivered yet (see
-[what is missing](#what-is-missing)).
+Today the mode handles shell input and the `/export`, `/name`, `/session` and
+`/debug` commands. Import, the offline viewer and packaged asset injection are not
+delivered yet (see [what is missing](#what-is-missing)).
+
+`maestro_chat::InteractiveMode` exposes the bodies of the session commands as
+methods. Each method reads the runtime's current session when it is called, so it
+follows a session switch.
+
+Editor submission routes typed commands to them after trimming the text: `/name`
+or `/name ` followed by a name, `/session`, `/debug` and `/export`. Other text,
+such as `/names` or `/session extra`, is ordinary input. Editor submission empties
+the editor before the command runs, so a command does not reach the waiting input
+or the editor's history. When a command fails, the failure goes to the terminal
+host.
 
 ## Shell input
 
@@ -92,6 +103,62 @@ Only an exact lower-case `.jsonl` suffix selects JSONL. `.JSONL`,
 `archive.jsonl.bak`, `notes.jsonl-summary` and an absent or empty path all select
 HTML. The comparison stays case-sensitive on purpose: the reference command
 selects JSONL for that suffix alone.
+
+## Session name
+
+`handle_name_command(text)` takes the whole command text. It drops a leading
+`/name`, then the outer whitespace under the shared whitespace policy. U+FEFF is
+trimmed and U+0085 is kept.
+
+- With no name left, it shows `Session name: <name>` in the dim colour, or the
+  warning `Usage: /name <name>` when the session has no name.
+- Otherwise it records the name through the session and shows
+  `Session name set: <name>`. The confirmation repeats the name that was
+  selected, even when a session listener changes the stored name or the editor.
+
+Each notice appends an empty row and a padded text row to the transcript and
+requests a frame. A stored name that is not text, or a failure to record the
+name, is returned as an error, and no notice is added.
+
+## Session information
+
+`handle_session_command()` reads the current session's statistics and name and
+appends one padded text block to the transcript:
+
+- `Session Info` in bold, then `Name:` when the session has a name, `File:` with
+  the session file or `In-memory` when there is none, and `ID:`. An empty file
+  name is shown as given.
+- `Messages`, with the user, assistant, tool call, tool result and total counts.
+- `Tokens`, with input, output and total tokens, plus cache reads and cache writes
+  only when they are above zero. Token totals use the grouping and decimal
+  separator of the locale chosen by `LC_ALL`, `LC_MESSAGES` or `LANG`, with at most
+  three decimals.
+- `Cost`, only when the cost is above zero, with four decimals. A cost that rounds
+  to `0.0000` is still shown.
+
+Labels use the dim colour and headings are bold. A malformed stored record is
+returned as the statistics owner's error.
+
+## Debug capture
+
+`handle_debug_command()` renders the presentation at the terminal's width, then
+replaces the debug log with a capture, creating its directory. The log is
+`maestro-debug.log` in the agent directory, `~/.maestro/agent` unless
+`MAESTRO_CODING_AGENT_DIR` names another one. It holds:
+
+1. `Debug output at` with the UTC time, the terminal size and the rendered line
+   count.
+2. Each rendered line as `[index] (w=width) "text"`, with its visible width and
+   its JSON-escaped text, styling included.
+3. Each session message as one compact JSON line, in history order.
+
+After the write, the transcript shows `✓ Debug log written` and the log path, so
+the capture never contains its own notice. A failed write is returned, and no
+notice or frame follows.
+
+The toolkit's global debug key (Shift+Ctrl+D) runs the same capture whatever has
+focus. The key handler does not keep the mode alive. A failure is handed to the
+terminal host, which reports it.
 
 ## What is missing
 

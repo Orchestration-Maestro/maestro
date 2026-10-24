@@ -8,6 +8,7 @@ session events, the expansion and thinking shortcuts, thinking and model
 cycling, the editor border, external editing and image paste. Streaming messages,
 installed custom headers, the terminal title and the other integrations are
 still to come.
+[Interactive commands](commands.md) describes the session command methods.
 
 ## Construction
 
@@ -35,12 +36,13 @@ header, transcript, pending-messages, status, upper widget, editor and lower wid
 containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
-editor submission and starts the terminal. A terminal start failure is returned and leaves the mode
-uninitialized. Once started, it subscribes to the session events and sets the window
-title. A theme change then invalidates the presentation, recolours the editor border
-and requests a frame, and a branch change requests a frame. Neither callback keeps
-the mode alive. Last, it lists the loaded resources and their diagnostics in the
-transcript and then replays the session (see below).
+editor submission and the global debug key, and starts the terminal. A terminal
+start failure is returned and leaves the mode uninitialized. Once started, it
+subscribes to the session events and sets the window title. A theme change then
+invalidates the presentation, recolours the editor border and requests a frame,
+and a branch change requests a frame. Neither callback keeps the mode alive. Last,
+it lists the loaded resources and their diagnostics in the transcript and then
+replays the session (see below).
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
@@ -148,9 +150,10 @@ editor, with the key bound to `tui.input.submit` (Enter by default). Submitted
 text loses its outer whitespace under the shared whitespace policy: Unicode white
 space other than U+0085, plus U+FEFF. U+0085, U+200B, inner spaces and line breaks
 stay. Submission ignores text that is empty after trimming: no input receives it
-and the history does not record it. While the session compacts or a response
-streams, submitted text is queued instead (see Queued input) and no input receives
-it.
+and the history does not record it. The session commands in
+[Interactive commands](commands.md) are handled before this step. While the session
+compacts or a response streams, submitted text is queued instead (see Queued
+input) and no input receives it.
 
 Only one input waits at a time. The future starts waiting when it is first
 polled, not when it is created, and it does not borrow the mode. When it waits,
