@@ -728,7 +728,7 @@ fn context_projection_excludes_the_abandoned_sibling() {
     );
     on_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
-        let first = append(&h, &[user(&json!("msg1"), 1)]);
+        append(&h, &[user(&json!("msg1"), 1)]);
         let second = append(
             &h,
             &[crate::support::session_harness::assistant(
@@ -754,7 +754,6 @@ fn context_projection_excludes_the_abandoned_sibling() {
             .map(crate::support::session_harness::message_text)
             .collect();
         assert_eq!(json!(texts), expected);
-        assert!(!first.is_empty());
     });
 }
 

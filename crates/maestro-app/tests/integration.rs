@@ -14,6 +14,7 @@ mod analysis_shared;
 mod analysis_tools;
 mod analysis_transcripts;
 mod analysis_usage;
+mod agent_session_stats_checks;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
@@ -111,6 +112,7 @@ mod pdf_pages;
 mod pptx_attachments;
 mod prompt_templates_checks;
 mod queued_slash_command_followup_checks;
+mod reload_stale_resource_settings_checks;
 mod resource_extension_loading;
 #[cfg(unix)]
 #[path = "support/resource_fixtures.rs"]
@@ -206,6 +208,7 @@ mod support {
     pub mod spreadsheet_native;
 }
 mod theme_selection;
+mod tree_cancel_compacting_checks;
 mod tree_interface;
 mod tree_traversal_checks;
 #[cfg(not(target_arch = "wasm32"))]
