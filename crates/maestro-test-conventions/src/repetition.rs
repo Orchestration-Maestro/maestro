@@ -1,10 +1,11 @@
+use std::ops::Range;
 use std::path::Path;
 
 use maestro_markdown::{Kind, MarkedOptions, Node, parse_with_options};
-use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use ra_ap_rustc_lexer::TokenKind;
 use syn::visit::Visit;
 
-use crate::source::{Member, Source, cfg_test, test_layout};
+use crate::source::{Member, Source, cfg_test, test_layout, tokens};
 
 /// Reject repeated documentation and invalid test source layouts.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -20,16 +21,17 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 
 /// Check documentation tokens without interpreting comment-like text in literals.
 fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String> {
-    let mut offset = ra_ap_rustc_lexer::strip_shebang(&source.contents).unwrap_or(0);
-    let mut line = crate::source::line(&source.contents, offset);
+    let mut lexed = tokens(&source.contents).peekable();
+    let mut line = lexed.peek().map_or(1, |(_, range)| {
+        crate::source::line(&source.contents, range.start)
+    });
     let mut block = Documentation::default();
     let mut style = None;
-    for token in ra_ap_rustc_lexer::tokenize(&source.contents[offset..], FrontmatterAllowed::No) {
-        let end = offset + token.len as usize;
-        let body = match token.kind {
+    for (kind, Range { start, end }) in lexed {
+        let body = match kind {
             TokenKind::LineComment {
                 doc_style: Some(owner),
-            } => Some((&source.contents[offset + 3..end], owner)),
+            } => Some((&source.contents[start + 3..end], owner)),
             TokenKind::BlockComment {
                 doc_style: Some(_), ..
             } if !generated_bindings => {
@@ -54,8 +56,7 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
             }
             block.comment(body, line);
         }
-        line += crate::source::count_newlines(&source.contents[offset..end]);
-        offset = end;
+        line += crate::source::count_newlines(&source.contents[start..end]);
     }
     block.check(source)
 }

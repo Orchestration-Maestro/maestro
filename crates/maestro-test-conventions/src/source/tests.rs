@@ -3,8 +3,12 @@
 #[path = "../../tests/support/scratch.rs"]
 mod scratch;
 
+use std::path::Path;
+
+use ra_ap_rustc_lexer::TokenKind;
+
 use self::scratch::Scratch;
-use super::{impl_item_attributes, read_manifest, trait_item_attributes};
+use super::{files, impl_item_attributes, read_manifest, tokens, trait_item_attributes};
 
 /// Reduce attributes to their `(path, argument)` identifiers in order.
 fn names(attributes: &[syn::Attribute]) -> Vec<(String, String)> {
@@ -126,4 +130,52 @@ fn documentation_newline_scans_grow_linearly() {
     println!("newline scan bytes: N={small}, 2N={large}");
     assert!(small > 0, "newline traversal must be observed");
     assert_eq!(large, 2 * small, "doubling documentation doubles scan work");
+}
+
+/// Count lexer walk entry identifiers in one file's token stream, macro arguments included.
+fn lexer_walks(source: &str) -> usize {
+    tokens(source)
+        .filter(|(kind, range)| {
+            matches!(kind, TokenKind::Ident)
+                && ["tokenize", "advance_token"].contains(&&source[range.clone()])
+        })
+        .count()
+}
+
+#[test]
+fn token_walks_stay_in_the_source_owner() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let walks: Vec<_> = files(&root)
+        .unwrap()
+        .into_iter()
+        .filter_map(|path| {
+            let count = lexer_walks(&std::fs::read_to_string(&path).unwrap());
+            let relative = path.strip_prefix(&root).unwrap();
+            // The duplicate checker's flat oracle stays independent of the owner it is compared with.
+            let allowed = usize::from(
+                relative == Path::new("source.rs") || relative == Path::new("duplicates/tests.rs"),
+            );
+            (count != allowed).then(|| (relative.display().to_string(), count))
+        })
+        .collect();
+    assert_eq!(walks, []);
+}
+
+#[test]
+fn token_walk_guard_rejects_independent_walks() {
+    let bypasses = [
+        "fn exact_offset(source: &str) -> Option<usize> {\n    let mut offset = ra_ap_rustc_lexer::strip_shebang(source).unwrap_or(0);\n    for token in ra_ap_rustc_lexer::tokenize(&source[offset..], FrontmatterAllowed::No) {\n        offset += token.len as usize;\n    }\n    None\n}\n",
+        "fn counts(s: &str) -> Vec<usize> {\n    vec![ra_ap_rustc_lexer::tokenize(s, FrontmatterAllowed::No).count()]\n}\n",
+        "fn walk() {\n    let walk = |s: &str| lexer::tokenize(s, FrontmatterAllowed::No).count();\n}\n",
+        "impl Walker {\n    fn walk(&self, s: &str) -> usize {\n        tokenize(s, FrontmatterAllowed::No).count()\n    }\n}\n",
+        "use ra_ap_rustc_lexer::tokenize as lex;\n",
+        "fn walk(s: &str) {\n    Cursor::new(s, FrontmatterAllowed::No).advance_token();\n}\n",
+    ];
+    let accepted: Vec<_> = bypasses
+        .into_iter()
+        .filter(|bypass| lexer_walks(bypass) == 0)
+        .collect();
+    assert_eq!(accepted, Vec::<&str>::new());
+    let control = "fn walk(s: &str) {\n    let _ = crate::source::tokens(s);\n    tokens(s).count();\n    // tokenize\n    let _ = \"advance_token\";\n}\n";
+    assert_eq!(lexer_walks(control), 0);
 }

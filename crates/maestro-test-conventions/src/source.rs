@@ -1,3 +1,4 @@
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use cargo_metadata::Metadata;
@@ -103,21 +104,27 @@ pub(crate) fn count_newlines(source: &str) -> usize {
     source.bytes().filter(|byte| *byte == b'\n').count()
 }
 
+/// Lex source after any shebang line, yielding each token's kind and byte range.
+pub(crate) fn tokens(source: &str) -> impl Iterator<Item = (TokenKind, Range<usize>)> {
+    let mut offset = ra_ap_rustc_lexer::strip_shebang(source).unwrap_or(0);
+    ra_ap_rustc_lexer::tokenize(&source[offset..], FrontmatterAllowed::No).map(move |token| {
+        let start = offset;
+        offset += token.len as usize;
+        (token.kind, start..offset)
+    })
+}
+
 /// Extract line and terminated block comments without inspecting literals.
 pub(crate) fn comments(source: &str) -> Vec<(usize, &str)> {
-    let mut offset = ra_ap_rustc_lexer::strip_shebang(source).unwrap_or(0);
     let mut comments = Vec::new();
-    for token in ra_ap_rustc_lexer::tokenize(&source[offset..], FrontmatterAllowed::No) {
-        let length = token.len as usize;
-        let end = offset + length;
-        match token.kind {
-            TokenKind::LineComment { .. } => comments.push((offset + 2, &source[offset + 2..end])),
+    for (kind, Range { start, end }) in tokens(source) {
+        match kind {
+            TokenKind::LineComment { .. } => comments.push((start + 2, &source[start + 2..end])),
             TokenKind::BlockComment {
                 terminated: true, ..
-            } => comments.push((offset + 2, &source[offset + 2..end - 2])),
+            } => comments.push((start + 2, &source[start + 2..end - 2])),
             _ => {}
         }
-        offset = end;
     }
     comments
 }

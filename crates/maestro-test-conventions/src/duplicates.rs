@@ -1,9 +1,10 @@
 use std::collections::HashMap;
+use std::ops::Range;
 
-use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use ra_ap_rustc_lexer::TokenKind;
 use syn::{spanned::Spanned, visit::Visit};
 
-use crate::source::{Member, Source, cfg_test, inherit_test_context, test_layout};
+use crate::source::{Member, Source, cfg_test, inherit_test_context, test_layout, tokens};
 
 /// Exact lexical identity, with nested delimiters represented by interned children.
 #[derive(PartialEq, Eq, Hash)]
@@ -57,30 +58,26 @@ impl<'a> Tokens<'a> {
     fn blocks(&mut self, source: &'a str) -> HashMap<usize, (usize, usize)> {
         let mut blocks = HashMap::new();
         let mut stack: Vec<Frame<'a>> = Vec::new();
-        let mut offset = ra_ap_rustc_lexer::strip_shebang(source).unwrap_or(0);
-        for token in ra_ap_rustc_lexer::tokenize(&source[offset..], FrontmatterAllowed::No) {
-            let end = offset + token.len as usize;
-            let text = &source[offset..end];
+        for (kind, Range { start, end }) in tokens(source) {
+            let text = &source[start..end];
             if matches!(
-                token.kind,
+                kind,
                 TokenKind::Whitespace
                     | TokenKind::LineComment { .. }
                     | TokenKind::BlockComment { .. }
             ) {
-                offset = end;
                 continue;
             }
             match text {
                 "(" | "[" | "{" => stack.push(Frame {
                     opening: text,
-                    start: offset,
+                    start,
                     children: Vec::new(),
                     count: 0,
                 }),
                 ")" | "]" | "}" => self.close(&mut stack, &mut blocks),
                 _ => self.atom(text, &mut stack),
             }
-            offset = end;
         }
         blocks
     }
