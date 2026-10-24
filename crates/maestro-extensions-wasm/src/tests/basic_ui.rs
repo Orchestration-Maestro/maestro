@@ -120,58 +120,82 @@ async fn requests(driver: &mut impl Driver, rows: &[Row], count: usize) -> Resul
     Ok(())
 }
 
-/// Declares one corpus-group test that runs on both adapters.
-macro_rules! group_test {
-    ($test:ident, $body:ident, $group:ident, $count:literal) => {
-        #[test]
-        fn $test() -> Result<(), String> {
-            on_both_adapters!($body)
-        }
-
-        async fn $body(driver: &mut impl Driver) -> Result<(), String> {
-            let rows = corpus().$group;
-            requests(driver, &rows, $count).await
-        }
-    };
+/// Runs the notifications rows through a fresh acquisition on both adapters.
+async fn notifications(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().notifications;
+    requests(driver, &rows, 8).await
 }
 
-group_test!(
-    notifications_keep_message_and_optional_severity,
-    notifications,
-    notifications,
-    8
-);
-group_test!(
-    status_calls_keep_keys_replacement_and_clear,
-    status_calls,
-    status,
-    7
-);
-group_test!(
-    working_message_keeps_empty_and_reset_requests,
-    working_messages,
-    working_messages,
-    3
-);
-group_test!(
-    working_indicator_keeps_independent_optional_fields,
-    working_indicator,
-    working_indicator,
-    10
-);
-group_test!(
-    thinking_labels_keep_empty_and_reset_requests,
-    thinking_labels,
-    thinking_labels,
-    3
-);
-group_test!(titles_keep_empty_and_literal_text, titles, titles, 2);
-group_test!(
-    fixed_widgets_keep_lines_placement_and_removal,
-    widgets,
-    widgets,
-    9
-);
+#[test]
+fn notifications_keep_message_and_optional_severity() -> Result<(), String> {
+    on_both_adapters!(notifications)
+}
+
+/// Runs the status rows through a fresh acquisition on both adapters.
+async fn status_calls(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().status;
+    requests(driver, &rows, 7).await
+}
+
+#[test]
+fn status_calls_keep_keys_replacement_and_clear() -> Result<(), String> {
+    on_both_adapters!(status_calls)
+}
+
+/// Runs the working messages rows through a fresh acquisition on both adapters.
+async fn working_messages(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().working_messages;
+    requests(driver, &rows, 3).await
+}
+
+#[test]
+fn working_message_keeps_empty_and_reset_requests() -> Result<(), String> {
+    on_both_adapters!(working_messages)
+}
+
+/// Runs the working indicator rows through a fresh acquisition on both adapters.
+async fn working_indicator(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().working_indicator;
+    requests(driver, &rows, 10).await
+}
+
+#[test]
+fn working_indicator_keeps_independent_optional_fields() -> Result<(), String> {
+    on_both_adapters!(working_indicator)
+}
+
+/// Runs the thinking labels rows through a fresh acquisition on both adapters.
+async fn thinking_labels(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().thinking_labels;
+    requests(driver, &rows, 3).await
+}
+
+#[test]
+fn thinking_labels_keep_empty_and_reset_requests() -> Result<(), String> {
+    on_both_adapters!(thinking_labels)
+}
+
+/// Runs the titles rows through a fresh acquisition on both adapters.
+async fn titles(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().titles;
+    requests(driver, &rows, 2).await
+}
+
+#[test]
+fn titles_keep_empty_and_literal_text() -> Result<(), String> {
+    on_both_adapters!(titles)
+}
+
+/// Runs the widgets rows through a fresh acquisition on both adapters.
+async fn widgets(driver: &mut impl Driver) -> Result<(), String> {
+    let rows = corpus().widgets;
+    requests(driver, &rows, 9).await
+}
+
+#[test]
+fn fixed_widgets_keep_lines_placement_and_removal() -> Result<(), String> {
+    on_both_adapters!(widgets)
+}
 
 /// Toggling visibility must not rewrite the message or the indicator options.
 async fn visibility(driver: &mut impl Driver) -> Result<(), String> {
