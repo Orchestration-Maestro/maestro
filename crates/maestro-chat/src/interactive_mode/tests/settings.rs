@@ -1,9 +1,11 @@
 //! Live settings through the panel the mode shows in place of its editor.
+use super::models::model_input;
+use super::transcript;
 use super::typed::{poll, recalled, submit};
 use super::{Setup, World, complete, isolated, start};
 use crate::SettingsSelectorComponent;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
-use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting};
+use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
 use maestro_theme::{ThemeDirectories, ThemeState};
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition};
 use maestro_tui::tui::InputHandler;
@@ -114,28 +116,10 @@ fn rows(world: &World) -> Vec<String> {
 /// Whether the panel's rendered rows hold a row starting with `label` and carrying `value`.
 fn shows_value(world: &World, label: &str, value: &str) -> bool {
     rows(world).iter().any(|row| {
-        let text = strip_ansi(row);
+        let text = strip_ansi(row).unwrap();
         let text = text.trim_start_matches(|character: char| !character.is_alphanumeric());
         text.starts_with(label) && text.split_whitespace().last() == Some(value)
     })
-}
-
-/// The printable text of `row`, without its style escapes.
-fn strip_ansi(row: &str) -> String {
-    let mut text = String::new();
-    let mut chars = row.chars();
-    while let Some(character) = chars.next() {
-        if character != '\u{1b}' {
-            text.push(character);
-            continue;
-        }
-        for character in chars.by_ref() {
-            if character.is_ascii_alphabetic() {
-                break;
-            }
-        }
-    }
-    text
 }
 
 #[test]
@@ -382,6 +366,10 @@ fn settings_session_modes_use_distinct_live_policies() {
     );
 }
 
+/// Each of the four choices must reach the live agent the session executes prompts on, so
+/// the next request is built with it: the session prompts `self.agent`
+/// (`agent_session/prompting.rs:73`) and the request options read that same agent's
+/// `transport` (`maestro-agent/src/agent/execution.rs:234`).
 #[test]
 fn settings_transport_change_reaches_the_live_agent() {
     isolated(
@@ -422,22 +410,7 @@ fn footer_shows(world: &World, label: &str) -> bool {
         .footer
         .render(100)
         .iter()
-        .any(|row| strip_ansi(row).contains(label))
-}
-
-/// A retained tool row's inputs over `world`, with an optional self-rendering request.
-fn tool_params(world: &World, id: &str) -> crate::ToolExecutionParams {
-    crate::ToolExecutionParams {
-        tool_name: "unknown_tool".into(),
-        tool_call_id: id.into(),
-        args: None,
-        options: crate::ToolExecutionOptions::default(),
-        tool_definition: None,
-        built_in_tool_definition: None,
-        environment: Rc::clone(&world.mode.tool_environment),
-        cwd: String::new(),
-        request_render: Rc::new(|| {}),
-    }
+        .any(|row| strip_ansi(row).unwrap().contains(label))
 }
 
 /// A one-pixel PNG as a retained tool result, carrying `text` beside the image.
@@ -467,7 +440,9 @@ fn image_result(text: &str) -> crate::ToolExecutionResult {
 fn retain_tools(world: &World, ids: &[&str]) -> Vec<Rc<crate::ToolExecutionComponent>> {
     ids.iter()
         .map(|id| {
-            let tool = Rc::new(crate::ToolExecutionComponent::new(tool_params(world, id)).unwrap());
+            let tool = Rc::new(
+                crate::ToolExecutionComponent::new(transcript::tool_params(world, id)).unwrap(),
+            );
             tool.update_result(image_result(id), false).unwrap();
             world
                 .mode
@@ -644,7 +619,7 @@ fn use_reasoning_model(world: &World, provider: &str, id: &str) {
                     api: Some("openai-completions".into()),
                     models: Some(vec![maestro_app::ProviderModelInput {
                         reasoning: true,
-                        ..provider_model(id)
+                        ..model_input(id)
                     }]),
                     ..maestro_app::ProviderConfigInput::default()
                 },
@@ -653,24 +628,6 @@ fn use_reasoning_model(world: &World, provider: &str, id: &str) {
         .unwrap();
     let model = session.model_registry().find(provider, id).unwrap();
     complete(session.set_model(model)).unwrap();
-}
-
-/// A catalog definition named `id`, without reasoning.
-fn provider_model(id: &str) -> maestro_app::ProviderModelInput {
-    maestro_app::ProviderModelInput {
-        id: id.to_owned(),
-        name: id.to_owned(),
-        api: None,
-        base_url: None,
-        reasoning: false,
-        thinking_level_map: None,
-        input: vec![maestro_app::ModelInput::Text],
-        cost: maestro_app::ModelCost::default(),
-        context_window: 1000.0,
-        max_tokens: 100.0,
-        headers: None,
-        compat: None,
-    }
 }
 
 #[test]
@@ -726,7 +683,13 @@ fn settings_thinking_visibility_rebuilds_retained_transcript() {
                 {"type": "thinking", "thinking": "CONSIDERED"},
                 {"type": "text", "text": "ANSWER"}
             ]);
-            append_messages(&world, vec![user_record("ASK"), assistant_record(&content)]);
+            append_messages(
+                &world,
+                vec![
+                    transcript::user_record("ASK"),
+                    transcript::assistant(&content, "stop", None),
+                ],
+            );
             world.mode.render_initial_messages().unwrap();
             let before = world.mode.chat_container.render(100);
             assert!(before.iter().any(|row| row.contains("CONSIDERED")));
@@ -762,20 +725,6 @@ fn append_messages(world: &World, messages: Vec<serde_json::Value>) {
     for message in messages {
         manager.append_message(message).unwrap();
     }
-}
-
-/// A stored assistant record with `content`.
-fn assistant_record(content: &serde_json::Value) -> serde_json::Value {
-    serde_json::json!({"role": "assistant", "content": content, "api": "controlled",
-        "provider": "controlled", "model": "controlled",
-        "usage": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
-        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}},
-        "stopReason": "stop", "timestamp": 0})
-}
-
-/// A stored user record with text content.
-fn user_record(text: &str) -> serde_json::Value {
-    serde_json::json!({"role": "user", "content": text, "timestamp": 0})
 }
 
 #[test]

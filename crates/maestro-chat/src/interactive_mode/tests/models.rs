@@ -34,7 +34,7 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
 }
 
 /// A catalog model definition named `id`.
-fn model_input(id: &str) -> ProviderModelInput {
+pub(super) fn model_input(id: &str) -> ProviderModelInput {
     ProviderModelInput {
         id: id.to_owned(),
         name: id.to_owned(),
