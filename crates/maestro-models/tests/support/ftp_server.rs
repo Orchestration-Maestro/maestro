@@ -336,6 +336,10 @@ fn session(
     scenario: &Scenario,
     observed: &Observed,
 ) -> std::io::Result<()> {
+    // A piece written while an earlier one awaits its acknowledgement would otherwise wait in
+    // this side's send buffer after its progress marker, so the marker would not show the bytes
+    // reached the client.
+    control.set_nodelay(true)?;
     let mut reader = BufReader::new(control.try_clone()?);
     match scripted(scenario, "") {
         Some(pieces) => pieces.send(&mut control, observed)?,
@@ -455,7 +459,9 @@ fn vanished(error: &std::io::Error) -> bool {
 fn accepted(data: &mut Option<TcpListener>) -> std::io::Result<TcpStream> {
     // The client connects before it sends the command, so the connection is already queued.
     let listener = data.take().ok_or_else(no_data)?;
-    listener.accept().map(|(stream, _)| stream)
+    let (stream, _) = listener.accept()?;
+    stream.set_nodelay(true)?;
+    Ok(stream)
 }
 
 /// Answer `FEAT` with its scripted reply.
