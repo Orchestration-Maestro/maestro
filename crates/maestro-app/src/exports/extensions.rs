@@ -1,7 +1,7 @@
 //! Existing extensions owners exposed at the application root.
 
 pub use maestro_extensions::{
-    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionActions,
+    AutocompleteProviderFactory, CompactOptions, ContextUsage, EventError, ExtensionActions,
     ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
     ExtensionContextActions, ExtensionError, ExtensionRuntime, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer,

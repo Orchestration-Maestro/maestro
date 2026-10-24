@@ -17,6 +17,7 @@ use std::{
     rc::Rc,
 };
 
+mod autocomplete;
 mod key_display;
 mod queues;
 mod replay;
@@ -90,6 +91,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
 }
 
 impl InteractiveMode {
@@ -158,6 +161,7 @@ impl InteractiveMode {
             is_initialized: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
@@ -168,19 +172,21 @@ impl InteractiveMode {
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources with their diagnostics and replays the session, once; theme
-    /// changes then refresh the editor border, and theme and branch changes request fresh
-    /// frames.
+    /// Prepares both search programs, installs completion, builds the header, adds every
+    /// container in order, focuses the editor, binds the transcript shortcuts, installs
+    /// editor submission, starts the terminal, lists the loaded resources with their
+    /// diagnostics and replays the session, once; theme changes then refresh the editor
+    /// border, and theme and branch changes request fresh frames.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing or of the replay.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// Returns the failure of the managed binary directory, of the header's theme colours,
+    /// of the terminal start, of the resource listing or of the replay.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         for child in [
             &self.header_container,

@@ -4,7 +4,7 @@ use super::{
     format_display_path, format_scope_groups, get_short_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
-use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles};
+use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles, start};
 use crate::{InteractiveMode, InteractiveModeOptions};
 use maestro_app::{
     ContextFile, PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope, home_directory,
@@ -354,7 +354,7 @@ fn check_listing(directory: &Path, listing: Listing, expected: Expected) -> Worl
         };
         world.mode.show_loaded_resources(options).unwrap();
     } else {
-        world.mode.init().unwrap();
+        start(&world);
     }
     let width = listing.width.unwrap_or(WIDTH);
     let theme = world.themes.theme().get().unwrap();
@@ -388,9 +388,9 @@ fn loaded_resources_use_compact_defaults() {
             sections(&world.mode).len(),
             chat.children().borrow().len() / 2
         );
-        world.mode.init().unwrap();
+        start(world);
         let children = chat.children().borrow().len();
-        world.mode.init().unwrap();
+        start(world);
         assert_eq!(chat.children().borrow().len(), children);
         assert_eq!(world.terminal.events(), ["start"]);
     });
@@ -500,7 +500,7 @@ fn resource_section_heading_refreshes_on_toggle_without_restyling_body() {
                 ..Setup::default()
             }
             .build(directory);
-            world.mode.init().unwrap();
+            start(&world);
             let dark = world.themes.theme().get().unwrap();
             let chat = &world.mode.chat_container;
             assert_eq!(chat.render(width), painted(&dark, &before));
@@ -570,7 +570,7 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
             }
             .build(directory);
             world.mode.tool_output_expanded.set(true);
-            world.mode.init().unwrap();
+            start(&world);
             let theme = world.themes.theme().get().unwrap();
             let row = theme.fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
             assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);

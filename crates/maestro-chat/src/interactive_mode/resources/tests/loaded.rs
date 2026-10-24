@@ -13,7 +13,7 @@ use super::loaded_support::{
     listings, world,
 };
 use super::{HOME, RecordedSource, expand_all, in_home, repainted, sections, unknown_home};
-use crate::interactive_mode::tests::{Setup, World, dark, light, painted, roles};
+use crate::interactive_mode::tests::{Setup, World, dark, light, painted, roles, start};
 use maestro_app::{ResourceDiagnostic, SourceInfo, home_directory};
 use maestro_tui::Component;
 use std::{
@@ -477,10 +477,19 @@ fn resource_diagnostics_remain_visible_when_quiet() {
         };
         listing.diagnostics = false;
         let (world, _) = world(directory, listing);
-        world.mode.init().unwrap();
+        start(&world);
+        // Completion reads the prompt templates and skills before the listing does.
         assert_eq!(
             *world.loader.calls.borrow(),
-            ["skills", "prompts", "themes", "extensions", "extensions"]
+            [
+                "prompts",
+                "skills",
+                "skills",
+                "prompts",
+                "themes",
+                "extensions",
+                "extensions"
+            ]
         );
         let theme = world.themes.theme().get().unwrap();
         assert_eq!(
