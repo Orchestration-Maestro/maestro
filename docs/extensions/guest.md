@@ -608,6 +608,16 @@ already stored the label it chose, so the next session start applies it. Loading
 enables the component runtime; `examples/extensions/README.md` gives the build
 and controlled-run commands.
 
+### A prompt toggle
+
+`examples/extensions/pirate.rs` registers a `/pirate` command and a
+`before_agent_start` handler that share one boolean the factory instance owns.
+The command flips that boolean and reports the new state through
+`ExtensionUIContext::notify`; the handler appends this example's instructions to
+the supplied `systemPrompt` only while the boolean is set and otherwise returns
+no override. A refused notification leaves the flip in place. Loading it into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
