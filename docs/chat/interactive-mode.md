@@ -376,4 +376,15 @@ Unix: an existing file or symbolic link of the same name is left untouched, and 
 edit stops with an error before the editor runs. Neither action keeps the mode
 alive; a clipboard read in progress keeps the mode until it completes.
 
-Suspending to the background is not part of the mode yet.
+## Suspend
+
+The key bound to `app.suspend` (Ctrl+Z by default) sends the mode to the
+background. From the key press until the process continues, interrupts are
+ignored. The mode stops the terminal and sends the stop signal to its process
+group. When the shell continues the process, interrupts take their default action
+again and the mode restarts the terminal once, with a full redraw. If stopping the
+terminal or signalling the group fails, interrupts take their default action again,
+a later continue signal does nothing, and the failure is handed to the terminal's
+runtime host. The continue signal is observed on the terminal's Tokio runtime,
+which must have I/O enabled. On Windows the key only shows
+`Suspend to background is not supported on Windows`.
