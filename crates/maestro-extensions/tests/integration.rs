@@ -12,6 +12,7 @@ mod hook_boundaries;
 mod hook_dispatch;
 mod hook_exports;
 mod hook_transforms;
+mod live_widget_map;
 mod local_registration;
 mod message_renderer_calls;
 mod registered_tools;

@@ -449,7 +449,10 @@ The read-only footer contract `ReadonlyFooterDataProvider`, its live
 belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
 because extension footer factories receive it. The application keeps the footer
 metadata owner, its branch, watch, count and status policy and its existing public
-paths, which re-export the moved declarations.
+paths, which re-export the moved declarations. The keyed live map reuses
+`maestro-listeners::Listeners` for insertion-order traversal. Replacement keeps
+position; removal returns ownership for release outside collection borrows.
+Clones retain one collection, and active walks observe edits until exhaustion.
 Native repository discovery belongs to `maestro-workspace::workspace::git`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.
