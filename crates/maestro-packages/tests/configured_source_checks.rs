@@ -44,7 +44,7 @@ fn source_classification_preserves_npm_and_local_precedence() {
     };
     let rows: Vec<SourceVector> =
         serde_json::from_str(include_str!("source_vectors.json")).unwrap();
-    let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]));
+    let (manager, _, _) = support::manager_below(&root, &json!({}), &json!([]), None);
     let mut visited = std::collections::HashSet::new();
     for row in rows {
         assert!(visited.insert(row.input.clone()), "duplicate query");
@@ -81,7 +81,7 @@ fn scoped_local_storage_and_matching_use_different_bases() {
             "project" => Project,
             _ => panic!("unknown scope"),
         };
-        let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]));
+        let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
         let input = support::below(&root, &row.input);
         assert!(manager.add_source_to_settings(&input, Some(scope)).unwrap());
         let stored = match scope {
@@ -92,7 +92,7 @@ fn scoped_local_storage_and_matching_use_different_bases() {
         assert!(!manager.add_source_to_settings(&input, Some(scope)).unwrap());
     }
     assert_eq!(visited.len(), 26);
-    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]));
+    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
     let project = support::below(&root, "/work/project/.maestro");
     assert!(
         manager
@@ -328,7 +328,7 @@ fn local_resolution_reads_home_and_cwd_only_when_needed() {
     else {
         return;
     };
-    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]));
+    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
     let absolute = support::below(&root, "/absolute/pkg");
     let local = support::below(&root, "/home/reader/agent/pkg");
     for path in [&absolute, &local] {
@@ -727,7 +727,7 @@ fn relative_home_storage_needs_cwd() {
     let Some((root, _removed)) = case_in_removed_cwd("relative home", home) else {
         return;
     };
-    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]));
+    let (manager, settings, _) = support::manager_below(&root, &json!({}), &json!([]), None);
     let error = manager.add_source_to_settings("~", None).unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert!(
