@@ -22,7 +22,7 @@ use maestro_app::{
     LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
     RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
     Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory,
+    load_extension_from_factory, strip_ansi,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{
@@ -1087,14 +1087,17 @@ fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
 }
 
 #[test]
-fn fatal_runtime_error_reports_then_closes_the_theme_watch_and_terminal() {
+fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
     isolated(
-        "fatal_runtime_error_reports_then_closes_the_theme_watch_and_terminal",
+        "fatal_runtime_error_writes_its_notice_before_stopping_the_terminal",
         |directory| {
             let watched = Rc::new(Watched::default());
             let world = watching(directory, &watched);
+            start(&world);
+            world.runtime.settle().unwrap();
             assert_eq!(watched.open.borrow().len(), 1);
             assert!(!watched.open.borrow()[0].get());
+            world.terminal.clear_writes();
             world
                 .mode
                 .report_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
@@ -1107,8 +1110,25 @@ fn fatal_runtime_error_reports_then_closes_the_theme_watch_and_terminal() {
                 rows.iter().any(|row| row.contains(&notice)),
                 "the failure notice: {rows:?}"
             );
+            let writes = world.terminal.writes();
+            let notice_index = writes
+                .iter()
+                .position(|write| {
+                    strip_ansi(write)
+                        .unwrap()
+                        .contains("Error: Failed to create session: boom")
+                })
+                .unwrap_or_else(|| panic!("the failure notice reached the terminal: {writes:?}"));
+            let restore_index = writes
+                .iter()
+                .position(|write| write.contains("\x1b[?25h"))
+                .expect("the cursor is shown");
+            assert!(
+                notice_index < restore_index,
+                "the notice precedes the restore: {writes:?}"
+            );
             assert!(watched.open.borrow()[0].get(), "the theme watch closes");
-            assert_eq!(world.terminal.events(), ["stop"]);
+            assert_eq!(world.terminal.events(), ["start", "stop"]);
         },
     );
 }

@@ -157,6 +157,19 @@ impl TUI {
         true
     }
 
+    /// Draws the frame a pending request asked for and consumes that request without
+    /// queueing another, so a caller that stops the writer next still shows the change.
+    ///
+    /// # Errors
+    ///
+    /// Returns the terminal's error unchanged.
+    pub fn render_pending_frame(&self) -> io::Result<()> {
+        if !self.claim_frame() {
+            return Ok(());
+        }
+        self.do_render()
+    }
+
     /// Runs the frame a delayed request was waiting for, then queues another when a
     /// component requested one meanwhile.
     fn run_scheduled_render(&self) -> io::Result<()> {

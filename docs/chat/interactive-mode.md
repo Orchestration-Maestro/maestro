@@ -199,10 +199,12 @@ does not survive the call, so the presentation shows only the session it now rea
 
 `handle_fatal_runtime_error` takes a prefix and the error that ended a session
 operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
-is the error's own text, then closes the theme watch and stops the terminal, so no
-theme reload or frame repaints while the process ends. It then ends the process with
-status 1. A failure while appending the notice or while stopping the terminal is
-ignored, because the process is ending either way.
+is the error's own text, draws that frame at once, then closes the theme watch and
+stops the terminal, so no theme reload or further frame repaints once the notice is
+drawn. It then ends the process with status 1. A failure while appending or drawing
+the notice, or while stopping the terminal, is ignored, because the process is ending
+either way. The notice is drawn before the terminal stops, because a stop cancels a
+queued frame.
 
 ## Shortcuts
 
