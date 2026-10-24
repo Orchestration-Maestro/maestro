@@ -118,6 +118,7 @@ mod sdk_root_exports;
 mod self_update_native;
 mod self_update_selection;
 mod server_commands;
+mod server_events;
 #[cfg(unix)]
 #[path = "support/service_observations.rs"]
 mod service_observations;
