@@ -394,5 +394,378 @@
     "expected": {
       "border": "@bashMode@\u2501\u001b[39m"
     }
+  },
+  {
+    "test": "external_edit_without_configuration_warns_without_native_work",
+    "input": {
+      "op": "external-missing"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " @warning@Warning: No editor configured. Set $VISUAL or $EDITOR environment variable.\u001b[39m                        "
+      ]
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new\n",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\n\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new\n",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "new\n",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "new\r",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "\u754c\ninside\n",
+      "status": 0,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "\u754c\ninside",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+    "input": {
+      "op": "external",
+      "content": "\u754c\ninside\n",
+      "status": 7,
+      "stored": "[paste #1 +13 lines]",
+      "expanded": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n"
+    },
+    "expected": {
+      "text": "[paste #1 +13 lines]",
+      "handoff": {
+        "args": [
+          "--wait"
+        ],
+        "text": "current\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\ncurrent\n",
+        "mode": 384
+      }
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/png"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "png",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/jpeg"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "jpg",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/webp"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "webp",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
+    "input": {
+      "op": "paste",
+      "type": "image/gif"
+    },
+    "expected": {
+      "bytes": [
+        0,
+        255,
+        128,
+        10
+      ],
+      "extension": "gif",
+      "text": "left<image-path>right",
+      "mode": 384
+    }
+  },
+  {
+    "test": "clipboard_absence_is_silent_and_does_not_edit",
+    "input": {
+      "op": "paste-none"
+    },
+    "expected": {
+      "text": "before"
+    }
   }
 ]

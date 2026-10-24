@@ -2,7 +2,8 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices, typed input and the editor border. The prompt loop,
+the startup help, the transcript notices, typed input, the editor border, external
+editing and image paste. The prompt loop,
 startup messages, the terminal title and the other integrations are still to come;
 the mode reads submitted text but does not yet prompt the session.
 
@@ -80,3 +81,38 @@ takes the colour of the session's thinking level, `thinkingOff` through
 `thinkingXhigh`. The border is repainted and a frame requested only when an edit
 switches between the two modes. A failure to read the theme is handed to the
 terminal's runtime host, which reports it.
+
+## External editing
+
+The key bound to `app.editor.external` (Ctrl+G by default) edits the editor text in
+an external editor. The mode reads the runtime's `VISUAL`, then `EDITOR`, each time
+the key is pressed; an empty value counts as unset, and neither value is trimmed.
+With no editor configured, the transcript shows the warning
+`No editor configured. Set $VISUAL or $EDITOR environment variable.` and nothing
+else happens. On Unix the command splits on ASCII spaces only, and the file path is
+its last argument; Windows runs it through the configured command interpreter, as
+the extension editor dialog does.
+
+The text written is the expanded text, so a collapsed paste is written in full
+rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
+the temporary directory. The mode then stops the terminal and runs the editor on
+the inherited terminal. A zero exit replaces the editor text with the file's text
+less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
+The file is removed, and the terminal restarted with a full redraw, after every
+outcome. Other failures are handed to the terminal's runtime host.
+
+## Image paste
+
+Pasting an image (`app.clipboard.pasteImage`: Ctrl+V by default, Alt+V on Windows)
+reads the clipboard through the application's
+image reader. An image is written to `maestro-clipboard-{UUID}.{extension}` in the
+temporary directory, with the extension of its type or `png`, and the file path is
+inserted at the cursor. The file stays for the prompt that uses it. No image, a
+failed read and a failed write all leave the editor as it was, without a message.
+
+Both actions create their temporary file exclusively, readable only by its owner on
+Unix: an existing file or symbolic link of the same name is left untouched, and the
+edit stops with an error before the editor runs. Neither action keeps the mode
+alive; a clipboard read in progress keeps the mode until it completes.
+
+Suspending to the background is not part of the mode yet.

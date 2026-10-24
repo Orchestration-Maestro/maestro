@@ -1,5 +1,12 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Only executable installation is shared."
+)]
+#[path = "../../../maestro-app/tests/support/native.rs"]
+mod native;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod typed;
@@ -32,6 +39,8 @@ const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.js
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
+/// The child's temporary directory is that root's `tmp`, its commands are looked up in
+/// the root's `bin` first, and its clipboard is a Wayland one.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
     if maestro_test_process::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
@@ -39,12 +48,27 @@ fn isolated(test: &str, body: impl FnOnce(&Path)) {
         return;
     }
     let scratch = child::Scratch::new();
-    let directory = scratch.0.path().to_str().unwrap();
+    let root = scratch.0.path();
+    for name in ["bin", "tmp"] {
+        std::fs::create_dir(root.join(name)).unwrap();
+    }
+    let path = format!(
+        "{}:{}",
+        root.join("bin").display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
     child::probe(
-        TestProcess::current(test).unwrap().case("child"),
-        scratch.0.path(),
-        &[(ENV_AGENT_DIR.as_str(), directory)],
-        &[],
+        TestProcess::current(test)
+            .unwrap()
+            .case("child")
+            .temp_dir(root.join("tmp")),
+        root,
+        &[
+            (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
+            ("PATH", &path),
+            ("WAYLAND_DISPLAY", "maestro-test"),
+        ],
+        &["WSL_DISTRO_NAME", "WSLENV", "TERMUX_VERSION"],
     );
 }
 
