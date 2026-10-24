@@ -6,6 +6,14 @@ mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod analysis_cost;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/analysis_fixtures.rs"]
+mod analysis_fixtures;
+mod analysis_shared;
+mod analysis_tools;
+mod analysis_transcripts;
+mod analysis_usage;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
@@ -20,6 +28,7 @@ mod browser_sessions;
 mod browser_storage;
 #[path = "support/browser_storage.rs"]
 mod browser_storage_support;
+mod changelog;
 #[cfg(unix)]
 #[path = "support/child.rs"]
 mod child;
@@ -69,6 +78,9 @@ mod footer_watch;
 mod helper_launches;
 mod install_reporting;
 mod installation_kind;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/isolated_home.rs"]
+mod isolated_home;
 mod javascript_execution;
 mod legacy_workbook_support;
 mod legacy_workbooks;
@@ -85,6 +97,7 @@ mod network_connection_lost_retry_checks;
 #[path = "docx_support/numbering.rs"]
 mod numbering_observation;
 mod output_routing;
+mod package_command_execution;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/package_fixtures.rs"]
 mod package_fixtures;

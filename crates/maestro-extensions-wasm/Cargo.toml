@@ -16,6 +16,11 @@ path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "hidden_thinking_label"
+path = "../../examples/extensions/hidden_thinking_label.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "shutdown_command"
 path = "../../examples/extensions/shutdown_command.rs"
 crate-type = ["cdylib"]
@@ -33,6 +38,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "reload_runtime"
 path = "../../examples/extensions/reload_runtime.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "protected_paths"
+path = "../../examples/extensions/protected_paths.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

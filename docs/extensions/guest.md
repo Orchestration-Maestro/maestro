@@ -587,6 +587,27 @@ prompt. A supplied user append is already part of the event's `systemPrompt`,
 including any edit an earlier handler made; the example never appends that
 option again. Loading it into an application is opt-in, and
 `examples/extensions/README.md` gives the build and controlled-run commands.
+
+### A hidden thinking label
+
+[`examples/extensions/hidden_thinking_label.rs`](../../examples/extensions/hidden_thinking_label.rs)
+is the shipped collapsed-thinking-label extension. Its `/thinking-label`
+command sets the label the host shows, and the same command without arguments
+clears that label and restores `Pondering...` for the next session start. The
+example also registers a `session_start` handler that applies the label it
+retains, so the next session shows the label the session before set.
+
+The command trims the surrounding whitespace of the text it receives and keeps
+the interior text unchanged, and a command that sends no text takes the reset
+branch rather than setting an empty label. Clearing the label and applying the
+example default are separate requests: the first asks the host to restore its own
+default, and the second shows the example's text at the next session start.
+
+A host rejection ends the command with the host's message. The command has
+already stored the label it chose, so the next session start applies it. Loading the component into an application is opt-in and needs a host that
+enables the component runtime; `examples/extensions/README.md` gives the build
+and controlled-run commands.
+
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses
@@ -631,6 +652,23 @@ The example is opt-in like the greeting tool: its crate's tests run the built
 component in a controlled host, and `examples/extensions/README.md` holds the
 build and controlled-run commands. Reloading a running application is not part
 of that controlled run.
+
+### A protected-paths tool-call hook
+
+[`examples/extensions/protected_paths.rs`](../../examples/extensions/protected_paths.rs)
+handles `tool_call` and returns a blocking `ToolCallEventResult` when a `write`
+or `edit` call names a path containing `.env`, `.git/` or `node_modules/`. The
+reason is `Path "<path>" is protected`, and the hook first asks the context
+whether the host has UI: if it does, it sends one warning,
+`Blocked write to protected path: <path>`, before returning the verdict.
+
+It reads the path after the tool-name filter, so every other tool passes
+through untouched and an unreadable path operand never reaches the UI. Matching is
+a case-sensitive literal substring test on the authored path: dot segments,
+uppercase spellings and backslash separators are left as they are, and no
+filesystem call decides the answer. The three patterns are the example's own
+policy; a hook needs a host that enables the component runtime, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
 
 ### A user-request summary handler
 
