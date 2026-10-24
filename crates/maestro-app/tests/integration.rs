@@ -112,6 +112,7 @@ mod resource_extension_loading;
 #[path = "support/resource_fixtures.rs"]
 mod resource_fixtures;
 mod resource_loading;
+mod rpc_client_events;
 mod rpc_client_lifecycle;
 mod rpc_client_transport;
 #[cfg(unix)]

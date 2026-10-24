@@ -654,3 +654,23 @@ fn resolves_tool_descriptions_with_no_guard_held() {
         assert_eq!(*changes.borrow(), [(true, None), (true, Some(true))]);
     });
 }
+
+#[test]
+fn extension_session_name_reaches_the_retained_session_and_listener() {
+    on_task_set(|_| async {
+        let (h, api) = kept_session().await;
+        api.set_session_name("from extension".into()).unwrap();
+        assert_eq!(
+            h.session.session_name().unwrap().as_deref(),
+            Some("from extension")
+        );
+        let names: Vec<Value> = h
+            .events
+            .borrow()
+            .iter()
+            .filter(|event| event["type"] == "session_info_changed")
+            .map(|event| event["name"].clone())
+            .collect();
+        assert_eq!(names, [json!("from extension")]);
+    });
+}

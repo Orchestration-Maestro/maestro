@@ -144,11 +144,3 @@ impl RpcClient {
         self.inner.state.borrow().stderr.clone()
     }
 }
-
-impl Inner {
-    /// Ends every pending request of the current child with [`RpcClientError::Stopped`].
-    fn fail_owned(&self) {
-        let pending = std::mem::take(&mut self.state.borrow_mut().pending);
-        drop(pending);
-    }
-}
