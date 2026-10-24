@@ -255,10 +255,7 @@ pub struct Closed {
 /// A running scripted server.
 pub struct Peer {
     address: SocketAddr,
-    commands: Arc<watch::Sender<Vec<String>>>,
-    written: Arc<AtomicUsize>,
-    control_closed: Arc<AtomicBool>,
-    data_closed: Arc<AtomicBool>,
+    pub(crate) observed: Arc<Observed>,
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<std::io::Result<()>>>,
 }
@@ -271,21 +268,7 @@ impl Peer {
 
     /// Commands the server has read so far.
     pub fn commands(&self) -> Vec<String> {
-        self.commands.borrow().clone()
-    }
-
-    /// Wait until the server logged `count` lines starting with `line`.
-    pub async fn reached(&self, line: &str, count: usize) {
-        let mut log = self.commands.subscribe();
-        // The peer holds the sender, so the log stays open while it is awaited.
-        log.wait_for(|log| log.iter().filter(|seen| seen.starts_with(line)).count() >= count)
-            .await
-            .ok();
-    }
-
-    /// The bytes the server wrote to its connections so far.
-    pub fn written(&self) -> usize {
-        self.written.load(Ordering::SeqCst)
+        self.observed.commands.borrow().clone()
     }
 
     /// Stop accepting connections, wait until every admitted session ended, and report what the
@@ -302,8 +285,8 @@ impl Peer {
         let worker = self.worker.take().ok_or("server already finished")?;
         worker.join().map_err(|_| "server thread panicked")??;
         Ok(Closed {
-            control: self.control_closed.load(Ordering::SeqCst),
-            data: self.data_closed.load(Ordering::SeqCst),
+            control: self.observed.control_closed.load(Ordering::SeqCst),
+            data: self.observed.data_closed.load(Ordering::SeqCst),
         })
     }
 }
@@ -352,12 +335,16 @@ impl Write for Wire {
     }
 }
 
-/// Recorded observations of one admitted session.
-struct Observed {
-    commands: Arc<watch::Sender<Vec<String>>>,
-    written: Arc<AtomicUsize>,
-    control_closed: Arc<AtomicBool>,
-    data_closed: Arc<AtomicBool>,
+/// What the server observed about its connections, shared with the peer that reports it.
+pub(crate) struct Observed {
+    /// Commands the server read, as its log.
+    pub(crate) commands: Arc<watch::Sender<Vec<String>>>,
+    /// The bytes the server wrote to every connection.
+    pub(crate) written: Arc<AtomicUsize>,
+    /// Whether the client closed the control connection.
+    pub(crate) control_closed: Arc<AtomicBool>,
+    /// Whether the client closed a data connection.
+    pub(crate) data_closed: Arc<AtomicBool>,
 }
 
 impl Observed {
@@ -678,27 +665,21 @@ fn accept_until_stopped(
 pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
-    let commands = Arc::new(watch::Sender::new(Vec::new()));
-    let written = Arc::new(AtomicUsize::new(0));
-    let control_closed = Arc::new(AtomicBool::new(false));
-    let data_closed = Arc::new(AtomicBool::new(false));
+    let observed = Arc::new(Observed {
+        commands: Arc::new(watch::Sender::new(Vec::new())),
+        written: Arc::new(AtomicUsize::new(0)),
+        control_closed: Arc::new(AtomicBool::new(false)),
+        data_closed: Arc::new(AtomicBool::new(false)),
+    });
     let stop = Arc::new(AtomicBool::new(false));
-    let observed = Observed {
-        commands: Arc::clone(&commands),
-        written: Arc::clone(&written),
-        control_closed: Arc::clone(&control_closed),
-        data_closed: Arc::clone(&data_closed),
-    };
     let stopping = Arc::clone(&stop);
+    let observing = Arc::clone(&observed);
     let worker = std::thread::spawn(move || {
-        accept_until_stopped(&listener, &stopping, &scenarios, &observed)
+        accept_until_stopped(&listener, &stopping, &scenarios, &observing)
     });
     Ok(Peer {
         address,
-        commands,
-        written,
-        control_closed,
-        data_closed,
+        observed,
         stop,
         worker: Some(worker),
     })
