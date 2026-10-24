@@ -9,6 +9,7 @@ mod runtime_support;
 mod support;
 
 mod example_theme_styles;
+mod interactive_output_errors;
 mod native_completion;
 mod native_runtime;
 mod terminal_lifecycle;

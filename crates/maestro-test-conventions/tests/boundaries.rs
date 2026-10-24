@@ -1605,3 +1605,122 @@ fn termination_subscription_owner_rejects_frontend_receivers() {
         std::fs::remove_file(path).unwrap();
     }
 }
+
+/// The import an adapter source names the callback alias with.
+const OUTPUT_ERROR_IMPORT: &str = "use maestro_tui::terminal::OutputErrorHandler;\n";
+
+/// A native terminal or host that returns the owner's removal for its output-error handler.
+fn output_error_delegation(receiver: &str) -> String {
+    format!(
+        "{OUTPUT_ERROR_IMPORT}/// Native.\npub struct Native;\nimpl Native {{\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {{\n        self.{receiver}.register(handler)\n    }}\n}}\n"
+    )
+}
+
+/// Adapter sources that register an output-error callback without returning the owner's
+/// removal, each with the diagnostic it must produce.
+const OUTPUT_ERROR_BYPASSES: &[(&str, &str, &str)] = &[
+    (
+        "src/terminal/discard.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        self.errors.register(handler);\n        Box::new(|| ())\n    }\n}\n",
+        "output-error registration must return the owner's removal",
+    ),
+    (
+        "src/terminal/let_underscore.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        let _ = self.errors.register(handler);\n        Box::new(|| ())\n    }\n}\n",
+        "output-error registration must return the owner's removal",
+    ),
+    (
+        "src/terminal/dropped.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        drop(self.errors.register(handler));\n        Box::new(|| ())\n    }\n}\n",
+        "output-error registration must return the owner's removal",
+    ),
+    (
+        "src/terminal/macro_argument.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        assert!(self.errors.register(handler).is_trivial());\n        Box::new(|| ())\n    }\n}\n",
+        "output-error registration must return the owner's removal",
+    ),
+    (
+        "src/terminal/closure.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        let removal = move || self.errors.register(handler);\n        Box::new(|| drop(removal))\n    }\n}\n",
+        "output-error registration must return the owner's removal",
+    ),
+    (
+        "src/terminal/helper.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        self.attach(handler)\n    }\n\n    /// Attaches.\n    pub fn attach(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        let _ = self.errors.register(handler);\n        Box::new(|| ())\n    }\n}\n",
+        "output-error registration must return the owner's removal",
+    ),
+    (
+        "src/terminal/storage.rs",
+        "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native {\n    /// Registered callbacks kept outside the owner.\n    handlers: Vec<OutputErrorHandler>,\n}\n",
+        "output-error callback storage outside output_errors",
+    ),
+];
+
+#[test]
+fn output_error_registration_returns_owner_removal() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui-crossterm"]);
+    for receiver in ["errors", "terminal"] {
+        let body = output_error_delegation(receiver);
+        let path = source(
+            &workspace,
+            "maestro-tui-crossterm",
+            "src/terminal/native.rs",
+            &body,
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Ok(()),
+            "{receiver}: {body}"
+        );
+        std::fs::remove_file(path).unwrap();
+    }
+    let owner = "//! Failures.\n/// Callbacks.\npub struct OutputErrors {\n    /// Registered.\n    handlers: std::cell::RefCell<Vec<OutputErrorHandler>>,\n}\nimpl OutputErrors {\n    /// Registers.\n    pub fn register(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        drop(handler);\n        Box::new(|| ())\n    }\n}\n";
+    let path = source(
+        &workspace,
+        "maestro-tui-crossterm",
+        "src/output_errors.rs",
+        owner,
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    std::fs::remove_file(path).unwrap();
+    let fabricated = "use maestro_tui::terminal::OutputErrorHandler;\n/// Native.\npub struct Native;\nimpl Native {\n    /// Registers.\n    pub fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {\n        self.errors.register(handler);\n        Box::new(|| ())\n    }\n}\n";
+    let path = source(
+        &workspace,
+        "maestro-tui-crossterm",
+        "src/terminal/native.rs",
+        fabricated,
+    );
+    let error = check_workspace(workspace.root.path()).expect_err("a fabricated removal");
+    assert!(
+        error.contains("output-error registration must return the owner's removal"),
+        "{error}"
+    );
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn output_error_registration_rejects_discarded_or_wrapped_removals() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui-crossterm"]);
+    let mut accepted = Vec::new();
+    for (file, contents, expected) in OUTPUT_ERROR_BYPASSES {
+        let path = source(&workspace, "maestro-tui-crossterm", file, contents);
+        match check_workspace(workspace.root.path()) {
+            Ok(()) => accepted.push(*file),
+            Err(error) => {
+                assert!(
+                    error.contains(expected),
+                    "{file}: expected {expected:?} in {error:?}"
+                );
+                assert!(
+                    error.contains(&path.display().to_string()),
+                    "{file}: {error}"
+                );
+            }
+        }
+        std::fs::remove_file(path).unwrap();
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{file}");
+    }
+    assert!(accepted.is_empty(), "accepted bypasses: {accepted:?}");
+}

@@ -3,7 +3,11 @@
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::time::Duration;
+
+/// Receives a native output failure.
+pub type OutputErrorHandler = Rc<dyn Fn(&io::Error)>;
 
 /// A terminal that components render to and that delivers input.
 pub trait Terminal {
@@ -112,4 +116,11 @@ pub trait Terminal {
     ///
     /// Returns the device error when the effect cannot be carried out.
     fn set_progress(&mut self, active: bool) -> io::Result<()>;
+
+    /// Registers `handler` for native output failures; the returned operation removes it and
+    /// does nothing when repeated.
+    fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
+        let _ = handler;
+        Box::new(|| ())
+    }
 }
