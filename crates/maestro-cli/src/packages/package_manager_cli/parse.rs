@@ -226,7 +226,7 @@ impl Scan {
 
     /// Resolve the update selection and keep every conflict collected on the way.
     fn target(&mut self) -> UpdateTarget {
-        if let Some(extension) = self.extension_source.clone() {
+        if let Some(extension) = self.extension_source.take() {
             if self.flags.contains(&Flag::SelfOnly) || self.flags.contains(&Flag::Extensions) {
                 first(
                     &mut self.conflicting_options,
@@ -245,7 +245,12 @@ impl Scan {
             }
             return UpdateTarget::Extensions(Some(extension));
         }
-        if let Some(source) = self.source.clone().filter(|source| !source.is_empty()) {
+        if let Some(source) = self
+            .source
+            .as_deref()
+            .filter(|source| !source.is_empty())
+            .map(str::to_owned)
+        {
             if source == "self" || source == "maestro" {
                 return self.application_target();
             }

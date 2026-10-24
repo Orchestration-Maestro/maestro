@@ -160,15 +160,11 @@ fn check_status(status: ExitStatus, display: &str) -> io::Result<()> {
 }
 
 /// Build the inherited-I/O launch of one selected step.
+///
+/// The operands stay literal: native spawning already launches a Windows batch shim
+/// through its shell, so joining them into command text would let an authored prefix
+/// like `C:\R&D` split and would drop an empty operand.
 pub(super) fn native_launch(command: &str, args: &[String]) -> maestro_process::Launch {
-    #[cfg(windows)]
-    if maestro_process::needs_windows_shell(command) {
-        let comspec = std::env::var("COMSPEC").ok();
-        return maestro_process::windows_shell_launch(
-            &super::command_line(command, args),
-            comspec.as_deref(),
-        );
-    }
     maestro_process::Launch {
         executable: command.into(),
         args: args.to_vec(),

@@ -155,16 +155,15 @@ async fn update(
     prepared: &Prepared,
     context: &PackageCommandContext<'_>,
 ) -> io::Result<()> {
-    let target = options.update_target.clone().unwrap_or(UpdateTarget::All);
-    let source = match &target {
-        UpdateTarget::Extensions(source) => source.clone(),
+    let fallback = UpdateTarget::All;
+    let target = options.update_target.as_ref().unwrap_or(&fallback);
+    let source = match target {
+        UpdateTarget::Extensions(source) => source.as_deref(),
         UpdateTarget::All | UpdateTarget::SelfOnly => None,
     };
     if target.includes_extensions() {
-        Rc::clone(&prepared.manager)
-            .update(source.as_deref())
-            .await?;
-        let text = source.as_deref().map_or_else(
+        Rc::clone(&prepared.manager).update(source).await?;
+        let text = source.map_or_else(
             || "Updated packages".to_owned(),
             |source| format!("Updated {source}"),
         );
