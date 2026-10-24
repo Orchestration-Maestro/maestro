@@ -42,11 +42,7 @@ impl<'a> Document<'a> {
 
     /// The authored view of one supplied node, with its declared kind when it has one.
     pub(crate) fn view(&'a self, raw: &'a Value) -> View<'a> {
-        View {
-            raw,
-            kind: self.kinds.get(&std::ptr::from_ref(raw)).copied(),
-            kinds: &self.kinds,
-        }
+        View::at(raw, &self.kinds)
     }
 }
 /// Borrowed authored schema node with its declared kind.
@@ -61,13 +57,18 @@ pub(crate) struct View<'a> {
 }
 
 impl<'a> View<'a> {
+    /// The authored view of one node, looked up in the supplied declared-kind index.
+    fn at(raw: &'a Value, kinds: &'a HashMap<*const Value, &'a SchemaKind>) -> Self {
+        Self {
+            raw,
+            kind: kinds.get(&std::ptr::from_ref(raw)).copied(),
+            kinds,
+        }
+    }
+
     /// The authored view of one child node of this node.
     pub(crate) fn child(self, raw: &'a Value) -> View<'a> {
-        View {
-            raw,
-            kind: self.kinds.get(&std::ptr::from_ref(raw)).copied(),
-            kinds: self.kinds,
-        }
+        Self::at(raw, self.kinds)
     }
 
     /// The authored view of the node this keyword addresses, when it holds one.
