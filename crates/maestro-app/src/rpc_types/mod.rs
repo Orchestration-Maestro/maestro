@@ -6,7 +6,10 @@ mod responses;
 pub use commands::{
     RpcCommand, RpcCommandBody, RpcCommandRejection, RpcSessionCommand, parse_rpc_command,
 };
-pub use responses::{RpcData, RpcResponse};
+pub use responses::{
+    RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
+    RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcThinkingLevel,
+};
 
 /// The workspace command family, its correlated responses and the shared envelope writer.
 pub use maestro_protocol::rpc_types as workspace;
@@ -19,11 +22,11 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::sync::{Arc, RwLock};
 
 /// The state of a session.
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RpcSessionState {
     /// The selected model.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<Arc<RwLock<Model>>>,
     /// The effective thinking level.
     pub thinking_level: ModelThinkingLevel,
@@ -36,12 +39,12 @@ pub struct RpcSessionState {
     /// How queued follow-up messages are delivered.
     pub follow_up_mode: maestro_agent::QueueMode,
     /// The session file, absent in memory.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_file: Option<String>,
     /// The session identity.
     pub session_id: String,
     /// The session name, when one is set.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_name: Option<String>,
     /// Whether automatic compaction is on.
     pub auto_compaction_enabled: bool,

@@ -23,7 +23,7 @@ type CompactionComplete = Rc<dyn Fn(CompactionResult) -> Result<(), EventError>>
 type CompactionError = Rc<dyn Fn(EventError) -> Result<(), EventError>>;
 
 /// Current context-window usage of the active model.
-#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContextUsage {
     /// Estimated context tokens, or `None` when unknown.

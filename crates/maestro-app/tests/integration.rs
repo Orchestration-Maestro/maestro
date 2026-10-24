@@ -173,5 +173,6 @@ mod tree_interface;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;
+mod wire_records;
 mod workbook_fixture;
 mod workbooks;
