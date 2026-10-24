@@ -161,6 +161,7 @@ mod ssf_values;
 mod ssf_writers;
 mod startup_completion;
 mod startup_conversions;
+mod startup_environment;
 mod startup_timings;
 mod system_prompt_assembly;
 /// Strict recorded observations shared by several test modules.
