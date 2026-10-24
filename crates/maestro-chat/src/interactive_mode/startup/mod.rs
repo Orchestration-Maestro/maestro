@@ -85,15 +85,16 @@ impl InteractiveMode {
                 key("app.tools.expand")
             ),
         )?;
-        let header = ExpandableText::new(
+        let header = Rc::new(ExpandableText::new(
             format!("{logo}\n{compact}\n{compact_onboarding}\n\n{onboarding}"),
             format!("{logo}\n{expanded}\n\n{onboarding}"),
             self.options.verbose,
             1,
             0,
-        );
+        ));
+        self.built_in_header.replace(Some(header.clone()));
         self.header_container.add_child(Rc::new(Spacer::new(1)));
-        self.header_container.add_child(Rc::new(header));
+        self.header_container.add_child(header);
         self.header_container.add_child(Rc::new(Spacer::new(1)));
         Ok(())
     }
@@ -141,7 +142,7 @@ fn expanded_instructions(
 }
 
 /// One help text with a collapsed and an expanded rendering.
-struct ExpandableText {
+pub(super) struct ExpandableText {
     /// The text owner that paints, wraps and clips the current variant.
     text: Text,
     /// The compact rendering.
@@ -152,7 +153,7 @@ struct ExpandableText {
 
 impl ExpandableText {
     /// Builds the component and applies the initial expansion.
-    fn new(
+    pub(super) fn new(
         collapsed: String,
         expanded: String,
         expanded_state: bool,
@@ -169,7 +170,7 @@ impl ExpandableText {
     }
 
     /// Replaces the rendered variant.
-    fn set_expanded(&self, expanded: bool) {
+    pub(super) fn set_expanded(&self, expanded: bool) {
         self.text.set_text(
             if expanded {
                 &self.expanded
