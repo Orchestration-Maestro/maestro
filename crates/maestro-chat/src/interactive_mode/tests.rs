@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 mod actions;
 mod bash;
+mod events;
 #[allow(
     dead_code,
     unused_imports,
