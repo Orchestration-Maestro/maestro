@@ -18,10 +18,10 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@2944898ff1734605a42be5ddd93ff4ffdc7310be
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@ee06f77726dcabf0f339fab171cd87b7805048bd
     with:
       concurrency-key: quality-qualification
 
   nightly:
     if: github.event_name == 'workflow_dispatch' && inputs.full-nightly
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/quality-nightly.yml@2944898ff1734605a42be5ddd93ff4ffdc7310be
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/quality-nightly.yml@ee06f77726dcabf0f339fab171cd87b7805048bd
