@@ -17,6 +17,22 @@ use tokio::sync::oneshot;
 /// Receives how the connection ended.
 pub(super) type Finish = oneshot::Receiver<io::Result<RpcConnectionOutcome>>;
 
+/// Where a connection is in its lifetime.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum Phase {
+    /// Lines are read; the initial binding may still run.
+    #[default]
+    Serving,
+    /// The input ended while the initial binding runs, so its dialogs cannot be answered.
+    InputEnded,
+    /// A shutdown owns the teardown but has not yet stopped signal delivery.
+    CloseQueued,
+    /// Signal delivery and the subscription are stopped and the runtime is disposing.
+    Closing,
+    /// The connection reported how it ended.
+    Closed,
+}
+
 /// Shutdown and subscription state of a connection.
 #[derive(Default)]
 pub(super) struct Lifecycle {
@@ -26,8 +42,8 @@ pub(super) struct Lifecycle {
     signal_cleanup: Option<Box<dyn Fn()>>,
     /// Whether an extension requested shutdown.
     shutdown_requested: bool,
-    /// Whether shutdown started.
-    pub(super) shutting_down: bool,
+    /// Where the connection is in its lifetime.
+    phase: Phase,
     /// The first input or output failure, which the connection reports however it ends.
     failure: Option<io::Error>,
     /// Reports how the connection ended; taken by the first report.
@@ -86,14 +102,29 @@ impl Connection {
     }
 
     /// Waits until the initial binding has handled the records that arrived meanwhile. The
-    /// connection is ending, so the dialogs the binding still waits on settle as cancelled:
-    /// no answer can arrive.
+    /// connection is ending, so the dialogs the binding waits on, now or later, settle as
+    /// cancelled: no answer can arrive.
     pub(super) async fn initial_binding(&self) {
         let bound = self.bound.notified();
         if self.early.borrow().is_some() {
+            self.lifecycle.borrow_mut().end_input();
             self.ui.cancel_pending();
             bound.await;
         }
+    }
+
+    /// Whether a dialog asked now can be answered: not while an ending connection waits for
+    /// its initial binding.
+    pub(super) fn admits_dialogs(&self) -> bool {
+        self.early.borrow().is_none() || self.lifecycle.borrow().phase == Phase::Serving
+    }
+
+    /// Whether a shutdown owns the teardown.
+    pub(super) fn shutting_down(&self) -> bool {
+        matches!(
+            self.lifecycle.borrow().phase,
+            Phase::CloseQueued | Phase::Closing | Phase::Closed
+        )
     }
 
     /// Binds the current session's extensions to the protocol, then replaces the event
@@ -164,12 +195,12 @@ impl Connection {
     }
 
     /// Keeps `error` as the connection's failure unless one came first, and starts the
-    /// shutdown unless one is running, which then reports the failure.
+    /// shutdown unless one owns the teardown, which then reports the failure.
     pub(super) fn fail(self: &Rc<Self>, error: io::Error) {
         let starting = {
             let mut lifecycle = self.lifecycle.borrow_mut();
             lifecycle.failure.get_or_insert(error);
-            !std::mem::replace(&mut lifecycle.shutting_down, true)
+            lifecycle.claim_close()
         };
         if starting {
             let connection = Rc::clone(self);
@@ -179,13 +210,18 @@ impl Connection {
         }
     }
 
-    /// Shuts down with `outcome`; a repeated shutdown finishes at once.
+    /// Shuts down with `outcome`. A shutdown repeated while the runtime disposes finishes at
+    /// once; one repeated before that leaves the report to the shutdown that owns the
+    /// teardown.
     pub(super) async fn shutdown(self: &Rc<Self>, outcome: RpcConnectionOutcome) {
-        let repeated = std::mem::replace(&mut self.lifecycle.borrow_mut().shutting_down, true);
-        if repeated {
-            self.finish(Ok(outcome));
-        } else {
+        let (claimed, phase) = {
+            let mut lifecycle = self.lifecycle.borrow_mut();
+            (lifecycle.claim_close(), lifecycle.phase)
+        };
+        if claimed {
             self.close(outcome).await;
+        } else if phase == Phase::Closing {
+            self.finish(Ok(outcome));
         }
     }
 
@@ -195,6 +231,7 @@ impl Connection {
         self.initial_binding().await;
         let (signal_cleanup, unsubscribe) = {
             let mut lifecycle = self.lifecycle.borrow_mut();
+            lifecycle.phase = Phase::Closing;
             (
                 lifecycle.signal_cleanup.take(),
                 lifecycle.unsubscribe.take(),
@@ -217,9 +254,28 @@ impl Connection {
         let Some(finish) = lifecycle.finish.take() else {
             return;
         };
+        lifecycle.phase = Phase::Closed;
         let reported = lifecycle.failure.take().map_or(ended, Err);
         drop(lifecycle);
         drop(finish.send(reported));
+    }
+}
+
+impl Lifecycle {
+    /// Records that the input can no longer answer the initial binding.
+    fn end_input(&mut self) {
+        if self.phase == Phase::Serving {
+            self.phase = Phase::InputEnded;
+        }
+    }
+
+    /// Gives the teardown to the caller when no shutdown owns it yet.
+    fn claim_close(&mut self) -> bool {
+        let claimed = matches!(self.phase, Phase::Serving | Phase::InputEnded);
+        if claimed {
+            self.phase = Phase::CloseQueued;
+        }
+        claimed
     }
 }
 

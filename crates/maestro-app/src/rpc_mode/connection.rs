@@ -187,14 +187,14 @@ impl Connection {
     }
 
     /// Ends the input: answers a final dialog response at once, then, once the initial
-    /// binding is done, shuts down while handling any other final line, or finishes at once
-    /// when a shutdown is already running.
+    /// binding is done, shuts down while handling any other final line, or repeats the
+    /// shutdown that already owns the teardown.
     async fn end(
         self: &Rc<Self>,
         tail: Option<String>,
         finished: &mut Finish,
     ) -> io::Result<RpcConnectionOutcome> {
-        if self.lifecycle.borrow().shutting_down {
+        if self.shutting_down() {
             self.shutdown(RpcConnectionOutcome::Eof).await;
             return finished.await.map_err(io::Error::other)?;
         }

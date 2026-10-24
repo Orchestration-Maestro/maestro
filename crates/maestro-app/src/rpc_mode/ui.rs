@@ -110,7 +110,8 @@ impl RpcUi {
     }
 
     /// Writes `method` and settles with the picked answer, or with `default` once `signal`
-    /// aborts, `timeout` milliseconds pass or the client dismisses it.
+    /// aborts, `timeout` milliseconds pass or the client dismisses it. It settles with
+    /// `default` without asking when no answer can arrive.
     fn dialog<T: 'static>(
         &self,
         method: RpcExtensionUIMethod,
@@ -119,7 +120,11 @@ impl RpcUi {
         pick: fn(RpcExtensionUIResponse) -> T,
     ) -> ExtensionUIFuture<T> {
         let ExtensionUIDialogOptions { signal, timeout } = options.unwrap_or_default();
-        if signal.as_ref().is_some_and(Cancellation::is_aborted) {
+        let unanswerable = self
+            .connection
+            .upgrade()
+            .is_some_and(|connection| !connection.admits_dialogs());
+        if unanswerable || signal.as_ref().is_some_and(Cancellation::is_aborted) {
             return Box::pin(std::future::ready(Ok(default)));
         }
         let deadline = expiry(timeout).map(|duration| Instant::now() + duration);
