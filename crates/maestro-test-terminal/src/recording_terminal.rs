@@ -1,10 +1,11 @@
 //! A terminal that records every effect the frame writer asks of it.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
 use std::rc::Rc;
+use std::task::{Context, Poll};
 use std::time::Duration;
 
 use maestro_tui::Terminal;
@@ -37,6 +38,8 @@ struct State {
     hide_error: Option<io::ErrorKind>,
     /// Controlled failure after recording terminal stop.
     stop_error: Option<io::ErrorKind>,
+    /// Whether a drain completes at once, shared with the drains it starts.
+    drain_open: Rc<Cell<bool>>,
     /// Observer of every recorded byte string.
     tap: Option<Tap>,
 }
@@ -64,6 +67,7 @@ impl RecordingTerminal {
                 tap: None,
                 hide_error: None,
                 stop_error: None,
+                drain_open: Rc::new(Cell::new(true)),
             })),
         }
     }
@@ -98,6 +102,16 @@ impl RecordingTerminal {
     /// Makes terminal stop fail after recording its occurrence.
     pub fn set_stop_error(&self, kind: Option<io::ErrorKind>) {
         self.state.borrow_mut().stop_error = kind;
+    }
+
+    /// Makes a drain wait until [`release_drain`](Self::release_drain).
+    pub fn hold_drain(&self) {
+        self.state.borrow().drain_open.set(false);
+    }
+
+    /// Completes the waiting drain; later drains complete at once.
+    pub fn release_drain(&self) {
+        self.state.borrow().drain_open.set(true);
     }
 
     /// Forgets the writes recorded so far.
@@ -206,7 +220,9 @@ impl Terminal for RecordingTerminal {
         _max: Option<Duration>,
         _idle: Option<Duration>,
     ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
-        Box::pin(async { Ok(()) })
+        Box::pin(DrainGate {
+            open: Rc::clone(&self.state.borrow().drain_open),
+        })
     }
 
     fn write(&mut self, data: &str) -> io::Result<()> {
@@ -274,5 +290,25 @@ impl Terminal for RecordingTerminal {
 
     fn set_progress(&mut self, _active: bool) -> io::Result<()> {
         Ok(())
+    }
+}
+
+/// A drain that completes once its terminal releases it.
+///
+/// A scenario polls it while it waits, so it keeps no waker.
+struct DrainGate {
+    /// Whether the terminal lets the drain complete.
+    open: Rc<Cell<bool>>,
+}
+
+impl Future for DrainGate {
+    type Output = io::Result<()>;
+
+    fn poll(self: Pin<&mut Self>, _context: &mut Context<'_>) -> Poll<Self::Output> {
+        if self.open.get() {
+            Poll::Ready(Ok(()))
+        } else {
+            Poll::Pending
+        }
     }
 }
