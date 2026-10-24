@@ -112,6 +112,11 @@ mod resource_extension_loading;
 #[path = "support/resource_fixtures.rs"]
 mod resource_fixtures;
 mod resource_loading;
+mod rpc_client_lifecycle;
+mod rpc_client_transport;
+#[cfg(unix)]
+#[path = "support/rpc_peer.rs"]
+mod rpc_peer;
 mod runtime_agent;
 mod sandbox_runtime_providers;
 mod sdk_root_exports;
