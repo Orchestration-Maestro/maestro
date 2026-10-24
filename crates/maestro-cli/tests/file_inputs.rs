@@ -28,7 +28,22 @@ fn copy_tree(source: &std::path::Path, destination: &std::path::Path) {
         let entry = entry.unwrap();
         std::fs::copy(entry.path(), destination.join(entry.file_name())).unwrap();
     }
+    copy_quoted_name(destination);
 }
+
+/// Add the authored name a double quote makes legal only outside Windows.
+#[cfg(unix)]
+fn copy_quoted_name(destination: &std::path::Path) {
+    std::fs::copy(
+        destination.join("quote.txt"),
+        destination.join("quote\".txt"),
+    )
+    .unwrap();
+}
+
+/// Windows cannot store a double quote in a name, so it has no such fixture.
+#[cfg(not(unix))]
+fn copy_quoted_name(_: &std::path::Path) {}
 
 /// The authored file names of one case.
 fn file_names(case: &Recorded) -> Vec<String> {
@@ -209,7 +224,11 @@ fn default_fitting_and_disabled_passthrough_keep_separate_results() {
 fn text_decoding_and_authored_file_names_are_not_rewritten() {
     let scratch = scratch();
     let native = NativeFileArgumentOperations::new(false);
-    for title in ["files-186", "files-187"] {
+    #[cfg(unix)]
+    let titles = ["files-186", "files-187"];
+    #[cfg(not(unix))]
+    let titles = ["files-186"];
+    for title in titles {
         let case = support::case_by_title("files", title);
         assert_prepared(&case, scratch.path(), &native);
     }

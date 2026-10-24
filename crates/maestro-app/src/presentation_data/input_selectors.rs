@@ -5,9 +5,13 @@
 
 use maestro_tui::KeybindingsManager;
 use maestro_tui::tui::ComponentHandle;
-use std::{cell::RefCell, error::Error, future::Future, io, pin::Pin, rc::Rc};
+#[cfg(not(target_arch = "wasm32"))]
+use std::cell::RefCell;
+use std::{error::Error, future::Future, io, pin::Pin, rc::Rc};
 
-use crate::{ResolvedPaths, SessionInfo, SettingsManager};
+use crate::SessionInfo;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{ResolvedPaths, SettingsManager};
 
 /// One presented component with the handle its input focuses.
 pub struct PresentedSelector {
@@ -18,6 +22,7 @@ pub struct PresentedSelector {
 }
 
 /// Supplied locations and managers of one configuration presentation.
+#[cfg(not(target_arch = "wasm32"))]
 pub struct ConfigSelectorOptions {
     /// Resolved resource paths the configuration edits.
     pub resolved_paths: ResolvedPaths,
@@ -40,6 +45,7 @@ pub struct ConfigSelectorCallbacks {
 }
 
 /// Builds a presented configuration component over the supplied options.
+#[cfg(not(target_arch = "wasm32"))]
 pub type ConfigSelectorFactory =
     Rc<dyn Fn(ConfigSelectorOptions, ConfigSelectorCallbacks) -> io::Result<PresentedSelector>>;
 

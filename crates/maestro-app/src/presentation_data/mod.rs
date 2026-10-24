@@ -2,7 +2,6 @@
 
 pub mod footer_data_provider;
 
-#[cfg(not(target_arch = "wasm32"))]
 pub mod input_selectors;
 
 pub mod keybindings;
