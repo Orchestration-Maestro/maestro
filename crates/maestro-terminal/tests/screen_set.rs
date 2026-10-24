@@ -1,6 +1,6 @@
 //! Lazy terminal screen ownership and independent lifetimes.
 
-use maestro_terminal::{ScreenSet, screen::Options, screen_set::Key};
+use maestro_terminal::{ScreenSet, screen::Options, screens::Key};
 
 #[test]
 fn screen_set_initializes_and_switches_lazily() {
@@ -121,7 +121,7 @@ fn fill_screen(screen: &mut maestro_terminal::Screen, value: u8) {
 }
 
 fn check_screen(screen: &maestro_terminal::Screen, value: u8) {
-    use maestro_terminal::{hyperlink::HyperlinkId, style::Color};
+    use maestro_terminal::{links::HyperlinkId, style::Color};
     let pin = *screen.pages.tracked_pin(screen.cursor.page_pin).unwrap();
     assert_eq!(
         pin.row_and_cell(&screen.pages).unwrap().1.codepoint(),
@@ -177,7 +177,7 @@ fn check_protocol_state(screen: &maestro_terminal::Screen, value: u8) {
 
 #[test]
 fn screen_set_active_transitions_refuse_invalid_lifetimes() {
-    use maestro_terminal::screen_set::ScreenSetError;
+    use maestro_terminal::screens::ScreenSetError;
     let mut set = ScreenSet::init(Options::default());
     assert!(std::ptr::eq(set.active(), set.get(Key::Primary).unwrap()));
     assert_eq!(
@@ -212,7 +212,7 @@ fn screen_set_active_transitions_refuse_invalid_lifetimes() {
 
 #[test]
 fn active_removal_preserves_selected_residency() {
-    use maestro_terminal::screen_set::ScreenSetError;
+    use maestro_terminal::screens::ScreenSetError;
     let mut set = ScreenSet::init(Options::default());
     set.get_init(Key::Alternate, Options::default());
     set.switch_to(Key::Alternate).unwrap();

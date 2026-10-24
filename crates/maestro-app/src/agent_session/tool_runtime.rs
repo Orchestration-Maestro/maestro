@@ -9,7 +9,7 @@ use maestro_agent::{
 };
 use maestro_extensions::{ExtensionExecution, RegisteredToolInput, ToolCallEvent, ToolResultEvent};
 use maestro_models::{DiagnosticErrorInfo, Local};
-use maestro_session::{Presence, messages::CustomAgentMessages};
+use maestro_session::{Presence, message_records::CustomAgentMessages};
 use maestro_settings::SettingsManager;
 use maestro_tools::{ToolsManager, local::ToolDef};
 use std::cell::RefCell;

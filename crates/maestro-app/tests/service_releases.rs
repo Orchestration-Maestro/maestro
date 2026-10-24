@@ -1,9 +1,7 @@
 //! Release comparison and hosted request observations.
 #![cfg(test)]
 #![cfg(unix)]
-use maestro_app::configuration::version_check::{
-    compare_package_versions, is_newer_package_version,
-};
+use maestro_app::configuration::releases::{compare_package_versions, is_newer_package_version};
 use maestro_text::collation::Collator;
 use serde::Deserialize;
 
@@ -64,7 +62,7 @@ fn unparsed_versions_compare_trimmed_text() {
     versions(28..35);
 }
 use crate::service_observations as services;
-use maestro_app::configuration::version_check::{VersionCheckOptions, get_latest_maestro_release};
+use maestro_app::configuration::releases::{VersionCheckOptions, get_latest_maestro_release};
 use services::{ORIGIN, Transport};
 #[cfg(unix)]
 #[test]
@@ -162,7 +160,7 @@ async fn release_fields_keep_their_selected_type_domain_run() {
             .is_none()
     );
 }
-use maestro_app::configuration::version_check::{
+use maestro_app::configuration::releases::{
     check_for_new_maestro_version, get_latest_maestro_version,
 };
 #[cfg(unix)]
@@ -380,19 +378,17 @@ async fn default_release_transport_reaches_the_controlled_server_run() {
         get_latest_maestro_release("1.2.3", &origin, &VersionCheckOptions::default()).await;
     let settings =
         maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
-    maestro_app::configuration::telemetry::report_install_telemetry(
+    maestro_app::configuration::installation::report_install_telemetry(
         "1.2.3", &settings, &origin, None, None,
     )
     .await;
     let observed = peer.join().unwrap();
     assert_eq!(
         release.unwrap(),
-        Some(
-            maestro_app::configuration::version_check::LatestMaestroRelease {
-                version: "1.2.4".into(),
-                package_name: Some("maestro".into())
-            }
-        )
+        Some(maestro_app::configuration::releases::LatestMaestroRelease {
+            version: "1.2.4".into(),
+            package_name: Some("maestro".into())
+        })
     );
     assert_eq!(observed[0].0, "GET /api/latest-version HTTP/1.1");
     assert_eq!(
@@ -403,7 +399,7 @@ async fn default_release_transport_reaches_the_controlled_server_run() {
     for (_, headers) in observed {
         assert_eq!(
             headers["user-agent"],
-            maestro_app::configuration::maestro_user_agent::get_maestro_user_agent(
+            maestro_app::configuration::identification::get_maestro_user_agent(
                 "1.2.3",
                 std::env::consts::OS,
                 std::env::consts::ARCH
@@ -494,7 +490,7 @@ async fn expire(
     mut work: std::pin::Pin<
         &mut impl std::future::Future<
             Output = std::io::Result<
-                Option<maestro_app::configuration::version_check::LatestMaestroRelease>,
+                Option<maestro_app::configuration::releases::LatestMaestroRelease>,
             >,
         >,
     >,

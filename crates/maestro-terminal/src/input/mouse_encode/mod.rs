@@ -1,18 +1,18 @@
 //! Mouse reporting for terminal applications.
 
-pub mod size;
+pub mod dimensions;
 
 use num_traits::ToPrimitive;
 
 use super::{
     key_mods::Mods,
-    mouse::{MouseAction, MouseButton, MouseEvent},
+    pointer::{MouseAction, MouseButton, MouseEvent},
 };
 use crate::{
     mouse::{Event, Format},
     point::Coordinate,
 };
-use size::{Coordinate as Position, Size, Space};
+use dimensions::{Coordinate as Position, Size, Space};
 
 /// Mouse reporting options and optional last-cell tracking.
 #[derive(Clone, Debug)]

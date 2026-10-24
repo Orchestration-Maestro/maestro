@@ -1,5 +1,5 @@
 //! Shared deleted-text history and owned undo snapshots.
-use maestro_tui::kill_ring::{KillRing, KillRingOptions};
+use maestro_tui::clipboard::{KillRing, KillRingOptions};
 
 #[test]
 fn kill_ring_ignores_empty_accumulates_and_rotates() {

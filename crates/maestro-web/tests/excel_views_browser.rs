@@ -64,7 +64,7 @@ fn encoded(name: &str) -> String {
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
     Rc::new(RefCell::new(maestro_web::Attachment {
         id: "same".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "original.xlsx".into(),
         mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".into(),
         size: bytes("two").len(),

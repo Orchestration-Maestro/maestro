@@ -11,7 +11,7 @@ impl<C: FnMut() -> u128> App<C> {
     pub(super) fn sync_runtime_detection_controls(
         &self,
         released: Option<(
-            maestro_workspace::layout::PaneId,
+            maestro_workspace::tiling::PaneId,
             maestro_detection::agents::Agent,
         )>,
         updates: &[PaneStateUpdate],

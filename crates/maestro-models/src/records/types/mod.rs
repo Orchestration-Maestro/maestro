@@ -6,7 +6,7 @@ pub use execution::{Execution, Local, Threaded};
 mod options;
 use crate::Cancellation;
 use crate::records::diagnostics::DiagnosticErrorInfo;
-pub use crate::records::event_stream::AssistantMessageEventStream;
+pub use crate::records::events::AssistantMessageEventStream;
 pub use options::*;
 
 /// Owned native callback future.

@@ -31,6 +31,7 @@ forbidden_lint_groups = "forbid"
 
 [workspace.lints.clippy]
 pedantic = { level = "forbid", priority = -1 }
+module_name_repetitions = "forbid"
 missing_docs_in_private_items = "forbid"
 redundant_clone = "forbid"
 too_many_arguments = "forbid"

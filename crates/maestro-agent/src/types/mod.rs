@@ -72,7 +72,7 @@ impl<C: CustomAgentMessages> AgentMessage<C> {
     /// Return an owned snapshot of a standard model message, or `None` for custom input.
     #[must_use]
     pub fn to_message(&self) -> Option<maestro_models::Message> {
-        use crate::agent::read;
+        use crate::runtime::read;
         use maestro_models::Message;
         match self {
             Self::User(value) => Some(Message::User(read(value).clone())),

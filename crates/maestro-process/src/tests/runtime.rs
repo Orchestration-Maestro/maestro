@@ -3,12 +3,12 @@
 
 /// Builds the same I/O runtime as the synchronous process bridges.
 pub(crate) fn runtime() -> tokio::runtime::Runtime {
-    crate::child_process::runtime().unwrap()
+    crate::children::runtime().unwrap()
 }
 
 /// Pauses the clock before the timer driver's origin is created.
 pub(crate) fn paused_runtime() -> tokio::runtime::Runtime {
-    crate::child_process::runtime_builder()
+    crate::children::runtime_builder()
         .start_paused(true)
         .build()
         .unwrap()

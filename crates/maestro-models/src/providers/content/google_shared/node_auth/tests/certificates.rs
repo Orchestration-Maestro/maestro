@@ -80,7 +80,7 @@ fn trusted_client(
         .add_root_certificate(root)
         .build()
         .map_err(|_| super::super::base_external_client::invalid_token())?;
-    Ok(crate::providers::http::supplied_fetch(client))
+    Ok(crate::providers::transport::supplied_fetch(client))
 }
 
 /// Build a server that verifies the controlled cloud-authentication client certificate.

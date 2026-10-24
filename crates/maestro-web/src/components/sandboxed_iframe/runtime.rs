@@ -1,6 +1,6 @@
 //! Assembly of already-serialized globals and complete provider functions.
 use super::document::head_program;
-use crate::components::sandbox::runtime_message_bridge::{
+use crate::components::sandbox::routing::{
     RuntimeMessageBridge, RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
 use maestro_app::{DiagnosticErrorInfo, compact_json};

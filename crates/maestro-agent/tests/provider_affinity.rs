@@ -182,7 +182,7 @@ fn local_awaited_registered_dispatch_uses_required_submission() {
                 awaited(
                     continuation,
                     &config,
-                    maestro_agent::agent_loop::LocalAgentLoopOptions::RegisteredDispatch {
+                    maestro_agent::execution::LocalAgentLoopOptions::RegisteredDispatch {
                         signal: None,
                         spawn,
                     },
@@ -254,7 +254,7 @@ fn local_config(model: maestro_models::Model) -> maestro_agent::LocalAgentLoopCo
 async fn awaited(
     continuation: bool,
     config: &maestro_agent::LocalAgentLoopConfig,
-    options: maestro_agent::agent_loop::LocalAgentLoopOptions,
+    options: maestro_agent::execution::LocalAgentLoopOptions,
 ) -> Vec<maestro_agent::AgentMessage> {
     let context = maestro_agent::LocalAgentContext {
         system_prompt: "instructions".into(),
@@ -266,11 +266,11 @@ async fn awaited(
             as <Local as maestro_models::Execution>::Future<'static, _>
     });
     if continuation {
-        maestro_agent::agent_loop::local::run_agent_loop_continue(context, config, emit, options)
+        maestro_agent::execution::local::run_agent_loop_continue(context, config, emit, options)
             .await
             .unwrap()
     } else {
-        maestro_agent::agent_loop::local::run_agent_loop(
+        maestro_agent::execution::local::run_agent_loop(
             vec![support::user("prompt")],
             context,
             config,
@@ -318,7 +318,7 @@ fn local_replacement_stream_needs_no_provider_submission() {
                 history.write().unwrap().push(support::user("transformed"));
                 Box::pin(std::future::ready(Ok(history)))
             }));
-            let options = maestro_agent::agent_loop::LocalAgentLoopOptions::ReplacementStream {
+            let options = maestro_agent::execution::LocalAgentLoopOptions::ReplacementStream {
                 signal: None,
                 stream_fn: replacement_stream(if continuation { 2 } else { 3 }),
             };
@@ -373,19 +373,19 @@ fn local_submitted_loops_reuse_their_task_owner() {
                 tools: None,
             };
             let stream = if continuation {
-                maestro_agent::agent_loop::local::agent_loop_continue(
+                maestro_agent::execution::local::agent_loop_continue(
                     context,
                     Rc::new(config),
-                    maestro_agent::agent_loop::AgentLoopOptionsRecord::default(),
+                    maestro_agent::execution::AgentLoopOptionsRecord::default(),
                     spawn,
                 )
                 .unwrap()
             } else {
-                maestro_agent::agent_loop::local::agent_loop(
+                maestro_agent::execution::local::agent_loop(
                     vec![support::user("prompt")],
                     context,
                     Rc::new(config),
-                    maestro_agent::agent_loop::AgentLoopOptionsRecord::default(),
+                    maestro_agent::execution::AgentLoopOptionsRecord::default(),
                     spawn,
                 )
             };

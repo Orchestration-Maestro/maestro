@@ -5,9 +5,7 @@ use crate::utils::lock::{read, write};
 /// A returned file whose content and metadata retain their original values.
 pub type DownloadableFile<V = serde_json::Value> = SandboxFile<V, V>;
 
-use super::sandbox_runtime_provider::{
-    RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
-};
+use super::providers::{RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider};
 use indexmap::IndexMap;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use std::sync::{Arc, RwLock};

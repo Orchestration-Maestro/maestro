@@ -589,13 +589,13 @@ fn persists_application_and_llm_messages_at_message_end() {
         prompt(&h, "use the tool").await;
         h.session
             .send_custom_message(
-                maestro_session::messages::CustomMessageInput {
+                maestro_session::message_records::CustomMessageInput {
                     custom_type: "note".into(),
                     content: maestro_models::UserContent::Text("remember".into()),
                     display: true,
                     details: Presence::Missing,
                 },
-                maestro_session::messages::SendMessageOptions {
+                maestro_session::message_records::SendMessageOptions {
                     trigger_turn: Some(true),
                     ..Default::default()
                 },

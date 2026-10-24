@@ -1,10 +1,10 @@
 #![doc = include_str!("../../../docs/terminal/native-terminal.md")]
 
 #[cfg(unix)]
-pub mod terminal;
+pub mod adapter;
 #[cfg(unix)]
-pub use terminal::ProcessTerminal;
+pub use adapter::ProcessTerminal;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod runtime;
+pub mod scheduling;
 #[cfg(not(target_arch = "wasm32"))]
-pub use runtime::ProcessTuiRuntime;
+pub use scheduling::ProcessTuiRuntime;

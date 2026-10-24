@@ -15,10 +15,10 @@ use super::wire::{
     ToolConfiguration, ToolInputSchema, ToolResultBlock, ToolResultContentBlock, ToolSpecification,
     ToolUseBlock, Union, Unit,
 };
-use crate::arguments::json_parse::whitespace;
+use crate::parameters::json_parse::whitespace;
 use crate::projection::normalize_tool_call_id;
 use crate::providers::base64_text::FORGIVING;
-use crate::providers::http::RequestFailure;
+use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantContent, AssistantMessage, Message as Turn, Model, Tool as ContextTool, ToolChoice,
     ToolResultMessage, UserBlock, UserContent, transform_messages,

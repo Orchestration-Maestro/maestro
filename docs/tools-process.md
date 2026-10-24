@@ -246,7 +246,7 @@ native operation implementations share one driver. The process leaf's
 
 ## PTY children
 
-On Linux, `maestro_process::pty::spawn` returns separate terminal-master and child
+On Linux, `maestro_process::terminal::spawn` returns separate terminal-master and child
 owners. `PtySetupEntry` supplies the executable and arguments that invoke the
 process-owned child setup entry. Its `spawn` operation preserves native target
 arguments, working directory and inherited or replacement environment policy.

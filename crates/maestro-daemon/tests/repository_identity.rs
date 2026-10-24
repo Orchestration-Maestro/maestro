@@ -8,18 +8,18 @@ mod support;
 use maestro_daemon::{
     app::App,
     settings::model::Config,
-    terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState},
+    terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::{
+    spaces::{Workspace, WorkspaceTopology},
     terminal_id::TerminalId,
-    workspace::{Workspace, WorkspaceTopology},
 };
 use std::{collections::HashMap, path::PathBuf};
 
 #[test]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -50,7 +50,7 @@ async fn check_admitted_repository(args: &[String]) {
     std::fs::create_dir(root.join(".git")).unwrap();
     std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = launch::launch_inputs(args, manifests);
     let mut config = Config::default();

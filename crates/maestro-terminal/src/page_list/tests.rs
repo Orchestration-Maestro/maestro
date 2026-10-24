@@ -368,7 +368,7 @@ fn check_pin_subsets(list: &PageList, pin: Pin) {
 /// Fill the retained pin's row with managed values and a background-only neighbour.
 fn populate_pin_views(list: &mut PageList, pin: Pin, style: crate::Style) {
     use crate::{
-        hyperlink::{Hyperlink, HyperlinkId},
+        links::{Hyperlink, HyperlinkId},
         page::{CellPosition, cell::Content},
     };
     let page = list.page_mut(pin.node).unwrap();

@@ -7,7 +7,7 @@ use crate::support::presenters::{Harness as Presenters, NoWatch, theme, view};
 use maestro_app::presentation_data::input_selectors::{
     ConfigSelectorFactory, ConfigSelectorOptions,
 };
-use maestro_cli::input::config_selector::ConfigPresentation;
+use maestro_cli::input::configuration::ConfigPresentation;
 use maestro_test_directory::Scratch;
 use maestro_theme::ThemeState;
 use serde_json::json;

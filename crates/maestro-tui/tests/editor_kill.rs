@@ -155,7 +155,7 @@ fn maestro_editor_no_op_delete_operations_do_not_push_undo_snapshots() {
 }
 
 fn ring_editor(entries: &[&str]) -> (maestro_tui::TUI, std::rc::Rc<maestro_tui::Editor>) {
-    use maestro_tui::{Editor, EditorOptions, tui::InputHandler};
+    use maestro_tui::{Editor, EditorOptions, interface::InputHandler};
     let (tui, _, _) = support::host(24);
     let editor = std::rc::Rc::new(Editor::new(
         &tui,
@@ -171,7 +171,7 @@ fn ring_editor(entries: &[&str]) -> (maestro_tui::TUI, std::rc::Rc<maestro_tui::
 }
 #[test]
 fn yank_callbacks_keep_deletion_before_rotation() {
-    use maestro_tui::tui::InputHandler;
+    use maestro_tui::interface::InputHandler;
     use std::{
         cell::{Cell, RefCell},
         rc::Rc,
@@ -208,7 +208,7 @@ fn yank_callbacks_keep_deletion_before_rotation() {
 
 #[test]
 fn yank_callbacks_read_live_ring_after_deletion() {
-    use maestro_tui::tui::InputHandler;
+    use maestro_tui::interface::InputHandler;
     use std::{
         cell::{Cell, RefCell},
         rc::Rc,
@@ -236,7 +236,7 @@ fn yank_callbacks_read_live_ring_after_deletion() {
 
 #[test]
 fn yank_reentry_never_erases_replacement_text() {
-    use maestro_tui::{autocomplete::CursorPosition, tui::InputHandler};
+    use maestro_tui::{candidates::CursorPosition, interface::InputHandler};
     use std::{
         cell::{Cell, RefCell},
         rc::Rc,
@@ -279,7 +279,7 @@ fn yank_reentry_never_erases_replacement_text() {
 
 #[test]
 fn yank_pop_from_deletion_callback_does_not_rotate_again() {
-    use maestro_tui::{autocomplete::CursorPosition, tui::InputHandler};
+    use maestro_tui::{candidates::CursorPosition, interface::InputHandler};
     use std::{cell::Cell, rc::Rc};
     let _guard = support::globals();
     for (entries, cursor) in [

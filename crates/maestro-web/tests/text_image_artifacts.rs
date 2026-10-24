@@ -4,7 +4,7 @@ use crate::artifact_support;
 use crate::session_header_support;
 use crate::text_image_support;
 use artifact_support::Frame;
-use maestro_web::{ArtifactElement, tools::artifacts::create_artifact_element};
+use maestro_web::{ArtifactElement, tools::documents::create_artifact_element};
 use session_header_support::Host;
 use std::rc::Rc;
 
@@ -253,7 +253,7 @@ fn image_download_rejects_invalid_base64() {
         let frame = Frame::default();
         assert!(matches!(
             frame.draw(&mut view, true, vec![]),
-            Err(maestro_web::tools::artifacts::ArtifactUiError::Presentation(_))
+            Err(maestro_web::tools::documents::ArtifactUiError::Presentation(_))
         ));
         assert!(host.downloads.borrow().is_empty());
         frame.draw(&mut view, false, vec![]).unwrap();

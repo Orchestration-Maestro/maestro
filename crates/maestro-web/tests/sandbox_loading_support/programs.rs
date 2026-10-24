@@ -11,11 +11,18 @@ pub(crate) async fn program_witness() {
     let sandbox = adapter();
     let providers = vec![SharedHandle::new(Provider {
         fixture: loading.clone(),
-        data: js_sys::JSON::parse(&serde_json::json!({"obsData": fixture.program_input("raw")}).to_string())
-            .unwrap(),
+        data: js_sys::JSON::parse(
+            &serde_json::json!({"obsData": fixture.program_input("raw")}).to_string(),
+        )
+        .unwrap(),
         runtime: fixture.program_input("provider"),
         failure: None,
-    }) as SharedHandle<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
+    })
+        as SharedHandle<
+            dyn maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider<
+                    super::BrowserSandboxValue,
+                >,
+        >];
     let html = sandbox
         .prepare_html_document("program", &fixture.program_input("user"), &providers, None)
         .unwrap();
@@ -125,10 +132,18 @@ pub(crate) async fn marker_witness() {
     let marker = "__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__";
     let providers = vec![SharedHandle::new(Provider {
         fixture: loading.clone(),
-        data: js_sys::JSON::parse(&serde_json::json!({marker: marker, "attachment": {"text": marker}}).to_string()).unwrap(),
+        data: js_sys::JSON::parse(
+            &serde_json::json!({marker: marker, "attachment": {"text": marker}}).to_string(),
+        )
+        .unwrap(),
         runtime: fixture.program_input("marker-provider"),
         failure: None,
-    }) as SharedHandle<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
+    })
+        as SharedHandle<
+            dyn maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider<
+                    super::BrowserSandboxValue,
+                >,
+        >];
     let html = sandbox
         .prepare_html_document(
             marker,

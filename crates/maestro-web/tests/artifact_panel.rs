@@ -324,7 +324,7 @@ fn artifact_panel_open_and_close_notifications_stay_distinct() {
 /// Pair actual body identity with the reached original-file header, not mere presence.
 fn assert_visible(
     harness: &Harness,
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     expected: &[String],
 ) {
     let visible = harness.visible();
@@ -442,7 +442,7 @@ fn artifact_panel_reconnect_retains_views_and_first_key() {
             harness.caller.show_artifact(active);
         } else {
             // A fresh caller can own the same records with absent selection.
-            let empty = maestro_app::browser::tools::artifacts::LocalArtifactsPanel::new_local(
+            let empty = maestro_app::browser::tools::documents::LocalArtifactsPanel::new_local(
                 harness.presentation.clone(),
             );
             *empty.artifacts().write().unwrap() =
@@ -457,7 +457,7 @@ fn artifact_panel_reconnect_retains_views_and_first_key() {
 /// Disconnect and reconnect with actual surviving factory handles.
 fn reconnect(
     harness: &Harness,
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     expected: &artifact_support::panel::Output,
 ) {
     let before: Vec<_> = harness
@@ -603,7 +603,7 @@ fn draw_underlying(harness: &Harness, events: Vec<egui::Event>) -> (bool, egui::
                 .render(
                     ui,
                     &harness.caller,
-                    maestro_web::tools::artifacts::artifact_element::ArtifactView {
+                    maestro_web::tools::documents::artifact_element::ArtifactView {
                         highlighter: &crate::highlighter_support::NoHighlight,
                         i18n: &harness.frame.i18n,
                         presentation: &presentation,
@@ -856,7 +856,7 @@ fn artifact_panel_final_drop_releases_only_owned_views() {
     harness.panel.set_on_close(Some(Rc::new(move || {
         let _ = &captured;
     })));
-    let mut unrelated = maestro_web::tools::artifacts::create_artifact_element(
+    let mut unrelated = maestro_web::tools::documents::create_artifact_element(
         "unrelated.zip",
         "AA==",
         host.clone(),
@@ -948,7 +948,7 @@ fn artifact_panel_reentrant_view_access_returns_conflict() {
     *harness.host.on_visibility.borrow_mut() = Some(Rc::new(move || {
         assert!(matches!(
             panel.upgrade().unwrap().show_artifact("a.zip"),
-            Err(maestro_web::tools::artifacts::ArtifactUiError::BorrowConflict)
+            Err(maestro_web::tools::documents::ArtifactUiError::BorrowConflict)
         ));
         observed.set(true);
     }));

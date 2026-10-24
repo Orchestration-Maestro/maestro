@@ -8,9 +8,9 @@ mod support;
 
 use maestro_daemon::{
     api::event_hub::EventHub,
-    app::{App, state::TabBarStatusSegment},
+    app::{App, model::TabBarStatusSegment},
     events::AppEvent,
-    settings::{model::Config, tab_bar::TabBarRightEntryConfig},
+    settings::{model::Config, tabs::TabBarRightEntryConfig},
 };
 use maestro_test_directory::temporary_root;
 use std::time::Instant;

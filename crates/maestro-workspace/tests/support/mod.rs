@@ -2,8 +2,8 @@
 #![cfg(test)]
 use maestro_protocol::schema::SplitDirection;
 use maestro_workspace::{
-    layout::{PaneId, SplitRequest},
-    workspace::WorkspaceTopology,
+    spaces::WorkspaceTopology,
+    tiling::{PaneId, SplitRequest},
 };
 
 pub fn topology() -> WorkspaceTopology<fn() -> u128> {
@@ -48,7 +48,7 @@ pub fn add_tab(owner: &mut WorkspaceTopology<fn() -> u128>, workspace: usize) ->
         .0
 }
 
-pub fn assert_invariants(workspace: &maestro_workspace::workspace::Workspace) {
+pub fn assert_invariants(workspace: &maestro_workspace::spaces::Workspace) {
     let mut ids = std::collections::HashSet::new();
     let mut terminals = std::collections::HashSet::new();
     let mut tab_numbers = std::collections::HashSet::new();

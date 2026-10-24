@@ -6,7 +6,7 @@ use maestro_agent::AgentMessage;
 use maestro_extensions::{ExtensionExecution, NativeAgentMessage};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, timestamp_now};
 use maestro_session::Presence;
-use maestro_session::messages::{BashExecutionMessage, CustomAgentMessages};
+use maestro_session::message_records::{BashExecutionMessage, CustomAgentMessages};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tools::{
     BashError, BashExecutorOptions, BashResult, create_local_bash_operations,

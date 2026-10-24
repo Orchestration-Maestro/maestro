@@ -13,9 +13,9 @@ use maestro_models::{
     DiagnosticErrorInfo, ImageContent, TextContent, UserBlock, UserContent, UserMessage,
     timestamp_now,
 };
-use maestro_resources::{expand_prompt_template, skills::read_text, strip_frontmatter};
+use maestro_resources::{catalog::read_text, expand_prompt_template, strip_frontmatter};
 use maestro_session::Presence;
-use maestro_session::messages::{
+use maestro_session::message_records::{
     CustomAgentMessages, CustomMessage, CustomMessageInput, UserMessageDelivery,
 };
 use std::rc::Rc;

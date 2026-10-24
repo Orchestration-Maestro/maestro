@@ -751,7 +751,7 @@ async fn guide_proxy_and_raw_loops_run_offline_case() {
     let (fetch, requests) = support::proxy::replying(support::proxy::Reply::chunks(
         support::proxy::canonical_lines(),
     ));
-    let agent = support::proxy::proxy_agent(support::proxy::proxy_stream_fn(
+    let agent = support::proxy::agent(support::proxy::stream_fn(
         "https://proxy.example".into(),
         Some(fetch),
     ));

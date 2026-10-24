@@ -1,6 +1,6 @@
 //! Right-side tab-bar entry preferences.
 
-use super::super::tab_bar::TabBarRightEntryConfig;
+use super::super::tabs::TabBarRightEntryConfig;
 use serde_json::json;
 
 #[test]
@@ -41,7 +41,7 @@ fn tab_entries_preserve_command_defaults() {
 
 #[test]
 fn tab_entry_diagnostics_cover_format_and_schedules() {
-    use super::super::tab_bar::{parse_tab_bar_datetime_format, tab_bar_right_diagnostics};
+    use super::super::tabs::{parse_tab_bar_datetime_format, tab_bar_right_diagnostics};
     assert_eq!(
         parse_tab_bar_datetime_format("").unwrap_err(),
         "datetime format is empty"

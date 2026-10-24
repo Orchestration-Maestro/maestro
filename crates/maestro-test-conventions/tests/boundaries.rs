@@ -1410,8 +1410,8 @@ fn interactive_session_setup_rejects_bypasses() {
     for relative in [
         "tests/footer_support/mod.rs",
         "tests/footer_support/corpus.rs",
-        "src/interactive_mode/tests.rs",
-        "src/interactive_mode/startup/tests.rs",
+        "src/interaction/tests.rs",
+        "src/interaction/startup/tests.rs",
     ] {
         let path = source(&workspace, "maestro-chat", relative, DUPLICATE_SETUP);
         assert_setup_rejected(&workspace, &path, relative);

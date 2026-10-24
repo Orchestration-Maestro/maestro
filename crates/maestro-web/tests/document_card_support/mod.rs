@@ -39,7 +39,7 @@ pub struct Expected {
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct DownloadExpectation {
-    pub r#type: maestro_app::browser::utils::attachment_utils::AttachmentType,
+    pub r#type: maestro_app::browser::utils::attachments::AttachmentType,
     pub file_name: String,
     pub mime_type: String,
     pub size: usize,

@@ -6,7 +6,7 @@ use crate::display_cases::{cases, search_cases, search_keys};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::display_support::{Env, bind};
 use maestro_tools::output::render_utils::{normalize_display_text, replace_tabs, str, strip_ansi};
-use maestro_tools::utils::shell::sanitize_binary_output;
+use maestro_tools::utils::environment::sanitize_binary_output;
 use maestro_tui::{TruncateOptions, truncate_to_width, visible_width};
 use serde_json::json;
 

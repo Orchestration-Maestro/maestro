@@ -330,7 +330,7 @@ pub fn artifact_panel_browser_attachment_modal_still_releases_children() {
     js("globalThis.unrelated=document.querySelector('pre').parentElement;");
     let attachment = Rc::new(RefCell::new(maestro_web::Attachment {
         id: "original".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "note.txt".into(),
         mime_type: "text/plain".into(),
         size: 3,

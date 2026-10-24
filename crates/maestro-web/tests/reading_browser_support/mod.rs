@@ -4,7 +4,7 @@ use crate::support;
 use maestro_web::{
     ArtifactElement, AttachmentOverlay, I18n,
     browser::attachment_content::*,
-    tools::artifacts::{artifact_element::ArtifactView, create_artifact_element},
+    tools::documents::{artifact_element::ArtifactView, create_artifact_element},
 };
 use std::{
     cell::{Cell, RefCell},

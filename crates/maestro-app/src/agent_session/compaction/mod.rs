@@ -6,7 +6,7 @@ use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_extensions::{ExtensionExecution, SessionBeforeCompactEvent, SessionCompactEvent};
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
-use maestro_session::compaction::{
+use maestro_session::summarization::{
     CompactionPreparation, CompactionResult, CompactionSettings, SummaryOptions, prepare_compaction,
 };
 use maestro_session::{
@@ -136,7 +136,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             thinking_level: Some(self.thinking_level()),
         };
         let model = read(&self.model()).clone();
-        maestro_session::compaction::compact(preparation, &model, &options)
+        maestro_session::summarization::compact(preparation, &model, &options)
             .await
             .map(stored_result)
     }

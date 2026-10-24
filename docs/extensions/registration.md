@@ -16,7 +16,7 @@ registration and facade flag reads return the stale-context error.
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::{create_event_bus, Extension, ExtensionAPI, ExtensionRunner, SourceInfo};
-use maestro_extensions::runner::ExtensionRunnerSession;
+use maestro_extensions::execution::ExtensionRunnerSession;
 use maestro_extensions::types::{
     RegisteredCommandOptions, ExtensionFlagOptions,
     ExtensionShortcutOptions, FlagType, FlagValue,
@@ -144,7 +144,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
 #       }
 #   }
 #   let no_commands = maestro_models::SharedHandle::new(NoCommands);
-#   let session = maestro_extensions::runner::ExtensionRunnerSession {
+#   let session = maestro_extensions::execution::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
 #       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
@@ -194,7 +194,7 @@ use maestro_extensions::{MessageRenderOptions, MessageRenderer, MessageRendererC
 use maestro_extensions::create_event_bus;
 use maestro_models::{Execution, Threaded, UserContent};
 use maestro_session::Presence;
-use maestro_session::messages::CustomMessage;
+use maestro_session::message_records::CustomMessage;
 use std::sync::Arc;
 
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -288,7 +288,7 @@ suspension; a `Local` callback may keep it across suspensions.
 ```rust
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::AuthStorage;
-use maestro_extensions::runner::ExtensionRunnerSession;
+use maestro_extensions::execution::ExtensionRunnerSession;
 use maestro_extensions::{ExtensionContextActions, ExtensionRunner};
 use maestro_models::SharedHandle;
 use maestro_session::SessionManager;
@@ -358,7 +358,7 @@ use maestro_extensions::{
     CommandContextOperations, ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext,
 };
 use maestro_extensions::types::{NewSessionCommandOptions, SessionChangeResult};
-use maestro_extensions::runner::ExtensionRunnerSession;
+use maestro_extensions::execution::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # fn no_op_operations() -> CommandContextOperations {
 #     let uncancelled = || Box::pin(std::future::ready(Ok(SessionChangeResult { cancelled: false })));

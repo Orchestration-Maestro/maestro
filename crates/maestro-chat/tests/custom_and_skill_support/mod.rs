@@ -10,7 +10,7 @@ use maestro_chat::{CustomMessageComponent, SkillInvocationMessageComponent};
 use maestro_theme::{LiveTheme, ThemeColor, ThemeState, paint};
 use maestro_tui::{
     Component, KeybindingDefinition, KeybindingKeys, KeybindingsManager, MarkdownTheme,
-    TerminalImage, Text, get_keybindings, set_keybindings, tui::ComponentHandle,
+    TerminalImage, Text, get_keybindings, interface::ComponentHandle, set_keybindings,
 };
 use serde::Deserialize;
 use serde_json::Value;

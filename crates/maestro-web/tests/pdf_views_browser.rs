@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::support;
 use maestro_web::{
-    AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
+    AttachmentOverlay, browser::attachment_content::*, tools::documents::create_artifact_element,
 };
 use num_traits::ToPrimitive as _;
 use std::{cell::RefCell, rc::Rc};
@@ -26,7 +26,7 @@ use reading_browser_support::{View, check, click, js, run};
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
     Rc::new(RefCell::new(maestro_web::Attachment {
         id: "same".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "original.pdf".into(),
         mime_type: "application/pdf".into(),
         size: bytes(true).len(),
@@ -386,15 +386,15 @@ pub fn reading_content_switches_release_old_native_roots() {
         run("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
         record.borrow_mut().mime_type = mime.into();
         record.borrow_mut().r#type = if mime == "image/png" {
-            maestro_app::browser::utils::attachment_utils::AttachmentType::Image
+            maestro_app::browser::utils::attachments::AttachmentType::Image
         } else {
-            maestro_app::browser::utils::attachment_utils::AttachmentType::Document
+            maestro_app::browser::utils::attachments::AttachmentType::Document
         };
         view.overlay(&mut overlay, vec![]);
         check("!oldRoot.isConnected&&!document.querySelector('.maestro-pdf')");
         record.borrow_mut().mime_type = "application/pdf".into();
         record.borrow_mut().r#type =
-            maestro_app::browser::utils::attachment_utils::AttachmentType::Document;
+            maestro_app::browser::utils::attachments::AttachmentType::Document;
         view.overlay(&mut overlay, vec![]);
         check(
             "document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf').isConnected",
@@ -422,7 +422,7 @@ pub fn reading_content_switches_release_old_native_roots() {
 fn assert_artifact_error_chrome(view: &mut View) {
     view.element.set_content("Zg==".into());
     let diagnostic =
-        maestro_app::browser::utils::attachment_utils::pdf::PdfDocument::new(vec![102])
+        maestro_app::browser::utils::attachments::portable::PdfDocument::new(vec![102])
             .err()
             .unwrap()
             .to_string();

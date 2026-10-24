@@ -239,7 +239,7 @@ fn first_frame_overflow_is_rejected() {
 
 #[test]
 fn settings_description_rows_fit_the_frame_viewport() {
-    use maestro_tui::components::settings_list::SettingsListOptions;
+    use maestro_tui::components::preferences::SettingsListOptions;
     use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme};
 
     for width in [1, 2, 3, 4, 8] {

@@ -220,12 +220,12 @@ impl ApiClient {
             }
         }
         let mut headers = IndexMap::new();
-        crate::providers::http::layer_request_headers(&mut headers, &authored, true)
+        crate::providers::transport::layer_request_headers(&mut headers, &authored, true)
             .map_err(|error| DiagnosticErrorInfo::error(format!("Header: {error}")))?;
         if let Some(milliseconds) = timeout {
             let seconds = maestro_json::compact_json(&Value::from((milliseconds / 1000.0).ceil()))
                 .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
-            crate::providers::http::layer_request_headers(
+            crate::providers::transport::layer_request_headers(
                 &mut headers,
                 &IndexMap::from([("X-Server-Timeout".to_owned(), seconds)]),
                 true,
@@ -298,14 +298,14 @@ impl ApiClient {
         fetch: crate::Fetch,
     ) -> Result<
         impl futures_core::Stream<Item = Result<String, DiagnosticErrorInfo>> + Unpin,
-        crate::providers::http::RequestFailure,
+        crate::providers::transport::RequestFailure,
     > {
-        use crate::providers::http::{RequestFailure, SseMessages, decode_utf8};
+        use crate::providers::transport::{RequestFailure, SseMessages, decode_utf8};
         let response = fetch(request)
             .await
             .map_err(|error| RequestFailure::new(error.to_string()))?;
         if !(200..300).contains(&response.status) {
-            let bytes = crate::providers::http::collect_body(response.body)
+            let bytes = crate::providers::transport::collect_body(response.body)
                 .await
                 .map_err(|error| RequestFailure::new(error.to_string()))?;
             let text = decode_utf8(&bytes);
@@ -344,7 +344,7 @@ struct ContentSource {
     /// Transport body.
     body: crate::HttpBody,
     /// Shared byte-framing owner.
-    decoder: crate::providers::http::SseMessages,
+    decoder: crate::providers::transport::SseMessages,
     /// Completed frames waiting for reduction.
     pending: std::collections::VecDeque<Result<String, DiagnosticErrorInfo>>,
     /// Whether the transport source has ended.
@@ -402,7 +402,7 @@ impl ContentSource {
 
 /// Select data or bare errors, normalizing null data roots to an empty response.
 fn response_data(
-    event: crate::providers::http::ServerSentEvent,
+    event: crate::providers::transport::ServerSentEvent,
 ) -> Option<Result<String, DiagnosticErrorInfo>> {
     if !event.is_data {
         return bare_error(&event.data).map(Err);
@@ -466,6 +466,6 @@ fn layer_generated(
         .into_iter()
         .filter(|(name, _)| !headers.contains_key(name))
         .collect();
-    crate::providers::http::layer_request_headers(headers, &generated, true)
+    crate::providers::transport::layer_request_headers(headers, &generated, true)
         .map_err(|error| DiagnosticErrorInfo::error(format!("Authentication: {error}")))
 }

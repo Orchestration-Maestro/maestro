@@ -7,11 +7,11 @@ mod presentation;
 pub use parse::PackageCommand;
 
 use super::package_manager_cli::parse::{PackageCommandOptions, UpdateTarget};
-use crate::input::config_selector::{ConfigPresentation, ConfigSelectorOptions, select_config};
+use crate::input::configuration::{ConfigPresentation, ConfigSelectorOptions, select_config};
 use maestro_app::configuration::config::{
     SelfUpdateCommand, SelfUpdateOperations, get_self_update_plan, run_self_update,
 };
-use maestro_app::configuration::version_check::VersionCheckOptions;
+use maestro_app::configuration::releases::VersionCheckOptions;
 use maestro_app::{
     InstalledSourceScope, PackageManager, PackageManagerOptions, Settings, SettingsManager,
 };

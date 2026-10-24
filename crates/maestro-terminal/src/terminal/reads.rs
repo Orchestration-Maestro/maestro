@@ -1,7 +1,7 @@
 //! Active-screen reads and viewport scrolling.
 
 use super::Terminal;
-use crate::{Scrollbar, kitty::key::Flags, page_list::Scroll, screen_set::Key};
+use crate::{Scrollbar, kitty::key::Flags, page_list::Scroll, screens::Key};
 
 /// Viewport destination within retained rows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -95,7 +95,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// Sleeps `delay` milliseconds under `signal`, then schedules the continuation; an abort
     /// ends the attempt instead.
     async fn wait_out_backoff(&self, attempt: u32, delay: f64, signal: &Cancellation) -> bool {
-        if maestro_tools::process::sleep::sleep(millis(delay), Some(signal))
+        if maestro_tools::process::delay::sleep(millis(delay), Some(signal))
             .await
             .is_err()
         {

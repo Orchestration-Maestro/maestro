@@ -11,7 +11,7 @@ use indexmap::IndexMap;
 use maestro_app::AgentSessionEvent;
 use maestro_extensions::{ExtensionAPI, ExtensionFactory};
 use maestro_models::{Local, UserContent};
-use maestro_session::messages::{SendUserMessageOptions, UserMessageDelivery};
+use maestro_session::message_records::{SendUserMessageOptions, UserMessageDelivery};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;

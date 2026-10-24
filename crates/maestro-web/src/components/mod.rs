@@ -1,8 +1,8 @@
 //! Browser attachment components.
 pub mod attachment_tile;
-pub mod diff;
+pub mod changes;
 /// Retained single-line browser input.
-pub mod input;
+pub mod fields;
 /// Open custom-message role callbacks.
 pub mod message_renderer_registry;
 /// Retained transcript message rows.
@@ -20,14 +20,14 @@ pub mod sandboxed_iframe;
 
 /// Native button element.
 #[cfg(target_arch = "wasm32")]
-pub mod button;
+pub mod controls;
 /// Original-text copy control.
 pub mod copy_button;
 
-/// Native highlighted code listing.
-pub mod code_block;
 /// Native Markdown with highlighted code and math.
 pub mod markdown_block;
+/// Native highlighted code listing.
+pub mod source;
 
 /// Literal native console output with owned copy feedback.
 pub mod console_block;

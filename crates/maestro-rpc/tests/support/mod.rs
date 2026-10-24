@@ -2,7 +2,7 @@
 //! and the test's end of it.
 #![cfg(unix)]
 use maestro_app::configuration::config::get_theme_directories;
-use maestro_app::rpc_mode::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
+use maestro_app::connection_runner::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
 use maestro_app::rpc_types::{workspace, workspace_schema};
 use maestro_app::{
     AgentSessionRuntime, CreateAgentSessionFromServicesOptions, CreateAgentSessionRuntimeFactory,

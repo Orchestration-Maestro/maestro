@@ -277,7 +277,7 @@ cell widths belong to the [terminal components](../terminal/components.md).
 ## Resource configuration
 
 Native callers use
-[`components::config_selector::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/config_selector/mod.rs).
+[`components::config_selector::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/configuration/mod.rs).
 Pass `maestro_app::ResolvedPaths`, a shared mutable `SettingsManager`,
 `ConfigSelectorOptions` and `ConfigSelectorCallbacks`. Options supply project and
 agent directories, a prepared `Collator`, live theme and a live bold-style policy.

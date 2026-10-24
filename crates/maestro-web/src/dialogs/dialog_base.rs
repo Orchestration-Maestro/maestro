@@ -1,6 +1,6 @@
 //! Owned dialog lifetimes in one canvas context.
-use super::dialog::{DialogBody, DialogProps};
-use crate::dialogs::dialog::DialogUiError;
+use super::surface::{DialogBody, DialogProps};
+use crate::dialogs::surface::DialogUiError;
 use crate::{
     I18n,
     browser::attachment_content::{AttachmentHost, FocusTarget, identity},
@@ -41,14 +41,14 @@ pub(super) struct State {
     pub(super) pressed: RefCell<Option<bool>>,
     /// Retained Close texture, updated only when its painted operands change.
     pub(super) ring:
-        RefCell<crate::browser::control_paint::Painter<super::dialog::close::CloseKey>>,
+        RefCell<crate::browser::control_paint::Painter<super::surface::close::CloseKey>>,
     /// Mount identity invalidated before removal effects or caller callbacks.
     pub(super) mount: Cell<u64>,
     /// Mounted Close properties, discarded before any removal effects.
-    pub(super) transitions: RefCell<Option<super::dialog::close::CloseTransitions>>,
+    pub(super) transitions: RefCell<Option<super::surface::close::CloseTransitions>>,
     /// Non-owning aliases for the existing reading transaction.
     #[cfg(target_arch = "wasm32")]
-    pub(super) native: RefCell<super::dialog::browser::Native>,
+    pub(super) native: RefCell<super::surface::browser::Native>,
 }
 /// Retained shell owner; dropping it releases its handling route.
 pub struct DialogBase {
@@ -100,7 +100,7 @@ impl DialogContext {
             let current = if escape {
                 owner.close(true)
             } else {
-                super::dialog::draw(&owner, i18n, presentation)
+                super::surface::draw(&owner, i18n, presentation)
             };
             result = result.and(current);
         }

@@ -1,18 +1,18 @@
 //! Model invocation records and their owning utilities.
 
-pub mod event_stream;
-pub mod hash;
-pub mod headers;
+pub mod digest;
+pub mod events;
+pub mod header_values;
 pub mod typebox_helpers;
 
 pub mod diagnostics;
 
-pub mod session_resources;
+pub mod sessions;
 
 pub mod types;
 
 pub mod api_registry;
-pub mod stream;
+pub mod invocation;
 
 /// Generate access to an independently owned native or browser-local store.
 macro_rules! platform_store_accessor {

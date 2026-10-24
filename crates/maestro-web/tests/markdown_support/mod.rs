@@ -18,7 +18,7 @@ mod tests {
             },
             timer::Timer,
         },
-        components::{code_block::CodeBlockView, markdown_block::MarkdownBlock},
+        components::{markdown_block::MarkdownBlock, source::CodeBlockView},
     };
     use serde::Deserialize;
     use std::{

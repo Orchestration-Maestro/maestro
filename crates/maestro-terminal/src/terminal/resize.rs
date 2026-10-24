@@ -2,7 +2,7 @@
 
 use super::{ScrollingRegion, SizeError, TABSTOP_INTERVAL, Terminal};
 use crate::{
-    Mode, osc::semantic_prompt::Redraw, page::StorageError, screen, screen_set::Key,
+    Mode, osc::semantic_prompt::Redraw, page::StorageError, screen, screens::Key,
     tabstops::Tabstops,
 };
 use std::num::NonZeroU16;

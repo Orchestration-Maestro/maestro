@@ -1,7 +1,7 @@
 //! Controlled terminal children through the checked libtest setup entry.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
-use maestro_process::pty::{self, PtyCommand, PtyEnvironment, PtySize};
+use maestro_process::terminal::{self as pty, PtyCommand, PtyEnvironment, PtySize};
 use maestro_test_process::{TestProcess, run_alone};
 use std::{
     ffi::OsString,
@@ -213,7 +213,7 @@ fn pty_resize_saturates_pixel_dimensions() {
         return;
     }
     let output = checked_target(
-        maestro_process::shell::pane_custom_command_pty_builder("exit 0"),
+        maestro_process::commands::pane_custom_command_pty_builder("exit 0"),
         size(),
         |pty| {
             let initial = rustix::termios::tcgetwinsize(&pty.master_fd)?;
@@ -336,7 +336,7 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
         assert_eq!(descriptor_count(), before);
     }
     let before = descriptor_count();
-    let mut command = maestro_process::shell::pane_custom_command_pty_builder("exit 0");
+    let mut command = maestro_process::commands::pane_custom_command_pty_builder("exit 0");
     command.environment =
         PtyEnvironment::Inherit(vec![("MAESTRO_PTY_DUP_FAILURE".into(), Some("1".into()))]);
     let error = pty::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
@@ -345,7 +345,7 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
         io::Error::from_raw_os_error(22).to_string()
     );
     assert_eq!(descriptor_count(), before);
-    let command = maestro_process::shell::pane_custom_command_pty_builder(
+    let command = maestro_process::commands::pane_custom_command_pty_builder(
         "printf 'checked failure completion\\n'",
     );
     let (pty, mut child) = pty::spawn(size(), command, |command| wrap(command, harness))?;

@@ -1,6 +1,6 @@
 # Artifact panels and views
 
-`maestro_web::tools::artifacts::create_artifact_element` constructs an owned
+`maestro_web::tools::documents::create_artifact_element` constructs an owned
 `Box<dyn maestro_web::ArtifactElement>` for text, images, Markdown, SVG, PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
 viewers are installed; they never silently become generic downloads.

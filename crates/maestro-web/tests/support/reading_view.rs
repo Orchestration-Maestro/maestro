@@ -1,7 +1,7 @@
 //! Projection of shared browser frame operands into retained tool/message content.
 use maestro_web::{
     TranslationFunction, browser::attachment_content::AttachmentHost,
-    components::code_block::CodeBlockView, tools::types::ToolRenderView,
+    components::source::CodeBlockView, tools::types::ToolRenderView,
 };
 use std::rc::Rc;
 

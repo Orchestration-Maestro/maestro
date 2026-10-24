@@ -89,7 +89,7 @@ impl ToolContent for RichText {
             let result = block
                 .render(
                     ui,
-                    maestro_web::components::code_block::CodeBlockView {
+                    maestro_web::components::source::CodeBlockView {
                         i18n: view.i18n,
                         presentation: view.presentation,
                         highlighter: view.highlighter,

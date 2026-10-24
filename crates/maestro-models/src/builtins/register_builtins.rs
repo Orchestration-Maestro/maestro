@@ -2,14 +2,14 @@
 use super::raw_options;
 use crate::SharedHandle;
 use crate::providers::assistant_output::{fail, initial_message};
-use crate::providers::chat::openai_completions as chat;
+use crate::providers::chat::endpoint as chat;
 use crate::providers::cloud::amazon_bedrock as bedrock;
-use crate::providers::content::{google as content, google_vertex as cloud_content};
-use crate::providers::http::RequestFailure;
-use crate::providers::messages::anthropic as messages;
-use crate::providers::reasoning::mistral as conversation;
-use crate::providers::response_sessions::openai_codex_responses as sessions;
-use crate::providers::responses::{azure_openai_responses as cloud, openai_responses as responses};
+use crate::providers::content::{generative as content, managed as cloud_content};
+use crate::providers::messages::endpoint as messages;
+use crate::providers::reasoning::endpoint as conversation;
+use crate::providers::response_sessions::codex as sessions;
+use crate::providers::responses_api::{azure_transport as cloud, openai as responses};
+use crate::providers::transport::RequestFailure;
 use crate::records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers,
     register_api_provider,
@@ -380,8 +380,7 @@ crate::records::platform_store_accessor!(
 
 /// Select the current pair, releasing the slot before invocation.
 fn selected_bedrock() -> BedrockProviderModule {
-    with_bedrock(|slot| slot.clone())
-        .unwrap_or_else(crate::bedrock_provider::bedrock_provider_module)
+    with_bedrock(|slot| slot.clone()).unwrap_or_else(crate::native::bedrock_provider_module)
 }
 
 /// Replace the callbacks used by subsequent bundled cloud-conversation invocations.

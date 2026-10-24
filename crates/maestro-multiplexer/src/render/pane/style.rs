@@ -1,12 +1,12 @@
 //! Frame styles and symbols for emulator cells.
 
 use crate::render::is_halfwidth_katakana_voiced_grapheme;
-use maestro_app::daemon::{pane::terminal::PaneRenderView, terminal_theme::RgbColor as HostColor};
+use maestro_app::daemon::{panes::display::PaneRenderView, terminal_theme::RgbColor as HostColor};
 use maestro_app::terminal::{
     color::{Palette, Rgb},
     kitty::graphics::unicode::PLACEHOLDER,
     page::cell::{Content, Wide},
-    render::RenderCell,
+    painting::RenderCell,
     style::{Color as CellColor, Flags},
 };
 use maestro_protocol::frames::with_underline_style;

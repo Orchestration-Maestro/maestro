@@ -1,8 +1,8 @@
 //! Application action interception around the toolkit editor.
 use indexmap::IndexMap;
-use maestro_tui::autocomplete::AutocompleteProvider;
+use maestro_tui::candidates::AutocompleteProvider;
 use maestro_tui::editor_component::{BorderColor, TextCallback};
-use maestro_tui::tui::InputHandler;
+use maestro_tui::interface::InputHandler;
 use maestro_tui::{
     Cancellation, Component, Editor, EditorComponent, EditorOptions, EditorTheme, FocusFlag,
     Focusable, KeybindingsManager, TUI,

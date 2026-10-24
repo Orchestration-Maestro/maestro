@@ -145,8 +145,8 @@ fn write(list: &mut PageList, y: u16, sequence: usize) {
         .unwrap();
     page.get_cells_mut(pin.y)[3] = PackedCell::init('l');
     let link = page
-        .insert_hyperlink(crate::hyperlink::Hyperlink {
-            id: crate::hyperlink::HyperlinkId::Implicit(0),
+        .insert_hyperlink(crate::links::Hyperlink {
+            id: crate::links::HyperlinkId::Implicit(0),
             uri: URI.to_vec(),
         })
         .unwrap();

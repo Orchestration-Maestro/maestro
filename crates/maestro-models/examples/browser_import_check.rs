@@ -1,5 +1,5 @@
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
-use maestro_models::providers::response_sessions::openai_codex_responses::{
+use maestro_models::providers::response_sessions::codex::{
     Nullable, OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
     close_openai_codex_web_socket_sessions, get_openai_codex_web_socket_debug_stats,
     reset_openai_codex_web_socket_debug_stats, stream_openai_codex_responses,
@@ -168,13 +168,13 @@ fn response_session_callbacks() {
 fn bedrock_surface() {
     std::hint::black_box((
         maestro_models::set_bedrock_provider_module,
-        maestro_models::bedrock_provider::bedrock_provider_module(),
+        maestro_models::native::bedrock_provider_module(),
     ));
     #[cfg(target_arch = "wasm32")]
     {
         let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
         let seen = std::rc::Rc::clone(&calls);
-        let mut module = maestro_models::bedrock_provider::bedrock_provider_module();
+        let mut module = maestro_models::native::bedrock_provider_module();
         let owner = maestro_models::SharedHandle::new(BrowserProvider(seen));
         module.stream_bedrock = owner.clone();
         module.stream_simple_bedrock = owner;

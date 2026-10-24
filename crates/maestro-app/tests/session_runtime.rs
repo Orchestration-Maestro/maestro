@@ -148,8 +148,8 @@ fn replaces_the_session_and_rebinds_before_with_session() {
 }
 
 /// A hidden custom message of type `probe`.
-fn probe_message() -> maestro_session::messages::CustomMessageInput {
-    maestro_session::messages::CustomMessageInput {
+fn probe_message() -> maestro_session::message_records::CustomMessageInput {
+    maestro_session::message_records::CustomMessageInput {
         custom_type: "probe".into(),
         content: maestro_models::UserContent::Text("probe".into()),
         display: false,

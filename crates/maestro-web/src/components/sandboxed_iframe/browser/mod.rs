@@ -2,11 +2,11 @@
 use super::{PrepareHtmlOptions, document, runtime};
 use crate::browser::{
     event_subscription::EventSubscription,
-    sandbox_value::{BrowserSandboxValue, diagnostic},
+    values::{BrowserSandboxValue, diagnostic},
 };
 use crate::components::sandbox::runtime_message_router::MessageConsumer;
 use js_sys::{JSON, Object, Reflect};
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
 use maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider;
 use maestro_app::{DiagnosticErrorInfo, SharedHandle};
 use maestro_theme::BrandPresentation;

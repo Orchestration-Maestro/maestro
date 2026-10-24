@@ -3,11 +3,11 @@
 use super::support::*;
 use maestro_protocol::schema::SplitDirection;
 use maestro_workspace::{
-    layout::PaneId,
+    spaces::Workspace,
     tab::{MovedPane, SpawnRequest},
-    workspace::Workspace,
+    tiling::PaneId,
 };
-use maestro_workspace::{layout::SplitRequest, workspace::WorkspaceTopology};
+use maestro_workspace::{spaces::WorkspaceTopology, tiling::SplitRequest};
 use std::{cell::Cell, rc::Rc};
 
 struct CallerOutput(Rc<Cell<usize>>);
@@ -19,7 +19,7 @@ fn spawn_output_belongs_to_caller() {
     for operation in 0..3 {
         let captured = outputs.clone();
         let observed = outputs.clone();
-        let spawn = move |id: maestro_workspace::layout::PaneId,
+        let spawn = move |id: maestro_workspace::tiling::PaneId,
                           request: maestro_workspace::tab::SpawnRequest| {
             assert_eq!(request.workspace_id, "w1");
             assert_eq!(request.tab_number, if operation == 0 { 1 } else { 2 });
@@ -122,7 +122,7 @@ fn pane_detach_promotes_root_without_losing_viewport_state() {
     assert!(!tab.zoomed);
     assert_eq!(tab.remove_pane(second), None);
     assert_eq!(
-        tab.take_pane_for_move(maestro_workspace::layout::PaneId::from_raw(999)),
+        tab.take_pane_for_move(maestro_workspace::tiling::PaneId::from_raw(999)),
         None
     );
     let moved = tab.take_pane_for_move(second).unwrap();
@@ -182,7 +182,7 @@ fn pane_moves_preserve_identity_and_recover_rejections() {
     assert_eq!(owner.workspaces[1].tabs[tab].root_pane, pane);
     assert_eq!(owner.workspaces[1].public_pane_number(pane), Some(2));
     let moved = owner.workspaces[1].take_pane_for_move(pane).unwrap().moved;
-    let recovered = maestro_workspace::workspace::WorkspaceTopology::from_existing_pane(
+    let recovered = maestro_workspace::spaces::WorkspaceTopology::from_existing_pane(
         &mut owner,
         "/recovered".into(),
         None,
@@ -305,7 +305,7 @@ fn assert_successful_split_controls(owner: &mut Topology, second: PaneId) {
         assert_eq!(tab.layout.focused(), if focus { pane } else { second });
         assert_eq!(
             tab.layout
-                .splits(maestro_workspace::layout::Rect::new(0, 0, 80, 24))
+                .splits(maestro_workspace::tiling::Rect::new(0, 0, 80, 24))
                 .last()
                 .unwrap()
                 .ratio
@@ -352,7 +352,7 @@ fn assert_same_workspace_transfer(owner: &mut Topology, root: PaneId, pane: Pane
 fn assert_invalid_tab_edits(owner: &mut Topology, root: PaneId) {
     let ws = &mut owner.workspaces[0];
     assert!(ws.close_pane(root));
-    assert!(!ws.close_pane(maestro_workspace::layout::PaneId::from_raw(999)));
+    assert!(!ws.close_pane(maestro_workspace::tiling::PaneId::from_raw(999)));
     assert_eq!(ws.focused_pane_id(), Some(root));
     assert!(!ws.close_tab(0));
     assert!(!ws.close_tab(99));

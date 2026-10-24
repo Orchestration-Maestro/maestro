@@ -11,7 +11,7 @@ use maestro_app::{
     ReadonlyFooterDataProvider, ThinkingLevel,
 };
 use maestro_chat::FooterComponent;
-use maestro_chat::components::footer::Environment;
+use maestro_chat::components::status::Environment;
 
 use maestro_theme::{Collator, LiveTheme, Theme, ThemeColor, ThemeState};
 use serde_json::Value;

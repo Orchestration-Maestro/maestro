@@ -146,7 +146,7 @@ fn edit_matching_failures_leave_original_bytes() {
 #[cfg(unix)]
 #[test]
 fn edit_execution_requires_read_and_write_access() {
-    use maestro_tools::edit_diff::compute_edit_diff;
+    use maestro_tools::previews::compute_edit_diff;
     for row in rows("edit_execution_requires_read_and_write_access") {
         let args: FileInput = serde_json::from_value(row.input).unwrap();
         let expected: FileExpected = serde_json::from_value(row.expected).unwrap();
@@ -705,11 +705,11 @@ fn edit_preview_and_execution_share_details() {
     let args = maestro_tools::EditToolInput {
         path: "file".into(),
         edits: vec![
-            maestro_tools::edit_diff::Edit {
+            maestro_tools::previews::Edit {
                 old_text: "\"hello\"".into(),
                 new_text: "world".into(),
             },
-            maestro_tools::edit_diff::Edit {
+            maestro_tools::previews::Edit {
                 old_text: "next".into(),
                 new_text: "NEXT".into(),
             },
@@ -717,7 +717,7 @@ fn edit_preview_and_execution_share_details() {
     };
     let preview =
         run(
-            maestro_tools::edit_diff::compute_edits_diff("file", args.edits.clone(), &dir.text())
+            maestro_tools::previews::compute_edits_diff("file", args.edits.clone(), &dir.text())
                 .unwrap(),
         )
         .unwrap();

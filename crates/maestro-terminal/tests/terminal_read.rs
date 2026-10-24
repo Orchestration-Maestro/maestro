@@ -172,7 +172,7 @@ fn row_ranges_are_half_open_clamped_and_include_history() {
 fn viewport_text(terminal: &Terminal, range: TextRange) -> String {
     use maestro_terminal::{
         Coordinate, Point,
-        formatter::{Content, Options, TerminalFormatter},
+        formatting::{Content, Options, TerminalFormatter},
         selection::Selection,
     };
     let pages = &terminal.screens.active().pages;
@@ -235,7 +235,7 @@ fn tracked_rows_keep_screen_ownership_and_reject_removed_lifetimes() {
     assert_eq!(
         terminal
             .screens
-            .get(maestro_terminal::screen_set::Key::Primary)
+            .get(maestro_terminal::screens::Key::Primary)
             .unwrap()
             .pages
             .count_tracked_pins(),
@@ -394,7 +394,7 @@ fn unchanged_history_width_retains_complete_physical_rows() {
 fn cell_read_content_retains_width_style_and_link_state() {
     let mut terminal = Terminal::new(8, 3, 100_000).unwrap();
     terminal.write(b"\x1b[31mA\x1b[0m");
-    let mut state = maestro_terminal::render::RenderState::default();
+    let mut state = maestro_terminal::painting::RenderState::default();
     state.update(&mut terminal);
     let row = state.rows().next().unwrap();
     let cell = row.cell(0).unwrap();

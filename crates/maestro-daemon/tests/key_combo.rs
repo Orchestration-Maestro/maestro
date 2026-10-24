@@ -3,9 +3,7 @@
 
 use maestro_daemon::{
     input::TerminalKey,
-    key_combo::{
-        format_key_combo, normalize_key_combo, parse_key_combo, terminal_key_matches_combo,
-    },
+    keys::{format_key_combo, normalize_key_combo, parse_key_combo, terminal_key_matches_combo},
 };
 use maestro_protocol::frames::{ClientKeyCode as KeyCode, KeyModifiers};
 

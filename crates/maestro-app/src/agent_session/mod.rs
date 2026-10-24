@@ -27,7 +27,7 @@ pub(crate) use selection::{model_level, saved_level};
 pub(crate) use state::{agent_messages, content_text, thrown};
 pub use types::*;
 
-use crate::resources::resource_loader::{LoadPromptsResult, ResourceLoader};
+use crate::resources::loading::{LoadPromptsResult, ResourceLoader};
 use crate::utils::lock::{read, write};
 use indexmap::{IndexMap, IndexSet};
 use maestro_agent::Subscription;
@@ -39,7 +39,7 @@ use maestro_extensions::{
 use maestro_listeners::Listeners;
 use maestro_models::{DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
-    Presence, SessionManager, messages::CustomAgentMessages,
+    Presence, SessionManager, message_records::CustomAgentMessages,
     session_manager::ReadonlySessionManager,
 };
 use maestro_settings::SettingsManager;
@@ -409,7 +409,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         (self.spawn)(Box::pin(async move {
             // The wait is anchored now, so a late first poll does not delay the continuation.
             let remaining = due.saturating_duration_since(tokio::time::Instant::now());
-            let _ = maestro_tools::process::sleep::sleep(remaining, None).await;
+            let _ = maestro_tools::process::delay::sleep(remaining, None).await;
             drop(agent.r#continue().await);
         }));
     }

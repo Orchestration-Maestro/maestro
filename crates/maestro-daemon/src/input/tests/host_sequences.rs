@@ -1,6 +1,6 @@
 //! Shared host input recognition boundaries.
 
-use maestro_tui::stdin_buffer::scan_sgr_mouse_fields;
+use maestro_tui::input_buffer::scan_sgr_mouse_fields;
 
 #[test]
 fn sgr_field_scanner_preserves_each_consumer_domain() {
@@ -115,7 +115,7 @@ fn native_functional_keys_are_filtered_only_at_projection() {
     assert!(crate::input::parse_terminal_key_sequence("\x1b[57364u").is_none());
 }
 
-use crate::input::raw_input::{
+use crate::input::framing::{
     RawInputFramer, events_require_host_surface_redraw,
     events_require_host_terminal_appearance_query, events_require_host_terminal_theme_query,
     extract_one_event, input_flush_timeout, is_complete_text_bracketed_paste,
@@ -126,7 +126,7 @@ use maestro_protocol::frames::{
     ClientKeyCode as KeyCode, ClientKeyKind as KeyEventKind, ClientMouseButton as MouseButton,
     ClientMouseKind as MouseEventKind, KeyModifiers,
 };
-use maestro_tui::stdin_buffer::RawInputByteFramer;
+use maestro_tui::input_buffer::RawInputByteFramer;
 
 /// Dark host appearance bytes.
 const DARK_REPORT: &[u8] = b"\x1b[?997;1n";

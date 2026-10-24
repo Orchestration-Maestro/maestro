@@ -16,7 +16,7 @@ pub(crate) mod dom;
 /// Independently retained collapsed reasoning disclosure.
 ///
 /// [`Default`] content mounts as native page content through
-/// [`DomContent`](crate::dom::DomContent); [`ThinkingBlock::new`] draws on a canvas host.
+/// [`DomContent`](crate::page::DomContent); [`ThinkingBlock::new`] draws on a canvas host.
 #[derive(Default)]
 pub struct ThinkingBlock {
     /// Original reasoning source, never trimmed for display.

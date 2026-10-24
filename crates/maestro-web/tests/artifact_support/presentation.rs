@@ -1,8 +1,8 @@
 //! Native local application-to-view adapter used only by composition tests.
-use maestro_app::browser::tools::artifacts::{
+use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState,
 };
-use maestro_web::{ArtifactElement, tools::artifacts::create_artifact_element};
+use maestro_web::{ArtifactElement, tools::documents::create_artifact_element};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

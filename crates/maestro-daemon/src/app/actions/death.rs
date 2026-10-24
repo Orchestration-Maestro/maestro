@@ -1,7 +1,7 @@
 //! Pane-exit topology and retained-state cleanup.
 
-use crate::app::state::{DaemonState, Mode};
-use maestro_workspace::layout::PaneId;
+use crate::app::model::{DaemonState, Mode};
+use maestro_workspace::tiling::PaneId;
 use std::collections::HashSet;
 
 impl<C: FnMut() -> u128> DaemonState<C> {

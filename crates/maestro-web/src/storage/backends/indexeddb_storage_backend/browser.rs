@@ -4,7 +4,7 @@ use super::{
     quota_info,
 };
 use cursor::Progress;
-use maestro_app::browser::storage::{IndexDirection, QuotaInfo, TransactionMode};
+use maestro_app::browser::persistence::{IndexDirection, QuotaInfo, TransactionMode};
 use std::future::Future;
 
 /// JSON application faces on the same native owners.
@@ -322,8 +322,7 @@ impl IndexedDBStorageBackend {
         js_sys::Array::from(&keys)
             .iter()
             .map(|key| {
-                crate::browser::sandbox_value::native_string(&key)
-                    .map_err(|error| browser_error(&error))
+                crate::browser::values::native_string(&key).map_err(|error| browser_error(&error))
             })
             .collect()
     }

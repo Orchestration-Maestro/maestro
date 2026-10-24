@@ -57,7 +57,7 @@ See [socket libraries](libraries/workspace-daemon.md) for dependency features an
 
 ## Window-title templates
 
-`maestro_daemon::settings::window_title` parses the default
+`maestro_daemon::settings::titles` parses the default
 `{hostname}: {workspace}` format and the `hostname`, `workspace`, `tab`, `pane`
 and `terminal_title` tokens. Doubled braces are literal braces; whitespace inside
 a token is ignored. Empty formats disable titles. Unknown tokens and unbalanced
@@ -105,7 +105,7 @@ The topology API starts no terminal, background task or daemon listener. See the
 
 ## Retained daemon state
 
-`maestro_daemon::app::state::DaemonState` retains one `WorkspaceTopology`,
+`maestro_daemon::app::model::DaemonState` retains one `WorkspaceTopology`,
 terminal metadata, active and selected workspace positions, and historical pane
 aliases. Its supplied clock feeds the topology allocator. Pane-size estimation
 uses the first supplied pane rectangle, falling back to the configured headless
@@ -160,7 +160,7 @@ retains the latest 512 ordered event payloads. Replay returns only events strict
 newer than the supplied sequence. Events use the shared type-tagged protocol
 records without another envelope.
 
-`maestro_daemon::key_combo` parses, formats and matches workspace key combinations
+`maestro_daemon::keys` parses, formats and matches workspace key combinations
 using shared key codes. It preserves named punctuation, Unicode characters,
 modifier aliases and shifted-key matching; shifted Tab normalizes to BackTab.
 
@@ -187,7 +187,7 @@ are separate operations, not part of these supplied-path functions.
 
 ## Pane processes
 
-The Linux process layer provides owned terminals through `maestro_process::pty`.
+The Linux process layer provides owned terminals through `maestro_process::terminal`.
 A pane's caller supplies its executable, literal arguments, working directory,
 environment policy and setup entry. The child becomes its terminal's session leader;
 the master supports foreground-group queries and window-size changes.
@@ -206,13 +206,13 @@ their terminal resources.
 Shell builders retain login-shell custom commands, plain pane commands and
 shell-evaluated scrollback editor selection. Foreground observations contain process
 facts rather than application classifications. Their records are available through
-`maestro_process::foreground` on every platform; native lookup remains Linux-only.
+`maestro_process::jobs` on every platform; native lookup remains Linux-only.
 Application wiring is described by the
 [workspace daemon contract](specs/workspace-daemon.md).
 
 ## Pane terminals
 
-`maestro_daemon::pane::terminal::PaneTerminal` owns one concrete terminal engine
+`maestro_daemon::panes::display::PaneTerminal` owns one concrete terminal engine
 with a single lock for screen state and pane policy. `process_pty_bytes` returns
 ordered child replies, title changes, bells, clipboard writes and working-directory
 observations. Its foreground-job source is lazy: colour sets and primary-screen
@@ -253,7 +253,7 @@ Native Windows input fallback and recent-text qualification are tracked in
 
 ## Pane runtime
 
-`maestro_daemon::pane::agent_detection` supplies screen-scan and publication
+`maestro_daemon::panes::agent_detection` supplies screen-scan and publication
 decisions. An identified idle pane can skip a scan when its content revision is
 unchanged and no identity, exit or pending-idle transition requires a read. Plain
 idle after working is held for three further observations or 700 ms; visible idle,
@@ -261,7 +261,7 @@ a changed identity or process exit bypasses that hold. Unchanged visible blocker
 evidence is refreshed after 800 ms. The caller owns observation times and applies
 the returned decision; these helpers do not start the detection task.
 
-On Linux, `maestro_daemon::pane::detection_task::spawn_basic_detection_task`
+On Linux, `maestro_daemon::panes::monitoring::spawn_basic_detection_task`
 starts fallback detection for an imported pane. The caller supplies the terminal,
 child identity, content revision, compiled manifest cache and event queue. The
 detector reports a newly identified process before a three-second startup grace
@@ -274,10 +274,10 @@ changes, hook state reports and agent releases. Its async publisher waits for qu
 transitions and pane death; a closed receiver produces a warning. Bell, clipboard
 and cwd metadata from the reader use nonblocking delivery.
 
-On Linux, `maestro_daemon::pane::PaneRuntime` owns the live terminal, child watcher,
+On Linux, `maestro_daemon::panes::PaneRuntime` owns the live terminal, child watcher,
 I/O actor and optional fallback detector. `PaneRuntimeConfig` supplies geometry,
 theme, manifest cache, event and render destinations, and a process-owned
-`PtySetupEntry`. The entry executable must call `maestro_process::pty::setup_entry`
+`PtySetupEntry`. The entry executable must call `maestro_process::terminal::setup_entry`
 before its ordinary argument parser. The composition-root binary is separate from
 these library interfaces.
 
@@ -320,7 +320,7 @@ hidden-only damage. `take` drains all accumulated origins together and clears th
 pending flag while retaining the supplied visibility policy. Reading title origins
 does not drain them or mark those panes as damaged.
 
-`maestro_daemon::pane::shell` builds native shell operands from supplied settings
+`maestro_daemon::panes::commands` builds native shell operands from supplied settings
 and environment observations. A configured shell wins over `SHELL`; blank values
 use `/bin/sh` on Unix or `powershell.exe` on Windows. Automatic mode uses a login
 shell only on macOS. Login mode resolves an executable path before launch and
@@ -331,7 +331,7 @@ reporting is enabled, a wrapped prompt may start above the visible screen: direc
 recovery follows its retained soft-wrap rows, but rejects an incomplete prompt whose
 prefix has been discarded.
 
-`maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
+`maestro_daemon::panes::launch::PaneLaunchEnv` applies terminal defaults
 (`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
 id, and applies user environment pairs. User pairs can override terminal defaults.
 The daemon marker, supplied socket/binary paths and managed workspace/tab/pane
@@ -341,7 +341,7 @@ only the pane id. Existing replacement environments remain replacements.
 The native PTY adapter is currently available on Linux; shell policy branches for
 Windows and macOS are exercised with supplied target and environment observations.
 
-`maestro_daemon::pane::probe` classifies foreground jobs using the shared process
+`maestro_daemon::panes::inspection` classifies foreground jobs using the shared process
 observations and agent catalogue. A leader environment hint wins over its name;
 an identifiable leader wins over a non-leader hint. Unidentified jobs retain the
 observed group without inventing an agent. Raw `MAESTRO_AGENT` values are read by
@@ -379,7 +379,7 @@ provenance prefix without changing other source text.
 
 ## Agent state
 
-`maestro-daemon::terminal::state::TerminalState` retains one pane's detected
+`maestro-daemon::terminal::model::TerminalState` retains one pane's detected
 agent, hook authority, session identity, managed launch and presentation. Detection
 and integration reports feed one effective-state recomputation. Live lifecycle
 integrations own state while matching foreground evidence remains valid; other
@@ -400,7 +400,7 @@ timer. Manual labels are trimmed, while agent names retain their spelling and
 session ownership. Managed launches use caller-supplied settling and timeout
 values, releasing their names on mismatch or process exit.
 
-`maestro-daemon::terminal::title::stripped_terminal_title` trims a terminal title
+`maestro-daemon::terminal::titles::stripped_terminal_title` trims a terminal title
 and removes one recognized leading activity glyph only when whitespace or the
 end of the title follows it. Other symbols and Unicode text stay intact. An empty
 result has no presented title. Raw-title changes are tracked separately from
@@ -417,7 +417,7 @@ set/reset sequences. Host colour queries and reply parsing have one owner,
 
 ## Resume plans
 
-`maestro-daemon::agent_resume` validates official integration session references
+`maestro-daemon::resume` validates official integration session references
 from reports or snapshots. Identifiers contain at most 512 UTF-8 bytes; absolute
 paths contain at most 4096. Both reject empty values and control characters.
 Path-capable integrations prefer a valid path, falling back to a valid identifier.
@@ -431,7 +431,7 @@ performs no filesystem lookup.
 
 ## Detection manifests
 
-[`ManifestCache`](../crates/maestro-detection/src/manifest/cache.rs) loads the
+[`ManifestCache`](../crates/maestro-detection/src/definitions/cache.rs) loads the
 20 embedded detection documents. Callers supply optional override and catalog
 folders; detection does not discover global configuration paths. A valid local
 `<agent>.toml` override takes precedence over a compatible download in
@@ -450,7 +450,7 @@ without live-state confidence; an absent agent returns unknown.
 
 ## Detection catalog
 
-[`manifest_update`](../crates/maestro-detection/src/manifest_update.rs) checks a
+[`updates`](../crates/maestro-detection/src/updates.rs) checks a
 caller-supplied catalog URL through a supplied fetch operation. Requests carry a
 256 KiB response limit, two retries, a five-second connection timeout and a
 15-second total timeout for the transport adapter to enforce. The engine rejects
@@ -509,7 +509,7 @@ graceful stop.
 
 ## Environment names
 
-`maestro_daemon::environment::NAMES` lists the names injected into panes and
+`maestro_daemon::variables::NAMES` lists the names injected into panes and
 workspace actions and status commands, plus the inputs observed by daemon selection. It is a
 vocabulary table, not an environment reader or launcher. Callers supply observed
 values to `SelectionEnvironment`; selection never mutates the process environment.
@@ -621,7 +621,7 @@ and restores focus. A failed spawn follows the normal pane-close path.
 Successful workspace creation admits native repository metadata and its initial
 branch after the pane spawn succeeds. Ordinary repositories, linked worktrees,
 standalone bare repositories and embedded bare repositories use the shared
-`maestro-workspace::workspace::git` discovery owner, re-exported through
+`maestro-workspace::spaces::repository` discovery owner, re-exported through
 `maestro-daemon::git::discovery`. Reftable branch and revision queries stay with
 the daemon's process-owning caller.
 

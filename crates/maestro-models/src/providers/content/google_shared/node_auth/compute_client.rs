@@ -6,7 +6,7 @@ use super::base_external_client::{
 use super::oauth_client_auth_handler::{decode, request as send};
 use super::{CLOUD_SCOPE, metadata::Metadata};
 use crate::HttpRequest;
-use crate::providers::http::{RequestPolicy, RetryStatuses};
+use crate::providers::transport::{RequestPolicy, RetryStatuses};
 use google_cloud_auth::errors::CredentialsError;
 
 /// Compute token source; discovery admission never changes its primary endpoint.

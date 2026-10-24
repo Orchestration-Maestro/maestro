@@ -5,10 +5,10 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use super::background::{BackgroundFn, fill_row};
+use crate::interface::Component;
 use crate::text::utils::{
     TruncateOptions, is_whitespace_scalar, truncate_to_width, visible_width, wrap_text_with_ansi,
 };
-use crate::tui::Component;
 
 /// Wrapped multi-line text between horizontal and vertical padding.
 pub struct Text {

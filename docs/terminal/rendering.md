@@ -31,7 +31,7 @@ it using the same policy as other fallible work, without a deferred render error
 # use std::pin::Pin;
 # use std::rc::Rc;
 # use std::time::Duration;
-use maestro_tui::tui::{
+use maestro_tui::interface::{
     ComponentHandle, LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime,
 };
 use maestro_tui::{Component, Terminal, TerminalImage, TUI};

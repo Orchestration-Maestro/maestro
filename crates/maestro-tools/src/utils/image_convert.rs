@@ -1,6 +1,6 @@
 //! PNG conversion for inline images.
 
-use super::exif_orientation::apply_exif_orientation;
+use super::image_metadata::apply_exif_orientation;
 use base64::{
     Engine as _, alphabet,
     engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig, general_purpose::STANDARD},

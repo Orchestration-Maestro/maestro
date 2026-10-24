@@ -1,7 +1,7 @@
 # Response-session requests
 
 The dedicated provider lives in
-`maestro_models::providers::response_sessions::openai_codex_responses`.
+`maestro_models::providers::response_sessions::codex`.
 `stream_openai_codex_responses` returns a stream whose setup failures become error
 updates. `stream_simple_openai_codex_responses` can return a missing-key error
 before creating a stream. The two option/debug records are also exported at the
@@ -149,7 +149,7 @@ it contacts no service.
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use base64::Engine as _;
 use maestro_models::{Context, HttpResponse, Model, StreamOptions, StopReason, Transport};
-use maestro_models::providers::response_sessions::openai_codex_responses::{
+use maestro_models::providers::response_sessions::codex::{
     OpenAICodexResponsesOptions, stream_openai_codex_responses,
 };
 use std::sync::Arc;

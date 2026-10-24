@@ -1,6 +1,6 @@
 //! Document observations through retained production dialogs.
 #![cfg(all(test, target_arch = "wasm32"))]
-use maestro_web::dialogs::dialog::{DialogHeaderProps, dialog_header};
+use maestro_web::dialogs::surface::{DialogHeaderProps, dialog_header};
 use wasm_bindgen::{JsCast as _, prelude::*};
 
 /// Prove header retains title description and literal text.
@@ -41,8 +41,8 @@ use maestro_web::{
     I18n,
     browser::attachment_content::*,
     dialogs::{
-        dialog::{DialogBody, DialogContentProps, DialogProps, dialog, dialog_content},
         dialog_base::{DialogBase, DialogContext},
+        surface::{DialogBody, DialogContentProps, DialogProps, dialog, dialog_content},
     },
 };
 use std::rc::Rc;
@@ -360,7 +360,7 @@ pub fn dialog_native_field_escape_reaches_every_open_owner() {
     let mode = Rc::new(Cell::new(0));
     let behavior = mode.clone();
     let input = maestro_web::Input::new(
-        maestro_web::components::input::InputProps {
+        maestro_web::components::fields::InputProps {
             on_key_down: Some(Rc::new(move |event| match behavior.get() {
                 1 => event.stop_propagation(),
                 2 => event.prevent_default(),
@@ -375,7 +375,7 @@ pub fn dialog_native_field_escape_reaches_every_open_owner() {
     let mut props = view.props.clone();
     props.children.render_content = Rc::new(move |ui, _, _, p| {
         input.borrow_mut().render(ui, &i18n, p).map_err(|error| {
-            use maestro_web::{components::input::InputUiError, dialogs::dialog::DialogUiError};
+            use maestro_web::{components::fields::InputUiError, dialogs::surface::DialogUiError};
             match error {
                 InputUiError::I18n(error) => DialogUiError::I18n(error),
                 InputUiError::Host(error) => DialogUiError::Host(error),
@@ -961,7 +961,7 @@ pub fn dialog_class_operands_keep_literal_native_readers() {
 /// Caller wrapper classes reach the native host literally, not the editable child's class list.
 #[wasm_bindgen]
 pub fn input_wrapper_classes_reach_host_wrapper_literally() {
-    use maestro_web::{Input, components::input::InputProps};
+    use maestro_web::{Input, components::fields::InputProps};
     use std::cell::RefCell;
     let view = View::new();
     view.owner.close().unwrap();

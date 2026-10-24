@@ -7,7 +7,7 @@ use crate::utils::lock::write;
 use maestro_agent::{AgentEvent, PromptInput};
 use maestro_extensions::{ExtensionExecution, InputSource, NativeAgentMessage};
 use maestro_models::{DiagnosticErrorInfo, ImageContent, UserBlock, UserContent};
-use maestro_session::messages::{
+use maestro_session::message_records::{
     CustomMessageInput, MessageDelivery, SendMessageOptions, SendUserMessageOptions,
 };
 use std::rc::Rc;

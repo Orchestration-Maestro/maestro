@@ -4,8 +4,8 @@ mod kitty;
 mod legacy;
 mod semantic;
 
-use super::key::KeyEvent;
 use super::key_mods::{Mod, Mods, Side};
+use super::keyboard::KeyEvent;
 use crate::modes::{Mode, ModeState};
 
 /// How the macOS option modifier participates in terminal alt sequences.

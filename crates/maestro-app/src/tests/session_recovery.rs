@@ -20,7 +20,7 @@ use maestro_models::{
 use maestro_session::CompactionResult;
 use maestro_session::Presence;
 use maestro_session::SessionManager;
-use maestro_session::messages::CustomAgentMessages;
+use maestro_session::message_records::CustomAgentMessages;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use serde_json::{Value, json};
 use std::{
@@ -123,7 +123,7 @@ fn boundary_millis(h: &Harness) -> f64 {
         .find(|entry| entry["type"] == "compaction")
         .expect("a stored compaction");
     let timestamp = entry["timestamp"].as_str().unwrap();
-    let millis = maestro_session::messages::parse_timestamp_millis(timestamp).unwrap();
+    let millis = maestro_session::message_records::parse_timestamp_millis(timestamp).unwrap();
     num_traits::cast::cast::<i64, f64>(millis).unwrap()
 }
 
@@ -191,7 +191,7 @@ fn set_agent_messages(h: &Harness, records: &[Value]) {
 fn entry_view(entry: &Value) -> Value {
     let timestamp = entry["timestamp"]
         .as_str()
-        .filter(|text| maestro_session::messages::parse_timestamp_millis(text).is_some())
+        .filter(|text| maestro_session::message_records::parse_timestamp_millis(text).is_some())
         .map_or_else(|| entry["timestamp"].clone(), |_| json!("$ISO"));
     match entry["type"].as_str() {
         Some("message") => json!({

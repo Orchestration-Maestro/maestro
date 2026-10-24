@@ -1,6 +1,6 @@
 # Session-tree navigation
 
-[`TreeList`](../../crates/maestro-chat/src/components/tree_selector/tree_list.rs)
+[`TreeList`](../../crates/maestro-chat/src/components/tree_picker/tree_list.rs)
 uses the shared [session-tree projection owner](../sessions/tree-projection.md) through
 `maestro_app::export_html::template` to retain a presentation of the supplied [session tree records](../sessions/session_format.md).
 Its selected-node getter returns a shared occurrence handle; an empty view returns `None`.
@@ -40,7 +40,7 @@ the bookmark for a later nonempty filter.
 ## Configurable input
 
 Callers install a `maestro_tui::KeybindingsManager` built from
-[`maestro_app::presentation_data::keybindings::KEYBINDINGS`](../../crates/maestro-app/src/presentation_data/keybindings.rs)
+[`maestro_app::presentation_data::bindings::KEYBINDINGS`](../../crates/maestro-app/src/presentation_data/bindings.rs)
 using `maestro_tui::set_keybindings`. The list reads the active manager on input;
 construction does not install one. The application table extends toolkit defaults
 with seven tree-filter actions, two fold/segment actions, label-edit notification,
@@ -120,7 +120,7 @@ normalization and shared-whitespace trimming. Tool summaries reuse the applicati
 JSON and read-range exports; their tool-specific prefix budgets remain here.
 ## Panel and labels
 
-[`TreeSelectorComponent`](../../crates/maestro-chat/src/components/tree_selector/panel.rs)
+[`TreeSelectorComponent`](../../crates/maestro-chat/src/components/tree_picker/panel.rs)
 composes borders, title, navigation help, the live authored query and the retained
 list. `TreeSelectorOptions` supplies selection, filter, terminal height, theme,
 runtime, decorations and an optional wall clock. Pages use half the height, at

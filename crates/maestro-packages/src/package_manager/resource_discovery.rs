@@ -1,8 +1,8 @@
 //! Conventional resource collection over replaceable filesystem observations.
 use maestro_path::join;
 use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
+use maestro_resources::catalog::{ResourceEntry, ResourceFileType, observed_type};
 use maestro_resources::package_manifest::{is_extension_file, resolve_extension_entries};
-use maestro_resources::skills::{ResourceEntry, ResourceFileType, observed_type};
 use std::{io, path::Path};
 /// The conventional resource directories.
 #[derive(Clone, Copy)]

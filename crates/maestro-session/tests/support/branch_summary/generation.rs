@@ -101,7 +101,7 @@ pub(super) fn run(row: &NativeRow) {
                 row.id
             );
             let decoded: Value = serde_json::from_str(&bytes).unwrap();
-            super::super::value::assert_value(&decoded, &row.expected["value"], &row.id);
+            super::super::value::assert_equal(&decoded, &row.expected["value"], &row.id);
         }
         Err(error) => {
             assert_eq!(row.expected["kind"], "error");
@@ -130,7 +130,7 @@ fn compare_calls(
         assert!(clock.contains(&context["messages"][0]["timestamp"].as_f64().unwrap()));
         context["messages"][0]["timestamp"] =
             expected["context"]["messages"][0]["timestamp"].clone();
-        super::super::value::assert_value(&context, &expected["context"], &row.id);
+        super::super::value::assert_equal(&context, &expected["context"], &row.id);
         super::super::summary_options::compare_options(options, &expected["options"]);
         assert_eq!(expected["sameSignal"], true);
     }
@@ -178,7 +178,7 @@ pub(super) fn lifetime() {
         .unwrap();
     events.lock().unwrap().push("observed-result".into());
     assert_eq!(*events.lock().unwrap(), case.events);
-    super::super::value::assert_value(
+    super::super::value::assert_equal(
         &serde_json::to_value(result).unwrap(),
         &case.result,
         "lifetime",

@@ -1,7 +1,7 @@
 //! Strict mutation oracle replay through retained public handles.
 use super::*;
 use maestro_chat::{SessionFileOperations, TrashResult};
-use maestro_tui::{Container, Input, tui::LocalFuture};
+use maestro_tui::{Container, Input, interface::LocalFuture};
 use std::io;
 
 /// Exact callback transcript with closed operand shapes.

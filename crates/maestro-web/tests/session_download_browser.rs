@@ -113,7 +113,7 @@ async fn attachment_download(fixture: &Fixture, host: &BrowserAttachmentHost) {
     let bytes = [0, 255, 128, 13, 10, 42];
     let attachment = maestro_web::Attachment {
         id: "binary".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "binary<雪>.dat".into(),
         mime_type: "application/octet-stream".into(),
         size: bytes.len(),

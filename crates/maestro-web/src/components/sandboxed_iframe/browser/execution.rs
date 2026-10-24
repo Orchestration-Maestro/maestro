@@ -7,8 +7,7 @@ use super::{
 use crate::browser::timer::{self, Timer};
 use maestro_app::browser::components::{
     sandbox::{
-        console_runtime_provider::ConsoleRuntimeProvider,
-        sandbox_runtime_provider::RuntimeProviderValue as _,
+        console_runtime_provider::ConsoleRuntimeProvider, providers::RuntimeProviderValue as _,
     },
     sandboxed_iframe::{SandboxError, SandboxExecution},
 };

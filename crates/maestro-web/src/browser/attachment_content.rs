@@ -60,7 +60,7 @@ pub enum AttachmentContent<'a> {
     /// Browser-native editable input.
     Input {
         /// Live native field configuration.
-        props: &'a crate::components::input::InputProps,
+        props: &'a crate::components::fields::InputProps,
         /// Localized native accessible name, including the required marker.
         accessible_label: &'a str,
         /// Assign the caller's changed value, preserving native edits otherwise.

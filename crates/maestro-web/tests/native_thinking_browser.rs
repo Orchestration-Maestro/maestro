@@ -6,7 +6,7 @@ use crate::contributions_support::{
 use maestro_theme::BrandMode;
 use maestro_web::{
     ThinkingBlock,
-    dom::{DomView, MountedContent},
+    page::{DomView, MountedContent},
 };
 use std::fmt::Write as _;
 use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};

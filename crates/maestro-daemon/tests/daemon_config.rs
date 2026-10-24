@@ -8,7 +8,7 @@ mod launch;
 
 use config_support::{block_on, fixture, put};
 use maestro_daemon::{
-    app::state::{Mode, ToastKind},
+    app::model::{Mode, ToastKind},
     settings::model::{
         AgentPanelSortConfig, ConfigReloadStatus, NewTerminalCwdConfig, ShellModeConfig,
         ToastDelivery,
@@ -64,11 +64,11 @@ fn live_reload_applies_daemon_areas_without_binding_loader() {
     app.state.selection = Some(maestro_daemon::selection::Selection::range(
         pane, 0, 0, 1, None,
     ));
-    app.state.selection_autoscroll = Some(maestro_daemon::app::state::SelectionAutoscroll {
-        direction: maestro_daemon::app::state::SelectionAutoscrollDirection::Down,
+    app.state.selection_autoscroll = Some(maestro_daemon::app::model::SelectionAutoscroll {
+        direction: maestro_daemon::app::model::SelectionAutoscrollDirection::Down,
         last_mouse_screen_col: 1,
         last_mouse_screen_row: 1,
-        inner_rect: maestro_workspace::layout::Rect::new(0, 0, 2, 2),
+        inner_rect: maestro_workspace::tiling::Rect::new(0, 0, 2, 2),
     });
     app.next_auto_update_check = Some(Instant::now());
     app.next_agent_manifest_update_check = Some(Instant::now());
@@ -108,7 +108,7 @@ fn live_reload_requests_client_reload_for_host_cursor_only_change() {
 
 #[test]
 fn live_reload_updates_sidebar_width_only_when_config_owned() {
-    use maestro_daemon::app::state::SidebarWidthSource;
+    use maestro_daemon::app::model::SidebarWidthSource;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(
         app.state.sidebar_width_source,
@@ -138,7 +138,7 @@ fn live_reload_updates_sidebar_width_only_when_config_owned() {
 
 #[test]
 fn live_reload_updates_sidebar_token_rows() {
-    use maestro_daemon::settings::sidebar::{AgentSidebarToken, SpaceSidebarToken};
+    use maestro_daemon::settings::navigation::{AgentSidebarToken, SpaceSidebarToken};
     let (mut app, mut manager, storage) = fixture();
     put(&*storage, &json!({"multiplexer":{"sidebar":{
         "agents":{"rows":[["state_icon", "$summary"]],"rowGap":1,"rowsByAgent":{"claude":[["terminal_title_stripped"]]}},
@@ -229,7 +229,7 @@ fn live_reload_updates_sidebar_collapsed_mode() {
 
 #[test]
 fn live_reload_updates_sidebar_bounds_and_reclamps() {
-    use maestro_daemon::app::state::SidebarWidthSource;
+    use maestro_daemon::app::model::SidebarWidthSource;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(app.config.ui.sidebar_min_width, 18);
     assert_eq!(app.config.ui.sidebar_max_width, 36);
@@ -418,7 +418,7 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     let (mut app, mut manager, storage) = fixture();
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
-    let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+    let paths = maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
     app.config.experimental.pane_history.0 = true;
     std::fs::write(paths.history_path(), "old history").unwrap();
     let snapshot = maestro_daemon::persist::capture(&app.state, &app.terminal_runtimes);
@@ -464,7 +464,8 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
         app.config.experimental.pane_history.0 = true;
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
-        let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+        let paths =
+            maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "retained history").unwrap();
         std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
         put(
@@ -500,7 +501,8 @@ fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_sn
         let (mut app, mut manager, storage) = fixture();
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
-        let paths = maestro_daemon::paths::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+        let paths =
+            maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "old history").unwrap();
         std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
         put(

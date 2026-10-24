@@ -1,6 +1,6 @@
 //! Strict attachment operands for browser message conversion.
 #![cfg(test)]
-use maestro_app::browser::utils::attachment_utils::{Attachment, AttachmentType};
+use maestro_app::browser::utils::attachments::{Attachment, AttachmentType};
 use serde::Deserialize;
 use serde_json::Value;
 /// An attachment input from the corpus.

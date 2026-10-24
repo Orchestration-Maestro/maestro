@@ -1,5 +1,5 @@
 //! Public theme file loading, admission and alias resolution.
-use crate::live::per_environment;
+use crate::live::with_observations;
 use crate::support;
 
 use maestro_theme::{ColorMode, ThemeColor, load_theme_from_path};
@@ -548,7 +548,7 @@ fn theme_retains_mode_and_authored_metadata() {
         (&[("COLORTERM", "truecolor")], ColorMode::Truecolor),
         (&limited, ColorMode::Color256),
     ];
-    if let Some(group) = per_environment(
+    if let Some(group) = with_observations(
         "theme_retains_mode_and_authored_metadata",
         cases,
         |(env, _)| env,
@@ -587,7 +587,7 @@ fn theme_retains_mode_and_authored_metadata() {
 fn theme_reads_ambient_color_settings_only_after_valid_input() {
     let linux: &[(&str, &str)] = &[("TERM", "linux")];
     let test = "theme_reads_ambient_color_settings_only_after_valid_input";
-    if per_environment(test, [linux], |env| env).is_some() {
+    if with_observations(test, [linux], |env| env).is_some() {
         let explicit = load_theme_from_path(DARK_PATH, Some(ColorMode::Truecolor)).unwrap();
         assert_eq!(explicit.get_color_mode(), ColorMode::Truecolor);
         let ambient = load_theme_from_path(DARK_PATH, None).unwrap();

@@ -4,7 +4,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::CellDimensions;
-use maestro_tui::tui::{InputListener, InputListenerResult};
+use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{Component, Container, TUI, TerminalImage};
 use serde::Deserialize;
 

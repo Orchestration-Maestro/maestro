@@ -129,7 +129,7 @@ fn terminal_write_failure_is_propagated() {
 fn wayland_detection_uses_nonempty_display_or_exact_session_type() {
     for case in controlled::corpus().wayland {
         assert_eq!(
-            maestro_app::utils::clipboard_image::is_wayland_session(|key| case
+            maestro_app::utils::image_clipboard::is_wayland_session(|key| case
                 .env
                 .get(key)
                 .cloned()),
@@ -208,7 +208,7 @@ fn native_adapter_forwards_launches_without_clipboard_access() {
 /// Exercises argv, bytes, status and independent descriptor forwarding.
 #[cfg(target_os = "linux")]
 fn native_launches() {
-    use maestro_app::utils::clipboard::{ClipboardOperations, NativeClipboardOperations};
+    use maestro_app::utils::copying::{ClipboardOperations, NativeClipboardOperations};
     use maestro_app::{OutputMode, SpawnSyncOptions};
     use tokio::process::Command;
     for (stdout, stderr) in [

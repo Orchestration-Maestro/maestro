@@ -1,5 +1,5 @@
 //! Functional key codes in the enhanced keyboard protocol.
-use super::key::Key;
+use super::keyboard::Key;
 
 /// A functional key's wire code and sequence terminator.
 #[derive(Clone, Copy)]

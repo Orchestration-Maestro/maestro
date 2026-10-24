@@ -2,7 +2,7 @@
 use super::{manual_runtime::ms, recording_terminal::RecordingTerminal, runtime_spy::Spy};
 use crate::bindings;
 use bindings::{Binding, bindings};
-use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_chat::{
     ExtensionInputComponent, ExtensionInputOptions, ExtensionSelectorComponent,
     ExtensionSelectorOptions,
@@ -648,7 +648,7 @@ impl Component for Dialog {
     fn invalidate(&self) {
         self.component().invalidate();
     }
-    fn input_handler(&self) -> Option<&dyn maestro_tui::tui::InputHandler> {
+    fn input_handler(&self) -> Option<&dyn maestro_tui::interface::InputHandler> {
         self.component().input_handler()
     }
     fn focusable(&self) -> Option<&dyn maestro_tui::Focusable> {

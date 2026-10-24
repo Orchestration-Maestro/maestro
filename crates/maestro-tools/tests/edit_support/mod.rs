@@ -195,7 +195,7 @@ pub fn start(
 pub fn input(path: &str, old: &str, new: &str) -> EditToolInput {
     EditToolInput {
         path: path.into(),
-        edits: vec![maestro_tools::edit_diff::Edit {
+        edits: vec![maestro_tools::previews::Edit {
             old_text: old.into(),
             new_text: new.into(),
         }],
@@ -236,7 +236,7 @@ impl FileInput {
             edits: self
                 .edits
                 .into_iter()
-                .map(|r| maestro_tools::edit_diff::Edit {
+                .map(|r| maestro_tools::previews::Edit {
                     old_text: r.old_text,
                     new_text: r.new_text,
                 })

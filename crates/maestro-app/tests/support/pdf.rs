@@ -3,7 +3,7 @@
 use super::run;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use hayro::vello_cpu::Pixmap;
-use maestro_app::browser::utils::attachment_utils::{
+use maestro_app::browser::utils::attachments::{
     Attachment, AttachmentError, AttachmentSource, load_attachment,
 };
 use maestro_models::{Fetch, HttpResponse};

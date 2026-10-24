@@ -4,12 +4,14 @@
 
 pub mod browser;
 pub mod configuration;
-pub mod contributions;
+pub mod contribution_files;
 pub mod presentation_data;
 pub mod utils;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod agent_session;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod connection_runner;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod developer_tools;
 #[cfg(not(target_arch = "wasm32"))]
@@ -19,9 +21,7 @@ pub mod output_guard;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod resources;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod rpc_client;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod rpc_mode;
+pub mod rpc_transport;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod rpc_types;
 #[cfg(not(target_arch = "wasm32"))]

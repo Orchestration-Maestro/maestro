@@ -1641,7 +1641,7 @@ async fn agent_scenario(
 ) {
     let abort = expected.0 == "aborted";
     let (backend, url, fetch) = Backend::start(route, lines);
-    let agent = support::proxy::proxy_agent(support::proxy::proxy_stream_fn(url, fetch));
+    let agent = support::proxy::agent(support::proxy::stream_fn(url, fetch));
     let updated = notify_on_update(&agent);
     let lifecycle = record_lifecycle(&agent);
     let done = agent.prompt(support::owned::input("hello"));

@@ -8,7 +8,7 @@ pub type MessageRole = String;
 /// Prepare owned content from the caller's original shared message.
 ///
 /// `T` selects the content representation. Its canvas default exists only while
-/// the canvas renderer family remains; page content uses [`crate::dom::DomContent`].
+/// the canvas renderer family remains; page content uses [`crate::page::DomContent`].
 pub trait MessageRenderer<C: CustomAgentMessages = NoCustomMessages, T = Box<dyn ToolContent>> {
     /// Prepare content without retaining the message borrow.
     /// # Errors
@@ -92,7 +92,7 @@ pub mod dom {
     use super::{
         AgentMessage, CustomAgentMessages, MessageRenderer, Rc, ToolUiError, render, retain,
     };
-    use crate::dom::DomContent;
+    use crate::page::DomContent;
     /// Retain the current page-content role callback for this message representation.
     #[must_use]
     pub fn get_message_renderer<C: CustomAgentMessages + 'static>(

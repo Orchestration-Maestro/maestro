@@ -140,7 +140,7 @@ fn maestro_overlays_sub_overlay_cleanup_then_hideoverlay_restores_focus_and_inpu
 
 #[test]
 fn maestro_overlays_deferred_sub_overlay_restores_focus() {
-    use maestro_tui::tui::TuiRuntime;
+    use maestro_tui::interface::TuiRuntime;
     use std::cell::Cell;
     use std::time::Duration;
     let _input = crate::input_support::globals();
@@ -747,7 +747,7 @@ fn overlay_cursor_failures_keep_completed_state_changes() {
 
 #[test]
 fn overlay_focus_fallback_precedes_key_release_filtering() {
-    use maestro_tui::tui::InputListenerResult;
+    use maestro_tui::interface::InputListenerResult;
     use std::cell::Cell;
     let _input = crate::input_support::globals();
     let scene = focused_scene();

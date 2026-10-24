@@ -1,5 +1,5 @@
 //! Strict recorded whole-frame session widget replay.
-use maestro_tui::tui::InputHandler;
+use maestro_tui::interface::InputHandler;
 #[allow(
     dead_code,
     reason = "The library tests use only the override shape and its conversion."
@@ -24,7 +24,7 @@ pub(crate) mod recording_terminal;
 #[path = "registry.rs"]
 pub(crate) mod registry;
 use bindings::Binding;
-use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_chat::{
     NameFilter, SessionScope, SessionSelectorHeader, SessionSelectorHeaderOptions, SortMode,
 };
@@ -1153,7 +1153,7 @@ fn check_frame(
         assert_eq!(*events.borrow(), *e);
     }
     if let Some(parent) = f.parent {
-        use maestro_tui::tui::Focusable;
+        use maestro_tui::interface::Focusable;
         assert_eq!(list.focus_flag().get(), parent);
     }
     if let Some(header) = &f.header {
@@ -1166,7 +1166,7 @@ fn callback_slots(
     events: &Rc<std::cell::RefCell<Vec<Vec<String>>>>,
     s: &Slots,
 ) {
-    use maestro_tui::tui::InputHandler;
+    use maestro_tui::interface::InputHandler;
     assert_eq!(list.on_select().is_none(), s.initial_select_absent.0);
     assert_eq!(list.on_cancel().is_none(), s.initial_cancel_absent.0);
     let old = events.clone();
@@ -1218,7 +1218,7 @@ fn focus(
     reapplied: &Frame,
     configure: Configure,
 ) {
-    use maestro_tui::tui::Focusable;
+    use maestro_tui::interface::Focusable;
     assert_eq!(frames.len(), 3);
     for (value, f) in [false, true, false].into_iter().zip(frames) {
         list.focus_flag().set(value);

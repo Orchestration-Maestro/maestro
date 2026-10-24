@@ -9,7 +9,7 @@ mod tests {
     use maestro_theme::BrandMode;
     use maestro_web::{
         browser::attachment_content::{AttachmentHost as _, ReadingPhase},
-        components::{code_block::CodeBlock, markdown_block::MarkdownBlock},
+        components::{markdown_block::MarkdownBlock, source::CodeBlock},
     };
     use std::fmt::Write as _;
     use wasm_bindgen::prelude::*;

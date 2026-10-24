@@ -1,6 +1,6 @@
 //! Built-in tool interchange records.
 
 /// Read observations.
-pub mod read;
+pub mod reading;
 /// Truncation accounting.
 pub mod truncate;

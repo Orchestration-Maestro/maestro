@@ -1,12 +1,12 @@
 //! Narrow native projections at message arrival and the application byte boundary.
 use super::super::execution::ExecutionMessage;
 use super::{BrowserSandboxValue, DiagnosticErrorInfo, diagnostic};
-use crate::browser::sandbox_value::native_string;
+use crate::browser::values::native_string;
 use js_sys::{Reflect, Uint8Array};
 use maestro_app::browser::components::{
     sandbox::{
         console_runtime_provider::{ConsoleLogType, ConsoleRuntimeProvider},
-        sandbox_runtime_provider::RuntimeProviderValue,
+        providers::RuntimeProviderValue,
     },
     sandboxed_iframe::{SandboxConsoleEntry, SandboxFileContent},
 };

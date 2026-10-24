@@ -9,8 +9,8 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 /// Parse the authored arguments of one startup case.
-pub fn args(tokens: &[&str]) -> maestro_cli::input::args::Args {
-    maestro_cli::input::args::parse_args(
+pub fn args(tokens: &[&str]) -> maestro_cli::input::arguments::Args {
+    maestro_cli::input::arguments::parse_args(
         &tokens
             .iter()
             .map(|token| (*token).to_owned())

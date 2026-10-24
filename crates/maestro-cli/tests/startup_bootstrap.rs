@@ -4,7 +4,7 @@ use crate::support::startup;
 use maestro_app::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, SettingsManager,
 };
-use maestro_cli::input::args::{Args, Diagnostic, DiagnosticType, Mode};
+use maestro_cli::input::arguments::{Args, Diagnostic, DiagnosticType, Mode};
 use maestro_cli::startup::main::bootstrap::{
     AppMode, collect_settings_diagnostics, report_diagnostics, report_parser_diagnostics,
     resolve_app_mode, resolve_session_dir, takes_over_stdout, to_print_output_mode,

@@ -4,9 +4,9 @@ use super::{
     protocol::{resolved, scopes},
     records::Scopes,
 };
-use maestro_chat::components::config_selector::ConfigSelectorOptions;
+use maestro_chat::components::configuration::ConfigSelectorOptions;
 use maestro_theme::Collator;
-use maestro_tui::{Component, tui::InputHandler};
+use maestro_tui::{Component, interface::InputHandler};
 use serde_json::json;
 use std::{path::Path, rc::Rc};
 /// Run cwd mutations only inside the existing isolated child seam.

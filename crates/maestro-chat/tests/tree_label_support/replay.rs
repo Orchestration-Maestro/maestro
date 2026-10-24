@@ -1,6 +1,6 @@
 //! Controlled effects and exact complete-frame assertions.
 use super::*;
-use maestro_tui::tui::Focusable;
+use maestro_tui::interface::Focusable;
 use serde_json::json;
 use std::time::{Duration, SystemTime};
 

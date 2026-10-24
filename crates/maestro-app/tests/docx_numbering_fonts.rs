@@ -2,8 +2,8 @@
 #![cfg(test)]
 use crate::docx_support::cases;
 use maestro_app::browser::docx_preview::{
-    font_table::{EmbedFontType, FontTablePart},
     parse_xml_string,
+    typefaces::{EmbedFontType, FontTablePart},
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -64,7 +64,7 @@ fn check(name: &str) {
             } => {
                 let part = {
                     let xml = parse_xml_string(&source, false).unwrap();
-                    maestro_app::browser::docx_preview::numbering::NumberingPart::parse_xml(
+                    maestro_app::browser::docx_preview::lists::NumberingPart::parse_xml(
                         &xml,
                         xml.root(),
                         ignore_width,

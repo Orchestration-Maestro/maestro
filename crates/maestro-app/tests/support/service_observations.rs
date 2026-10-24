@@ -152,7 +152,7 @@ impl Transport {
 /// Observe selected optional fields in the recorded response format.
 #[must_use]
 pub fn release_value(
-    release: Option<maestro_app::configuration::version_check::LatestMaestroRelease>,
+    release: Option<maestro_app::configuration::releases::LatestMaestroRelease>,
 ) -> Value {
     release.map_or(Value::Null, |r| {
         let mut value = json!({"version": r.version});

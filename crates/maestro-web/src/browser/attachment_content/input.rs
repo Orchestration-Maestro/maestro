@@ -1,7 +1,7 @@
 //! Native editing capabilities within the retained content owner.
 use super::{AttachmentHostError, browser::host_error};
 use crate::browser::event_subscription::EventSubscription;
-use crate::components::input::{InputProps, InputRef, InputSize, InputType};
+use crate::components::fields::{InputProps, InputRef, InputSize, InputType};
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, Event, HtmlInputElement, KeyboardEvent};

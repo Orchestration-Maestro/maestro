@@ -530,10 +530,9 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
     });
     let model = chat::model(&json!({}))?;
     let context = chat::context(&json!({"messages": []}))?;
-    let missing =
-        maestro_models::providers::chat::openai_completions::stream_simple_openai_completions_for::<
-            Local,
-        >(model.clone(), context.clone(), None, Rc::clone(&spawn));
+    let missing = maestro_models::providers::chat::endpoint::stream_simple_openai_completions_for::<
+        Local,
+    >(model.clone(), context.clone(), None, Rc::clone(&spawn));
     let Err(error) = missing else {
         panic!("missing key must fail before a stream exists")
     };

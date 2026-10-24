@@ -1,11 +1,11 @@
 //! Contribution registration, lookup, admission and descriptor records.
 #![cfg(test)]
 use maestro_web::{
-    contributions::{
+    page::{DomContent, DomRoot, DomView},
+    runtime_contributions::{
         BrowserContribution, ContributionDescriptor, ContributionFailure, ContributionView, admit,
         register_contribution, route_contribution, slot_contributions, slot_input,
     },
-    dom::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use serde_json::{Value, json};

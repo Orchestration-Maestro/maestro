@@ -1,9 +1,9 @@
 //! Unicode placeholder decoding and row-local placement runs.
 
 use super::{
-    image::Image,
-    render::RenderPlacement,
-    storage::{ImageStorage, Location, PlacementId, PlacementKey},
+    bitmap::Image,
+    images::{ImageStorage, Location, PlacementId, PlacementKey},
+    painting::RenderPlacement,
 };
 use crate::{
     PageList,
@@ -278,7 +278,7 @@ impl Placement {
     pub(super) fn prototype<'a>(
         &self,
         storage: &'a ImageStorage,
-    ) -> Option<&'a super::storage::Placement> {
+    ) -> Option<&'a super::images::Placement> {
         if self.placement_id > 0 {
             storage.placements.get(&PlacementKey {
                 image_id: self.image_id,

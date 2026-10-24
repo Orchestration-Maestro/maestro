@@ -3,8 +3,8 @@ use super::reading_view;
 use crate::{
     browser::attachment_content::AttachmentHost,
     components::{
-        code_block::CodeBlock,
         native_text::{NativeText, TextKind},
+        source::CodeBlock,
     },
     tools::types::{ToolRenderView, ToolUiError},
 };

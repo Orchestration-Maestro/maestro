@@ -2,7 +2,7 @@
 
 use crate::support;
 use maestro_app::ThinkingLevel;
-use maestro_cli::input::args::{
+use maestro_cli::input::arguments::{
     Diagnostic, DiagnosticType, ListModels, Mode, is_valid_thinking_level, parse_args,
 };
 

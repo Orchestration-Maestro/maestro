@@ -5,8 +5,8 @@ use crate::{
         attachment_content::{AttachmentHostError, browser::host_error},
         event_subscription::EventSubscription,
     },
-    dom::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
     icons,
+    page::{self as dom, DomContent, DomRoot, DomView, Getter, Link, Setter},
     tools::types::ToolUiError,
 };
 use std::{

@@ -1,3 +1,3 @@
 //! Reasoning conversation protocols.
 
-pub mod mistral;
+pub mod endpoint;

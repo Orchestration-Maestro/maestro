@@ -1,6 +1,6 @@
 //! Retained row handles follow byte-driven scroll and screen lifetimes.
 
-use maestro_terminal::{Coordinate, Point, Terminal, page_list::TrackedPin, screen_set::Key};
+use maestro_terminal::{Coordinate, Point, Terminal, page_list::TrackedPin, screens::Key};
 
 fn track(t: &mut Terminal) -> TrackedPin {
     let pages = &mut t.screens.active_mut().pages;

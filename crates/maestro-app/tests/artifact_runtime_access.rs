@@ -3,12 +3,12 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::run;
 use maestro_agent::{Agent, AgentMessage, AgentOptions};
-use maestro_app::browser::components::messages::CustomAgentMessages;
+use maestro_app::browser::components::records::CustomAgentMessages;
 use maestro_app::browser::components::sandbox::{
     artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
-    sandbox_runtime_provider::SandboxRuntimeProvider,
+    providers::SandboxRuntimeProvider,
 };
-use maestro_app::browser::tools::artifacts::{
+use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanel, ArtifactsPanelState,
     FileType, get_file_type,
 };

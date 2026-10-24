@@ -1,12 +1,13 @@
 //! Existing tools owners exposed at the application root.
 
-pub use maestro_tools::diff::text_diff::{Change, diff_lines};
+pub use maestro_tools::changes::text::{Change, diff_lines};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
     BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState, BashSpawnContext,
     BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
-    create_bash_tool_definition, create_local_bash_operations, utils::shell::get_shell_config,
+    create_bash_tool_definition, create_local_bash_operations,
+    utils::environment::get_shell_config,
 };
 
 pub use maestro_tools::output::render_utils::{
@@ -27,7 +28,7 @@ pub use maestro_tools::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
+pub use maestro_tools::process::commands::{ExecOptions, ExecResult, exec_command};
 
 pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};
 
@@ -38,11 +39,11 @@ pub use maestro_tools::{VisualTruncateResult, truncate_to_visual_lines};
 
 pub use maestro_tools::output::render_utils::strip_ansi;
 
-pub use maestro_tools::utils::shell::sanitize_binary_output;
+pub use maestro_tools::utils::environment::sanitize_binary_output;
 
 /// Kills every tracked detached child, for a frontend ending the process.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::utils::shell::kill_tracked_detached_children;
+pub use maestro_tools::utils::environment::kill_tracked_detached_children;
 
 pub use maestro_tools::{TruncationOptions, TruncationResult, truncate_tail};
 
@@ -53,7 +54,7 @@ pub use maestro_tools::output::render_utils::num;
 pub use maestro_tools::utils::image_convert::{ConvertedImage, convert_to_png};
 
 /// Image fitting and the file effects the command-line input needs.
-pub use maestro_tools::utils::image_resize::{
+pub use maestro_tools::utils::images::{
     ImageResizeOptions, ResizedImage, format_dimension_note, resize_image,
 };
 

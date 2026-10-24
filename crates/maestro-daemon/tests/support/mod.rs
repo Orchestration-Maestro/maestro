@@ -1,6 +1,6 @@
 //! Shared daemon state admission and invariant observations.
 
-use maestro_daemon::app::state::DaemonState;
+use maestro_daemon::app::model::DaemonState;
 
 /// Admit terminal metadata for each pane using its topology-owned identity.
 pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
@@ -10,7 +10,7 @@ pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
                 .terminals
                 .entry(pane.attached_terminal_id.clone())
                 .or_insert_with(|| {
-                    maestro_daemon::terminal::state::TerminalState::new(
+                    maestro_daemon::terminal::model::TerminalState::new(
                         pane.attached_terminal_id.clone(),
                         workspace.identity_cwd.clone(),
                     )
@@ -74,8 +74,8 @@ fn assert_tab_geometry(tab: &maestro_workspace::tab::Tab) {
 
 /// Builds one isolated detection snapshot for state and any pane runtimes under test.
 pub fn manifest_cache()
--> std::sync::Arc<std::sync::RwLock<maestro_detection::manifest::ManifestCache>> {
+-> std::sync::Arc<std::sync::RwLock<maestro_detection::definitions::ManifestCache>> {
     std::sync::Arc::new(std::sync::RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ))
 }

@@ -1,9 +1,7 @@
 //! Byte input through terminal reads, viewport selection and reset.
 
 use super::support::terminal::{assert_text, cell};
-use maestro_terminal::{
-    Coordinate, Mode, Point, Terminal, screen_set::Key, terminal::ScrollViewport,
-};
+use maestro_terminal::{Coordinate, Mode, Point, Terminal, screens::Key, terminal::ScrollViewport};
 
 fn viewport(t: &Terminal) -> String {
     let pages = &t.screens.active().pages;

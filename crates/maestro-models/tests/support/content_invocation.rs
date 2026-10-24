@@ -342,7 +342,7 @@ async fn observe(input: &Input) -> TestResult<Value> {
     let context: Context = chat::context(&context)?;
     let common = common(input, &observed, &signal)?;
     let result = if input.simple == Some(true) {
-        maestro_models::providers::content::google::stream_simple_google(
+        maestro_models::providers::content::generative::stream_simple_google(
             model,
             context,
             Some(SimpleStreamOptions {

@@ -104,7 +104,7 @@ fn environment() -> (Env, Setup) {
     )
 }
 /// A callback observation independent of details representation.
-fn empty() -> maestro_tui::tui::ComponentHandle {
+fn empty() -> maestro_tui::interface::ComponentHandle {
     Rc::new(Text::new("observed".into(), 0, 0, None))
 }
 /// Distinguishable conversion error.
@@ -479,8 +479,8 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
 }
 /// An unchanged identity keeps the captured title; a different fraction rebuilds it.
 fn assert_fractional_line_rebuild(
-    settle: impl Fn(&str, &maestro_theme::LiveTheme) -> maestro_tui::tui::ComponentHandle,
-    call: &maestro_tui::tui::ComponentHandle,
+    settle: impl Fn(&str, &maestro_theme::LiveTheme) -> maestro_tui::interface::ComponentHandle,
+    call: &maestro_tui::interface::ComponentHandle,
 ) {
     let unchanged = call.render(80);
     let changed_theme =
@@ -927,7 +927,7 @@ fn themed_definition() -> maestro_tools::types::local::ToolDefinition<(), (), se
         let text = theme
             .fg(&maestro_theme::ThemeColor::ToolOutput, "styled")
             .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?;
-        Ok(Rc::new(Text::new(text, 0, 0, None)) as maestro_tui::tui::ComponentHandle)
+        Ok(Rc::new(Text::new(text, 0, 0, None)) as maestro_tui::interface::ComponentHandle)
     };
     let mut tool = definition::<u32, serde_json::Value>();
     tool.render_call = Some(Rc::new(move |_, theme, _| styled(theme)));

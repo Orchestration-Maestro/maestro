@@ -7,12 +7,14 @@ pub mod actions;
 pub mod agents;
 /// Common.
 pub mod common;
+/// Server.
+pub mod endpoint;
 /// Event payload records.
 mod event_data;
-/// Events.
-pub mod events;
 /// Integrations.
 pub mod integrations;
+/// Events.
+pub mod notifications;
 /// Pane graphics records.
 mod pane_graphics;
 /// Pane results.
@@ -20,11 +22,9 @@ mod pane_results;
 /// Panes.
 pub mod panes;
 /// Response.
-pub mod response;
-/// Server.
-pub mod server;
+pub mod replies;
 /// Session.
-pub mod session;
+pub mod snapshots;
 /// Tabs.
 pub mod tabs;
 /// Workspaces.
@@ -35,12 +35,12 @@ pub mod worktrees;
 pub use actions::*;
 pub use agents::*;
 pub use common::*;
-pub use events::*;
+pub use endpoint::*;
 pub use integrations::*;
+pub use notifications::*;
 pub use panes::*;
-pub use response::*;
-pub use server::*;
-pub use session::*;
+pub use replies::*;
+pub use snapshots::*;
 pub use tabs::*;
 pub use workspaces::*;
 pub use worktrees::*;

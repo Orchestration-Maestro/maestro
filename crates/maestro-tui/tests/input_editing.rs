@@ -1,6 +1,6 @@
 //! Single-line input editing through its public component capability.
 use crate::input_support;
-use maestro_tui::{Input, tui::InputHandler};
+use maestro_tui::{Input, interface::InputHandler};
 use std::{cell::RefCell, rc::Rc};
 
 #[test]
@@ -623,7 +623,7 @@ fn paste_framing_preserves_order_and_literal_payload() {
 
 #[test]
 fn reset_starts_fresh_editing_without_replacing_callbacks_or_focus() {
-    use maestro_tui::{Component, tui::Focusable};
+    use maestro_tui::{Component, interface::Focusable};
     let _guard = input_support::globals();
     let input = Input::new();
     let submitted = Rc::new(RefCell::new(Vec::new()));
@@ -640,7 +640,7 @@ fn reset_starts_fresh_editing_without_replacing_callbacks_or_focus() {
     input.reset("fresh".into());
     assert!(Rc::ptr_eq(&input.on_submit().unwrap(), &callback));
     assert!(Rc::ptr_eq(&input.on_escape().unwrap(), &escape));
-    assert!(input.render(30)[0].contains(maestro_tui::tui::CURSOR_MARKER));
+    assert!(input.render(30)[0].contains(maestro_tui::interface::CURSOR_MARKER));
     for key in ["\u{19}", "\u{1f}"] {
         input.handle_input(key);
     }

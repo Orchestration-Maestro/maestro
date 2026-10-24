@@ -13,7 +13,7 @@ The issue and completion files retain literal `$ARGUMENTS`; the review file
 retains `$@`. These are authored template inputs, not shell commands.
 
 The files live in `.maestro/prompts/`, the project prompt directory, so
-[`load_prompt_templates`](../crates/maestro-resources/src/prompt_templates.rs)
+[`load_prompt_templates`](../crates/maestro-resources/src/prompts.rs)
 finds them by default. Loading and expansion behavior belongs
 to the [prompt-template resource guide](resources/prompt-templates.md).
 

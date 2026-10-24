@@ -1,6 +1,6 @@
 //! The interactive-mode test session, built over a catalog read from its directory and
 //! in-memory settings and loader.
-use maestro_app::resources::resource_loader::ResourceLoader;
+use maestro_app::resources::loading::ResourceLoader;
 use maestro_app::{
     AgentSession, AgentSessionConfig, AgentSessionServices, AuthStorage, ConfigValues,
     CreateAgentSessionRuntimeResult, DefaultResourceLoader, DefaultResourceLoaderOptions, Local,
@@ -17,11 +17,11 @@ pub fn session(
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
 ) -> CreateAgentSessionRuntimeResult {
-    session_over(cwd, oauth_provider, loader, None)
+    with_history(cwd, oauth_provider, loader, None)
 }
 
 /// The same session, over a history file under `session_dir` when supplied.
-pub fn session_over(
+pub fn with_history(
     cwd: &str,
     oauth_provider: Option<&str>,
     loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,

@@ -24,7 +24,7 @@ fn app() -> TestApp {
         .clone();
     app.state.terminals.insert(
         id.clone(),
-        maestro_daemon::terminal::state::TerminalState::new(id, "/herd".into()),
+        maestro_daemon::terminal::model::TerminalState::new(id, "/herd".into()),
     );
     app
 }

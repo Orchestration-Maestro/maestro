@@ -2,4 +2,4 @@
 //! session runtime through the application's protocol server and exits with its outcome.
 pub mod server;
 
-pub use server::rpc_mode::{NativeRpcProcess, run_rpc_mode};
+pub use server::connection::{NativeRpcProcess, run_rpc_mode};

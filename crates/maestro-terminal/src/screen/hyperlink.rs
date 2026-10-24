@@ -2,7 +2,7 @@
 
 use super::Screen;
 use crate::{
-    hyperlink::{Hyperlink, HyperlinkId},
+    links::{Hyperlink, HyperlinkId},
     page::{CellPosition, StorageError},
     page_list::{IncreaseCapacity, IncreaseCapacityError as Error},
 };

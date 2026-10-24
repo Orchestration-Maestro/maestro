@@ -67,7 +67,7 @@ handoff use this one protocol version; `frames` re-exports the same constant.
 The generated schema's `schema_version: 1` is its document format, not another
 negotiated protocol. Product versions remain separate strings. Existing JSONL
 clients need no header, handshake, version field or unsolicited startup record.
-JSONL framing belongs to `maestro-json::jsonl`, not a second codec here.
+JSONL framing belongs to `maestro-json::lines`, not a second codec here.
 
 ## Binary screen channel
 

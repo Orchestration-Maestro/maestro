@@ -1,7 +1,7 @@
 //! Strict recorded sandbox inputs and public-boundary replay.
 use maestro_app::SandboxFile;
 use maestro_app::browser::{
-    components::{sandbox::sandbox_runtime_provider::SandboxRuntimeProvider, sandboxed_iframe::*},
+    components::{sandbox::providers::SandboxRuntimeProvider, sandboxed_iframe::*},
     tools::javascript_repl::*,
 };
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};

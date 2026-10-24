@@ -309,7 +309,7 @@ fn first_grapheme_capacity(t: &Terminal) -> u32 {
 }
 
 /// Check a row's linked cell and its retained identity.
-fn assert_link(t: &Terminal, x: u16, id: Option<crate::hyperlink::Id>) {
+fn assert_link(t: &Terminal, x: u16, id: Option<crate::links::Id>) {
     let screen = t.screens.active();
     let pin = screen
         .pages
