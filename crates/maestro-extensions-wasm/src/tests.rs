@@ -87,6 +87,7 @@ mod tool_events;
 mod trigger_compact_example;
 pub(crate) mod ui_host;
 mod with_deps_example;
+mod working_message_example;
 
 use std::future::Future;
 

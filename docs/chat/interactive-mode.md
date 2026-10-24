@@ -4,11 +4,11 @@
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export, share and copy commands, session replay, the
-expansion and thinking shortcuts, thinking and model cycling, the editor border,
-external editing and image paste. The prompt loop, streaming messages, startup
-messages, installed custom headers, the terminal title and the other integrations
-are still to come; the mode prompts the session only for input queued during a
-response or a compaction.
+session events, the expansion and thinking shortcuts, thinking and model cycling,
+the editor border, external editing and image paste. The prompt loop, streaming
+messages, startup messages, installed custom headers, the terminal title and the
+other integrations are still to come; the mode prompts the session only for input
+queued during a response or a compaction.
 
 ## Construction
 
@@ -36,10 +36,10 @@ header, transcript, pending-messages, status, upper widget, editor and lower wid
 containers and the footer, in that order. It focuses the editor, binds the
 transcript shortcuts, the queue keys and editor actions, installs editor submission
 and starts the terminal. A terminal start failure is returned and leaves the mode
-uninitialized. After a successful start, a theme change invalidates the
-presentation, recolours the
-editor border and requests a frame, and a branch change requests a frame. Neither
-callback keeps the mode alive. Last, it lists the loaded resources in the
+uninitialized. Once started, it subscribes to the session events and sets the window
+title. A theme change then invalidates the presentation, recolours the editor border
+and requests a frame, and a branch change requests a frame. Neither callback keeps
+the mode alive. Last, it lists the loaded resources and their diagnostics in the
 transcript and then replays the session (see below).
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
@@ -53,9 +53,11 @@ Header text keeps the colours of the theme in effect when it was built.
 ## Loaded resources
 
 The listing appends one section per kind of loaded resource that has entries, in
-the order `[Context]`, `[Skills]`, `[Prompts]`. Each section is its heading over its
-entries, followed by an empty row; `[Context]` also gets an empty row above it.
-With `quietStartup` set and verbose off, nothing is listed.
+the order `[Context]`, `[Skills]`, `[Prompts]`, `[Extensions]`, `[Themes]`. Each
+section is its heading over its entries, followed by an empty row; `[Context]` also
+gets an empty row above it.
+With `quietStartup` set and verbose off, startup lists no sections but still shows
+the resource diagnostics described below.
 
 `[Context]` lists the context files the session's resource loader discovered, in
 discovery order. The compact form puts them on one row, separated by commas: a file
@@ -75,6 +77,47 @@ entries, all sorted for the locale. A package entry is shown relative to its
 package root, or else by its path inside the npm or Git package directory. Prompts
 show their `/name`; when several templates share a file, the last one's name is
 shown.
+
+`[Extensions]` lists the loaded extensions. The compact form is one row of sorted
+labels. A package extension is labelled by its package: an npm source without
+`npm:`, or a Git source by its repository path. An index file below the package's
+`extensions` folder adds its folder after a colon (`workers:subagents`), and any
+other file adds its path. Other extensions are labelled by the shortest end of
+their path that no other such extension shares: `index.ts` and `index.js` files
+show their folder, and parent folders are added only as needed, so
+`/a/tools/index.ts` and `/b/tools/index.ts` become `a/tools` and `b/tools`. Two
+extensions at the same path keep the same full label. Package labels never make
+other labels longer. The expanded form groups the extensions by scope and package,
+showing each path without a final `/index.ts` or `/index.js`.
+
+`[Themes]` lists the loaded themes that came from a file; themes without a file,
+such as the shipped ones, are left out. The compact form is one row of theme names,
+sorted like skill names. A theme without a name shows the last segment of its path
+instead, and an empty name is left off that row. The expanded form groups the
+theme files by scope and package, as for skills.
+
+After the sections come the resource diagnostics, as plain text that does not
+expand: `[Skill conflicts]`, `[Prompt conflicts]`, `[Extension issues]` and
+`[Theme conflicts]`, each heading in the warning colour and followed by an empty
+row, and each left out when it has nothing to show. Name collisions come first,
+grouped by name in the order first seen: `"name" collision:`, the kept file after
+`✓`, then each skipped file after `✗` with `(skipped)`. Other diagnostics follow
+in order, in the error colour for errors and the warning colour otherwise: a
+diagnostic with a path shows the path on one row and its message indented below
+it, and one without a path shows only the message. `[Extension issues]` lists the
+extensions that failed to load, the command and shortcut problems the extensions
+reported, and each extension command named like a built-in command, which is
+either skipped in completion or reachable under its numbered name:
+
+```text
+Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.
+```
+
+A path in a diagnostic is shown after the source of the listed resource at that
+path, or else at its nearest parent: `user`, `project` or `path (temp)` for local
+files, `path` for command-line files, and a package source with its scope, such as
+`npm:tools (project) extensions/index.ts`. A path with no known source is shown with
+only its home directory abbreviated.
 
 Sections start expanded in verbose mode or when tool output is expanded, and compact
 otherwise. Each section keeps the text it was built with. Expanding or collapsing it
@@ -185,6 +228,32 @@ While a response streams, the interrupt key (Escape by default) restores the que
 messages the same way and then stops the response, even when nothing was queued. When
 no response streams, the key does nothing. The queue keys do not keep the mode alive,
 and a failure in them goes to the terminal runtime's error route.
+## Session events
+
+One listener carries the session's events into the mode. It is the session's own
+subscription, so the removal operation the session returns is kept for the
+lifecycle that ends it. Delivery is synchronous and borrowed: the mode handles
+each event before the producer returns, keeps no reference to itself through the
+listener, and enqueues no copy of the event. A failure goes to the terminal
+runtime's error route.
+
+An event that arrives before the presentation has started starts it first. Every
+event then invalidates the footer, which the footer does not cache. The events
+that carry session metadata read the session's live state rather than the values
+the event carries:
+
+- a changed session name writes the window title;
+- a changed thinking level recolours the editor border for the shell colour or
+  the new level, as the shortcut section describes.
+
+The window title is `Maestro - <name> - <directory>` when the session has a name
+and `Maestro - <directory>` when it has none. The directory is the last segment of
+the session's working directory as authored text, so it needs no filesystem read
+and keeps the separators of the platform the build targets. The name is the one
+the session stores: the newest name record wins, an empty record clears it, and
+the name loses its outer whitespace under the shared whitespace policy. A name
+record that holds anything but text or null is an invalid-data failure, which
+takes the event's error route and leaves the current title in place.
 
 ## Status lines
 

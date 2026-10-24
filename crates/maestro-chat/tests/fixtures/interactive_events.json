@@ -1,0 +1,502 @@
+[
+  {
+    "test": "events_subscription_initializes_once_and_releases",
+    "input": {
+      "op": "init",
+      "initialized": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": []
+    }
+  },
+  {
+    "test": "events_subscription_initializes_once_and_releases",
+    "input": {
+      "op": "init",
+      "initialized": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": []
+    }
+  },
+  {
+    "test": "events_subscription_initializes_once_and_releases",
+    "input": {
+      "op": "subscribe"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": []
+    }
+  },
+  {
+    "test": "events_thinking_level_refreshes_footer_and_border",
+    "input": {
+      "op": "level",
+      "bash": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": []
+    }
+  },
+  {
+    "test": "events_thinking_level_refreshes_footer_and_border",
+    "input": {
+      "op": "level",
+      "bash": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": []
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/project///",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - "
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "relative/",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - relative"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/a/..",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - .."
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "/work/\u754c",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - \u754c"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": ""
+    },
+    "expected": {
+      "title": "Maestro - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": "named"
+    },
+    "expected": {
+      "title": "Maestro - named - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_uses_native_lexical_basename_and_optional_name",
+    "input": {
+      "op": "title",
+      "cwd": "C:\\work\\project",
+      "name": "\u754c\u001b[31m"
+    },
+    "expected": {
+      "title": "Maestro - \u754c\u001b[31m - C:\\work\\project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "missing",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "null",
+      "name": null
+    },
+    "expected": {
+      "title": "Maestro - project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "string",
+      "name": "  \ufefftitle\ufeff  "
+    },
+    "expected": {
+      "title": "Maestro - title - project"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "number",
+      "name": 7
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "boolean",
+      "name": true
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "object",
+      "name": {}
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  },
+  {
+    "test": "events_title_keeps_the_session_name_producers_field_domain",
+    "input": {
+      "op": "title-domain",
+      "kind": "array",
+      "name": [
+        "name"
+      ]
+    },
+    "expected": {
+      "errorKind": "invalid-session-name"
+    }
+  }
+]

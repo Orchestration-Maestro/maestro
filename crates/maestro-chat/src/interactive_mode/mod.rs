@@ -19,6 +19,7 @@ use std::{
 };
 
 mod actions;
+mod events;
 mod key_display;
 mod queues;
 mod replay;
@@ -94,6 +95,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The session subscription that delivers agent and session events.
+    unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
 }
 
 impl InteractiveMode {
@@ -138,12 +141,10 @@ impl InteractiveMode {
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
+        let settings = session.settings_manager();
+        let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -169,13 +170,15 @@ impl InteractiveMode {
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
+            unsubscribe: RefCell::default(),
         }))
     }
 
     /// Builds the header, adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources and replays the session, once; theme changes then refresh the
-    /// editor border, and theme and branch changes request fresh frames.
+    /// loaded resources with their diagnostics and replays the session, once; theme
+    /// changes then refresh the editor border, and theme and branch changes request
+    /// fresh frames.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
@@ -203,6 +206,8 @@ impl InteractiveMode {
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
+        self.subscribe_to_agent();
+        self.update_terminal_title()?;
         let mode = Rc::downgrade(self);
         self.themes.on_theme_change(Rc::new(move || {
             if let Some(mode) = mode.upgrade() {
@@ -217,7 +222,10 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        self.show_loaded_resources(false)?;
+        self.show_loaded_resources(resources::ShowLoadedResourcesOptions {
+            show_diagnostics_when_quiet: true,
+            ..resources::ShowLoadedResourcesOptions::default()
+        })?;
         self.render_initial_messages()
     }
 }

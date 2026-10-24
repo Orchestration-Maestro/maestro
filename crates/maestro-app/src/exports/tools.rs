@@ -40,6 +40,10 @@ pub use maestro_tools::output::render_utils::strip_ansi;
 
 pub use maestro_tools::utils::shell::sanitize_binary_output;
 
+/// Kills every tracked detached child, for a frontend ending the process.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::utils::shell::kill_tracked_detached_children;
+
 pub use maestro_tools::{TruncationOptions, TruncationResult, truncate_tail};
 
 pub use maestro_tools::keybinding_hints::plain_key_hint;

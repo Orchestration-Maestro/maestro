@@ -377,9 +377,9 @@ fn binds_partial_ui_bindings_without_clearing_others() {
         };
         h.session.bind_extensions(errors).await.unwrap();
         let commands = ExtensionBindings {
-            command_context_actions: Some(
-                maestro_extensions::ExtensionCommandContextActions::default(),
-            ),
+            command_context_actions: Some(maestro_extensions::ExtensionCommandContextActions::new(
+                crate::command_operations::silent(),
+            )),
             ..ExtensionBindings::default()
         };
         h.session.bind_extensions(commands).await.unwrap();
