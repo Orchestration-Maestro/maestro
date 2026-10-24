@@ -301,10 +301,10 @@ fn write_report(
         writeln!(stdout, "{}", "-".repeat(RULE))?;
         let mut day_total = 0.0;
         for provider in sorted(providers) {
-            let row = providers[&provider];
+            let row = &providers[provider];
             day_total += row.total;
-            add(totals.entry(provider.clone()).or_default(), &row);
-            write_row(stdout, &provider, &row)?;
+            add(totals.entry(provider.to_owned()).or_default(), row);
+            write_row(stdout, provider, row)?;
         }
         writeln!(
             stdout,
@@ -318,7 +318,7 @@ fn write_report(
     writeln!(stdout, "TOTALS BY PROVIDER")?;
     writeln!(stdout, "{}", "-".repeat(RULE))?;
     for provider in sorted(&totals) {
-        write_row(stdout, &provider, &totals[&provider])?;
+        write_row(stdout, provider, &totals[provider])?;
     }
     writeln!(stdout, "{}", "-".repeat(RULE))?;
     writeln!(
@@ -332,8 +332,8 @@ fn write_report(
 }
 
 /// The row labels in UTF-16 order.
-fn sorted(rows: &BTreeMap<String, DayCost>) -> Vec<String> {
-    let mut keys: Vec<String> = rows.keys().cloned().collect();
+fn sorted(rows: &BTreeMap<String, DayCost>) -> Vec<&str> {
+    let mut keys: Vec<&str> = rows.keys().map(String::as_str).collect();
     keys.sort_by(|left, right| utf16_order(left, right));
     keys
 }
