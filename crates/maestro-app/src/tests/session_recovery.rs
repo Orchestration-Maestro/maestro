@@ -4,7 +4,7 @@
 use super::session_harness::{
     Auth, Harness, HarnessOptions, agent_ended, answer, assistant, case, harness, load_history,
     message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon,
-    summary_provider, usage, user,
+    summary_provider, summary_result, usage, user,
 };
 use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_app::agent_session::CompactionReason;
@@ -360,18 +360,7 @@ async fn pass(gate: Option<Gate>) {
 
 /// The handler the recorded cases install to supply the preparation's summary.
 fn supplied_summary() -> Handler {
-    Rc::new(|event| {
-        let data = &event.data;
-        Some(SessionBeforeCompactResult {
-            cancel: Presence::Missing,
-            compaction: Presence::Present(CompactionResult {
-                summary: "auto compacted".to_owned(),
-                first_kept_entry_id: data.preparation.first_kept_entry_id.clone(),
-                tokens_before: data.preparation.tokens_before,
-                details: Presence::Present(json!({})),
-            }),
-        })
-    })
+    Rc::new(|event| Some(summary_result(event, AUTO_SUMMARY)))
 }
 
 /// The summary text every recorded case supplies.
@@ -609,16 +598,7 @@ fn retry_classification_follows_the_reference_table() {
 fn counted_summary(calls: Rc<Cell<usize>>) -> ExtensionFactory<Local> {
     handled(Rc::new(move |event| {
         calls.set(calls.get() + 1);
-        let data = &event.data;
-        Some(SessionBeforeCompactResult {
-            cancel: Presence::Missing,
-            compaction: Presence::Present(CompactionResult {
-                summary: "auto compacted".to_owned(),
-                first_kept_entry_id: data.preparation.first_kept_entry_id.clone(),
-                tokens_before: data.preparation.tokens_before,
-                details: Presence::Present(json!({})),
-            }),
-        })
+        Some(summary_result(event, AUTO_SUMMARY))
     }))
 }
 

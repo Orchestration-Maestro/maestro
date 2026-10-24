@@ -46,21 +46,28 @@ pub fn summary_provider(summary: &'static str) -> ExtensionFactory<Local> {
         let registered = api.on::<SessionBeforeCompactEvent, SessionBeforeCompactResult>(
             "session_before_compact".into(),
             Rc::new(move |event, _| {
-                let data = &event.data;
-                Box::pin(std::future::ready(Ok(Some(SessionBeforeCompactResult {
-                    cancel: Presence::Missing,
-                    compaction: Presence::Present(CompactionResult {
-                        summary: summary.to_owned(),
-                        first_kept_entry_id: data.preparation.first_kept_entry_id.clone(),
-                        tokens_before: data.preparation.tokens_before,
-                        details: Presence::Present(json!({})),
-                    }),
-                }))))
+                Box::pin(std::future::ready(Ok(Some(summary_result(event, summary)))))
             }),
         );
         drop(registered);
         Box::pin(std::future::ready(Ok(())))
     })
+}
+
+/// A supplied summary retaining the compaction preparation's boundary and token count.
+pub fn summary_result(
+    event: &SessionBeforeCompactEvent,
+    summary: &str,
+) -> SessionBeforeCompactResult {
+    SessionBeforeCompactResult {
+        cancel: Presence::Missing,
+        compaction: Presence::Present(CompactionResult {
+            summary: summary.to_owned(),
+            first_kept_entry_id: event.data.preparation.first_kept_entry_id.clone(),
+            tokens_before: event.data.preparation.tokens_before,
+            details: Presence::Present(json!({})),
+        }),
+    }
 }
 
 /// The recorded corpus file `name`.
