@@ -16,16 +16,26 @@ use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
 use tokio::{sync::oneshot, time::Instant};
 
-/// A dialog's settled answer: dismissed, or the client's response.
+/// A dialog's settled answer: its default, or the client's response.
 enum Answer {
-    /// The client dismissed the dialog.
+    /// The client dismissed the dialog, or it was aborted or expired before the answer came.
     Cancelled,
     /// The client answered.
     Response(RpcExtensionUIResponse),
 }
 
-/// Where the answer to each pending dialog goes, by request identifier.
-type PendingDialogs = Rc<RefCell<HashMap<String, oneshot::Sender<Result<Answer, EventError>>>>>;
+/// A pending dialog: where its answer goes and what settles it without one.
+struct Waiting {
+    /// Receives the answer.
+    answer: oneshot::Sender<Result<Answer, EventError>>,
+    /// Aborts the dialog.
+    signal: Option<Cancellation>,
+    /// When the dialog expires.
+    deadline: Option<Instant>,
+}
+
+/// The pending dialogs, by request identifier.
+type PendingDialogs = Rc<RefCell<HashMap<String, Waiting>>>;
 
 /// The extension interface of one connection, shared by every session it binds.
 pub(super) struct RpcUi {
@@ -48,7 +58,8 @@ impl RpcUi {
     }
 
     /// Settles the pending dialog `record` answers; a record naming no pending dialog is
-    /// ignored. `cancelled: true` wins; otherwise each present member must have its kind.
+    /// ignored. An abort or deadline already passed, or `cancelled: true`, settles the
+    /// default; otherwise each present member must have its kind.
     pub(super) fn answer(&self, record: &Value) {
         let Some(id) = record.get("id").and_then(Value::as_str) else {
             return;
@@ -56,14 +67,21 @@ impl RpcUi {
         let Some(waiting) = self.pending.borrow_mut().remove(id) else {
             return;
         };
-        let answer = if record.get("cancelled") == Some(&Value::Bool(true)) {
+        let aborted = waiting
+            .signal
+            .as_ref()
+            .is_some_and(Cancellation::is_aborted);
+        let expired = waiting
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline);
+        let answer = if aborted || expired || record.get("cancelled") == Some(&Value::Bool(true)) {
             Ok(Answer::Cancelled)
         } else {
             RpcExtensionUIResponse::deserialize(record)
                 .map(Answer::Response)
                 .map_err(EventError::from)
         };
-        drop(waiting.send(answer));
+        drop(waiting.answer.send(answer));
     }
 
     /// Writes `method` as the request `id`.
@@ -92,7 +110,12 @@ impl RpcUi {
         let deadline = expiry(timeout).map(|duration| Instant::now() + duration);
         let id = uuid::Uuid::new_v4().to_string();
         let (sender, answer) = oneshot::channel();
-        self.pending.borrow_mut().insert(id.clone(), sender);
+        let waiting = Waiting {
+            answer: sender,
+            signal: signal.clone(),
+            deadline,
+        };
+        self.pending.borrow_mut().insert(id.clone(), waiting);
         if let Err(error) = self.send(id.clone(), method) {
             self.pending.borrow_mut().remove(&id);
             return Box::pin(std::future::ready(Err(error)));
@@ -102,7 +125,10 @@ impl RpcUi {
             let (has_signal, has_deadline) = (signal.is_some(), deadline.is_some());
             let aborted = OptionFuture::from(signal.as_ref().map(Cancellation::cancelled));
             let expired = OptionFuture::from(deadline.map(tokio::time::sleep_until));
+            // An answer already sent came first: `answer` decided against the abort and
+            // the deadline when it arrived.
             let settled = tokio::select! {
+                biased;
                 answer = answer => match answer {
                     Ok(answer) => answer.map(|answer| match answer {
                         Answer::Cancelled => default,

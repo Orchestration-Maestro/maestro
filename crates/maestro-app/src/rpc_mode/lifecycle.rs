@@ -31,6 +31,8 @@ pub(super) struct Lifecycle {
     shutdown_requested: bool,
     /// Whether shutdown started.
     pub(super) shutting_down: bool,
+    /// The first input or output failure, which the shutdown reports.
+    failure: Option<io::Error>,
     /// Reports how the connection ended; taken by the first report.
     finish: Option<oneshot::Sender<io::Result<RpcConnectionOutcome>>>,
 }
@@ -88,21 +90,29 @@ impl Connection {
     }
 
     /// Binds the first session, registers the signals, then handles the records that
-    /// arrived meanwhile in their arrival order.
+    /// arrived meanwhile in their arrival order; a failure ends the connection instead.
     async fn finish_initial_binding(self: &Rc<Self>) {
-        if let Err(error) = self.bind_current().await {
-            self.finish(Err(io::Error::other(error)));
-            return;
-        }
-        if let Err(error) = self.register_signals() {
-            self.finish(Err(error));
-            return;
-        }
+        let bound = match self.bind_current().await {
+            Ok(()) => self.register_signals(),
+            Err(error) => Err(io::Error::other(error)),
+        };
         let early = self.early.borrow_mut().take();
-        for record in early.into_iter().flatten() {
-            self.spawn(record);
+        match bound {
+            Ok(()) => early
+                .into_iter()
+                .flatten()
+                .for_each(|record| self.spawn(record)),
+            Err(error) => self.fail(error),
         }
-        self.bound.notify_one();
+        self.bound.notify_waiters();
+    }
+
+    /// Waits until the initial binding has handled the records that arrived meanwhile.
+    pub(super) async fn initial_binding(&self) {
+        let bound = self.bound.notified();
+        if self.early.borrow().is_some() {
+            bound.await;
+        }
     }
 
     /// Binds the current session's extensions to the protocol, then replaces the event
@@ -178,8 +188,26 @@ impl Connection {
         }
     }
 
+    /// Ends the connection with `error` through the shutdown, once the initial binding is
+    /// done; a running shutdown reports the first failure instead of its outcome.
+    pub(super) fn fail(self: &Rc<Self>, error: io::Error) {
+        let ending = {
+            let mut lifecycle = self.lifecycle.borrow_mut();
+            let ending = lifecycle.shutting_down || lifecycle.failure.is_some();
+            lifecycle.failure.get_or_insert(error);
+            ending
+        };
+        if !ending {
+            let connection = Rc::clone(self);
+            drop(tokio::task::spawn_local(async move {
+                connection.initial_binding().await;
+                connection.shutdown(RpcConnectionOutcome::Eof).await;
+            }));
+        }
+    }
+
     /// Stops signal delivery and the event subscription, disposes the runtime and finishes
-    /// with `outcome`; a repeated shutdown finishes at once.
+    /// with `outcome`, or with the first failure; a repeated shutdown finishes at once.
     pub(super) async fn shutdown(self: &Rc<Self>, outcome: RpcConnectionOutcome) {
         let (signal_cleanup, unsubscribe) = {
             let mut lifecycle = self.lifecycle.borrow_mut();
@@ -201,11 +229,15 @@ impl Connection {
             unsubscribe();
         }
         let disposed = self.runtime.dispose().await;
-        self.finish(disposed.map(|()| outcome).map_err(io::Error::other));
+        let failure = self.lifecycle.borrow_mut().failure.take();
+        self.finish(match failure {
+            Some(error) => Err(error),
+            None => disposed.map(|()| outcome).map_err(io::Error::other),
+        });
     }
 
     /// Reports how the connection ended; only the first report counts.
-    pub(super) fn finish(&self, outcome: io::Result<RpcConnectionOutcome>) {
+    fn finish(&self, outcome: io::Result<RpcConnectionOutcome>) {
         let finish = self.lifecycle.borrow_mut().finish.take();
         if let Some(finish) = finish {
             drop(finish.send(outcome));

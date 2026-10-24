@@ -140,8 +140,8 @@ impl<C: CustomAgentMessages + serde::Serialize> serde::Serialize for AgentEvent<
                 assistant_message_event,
             } => {
                 map.serialize_entry("type", "message_update")?;
-                map.serialize_entry("message", message)?;
                 map.serialize_entry("assistantMessageEvent", assistant_message_event)?;
+                map.serialize_entry("message", message)?;
             }
             Self::MessageEnd { message } => {
                 map.serialize_entry("type", "message_end")?;

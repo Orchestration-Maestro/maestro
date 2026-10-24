@@ -107,7 +107,8 @@ pub(super) struct Connection {
     pub(super) options: RpcModeOptions,
     /// Records admitted during the initial binding, in arrival order; `None` once bound.
     pub(super) early: RefCell<Option<Vec<Record>>>,
-    /// Notified once the initial binding has handled the records that arrived meanwhile.
+    /// Notifies every waiter once the initial binding has handled the records that arrived
+    /// meanwhile.
     pub(super) bound: tokio::sync::Notify,
     /// Shutdown and subscription state.
     pub(super) lifecycle: RefCell<super::lifecycle::Lifecycle>,
@@ -146,17 +147,22 @@ impl Connection {
             let next = tokio::select! {
                 biased;
                 outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
-                next = input.next_line() => next?,
+                next = input.next_line() => next,
             };
             match next {
-                RpcInput::Line(line) => self.accept(&line),
-                RpcInput::End { tail } => return self.end(tail, finished).await,
+                Ok(RpcInput::Line(line)) => self.accept(&line),
+                Ok(RpcInput::End { tail }) => return self.end(tail, finished).await,
+                Err(error) => {
+                    self.fail(error);
+                    return finished.await.map_err(io::Error::other)?;
+                }
             }
         }
     }
 
-    /// Ends the input: once the initial binding is done, shuts down while handling the final
-    /// line, or finishes at once when a shutdown is already running.
+    /// Ends the input: answers a final dialog response at once, then, once the initial
+    /// binding is done, shuts down while handling any other final line, or finishes at once
+    /// when a shutdown is already running.
     async fn end(
         self: &Rc<Self>,
         tail: Option<String>,
@@ -165,15 +171,14 @@ impl Connection {
         if self.lifecycle.borrow().shutting_down {
             return Ok(RpcConnectionOutcome::Eof);
         }
+        // A startup dialog may wait for this answer, so it comes before the binding's end.
+        let tail = tail.and_then(|line| self.decode(&line));
         // Input is served after the initial binding, so its end waits for the binding too.
-        if self.early.borrow().is_some() {
-            tokio::select! {
-                biased;
-                outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
-                () = self.bound.notified() => {}
-            }
+        tokio::select! {
+            biased;
+            outcome = &mut *finished => return outcome.map_err(io::Error::other)?,
+            () = self.initial_binding() => {}
         }
-        let tail = tail.and_then(|line| self.admit(&line));
         let shutdown =
             futures_util::future::join(self.shutdown(RpcConnectionOutcome::Eof), async {
                 if let Some(record) = tail {
@@ -201,13 +206,7 @@ impl Connection {
     /// Decodes `line`, answers a dialog response at once and holds every other record
     /// while the initial binding runs; returns the record to handle now.
     fn admit(&self, line: &str) -> Option<Record> {
-        let record = serde_json::from_str::<Value>(line);
-        if let Ok(value) = &record
-            && value.get("type").and_then(Value::as_str) == Some("extension_ui_response")
-        {
-            self.ui.answer(value);
-            return None;
-        }
+        let record = self.decode(line)?;
         match &mut *self.early.borrow_mut() {
             Some(early) => {
                 early.push(record);
@@ -215,6 +214,18 @@ impl Connection {
             }
             None => Some(record),
         }
+    }
+
+    /// Decodes `line` and answers a dialog response; returns any other record.
+    fn decode(&self, line: &str) -> Option<Record> {
+        let record = serde_json::from_str::<Value>(line);
+        if let Ok(value) = &record
+            && value.get("type").and_then(Value::as_str) == Some("extension_ui_response")
+        {
+            self.ui.answer(value);
+            return None;
+        }
+        Some(record)
     }
 
     /// Handles `record` at once and finishes it on its own task, so commands overlap and a
@@ -282,9 +293,9 @@ impl Connection {
     }
 
     /// Writes `record`; a failed write ends the connection with that failure.
-    pub(super) fn write(&self, record: &impl Serialize) {
+    pub(super) fn write(self: &Rc<Self>, record: &impl Serialize) {
         if let Err(error) = write_record(&self.output, record) {
-            self.finish(Err(error));
+            self.fail(error);
         }
     }
 }
