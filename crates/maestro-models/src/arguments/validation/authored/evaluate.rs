@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 
 use crate::SchemaKind;
 
-use super::Context;
+use super::{Context, collections};
 
 /// A schema node with the kinds its author declared, rooted at the empty pointer.
 #[derive(Clone)]
@@ -41,62 +41,63 @@ impl Node {
 
     /// Extract the node a nested member schema stands for.
     fn child(&self, schema: &Value, pointer: &str) -> Self {
-        let mut kinds = HashMap::new();
-        for (key, kind) in &self.kinds {
-            let nested = if key.is_empty() {
-                // The enclosing node's own kind belongs to the enclosing node, not to the child.
-                None
-            } else if key == pointer {
-                Some(String::new())
-            } else {
-                key.strip_prefix(pointer).map(ToOwned::to_owned)
-            };
-            if let Some(nested) = nested {
-                kinds.insert(nested, kind.clone());
-            }
-        }
         Self {
             schema: schema.clone(),
-            kinds,
+            kinds: nested_kinds(&self.kinds, pointer),
         }
     }
 
-    /// Re-root an extracted node's kinds below one pointer segment.
-    fn re_root(&self, pointer: &str, schema: &Value) -> Self {
-        let kinds = self
-            .kinds
+    /// Re-root this node's kinds below one pointer segment.
+    fn re_rooted_kinds(&self, pointer: &str) -> HashMap<String, SchemaKind> {
+        self.kinds
             .iter()
-            .map(|(key, kind)| {
-                let nested = if key.is_empty() {
-                    pointer.to_owned()
-                } else {
-                    format!("{pointer}/{key}")
-                };
-                (nested, kind.clone())
-            })
-            .collect();
-        Self {
-            schema: schema.clone(),
-            kinds,
-        }
+            .map(|(key, kind)| (nested(pointer, key), kind.clone()))
+            .collect()
     }
 }
 
 /// Evaluate one declared intersection into the node conversion uses.
 pub(super) fn evaluate(context: &Context<'_>, pointer: &str, members: &[Value]) -> Option<Node> {
-    let root = Node {
-        schema: context.schema().clone(),
-        kinds: context.kinds().clone(),
-    };
     if members.is_empty() {
         return None;
     }
     let nodes: Vec<Node> = members
         .iter()
         .enumerate()
-        .map(|(index, member)| root.child(member, &format!("{pointer}/allOf/{index}")))
+        .map(|(index, member)| {
+            let address = format!("{pointer}/allOf/{index}");
+            Node {
+                schema: member.clone(),
+                kinds: nested_kinds(context.kinds(), &address),
+            }
+        })
         .collect();
     broaden(&distribute(&nodes))
+}
+
+/// The kinds declared below one pointer, keyed from that pointer's node.
+fn nested_kinds(kinds: &HashMap<String, SchemaKind>, pointer: &str) -> HashMap<String, SchemaKind> {
+    kinds
+        .iter()
+        .filter_map(|(key, kind)| {
+            let nested = if key.is_empty() {
+                None
+            } else if key == pointer {
+                Some(String::new())
+            } else {
+                key.strip_prefix(pointer).map(ToOwned::to_owned)
+            };
+            nested.map(|nested| (nested, kind.clone()))
+        })
+        .collect()
+}
+
+/// Address a node's kinds below one pointer, keeping the pointer's own boundaries.
+fn nested(pointer: &str, key: &str) -> String {
+    match key.strip_prefix('/') {
+        None => pointer.to_owned(),
+        Some(rest) => format!("{pointer}/{rest}"),
+    }
 }
 
 /// Combine the supplied nodes pairwise, distributing alternatives.
@@ -152,17 +153,15 @@ fn composite(left: &Node, right: &Node) -> Node {
     keys.dedup();
     for key in keys {
         let member = match (left_properties.get(key), right_properties.get(key)) {
-            (Some(one), Some(other)) => pair(one.clone(), other.clone())
-                .into_iter()
-                .next()
-                .unwrap_or_else(never),
+            (Some(one), Some(other)) => {
+                broaden(&pair(one.clone(), other.clone())).unwrap_or_else(never)
+            }
             (Some(one), None) => one.clone(),
             (None, Some(other)) => other.clone(),
             (None, None) => continue,
         };
-        let pointer = format!("/properties/{}", key.replace('~', "~0").replace('/', "~1"));
-        let member = member.re_root(&pointer, &member.schema.clone());
-        kinds.extend(member.kinds.iter().map(|(k, v)| (k.clone(), v.clone())));
+        let pointer = format!("/properties/{}", collections::escape(key));
+        kinds.extend(member.re_rooted_kinds(&pointer));
         merged.insert(key.clone(), member.schema);
     }
     let mut schema = Map::new();
@@ -188,7 +187,7 @@ fn properties(node: &Node) -> HashMap<String, Node> {
                 .map(|(key, schema)| {
                     (
                         key.clone(),
-                        node.child(schema, &format!("/properties/{key}")),
+                        node.child(schema, &format!("/properties/{}", collections::escape(key))),
                     )
                 })
                 .collect()
@@ -223,10 +222,14 @@ fn relation(left: &Node, right: &Node) -> Relation {
         (Some(SchemaKind::Never) | None, _) | (_, Some(SchemaKind::Never) | None) => {
             Relation::Disjoint
         }
+        (
+            Some(SchemaKind::Any | SchemaKind::Unknown),
+            Some(SchemaKind::Any | SchemaKind::Unknown),
+        ) => Relation::Equal,
         (Some(SchemaKind::Any | SchemaKind::Unknown), _)
-        | (Some(SchemaKind::Integer), Some(SchemaKind::Number)) => Relation::LeftInside,
-        (Some(SchemaKind::Number), Some(SchemaKind::Integer))
-        | (_, Some(SchemaKind::Any | SchemaKind::Unknown)) => Relation::RightInside,
+        | (Some(SchemaKind::Number), Some(SchemaKind::Integer)) => Relation::RightInside,
+        (Some(SchemaKind::Integer), Some(SchemaKind::Number))
+        | (_, Some(SchemaKind::Any | SchemaKind::Unknown)) => Relation::LeftInside,
         (Some(SchemaKind::Literal), Some(SchemaKind::Literal)) => {
             if left.schema.get("const") == right.schema.get("const") {
                 Relation::Equal
@@ -301,12 +304,12 @@ fn broaden(nodes: &[Node]) -> Option<Node> {
 
 /// Build the alternative node a set of accepted members stands for.
 fn union(nodes: &[Node]) -> Node {
-    let members: Vec<Value> = nodes.iter().map(|node| node.schema.clone()).collect();
     let mut kinds = HashMap::new();
     kinds.insert(String::new(), SchemaKind::Union);
+    let mut members = Vec::with_capacity(nodes.len());
     for (index, node) in nodes.iter().enumerate() {
-        let member = node.re_root(&format!("/anyOf/{index}"), &node.schema.clone());
-        kinds.extend(member.kinds);
+        kinds.extend(node.re_rooted_kinds(&format!("/anyOf/{index}")));
+        members.push(node.schema.clone());
     }
     Node {
         schema: serde_json::json!({ "anyOf": members }),

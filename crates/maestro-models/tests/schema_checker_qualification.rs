@@ -479,6 +479,31 @@ fn maestro_rejects_nonprogressing_reference_cycles() {
 }
 
 #[test]
+fn maestro_resolves_pointer_references_from_the_enclosing_resource() {
+    let schema = json!({
+        "$defs": {"S": {"type": "number"}},
+        "properties": {"value": {"$defs": {"S": {"type": "string"}}, "$ref": "#/$defs/S"}}
+    });
+    assert_eq!(
+        check_object(
+            schema.clone(),
+            maestro_models::JsonObject::from_iter([("value".into(), json!(1))])
+        ),
+        Ok(maestro_models::JsonObject::from_iter([(
+            "value".into(),
+            json!(1)
+        )]))
+    );
+    assert!(
+        check_object(
+            schema,
+            maestro_models::JsonObject::from_iter([("value".into(), json!("text"))])
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn maestro_resolves_schema_ids_anchors_and_recursive_references() {
     let arguments = maestro_models::JsonObject::from_iter([("example".into(), json!(1))]);
     assert_eq!(

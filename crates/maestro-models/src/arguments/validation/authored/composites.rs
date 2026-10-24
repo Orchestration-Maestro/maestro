@@ -34,14 +34,14 @@ pub(super) fn convert_enum(value: &mut Value, schema: &Value) {
 
 /// Convert through the alternatives of the supplied node, when the alternative set names one.
 pub(super) fn convert_union(context: &mut super::Context<'_>, value: &mut Value, pointer: &str) {
-    let Some(schema) = context.schema().pointer(pointer).cloned() else {
+    let Some(alternatives) = context
+        .schema()
+        .pointer(pointer)
+        .and_then(|schema| schema.get("anyOf"))
+        .and_then(Value::as_array)
+    else {
         return;
     };
-    let alternatives = schema
-        .get("anyOf")
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default();
     if alternatives
         .iter()
         .any(|alternative| validates(alternative, value))

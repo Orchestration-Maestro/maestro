@@ -48,13 +48,14 @@ pub(super) struct Context<'a> {
     bindings: Vec<(String, String)>,
 }
 
-impl Context<'_> {
+impl<'a> Context<'a> {
     /// Convert a value against the node at the supplied pointer.
     fn convert_at(&mut self, value: &mut Value, pointer: &str) {
+        let document = self.schema;
         let Some(kind) = self.kinds.get(pointer).cloned() else {
             return;
         };
-        let Some(schema) = self.schema.pointer(pointer).cloned() else {
+        let Some(schema) = document.pointer(pointer) else {
             return;
         };
         match kind {
@@ -64,15 +65,15 @@ impl Context<'_> {
             SchemaKind::Boolean => scalars::to_boolean(value),
             SchemaKind::Null => scalars::to_null(value),
             SchemaKind::Array => self.convert_array(value, pointer),
-            SchemaKind::Tuple => self.convert_tuple(value, pointer, &schema),
-            SchemaKind::Object => self.convert_object(value, pointer, &schema),
-            SchemaKind::Record => self.convert_record(value, pointer, &schema),
-            SchemaKind::Literal => composites::convert_literal(value, &schema),
-            SchemaKind::Enum => composites::convert_enum(value, &schema),
+            SchemaKind::Tuple => self.convert_tuple(value, pointer, schema),
+            SchemaKind::Object => self.convert_object(value, pointer, schema),
+            SchemaKind::Record => self.convert_record(value, pointer, schema),
+            SchemaKind::Literal => composites::convert_literal(value, schema),
+            SchemaKind::Enum => composites::convert_enum(value, schema),
             SchemaKind::Union => composites::convert_union(self, value, pointer),
-            SchemaKind::Intersect => self.convert_intersect(value, pointer, &schema),
-            SchemaKind::Ref | SchemaKind::Cyclic => self.convert_reference(value, pointer, &schema),
-            SchemaKind::TemplateLiteral => templates::convert(value, &schema),
+            SchemaKind::Intersect => self.convert_intersect(value, pointer, schema),
+            SchemaKind::Ref | SchemaKind::Cyclic => self.convert_reference(value, pointer, schema),
+            SchemaKind::TemplateLiteral => templates::convert(value, schema),
             _ => {}
         }
     }
@@ -85,7 +86,7 @@ impl Context<'_> {
 
     /// Wrap a supplied value into a sequence and convert its items.
     fn convert_array(&mut self, value: &mut Value, pointer: &str) {
-        let mut candidate = scalars::to_array(value);
+        let mut candidate = scalars::to_array(std::mem::take(value));
         if let Some(values) = candidate.as_array_mut() {
             for member in values {
                 self.convert_child(member, pointer, "items");
@@ -215,11 +216,12 @@ impl Context<'_> {
 
     /// Convert through the definition a reference names.
     fn convert_reference(&mut self, value: &mut Value, pointer: &str, schema: &Value) {
-        let publish = self.kinds.get(pointer) == Some(&SchemaKind::Cyclic);
-        let added = publish.then(|| {
-            let definitions = schema.get("$defs").cloned().unwrap_or(Value::Null);
-            self.bind(pointer, &definitions)
-        });
+        let restore = self.bindings.len();
+        if self.kinds.get(pointer) == Some(&SchemaKind::Cyclic)
+            && let Some(definitions) = schema.get("$defs").and_then(Value::as_object)
+        {
+            self.bind(pointer, definitions);
+        }
         if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
             && let Some(target) = self
                 .bindings
@@ -230,16 +232,11 @@ impl Context<'_> {
         {
             self.convert_at(value, &target);
         }
-        if added.flatten().is_some() {
-            self.bindings
-                .truncate(self.bindings.len().saturating_sub(1));
-        }
+        self.bindings.truncate(restore);
     }
 
     /// Publish the identifiers a definition block declares.
-    fn bind(&mut self, pointer: &str, definitions: &Value) -> Option<usize> {
-        let definitions = definitions.as_object()?;
-        let before = self.bindings.len();
+    fn bind(&mut self, pointer: &str, definitions: &serde_json::Map<String, Value>) {
         for (key, definition) in definitions {
             let identifier = definition
                 .get("$id")
@@ -249,16 +246,15 @@ impl Context<'_> {
             let target = format!("{pointer}/$defs/{}", collections::escape(key));
             self.bindings.push((identifier, target));
         }
-        Some(self.bindings.len() - before)
     }
 
     /// Borrow the authored kinds.
-    pub(super) fn kinds(&self) -> &HashMap<String, SchemaKind> {
+    pub(super) fn kinds(&self) -> &'a HashMap<String, SchemaKind> {
         self.kinds
     }
 
     /// Borrow the supplied schema.
-    pub(super) fn schema(&self) -> &Value {
+    pub(super) fn schema(&self) -> &'a Value {
         self.schema
     }
 }

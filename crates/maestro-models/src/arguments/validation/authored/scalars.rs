@@ -77,10 +77,10 @@ pub(super) fn to_null(value: &mut Value) {
 }
 
 /// Wrap any supplied value into a sequence, keeping sequences unchanged.
-pub(super) fn to_array(value: &Value) -> Value {
+pub(super) fn to_array(value: Value) -> Value {
     match value {
-        Value::Array(_) => value.clone(),
-        other => Value::Array(vec![other.clone()]),
+        Value::Array(_) => value,
+        other => Value::Array(vec![other]),
     }
 }
 

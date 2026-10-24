@@ -290,7 +290,7 @@ fn target<'a>(
     let resource = &context.location.resource;
     let joined = |base: &Resource<'a>| base.uri.as_ref()?.join(reference).ok();
     if let Some(fragment) = fragment_pointer(reference)
-        && let Some(found) = pointer(&context.location, &fragment)
+        && let Some(found) = rooted_pointer(&context.location.resource_root(), &fragment)
     {
         return Some(found);
     }
@@ -410,6 +410,26 @@ fn matched<'a>(
         .iter()
         .any(|key| node.schema.get(key).and_then(Value::as_str) == Some(fragment))
         .then(|| node.clone())
+}
+
+/// Search a resource for the node a pointer addresses, from its root in traversal order.
+///
+/// A pointer fragment is looked up at the resource root first and then at each node below it,
+/// so a nested node's own definitions never shadow the ones the resource declares.
+fn rooted_pointer<'a>(start: &Location<'a>, fragment: &str) -> Option<Location<'a>> {
+    let mut pending = vec![start.clone()];
+    while let Some(node) = pending.pop() {
+        if let Some(found) = pointer(&node, fragment) {
+            return Some(found);
+        }
+        pending.extend(
+            children(node.schema)
+                .into_iter()
+                .rev()
+                .map(|child| node.child(child)),
+        );
+    }
+    None
 }
 
 /// Traverse decoded pointer segments, entering each crossed resource once.

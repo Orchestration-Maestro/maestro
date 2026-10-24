@@ -18271,5 +18271,370 @@
         "filename": "null"
       }
     }
+  },
+  {
+    "case": "intersect_nested_object",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "inner"
+              ],
+              "properties": {
+                "inner": {
+                  "type": "object",
+                  "required": [
+                    "s"
+                  ],
+                  "properties": {
+                    "s": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "inner"
+              ],
+              "properties": {
+                "inner": {
+                  "type": "object",
+                  "required": [
+                    "t"
+                  ],
+                  "properties": {
+                    "t": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Object",
+      "/properties/value/allOf/0/properties/inner": "Object",
+      "/properties/value/allOf/0/properties/inner/properties/s": "String",
+      "/properties/value/allOf/1": "Object",
+      "/properties/value/allOf/1/properties/inner": "Object",
+      "/properties/value/allOf/1/properties/inner/properties/t": "String"
+    },
+    "arguments": {
+      "value": {
+        "inner": {
+          "s": null,
+          "t": null
+        }
+      }
+    },
+    "expected": {
+      "Ok": {
+        "value": {
+          "inner": {
+            "s": "null",
+            "t": "null"
+          }
+        }
+      }
+    }
+  },
+  {
+    "case": "intersect_nested_array",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "list"
+              ],
+              "properties": {
+                "list": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "list"
+              ],
+              "properties": {
+                "list": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Object",
+      "/properties/value/allOf/0/properties/list": "Array",
+      "/properties/value/allOf/0/properties/list/items": "String",
+      "/properties/value/allOf/1": "Object",
+      "/properties/value/allOf/1/properties/list": "Array",
+      "/properties/value/allOf/1/properties/list/items": "String"
+    },
+    "arguments": {
+      "value": {
+        "list": [
+          null,
+          2
+        ]
+      }
+    },
+    "expected": {
+      "Ok": {
+        "value": {
+          "list": [
+            "null",
+            "2"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "case": "intersect_unknown_left",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {},
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "Unknown",
+      "/properties/value/allOf/1": "String"
+    },
+    "arguments": {
+      "value": null
+    },
+    "expected": {
+      "Ok": {
+        "value": "null"
+      }
+    }
+  },
+  {
+    "case": "intersect_unknown_right",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "allOf": [
+            {
+              "type": "string"
+            },
+            {}
+          ]
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Intersect",
+      "/properties/value/allOf/0": "String",
+      "/properties/value/allOf/1": "Unknown"
+    },
+    "arguments": {
+      "value": null
+    },
+    "expected": {
+      "Ok": {
+        "value": "null"
+      }
+    }
+  },
+  {
+    "case": "template alternatives null first",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^(null|true)$"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "TemplateLiteral"
+    },
+    "arguments": {
+      "value": null
+    },
+    "expected": {
+      "Ok": {
+        "value": "null"
+      }
+    }
+  },
+  {
+    "case": "template alternatives true first",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^(true|null)$"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "TemplateLiteral"
+    },
+    "arguments": {
+      "value": null
+    },
+    "expected": {
+      "Ok": {
+        "value": "null"
+      }
+    }
+  },
+  {
+    "case": "cyclic_scope",
+    "group": "ruling",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$defs": {
+            "T": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "$id": "T"
+            },
+            "R": {
+              "type": "array",
+              "additionalItems": false,
+              "items": [
+                {
+                  "$defs": {
+                    "T": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ],
+                      "$id": "T"
+                    },
+                    "U": {
+                      "type": "boolean",
+                      "$id": "U"
+                    }
+                  },
+                  "$ref": "T"
+                },
+                {
+                  "$ref": "T"
+                }
+              ],
+              "minItems": 2,
+              "$id": "R"
+            }
+          },
+          "$ref": "R"
+        }
+      }
+    },
+    "kinds": {
+      "": "Object",
+      "/properties/value": "Cyclic",
+      "/properties/value/$defs/T": "Union",
+      "/properties/value/$defs/T/anyOf/0": "String",
+      "/properties/value/$defs/T/anyOf/1": "Number",
+      "/properties/value/$defs/R": "Tuple",
+      "/properties/value/$defs/R/items/0": "Cyclic",
+      "/properties/value/$defs/R/items/0/$defs/T": "Union",
+      "/properties/value/$defs/R/items/0/$defs/T/anyOf/0": "Number",
+      "/properties/value/$defs/R/items/0/$defs/T/anyOf/1": "String",
+      "/properties/value/$defs/R/items/0/$defs/U": "Boolean",
+      "/properties/value/$defs/R/items/1": "Ref"
+    },
+    "arguments": {
+      "value": [
+        null,
+        null
+      ]
+    },
+    "expected": {
+      "Ok": {
+        "value": [
+          0,
+          "null"
+        ]
+      }
+    }
   }
 ]

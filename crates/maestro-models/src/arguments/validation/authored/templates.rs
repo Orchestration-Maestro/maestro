@@ -7,9 +7,6 @@ use serde_json::Value;
 
 use super::scalars;
 
-/// Largest literal set the decoder enumerates before treating a pattern as unbounded.
-const LIMIT: usize = 1_024;
-
 /// Convert a supplied value through the literals a template pattern names.
 pub(super) fn convert(value: &mut Value, schema: &Value) {
     let Some(pattern) = schema.get("pattern").and_then(Value::as_str) else {
@@ -58,8 +55,7 @@ impl Reader<'_> {
         let mut variants = self.sequence()?;
         while self.peek() == Some(b'|') {
             self.index += 1;
-            let next = self.sequence()?;
-            variants = join(&variants, &next)?;
+            variants.extend(self.sequence()?);
         }
         Some(variants)
     }
@@ -72,7 +68,7 @@ impl Reader<'_> {
                 break;
             }
             let piece = self.piece()?;
-            variants = join(&variants, &piece)?;
+            variants = join(&variants, &piece);
         }
         Some(variants)
     }
@@ -115,7 +111,7 @@ impl Reader<'_> {
             if count >= lowest {
                 variants.extend(current.iter().cloned());
             }
-            current = join(&current, atom)?;
+            current = join(&current, atom);
         }
         Some(variants)
     }
@@ -180,13 +176,38 @@ fn character(byte: u8) -> char {
 }
 
 /// Combine two literal sets by concatenating every pair.
-fn join(left: &[String], right: &[String]) -> Option<Vec<String>> {
-    if left.len().saturating_mul(right.len()) > LIMIT {
-        return None;
+fn join(left: &[String], right: &[String]) -> Vec<String> {
+    left.iter()
+        .flat_map(|prefix| right.iter().map(move |suffix| format!("{prefix}{suffix}")))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::decode;
+
+    /// Alternatives name every alternative, not their concatenation.
+    #[test]
+    fn alternatives_stay_separate() {
+        assert_eq!(
+            decode("^(null|true)$").unwrap_or_default(),
+            ["null", "true"]
+        );
     }
-    Some(
-        left.iter()
-            .flat_map(|prefix| right.iter().map(move |suffix| format!("{prefix}{suffix}")))
-            .collect(),
-    )
+
+    /// A finite pattern names every text it accepts, however many there are.
+    #[test]
+    fn finite_patterns_expand_without_a_bound() {
+        let literals = decode("^(a|b){11}$").unwrap_or_default();
+        assert_eq!(literals.len(), 2_048);
+        assert!(literals.iter().all(|literal| literal.len() == 11));
+    }
+
+    /// Unbounded repetition names no finite set of texts.
+    #[test]
+    fn unbounded_repetition_stays_unbounded() {
+        for pattern in ["^(a|b)+$", "^(a|b)*$"] {
+            assert!(decode(pattern).is_none(), "{pattern} is unbounded");
+        }
+    }
 }

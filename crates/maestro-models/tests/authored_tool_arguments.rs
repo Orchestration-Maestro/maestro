@@ -180,6 +180,25 @@ const MATRIX: &[(&str, &[&str])] = &[
         "unsafe_nodes_remain_plain",
         &["unsafe", "root_plain_object"],
     ),
+    (
+        "nested_intersection_keeps_child_conversions",
+        &["intersect_nested_object", "intersect_nested_array"],
+    ),
+    (
+        "intersection_narrowing_keeps_the_declared_operand",
+        &["intersect_unknown_left", "intersect_unknown_right"],
+    ),
+    (
+        "template_alternatives_stay_alternatives",
+        &[
+            "template alternatives null first",
+            "template alternatives true first",
+        ],
+    ),
+    (
+        "nested_definitions_restore_the_enclosing_scope",
+        &["cyclic_scope"],
+    ),
 ];
 
 /// Read the recorded corpus.
@@ -462,6 +481,30 @@ fn template_literals_keep_finite_and_infinite_routes() {
 #[test]
 fn unsafe_nodes_remain_plain() {
     run("unsafe_nodes_remain_plain");
+}
+
+/// Members an intersection merges keep the conversions declared for their own nodes.
+#[test]
+fn nested_intersection_keeps_child_conversions() {
+    run("nested_intersection_keeps_child_conversions");
+}
+
+/// Narrowing an unknown member keeps the declared operand, whichever side it is on.
+#[test]
+fn intersection_narrowing_keeps_the_declared_operand() {
+    run("intersection_narrowing_keeps_the_declared_operand");
+}
+
+/// Template alternatives convert through every alternative, not their concatenation.
+#[test]
+fn template_alternatives_stay_alternatives() {
+    run("template_alternatives_stay_alternatives");
+}
+
+/// A nested definition block leaves the enclosing definitions visible again.
+#[test]
+fn nested_definitions_restore_the_enclosing_scope() {
+    run("nested_definitions_restore_the_enclosing_scope");
 }
 
 /// Providers and saved JSON observe the supplied schema without authored provenance.
