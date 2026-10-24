@@ -82,6 +82,23 @@ pub fn collect_settings_diagnostics(
         .collect()
 }
 
+/// The rendered line of one message with its severity prefix and style.
+fn render_message(
+    severity: AgentSessionRuntimeDiagnosticType,
+    message: &str,
+    styles_enabled: bool,
+) -> String {
+    match severity {
+        AgentSessionRuntimeDiagnosticType::Error => {
+            Theme::red(&format!("Error: {message}"), styles_enabled)
+        }
+        AgentSessionRuntimeDiagnosticType::Warning => {
+            Theme::yellow(&format!("Warning: {message}"), styles_enabled)
+        }
+        AgentSessionRuntimeDiagnosticType::Info => Theme::dim(message, styles_enabled),
+    }
+}
+
 /// Write every diagnostic to `stderr` with its severity prefix and style.
 ///
 /// # Errors
@@ -92,31 +109,10 @@ pub fn report_diagnostics(
     styles_enabled: bool,
 ) -> io::Result<()> {
     for diagnostic in diagnostics {
-        let line = match diagnostic.r#type {
-            AgentSessionRuntimeDiagnosticType::Error => {
-                Theme::red(&format!("Error: {}", diagnostic.message), styles_enabled)
-            }
-            AgentSessionRuntimeDiagnosticType::Warning => {
-                Theme::yellow(&format!("Warning: {}", diagnostic.message), styles_enabled)
-            }
-            AgentSessionRuntimeDiagnosticType::Info => {
-                Theme::dim(&diagnostic.message, styles_enabled)
-            }
-        };
+        let line = render_message(diagnostic.r#type, &diagnostic.message, styles_enabled);
         writeln!(stderr, "{line}")?;
     }
     Ok(())
-}
-
-/// The runtime form of a parser diagnostic.
-fn runtime_diagnostic(diagnostic: &Diagnostic) -> AgentSessionRuntimeDiagnostic {
-    AgentSessionRuntimeDiagnostic {
-        r#type: match diagnostic.r#type {
-            DiagnosticType::Error => AgentSessionRuntimeDiagnosticType::Error,
-            DiagnosticType::Warning => AgentSessionRuntimeDiagnosticType::Warning,
-        },
-        message: diagnostic.message.clone(),
-    }
 }
 
 /// Write the parser diagnostics, returning the status that ends startup when one is an error.
@@ -131,11 +127,14 @@ pub fn report_parser_diagnostics(
     let failed = diagnostics
         .iter()
         .any(|diagnostic| diagnostic.r#type == DiagnosticType::Error);
-    let reported = diagnostics
-        .iter()
-        .map(runtime_diagnostic)
-        .collect::<Vec<_>>();
-    report_diagnostics(&reported, stderr, styles_enabled)?;
+    for diagnostic in diagnostics {
+        let severity = match diagnostic.r#type {
+            DiagnosticType::Warning => AgentSessionRuntimeDiagnosticType::Warning,
+            DiagnosticType::Error => AgentSessionRuntimeDiagnosticType::Error,
+        };
+        let line = render_message(severity, &diagnostic.message, styles_enabled);
+        writeln!(stderr, "{line}")?;
+    }
     Ok(failed.then_some(FAILURE))
 }
 
