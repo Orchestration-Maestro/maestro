@@ -4,7 +4,7 @@ use crate::{MarkedOptions, source::ScopeSource, tokenizer};
 use std::{collections::HashMap, convert::Infallible};
 
 /// One source-only lexer using the ordinary block dispatcher.
-fn lexer() -> Lexer<'static, Infallible> {
+pub(in crate::lexer) fn lexer() -> Lexer<'static, Infallible> {
     Lexer {
         tokenizer: None,
         error: None,
