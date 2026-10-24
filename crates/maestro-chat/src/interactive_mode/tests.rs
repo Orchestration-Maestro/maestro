@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod transcript;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};
@@ -13,9 +14,10 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DiagnosticErrorInfo, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, ResourceExtensionPaths,
-    ResourceLoader, SettingsManager, Skill,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
+    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
+    PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
+    create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -79,14 +81,21 @@ pub(super) struct ForwardingLoader {
     skills: Rc<LoadSkillsResult>,
     /// The prompt templates of each read; the last answers every later read.
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
+    /// The loaded extensions answered instead of the default loader's.
+    extensions: Option<Rc<LoadExtensionsResult<Local>>>,
 }
 
 /// The context files, skills and successive prompt templates a loader answers.
 type Resources = (Vec<ContextFile>, Vec<Skill>, Vec<Vec<PromptTemplate>>);
 
 impl ForwardingLoader {
-    /// A loader over `inner` answering the dark and light palettes and `resources`.
-    fn new(inner: Rc<dyn ResourceLoader<Local>>, (context, skills, prompts): Resources) -> Self {
+    /// A loader over `inner` answering the dark and light palettes, `resources` and the
+    /// supplied `extensions`.
+    fn new(
+        inner: Rc<dyn ResourceLoader<Local>>,
+        (context, skills, prompts): Resources,
+        extensions: Option<Rc<LoadExtensionsResult<Local>>>,
+    ) -> Self {
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
                 prompts,
@@ -103,13 +112,16 @@ impl ForwardingLoader {
                 diagnostics: Vec::new(),
             }),
             prompts: RefCell::new(prompts.collect()),
+            extensions,
         }
     }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
-        self.inner.get_extensions()
+        self.extensions
+            .clone()
+            .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
         Rc::clone(&self.skills)
@@ -197,6 +209,8 @@ pub(super) struct Setup {
     pub(super) skills: Vec<Skill>,
     /// The prompt templates of each loader read; the last answers every later read.
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
+    /// The inline extension the session loads, when supplied.
+    pub(super) extension: Option<ExtensionFactory<Local>>,
 }
 
 impl Default for Setup {
@@ -209,8 +223,32 @@ impl Default for Setup {
             context: Vec::new(),
             skills: Vec::new(),
             prompts: Vec::new(),
+            extension: None,
         }
     }
+}
+
+/// Loads `factory` as the session's only extension; its initialization must finish at once.
+fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let bus = <Local as DefaultEventBus>::default_event_bus(&local);
+    let runtime = create_extension_runtime::<Local>();
+    let loading = std::pin::pin!(load_extension_from_factory(
+        factory,
+        cwd.to_owned(),
+        bus.for_extension(),
+        Rc::clone(&runtime),
+        None,
+    ));
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    let std::task::Poll::Ready(owner) = std::future::Future::poll(loading, &mut context) else {
+        panic!("the inline extension initializes at once");
+    };
+    Rc::new(LoadExtensionsResult {
+        extensions: vec![owner.unwrap()],
+        errors: Vec::new(),
+        runtime,
+    })
 }
 
 impl Setup {
@@ -222,8 +260,9 @@ impl Setup {
         let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
         let resources = (self.context, self.skills, self.prompts);
+        let extensions = self.extension.map(|factory| loaded(&cwd, factory));
         let result = session::session(&cwd, None, move |inner| {
-            let loader = Rc::new(ForwardingLoader::new(inner, resources));
+            let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
             *created.borrow_mut() = Some(Rc::clone(&loader));
             loader
         });

@@ -80,7 +80,8 @@ statement that edits or reads it, because the container borrows it itself to ren
 invalidate, add and remove.
 
 `render` and `invalidate` walk the array held when they start, by position, while the
-position is below that array's current length. A child added to that array is visited
+position is below that array's current length. `walk` gives the same traversal to a
+caller, fetching each child when the walk reaches it. A child added to that array is visited
 only if the walk reaches its position. After `clear`, or `set_children` with another
 array, the running walk keeps the array it started on and visits nothing added to the
 new one. A removal at or before the position being visited shifts the later children
