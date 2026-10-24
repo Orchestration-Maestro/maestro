@@ -18,6 +18,7 @@ mod browser_sessions;
 mod browser_storage;
 #[path = "support/browser_storage.rs"]
 mod browser_storage_support;
+mod changelog;
 #[cfg(unix)]
 #[path = "support/child.rs"]
 mod child;
