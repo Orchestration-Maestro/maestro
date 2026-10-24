@@ -15,5 +15,6 @@ mod message_renderer_ownership;
 mod quality;
 mod repetition;
 mod support;
+mod temp_directories;
 mod test_directories;
 mod time_limits;

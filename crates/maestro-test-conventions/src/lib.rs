@@ -24,6 +24,8 @@ mod quality;
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
+/// Test-owned temporary directory checks.
+mod temp_directories;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 
@@ -75,6 +77,14 @@ mod time_limits;
 /// writes the decode or the release walk inline is reported with its file and
 /// line, wherever the copy sits.
 ///
+/// Test code in the crates the temporary-directory migration has reached may not
+/// name the platform temporary directory itself: not as a call, a value or a macro
+/// argument inside test-owned code, and not as an import anywhere in the crate,
+/// whatever the alias. Diagnostics name `TEST_DIRECTORY_CALLERS`; the owner's
+/// `temporary_root` accessor, the owner parent and an uncreated socket path remain
+/// accepted. The scope grows with each migration batch and disappears when every
+/// crate uses the owner.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -89,5 +99,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     quality::check(root, &members)?;
     time_limits::check(&members)?;
     duplicates::check(&members)?;
-    example_helpers::check(&members)
+    example_helpers::check(&members)?;
+    temp_directories::check(&members)
 }

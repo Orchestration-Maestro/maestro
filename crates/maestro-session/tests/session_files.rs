@@ -76,8 +76,8 @@ fn published_histories_never_republish_the_header() {
             1,
         ),
     ] {
-        let file =
-            std::env::temp_dir().join(format!("maestro-published-{}.jsonl", uuid::Uuid::new_v4()));
+        let file = maestro_test_directory::temporary_root()
+            .join(format!("maestro-published-{}.jsonl", uuid::Uuid::new_v4()));
         std::fs::write(&file, content).unwrap();
         let mut manager =
             maestro_session::SessionManager::open(file.to_str().unwrap(), None, Some("override"))

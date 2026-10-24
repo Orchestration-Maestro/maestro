@@ -641,7 +641,8 @@ optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
-root's canonical path. `Scratch::new_in(parent)` preserves native path-join
+root's canonical path. `temporary_root()` reports that parent for tests that
+observe it without owning it. `Scratch::new_in(parent)` preserves native path-join
 spelling, including relative and non-Unicode parents. Both return `io::Result`,
 use PID/atomic-sequence candidates and exclusive `create_dir`, retry only
 `AlreadyExists`, and never delete a colliding entry. The borrowed `path()` stays

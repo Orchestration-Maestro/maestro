@@ -160,10 +160,7 @@ fn invalid_area_discards_its_unknown_key_warnings() {
 use super::support::{block_on, capture, manager, put};
 use crate::settings::model::ConfigReloadStatus;
 use maestro_settings::{SettingsManager, SettingsScope, SettingsStorage};
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
-};
+use std::sync::Arc;
 
 #[test]
 fn theme_name_warning_survives_reload() {
@@ -184,16 +181,12 @@ fn theme_name_warning_survives_reload() {
 
 #[test]
 fn unreadable_settings_report_startup_and_reload_impact() {
-    static NEXT: AtomicUsize = AtomicUsize::new(0);
-    let root = std::env::temp_dir().join(format!(
-        "maestro-settings-read-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     std::fs::create_dir_all(root.join("settings.json")).unwrap();
     let root_text = root.to_str().unwrap();
     let mut manager = SettingsManager::create(root_text, root_text, "project");
-    let ((loaded, errors), warning) = capture(|| load_config(&mut manager, &root));
+    let ((loaded, errors), warning) = capture(|| load_config(&mut manager, root));
     assert!(errors.is_empty());
     assert_eq!(loaded.config, Config::default());
     assert!(loaded.diagnostics[0].starts_with("config read error:"));
@@ -203,13 +196,12 @@ fn unreadable_settings_report_startup_and_reload_impact() {
     let mut current = project(json!({"daemon":{"paneShell":"kept"}})).config;
     let prior = current.clone();
     let ((report, errors), warning) =
-        capture(|| block_on(reload_config(&mut manager, &mut current, &root)));
+        capture(|| block_on(reload_config(&mut manager, &mut current, root)));
     assert!(errors.is_empty());
     assert_eq!(report.status, ConfigReloadStatus::Failed);
     assert_eq!(current, prior);
     assert!(report.diagnostics[0].ends_with("keeping current config"));
     assert!(warning.is_empty());
-    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

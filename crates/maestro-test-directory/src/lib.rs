@@ -12,6 +12,12 @@ use std::{
 /// Sequence shared by all callers in this process.
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
+/// The platform temporary directory, for tests that observe it without owning it.
+#[must_use]
+pub fn temporary_root() -> PathBuf {
+    std::env::temp_dir()
+}
+
 /// An exclusively created directory whose removal is attempted on drop.
 #[derive(Debug)]
 pub struct Scratch {
@@ -25,7 +31,7 @@ impl Scratch {
     /// # Errors
     /// Returns a directory creation or canonicalization failure.
     pub fn new() -> io::Result<Self> {
-        let mut scratch = Self::new_in(&std::env::temp_dir())?;
+        let mut scratch = Self::new_in(&temporary_root())?;
         scratch.path = fs::canonicalize(&scratch.path)?;
         Ok(scratch)
     }
