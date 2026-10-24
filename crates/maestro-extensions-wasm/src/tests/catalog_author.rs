@@ -247,6 +247,13 @@ fn retained(
                 let old = kept.borrow_mut().uis.pop();
                 drop(old);
             }
+            "call" => {
+                let ui = kept.borrow().uis.first().cloned().ok_or("missing UI")?;
+                let call =
+                    serde_json::from_value(request.args.first().cloned().ok_or("missing call")?)
+                        .map_err(|error| error.to_string())?;
+                super::ui_author::perform(&ui, &call)?;
+            }
             _ => return Err("unknown UI operation".into()),
         }
     }

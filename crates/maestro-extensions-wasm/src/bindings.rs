@@ -29,7 +29,7 @@ pub(crate) mod host_side {
             "maestro:extension/host.bash-output": crate::tests::shell_host::Receiver,
             "maestro:extension/host.theme": crate::tests::renderer_host::Theme,
             "maestro:extension/host.session-manager": crate::tests::reader_host::Reader,
-            "maestro:extension/host.extension-ui-context": crate::tests::catalog_host::Ui,
+            "maestro:extension/host.extension-ui-context": crate::tests::ui_host::Ui,
             "maestro:extension/host.model-registry": crate::tests::reader_host::Reader,
             "maestro:extension/host.readonly-session-manager": crate::tests::reader_host::Reader,
             "maestro:extension/host.session-tree-node": crate::tests::reader_host::Node,
