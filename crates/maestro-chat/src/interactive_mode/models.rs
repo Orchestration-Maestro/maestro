@@ -1,19 +1,146 @@
-//! Model selection: the model panel and applying a chosen model to the session.
+//! Model selection: the `/model` command, the model panel, model candidates, the footer's
+//! provider count and the subscription billing notice.
 use super::InteractiveMode;
 use crate::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
-use maestro_app::Model;
+use maestro_app::{AuthCredential, Model, find_exact_model_reference_match};
 use maestro_tui::Component;
 use std::{
+    collections::HashSet,
     error::Error,
     rc::Rc,
     sync::{Arc, PoisonError, RwLock},
 };
 
+/// The notice shown once when a provider subscription pays for usage.
+const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING: &str = "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.";
+
+/// Whether `api_key` is a subscription token.
+fn is_anthropic_subscription_auth_key(api_key: Option<&str>) -> bool {
+    api_key.is_some_and(|key| key.starts_with("sk-ant-oat"))
+}
+
 impl InteractiveMode {
+    /// Applies the unique exact match of `search_term` among the candidates, or opens the
+    /// model panel with that search; no or an empty term opens the panel unfiltered.
+    ///
+    /// # Errors
+    /// Returns the catalog refresh failure, the panel's failure or the published theme's.
+    pub(super) async fn handle_model_command(
+        self: &Rc<Self>,
+        search_term: Option<String>,
+    ) -> Result<(), Box<dyn Error>> {
+        let Some(search_term) = search_term.filter(|term| !term.is_empty()) else {
+            return self.show_model_selector(None);
+        };
+        match self.find_exact_model_match(&search_term)? {
+            Some(model) => self.apply_model_selection(model, None).await,
+            None => self.show_model_selector(Some(search_term)),
+        }
+    }
+
+    /// The unique exact reference match of `search_term` among the candidates.
+    ///
+    /// # Errors
+    /// Returns the catalog refresh failure.
+    fn find_exact_model_match(
+        &self,
+        search_term: &str,
+    ) -> Result<Option<Arc<RwLock<Model>>>, Box<dyn Error>> {
+        Ok(find_exact_model_reference_match(
+            search_term,
+            &self.get_model_candidates()?,
+        ))
+    }
+
+    /// The session's scoped models in order, or else the refreshed catalog's available
+    /// models, empty when availability cannot be read.
+    ///
+    /// # Errors
+    /// Returns the catalog refresh failure.
+    pub(super) fn get_model_candidates(&self) -> Result<Vec<Arc<RwLock<Model>>>, Box<dyn Error>> {
+        let session = self.runtime_host.session();
+        let scoped = session.scoped_models();
+        if !scoped.is_empty() {
+            return Ok(scoped.into_iter().map(|scoped| scoped.model).collect());
+        }
+        let registry = session.model_registry();
+        registry.refresh()?;
+        Ok(registry.get_available().unwrap_or_default())
+    }
+
+    /// Gives the footer the number of distinct providers among the candidates.
+    ///
+    /// # Errors
+    /// Returns the catalog refresh failure.
+    pub(super) fn update_available_provider_count(&self) -> Result<(), Box<dyn Error>> {
+        let mut providers = HashSet::new();
+        let count = self
+            .get_model_candidates()?
+            .iter()
+            .fold(0.0, |count, model| {
+                let model = model.read().unwrap_or_else(PoisonError::into_inner);
+                if providers.insert(model.provider.clone()) {
+                    count + 1.0
+                } else {
+                    count
+                }
+            });
+        self.footer_data_provider
+            .set_available_provider_count(count);
+        Ok(())
+    }
+
+    /// Shows the subscription billing notice once for this mode when `model`, or else the
+    /// session's model, belongs to the subscription provider and a stored sign-in or a
+    /// subscription key pays for it. A disabled notice, another provider, an ordinary or
+    /// missing key and a failed key lookup show nothing and leave the check open.
+    ///
+    /// # Errors
+    /// Returns the published theme's failure.
+    pub(super) async fn maybe_warn_about_anthropic_subscription_auth(
+        &self,
+        model: Option<Arc<RwLock<Model>>>,
+    ) -> Result<(), Box<dyn Error>> {
+        let session = self.runtime_host.session();
+        let warnings = session.settings_manager().borrow().get_warnings();
+        if warnings.anthropic_extra_usage() == Some(false)
+            || self.anthropic_subscription_warning_shown.get()
+        {
+            return Ok(());
+        }
+        let model = model.unwrap_or_else(|| session.model());
+        let provider = model
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .provider
+            .clone();
+        if provider != "anthropic" {
+            return Ok(());
+        }
+        let registry = session.model_registry();
+        let signed_in = matches!(
+            registry.auth_storage().get("anthropic"),
+            Some(AuthCredential::OAuth(_))
+        );
+        if !signed_in {
+            let Ok(key) = registry.get_api_key_for_provider(&provider).await else {
+                return Ok(());
+            };
+            if !is_anthropic_subscription_auth_key(key.as_deref()) {
+                return Ok(());
+            }
+        }
+        // A concurrent check may have shown the notice while the key was looked up.
+        if self.anthropic_subscription_warning_shown.replace(true) {
+            return Ok(());
+        }
+        self.show_warning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING)
+    }
+
     /// Selects `model` on the current session. On success it refreshes the footer and
-    /// border, runs `done` and shows the model; on refusal it runs `done` and shows the
-    /// session's error. The status reads the selected descriptor after the session's
-    /// listeners ran.
+    /// border, runs `done`, shows the model and checks the subscription notice; on refusal
+    /// it runs `done` and shows the session's error. The status and the notice read the
+    /// selected descriptor after the session's listeners ran.
     ///
     /// # Errors
     /// Returns the published theme's failure.
@@ -39,7 +166,9 @@ impl InteractiveMode {
             .unwrap_or_else(PoisonError::into_inner)
             .id
             .clone();
-        self.show_status(&format!("Model: {id}"))
+        self.show_status(&format!("Model: {id}"))?;
+        self.maybe_warn_about_anthropic_subscription_auth(Some(model))
+            .await
     }
 
     /// The model panel's callbacks, which do not keep the mode alive: a selection is

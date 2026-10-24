@@ -88,6 +88,8 @@ pub struct InteractiveMode {
     is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Whether this mode has shown the subscription billing notice.
+    anthropic_subscription_warning_shown: Cell<bool>,
 }
 
 impl InteractiveMode {
@@ -133,6 +135,10 @@ impl InteractiveMode {
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = session.settings_manager().borrow().get_theme();
+        let hide_thinking_block = session
+            .settings_manager()
+            .borrow()
+            .get_hide_thinking_block();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
         Ok(Rc::new(Self {
             runtime_host,
@@ -153,16 +159,12 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(
-                session
-                    .settings_manager()
-                    .borrow()
-                    .get_hide_thinking_block(),
-            ),
+            hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
+            anthropic_subscription_warning_shown: Cell::new(false),
         }))
     }
 
@@ -170,11 +172,11 @@ impl InteractiveMode {
     /// transcript shortcuts, installs editor submission, starts the terminal and replays
     /// the session, once; theme
     /// changes then refresh the editor border, and theme and branch changes request fresh
-    /// frames.
+    /// frames. Finally the footer learns how many providers the model candidates cover.
     ///
     /// # Errors
-    /// Returns the failure of the header's theme colours, of the terminal start or of the
-    /// replay.
+    /// Returns the failure of the header's theme colours, of the terminal start, of the
+    /// replay or of the catalog refresh.
     pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
@@ -212,7 +214,7 @@ impl InteractiveMode {
             self.footer_data_provider
                 .on_branch_change(self.ui.weak_render_request()),
         );
-        Ok(())
+        self.update_available_provider_count()
     }
 }
 

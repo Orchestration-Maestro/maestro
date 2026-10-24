@@ -701,7 +701,7 @@ fn usage() -> Value {
 }
 
 /// A stored assistant record with `content`, its stop reason and an optional error.
-fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
+pub(super) fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
     let mut record = json!({"role": "assistant", "content": content, "api": "controlled",
         "provider": "controlled", "model": "controlled", "usage": usage(),
         "stopReason": stop, "timestamp": 0});

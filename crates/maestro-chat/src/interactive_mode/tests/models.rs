@@ -1,16 +1,22 @@
 //! Model selection, model scopes and the subscription notice through the mode's installed
 //! callbacks, its registered keys, the real panels and an in-memory catalog.
-use super::{World, isolated, started};
+use super::actions::{install, run_action};
+use super::transcript::assistant;
+use super::{Setup, World, isolated, started};
 use crate::ModelSelectorComponent;
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::{
-    Model, ModelCost, ModelInput, ProviderConfigInput, ProviderModelInput, SharedHandle,
+    AuthCredential, BoxFuture, DiagnosticErrorInfo, ExtensionFactory, Fetch, Local, Model,
+    ModelCost, ModelInput, ModelSelectEvent, OAuthCallbacks, OAuthCredentials, OAuthError,
+    OAuthProviderInterface, ProviderConfigInput, ProviderModelInput, ReadonlyFooterDataProvider,
+    ScopedModel, SessionManager, SharedHandle, ThinkingLevel, WarningSettings,
 };
 use maestro_tui::{Component, Input, Text, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use std::{
     any::Any,
     cell::RefCell,
+    path::{Path, PathBuf},
     rc::Rc,
     sync::{Arc, RwLock},
 };
@@ -26,27 +32,29 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
     decode_cases(FIXTURES, test)
 }
 
+/// A catalog model definition named `id`.
+fn model_input(id: &str) -> ProviderModelInput {
+    ProviderModelInput {
+        id: id.to_owned(),
+        name: id.to_owned(),
+        api: None,
+        base_url: None,
+        reasoning: false,
+        thinking_level_map: None,
+        input: vec![ModelInput::Text],
+        cost: ModelCost::default(),
+        context_window: 1000.0,
+        max_tokens: 100.0,
+        headers: None,
+        compat: None,
+    }
+}
+
 /// Registers `provider` with `ids` as its models, authenticated by a configured key, and
 /// returns the catalog's descriptors in order.
 fn register(world: &World, provider: &str, ids: &[&str]) -> Vec<Arc<RwLock<Model>>> {
     let session = world.host.session();
-    let models = ids
-        .iter()
-        .map(|id| ProviderModelInput {
-            id: (*id).to_owned(),
-            name: (*id).to_owned(),
-            api: None,
-            base_url: None,
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec![ModelInput::Text],
-            cost: ModelCost::default(),
-            context_window: 1000.0,
-            max_tokens: 100.0,
-            headers: None,
-            compat: None,
-        })
-        .collect();
+    let models = ids.iter().map(|id| model_input(id)).collect();
     session
         .model_registry()
         .register_provider(
@@ -119,7 +127,7 @@ fn model_panel(world: &World) -> Option<Rc<ModelSelectorComponent>> {
 }
 
 /// One recorded effect, its name first.
-type Event = Vec<String>;
+type Event = Vec<serde_json::Value>;
 
 /// The final state recorded effects leave behind: the editor container's children, the
 /// focused component, whether a frame was requested and whether the factory ran.
@@ -145,7 +153,11 @@ fn effects(events: &[Event]) -> Effects {
         ..Effects::default()
     };
     for event in events {
-        match event.iter().map(String::as_str).collect::<Vec<_>>()[..] {
+        match event
+            .iter()
+            .map(|part| part.as_str().unwrap_or_default())
+            .collect::<Vec<_>>()[..]
+        {
             ["factory"] => state.factory = true,
             ["clear"] => state.children.clear(),
             ["add", name] => state.children.push(name.into()),
@@ -304,6 +316,7 @@ fn final_notice(world: &World, notice: &Event) -> bool {
     let [kind, text] = notice.as_slice() else {
         panic!("a final notice");
     };
+    let text = text.as_str().unwrap();
     if kind == "status" {
         assert!(shows(world, text));
         assert_ne!(border, "─".repeat(80));
@@ -546,6 +559,1072 @@ fn model_callbacks_read_current_session_and_release_the_mode() {
             assert!(runtime.drain_futures().is_empty());
             assert_eq!(host.session().model().read().unwrap().id, "alpha");
             assert!(weak.upgrade().is_none());
+        },
+    );
+}
+
+/// The common observations of a model witness.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Outcome {
+    /// The recorded effects.
+    events: Vec<Event>,
+    /// The session scope afterwards, by `provider/id` and level.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
+    /// The footer's provider count, when it was set.
+    count: Option<f64>,
+    /// Whether the subscription notice was shown.
+    shown: bool,
+}
+
+/// The session scope by `provider/id` and level.
+fn scope_of(world: &World) -> Vec<(String, Option<ThinkingLevel>)> {
+    world
+        .host
+        .session()
+        .scoped_models()
+        .into_iter()
+        .map(|scoped| (id_of(&scoped.model), scoped.thinking_level))
+        .collect()
+}
+
+/// A descriptor's `provider/id`.
+fn id_of(model: &Arc<RwLock<Model>>) -> String {
+    let model = model.read().unwrap();
+    format!("{}/{}", model.provider, model.id)
+}
+
+/// Checks the scope, the provider count when recorded, and the notice flag.
+fn settled(world: &World, outcome: &Outcome) {
+    assert_eq!(scope_of(world), outcome.scope);
+    if let Some(count) = outcome.count {
+        let provider = &world.mode.footer_data_provider;
+        assert_eq!(
+            provider.get_available_provider_count().to_bits(),
+            count.to_bits()
+        );
+    }
+    assert_eq!(
+        world.mode.anthropic_subscription_warning_shown.get(),
+        outcome.shown
+    );
+}
+
+/// The recorded events named `name`, without their names.
+fn named<'a>(
+    events: &'a [Event],
+    name: &'a str,
+) -> impl Iterator<Item = &'a [serde_json::Value]> + 'a {
+    events
+        .iter()
+        .filter(move |event| event[0] == *name)
+        .map(|event| &event[1..])
+}
+
+/// The width the long subscription notice fits on one row at.
+const NOTICE_WIDTH: usize = 400;
+
+/// Checks the recorded subscription notices, and the recorded key lookups when `lookups`
+/// counts them; reading stored credentials has no observable effect and is not compared.
+fn notices(world: &World, outcome: &Outcome, lookups: Option<usize>) {
+    if let Some(lookups) = lookups {
+        assert_eq!(lookups, named(&outcome.events, "key").count());
+    }
+    let warnings: Vec<_> = named(&outcome.events, "warning").collect();
+    let rows = world.mode.chat_container.render(NOTICE_WIDTH).concat();
+    assert_eq!(rows.matches("Warning: ").count(), warnings.len());
+    for warning in warnings {
+        assert!(rows.contains(&format!("Warning: {}", warning[0].as_str().unwrap())));
+    }
+    settled(world, outcome);
+}
+
+/// The subscription provider's catalog model.
+fn subscription_model(world: &World) -> Arc<RwLock<Model>> {
+    let session = world.host.session();
+    session
+        .model_registry()
+        .find("anthropic", "claude-sonnet-4-5")
+        .unwrap()
+}
+
+/// A copy of the subscription model under `provider` and `id`.
+fn model_named(world: &World, provider: &str, id: &str) -> Arc<RwLock<Model>> {
+    let mut model = subscription_model(world).read().unwrap().clone();
+    model.provider = provider.into();
+    model.id = id.into();
+    Arc::new(RwLock::new(model))
+}
+
+/// The key command's log of lookups for case `case`.
+fn lookup_log(directory: &Path, case: usize) -> PathBuf {
+    directory.join(format!("lookups{case}"))
+}
+
+/// The key lookups case `case` made.
+fn lookups(directory: &Path, case: usize) -> usize {
+    std::fs::read_to_string(lookup_log(directory, case)).map_or(0, |log| log.lines().count())
+}
+
+/// Stores, for `provider`, a key whose every lookup runs a command that logs the lookup
+/// and prints `key`, or fails without one.
+fn key_command(
+    world: &World,
+    directory: &Path,
+    provider: &str,
+    (case, key): (usize, Option<&str>),
+) {
+    let name = format!("lookup{case}");
+    if !directory.join("bin").join(&name).exists() {
+        let output = key.map_or("exit 1".to_owned(), |key| format!("printf '%s' '{key}'"));
+        let log = lookup_log(directory, case);
+        install(
+            directory,
+            &name,
+            &format!("#!/bin/sh\necho >> '{}'\n{output}\n", log.display()),
+        );
+    }
+    let credential = serde_json::json!({"type": "api_key", "key": format!("!{name}")});
+    let session = world.host.session();
+    session
+        .model_registry()
+        .auth_storage()
+        .set(provider, serde_json::from_value(credential).unwrap());
+}
+
+/// Stores a sign-in for the subscription provider.
+fn sign_in(world: &World) {
+    let session = world.host.session();
+    session.model_registry().auth_storage().set(
+        "anthropic",
+        AuthCredential::OAuth(OAuthCredentials {
+            access: "access".into(),
+            refresh: "refresh".into(),
+            expires: 0.0,
+            extra: serde_json::Map::default(),
+        }),
+    );
+}
+
+/// Runs subscription checks for `models` together on the terminal runtime.
+fn check(world: &World, models: Vec<Option<Arc<RwLock<Model>>>>) {
+    for model in models {
+        let mode = Rc::clone(&world.mode);
+        world.runtime.handle().spawn_local(Box::pin(async move {
+            mode.maybe_warn_about_anthropic_subscription_auth(model)
+                .await
+        }));
+    }
+    assert!(world.runtime.drain_futures().is_empty());
+}
+
+/// The subscription key the recorded regressions use.
+const SUBSCRIPTION_KEY: &str = "sk-ant-oat01-test";
+
+/// A subscription check under recorded settings, credentials and provider.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct Regression {
+    /// `warning-regression` or `provider-case-boundary`.
+    op: String,
+    /// The checked model's provider.
+    provider: String,
+    /// The provider key, when one is stored.
+    #[serde(default)]
+    key: Option<String>,
+    /// How often the check runs.
+    #[serde(default)]
+    repeats: Option<usize>,
+    /// The stored credential's kind, when one is stored.
+    #[serde(default)]
+    credential: Option<serde_json::Value>,
+    /// Whether a key lookup would fail.
+    #[serde(default)]
+    auth_error: Option<bool>,
+    /// The settings in effect.
+    #[serde(default)]
+    settings: Option<serde_json::Value>,
+}
+
+/// Runs one recorded regression as case `case` and checks its notices and lookups.
+fn regression(directory: &Path, case: usize, input: Regression, expected: &Outcome) {
+    assert!(["warning-regression", "provider-case-boundary"].contains(&input.op.as_str()));
+    let world = started(directory);
+    if let Some(settings) = input.settings {
+        let warnings = serde_json::from_value(settings["warnings"].clone()).unwrap();
+        let session = world.host.session();
+        session
+            .settings_manager()
+            .borrow_mut()
+            .set_warnings(warnings);
+    }
+    let key = (!input.auth_error.unwrap_or(false))
+        .then(|| input.key.as_deref().unwrap_or(SUBSCRIPTION_KEY));
+    for provider in ["anthropic", input.provider.as_str()] {
+        key_command(&world, directory, provider, (case, key));
+    }
+    if let Some(credential) = input.credential {
+        assert_eq!(credential, serde_json::json!({"type": "oauth"}));
+        sign_in(&world);
+    }
+    let model = model_named(&world, &input.provider, "claude-sonnet-4-5");
+    for _ in 0..input.repeats.unwrap_or(1) {
+        check(&world, vec![Some(Arc::clone(&model))]);
+    }
+    notices(&world, expected, Some(lookups(directory, case)));
+}
+
+/// Runs every recorded regression of `test`.
+fn regressions(test: &str) {
+    isolated(test, |directory| {
+        for (case, (input, expected)) in cases::<Regression, Outcome>(test).into_iter().enumerate()
+        {
+            regression(directory, case, input, &expected);
+        }
+    });
+}
+
+#[test]
+fn subscription_warning_runs_once_for_a_subscription_key() {
+    regressions("subscription_warning_runs_once_for_a_subscription_key");
+}
+
+#[test]
+fn stored_sign_in_warns_without_refreshing() {
+    regressions("stored_sign_in_warns_without_refreshing");
+}
+
+#[test]
+fn other_providers_do_not_query_credentials() {
+    regressions("other_providers_do_not_query_credentials");
+}
+
+#[test]
+fn disabled_subscription_warning_does_not_query_credentials() {
+    regressions("disabled_subscription_warning_does_not_query_credentials");
+}
+
+/// A subscription check with one recorded key kind.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PrefixCase {
+    /// Always `warning-prefix`.
+    op: String,
+    /// The key; only text can be stored as a key.
+    key: serde_json::Value,
+    /// Whether no key is stored at all.
+    missing: bool,
+}
+
+#[test]
+fn subscription_warning_checks_only_the_exact_key_prefix() {
+    let test = "subscription_warning_checks_only_the_exact_key_prefix";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<PrefixCase, Outcome>(test) {
+            assert_eq!(input.op, "warning-prefix");
+            let world = started(directory);
+            if let (false, Some(key)) = (input.missing, input.key.as_str()) {
+                let session = world.host.session();
+                let auth = session.model_registry().auth_storage();
+                auth.set_runtime_api_key("anthropic", key);
+            }
+            check(&world, vec![Some(subscription_model(&world))]);
+            notices(&world, &expected, None);
+        }
+    });
+}
+
+/// A subscription check under one recorded notice preference.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PreferenceCase {
+    /// Always `warning-setting`.
+    op: String,
+    /// The preference value.
+    value: serde_json::Value,
+    /// Whether the preference is absent.
+    missing: bool,
+}
+
+#[test]
+fn warning_preferences_disable_only_on_false() {
+    let test = "warning_preferences_disable_only_on_false";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<PreferenceCase, Outcome>(test) {
+            assert_eq!(input.op, "warning-setting");
+            let world = started(directory);
+            let session = world.host.session();
+            if !input.missing {
+                let mut warnings = serde_json::Map::new();
+                warnings.insert("anthropicExtraUsage".into(), input.value);
+                let mut settings = session.settings_manager().borrow_mut();
+                settings.set_warnings(WarningSettings(warnings));
+            }
+            let auth = session.model_registry().auth_storage();
+            auth.set_runtime_api_key("anthropic", SUBSCRIPTION_KEY);
+            check(&world, vec![Some(subscription_model(&world))]);
+            notices(&world, &expected, None);
+        }
+    });
+}
+
+/// A named recorded operation without arguments.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Operation {
+    /// The operation's name.
+    op: String,
+}
+
+#[test]
+fn failed_warning_lookup_leaves_the_check_retryable() {
+    let test = "failed_warning_lookup_leaves_the_check_retryable";
+    isolated(test, |directory| {
+        let (input, expected) = cases::<Operation, Outcome>(test).swap_remove(0);
+        assert_eq!(input.op, "auth-failure-then-success");
+        let world = started(directory);
+        key_command(&world, directory, "anthropic", (0, None));
+        check(&world, vec![Some(subscription_model(&world))]);
+        assert!(!world.mode.anthropic_subscription_warning_shown.get());
+        assert!(!shows(&world, "Warning: "));
+        sign_in(&world);
+        check(&world, vec![Some(subscription_model(&world))]);
+        notices(&world, &expected, Some(lookups(directory, 0)));
+    });
+}
+
+/// A check with or without an explicit model.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DefaultCase {
+    /// Always `warning-default`.
+    op: String,
+    /// `missing`, `current`, `explicit` or `already-shown`.
+    kind: String,
+}
+
+#[test]
+fn warning_uses_the_default_model_only_when_not_supplied() {
+    let test = "warning_uses_the_default_model_only_when_not_supplied";
+    isolated(test, |directory| {
+        for (case, (input, expected)) in cases::<DefaultCase, Outcome>(test).into_iter().enumerate()
+        {
+            assert_eq!(input.op, "warning-default");
+            let world = started(directory);
+            key_command(
+                &world,
+                directory,
+                "anthropic",
+                (case, Some(SUBSCRIPTION_KEY)),
+            );
+            if input.kind != "missing" {
+                let session = world.host.session();
+                session.agent().state().write().unwrap().model = subscription_model(&world);
+            }
+            world
+                .mode
+                .anthropic_subscription_warning_shown
+                .set(input.kind == "already-shown");
+            let explicit = (input.kind == "explicit").then(|| model_named(&world, "openai", "gpt"));
+            check(&world, vec![explicit]);
+            notices(&world, &expected, Some(lookups(directory, case)));
+        }
+    });
+}
+
+#[test]
+fn subscription_warning_overlap_is_shown_once() {
+    let test = "subscription_warning_overlap_is_shown_once";
+    isolated(test, |directory| {
+        let (input, expected) = cases::<Operation, Outcome>(test).swap_remove(0);
+        assert_eq!(input.op, "warning-overlap");
+        let world = started(directory);
+        key_command(&world, directory, "anthropic", (0, Some(SUBSCRIPTION_KEY)));
+        let model = subscription_model(&world);
+        check(&world, vec![Some(Arc::clone(&model)), Some(model)]);
+        // The native key lookup finishes without suspending, so the second check finds the
+        // notice shown before it looks a key up.
+        notices(&world, &expected, None);
+        assert_eq!(lookups(directory, 0), 1);
+    });
+}
+
+/// One caller of the subscription check.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CallerCase {
+    /// Always `warning-callers`.
+    op: String,
+    /// The calling route.
+    route: String,
+}
+
+#[test]
+fn model_cycle_reuses_the_subscription_warning_owner() {
+    let test = "model_cycle_reuses_the_subscription_warning_owner";
+    isolated(test, |directory| {
+        let (input, expected) = cases::<CallerCase, Outcome>(test).swap_remove(0);
+        assert_eq!(
+            (input.op.as_str(), input.route.as_str()),
+            ("warning-callers", "cycle")
+        );
+        for (case, key) in [(0, SUBSCRIPTION_KEY), (1, "sk-ant-api03-ordinary")] {
+            let world = started(directory);
+            key_command(&world, directory, "anthropic", (case, Some(key)));
+            let session = world.host.session();
+            session.agent().state().write().unwrap().model = subscription_model(&world);
+            run_action(&world, "app.model.cycleForward");
+            assert!(world.runtime.drain_futures().is_empty());
+            assert!(shows(&world, "Switched to"));
+            if case == 0 {
+                notices(&world, &expected, Some(lookups(directory, case)));
+            } else {
+                assert!(!shows(&world, "Warning: "));
+                assert_eq!(lookups(directory, case), 1);
+            }
+        }
+    });
+}
+
+/// A catalog provider whose stored sign-in makes every catalog refresh fail.
+struct RefusingCatalog;
+
+impl OAuthProviderInterface for RefusingCatalog {
+    fn id(&self) -> &'static str {
+        "refusing"
+    }
+    fn name(&self) -> &'static str {
+        "Refusing"
+    }
+    fn login(
+        &self,
+        _: OAuthCallbacks,
+        _: Option<Fetch>,
+    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
+        Box::pin(std::future::ready(Err(refused())))
+    }
+    fn refresh_token(
+        &self,
+        _: OAuthCredentials,
+        _: Option<Fetch>,
+    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
+        Box::pin(std::future::ready(Err(refused())))
+    }
+    fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
+        Ok(&credentials.access)
+    }
+    fn modify_models<'m>(
+        &self,
+        _: &'m [Model],
+        _: &OAuthCredentials,
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, OAuthError>> {
+        Some(Err(refused()))
+    }
+}
+
+/// The refusing provider's failure.
+fn refused() -> OAuthError {
+    DiagnosticErrorInfo::error("refresh refused").into()
+}
+
+/// Makes every later catalog refresh fail.
+fn refuse_refresh(world: &World) {
+    let session = world.host.session();
+    let registry = session.model_registry();
+    registry
+        .register_provider(
+            "refusing",
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
+                base_url: Some("https://example.invalid".into()),
+                api: Some("openai-completions".into()),
+                oauth: Some(SharedHandle::new(RefusingCatalog)),
+                models: Some(vec![model_input("refused")]),
+                ..ProviderConfigInput::default()
+            })),
+        )
+        .unwrap();
+    registry.auth_storage().set(
+        "refusing",
+        AuthCredential::OAuth(OAuthCredentials {
+            access: "access".into(),
+            refresh: "refresh".into(),
+            expires: 0.0,
+            extra: serde_json::Map::default(),
+        }),
+    );
+}
+
+/// Makes reading the catalog's available models fail.
+fn refuse_availability(world: &World) {
+    let session = world.host.session();
+    let auth = session.model_registry().auth_storage();
+    auth.set_fallback_resolver(|_| Err(DiagnosticErrorInfo::error("availability refused").into()));
+}
+
+/// Registers the recorded catalog: `z/shared`, `z/tail`, `a/alpha` and `a/shared`.
+fn catalog(world: &World) -> Vec<Arc<RwLock<Model>>> {
+    [
+        register(world, "z", &["shared", "tail"]),
+        register(world, "a", &["alpha", "shared"]),
+    ]
+    .concat()
+}
+
+/// Makes the recorded `provider/id` references the session scope, without levels.
+fn scope(world: &World, references: &[(String, Option<ThinkingLevel>)]) {
+    let session = world.host.session();
+    let registry = session.model_registry();
+    let scope = references
+        .iter()
+        .map(|(reference, level)| {
+            let (provider, id) = reference.split_once('/').unwrap();
+            ScopedModel {
+                model: registry.find(provider, id).unwrap(),
+                thinking_level: level.clone(),
+            }
+        })
+        .collect();
+    session.set_scoped_models(scope);
+}
+
+/// One recorded candidate list.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CandidateCase {
+    /// Always `candidates`.
+    op: String,
+    /// `all`, `scoped`, `unavailable`, `refresh-error` or `empty`.
+    kind: String,
+}
+
+/// The candidates by `provider/id` or the failure, and whether the catalog was read.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Candidates {
+    /// The candidates in order.
+    ids: Option<Vec<String>>,
+    /// The failure.
+    error: Option<String>,
+    /// The catalog reads: a refresh and the available models.
+    events: Vec<Event>,
+}
+
+/// Prepares the catalog for a recorded candidate kind, returning a descriptor whose
+/// replacement shows a catalog refresh.
+fn candidate_catalog(world: &World, kind: &str) -> Option<Arc<RwLock<Model>>> {
+    match kind {
+        "empty" => return None,
+        "refresh-error" => refuse_refresh(world),
+        _ => {}
+    }
+    let models = catalog(world);
+    match kind {
+        "scoped" => scope(
+            world,
+            &["z/tail", "z/shared", "z/tail"].map(|id| (id.to_owned(), None)),
+        ),
+        "unavailable" => refuse_availability(world),
+        _ => {}
+    }
+    models.into_iter().next()
+}
+
+#[test]
+fn model_candidates_keep_scope_order_and_availability_failure_boundary() {
+    let test = "model_candidates_keep_scope_order_and_availability_failure_boundary";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<CandidateCase, Candidates>(test) {
+            assert_eq!(input.op, "candidates");
+            let world = started(directory);
+            let probe = candidate_catalog(&world, &input.kind);
+            let result = world.mode.get_model_candidates();
+            if let Some(probe) = probe {
+                let current = world.host.session().model_registry().find("z", "shared");
+                let refreshed = !current.is_some_and(|current| Arc::ptr_eq(&current, &probe));
+                assert_eq!(refreshed, named(&expected.events, "refresh").count() == 1);
+            }
+            match (result, expected.ids, expected.error) {
+                (Ok(models), Some(ids), None) if input.kind == "all" => {
+                    // The native catalog lists each provider's models together, in
+                    // registration order.
+                    let mut native: Vec<_> = models.iter().map(id_of).collect();
+                    let session = world.host.session();
+                    let available = session.model_registry().get_available().unwrap();
+                    assert_eq!(native, available.iter().map(id_of).collect::<Vec<_>>());
+                    native.sort();
+                    let mut ids = ids;
+                    ids.sort();
+                    assert_eq!(native, ids);
+                }
+                (Ok(models), Some(ids), None) => {
+                    assert_eq!(models.iter().map(id_of).collect::<Vec<_>>(), ids);
+                }
+                (Err(error), None, Some(message)) => assert_eq!(error.to_string(), message),
+                _ => panic!("the recorded outcome kind"),
+            }
+        }
+    });
+}
+
+/// The provider count for a recorded scope.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CountCase {
+    /// Always `provider-count`.
+    op: String,
+    /// The session scope.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
+}
+
+/// Whether the footer prefixes the model with its provider.
+fn provider_badge(world: &World) -> bool {
+    let provider = world
+        .host
+        .session()
+        .model()
+        .read()
+        .unwrap()
+        .provider
+        .clone();
+    let footer = world.mode.footer.render(120).concat();
+    footer.contains(&format!("({provider}) "))
+}
+
+#[test]
+fn provider_count_deduplicates_providers_without_reordering_candidates() {
+    let test = "provider_count_deduplicates_providers_without_reordering_candidates";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<CountCase, Outcome>(test) {
+            assert_eq!(input.op, "provider-count");
+            let world = started(directory);
+            assert!(!provider_badge(&world));
+            catalog(&world);
+            scope(&world, &input.scope);
+            world.mode.update_available_provider_count().unwrap();
+            let [count] = named(&expected.events, "providers").collect::<Vec<_>>()[..] else {
+                panic!("one provider count");
+            };
+            assert_eq!(count[0].as_f64(), expected.count);
+            settled(&world, &expected);
+            assert_eq!(provider_badge(&world), expected.count > Some(1.0));
+            let candidates = world.mode.get_model_candidates().unwrap();
+            if !input.scope.is_empty() {
+                let ids: Vec<_> = input.scope.iter().map(|(id, _)| id.clone()).collect();
+                assert_eq!(candidates.iter().map(id_of).collect::<Vec<_>>(), ids);
+            }
+        }
+    });
+}
+
+/// Runs `/model` with `search` on the terminal runtime.
+fn model_command(world: &World, search: Option<String>) {
+    let mode = Rc::clone(&world.mode);
+    world.runtime.handle().spawn_local(Box::pin(
+        async move { mode.handle_model_command(search).await },
+    ));
+    assert!(world.runtime.drain_futures().is_empty());
+}
+
+/// Checks a recorded command outcome: the selected model and its status, or the model
+/// panel and its search.
+fn command_outcome(world: &World, outcome: &Outcome) {
+    if let Some([search]) = named(&outcome.events, "selector-search").next() {
+        let panel = model_panel(world).expect("the model panel is shown");
+        assert_eq!(
+            panel.get_search_input().get_value(),
+            search.as_str().unwrap_or_default()
+        );
+        assert!(named(&outcome.events, "select").next().is_none());
+    } else {
+        let [selected] = named(&outcome.events, "select").next().unwrap() else {
+            panic!("one selected model");
+        };
+        assert_eq!(current(world), selected.as_str().unwrap());
+        let [status] = named(&outcome.events, "status").next().unwrap() else {
+            panic!("one status");
+        };
+        assert!(shows(world, status.as_str().unwrap()));
+        assert!(shows_only(world, &editor(world)));
+    }
+    settled(world, outcome);
+}
+
+/// The term the recording searches over `scope`: its repeated reference, or else `alpha`.
+fn recorded_search(scope: &[(String, Option<ThinkingLevel>)]) -> String {
+    let repeated = scope[0].0 == "z/shared";
+    if repeated { "z/shared" } else { "alpha" }.to_owned()
+}
+
+/// One recorded `/model` search, or an exact search over a recorded scope.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CommandCase {
+    /// `model-command` or `scoped-exact-match`.
+    op: String,
+    /// The search term.
+    #[serde(default)]
+    search: Option<String>,
+    /// Whether the term is absent.
+    #[serde(default)]
+    missing: Option<bool>,
+    /// The session scope.
+    #[serde(default)]
+    scope: Option<Vec<(String, Option<ThinkingLevel>)>>,
+}
+
+#[test]
+fn model_command_applies_unique_exact_references_or_keeps_the_search() {
+    let test = "model_command_applies_unique_exact_references_or_keeps_the_search";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<CommandCase, Outcome>(test) {
+            let world = started(directory);
+            catalog(&world);
+            let search = match (input.op.as_str(), input.scope) {
+                ("model-command", None) => {
+                    assert_eq!(input.missing, Some(input.search.is_none()));
+                    input.search
+                }
+                ("scoped-exact-match", Some(references)) => {
+                    scope(&world, &references);
+                    Some(recorded_search(&references))
+                }
+                _ => panic!("a recorded command"),
+            };
+            model_command(&world, search);
+            command_outcome(&world, &expected);
+        }
+    });
+}
+
+/// A failed selection's observations.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FailureOutcome {
+    /// The model the session holds afterwards, when recorded.
+    #[serde(default)]
+    selected: Option<String>,
+    /// The recorded effects, the error last.
+    events: Vec<Event>,
+    /// The session scope afterwards.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
+    /// The footer's provider count, when it was set.
+    count: Option<f64>,
+    /// Whether the subscription notice was shown.
+    shown: bool,
+}
+
+/// Makes every later session recording fail after the session holds a record.
+fn refuse_recording(world: &World, directory: &Path) {
+    let sessions = directory.join("sessions");
+    let cwd = directory.to_str().unwrap();
+    let mut manager = SessionManager::create(cwd, sessions.to_str(), cwd).unwrap();
+    let seeded = assistant(&serde_json::json!([]), "stop", None);
+    drop(manager.append_message(seeded).unwrap());
+    *world.host.session().session_manager().borrow_mut() = manager;
+    std::fs::remove_dir_all(sessions).unwrap();
+}
+
+#[test]
+fn model_selection_failure_reports_without_success_effects() {
+    let test = "model_selection_failure_reports_without_success_effects";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<Operation, FailureOutcome>(test) {
+            let world = started(directory);
+            catalog(&world);
+            let previous = current(&world);
+            world.mode.editor.set_border_color(Rc::new(str::to_owned));
+            let footer = world.mode.footer.render(80);
+            match input.op.as_str() {
+                "model-command-failed" => {
+                    scope(&world, &[("a/alpha".to_owned(), None)]);
+                    let session = world.host.session();
+                    session.model_registry().unregister_provider("a").unwrap();
+                }
+                "selection-recording-failure-after-state-change" => {
+                    refuse_recording(&world, directory);
+                }
+                _ => panic!("a recorded failure"),
+            }
+            model_command(&world, Some("alpha".into()));
+            let [kind, _] = expected.events.last().unwrap().as_slice() else {
+                panic!("a final error");
+            };
+            assert_eq!(kind, "error");
+            assert!(shows(&world, "Error: "));
+            assert!(!shows(&world, "Model: "));
+            assert_eq!(world.mode.editor.render(80)[0], "─".repeat(80));
+            let selected = (expected.selected.clone()).map_or(previous, |id| format!("a/{id}"));
+            assert_eq!(current(&world), selected);
+            if expected.selected.is_none() {
+                assert_eq!(world.mode.footer.render(80), footer);
+            }
+            // A refusal needs an unauthenticated candidate, which only a scope supplies:
+            // the catalog lists authenticated models only.
+            let refused_scope = input.op == "model-command-failed";
+            assert!(expected.scope.is_empty());
+            let scope = if refused_scope {
+                vec![("a/alpha".to_owned(), None)]
+            } else {
+                expected.scope
+            };
+            settled(
+                &world,
+                &Outcome {
+                    events: expected.events,
+                    scope,
+                    count: expected.count,
+                    shown: expected.shown,
+                },
+            );
+        }
+    });
+}
+
+/// One recorded change a model-selection handler makes.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ListenerCase {
+    /// Always `selection-listener`.
+    op: String,
+    /// `mutate-id`, `replace-session` or `change-provider`.
+    edit: String,
+}
+
+/// The change a handler makes to the session's current model.
+type Replacement = Rc<RefCell<Option<Box<dyn Fn()>>>>;
+
+/// An extension whose model-selection handler makes `edit`, running `replacement` for
+/// `replace-session`.
+fn editing(edit: String, replacement: Replacement) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let (edit, replacement) = (edit.clone(), Rc::clone(&replacement));
+        api.on::<ModelSelectEvent, ()>(
+            "model_select".into(),
+            Rc::new(move |event, _| {
+                match edit.as_str() {
+                    "mutate-id" => event.model.write().unwrap().id = "changed".into(),
+                    "change-provider" => event.model.write().unwrap().provider = "anthropic".into(),
+                    _ => replacement.borrow().as_ref().unwrap()(),
+                }
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        )
+        .unwrap();
+        Box::pin(std::future::ready(Ok(())))
+    })
+}
+
+#[test]
+fn model_selection_observes_the_selected_descriptor_after_listeners() {
+    let test = "model_selection_observes_the_selected_descriptor_after_listeners";
+    isolated(test, |directory| {
+        for (case, (input, expected)) in
+            cases::<ListenerCase, Outcome>(test).into_iter().enumerate()
+        {
+            assert_eq!(input.op, "selection-listener");
+            let replacement = Rc::default();
+            let world = Setup {
+                extension: Some(editing(input.edit.clone(), Rc::clone(&replacement))),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().unwrap();
+            let tail = Arc::clone(&catalog(&world)[1]);
+            let session = world.host.session();
+            *replacement.borrow_mut() = Some(Box::new(move || {
+                session.agent().state().write().unwrap().model = Arc::clone(&tail);
+            }));
+            key_command(
+                &world,
+                directory,
+                "anthropic",
+                (case, Some("sk-ant-api03-ordinary")),
+            );
+            model_command(&world, Some("alpha".into()));
+            let [status] = named(&expected.events, "status").next().unwrap() else {
+                panic!("one status");
+            };
+            assert!(shows(&world, status.as_str().unwrap()));
+            notices(&world, &expected, Some(lookups(directory, case)));
+        }
+    });
+}
+
+/// One submitted editor text.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Submission {
+    /// Always `submit`.
+    op: String,
+    /// The submitted text.
+    text: String,
+}
+
+/// Submits `text` exactly through the editor's installed submission, with the editor
+/// holding it; typed text would have its tabs widened first.
+fn submit(world: &World, text: &str) {
+    world.mode.editor.set_text(text);
+    world.mode.editor.on_submit().unwrap()(text);
+    assert!(world.runtime.drain_futures().is_empty());
+}
+
+/// Polls `future` once without waking.
+fn poll_once<F: std::future::Future>(future: std::pin::Pin<&mut F>) -> std::task::Poll<F::Output> {
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    future.poll(&mut context)
+}
+
+/// The text recalled from the editor's history, newest first, until it repeats.
+fn history(world: &World) -> Vec<String> {
+    world.mode.editor.set_text("");
+    let mut recalled = Vec::new();
+    loop {
+        world.terminal.send_input("\x1b[A");
+        let text = world.mode.editor.get_text();
+        if recalled.last() == Some(&text) || text.is_empty() {
+            break;
+        }
+        recalled.push(text);
+    }
+    world.mode.editor.set_text("");
+    recalled
+}
+
+/// Checks one recorded submission: a command clears the editor and runs, other text goes
+/// to the waiting input and the history.
+fn submission(world: &World, text: &str, outcome: &Outcome) {
+    let waiting = world.mode.get_user_input();
+    let mut waiting = std::pin::pin!(waiting);
+    assert!(poll_once(waiting.as_mut()).is_pending());
+    submit(world, text);
+    if let Some([unhandled]) = named(&outcome.events, "unhandled").next() {
+        let unhandled = unhandled.as_str().unwrap();
+        let trimmed = unhandled.trim_matches(maestro_app::is_whitespace_scalar);
+        assert_eq!(
+            poll_once(waiting.as_mut()),
+            std::task::Poll::Ready(trimmed.to_owned())
+        );
+        assert_eq!(history(world), [trimmed]);
+        return;
+    }
+    assert!(poll_once(waiting.as_mut()).is_pending());
+    assert!(history(world).is_empty());
+    let [cleared] = named(&outcome.events, "editor").next().unwrap() else {
+        panic!("the editor is cleared");
+    };
+    assert_eq!(world.mode.editor.get_text(), cleared.as_str().unwrap());
+    let [search] = named(&outcome.events, "model-command").next().unwrap() else {
+        panic!("one model command");
+    };
+    match search.as_str() {
+        Some(search) => assert!(shows(world, &format!("Model: {search}"))),
+        None => assert_eq!(
+            model_panel(world).unwrap().get_search_input().get_value(),
+            ""
+        ),
+    }
+}
+
+#[test]
+fn model_commands_use_the_shared_whitespace_and_exact_tokens() {
+    let test = "model_commands_use_the_shared_whitespace_and_exact_tokens";
+    isolated(test, |directory| {
+        for (input, expected) in cases::<Submission, Outcome>(test) {
+            assert_eq!(input.op, "submit");
+            if named(&expected.events, "scope-command").next().is_some() {
+                continue;
+            }
+            let world = started(directory);
+            catalog(&world);
+            submission(&world, &input.text, &expected);
+            settled(&world, &expected);
+        }
+    });
+}
+
+#[test]
+fn model_commands_leave_waiter_and_history_untouched() {
+    isolated(
+        "model_commands_leave_waiter_and_history_untouched",
+        |directory| {
+            let world = started(directory);
+            catalog(&world);
+            let waiting = world.mode.get_user_input();
+            let mut waiting = std::pin::pin!(waiting);
+            assert!(poll_once(waiting.as_mut()).is_pending());
+            for command in ["/model alpha", "/model"] {
+                submit(&world, command);
+                assert!(poll_once(waiting.as_mut()).is_pending());
+            }
+            assert!(shows(&world, "Model: alpha"));
+            assert!(model_panel(&world).is_some());
+            world.mode.editor_container.clear();
+            world
+                .mode
+                .editor_container
+                .add_child(world.mode.editor.clone());
+            world.mode.ui.set_focus(Some(world.mode.editor.clone()));
+            submit(&world, "normal");
+            assert_eq!(
+                poll_once(waiting.as_mut()),
+                std::task::Poll::Ready("normal".to_owned())
+            );
+            assert_eq!(history(&world), ["normal"]);
+        },
+    );
+}
+
+/// A mode whose session can be replaced by a fresh memory session.
+fn replaceable(directory: &Path) -> World {
+    let world = Setup {
+        create: Some(Rc::new(|options| {
+            Box::pin(async move { Ok(super::session::session(&options.cwd, None, |inner| inner)) })
+        })),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().unwrap();
+    world.runtime.settle().unwrap();
+    world
+}
+
+/// The default value of `T`, for option records the application root does not name.
+fn defaults<T: Default>() -> T {
+    T::default()
+}
+
+/// Replaces the runtime's session with a fresh one.
+fn replace_session(world: &World) {
+    let host = Rc::clone(&world.host);
+    world.runtime.handle().spawn_local(Box::pin(async move {
+        host.new_session(defaults()).await?;
+        Ok(())
+    }));
+    assert!(world.runtime.drain_futures().is_empty());
+}
+
+#[test]
+fn warning_lifetime_survives_rebinding_but_not_another_mode() {
+    isolated(
+        "warning_lifetime_survives_rebinding_but_not_another_mode",
+        |directory| {
+            let world = replaceable(directory);
+            key_command(&world, directory, "anthropic", (0, Some(SUBSCRIPTION_KEY)));
+            check(&world, vec![Some(subscription_model(&world))]);
+            assert!(shows(&world, "Warning: "));
+            let first = world.host.session();
+            replace_session(&world);
+            assert!(!Rc::ptr_eq(&first, &world.host.session()));
+            key_command(&world, directory, "anthropic", (1, Some(SUBSCRIPTION_KEY)));
+            world.mode.chat_container.clear();
+            check(&world, vec![Some(subscription_model(&world))]);
+            assert!(!shows(&world, "Warning: "));
+            assert_eq!(lookups(directory, 1), 0);
+            let other = started(directory);
+            key_command(&other, directory, "anthropic", (2, Some(SUBSCRIPTION_KEY)));
+            check(&other, vec![Some(subscription_model(&other))]);
+            assert!(shows(&other, "Warning: "));
+            assert_eq!(lookups(directory, 2), 1);
         },
     );
 }

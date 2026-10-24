@@ -129,7 +129,7 @@ fn border_theme_change_refreshes_the_first_returned_frame() {
 const EDIT_FILE: &str = "maestro-editor-1767323045006.maestro.md";
 
 /// Installs `script` as the executable `name` in the command directory of `directory`.
-fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
+pub(super) fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
     let bin = directory.join("bin");
     let source = bin.join(format!("{name}.source"));
     std::fs::write(&source, script).unwrap();
@@ -140,7 +140,7 @@ fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
 }
 
 /// Runs the editor action the mode registered.
-fn run_action(world: &World, action: &str) {
+pub(super) fn run_action(world: &World, action: &str) {
     let handler = world.mode.editor.action_handlers().borrow()[action].clone();
     handler();
 }

@@ -23,10 +23,10 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
-    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
-    ResourceExtensionPaths, ResourceLoader, SettingsManager, create_extension_runtime,
-    load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, CreateAgentSessionRuntimeFactory, DefaultEventBus,
+    DiagnosticErrorInfo, ExtensionFactory, LoadExtensionsResult, LoadPromptsResult,
+    LoadSkillsResult, LoadThemesResult, Local, ResourceExtensionPaths, ResourceLoader,
+    SettingsManager, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -164,6 +164,8 @@ struct Setup {
     select: Option<String>,
     /// The inline extension the session loads, when supplied.
     extension: Option<ExtensionFactory<Local>>,
+    /// Creates replacement sessions, when supplied; replacing otherwise fails.
+    create: Option<CreateAgentSessionRuntimeFactory>,
 }
 
 impl Default for Setup {
@@ -173,6 +175,7 @@ impl Default for Setup {
             configure: Box::new(|_| {}),
             select: None,
             extension: None,
+            create: None,
         }
     }
 }
@@ -224,10 +227,10 @@ impl Setup {
             let loader = loader.borrow();
             *loader.as_ref().unwrap().select.borrow_mut() = Some((settings, name));
         }
-        let host = Rc::new(AgentSessionRuntime::new(
-            result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
-        ));
+        let create = self.create.unwrap_or_else(|| {
+            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }))
+        });
+        let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
         let themes = Rc::new(published::unpublished());
