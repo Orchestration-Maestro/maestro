@@ -1328,3 +1328,48 @@ fn registered_definition_alias_keeps_tools_ownership() {
             .contains("ToolDefinition declaration belongs to maestro-tools")
     );
 }
+
+#[test]
+fn interactive_session_setup_rejects_bypasses() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    source(
+        &workspace,
+        "maestro-chat",
+        "tests/footer_support/session.rs",
+        "fn session() -> Result { AgentSession::new(AgentSessionConfig { agent: owner() }) }",
+    );
+    for bypass in [
+        "fn f() { let value = AgentSessionConfig { agent: owner() }; }",
+        "fn f() { check!(AgentSessionConfig { agent: owner() }); }",
+        "fn f() { let make = || AgentSessionConfig { agent: owner() }; }",
+        "impl Example { fn make() { drop(AgentSessionConfig { agent: owner() }); } }",
+        "fn f() { let _ = session(cwd, None); drop(AgentSessionConfig { agent: owner() }); }",
+        "use maestro_app::AgentSessionConfig as Config;\nfn f() { let x = Config { agent: owner() }; }",
+        "fn f() { let x = r#AgentSessionConfig { agent: owner() }; }",
+    ] {
+        source(
+            &workspace,
+            "maestro-chat",
+            "tests/footer_support/mod.rs",
+            bypass,
+        );
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error.contains("tests/footer_support/mod.rs:1: session setup belongs in tests/footer_support/session.rs"),
+            "{bypass}: {error}"
+        );
+    }
+    for accepted in [
+        "fn f() -> CreateAgentSessionRuntimeResult { session(cwd, None) }",
+        "// AgentSessionConfig\nfn f() { let _ = \"AgentSessionConfig\"; }",
+    ] {
+        source(
+            &workspace,
+            "maestro-chat",
+            "tests/footer_support/mod.rs",
+            accepted,
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{accepted}");
+    }
+}
