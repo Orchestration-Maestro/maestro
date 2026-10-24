@@ -25,12 +25,12 @@
       "host": { "method": "notify", "operands": ["  padded  ", "Info"] }
     },
     {
-      "call": { "op": "notify", "message": "second", "kind": "info" },
-      "host": { "method": "notify", "operands": ["second", "Info"] }
+      "call": { "op": "notify", "message": "", "kind": "warning" },
+      "host": { "method": "notify", "operands": ["", "Warning"] }
     },
     {
-      "call": { "op": "notify", "message": "third", "kind": "error" },
-      "host": { "method": "notify", "operands": ["third", "Error"] }
+      "call": { "op": "notify", "message": "", "kind": "error" },
+      "host": { "method": "notify", "operands": ["", "Error"] }
     }
   ],
   "status": [
@@ -125,6 +125,10 @@
       "host": { "method": "setWorkingIndicator", "operands": [{ "frames": [], "intervalMs": 0.0 }] }
     },
     {
+      "call": { "op": "setWorkingIndicator", "options": { "intervalMs": -120.0 } },
+      "host": { "method": "setWorkingIndicator", "operands": [{ "frames": null, "intervalMs": -120.0 }] }
+    },
+    {
       "call": { "op": "setWorkingIndicator", "options": { "intervalMs": -0.0 } },
       "host": { "method": "setWorkingIndicator", "operands": [{ "frames": null, "intervalMs": -0.0 }] }
     }
@@ -179,6 +183,10 @@
     {
       "call": { "op": "setWidget", "key": "", "content": ["empty key"] },
       "host": { "method": "setWidget", "operands": ["", ["empty key"], null] }
+    },
+    {
+      "call": { "op": "setWidget", "key": "other 雪", "content": ["literal 雪", "\u001b[7minverse\u001b[0m"], "options": { "placement": "belowEditor" } },
+      "host": { "method": "setWidget", "operands": ["other 雪", ["literal 雪", "\u001b[7minverse\u001b[0m"], { "placement": "BelowEditor" }] }
     }
   ],
   "titles": [

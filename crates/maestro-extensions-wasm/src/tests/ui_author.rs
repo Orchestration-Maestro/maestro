@@ -5,7 +5,6 @@
     clippy::excessive_nesting
 )]
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
@@ -139,18 +138,20 @@ pub enum Call {
     },
 }
 
-/// One probe operation around a request and the retained handles.
+/// One probe operation around a fresh acquisition and its callbacks.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase")]
 enum Operation {
-    /// Retains the UI of the current context.
-    Retain,
-    /// Retains another alias of the first retained handle.
-    Alias,
-    /// Drops the last retained handle.
-    Pop,
-    /// Registers the retained listener and starts a compaction.
+    /// Performs a request through a freshly acquired handle.
+    Acquire {
+        /// The request.
+        call: Call,
+    },
+    /// Registers the bus listener through one acquisition, which reports its owner once.
     Observe,
+    /// Starts one compaction whose callbacks report through one acquisition, which reports its
+    /// owner once.
+    Compact,
     /// Emits one supplied payload on a supplied channel.
     Emit {
         /// Literal channel.
@@ -158,41 +159,11 @@ enum Operation {
         /// Payload to emit.
         input: Value,
     },
-    /// Performs a request through a freshly acquired handle.
-    Acquire {
-        /// The request.
-        call: Call,
-    },
-    /// Performs a request through a retained handle.
-    Retained {
-        /// Retained handle to use.
-        #[serde(default)]
-        index: usize,
-        /// The request.
-        call: Call,
-    },
     /// Supplies the host rejection of the next request.
     Control {
         /// Message the next request is rejected with.
         error: String,
     },
-}
-
-/// Independently retained handles.
-#[derive(Default)]
-struct Kept {
-    /// Retained UI owners.
-    uis: Vec<ExtensionUIContext>,
-}
-
-impl Kept {
-    /// The retained handle at `index`.
-    fn at(&self, index: usize) -> ExtensionResult<ExtensionUIContext> {
-        self.uis
-            .get(index)
-            .cloned()
-            .ok_or_else(|| "missing UI".to_owned())
-    }
 }
 
 /// Runs one request through the supplied handle.
@@ -232,36 +203,17 @@ fn caught(result: ExtensionResult<()>) -> Value {
     }
 }
 
-/// Runs one operation against the supplied context and reports its outcome.
-async fn dispatch(
-    kept: &Rc<RefCell<Kept>>,
-    api: &ExtensionAPI,
-    ctx: &ExtensionContext,
-    text: &str,
-) -> ExtensionResult<()> {
+/// Runs one operation and reports its outcome.
+async fn dispatch(api: &ExtensionAPI, ctx: &ExtensionContext, text: &str) -> ExtensionResult<()> {
     let operation: Operation = serde_json::from_str(text).map_err(|error| error.to_string())?;
     let answer = match operation {
-        Operation::Retain => {
-            kept.borrow_mut().uis.push(ctx.ui()?);
-            json!("retained")
-        }
-        Operation::Alias => {
-            let alias = kept.borrow().at(0)?;
-            kept.borrow_mut().uis.push(alias);
-            json!("retained")
-        }
-        Operation::Pop => {
-            let dropped = kept.borrow_mut().uis.pop();
-            drop(dropped);
-            json!("dropped")
-        }
-        Operation::Observe => observe(kept, api, ctx)?,
+        Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
+        Operation::Observe => observe(api, ctx)?,
+        Operation::Compact => compact(api, ctx)?,
         Operation::Emit { channel, input } => {
             api.events().emit(&channel, input).await?;
             json!("emitted")
         }
-        Operation::Acquire { call } => caught(perform(&ctx.ui()?, &call)),
-        Operation::Retained { index, call } => caught(perform(&kept.borrow().at(index)?, &call)),
         Operation::Control { error } => {
             api.append_entry("ui-control", Some(json!({ "error": error })))?;
             json!("controlled")
@@ -271,16 +223,11 @@ async fn dispatch(
     api.append_entry("ui-done", None)
 }
 
-/// Registers the retained listener and starts a compaction, both reporting through the first
-/// retained handle.
-fn observe(
-    kept: &Rc<RefCell<Kept>>,
-    api: &ExtensionAPI,
-    ctx: &ExtensionContext,
-) -> ExtensionResult<Value> {
-    let ui = kept.borrow().at(0)?;
+/// Registers the bus listener through an acquired handle, which reports that owner.
+fn observe(api: &ExtensionAPI, ctx: &ExtensionContext) -> ExtensionResult<Value> {
+    let listener = ctx.ui()?;
+    listener.notify("observe", Some(NotificationType::Info))?;
     let log = api.clone();
-    let listener = ui.clone();
     api.events().on(
         "ui-bus",
         Rc::new(move |data, _| {
@@ -289,9 +236,16 @@ fn observe(
             Ok(None)
         }),
     )?;
+    Ok(json!("observed"))
+}
+
+/// Starts one compaction whose callbacks report through an acquired handle, which reports that
+/// owner.
+fn compact(api: &ExtensionAPI, ctx: &ExtensionContext) -> ExtensionResult<Value> {
+    let ui = ctx.ui()?;
+    ui.notify("compact", None)?;
     let log = api.clone();
     let complete = ui.clone();
-    let error = ui;
     ctx.compact(Some(CompactOptions {
         custom_instructions: None,
         on_complete: Some(Rc::new(move |result, _| {
@@ -299,27 +253,24 @@ fn observe(
             log.append_entry("ui-complete-done", Some(json!(result.summary)))
         })),
         on_error: Some(Rc::new(move |message, _| {
-            error.notify(&format!("error {message}"), Some(NotificationType::Error))
+            ui.notify(&format!("error {message}"), Some(NotificationType::Error))
         })),
     }))?;
-    Ok(json!("observed"))
+    Ok(json!("compacted"))
 }
 
 /// Registers the event handler and the command that share these requests.
 pub fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
-    let kept = Rc::new(RefCell::new(Kept::default()));
-    let event_kept = Rc::clone(&kept);
     let event_api = api.clone();
     api.on(
         "ui",
         Rc::new(move |event, ctx| {
-            let kept = Rc::clone(&event_kept);
             let api = event_api.clone();
             Box::pin(async move {
                 let ExtensionEvent::Input(input) = event else {
                     return Err("expected input".into());
                 };
-                dispatch(&kept, &api, &ctx, &input.text).await?;
+                dispatch(&api, &ctx, &input.text).await?;
                 Ok(None)
             })
         }),
@@ -331,9 +282,8 @@ pub fn register(api: &ExtensionAPI) -> ExtensionResult<()> {
             get_argument_completions: None,
             description: None,
             handler: Rc::new(move |args, ctx| {
-                let kept = Rc::clone(&kept);
                 let log = log.clone();
-                Box::pin(async move { dispatch(&kept, &log, &ctx, &args).await })
+                Box::pin(async move { dispatch(&log, &ctx, &args).await })
             }),
         },
     )
