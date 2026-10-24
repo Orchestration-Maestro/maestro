@@ -4,6 +4,7 @@ use super::{request, routed};
 use crate::providers::transport::collect_body;
 use crate::providers::transport::proxy_agent::tests::socks;
 use crate::tests::{loopback, tls};
+use maestro_test_process::test_name;
 use std::io::{Read, Write};
 use std::sync::{Arc, mpsc};
 
@@ -22,7 +23,6 @@ enum Phase {
 
 #[test]
 fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
-    const TEST: &str = "providers::http::client::tests::pac::tls::pac_proxy_tls_and_destination_tls_keep_failure_phases";
     if let Ok(trust) = std::env::var("MAESTRO_PAC_TLS_CHILD") {
         crate::tests::runtime::run(async {
             for phase in [Phase::Forward, Phase::Tunnel, Phase::Direct, Phase::Socks] {
@@ -38,10 +38,12 @@ fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
         return;
     }
     for trust in ["untrusted", "trusted"] {
-        let process = maestro_test_process::TestProcess::current(TEST)
-            .unwrap()
-            .env_clear()
-            .env("MAESTRO_PAC_TLS_CHILD", trust);
+        let process = maestro_test_process::TestProcess::current(
+            &test_name(pac_proxy_tls_and_destination_tls_keep_failure_phases).unwrap(),
+        )
+        .unwrap()
+        .env_clear()
+        .env("MAESTRO_PAC_TLS_CHILD", trust);
         let process = if trust == "trusted" {
             process.env(
                 "SSL_CERT_FILE",

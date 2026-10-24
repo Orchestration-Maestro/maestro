@@ -4,6 +4,7 @@ use super::{
     CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
 };
 use super::{OutputMode, SpawnSyncOptions};
+use maestro_test_process::test_name;
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -679,15 +680,15 @@ s.close(); os._exit(0)
 #[test]
 fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     use std::{error::Error, io::Write};
-    const CASE: &str =
-        "child_process::tests::capture_timeout_closes_inherited_stdout_after_direct_child_exit";
     if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(CASE)
-            .unwrap()
-            .nocapture()
-            .case("*")
-            .output()
-            .unwrap();
+        let output = maestro_test_process::TestProcess::current(
+            &test_name(capture_timeout_closes_inherited_stdout_after_direct_child_exit).unwrap(),
+        )
+        .unwrap()
+        .nocapture()
+        .case("*")
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "{}\n{}",
