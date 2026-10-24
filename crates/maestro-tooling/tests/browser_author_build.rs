@@ -1659,7 +1659,7 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
 
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
-    let browser = Browser::new();
+    let browser = Browser::unshared();
     browser_support::bootstrap_source(&browser);
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
