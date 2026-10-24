@@ -46,11 +46,6 @@ features, records pane identity and native actor errors. These features reuse th
 locked dependency closure; no package version changes.
 
 On Unix, `maestro-process` uses `signal-hook =0.3.18` (MIT OR Apache-2.0), with default
-features disabled, only to give a signal its native default action: a termination signal
-once graceful shutdown has started, and an interrupt once a suspended interactive mode
-continues. Tokio keeps signal delivery. The package is already in the locked dependency
-closure; no package version changes.
-
-For job control on Unix, the process crate also enables Tokio `signal` to observe the
-continue signal, and sends the stop signal to its process group through rustix's
-`process` feature. Both reuse the locked dependency closure.
+features disabled, only to give a termination signal its native default action once
+graceful shutdown has started. Tokio keeps signal delivery. The package is already in the
+locked dependency closure; no package version changes.

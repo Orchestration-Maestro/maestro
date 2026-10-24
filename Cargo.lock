@@ -3995,7 +3995,6 @@ dependencies = [
  "futures-util",
  "getrandom 0.4.3",
  "hashbrown 0.17.1",
- "iana-time-zone",
  "icu_locale_core",
  "icu_normalizer",
  "icu_properties",

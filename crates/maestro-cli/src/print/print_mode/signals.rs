@@ -23,9 +23,7 @@ impl SignalPort for NativeSignals {
     fn register(&self, callback: Rc<dyn Fn(TerminationSignal)>) -> io::Result<Box<dyn Fn()>> {
         let mut handles = Vec::new();
         for signal in signals_for_host() {
-            let stream = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::from_raw(
-                signal.as_raw(),
-            ))?;
+            let stream = tokio::signal::unix::signal(kind(signal))?;
             handles.push(tokio::task::spawn_local(deliver(
                 stream,
                 signal,
@@ -74,5 +72,14 @@ async fn deliver(
 ) {
     while stream.recv().await.is_some() {
         callback(signal);
+    }
+}
+
+/// The native stream of `signal`.
+#[cfg(unix)]
+fn kind(signal: TerminationSignal) -> tokio::signal::unix::SignalKind {
+    match signal {
+        TerminationSignal::Terminate => tokio::signal::unix::SignalKind::terminate(),
+        TerminationSignal::Hangup => tokio::signal::unix::SignalKind::hangup(),
     }
 }
