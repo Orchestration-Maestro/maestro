@@ -293,6 +293,13 @@
     "raw": "{\"type\":\"response\",\"command\":\"get_last_assistant_text\",\"success\":true,\"data\":{\"text\":\"answer\"}}\n"
   },
   {
+    "name": "last_assistant_null",
+    "input": {
+      "type": "get_last_assistant_text"
+    },
+    "raw": "{\"type\":\"response\",\"command\":\"get_last_assistant_text\",\"success\":true,\"data\":{\"text\":null}}\n"
+  },
+  {
     "name": "fork_cancelled_without_id",
     "input": {
       "type": "fork",
