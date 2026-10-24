@@ -6,6 +6,9 @@ pub mod input_selectors;
 
 pub mod keybindings;
 
-pub use maestro_models::get_oauth_providers;
+pub use maestro_models::{
+    OAuthAuthInfo, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderHandle, get_oauth_provider,
+    get_oauth_providers,
+};
 
 pub mod slash_commands;

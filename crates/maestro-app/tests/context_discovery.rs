@@ -2,7 +2,8 @@
 //! working directory, and the warning for one that cannot be read.
 #![cfg(unix)]
 use crate::resource_fixtures::{
-    Entry, Root, child_stderr, loader_case, on_task_set, run_loader_case,
+    Entry, Root, child_stderr, directory_read_error, loader_case, on_task_set, run_loader_case,
+    warnings,
 };
 use maestro_app::load_project_context_files;
 use serde::Deserialize;
@@ -73,16 +74,10 @@ fn missing_context_files_yield_nothing() {
 
 /// The warning line written for `path`, a directory, with the native error for reading one.
 fn read_warning(prefix: &str, path: &str) -> String {
-    let error = std::fs::read(env!("CARGO_MANIFEST_DIR")).unwrap_err();
-    format!("Warning: Could not read {prefix}{path}: {error}")
-}
-
-/// The standard error lines that are warnings.
-fn warnings(stderr: &str) -> Vec<&str> {
-    stderr
-        .lines()
-        .filter(|line| line.starts_with("Warning:"))
-        .collect()
+    format!(
+        "Warning: Could not read {prefix}{path}: {}",
+        directory_read_error()
+    )
 }
 
 #[test]
