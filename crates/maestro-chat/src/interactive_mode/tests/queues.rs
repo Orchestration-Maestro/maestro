@@ -963,7 +963,7 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
         ..Setup::default()
     }
     .build(directory);
-    world.mode.init().unwrap();
+    super::start(&world);
     world.runtime.settle().unwrap();
     // The recorded transcripts start after the startup resource listing.
     world.mode.chat_container.clear();

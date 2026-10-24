@@ -29,7 +29,7 @@ pub use maestro_export::{ExportOperations, NativeExportOperations};
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
     ExtensionBindings, ModelCycleResult, ParsedSkillBlock, PromptOptions, SessionStats,
-    parse_skill_block,
+    delivery_mode, parse_skill_block,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -47,7 +47,7 @@ pub use crate::runtime::agent_session_services::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::sdk::{
     CreateAgentSessionOptions, CreateAgentSessionResult, NoTools, SessionResources,
-    create_agent_session,
+    create_agent_session, queue_mode,
 };
 
 pub use maestro_session::compaction::{

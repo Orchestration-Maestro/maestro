@@ -2,6 +2,7 @@
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
 use maestro_app::messages::UserMessageDelivery;
+use maestro_tui::EditorComponent;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -57,15 +58,38 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs the export command when `text` is one, handing a failure beyond the transcript
-    /// to the terminal runtime, and says whether `text` was handled as a command.
-    fn runs_command(&self, text: &str) -> bool {
-        if text != "/export" && !text.starts_with("/export ") {
-            return false;
+    /// Runs an export, settings or model command when `text` is one, handing a failure
+    /// beyond the transcript to the terminal runtime, and says whether `text` was handled.
+    fn runs_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/export" || text.starts_with("/export ") {
+            if let Err(error) = self.handle_export_command(text) {
+                self.report(Err(error));
+            }
+            return true;
         }
-        if let Err(error) = self.handle_export_command(text) {
-            self.report(Err(error));
+        if text == "/settings" {
+            self.report(self.show_settings_selector());
+            return true;
         }
-        true
+        if text == "/scoped-models" {
+            self.report(self.show_models_selector());
+            return true;
+        }
+        if text == "/model" || text.starts_with("/model ") {
+            let search = text["/model".len()..].trim_matches(is_whitespace_scalar);
+            Rc::clone(self)
+                .submit_model_command(Some(search.to_owned()).filter(|search| !search.is_empty()));
+            return true;
+        }
+        false
+    }
+
+    /// Clears the editor and runs `/model` with `search` on the terminal runtime.
+    fn submit_model_command(self: Rc<Self>, search: Option<String>) {
+        self.editor.set_text("");
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        runtime.spawn_local(Box::pin(
+            async move { self.handle_model_command(search).await },
+        ));
     }
 }

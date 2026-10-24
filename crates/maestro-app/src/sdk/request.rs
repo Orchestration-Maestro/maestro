@@ -229,7 +229,8 @@ fn transform_context(
 }
 
 /// The agent's form of a saved delivery mode.
-fn queue_mode(mode: &MessageDeliveryMode) -> QueueMode {
+#[must_use]
+pub fn queue_mode(mode: &MessageDeliveryMode) -> QueueMode {
     match mode {
         MessageDeliveryMode::All => QueueMode::All,
         _ => QueueMode::OneAtATime,

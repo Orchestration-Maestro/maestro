@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 use maestro_test_directory::Scratch;
@@ -390,6 +390,20 @@ fn dropping_live_stdout_closes_the_only_read_end() {
         "{}",
         text(&output.stderr)
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_setup_runs_when_the_child_replaces_path() {
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("setup-ran");
+    let setup = format!("echo ran > '{}'", marker.display());
+    plain(&left_name())
+        .env("PATH", scratch.path())
+        .shell_setup(setup)
+        .output()
+        .unwrap();
+    assert_eq!(std::fs::read_to_string(&marker).unwrap(), "ran\n");
 }
 
 #[cfg(unix)]
@@ -999,4 +1013,133 @@ fn argument_invoker_keeps_exact_selection_and_caller_result() {
         });
     assert!(result.is_err());
     assert!(!invoked);
+}
+
+/// Variable that marks a shell-lookup child and names the parent's disposable layout.
+#[cfg(unix)]
+const LOOKUP_ROOT: &str = "MTP_LOOKUP_ROOT";
+
+/// Run this test once in a child whose `command` the parent prepared over `scratch`, and hand
+/// the child's own `body` the disposable root. The parent asserts the child passed.
+#[cfg(unix)]
+fn in_lookup_child(command: impl FnOnce(&Scratch) -> Command, body: impl FnOnce(&Path)) {
+    let Some(root) = std::env::var_os(LOOKUP_ROOT).map(PathBuf::from) else {
+        let scratch = Scratch::new().unwrap();
+        let output = command(&scratch)
+            .env(LOOKUP_ROOT, scratch.path())
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{}", text(&output.stderr));
+        return;
+    };
+    body(&root);
+}
+
+/// This test's own function in a child carrying `path` for the setup shell, from `directory`.
+#[cfg(unix)]
+fn lookup_child(leaf: &str, path: Option<&str>, directory: Option<&Path>) -> Command {
+    let mut command = outer(leaf);
+    if let Some(path) = path {
+        command.env("PATH", path);
+    } else {
+        command.env_remove("PATH");
+    }
+    if let Some(directory) = directory {
+        command.current_dir(directory);
+    }
+    command
+}
+
+/// Install an executable `bash` at `directory`, where the setup shell is looked for.
+#[cfg(unix)]
+fn install_shell(directory: &Path) {
+    std::fs::create_dir_all(directory).unwrap();
+    std::fs::copy("/bin/sh", directory.join("bash")).unwrap();
+}
+
+/// Run one setup spawn here and check the shell it selected wrote its marker.
+///
+/// `directory` becomes the child's working directory first, so a shell named relative to
+/// this process would be read from the wrong place.
+#[cfg(unix)]
+fn assert_setup_ran(root: &Path, directory: Option<&Path>) {
+    let marker = root.join("marker");
+    let mut process = plain(&left_name()).shell_setup(format!("echo ran > '{}'", marker.display()));
+    if let Some(directory) = directory {
+        process = process.current_dir(directory);
+    }
+    process.output().unwrap();
+    assert_eq!(std::fs::read_to_string(&marker).unwrap(), "ran\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_lookup_skips_a_non_executable_candidate() {
+    in_lookup_child(
+        |scratch| {
+            let bad = scratch.path().join("bad");
+            std::fs::create_dir(&bad).unwrap();
+            std::fs::write(bad.join("bash"), "not a program\n").unwrap();
+            install_shell(&scratch.path().join("good"));
+            let path = format!(
+                "{}:{}",
+                bad.display(),
+                scratch.path().join("good").display()
+            );
+            lookup_child(
+                "shell_lookup_skips_a_non_executable_candidate",
+                Some(&path),
+                None,
+            )
+        },
+        |root| assert_setup_ran(root, None),
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_lookup_anchors_a_relative_parent_entry() {
+    in_lookup_child(
+        |scratch| {
+            install_shell(&scratch.path().join("good"));
+            std::fs::create_dir(scratch.path().join("elsewhere")).unwrap();
+            lookup_child(
+                "shell_lookup_anchors_a_relative_parent_entry",
+                Some("good"),
+                Some(scratch.path()),
+            )
+        },
+        |root| assert_setup_ran(root, Some(&root.join("elsewhere"))),
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_lookup_keeps_the_native_search_for_an_unset_path() {
+    in_lookup_child(
+        |_| {
+            lookup_child(
+                "shell_lookup_keeps_the_native_search_for_an_unset_path",
+                None,
+                None,
+            )
+        },
+        |root| assert_setup_ran(root, None),
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_lookup_refuses_an_empty_path() {
+    in_lookup_child(
+        |_| lookup_child("shell_lookup_refuses_an_empty_path", Some(""), None),
+        |_| {
+            let error = plain(&left_name())
+                .shell_setup("true")
+                .output()
+                .unwrap_err()
+                .to_string();
+            assert!(error.contains("cannot find the setup shell"), "{error}");
+        },
+    );
 }

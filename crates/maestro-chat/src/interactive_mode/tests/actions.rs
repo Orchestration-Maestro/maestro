@@ -130,8 +130,9 @@ fn border_theme_change_refreshes_the_first_returned_frame() {
 const EDIT_FILE: &str = "maestro-editor-1767323045006.maestro.md";
 
 /// Installs `script` as the executable `name` in the command directory of `directory`.
-fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
+pub(super) fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
     let bin = directory.join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
     let source = bin.join(format!("{name}.source"));
     std::fs::write(&source, script).unwrap();
     let target = bin.join(name);
@@ -141,7 +142,7 @@ fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
 }
 
 /// Runs the editor action the mode registered.
-fn run_action(world: &World, action: &str) {
+pub(super) fn run_action(world: &World, action: &str) {
     let handler = world.mode.editor.action_handlers().borrow()[action].clone();
     handler();
 }
@@ -874,7 +875,7 @@ const NO_EDITOR: &str = "No editor configured";
 const DEFAULT_ASYNCHRONOUS: [&str; 3] = ["\x10", "\x1b[112;6u", "\x16"];
 
 /// Whether the transcript shows `text`.
-fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
+pub(super) fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
     chat.render(WIDTH).concat().contains(text)
 }
 

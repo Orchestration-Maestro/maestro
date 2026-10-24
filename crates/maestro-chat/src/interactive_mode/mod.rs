@@ -19,10 +19,14 @@ use std::{
 };
 
 mod actions;
+mod autocomplete;
 mod key_display;
+mod models;
 mod queues;
 mod replay;
 mod resources;
+mod selectors;
+mod settings;
 mod startup;
 mod submit;
 mod toggles;
@@ -47,6 +51,8 @@ pub struct InteractiveModeOptions {
 pub struct InteractiveMode {
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
+    /// The watch effects supplied to theme selection and its reloads.
+    settings_theme_watch: Rc<dyn maestro_theme::ThemeWatchOperations>,
     /// How the mode starts.
     options: InteractiveModeOptions,
     /// The terminal user interface this mode owns.
@@ -91,8 +97,12 @@ pub struct InteractiveMode {
     is_bash_mode: Cell<bool>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
+    /// Whether this mode has shown the subscription billing notice.
+    anthropic_subscription_warning_shown: Cell<bool>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The selected search program for file completion, absent until startup prepares it.
+    fd_path: RefCell<Option<String>>,
 }
 
 impl InteractiveMode {
@@ -110,6 +120,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
+        let settings = session.settings_manager();
         let tool_environment = Rc::new(ToolRenderEnvironment {
             runtime: terminal.1.clone(),
             readme_path: maestro_app::configuration::config::get_readme_path()?,
@@ -122,12 +133,7 @@ impl InteractiveMode {
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
-        let editor = create_editor(
-            &ui,
-            themes.theme(),
-            (*keys).clone(),
-            session.settings_manager(),
-        );
+        let editor = create_editor(&ui, themes.theme(), (*keys).clone(), settings);
         let editor_container = Rc::new(Container::new());
         editor_container.add_child(editor.clone());
         let footer_data_provider = FooterDataProvider::new(
@@ -137,14 +143,13 @@ impl InteractiveMode {
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
+        let selected_theme = settings.borrow().get_theme();
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
+        let settings_theme_watch = operations.clone();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
+            settings_theme_watch,
             options,
             ui,
             themes,
@@ -161,29 +166,33 @@ impl InteractiveMode {
             is_initialized: Cell::new(false),
             built_in_header: RefCell::default(),
             tool_environment,
+            fd_path: RefCell::default(),
             tool_output_expanded: Cell::new(false),
             hide_thinking_block: Cell::new(hide_thinking_block),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
+            anthropic_subscription_warning_shown: Cell::new(false),
             compaction_queued_messages: RefCell::default(),
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor, binds the
+    /// Prepares search programs and completion, builds the header, adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission, starts the terminal, lists the
     /// loaded resources with their diagnostics and replays the session, once; theme
-    /// changes then refresh the editor border, and theme and branch changes request
-    /// fresh frames.
+    /// changes then refresh the editor border, and theme and branch changes request fresh
+    /// frames. Finally the footer learns how many providers the model candidates cover.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
-    /// resource listing or of the replay.
-    pub fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
+    /// resource listing, of the replay or of the catalog refresh.
+    pub async fn init(self: &Rc<Self>) -> Result<(), Box<dyn Error>> {
         if self.is_initialized.get() {
             return Ok(());
         }
+        self.prepare_search_tools().await?;
+        self.setup_autocomplete_provider();
         self.build_header()?;
         for child in [
             &self.header_container,
@@ -221,7 +230,36 @@ impl InteractiveMode {
             show_diagnostics_when_quiet: true,
             ..resources::ShowLoadedResourcesOptions::default()
         })?;
+        self.render_initial_messages()?;
+        self.update_available_provider_count()
+    }
+
+    /// Clears the transcript and the pending-message rows, then replays the current session
+    /// with the initial replay's footer, history and compaction effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
         self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, draws that frame before
+    /// the stop that would cancel it, closes the theme watch and stops the terminal, so
+    /// nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        let _ = self.ui.render_pending_frame();
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
     }
 }
 

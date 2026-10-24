@@ -10,7 +10,12 @@ use maestro_app::utils::clipboard_image::{
 };
 use maestro_app::{DiagnosticErrorInfo, ThinkingLevel, is_whitespace_scalar};
 use maestro_tui::Component;
-use std::{error::Error, io, rc::Rc, sync::PoisonError};
+use std::{
+    error::Error,
+    io,
+    rc::Rc,
+    sync::{Arc, PoisonError},
+};
 
 impl InteractiveMode {
     /// Installs the editor's change callback and image paste without keeping the mode
@@ -66,13 +71,26 @@ impl InteractiveMode {
         self.show_status(&format!("Thinking level: {}", thinking_text(&level).0))
     }
 
-    /// Selects the session's next or previous model and shows the outcome.
+    /// Selects the session's next or previous model, shows the outcome and checks the
+    /// subscription notice for a selected model.
     ///
     /// # Errors
     /// Returns the published theme's failure.
     async fn cycle_model(self: Rc<Self>, direction: CycleDirection) -> Result<(), Box<dyn Error>> {
         let result = self.runtime_host.session().cycle_model(direction).await;
-        self.show_model_cycle_result(result)
+        let selected = result
+            .as_ref()
+            .ok()
+            .and_then(Option::as_ref)
+            .map(|result| Arc::clone(&result.model));
+        self.show_model_cycle_result(result)?;
+        match selected {
+            Some(model) => {
+                self.maybe_warn_about_anthropic_subscription_auth(Some(model))
+                    .await
+            }
+            None => Ok(()),
+        }
     }
 
     /// Shows a finished model cycle: the selected model and its thinking level after
@@ -162,6 +180,15 @@ impl InteractiveMode {
         if write_temporary_file(&path, &image.bytes).is_ok() {
             self.editor.insert_text_at_cursor(&path.to_string_lossy());
             self.ui.request_render(false);
+        }
+    }
+
+    /// Hands a failed editor callback's error to the terminal runtime, which reports it.
+    pub(super) fn report(&self, result: Result<(), Box<dyn Error>>) {
+        if let Err(error) = result {
+            self.tool_environment
+                .runtime
+                .spawn_local(Box::pin(std::future::ready(Err(error))));
         }
     }
 }

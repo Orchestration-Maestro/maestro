@@ -13,16 +13,17 @@ pub use maestro_models::{
     UserBlock, UserContent, UserMessage, default_fetch,
 };
 
-/// Agent reasoning levels, including disabled reasoning.
-pub use maestro_agent::ThinkingLevel;
+/// Agent reasoning levels, including disabled reasoning, and how queued messages are delivered.
+pub use maestro_agent::{QueueMode, ThinkingLevel};
 
 pub use maestro_models::{Local, Threaded};
 
 pub use maestro_models::Transport;
 
 pub use maestro_catalog::{
-    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderConfigInput,
-    ProviderModelInput, ScopedModel, model_id_comparator,
+    CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ModelResolverOutput,
+    ProviderConfigInput, ProviderModelInput, ScopedModel, find_exact_model_reference_match,
+    model_id_comparator, resolve_model_scope,
 };
 
 pub use maestro_models::models_are_equal;

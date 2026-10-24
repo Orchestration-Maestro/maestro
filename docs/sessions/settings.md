@@ -56,7 +56,9 @@ indicators on.
 
 `warnings.anthropicExtraUsage` controls the paid-extra-usage warning for
 subscription sign-in. The settings getter returns what is stored; the consumer
-applies the default.
+applies the default. The interactive mode shows the
+[billing notice](../chat/commands.md#subscription-billing-notice) unless the value
+is `false`.
 
 ```json
 { "warnings": { "anthropicExtraUsage": false } }
@@ -124,7 +126,8 @@ project's default directory described in the
 ## Model cycling
 
 `enabledModels` lists the patterns used when cycling models, in the same format
-as the model-selection option.
+as the model-selection option. The interactive
+[scope panel](../chat/commands.md#editing-the-model-scope) edits and saves it.
 
 ```json
 { "enabledModels": ["claude-*", "gpt-4o", "gemini-2*"] }

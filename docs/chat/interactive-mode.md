@@ -3,12 +3,13 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export command, session replay, the expansion and thinking
-shortcuts, thinking and model cycling, the editor border, external editing and
-image paste. The prompt loop, streaming messages, startup messages, installed
-custom headers, the terminal title and the other integrations are still to come;
-the mode prompts the session only for input queued during a response or a
-compaction.
+input, queued input, the export command, session replay, the reset of the
+presentation after a session replacement, the fatal-error exit, the expansion and
+thinking shortcuts, thinking and model cycling, model selection and scopes, the
+editor border, external editing and image paste. The prompt loop, streaming
+messages, startup messages, installed custom headers, the terminal title and other
+integrations are still to come; the mode prompts the session only for input queued
+during a response or compaction.
 
 ## Construction
 
@@ -31,24 +32,27 @@ fallback theme is returned.
 
 ## Startup
 
-`init` runs once; later calls change nothing. It builds the header, then adds the
-header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. It focuses the editor, binds the
-transcript shortcuts, the queue keys and editor actions, installs editor submission
-and starts the terminal. A terminal start failure is returned and leaves the mode
-uninitialized. After a successful start, a theme change invalidates the
-presentation, recolours the
-editor border and requests a frame, and a branch change requests a frame. Neither
-callback keeps the mode alive. Last, it lists the loaded resources and their
-diagnostics in the transcript and then replays the session (see below).
+`init` is asynchronous and runs once; later calls change nothing. It first
+starts both search programs and installs
+[completion](extension-ui.md#completion), then builds the header, adds the
+header, transcript, pending-messages, status, upper widget, editor and lower
+widget containers and the footer, in that order. It then focuses the editor,
+binds shortcuts, editor actions and queue keys, installs editor submission and
+starts the terminal. A failure to locate the managed binary directory or to
+start the terminal is returned and leaves the mode uninitialized. After a
+successful start, a theme change invalidates the presentation, recolours the
+editor border and requests a frame, and a branch change requests a frame.
+Neither callback keeps the mode alive. Last, it lists the loaded resources and
+their diagnostics in the transcript, replays the session and refreshes the
+footer provider count.
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the
-header empty. Otherwise the header shows the
-application name and version, the compact key hints and two onboarding lines. In
-verbose mode it shows the full list of key hints instead. Hints follow the loaded
-bindings: several keys keep their order, and an unbound action shows no key.
-Header text keeps the colours of the theme in effect when it was built.
+header empty. Otherwise the header shows the application name and version, the
+compact key hints and two onboarding lines. In verbose mode it shows the full
+list of key hints instead. Hints follow the loaded bindings: several keys keep
+their order, and an unbound action shows no key. Header text keeps the colours
+of the theme in effect when it was built.
 
 ## Loaded resources
 
@@ -232,6 +236,23 @@ and a failure in them goes to the terminal runtime's error route.
 A status is a dim line in the transcript. When the previous status line is still
 the last row, a new status replaces its text; otherwise it starts a new line.
 
+## Session replacement and fatal errors
+
+`render_current_session_state` clears the transcript and the pending-message rows and
+then replays the current session with the initial replay's effects: it refreshes the
+footer and the editor border, adds each user text to the editor history and shows the
+compaction notice. A transcript row or pending tool row left by the replaced session
+does not survive the call, so the presentation shows only the session it now reads.
+
+`handle_fatal_runtime_error` takes a prefix and the error that ended a session
+operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
+is the error's own text, draws that frame at once, then closes the theme watch and
+stops the terminal, so no theme reload or further frame repaints once the notice is
+drawn. It then ends the process with status 1. A failure while appending or drawing
+the notice, or while stopping the terminal, is ignored, because the process is ending
+either way. The notice is drawn before the terminal stops, because a stop cancels a
+queued frame.
+
 ## Shortcuts
 
 The expand shortcut (`app.tools.expand`) flips expansion of the startup help and of
@@ -257,11 +278,15 @@ the next or previous available model when none are scoped. The cycle runs on the
 terminal runtime, which keeps the mode until it completes. It then shows
 `Switched to <name>`, using the model id when the name is empty and adding
 ` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
-the footer and editor border. With no other candidate it shows
-`Only one model in scope` or `Only one model available`. A session error is shown
-as an error notice instead of the switch message. A failed credential lookup leaves
-the selection as it was; a recording or listener failure happens after the new
-model is selected, so that model stays selected.
+the footer and editor border, then checks the
+[subscription billing notice](commands.md#subscription-billing-notice). With no
+other candidate it shows `Only one model in scope` or `Only one model available`.
+A session error is shown as an error notice instead of the switch message. A failed
+credential lookup leaves selection unchanged; a recording or listener failure
+happens after selection, so the new model stays selected.
+
+`/model`, `/scoped-models` and the model-select key are described in
+[interactive commands](commands.md).
 
 ## Editor border
 
