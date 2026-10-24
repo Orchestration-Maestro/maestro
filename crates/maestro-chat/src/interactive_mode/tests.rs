@@ -2,6 +2,7 @@
 mod actions;
 mod events;
 mod extension_ui;
+mod extension_widgets;
 #[allow(
     dead_code,
     unused_imports,
@@ -417,11 +418,20 @@ impl Default for Setup {
 fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResult<Local>> {
     let local = Rc::new(tokio::task::LocalSet::new());
     let bus = <Local as DefaultEventBus>::default_event_bus(&local);
+    loaded_on_bus(cwd, factory, bus.for_extension())
+}
+
+/// Loads one synchronous-ready extension on the supplied shared event bus.
+fn loaded_on_bus(
+    cwd: &str,
+    factory: ExtensionFactory<Local>,
+    bus: maestro_app::EventBus<Local>,
+) -> Rc<LoadExtensionsResult<Local>> {
     let runtime = create_extension_runtime::<Local>();
     let loading = std::pin::pin!(load_extension_from_factory(
         factory,
         cwd.to_owned(),
-        bus.for_extension(),
+        bus,
         Rc::clone(&runtime),
         None,
     ));

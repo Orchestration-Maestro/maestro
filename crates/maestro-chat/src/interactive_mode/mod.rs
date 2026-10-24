@@ -48,6 +48,10 @@ pub struct InteractiveModeOptions {
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {
+    /// Live keyed widgets above the editor.
+    extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    /// Live keyed widgets below the editor.
+    extension_widgets_below: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
     /// How the mode starts.
@@ -141,6 +145,8 @@ impl InteractiveMode {
         themes.init_theme(selected_theme.as_deref(), Some(operations.clone()))?;
         let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
+            extension_widgets_above: maestro_app::Live::new(),
+            extension_widgets_below: maestro_app::Live::new(),
             runtime_host,
             options,
             ui,
