@@ -14,6 +14,8 @@ use maestro_tui::Component;
 use serde::Deserialize;
 use std::{any::Any, cell::Cell, io, path::Path, rc::Rc};
 
+mod loaded;
+
 /// Every recorded listing case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_resources.json");
 
@@ -147,7 +149,7 @@ struct Recorded {
 }
 
 /// Where a recorded resource came from.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 struct RecordedSource {
     /// The source label.
