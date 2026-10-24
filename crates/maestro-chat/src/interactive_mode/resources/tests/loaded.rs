@@ -1,13 +1,22 @@
 //! The extension, theme and diagnostic sections of the loaded-resource listing.
-use super::super::{HomeLookup, ResourceItem, labels::get_compact_path_label};
+use super::super::labels::{
+    format_extension_display_path, get_compact_extension_labels, get_compact_package_source_label,
+    get_compact_path_label, get_distinct_suffix_labels,
+};
+use super::super::{HomeLookup, ResourceItem};
 use super::{HOME, RecordedSource, expand_all, in_home, repainted, sections, unknown_home};
 use crate::InteractiveModeOptions;
 use crate::interactive_mode::tests::{Setup, World, light, painted};
-use maestro_app::home_directory;
+use maestro_app::{SourceInfo, home_directory};
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
 use maestro_tui::Component;
 use serde::Deserialize;
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    hash::{Hash, Hasher},
+    path::Path,
+    rc::Rc,
+};
 
 /// Every recorded case of these witnesses.
 const FIXTURES: &str = include_str!("../../../../tests/fixtures/interactive_loaded_resources.json");
@@ -41,7 +50,11 @@ enum Input {
         /// The section kind.
         kind: String,
         /// The loaded themes.
+        #[serde(default)]
         themes: Vec<RecordedTheme>,
+        /// The loaded extensions.
+        #[serde(default)]
+        extensions: Vec<RecordedExtension>,
     },
     /// A listing whose home lookup fails, then succeeds.
     HomeRoutes(Listing),
@@ -49,6 +62,22 @@ enum Input {
     CompactPath {
         /// The resource path.
         path: String,
+    },
+    /// One extension's compact label.
+    ExtensionLabel {
+        /// The extension.
+        extension: RecordedExtension,
+    },
+    /// One extension's expanded path.
+    ExtensionPath {
+        /// The extension path.
+        path: String,
+    },
+    /// One package source's compact label.
+    PackageSource {
+        /// Where the extension came from.
+        #[serde(rename = "sourceInfo")]
+        source_info: RecordedSource,
     },
 }
 
@@ -60,6 +89,27 @@ struct Listing {
     expanded: bool,
     /// The loaded themes.
     themes: Vec<RecordedTheme>,
+    /// The loaded extensions.
+    extensions: Vec<RecordedExtension>,
+}
+
+/// One recorded loaded extension.
+#[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+struct RecordedExtension {
+    /// The extension path.
+    path: String,
+    /// Where it came from.
+    #[serde(rename = "sourceInfo")]
+    source_info: RecordedSource,
+}
+
+impl RecordedExtension {
+    /// The extension's path and provenance.
+    fn into_loaded(self) -> (String, SourceInfo) {
+        let source_info = self.source_info.into_source_info(&self.path);
+        (self.path, source_info)
+    }
 }
 
 /// One recorded loaded theme.
@@ -155,6 +205,11 @@ fn world(directory: &Path, listing: Listing) -> World {
             .into_iter()
             .map(RecordedTheme::into_theme)
             .collect(),
+        extensions: listing
+            .extensions
+            .into_iter()
+            .map(RecordedExtension::into_loaded)
+            .collect(),
         ..Setup::default()
     }
     .build(directory);
@@ -224,8 +279,7 @@ fn compact_path_labels_keep_empty_root_and_separator_rules() {
             path: &path,
             source_info: None,
         };
-        let home: &HomeLookup<'_> = &|| Ok(HOME.to_owned());
-        assert_eq!(get_compact_path_label(&item, home).unwrap(), value);
+        assert_eq!(get_compact_path_label(&item, RECORDED_HOME).unwrap(), value);
     }
 }
 
@@ -235,7 +289,11 @@ fn extension_and_theme_sections_keep_owned_content_across_theme_and_owner_change
     in_home(test, |directory| {
         for (input, expected) in cases(test) {
             let (
-                Input::ThemeToggle { kind, themes },
+                Input::ThemeToggle {
+                    kind,
+                    themes,
+                    extensions,
+                },
                 Expected::Toggle {
                     before,
                     no_toggle,
@@ -246,11 +304,12 @@ fn extension_and_theme_sections_keep_owned_content_across_theme_and_owner_change
             else {
                 panic!("a theme change case");
             };
-            assert_eq!(kind, "theme");
+            assert_eq!(kind == "theme", extensions.is_empty());
             let world = world(
                 directory,
                 Listing {
                     themes,
+                    extensions,
                     ..Listing::default()
                 },
             );
@@ -308,4 +367,212 @@ fn resource_home_queries_follow_the_reached_formatting_branch() {
             );
         }
     });
+}
+
+#[test]
+fn extension_listing_uses_short_file_labels() {
+    listings("extension_listing_uses_short_file_labels");
+}
+
+#[test]
+fn extension_listing_keeps_mixed_compact_labels() {
+    listings("extension_listing_keeps_mixed_compact_labels");
+}
+
+#[test]
+fn extension_labels_add_only_needed_parent_segments() {
+    listings("extension_labels_add_only_needed_parent_segments");
+}
+
+#[test]
+fn extension_labels_shorten_typescript_indexes() {
+    listings("extension_labels_shorten_typescript_indexes");
+}
+
+#[test]
+fn extension_labels_shorten_javascript_indexes() {
+    listings("extension_labels_shorten_javascript_indexes");
+}
+
+#[test]
+fn extension_labels_mix_files_and_folder_indexes() {
+    listings("extension_labels_mix_files_and_folder_indexes");
+}
+
+#[test]
+fn extension_labels_keep_distinct_folder_names_short() {
+    listings("extension_labels_keep_distinct_folder_names_short");
+}
+
+#[test]
+fn extension_labels_disambiguate_equal_folder_names() {
+    listings("extension_labels_disambiguate_equal_folder_names");
+}
+
+#[test]
+fn extension_labels_keep_non_index_filenames() {
+    listings("extension_labels_keep_non_index_filenames");
+}
+
+#[test]
+fn extension_labels_preserve_duplicates_and_exclude_packages_from_uniqueness() {
+    listings("extension_labels_preserve_duplicates_and_exclude_packages_from_uniqueness");
+}
+
+#[test]
+fn extension_listing_groups_full_paths_by_scope() {
+    listings("extension_listing_groups_full_paths_by_scope");
+}
+
+/// Looks up the home directory the recorded labels abbreviate.
+const RECORDED_HOME: &HomeLookup<'static> = &|| Ok(HOME.to_owned());
+
+#[test]
+fn extension_labels_keep_package_identity() {
+    let test = "extension_labels_keep_package_identity";
+    in_home(test, |directory| {
+        for (input, expected) in cases(test) {
+            match (input, expected) {
+                (Input::Listing(listing), expected) => {
+                    check_listing(directory, listing, expected);
+                }
+                (Input::ExtensionLabel { extension }, Expected::Value { value }) => {
+                    let (path, source_info) = extension.into_loaded();
+                    let item = ResourceItem {
+                        path: &path,
+                        source_info: Some(&source_info),
+                    };
+                    let labels = get_compact_extension_labels(&[item], RECORDED_HOME).unwrap();
+                    assert_eq!(labels, [value]);
+                }
+                _ => panic!("a package label case"),
+            }
+        }
+    });
+}
+
+#[test]
+fn extension_display_paths_strip_only_terminal_forward_slash_indexes() {
+    let test = "extension_display_paths_strip_only_terminal_forward_slash_indexes";
+    for (input, expected) in cases(test) {
+        let (Input::ExtensionPath { path }, Expected::Value { value }) = (input, expected) else {
+            panic!("an extension path case");
+        };
+        assert_eq!(
+            format_extension_display_path(&path, RECORDED_HOME).unwrap(),
+            value
+        );
+    }
+}
+
+#[test]
+fn extension_labels_keep_package_source_forms() {
+    for (input, expected) in cases("extension_labels_keep_package_source_forms") {
+        let (Input::PackageSource { source_info }, Expected::Value { value }) = (input, expected)
+        else {
+            panic!("a package source case");
+        };
+        assert_eq!(get_compact_package_source_label(&source_info.source), value);
+    }
+}
+
+/// A path segment that counts every hash and comparison made with it.
+struct Counted<'a> {
+    /// The segment.
+    segment: &'a str,
+    /// The shared count of hashes and comparisons.
+    work: &'a Cell<usize>,
+}
+
+impl Hash for Counted<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.work.set(self.work.get() + 1);
+        self.segment.hash(state);
+    }
+}
+
+impl PartialEq for Counted<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.work.set(self.work.get() + 1);
+        self.segment == other.segment
+    }
+}
+
+impl Eq for Counted<'_> {}
+
+impl AsRef<str> for Counted<'_> {
+    fn as_ref(&self) -> &str {
+        self.segment
+    }
+}
+
+/// `count` local extension paths sharing every suffix but their second segment.
+fn equal_suffixes(count: usize) -> Vec<String> {
+    (0..count)
+        .map(|index| format!("/root/{index}/same/tools/index.ts"))
+        .collect()
+}
+
+/// The segments of `paths` as the labels see them, counting work into `work`.
+fn counted<'a>(paths: &'a [String], work: &'a Cell<usize>) -> Vec<Vec<Counted<'a>>> {
+    paths
+        .iter()
+        .map(|path| {
+            let segments = path.trim_end_matches("/index.ts").split('/');
+            segments
+                .filter(|segment| !segment.is_empty())
+                .map(|segment| Counted { segment, work })
+                .collect()
+        })
+        .collect()
+}
+
+/// The work a selection comparing each candidate suffix with every other path does.
+fn rescanned(paths: &[Vec<Counted<'_>>]) -> usize {
+    for (index, segments) in paths.iter().enumerate() {
+        for length in 1..=segments.len() {
+            let candidate = &segments[segments.len() - length..];
+            let shared = paths.iter().enumerate().any(|(other, others)| {
+                other != index
+                    && others.len() >= length
+                    && others[others.len() - length..] == *candidate
+            });
+            if !shared {
+                break;
+            }
+        }
+    }
+    paths[0][0].work.get()
+}
+
+#[test]
+fn extension_label_work_stays_linear_in_total_path_segments() {
+    let mut previous = None;
+    for count in [32, 64, 128] {
+        let paths = equal_suffixes(count);
+        let work = Cell::new(0);
+        let segments = counted(&paths, &work);
+        let labels = get_distinct_suffix_labels(&segments);
+        let total: usize = segments.iter().map(Vec::len).sum();
+        assert!(work.get() <= 4 * total, "{} > 4 * {total}", work.get());
+        let expected: Vec<_> = (0..count)
+            .map(|index| format!("{index}/same/tools"))
+            .collect();
+        assert_eq!(labels, expected);
+        let items: Vec<_> = paths
+            .iter()
+            .map(|path| ResourceItem {
+                path,
+                source_info: None,
+            })
+            .collect();
+        let listed = get_compact_extension_labels(&items, RECORDED_HOME).unwrap();
+        assert_eq!(listed, expected);
+        if let Some(previous) = previous {
+            assert!(work.get() <= 2 * previous + total, "work grows linearly");
+        }
+        previous = Some(work.get());
+        let control = Cell::new(0);
+        assert!(rescanned(&counted(&paths, &control)) > 4 * total);
+    }
 }
