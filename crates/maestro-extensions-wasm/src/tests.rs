@@ -52,6 +52,7 @@ mod host_family;
 mod join;
 mod observed;
 mod prompt_customizer_example;
+mod protected_paths_example;
 pub(crate) mod reader_host;
 mod registration_callbacks;
 mod registration_corpus;
