@@ -8,11 +8,10 @@ use super::{CommandHandler, Setup, World, cases, isolated, painted, started};
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
 use maestro_app::{
-    AgentSession, AgentSessionEvent, AssistantMessageEventStream, CommandContextOperations,
-    CompactionResult, DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext,
-    ExtensionCommandContextActions, ExtensionFactory, InputEvent, InputEventResult, Local,
-    RegisteredCommand, ResourceLoader, SessionChangeResult, Skill, SourceInfo, SourceOrigin,
-    SourceScope,
+    AgentSession, AgentSessionEvent, AssistantMessageEventStream, CompactionResult,
+    DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext, ExtensionFactory,
+    InputEvent, InputEventResult, Local, RegisteredCommand, ResourceLoader, Skill, SourceInfo,
+    SourceOrigin, SourceScope,
 };
 use maestro_tui::Component;
 use maestro_tui::tui::InputHandler;
@@ -1137,7 +1136,7 @@ async fn flush_world(
     *loader.borrow_mut() = Some(Rc::clone(session.resource_loader()));
     if input.replace {
         let bindings = ExtensionBindings {
-            command_context_actions: Some(session_actions(&world)),
+            command_context_actions: Some(world.host.command_context_actions()),
             ..ExtensionBindings::default()
         };
         session.bind_extensions(bindings).await.unwrap();
@@ -1216,27 +1215,6 @@ fn refuse_on(session: &Rc<AgentSession>, captured: &Captured) {
     drop(session.extension_runner().on_error(Rc::new(move |_| {
         Err(Box::new(DiagnosticErrorInfo::new(None, message.clone())))
     })));
-}
-
-/// The command context a command uses to start a new session on the mode's runtime; the
-/// other session operations report no change.
-fn session_actions(world: &World) -> ExtensionCommandContextActions {
-    let runtime = Rc::clone(&world.host);
-    ExtensionCommandContextActions::new(CommandContextOperations {
-        wait_for_idle: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
-        new_session: Rc::new(move |options| {
-            let runtime = Rc::clone(&runtime);
-            Box::pin(async move { Ok(runtime.new_session(options.unwrap_or_default()).await?) })
-        }),
-        fork: Rc::new(|_, _| Box::pin(std::future::ready(Ok(SessionChangeResult::default())))),
-        navigate_tree: Rc::new(|_, _| {
-            Box::pin(std::future::ready(Ok(SessionChangeResult::default())))
-        }),
-        switch_session: Rc::new(|_, _| {
-            Box::pin(std::future::ready(Ok(SessionChangeResult::default())))
-        }),
-        reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
-    })
 }
 
 /// The inline extension whose input handler records every prompt and refuses the case's text,
@@ -1599,6 +1577,26 @@ fn compaction_flush_delayed_failure_stops_admission_and_restores_once() {
 #[test]
 fn compaction_flush_real_commands_and_modes_reach_provider() {
     const TEST: &str = "compaction_flush_real_commands_and_modes_reach_provider";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_selected_commands_still_prompt_after_removal() {
+    const TEST: &str = "compaction_flush_selected_commands_still_prompt_after_removal";
+    isolated(TEST, |directory| {
+        for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
+            flush_case(directory, &input, &expected);
+        }
+    });
+}
+
+#[test]
+fn compaction_flush_selected_prefix_still_prompts_after_removal() {
+    const TEST: &str = "compaction_flush_selected_prefix_still_prompts_after_removal";
     isolated(TEST, |directory| {
         for (input, expected) in cases::<FlushInput, FlushExpected>(FIXTURES, TEST) {
             flush_case(directory, &input, &expected);

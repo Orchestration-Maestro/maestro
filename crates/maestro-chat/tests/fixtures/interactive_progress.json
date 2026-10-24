@@ -2783,5 +2783,64 @@
       "pending": 4,
       "editor": "draft"
     }
+  },
+  {
+    "test": "compaction_flush_selected_commands_still_prompt_after_removal",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd remove",
+          "mode": "steer"
+        },
+        {
+          "text": "/late selected",
+          "mode": "followUp"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd remove",
+        "a prompt /late selected"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_flush_selected_prefix_still_prompts_after_removal",
+    "input": {
+      "willRetry": false,
+      "local": [
+        {
+          "text": "/cmd remove",
+          "mode": "steer"
+        },
+        {
+          "text": "/late selected",
+          "mode": "followUp"
+        },
+        {
+          "text": "first",
+          "mode": "steer"
+        }
+      ],
+      "edit": "remove-command"
+    },
+    "expected": {
+      "log": [
+        "a command /cmd remove",
+        "a prompt /late selected",
+        "a prompt first"
+      ],
+      "local": [],
+      "errors": [],
+      "pending": 0,
+      "editor": "draft"
+    }
   }
 ]

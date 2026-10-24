@@ -344,9 +344,10 @@ does anything with it, shows the pending rows without it, and delivers it on the
 terminal host. A retried compaction queues each message the way its own kind asks:
 a registered command still runs as a prompt, and other text joins the steering or
 follow-up queue. Otherwise the first message that is not a registered command starts
-the next turn, the registered commands before it prompt first, and the rest of the
-batch follows behind that turn in order. A tail message is not sent once the first
-prompt has failed. A phase that fails clears the session's queues, restores the
+the next turn, the commands selected before it prompt first, and the rest of the
+batch follows behind that turn in order. Selected commands still prompt if an earlier
+command removes their registration; a batch containing only commands prompts them all.
+A tail message is not sent once the first prompt has failed. A phase that fails clears the session's queues, restores the
 captured batch ahead of any input admitted since, and shows one notice reading
 `Failed to send queued message<s>: <error>`; a second failure changes nothing. A
 compaction that ends with nothing captured delivers nothing.

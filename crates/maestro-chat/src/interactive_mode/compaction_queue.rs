@@ -7,7 +7,7 @@ use maestro_app::DiagnosticErrorInfo;
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::messages::UserMessageDelivery;
 use std::{
-    cell::{Cell, RefCell},
+    cell::Cell,
     error::Error,
     future::Future,
     rc::Rc,
@@ -21,8 +21,8 @@ struct Delivery {
     batch: Vec<CompactionQueuedMessage>,
     /// Whether the batch was already recovered, so its failures restore it once.
     recovered: Cell<bool>,
-    /// The first prompt's failure, absent until it fails.
-    first_failure: RefCell<Option<DiagnosticErrorInfo>>,
+    /// Whether the first prompt failed.
+    first_failed: Cell<bool>,
 }
 
 impl Delivery {
@@ -31,13 +31,13 @@ impl Delivery {
         Self {
             batch,
             recovered: Cell::new(false),
-            first_failure: RefCell::default(),
+            first_failed: Cell::new(false),
         }
     }
 
     /// Whether the first prompt already failed, which stops the tail behind it.
     fn first_failed(&self) -> bool {
-        self.first_failure.borrow().is_some()
+        self.first_failed.get()
     }
 }
 
@@ -117,11 +117,14 @@ impl InteractiveMode {
             .batch
             .iter()
             .position(|message| !self.is_extension_command(&message.text));
-        let Some(index) = first_prompt else {
-            return self.deliver_each(&delivery.batch).await;
-        };
+        let index = first_prompt.unwrap_or(delivery.batch.len());
         let (commands, rest) = delivery.batch.split_at(index);
-        self.deliver_each(commands).await?;
+        for message in commands {
+            self.runtime_host
+                .session()
+                .prompt(&message.text, PromptOptions::default())
+                .await?;
+        }
         let Some((first, tail)) = rest.split_first() else {
             return Ok(());
         };
@@ -164,7 +167,7 @@ impl InteractiveMode {
                 let Err(error) = prompt.await else {
                     return Ok(());
                 };
-                *delivery.first_failure.borrow_mut() = Some(error.clone());
+                delivery.first_failed.set(true);
                 mode.recover(&delivery, &error)
             }));
         None
