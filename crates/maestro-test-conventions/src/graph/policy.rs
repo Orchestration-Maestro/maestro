@@ -295,14 +295,26 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// Internal development edges permitted beyond the production table.
+/// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-detection", "maestro-text"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
     ("maestro-rpc", "maestro-tui-crossterm"),
 ];
+
+/// Permitted development edges that only a native, non-optional declaration may use.
+pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-detection", "maestro-text"),
+    ("maestro-chat", "maestro-models"),
+];
+
+/// Whether the policy permits this internal development edge between the two crates.
+pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
+    [DEVELOPMENT, NATIVE_DEVELOPMENT]
+        .iter()
+        .any(|edges| edges.contains(&(from, to)))
+}
 
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";

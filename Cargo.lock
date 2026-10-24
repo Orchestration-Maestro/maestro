@@ -3888,6 +3888,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-app",
  "maestro-dependencies",
+ "maestro-models",
  "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",

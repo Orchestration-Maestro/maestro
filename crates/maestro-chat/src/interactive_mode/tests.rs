@@ -10,6 +10,7 @@ mod extension_ui;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -29,12 +30,11 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
-    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
-    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
-    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
-    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
+    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
+    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
+    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
+    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -113,8 +113,8 @@ pub(super) fn isolated_case(
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
-/// successive prompt templates and context files, and changing the configured theme
-/// while its themes are read.
+/// successive prompt templates, context files and loaded extensions, and changing the
+/// configured theme while its themes are read.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
@@ -375,7 +375,7 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
-    /// Starts a fresh session for each replacement instead of failing it.
+    /// Starts each replacement with fresh services instead of reusing the current ones.
     pub(super) replacing: bool,
     /// Creates the session history under a file in this directory when supplied.
     pub(super) session_history: Option<std::path::PathBuf>,
@@ -479,9 +479,10 @@ impl Setup {
         let settings = Rc::clone(result.session.settings_manager());
         prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
+        let services = Rc::clone(&result.services);
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            create(&cwd, self.replacing),
+            create(services, self.replacing),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
@@ -529,16 +530,18 @@ fn registry(directories: Option<maestro_theme::ThemeDirectories>) -> Rc<ThemeSta
     })
 }
 
-/// The factory that creates each replacement session: a fresh one in `cwd` when
-/// `replacing`, otherwise the failure the other witnesses expect.
-fn create(cwd: &str, replacing: bool) -> maestro_app::CreateAgentSessionRuntimeFactory {
-    if !replacing {
-        return Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }));
-    }
-    let cwd = cwd.to_owned();
-    Rc::new(move |_| {
-        let cwd = cwd.clone();
-        Box::pin(async move { Ok(session::session(&cwd, None, |inner| inner)) })
+/// The replacement factory, reusing `services` unless fresh services are selected.
+fn create(
+    services: Rc<maestro_app::AgentSessionServices<Local>>,
+    fresh: bool,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    Rc::new(move |options| {
+        let replacement = if fresh {
+            session::session(&options.cwd, None, |inner| inner)
+        } else {
+            session::over(&options.cwd, &services)
+        };
+        Box::pin(async { Ok(replacement) })
     })
 }
 
@@ -723,7 +726,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                 assert!(!expanded, "tool output starts collapsed");
                 std::fs::write(directory.join("keybindings.json"), config.to_string()).unwrap();
                 let world = Setup {
-                    options: InteractiveModeOptions { verbose },
+                    options: InteractiveModeOptions {
+                        verbose,
+                        ..InteractiveModeOptions::default()
+                    },
                     configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
                     ..Setup::default()
                 }
