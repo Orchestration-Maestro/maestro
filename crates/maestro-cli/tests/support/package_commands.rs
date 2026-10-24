@@ -13,7 +13,8 @@ use maestro_app::{
     PackageOperations, Settings, SettingsManager, SettingsScope, SettingsStorage,
     SettingsStorageError, SettingsUpdate, SpawnSyncError,
 };
-use maestro_cli::packages::{PackageCommandContext, handle_package_command};
+use maestro_cli::input::config_selector::ConfigPresentation;
+use maestro_cli::packages::{PackageCommandContext, handle_config_command, handle_package_command};
 use maestro_test_directory::Scratch;
 use serde_json::Value;
 use std::cell::{Cell, RefCell};
@@ -360,6 +361,8 @@ pub struct State {
     pub factory: RefCell<Vec<*const RefCell<SettingsManager>>>,
     /// An edit the manager factory makes to the live settings.
     pub edit_in_factory: RefCell<Option<Edit>>,
+    /// Observations and effects of the command, in call order.
+    pub steps: RefCell<Vec<&'static str>>,
 }
 
 /// Everything one package command is given.
@@ -413,6 +416,10 @@ impl Harness {
                 .into_owned(),
         );
         harness.write_settings(global, project);
+        let steps = Rc::clone(&harness.state);
+        harness
+            .stderr
+            .set_hook(Rc::new(move || steps.steps.borrow_mut().push("warning")));
         harness
     }
 
@@ -499,6 +506,39 @@ impl Harness {
     /// # Panics
     /// Panics when the harness cannot start its runtime.
     pub fn try_run(&self, args: &[&str]) -> io::Result<bool> {
+        self.run_command(args, None)
+    }
+
+    /// Run `args` as a configuration command over `presentation`.
+    ///
+    /// # Panics
+    /// Panics when the command does not complete.
+    pub fn run_config(&self, args: &[&str], presentation: ConfigPresentation) -> bool {
+        self.try_run_config(args, presentation)
+            .expect("the command completes")
+    }
+
+    /// Run `args` as a configuration command, keeping the handler's own error.
+    ///
+    /// # Panics
+    /// Panics when the harness cannot start its runtime.
+    pub fn try_run_config(
+        &self,
+        args: &[&str],
+        presentation: ConfigPresentation,
+    ) -> io::Result<bool> {
+        self.run_command(args, Some(presentation))
+    }
+
+    /// Run one command of this harness on its own current-thread runtime.
+    ///
+    /// # Panics
+    /// Panics when the harness cannot start its runtime.
+    fn run_command(
+        &self,
+        args: &[&str],
+        presentation: Option<ConfigPresentation>,
+    ) -> io::Result<bool> {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -506,40 +546,33 @@ impl Harness {
         let local = Rc::new(tokio::task::LocalSet::new());
         *self.state.effects.local.borrow_mut() = Rc::downgrade(&local);
         let tokens: Vec<String> = args.iter().map(|arg| (*arg).to_owned()).collect();
-        runtime.block_on(local.run_until(async { self.handle(&tokens).await }))
+        runtime.block_on(local.run_until(async { self.handle(&tokens, presentation).await }))
     }
 
     /// Build the context and handle `argv`.
-    async fn handle(&self, argv: &[String]) -> io::Result<bool> {
-        let state = Rc::clone(&self.state);
+    async fn handle(
+        &self,
+        argv: &[String],
+        presentation: Option<ConfigPresentation>,
+    ) -> io::Result<bool> {
         let cwd = self.cwd.clone();
         let agent_dir = self.agent_dir.clone();
-        let observe_cwd = move || match state.cwd_failure.borrow().as_deref() {
-            Some(reason) => Err(io::Error::other(reason.to_owned())),
-            None => Ok(cwd.clone()),
-        };
-        let observe_agent = move || Ok(agent_dir.clone());
-        let load = |cwd: &str, agent_dir: &str| self.load(cwd, agent_dir);
-        let create = |options: PackageManagerOptions| {
+        let observe_cwd = {
             let state = Rc::clone(&self.state);
-            let effects = Rc::clone(&state.effects);
-            state
-                .factory
-                .borrow_mut()
-                .push(Rc::as_ptr(&options.settings_manager));
-            let edit = state.edit_in_factory.borrow().clone();
-            if let Some(edit) = edit {
-                edit(&mut options.settings_manager.borrow_mut());
+            move || {
+                state.steps.borrow_mut().push("cwd");
+                match state.cwd_failure.borrow().as_deref() {
+                    Some(reason) => Err(io::Error::other(reason.to_owned())),
+                    None => Ok(cwd.clone()),
+                }
             }
-            if state.second.get() {
-                let manager =
-                    maestro_app::DefaultPackageManager::new(options, Second(Rc::clone(&effects)));
-                return Ok(Rc::new(manager) as Rc<dyn PackageManager>);
-            }
-            let manager =
-                maestro_app::DefaultPackageManager::new(options, Operations(Rc::clone(&effects)));
-            Ok(Rc::new(manager) as Rc<dyn PackageManager>)
         };
+        let observe_agent = move || {
+            self.state.steps.borrow_mut().push("agent");
+            Ok(agent_dir.clone())
+        };
+        let load = |cwd: &str, agent_dir: &str| self.load(cwd, agent_dir);
+        let create = |options: PackageManagerOptions| Ok(self.build_manager(options));
         let select = |settings: &Settings, package: &str| self.select(settings, package);
         let instruction = |settings: &Settings, package: &str| self.instruction(settings, package);
         let context = PackageCommandContext {
@@ -558,7 +591,33 @@ impl Harness {
             entrypoint: Some("/opt/maestro/bin/maestro"),
             styles_enabled: false,
         };
-        handle_package_command(argv, &context).await
+        match presentation {
+            Some(presentation) => handle_config_command(argv, &context, presentation).await,
+            None => handle_package_command(argv, &context).await,
+        }
+    }
+
+    /// Build the package manager over the settings owner of one command.
+    fn build_manager(&self, options: PackageManagerOptions) -> Rc<dyn PackageManager> {
+        let state = Rc::clone(&self.state);
+        let effects = Rc::clone(&state.effects);
+        state
+            .factory
+            .borrow_mut()
+            .push(Rc::as_ptr(&options.settings_manager));
+        state.steps.borrow_mut().push("manager");
+        let edit = state.edit_in_factory.borrow().clone();
+        if let Some(edit) = edit {
+            edit(&mut options.settings_manager.borrow_mut());
+        }
+        if state.second.get() {
+            let manager =
+                maestro_app::DefaultPackageManager::new(options, Second(Rc::clone(&effects)));
+            return Rc::new(manager) as Rc<dyn PackageManager>;
+        }
+        let manager =
+            maestro_app::DefaultPackageManager::new(options, Operations(Rc::clone(&effects)));
+        Rc::new(manager) as Rc<dyn PackageManager>
     }
 
     /// Load the shared settings owner over `cwd` and `agent_dir`.
@@ -571,6 +630,7 @@ impl Harness {
             Some(storage) => SettingsManager::from_storage(storage),
             None => SettingsManager::create(cwd, agent_dir, CONFIG_DIR),
         }));
+        state.steps.borrow_mut().push("settings");
         state.loaded.borrow_mut().push(Rc::clone(&manager));
         state.supplied.borrow_mut().push(Rc::clone(&manager));
         Ok(manager)

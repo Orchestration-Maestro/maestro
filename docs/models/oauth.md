@@ -6,6 +6,12 @@ and refresh, and response-account `login_openai_codex`,
 `refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`,
 and GitHub Copilot device login and refresh.
 
+A terminal frontend reads this metadata through `maestro-app`, which re-exports
+`get_providers`, `DEFAULT_MODEL_PER_PROVIDER`, `BUILT_IN_PROVIDER_DISPLAY_NAMES`,
+`OAuthSelectPrompt` and `OAuthSelectOption` at its root. The application exports
+share the catalog's own tables and prompt record, so a frontend selects a model
+and presents an authorization prompt without keeping copies.
+
 `OAuthCredentials` carries token strings, an expiry number in Unix epoch
 milliseconds and flattened provider extension fields. It does not validate
 credentials or persist them. Prompt and authorization records omit absent

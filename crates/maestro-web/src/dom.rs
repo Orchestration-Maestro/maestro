@@ -108,21 +108,49 @@ pub(crate) enum Property {
 }
 /// A property getter callable.
 #[cfg(target_arch = "wasm32")]
-type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
+pub(crate) type Getter = wasm_bindgen::closure::Closure<dyn Fn() -> wasm_bindgen::JsValue>;
 /// A property setter callable.
 #[cfg(target_arch = "wasm32")]
-type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+pub(crate) type Setter = wasm_bindgen::closure::Closure<dyn Fn(wasm_bindgen::JsValue)>;
+/// A weak reference to one built-in element, which a callback must not keep alive.
+#[cfg(target_arch = "wasm32")]
+pub(crate) type Link = js_sys::WeakRef<web_sys::HtmlElement>;
 /// Property accessors installed on one element, kept as long as its state.
 #[cfg(target_arch = "wasm32")]
 pub(crate) struct Reflected {
     /// Getter and setter callables, released with the element's state.
     _accessors: Vec<(Getter, Setter)>,
 }
+/// The element behind `link` while it exists.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn live(link: &Link) -> Option<web_sys::HtmlElement> {
+    link.deref()
+}
+/// The element behind `link` while it exists and is still connected.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn connected(link: &Link) -> Option<web_sys::HtmlElement> {
+    live(link).filter(|element| element.is_connected())
+}
+/// Install `get` and `set` as the configurable property `name` of `element`, reporting success.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn install(
+    element: &web_sys::HtmlElement,
+    name: &str,
+    get: &Getter,
+    set: &Setter,
+) -> bool {
+    use wasm_bindgen::JsValue;
+    let descriptor = js_sys::Object::new();
+    for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
+        let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
+    }
+    let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
+    js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok()
+}
 /// Install accessors for `properties` on `element`, so setting one changes its observed attribute.
 #[cfg(target_arch = "wasm32")]
 fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected {
     use wasm_bindgen::JsValue;
-    let live = |weak: &js_sys::WeakRef<web_sys::HtmlElement>| weak.deref();
     let mut kept = Vec::new();
     for &property in properties {
         let (name, attribute, flag) = match property {
@@ -149,24 +177,11 @@ fn reflect(element: &web_sys::HtmlElement, properties: &[Property]) -> Reflected
                 None => element.remove_attribute(attribute),
             };
         });
-        let descriptor = js_sys::Object::new();
-        for (key, value) in [("get", get.as_ref()), ("set", set.as_ref())] {
-            let _ = js_sys::Reflect::set(&descriptor, &key.into(), value);
-        }
-        let _ = js_sys::Reflect::set(&descriptor, &"configurable".into(), &JsValue::TRUE);
-        if js_sys::Reflect::define_property(element, &name.into(), &descriptor).is_ok() {
+        if install(element, name, &get, &set) {
             kept.push((get, set));
         }
     }
     Reflected { _accessors: kept }
-}
-/// The element behind `root` while it exists and is connected.
-#[cfg(target_arch = "wasm32")]
-pub(crate) fn connected(root: &js_sys::WeakRef) -> Option<web_sys::HtmlElement> {
-    use wasm_bindgen::JsCast as _;
-    root.deref()
-        .and_then(|root| root.dyn_into::<web_sys::HtmlElement>().ok())
-        .filter(|root| root.is_connected())
 }
 /// Install the built-in elements' stylesheet once per document, with the selected pack's properties.
 /// # Errors

@@ -161,21 +161,21 @@ pub struct Receipt {
     pub operands: Value,
 }
 
+/// The UI request `line` records, if it records one.
+pub fn receipt(line: &str) -> Option<Receipt> {
+    let rest = line.strip_prefix("ui ")?;
+    let (key, rest) = rest.split_once(' ')?;
+    let (method, operands) = rest.split_once(' ')?;
+    Some(Receipt {
+        key: key.parse().ok()?,
+        method: method.to_owned(),
+        operands: serde_json::from_str(operands).ok()?,
+    })
+}
+
 /// The UI requests recorded in `lines`, in time order.
 pub fn receipts(lines: &[String]) -> Vec<Receipt> {
-    lines
-        .iter()
-        .filter_map(|line| line.strip_prefix("ui "))
-        .filter_map(|rest| {
-            let (key, rest) = rest.split_once(' ')?;
-            let (method, operands) = rest.split_once(' ')?;
-            Some(Receipt {
-                key: key.parse().ok()?,
-                method: method.to_owned(),
-                operands: serde_json::from_str(operands).ok()?,
-            })
-        })
-        .collect()
+    lines.iter().filter_map(|line| receipt(line)).collect()
 }
 
 impl State {

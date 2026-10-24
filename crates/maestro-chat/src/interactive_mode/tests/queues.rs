@@ -2,7 +2,7 @@
 //! and the queue key actions over the mode's real session and editor.
 use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions};
 use super::typed::recalled;
-use super::{Setup, World, isolated, painted, recorded, started};
+use super::{Setup, World, isolated, painted, started};
 use crate::InteractiveMode;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{
@@ -32,7 +32,7 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_queues.
 
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    recorded(FIXTURES, test)
+    super::cases(FIXTURES, test)
 }
 
 /// A recorded delivery.

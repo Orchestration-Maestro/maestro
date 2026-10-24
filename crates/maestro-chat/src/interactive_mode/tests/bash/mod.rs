@@ -144,7 +144,7 @@ fn poll_once<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
 fn delivered(world: &World, text: &str) -> Vec<String> {
     let mut waiter: Pin<Box<dyn Future<Output = String>>> = Box::pin(world.mode.get_user_input());
     assert!(poll_once(&mut waiter).is_none());
-    submit(world, text);
+    submit(&world.mode, text);
     poll_once(&mut waiter).into_iter().collect()
 }
 
@@ -263,11 +263,11 @@ fn busy_shell_restores_selected_input_without_history() {
             );
             let world = shelling(directory, &script);
             let ((), errors) = on_tasks(driving(&world, async {
-                submit(&world, "!first");
+                submit(&world.mode, "!first");
                 until_exists(&started).await;
                 assert!(world.host.session().is_bash_running());
                 for text in ["!second", "!!second"] {
-                    submit(&world, text);
+                    submit(&world.mode, text);
                     assert_eq!(world.mode.editor.get_text(), text, "{text}");
                     assert!(!recalled(&world.mode.editor).contains(&text.to_owned()));
                 }
@@ -424,7 +424,7 @@ fn settled(
     let (world, seen) = intercepting_world(directory, script, answer);
     let errors = on_tasks(async {
         let ((), errors) = driving(&world, async {
-            submit(&world, text);
+            submit(&world.mode, text);
             until_command_settles(&world).await;
         })
         .await;
@@ -674,7 +674,7 @@ fn replaced_session_during_interception_records_there(directory: &Path) {
     let retired = world.host.session();
     let errors = on_tasks(async {
         let ((), errors) = driving(&world, async {
-            submit(&world, "!echo kept");
+            submit(&world.mode, "!echo kept");
             reached.notified().await;
             let replaced = world
                 .host
@@ -887,7 +887,7 @@ fn shell_completion_from_replaced_session_is_retired() {
             let world = replacing(directory, &script);
             on_tasks(async {
                 let ((), errors) = driving(&world, async {
-                    submit(&world, "!old");
+                    submit(&world.mode, "!old");
                     until_exists(&directory.join("old-started")).await;
                     let old_session = world.host.session();
                     let replacement = start_replacement(&world);
@@ -955,7 +955,7 @@ fn intercepted_shell_recording_failure_releases_active_row() {
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o400)).unwrap();
             let errors = on_tasks(async {
                 let ((), errors) = driving(&world, async {
-                    submit(&world, "!echo kept");
+                    submit(&world.mode, "!echo kept");
                     until_command_settles(&world).await;
                 })
                 .await;
@@ -986,7 +986,7 @@ fn native_shell_output_paints_chunks_once() {
         let world = shelling(directory, &script);
         let errors = on_tasks(async {
             let ((), errors) = driving(&world, async {
-                submit(&world, "!true");
+                submit(&world.mode, "!true");
                 until_complete(&world, 1).await;
             })
             .await;
@@ -1072,7 +1072,7 @@ fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
             let world = shelling(directory, &script);
             let errors = on_tasks(async {
                 let ((), errors) = driving(&world, async {
-                    submit(&world, "!drain");
+                    submit(&world.mode, "!drain");
                     until_exists(&started).await;
                     let row = active(&world).expect("the row produces output");
                     until_painted(&row, "first").await;
@@ -1137,7 +1137,7 @@ fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
             let world = shelling(directory, &script);
             let errors = on_tasks(async {
                 let ((), errors) = driving(&world, async {
-                    submit(&world, "!cancel");
+                    submit(&world.mode, "!cancel");
                     until_exists(&started).await;
                     world.host.session().abort_bash();
                     until_complete(&world, 1).await;

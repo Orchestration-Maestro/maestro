@@ -23,6 +23,9 @@ pub use maestro_session::session_manager::SessionListProgress;
 pub use maestro_session::export_html;
 
 #[cfg(not(target_arch = "wasm32"))]
+pub use maestro_export::{ExportOperations, NativeExportOperations};
+
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::agent_session::{
     AgentSession, AgentSessionConfig, AgentSessionEvent, AgentSessionEventListener,
     ExtensionBindings, ModelCycleResult, ParsedSkillBlock, PromptOptions, SessionStats,
