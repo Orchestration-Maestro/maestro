@@ -618,6 +618,22 @@ the supplied `systemPrompt` only while the boolean is set and otherwise returns
 no override. A refused notification leaves the flip in place. Loading it into an
 application is opt-in, and `examples/extensions/README.md` gives the build and
 controlled-run commands.
+
+### A system prompt status header
+
+[`examples/extensions/system_prompt_header.rs`](../../examples/extensions/system_prompt_header.rs)
+registers `agent_start` to read the prompt the host supplies at that moment and
+set the `system-prompt` status to `System: N chars`, where `N` counts UTF-16 code
+units of that prompt. Whitespace, a byte order mark and combining sequences keep
+the width the string stores, and nothing is trimmed, rebuilt or cached.
+`session_shutdown` removes the status under the same key, including when no start
+came first, so the handler keeps no state between invocations.
+
+A host rejection from the getter or the status request reaches the host
+unchanged, and no fallback status is written. Loading the component into an
+application is opt-in, and `examples/extensions/README.md` gives the build and
+controlled-run commands.
+
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses

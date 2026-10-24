@@ -82,6 +82,7 @@ mod shell_callbacks;
 pub(crate) mod shell_host;
 mod shutdown_example;
 mod stream_events;
+mod system_prompt_header_example;
 mod tool_callbacks;
 mod tool_events;
 mod trigger_compact_example;

@@ -108,7 +108,7 @@ impl InteractiveMode {
                 return self.show_status("Only one model available");
             }
             Ok(None) => return self.show_status("Only one model in scope"),
-            Err(error) => return self.show_error(&error.message),
+            Err(error) => return Ok(self.show_error(&error.message)?),
         };
         self.footer.invalidate();
         self.update_editor_border_color()?;
@@ -133,9 +133,9 @@ impl InteractiveMode {
     /// Returns the warning's theme failure or the edit's file, terminal or process failure.
     pub(super) fn open_external_editor(&self) -> Result<(), Box<dyn Error>> {
         let Some(command) = external_command(self.tool_environment.runtime.as_ref()) else {
-            return self.show_warning(
+            return Ok(self.show_warning(
                 "No editor configured. Set $VISUAL or $EDITOR environment variable.",
-            );
+            )?);
         };
         let path = std::env::temp_dir().join(format!(
             "maestro-editor-{}.maestro.md",

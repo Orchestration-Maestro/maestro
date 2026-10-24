@@ -142,7 +142,7 @@ impl InteractiveMode {
         if self.anthropic_subscription_warning_shown.replace(true) {
             return Ok(());
         }
-        self.show_warning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING)
+        Ok(self.show_warning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING)?)
     }
 
     /// Selects `model` on the current session. On success it refreshes the footer and
@@ -167,7 +167,7 @@ impl InteractiveMode {
             done();
         }
         if let Some(error) = refused {
-            return self.show_error(&error.message);
+            return Ok(self.show_error(&error.message)?);
         }
         let id = model
             .read()

@@ -929,8 +929,8 @@ fn transcript_initial_replay_updates_footer_history_and_compaction_notice() {
     });
 }
 
-/// Owned inputs for a stand-alone row of `id`, used to seed a stale registration.
-fn tool_params(world: &World, id: &str) -> crate::ToolExecutionParams {
+/// Owned inputs for a stand-alone tool row of `id`.
+pub(super) fn tool_params(world: &World, id: &str) -> crate::ToolExecutionParams {
     crate::ToolExecutionParams {
         tool_name: "unknown_tool".into(),
         tool_call_id: id.into(),
