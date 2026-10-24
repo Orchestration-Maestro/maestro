@@ -1,0 +1,1735 @@
+[
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "manual",
+      "progress": false,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (escape to cancel)\u001b[39m                                                         "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "manual",
+      "progress": true,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (escape to cancel)\u001b[39m                                                         "
+        ],
+        "chat": [],
+        "progress": [
+          true
+        ],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        ],
+        "progress": [
+          true,
+          false
+        ],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "threshold",
+      "progress": false,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Auto-compacting... (escape to cancel)\u001b[39m                                                            "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "threshold",
+      "progress": true,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Auto-compacting... (escape to cancel)\u001b[39m                                                            "
+        ],
+        "chat": [],
+        "progress": [
+          true
+        ],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [
+          true,
+          false
+        ],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "overflow",
+      "progress": false,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Context overflow detected, Auto-compacting... (escape to cancel)\u001b[39m                                 "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "start-end",
+      "reason": "overflow",
+      "progress": true,
+      "previous": true
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Context overflow detected, Auto-compacting... (escape to cancel)\u001b[39m                                 "
+        ],
+        "chat": [],
+        "progress": [
+          true
+        ],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+        ],
+        "progress": [
+          true,
+          false
+        ],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "aborted",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "result",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft",
+      "chatContains": "Compacted from 123 tokens"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: provider failure\u001b[39m                                                                            "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "empty",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "manual",
+      "outcome": "empty-error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "aborted",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "result",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft",
+      "chatContains": "Compacted from 123 tokens"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@provider failure\u001b[39m                                                                                   "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "empty",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "threshold",
+      "outcome": "empty-error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "aborted",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @dim@Auto-compaction cancelled\u001b[39m                                                                          "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "result",
+      "willRetry": true
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft",
+      "chatContains": "Compacted from 123 tokens"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@provider failure\u001b[39m                                                                                   "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "empty",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-outcome",
+      "reason": "overflow",
+      "outcome": "empty-error",
+      "willRetry": false
+    },
+    "expected": {
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 0,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 0,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in -1s... (escape to cancel)\u001b[39m                                                      "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 999,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 999,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1000,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1000,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1001,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 1001,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 2500,
+      "success": false
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 3s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Retry failed after 2 attempts: last failure\u001b[39m                                                 "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-countdown",
+      "delayMs": 2500,
+      "success": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 3s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 2s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 1s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80,
+            1000
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        },
+        {
+          "status": [
+            "",
+            " @warning@⠋\u001b[39m @muted@Retrying (2/3) in 0s... (escape to cancel)\u001b[39m                                                       "
+          ],
+          "chat": [],
+          "progress": [],
+          "timers": [
+            80
+          ],
+          "editor": "draft"
+        }
+      ],
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "input": {
+      "op": "retry-end",
+      "success": false
+    },
+    "expected": {
+      "status": [],
+      "chat": [
+        "",
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "input": {
+      "op": "retry-end",
+      "success": false,
+      "finalError": ""
+    },
+    "expected": {
+      "status": [],
+      "chat": [
+        "",
+        " @error@Error: Retry failed after 3 attempts: Unknown error\u001b[39m                                                "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "input": {
+      "op": "retry-end",
+      "success": false,
+      "finalError": "last failure"
+    },
+    "expected": {
+      "status": [],
+      "chat": [
+        "",
+        " @error@Error: Retry failed after 3 attempts: last failure\u001b[39m                                                 "
+      ],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "input": {
+      "op": "retry-end",
+      "success": true
+    },
+    "expected": {
+      "status": [],
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "input": {
+      "op": "retry-end",
+      "success": true,
+      "finalError": ""
+    },
+    "expected": {
+      "status": [],
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "retry_completion_disposes_progress_and_selects_failure_text",
+    "input": {
+      "op": "retry-end",
+      "success": true,
+      "finalError": "last failure"
+    },
+    "expected": {
+      "status": [],
+      "chat": [],
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "progress_replacement_stops_old_countdown_and_restores_escape",
+    "input": {
+      "op": "retry-replace-and-live-keys"
+    },
+    "expected": {
+      "changed": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (1/4) in 2s... (ctrl+q/alt+x to cancel)\u001b[39m                                                 "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "after": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (2/4) in 1s... (ctrl+q/alt+x to cancel)\u001b[39m                                                 "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "configured-cancel-hint",
+      "keys": []
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... ( to cancel)\u001b[39m                                                               "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "configured-cancel-hint",
+      "keys": [
+        "ctrl+q",
+        "alt+x"
+      ]
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (ctrl+q/alt+x to cancel)\u001b[39m                                                   "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
+    }
+  },
+  {
+    "test": "retry_countdown_uses_ceiling_and_live_cancel_keys",
+    "input": {
+      "op": "retry-fractional-limit",
+      "maxAttempts": 2.5,
+      "delayMs": 333.3
+    },
+    "expected": {
+      "start": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (1/2.5) in 1s... (escape to cancel)\u001b[39m                                                     "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      }
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "live-progress-setting",
+      "before": false,
+      "after": true
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+      ],
+      "progress": [
+        false
+      ],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_labels_keep_reason_live_keys_and_editor",
+    "input": {
+      "op": "live-progress-setting",
+      "before": true,
+      "after": false
+    },
+    "expected": {
+      "chat": [
+        "",
+        " @error@Error: Compaction cancelled\u001b[39m                                                                        "
+      ],
+      "progress": [
+        true
+      ],
+      "editor": "draft"
+    }
+  },
+  {
+    "test": "compaction_completion_replays_then_appends_summary",
+    "input": {
+      "op": "compaction-empty-summary-zero-tokens"
+    },
+    "expected": {
+      "chat": [],
+      "chatContains": "Compacted from 0 tokens",
+      "progress": [],
+      "timers": [],
+      "editor": "draft"
+    }
+  }
+]

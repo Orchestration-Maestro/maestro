@@ -9,6 +9,7 @@ mod extension_ui;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod progress;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;

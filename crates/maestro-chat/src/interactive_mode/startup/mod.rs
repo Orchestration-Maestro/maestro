@@ -37,7 +37,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the failure of the published theme's colour.
-    fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
+    pub(super) fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), ThemeError> {
         let text = self.themes.theme().get()?.fg(color, text)?;
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.chat_container

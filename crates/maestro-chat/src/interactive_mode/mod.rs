@@ -21,6 +21,7 @@ use std::{
 mod actions;
 mod events;
 mod key_display;
+mod progress;
 mod queues;
 mod replay;
 mod resources;
@@ -98,6 +99,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+    /// The progress presentation's loaders, countdown and interrupt callbacks.
+    progress: progress::Retained,
     /// The session subscription that delivers agent and session events.
     unsubscribe: RefCell<Option<Box<dyn Fn()>>>,
 }
@@ -166,6 +169,7 @@ impl InteractiveMode {
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
+            progress: progress::Retained::default(),
             unsubscribe: RefCell::default(),
         }))
     }

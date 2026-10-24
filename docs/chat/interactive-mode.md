@@ -3,12 +3,12 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export command, session replay, the session events, the
-expansion and thinking shortcuts, thinking and model cycling, the editor border,
-external editing and image paste. The prompt loop, streaming messages, startup
-messages, installed custom headers, the terminal title and the other integrations
-are still to come; the mode prompts the session only for input queued during a
-response or a compaction.
+input, queued input, the export command, session replay, the session events,
+compaction and retry progress, the expansion and thinking shortcuts, thinking and
+model cycling, the editor border, external editing and image paste. The prompt
+loop, streaming messages, startup messages, installed custom headers, the terminal
+title and the other integrations are still to come; the mode prompts the session
+only for input queued during a response or a compaction.
 
 ## Construction
 
@@ -261,6 +261,55 @@ the session stores: the newest name record wins, an empty record clears it, and
 the name loses its outer whitespace under the shared whitespace policy. A name
 record that holds anything but text or null is an invalid-data failure, which
 takes the event's error route and leaves the current title in place.
+
+## Compaction and retry progress
+
+`compaction_start` shows a loader in the status container and makes the interrupt
+key abort the compaction. The label names the reason it records: `Compacting
+context... (escape to cancel)` when the caller asked for it, `Auto-compacting...
+(escape to cancel)` at the reserve threshold, and `Context overflow detected,
+Auto-compacting... (escape to cancel)` after an overflow. The parenthesised keys
+are the ones bound to `app.interrupt` when the compaction starts, joined with `/`;
+an action bound to no key reads `( to cancel)`. The editor keeps its text, its
+focus and its submission, so input typed during a compaction still queues. The
+terminal's indeterminate progress follows the `showTerminalProgress` setting, read
+when the event arrives rather than when the mode was built, so changing it between
+the start and the end changes what the next event does.
+
+`compaction_end` restores the interrupt callback the compaction replaced, or the
+editor's ordinary action when it had none, turns the terminal's progress off, stops
+the loader and empties its row. It then shows what the compaction ended with:
+
+- an aborted manual compaction shows `Compaction cancelled` as an error notice; an
+  aborted automatic one shows `Auto-compaction cancelled` as a status line;
+- a result clears the transcript, replays the session from the stored context, and
+  appends one synthetic compaction summary carrying the summary text, the token
+  count and the current time, then invalidates the footer;
+- a failed manual compaction shows the supplied message as an error notice; a
+  failed automatic one appends it unpainted by that prefix, in the error colour;
+- an end with neither a result nor a non-empty failure message adds no row.
+
+`auto_retry_start` shows `Retrying (<attempt>/<limit>) in <seconds>s... (escape to
+cancel)` in the status container, where the same key aborts the retry. The
+seconds are the wait rounded up, which the existing countdown timer writes on its
+first report; it then reports each whole second left, and the label is rebuilt on
+every tick so it reads the keys bound then. The attempt limit keeps its numeric
+spelling, so a fractional limit reads `2.5`. `auto_retry_end` stops the countdown
+and the loader, empties their row, restores the interrupt callback, and shows
+`Retry failed after <attempt> attempts: <error>` only when the retries are
+exhausted, with `Unknown error` for an absent or empty failure.
+
+A started response clears the retry row and its countdown before the working
+presentation resumes, and turns the terminal's progress on. Because the
+retry's own row is removed there, a retry end that arrives afterwards removes
+nothing. When the response ends, the terminal's progress is turned off again, and
+both ends read the setting as their event arrives.
+
+Input queued during a compaction is not delivered yet. The mode keeps it in
+order until an owner captures it at the end of a compaction, refreshes the pending
+rows, and delivers it through the session's prompt, steering and follow-up
+operations; that delivery, its failure recovery and the retry choice the compaction
+end carries are the remaining part of this work.
 
 ## Status lines
 

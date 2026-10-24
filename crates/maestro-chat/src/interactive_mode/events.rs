@@ -1,11 +1,12 @@
 //! The single session-event subscriber and the metadata it refreshes.
 
 use super::InteractiveMode;
-use maestro_app::AgentSessionEvent;
+use super::progress::{CompactionOutcome, RetryEnd, RetryStart};
 use maestro_app::ReadonlySessionManager;
 use maestro_app::configuration::config::APP_TITLE;
+use maestro_app::{AgentEvent, AgentSessionEvent};
 use maestro_tui::Component;
-use std::{error::Error, rc::Rc};
+use std::{error::Error, rc::Rc, sync::PoisonError};
 
 impl InteractiveMode {
     /// Registers the one listener that delivers session events synchronously and keeps no
@@ -46,7 +47,54 @@ impl InteractiveMode {
                 self.ui.request_render(false);
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
-            _ => {}
+            AgentSessionEvent::CompactionStart { reason } => self.start_compaction(*reason)?,
+            // The captured input and the end's retry choice arrive with their own owner.
+            AgentSessionEvent::CompactionEnd {
+                reason,
+                result,
+                aborted,
+                error_message,
+                ..
+            } => self.end_compaction(&CompactionOutcome {
+                reason: *reason,
+                result: result.as_ref(),
+                aborted: *aborted,
+                error_message: error_message.as_deref(),
+            })?,
+            AgentSessionEvent::AutoRetryStart {
+                attempt,
+                max_attempts,
+                delay_ms,
+                ..
+            } => self.start_retry(&RetryStart {
+                attempt: *attempt,
+                max_attempts: *max_attempts,
+                delay_ms: *delay_ms,
+            }),
+            AgentSessionEvent::AutoRetryEnd {
+                success,
+                attempt,
+                final_error,
+            } => self.end_retry(&RetryEnd {
+                success: *success,
+                attempt: *attempt,
+                final_error: final_error.as_deref(),
+            })?,
+            AgentSessionEvent::Agent(event) => {
+                let (started, ended) = {
+                    let event = event.read().unwrap_or_else(PoisonError::into_inner);
+                    (
+                        matches!(&*event, AgentEvent::AgentStart),
+                        matches!(&*event, AgentEvent::AgentEnd { .. }),
+                    )
+                };
+                if started {
+                    self.start_agent_progress()?;
+                } else if ended {
+                    self.end_agent_progress()?;
+                }
+            }
+            AgentSessionEvent::QueueUpdate { .. } => {}
         }
         Ok(())
     }
