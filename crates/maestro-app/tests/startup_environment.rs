@@ -1,6 +1,7 @@
 //! Startup offline and version-skip selections reaching the hosted-service gates.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::resource_fixtures::{Root, module_loader, with_isolated_home};
 use crate::service_observations as services;
 use maestro_app::configuration::telemetry::{
     is_install_telemetry_enabled, report_install_telemetry,
@@ -9,8 +10,19 @@ use maestro_app::configuration::version_check::{
     VersionCheckOptions, check_for_new_maestro_version, get_latest_maestro_release,
     get_latest_maestro_version,
 };
+use maestro_app::resources::resource_loader::{
+    DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
+};
+use maestro_app::{
+    AgentSessionServices, CreateAgentSessionServicesOptions, create_agent_session_services,
+};
+use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_models::Local;
 use maestro_settings::{Settings, SettingsManager};
+use serde_json::json;
 use services::{ORIGIN, Transport};
+use std::rc::Rc;
+use tokio::task::LocalSet;
 
 /// The truth-value selections a startup decides, in both unequal directions.
 const SELECTIONS: [(Option<bool>, Option<bool>); 9] = [
@@ -217,4 +229,148 @@ fn report_with_skip_flag() -> usize {
         report_install_telemetry("1.2.3", &settings, ORIGIN, Some(t.fetch.clone()), None).await;
         t.count()
     })
+}
+
+/// A tree whose project settings configure one missing pinned package, with a controlled
+/// package command that records each acquisition.
+fn package_tree(base: &str, name: &str) -> (Root, std::path::PathBuf) {
+    let root = Root::new(base, name);
+    let marker = std::path::PathBuf::from(&root.path).join("acquired");
+    std::fs::create_dir_all(format!("{}/.maestro", root.project())).unwrap();
+    std::fs::write(
+        format!("{}/.maestro/settings.json", root.project()),
+        json!({
+            "packages": ["npm:missing@1.0.0"],
+            "npmCommand": ["/bin/sh", "-c", format!("printf acquired >> {}", marker.display())],
+        })
+        .to_string(),
+    )
+    .unwrap();
+    (root, marker)
+}
+
+/// Reloads the real default loader over `root` and reports whether it acquired the package.
+fn loader_acquires(root: &Root, offline: Option<bool>) -> bool {
+    let local = Rc::new(LocalSet::new());
+    let mut resources: ResourceLoaderOptions<Local> =
+        ResourceLoaderOptions::new(Rc::clone(&local), module_loader());
+    resources.offline = offline;
+    let loader = DefaultResourceLoader::<Local>::new(DefaultResourceLoaderOptions {
+        cwd: root.project(),
+        agent_dir: root.agent(),
+        settings_manager: None,
+        resources,
+    });
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(local.run_until(async { loader.reload().await.unwrap() }));
+    std::path::Path::new(&format!("{}/acquired", root.path)).exists()
+}
+
+#[test]
+fn loader_startup_selection_reaches_configured_packages() {
+    with_isolated_home(
+        "loader_startup_selection_reaches_configured_packages",
+        |base| {
+            let (root, marker) = package_tree(base, "loader");
+            assert!(!loader_acquires(&root, Some(true)));
+            assert!(!marker.exists());
+            assert!(loader_acquires(&root, None));
+            assert!(marker.exists());
+        },
+    );
+}
+
+/// Creates the session services over `root` with the two independent offline selections.
+fn services_for(
+    root: &Root,
+    local: &Rc<LocalSet>,
+    packages: Option<bool>,
+    search: Option<bool>,
+) -> AgentSessionServices<Local> {
+    let mut resources: ResourceLoaderOptions<Local> =
+        ResourceLoaderOptions::new(Rc::clone(local), module_loader());
+    resources.offline = packages;
+    let options = CreateAgentSessionServicesOptions {
+        cwd: root.project(),
+        agent_dir: Some(root.agent()),
+        auth_storage: Some(std::sync::Arc::new(AuthStorage::in_memory(
+            AuthStorageData::default(),
+        ))),
+        settings_manager: None,
+        model_registry: None,
+        extension_flag_values: None,
+        resource_loader_options: resources,
+        offline: search,
+    };
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime
+        .block_on(local.run_until(create_agent_session_services(options)))
+        .unwrap()
+}
+
+#[test]
+fn session_startup_selection_reaches_find_and_grep() {
+    with_isolated_home("session_startup_selection_reaches_find_and_grep", |base| {
+        let (root, marker) = package_tree(base, "session");
+        let local = Rc::new(LocalSet::new());
+        let services = services_for(&root, &local, Some(true), Some(false));
+        assert!(
+            !marker.exists(),
+            "the search selection must not change packages"
+        );
+        assert_eq!(services.offline, Some(false));
+        assert_no_search_program(&services);
+    });
+    with_isolated_home("session_startup_selection_reaches_find_and_grep", |base| {
+        let (root, marker) = package_tree(base, "session-online");
+        let local = Rc::new(LocalSet::new());
+        let services = services_for(&root, &local, None, Some(true));
+        assert!(marker.exists(), "the package selection stays independent");
+        assert_eq!(services.offline, Some(true));
+        assert_no_search_program(&services);
+    });
+}
+
+/// A missing search program stays absent with no staging entry, because no download started.
+fn assert_no_search_program(services: &AgentSessionServices<Local>) {
+    let bin = maestro_app::configuration::config::paths::get_bin_dir(&services.agent_dir);
+    let entries: Vec<String> = std::fs::read_dir(&bin)
+        .map(|entries| {
+            entries
+                .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+                .collect()
+        })
+        .unwrap_or_default();
+    assert!(
+        entries
+            .iter()
+            .all(|name| !(name == "fd" || name == "rg" || name.starts_with("extract_tmp_"))),
+        "{entries:?}"
+    );
+}
+
+#[test]
+fn startup_selection_survives_service_replacement() {
+    with_isolated_home("startup_selection_survives_service_replacement", |base| {
+        let (root, marker) = package_tree(base, "replace");
+        let local = Rc::new(LocalSet::new());
+        let selected = services_for(&root, &local, Some(true), Some(true));
+        assert_eq!(selected.offline, Some(true));
+        assert!(!marker.exists());
+        let replacement = services_for(&root, &local, Some(true), Some(true));
+        assert_eq!(replacement.offline, Some(true));
+        assert!(!marker.exists());
+        let online = services_for(&root, &local, None, Some(false));
+        assert_eq!(online.offline, Some(false));
+        assert!(
+            marker.exists(),
+            "a separate service keeps its own selection"
+        );
+    });
 }
