@@ -4,7 +4,7 @@ use super::{
     format_display_path, format_scope_groups, get_short_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
-use crate::interactive_mode::tests::{Setup, World, isolated_case, light, painted, roles};
+use crate::interactive_mode::tests::{Setup, World, dark, isolated_case, light, painted, roles};
 use crate::{InteractiveMode, InteractiveModeOptions};
 use maestro_app::{
     ContextFile, PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope, home_directory,
@@ -547,6 +547,28 @@ fn resource_paths_abbreviate_supplied_home_prefix() {
 }
 
 #[test]
+fn resource_listing_keeps_root_home_paths_absolute() {
+    let test = "resource_listing_keeps_root_home_paths_absolute";
+    in_home(test, |directory| {
+        for (home, value) in [
+            ("/", "/tmp/supplied-home/file"),
+            ("", "/tmp/supplied-home/file"),
+            ("/tmp/supplied-home", "~/file"),
+        ] {
+            let setup = Setup {
+                context: context_files(vec![Located {
+                    path: "/tmp/supplied-home/file".to_owned(),
+                }]),
+                ..Setup::default()
+            };
+            let rows = listed(directory, setup, &|| Ok(home.to_owned())).unwrap();
+            let row = dark().fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
+            assert_eq!(rows[2].trim_end(), row, "{home:?} home");
+        }
+    });
+}
+
+#[test]
 fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix() {
     let test = "resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_prefix";
     for (input, expected) in cases(test) {
@@ -555,24 +577,47 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
             panic!("a native home case");
         };
         let environment: &[(&str, &str)] = match mode.as_str() {
-            "absent" => &[],
             "supplied" => &[("HOME", "/tmp/supplied-home")],
             "empty" => &[("HOME", "")],
             other => panic!("an unknown home mode {other}"),
         };
         isolated_case(test, &mode, environment, |directory| {
-            assert_eq!(format_display_path(&path, &home_directory).unwrap(), value);
-            let world = Setup {
-                context: context_files(vec![Located { path }]),
-                ..Setup::default()
-            }
-            .build(directory);
-            world.mode.tool_output_expanded.set(true);
-            world.mode.init().unwrap();
-            let theme = world.themes.theme().get().unwrap();
-            let row = theme.fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
-            assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);
+            assert_native_home(directory, &path, &value);
         });
+    }
+    isolated_case(test, "absent", &[], |directory| {
+        let (path, value) = native_absent_case();
+        assert_native_home(directory, &path, &value);
+    });
+}
+
+/// Checks `path` shows as `value` under the child's home, both formatted and listed.
+fn assert_native_home(directory: &Path, path: &str, value: &str) {
+    assert_eq!(format_display_path(path, &home_directory).unwrap(), value);
+    let world = Setup {
+        context: context_files(vec![Located {
+            path: path.to_owned(),
+        }]),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.tool_output_expanded.set(true);
+    world.mode.init().unwrap();
+    let theme = world.themes.theme().get().unwrap();
+    let row = theme.fg(&ThemeColor::Dim, &format!("  {value}")).unwrap();
+    assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);
+}
+
+/// The path and the display it shows when the account home stands in for an absent HOME.
+fn native_absent_case() -> (String, String) {
+    let home = home_directory().unwrap();
+    if home.is_empty() {
+        let path = "/tmp/supplied-home/file".to_owned();
+        (path.clone(), path)
+    } else if home == "/" {
+        (home.clone(), home)
+    } else {
+        (home, "~".to_owned())
     }
 }
 
