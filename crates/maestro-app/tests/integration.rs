@@ -8,6 +8,7 @@ mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
 mod agent_session_runtime_checks;
+mod agent_session_runtime_events_checks;
 mod analysis_cost;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/analysis_fixtures.rs"]
@@ -114,6 +115,7 @@ mod pdf_pages;
 mod pptx_attachments;
 mod prompt_templates_checks;
 mod queued_slash_command_followup_checks;
+mod replaced_session_context_checks;
 mod resource_extension_loading;
 #[cfg(unix)]
 #[path = "support/resource_fixtures.rs"]

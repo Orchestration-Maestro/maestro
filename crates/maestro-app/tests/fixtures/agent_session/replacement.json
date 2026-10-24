@@ -193,5 +193,224 @@
     "called": 0,
     "name": "MissingSessionCwdError",
     "message": "Stored session working directory does not exist: $ROOT/missing-cwd\nSession file: $ROOT/missing.jsonl\nCurrent working directory: $ROOT"
+  },
+  "lifecycle": {
+    "startup": [
+      {
+        "type": "session_start",
+        "reason": "startup"
+      }
+    ],
+    "created": {
+      "cancelled": false
+    },
+    "fresh": [
+      {
+        "type": "session_before_switch",
+        "reason": "new"
+      },
+      {
+        "type": "session_shutdown",
+        "reason": "new",
+        "targetSessionFile": "SECOND"
+      },
+      {
+        "type": "session_start",
+        "reason": "new",
+        "previousSessionFile": "FIRST"
+      }
+    ],
+    "resumed": {
+      "cancelled": false
+    },
+    "resume": [
+      {
+        "type": "session_before_switch",
+        "reason": "resume",
+        "targetSessionFile": "FIRST"
+      },
+      {
+        "type": "session_shutdown",
+        "reason": "resume",
+        "targetSessionFile": "FIRST"
+      },
+      {
+        "type": "session_start",
+        "reason": "resume",
+        "previousSessionFile": "SECOND"
+      }
+    ]
+  },
+  "veto_new": {
+    "result": {
+      "cancelled": true
+    },
+    "sameSession": true,
+    "builds": 1,
+    "events": [
+      {
+        "type": "session_before_switch",
+        "reason": "new"
+      }
+    ]
+  },
+  "veto_resume": {
+    "result": {
+      "cancelled": true
+    },
+    "sameSession": true,
+    "builds": 1,
+    "events": [
+      {
+        "type": "session_before_switch",
+        "reason": "resume",
+        "targetSessionFile": "$ROOT/case-8/not-opened.jsonl"
+      }
+    ]
+  },
+  "invalidation": {
+    "phases": [
+      "session_shutdown",
+      "before_invalidate",
+      "rebind"
+    ],
+    "error": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
+  },
+  "fork_events": {
+    "result": {
+      "cancelled": false,
+      "selectedText": "hello"
+    },
+    "success": [
+      {
+        "type": "session_before_fork",
+        "entryId": "USER",
+        "position": "before"
+      },
+      {
+        "type": "session_shutdown",
+        "reason": "fork",
+        "targetSessionFile": "NEW"
+      },
+      {
+        "type": "session_start",
+        "reason": "fork",
+        "previousSessionFile": "OLD"
+      }
+    ],
+    "valid": {
+      "cancelled": true
+    },
+    "validEvents": [
+      {
+        "type": "session_before_fork",
+        "entryId": "USER",
+        "position": "before"
+      }
+    ],
+    "invalid": {
+      "cancelled": true
+    },
+    "invalidEvents": [
+      {
+        "type": "session_before_fork",
+        "entryId": "missing-entry",
+        "position": "at"
+      }
+    ],
+    "error": "Invalid entry ID for forking"
+  },
+  "failed_replacement": {
+    "error": "factory refused replacement",
+    "continued": false,
+    "sameSession": true,
+    "builds": 2,
+    "phases": [
+      "session_shutdown",
+      "before_invalidate",
+      "factory_failure"
+    ],
+    "stale": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
+  },
+  "with_new": {
+    "order": [
+      "start:1",
+      "shutdown:1",
+      "start:2",
+      "with:1"
+    ],
+    "staleCtx": true,
+    "staleApi": true,
+    "after": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+    "messages": [
+      {
+        "role": "user",
+        "text": "new callback message"
+      },
+      {
+        "role": "assistant",
+        "text": "one"
+      }
+    ],
+    "isTarget": true
+  },
+  "with_fork": {
+    "order": [
+      "start:1",
+      "shutdown:1",
+      "start:2",
+      "with:1"
+    ],
+    "staleCtx": true,
+    "staleApi": true,
+    "after": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+    "messages": [
+      {
+        "role": "user",
+        "text": "seed"
+      },
+      {
+        "role": "assistant",
+        "text": "one"
+      },
+      {
+        "role": "user",
+        "text": "fork callback message"
+      },
+      {
+        "role": "assistant",
+        "text": "two"
+      }
+    ],
+    "isTarget": true
+  },
+  "with_switch": {
+    "order": [
+      "shutdown:3",
+      "start:4",
+      "with:3"
+    ],
+    "staleCtx": true,
+    "staleApi": true,
+    "after": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+    "messages": [
+      {
+        "role": "user",
+        "text": "target"
+      },
+      {
+        "role": "assistant",
+        "text": "two"
+      },
+      {
+        "role": "user",
+        "text": "switch callback message"
+      },
+      {
+        "role": "assistant",
+        "text": "three"
+      }
+    ],
+    "isTarget": true
   }
 }
