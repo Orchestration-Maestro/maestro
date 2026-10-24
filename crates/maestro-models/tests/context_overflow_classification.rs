@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use maestro_models::{AssistantMessage, StopReason, is_context_overflow};
+    use maestro_request::presence::Presence;
 
     fn message(text: Option<&str>) -> AssistantMessage {
         serde_json::from_value(serde_json::json!({
@@ -127,7 +128,7 @@ mod tests {
             assert!(is_context_overflow(&response, Some(-1.0)));
             response.usage.input = 0.0;
             response.usage.cache_write = 1_000_000.0;
-            response.usage.total_tokens = 1_000_000.0;
+            response.usage.total_tokens = Presence::Present(1_000_000.0);
             response.usage.cost.total = 1_000_000.0;
             assert!(!is_context_overflow(&response, Some(100.0)));
         }
