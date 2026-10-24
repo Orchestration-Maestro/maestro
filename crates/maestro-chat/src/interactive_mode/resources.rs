@@ -4,7 +4,7 @@ use super::{
     InteractiveMode,
     startup::{ExpandableText, TextFactory},
 };
-use crate::components::shorten_home_path as format_display_path;
+use crate::components::shorten_home_path;
 use indexmap::IndexMap;
 use maestro_app::{
     ContextFile, PromptTemplate, ReadonlySessionManager, Skill, SourceInfo, SourceScope,
@@ -18,6 +18,9 @@ use std::{collections::HashMap, error::Error, io, rc::Rc};
 #[cfg(test)]
 #[cfg(unix)]
 mod tests;
+
+/// Looks up the home directory for a path display that abbreviates it.
+type HomeLookup<'a> = dyn Fn() -> io::Result<String> + 'a;
 
 /// One listed resource: its path and, when known, where it came from.
 struct ResourceItem<'a> {
@@ -99,12 +102,21 @@ fn build_scope_groups<'a>(
         .collect()
 }
 
+/// Displays `path` with the home prefix abbreviated, looking the home directory up now.
+///
+/// # Errors
+/// Returns the failure of the home lookup.
+fn format_display_path(path: &str, home: &HomeLookup<'_>) -> io::Result<String> {
+    Ok(shorten_home_path(path, Some(&home()?)))
+}
+
 /// Displays a context file relative to `cwd` when it lies inside it, otherwise as an
 /// absolute path with the home prefix abbreviated; both operands resolve lexically.
 ///
 /// # Errors
-/// Returns the working-directory error of a resolution that needed it.
-fn format_context_path(path: &str, cwd: &str, home: Option<&str>) -> io::Result<String> {
+/// Returns the working-directory error of a resolution that needed it, or the failure
+/// of the home lookup.
+fn format_context_path(path: &str, cwd: &str, home: &HomeLookup<'_>) -> io::Result<String> {
     let cwd = maestro_app::resolve(&[cwd])?;
     let absolute = maestro_app::resolve(&[&cwd, path])?;
     let relative = relative(
@@ -120,7 +132,7 @@ fn format_context_path(path: &str, cwd: &str, home: Option<&str>) -> io::Result<
     } else if !relative.starts_with("..") && !is_absolute(&relative) {
         Ok(relative)
     } else {
-        Ok(format_display_path(&absolute, home))
+        format_display_path(&absolute, home)
     }
 }
 
@@ -129,11 +141,12 @@ fn format_context_path(path: &str, cwd: &str, home: Option<&str>) -> io::Result<
 /// path with the home prefix abbreviated.
 ///
 /// # Errors
-/// Returns the working-directory error of a resolution that needed it.
+/// Returns the working-directory error of a resolution that needed it, or the failure
+/// of the home lookup.
 fn get_short_path(
     path: &str,
     source_info: Option<&SourceInfo>,
-    home: Option<&str>,
+    home: &HomeLookup<'_>,
 ) -> Result<String, Box<dyn Error>> {
     if let Some(base_dir) = source_info
         .filter(|_| is_package_source(source_info))
@@ -166,7 +179,7 @@ fn get_short_path(
             return Ok(path[range].to_owned());
         }
     }
-    Ok(format_display_path(path, home))
+    Ok(format_display_path(path, home)?)
 }
 
 /// Copies `items` sorted by path under `collator`, equal paths keeping their order.
@@ -246,6 +259,20 @@ impl InteractiveMode {
     /// Returns the failure of the collator, the home lookup, a path resolution or the
     /// theme's colours.
     pub(super) fn show_loaded_resources(&self, force: bool) -> Result<(), Box<dyn Error>> {
+        self.list_loaded_resources(force, &home_directory)
+    }
+
+    /// Appends the loaded resources as `show_loaded_resources` does, looking the home
+    /// directory up through `home`.
+    ///
+    /// # Errors
+    /// Returns the failure of the collator, the home lookup, a path resolution or the
+    /// theme's colours.
+    fn list_loaded_resources(
+        &self,
+        force: bool,
+        home: &HomeLookup<'_>,
+    ) -> Result<(), Box<dyn Error>> {
         let session = self.runtime_host.session();
         if !force
             && !self.options.verbose
@@ -255,8 +282,6 @@ impl InteractiveMode {
         }
         let theme = self.themes.theme().get()?;
         let collator = Collator::new(&|key| std::env::var(key).ok())?;
-        let home = home_directory()?;
-        let home = Some(home.as_str());
         let loader = session.resource_loader();
         let skills = loader.get_skills();
         // The loader's own prompt read precedes the session's, whose templates are listed.
@@ -270,12 +295,12 @@ impl InteractiveMode {
     /// each full path on its own row.
     ///
     /// # Errors
-    /// Returns the failure of a path resolution or the theme's colours.
+    /// Returns the failure of a path resolution, the home lookup or the theme's colours.
     fn show_context_resources(
         &self,
         files: &[ContextFile],
         theme: &Theme,
-        home: Option<&str>,
+        home: &HomeLookup<'_>,
     ) -> Result<(), Box<dyn Error>> {
         if files.is_empty() {
             return Ok(());
@@ -294,12 +319,10 @@ impl InteractiveMode {
         let expanded = files
             .iter()
             .map(|file| {
-                theme.fg(
-                    &ThemeColor::Dim,
-                    &format!("  {}", format_display_path(&file.path, home)),
-                )
+                let path = format_display_path(&file.path, home)?;
+                Ok(theme.fg(&ThemeColor::Dim, &format!("  {path}"))?)
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         self.add_loaded_section(
             "Context",
@@ -317,7 +340,7 @@ impl InteractiveMode {
         skills: &[Skill],
         theme: &Theme,
         collator: &Collator,
-        home: Option<&str>,
+        home: &HomeLookup<'_>,
     ) -> Result<(), Box<dyn Error>> {
         if skills.is_empty() {
             return Ok(());
@@ -333,7 +356,7 @@ impl InteractiveMode {
             &build_scope_groups(&items),
             theme,
             collator,
-            |item| Ok(format_display_path(item.path, home)),
+            |item| Ok(format_display_path(item.path, home)?),
             |item| get_short_path(item.path, item.source_info, home),
         )?;
         let names = skills.iter().map(|skill| skill.name.as_str());
@@ -351,7 +374,7 @@ impl InteractiveMode {
         prompts: &[PromptTemplate],
         theme: &Theme,
         collator: &Collator,
-        home: Option<&str>,
+        home: &HomeLookup<'_>,
     ) -> Result<(), Box<dyn Error>> {
         if prompts.is_empty() {
             return Ok(());
@@ -368,10 +391,10 @@ impl InteractiveMode {
             .map(|prompt| (prompt.file_path.as_str(), prompt.name.as_str()))
             .collect();
         let label = |item: &ResourceItem<'_>| {
-            Ok(by_path.get(item.path).map_or_else(
-                || format_display_path(item.path, home),
-                |name| format!("/{name}"),
-            ))
+            Ok(match by_path.get(item.path) {
+                Some(name) => format!("/{name}"),
+                None => format_display_path(item.path, home)?,
+            })
         };
         let expanded =
             format_scope_groups(&build_scope_groups(&items), theme, collator, label, label)?;

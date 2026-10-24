@@ -1,6 +1,6 @@
 //! The loaded-resource listing through the mode's startup and retained sections.
 use super::{
-    ResourceItem, build_scope_groups, format_context_path, format_display_path,
+    HomeLookup, ResourceItem, build_scope_groups, format_context_path, format_display_path,
     format_scope_groups, get_short_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
@@ -12,7 +12,7 @@ use maestro_app::{
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Component;
 use serde::Deserialize;
-use std::{any::Any, cell::Cell, path::Path, rc::Rc};
+use std::{any::Any, cell::Cell, io, path::Path, rc::Rc};
 
 /// Every recorded listing case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_resources.json");
@@ -522,7 +522,7 @@ fn context_resources_resolve_lexically_without_touching_files() {
             panic!("a context case");
         };
         assert_eq!(
-            format_context_path(&path, &cwd, Some(&home)).unwrap(),
+            format_context_path(&path, &cwd, &|| Ok(home.clone())).unwrap(),
             value
         );
     }
@@ -534,7 +534,10 @@ fn resource_paths_abbreviate_supplied_home_prefix() {
         let (Input::Display { path, home }, Expected::Value { value }) = (input, expected) else {
             panic!("a display case");
         };
-        assert_eq!(format_display_path(&path, Some(&home)), value);
+        assert_eq!(
+            format_display_path(&path, &|| Ok(home.clone())).unwrap(),
+            value
+        );
     }
 }
 
@@ -553,8 +556,7 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
             other => panic!("an unknown home mode {other}"),
         };
         isolated_case(test, &mode, environment, |directory| {
-            let home = home_directory().ok();
-            assert_eq!(format_display_path(&path, home.as_deref()), value);
+            assert_eq!(format_display_path(&path, &home_directory).unwrap(), value);
             let world = Setup {
                 context: context_files(vec![Located { path }]),
                 ..Setup::default()
@@ -567,6 +569,71 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
             assert_eq!(world.mode.chat_container.render(WIDTH)[2].trim_end(), row);
         });
     }
+}
+
+/// A home lookup failing as on a host with no home variable and no account entry.
+fn unknown_home() -> io::Result<String> {
+    Err(io::Error::new(
+        io::ErrorKind::NotFound,
+        "home directory is unknown",
+    ))
+}
+
+/// The rows a forced, expanded listing over `setup` appends, looking home up through
+/// `home`, or its error.
+fn listed(directory: &Path, setup: Setup, home: &HomeLookup<'_>) -> Result<Vec<String>, String> {
+    let world = setup.build(directory);
+    world.mode.tool_output_expanded.set(true);
+    world
+        .mode
+        .list_loaded_resources(true, home)
+        .map(|()| world.mode.chat_container.render(WIDTH))
+        .map_err(|error| error.to_string())
+}
+
+/// One resource of `name` below the recorded home directory.
+fn under_home(path: &str, name: &str) -> Vec<Recorded> {
+    vec![Recorded {
+        file_path: format!("{HOME}/{path}"),
+        name: name.to_owned(),
+        source_info: None,
+    }]
+}
+
+#[test]
+fn resource_listing_looks_up_home_only_to_abbreviate_a_path() {
+    let test = "resource_listing_looks_up_home_only_to_abbreviate_a_path";
+    in_home(test, |directory| {
+        let prompts = || Setup {
+            prompts: vec![templates(under_home("prompt.md", "prompt"))],
+            ..Setup::default()
+        };
+        let rows = listed(directory, prompts(), &home_directory).unwrap();
+        assert!(rows.iter().any(|row| row.contains("/prompt")));
+        assert_eq!(
+            (
+                listed(directory, Setup::default(), &unknown_home),
+                listed(directory, prompts(), &unknown_home)
+            ),
+            (Ok(Vec::new()), Ok(rows))
+        );
+        let context = Setup {
+            context: context_files(vec![Located {
+                path: format!("{HOME}/AGENTS.md"),
+            }]),
+            ..Setup::default()
+        };
+        let skills = Setup {
+            skills: skills(under_home("skill/SKILL.md", "skill")),
+            ..Setup::default()
+        };
+        for abbreviating in [context, skills] {
+            assert_eq!(
+                listed(directory, abbreviating, &unknown_home),
+                Err("home directory is unknown".to_owned())
+            );
+        }
+    });
 }
 
 #[test]
@@ -615,7 +682,7 @@ fn package_resources_shorten_from_roots_before_legacy_fallbacks() {
             panic!("a package path case");
         };
         let source_info = source_info.map(|source| source.into_source_info(&path));
-        let short = get_short_path(&path, source_info.as_ref(), Some(&home)).unwrap();
+        let short = get_short_path(&path, source_info.as_ref(), &|| Ok(home.clone())).unwrap();
         assert_eq!(short, value);
     }
 }
