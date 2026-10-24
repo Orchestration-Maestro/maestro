@@ -779,7 +779,7 @@ fn model_cycle_renders_failures_without_success_effects() {
 const NO_THINKING: &str = "Current model does not support thinking";
 
 /// Whether the transcript shows `text`.
-fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
+pub(super) fn shows(chat: &maestro_tui::Container, text: &str) -> bool {
     chat.render(WIDTH).concat().contains(text)
 }
 

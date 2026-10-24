@@ -47,7 +47,7 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
 }
 
 /// Polls `future` once with a waker that observes nothing.
-fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
+pub(super) fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
     match Pin::new(future).poll(&mut Context::from_waker(Waker::noop())) {
         Poll::Ready(output) => Some(output),
         Poll::Pending => None,
@@ -55,7 +55,7 @@ fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
 }
 
 /// An input future of `mode` that has been polled once and is waiting.
-fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
+pub(super) fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
     let mut waiter: Pin<Box<dyn Future<Output = String>>> = Box::pin(mode.get_user_input());
     assert_eq!(poll(&mut waiter), None);
     waiter
@@ -63,7 +63,7 @@ fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
 
 /// The editor's history, newest first, recalled with Up from an empty editor, which is
 /// left empty again.
-fn recalled(editor: &CustomEditor) -> Vec<String> {
+pub(super) fn recalled(editor: &CustomEditor) -> Vec<String> {
     editor.set_text("");
     let mut history: Vec<String> = Vec::new();
     loop {
@@ -79,7 +79,7 @@ fn recalled(editor: &CustomEditor) -> Vec<String> {
 }
 
 /// Submits `text` through the callback the mode installed on its editor.
-fn submit(world: &World, text: &str) {
+pub(super) fn submit(world: &World, text: &str) {
     let callback = world.mode.editor.on_submit().unwrap();
     callback(text);
 }

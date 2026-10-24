@@ -1,7 +1,8 @@
 //! Model selection, model scopes and the subscription notice through the mode's installed
 //! callbacks, its registered keys, the real panels and an in-memory catalog.
-use super::actions::{install, run_action};
+use super::actions::{install, run_action, shows};
 use super::transcript::assistant;
+use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, isolated, started};
 use crate::ModelSelectorComponent;
 use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
@@ -25,9 +26,6 @@ use std::{
 
 /// Every recorded model-selection case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_models.json");
-
-/// The width transcript rows are rendered at.
-const WIDTH: usize = 200;
 
 /// The recorded cases of `test`, typed by that witness.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
@@ -80,16 +78,6 @@ fn current(world: &World) -> String {
     let model = world.host.session().model();
     let model = model.read().unwrap();
     format!("{}/{}", model.provider, model.id)
-}
-
-/// Whether the transcript shows `text`.
-fn shows(world: &World, text: &str) -> bool {
-    world
-        .mode
-        .chat_container
-        .render(WIDTH)
-        .concat()
-        .contains(text)
 }
 
 /// The components the editor container holds.
@@ -320,12 +308,15 @@ fn final_notice(world: &World, notice: &Event) -> bool {
     };
     let text = text.as_str().unwrap();
     if kind == "status" {
-        assert!(shows(world, text));
+        assert!(shows(&world.mode.chat_container, text));
         assert_ne!(border, "─".repeat(80));
         return true;
     }
     assert_eq!(kind, "error");
-    assert!(shows(world, "Error: No API key for a/alpha"));
+    assert!(shows(
+        &world.mode.chat_container,
+        "Error: No API key for a/alpha"
+    ));
     assert_eq!(border, "─".repeat(80));
     false
 }
@@ -941,7 +932,7 @@ fn failed_warning_lookup_leaves_the_check_retryable() {
         key_command(&world, directory, "anthropic", (0, None));
         check(&world, vec![Some(subscription_model(&world))]);
         assert!(!world.mode.anthropic_subscription_warning_shown.get());
-        assert!(!shows(&world, "Warning: "));
+        assert!(!shows(&world.mode.chat_container, "Warning: "));
         sign_in(&world);
         check(&world, vec![Some(subscription_model(&world))]);
         notices(&world, &expected, Some(lookups(directory, 0)));
@@ -1030,11 +1021,11 @@ fn model_cycle_reuses_the_subscription_warning_owner() {
             session.agent().state().write().unwrap().model = subscription_model(&world);
             run_action(&world, "app.model.cycleForward");
             assert!(world.runtime.drain_futures().is_empty());
-            assert!(shows(&world, "Switched to"));
+            assert!(shows(&world.mode.chat_container, "Switched to"));
             if case == 0 {
                 notices(&world, &expected, Some(lookups(directory, case)));
             } else {
-                assert!(!shows(&world, "Warning: "));
+                assert!(!shows(&world.mode.chat_container, "Warning: "));
                 assert_eq!(lookups(directory, case), 1);
             }
         }
@@ -1298,7 +1289,7 @@ fn command_outcome(world: &World, outcome: &Outcome) {
         let [status] = named(&outcome.events, "status").next().unwrap() else {
             panic!("one status");
         };
-        assert!(shows(world, status.as_str().unwrap()));
+        assert!(shows(&world.mode.chat_container, status.as_str().unwrap()));
         assert!(shows_only(world, &editor(world)));
     }
     settled(world, outcome);
@@ -1405,8 +1396,8 @@ fn model_selection_failure_reports_without_success_effects() {
                 panic!("a final error");
             };
             assert_eq!(kind, "error");
-            assert!(shows(&world, "Error: "));
-            assert!(!shows(&world, "Model: "));
+            assert!(shows(&world.mode.chat_container, "Error: "));
+            assert!(!shows(&world.mode.chat_container, "Model: "));
             assert_eq!(world.mode.editor.render(80)[0], "─".repeat(80));
             let selected = (expected.selected.clone()).map_or(previous, |id| format!("a/{id}"));
             assert_eq!(current(&world), selected);
@@ -1499,7 +1490,7 @@ fn model_selection_observes_the_selected_descriptor_after_listeners() {
             let [status] = named(&expected.events, "status").next().unwrap() else {
                 panic!("one status");
             };
-            assert!(shows(&world, status.as_str().unwrap()));
+            assert!(shows(&world.mode.chat_container, status.as_str().unwrap()));
             notices(&world, &expected, Some(lookups(directory, case)));
         }
     });
@@ -1516,54 +1507,27 @@ struct Submission {
 }
 
 /// Submits `text` exactly through the editor's installed submission, with the editor
-/// holding it; typed text would have its tabs widened first.
-fn submit(world: &World, text: &str) {
+/// holding it, and runs the work it hands over; typed text would have its tabs widened.
+fn submit_held(world: &World, text: &str) {
     world.mode.editor.set_text(text);
-    world.mode.editor.on_submit().unwrap()(text);
+    submit(world, text);
     assert!(world.runtime.drain_futures().is_empty());
-}
-
-/// Polls `future` once without waking.
-fn poll_once<F: std::future::Future>(future: std::pin::Pin<&mut F>) -> std::task::Poll<F::Output> {
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    future.poll(&mut context)
-}
-
-/// The text recalled from the editor's history, newest first, until it repeats.
-fn history(world: &World) -> Vec<String> {
-    world.mode.editor.set_text("");
-    let mut recalled = Vec::new();
-    loop {
-        world.terminal.send_input("\x1b[A");
-        let text = world.mode.editor.get_text();
-        if recalled.last() == Some(&text) || text.is_empty() {
-            break;
-        }
-        recalled.push(text);
-    }
-    world.mode.editor.set_text("");
-    recalled
 }
 
 /// Checks one recorded submission: a command clears the editor and runs, other text goes
 /// to the waiting input and the history.
 fn submission(world: &World, text: &str, outcome: &Outcome) {
-    let waiting = world.mode.get_user_input();
-    let mut waiting = std::pin::pin!(waiting);
-    assert!(poll_once(waiting.as_mut()).is_pending());
-    submit(world, text);
+    let mut waiting = waiting(&world.mode);
+    submit_held(world, text);
     if let Some([unhandled]) = named(&outcome.events, "unhandled").next() {
         let unhandled = unhandled.as_str().unwrap();
         let trimmed = unhandled.trim_matches(maestro_app::is_whitespace_scalar);
-        assert_eq!(
-            poll_once(waiting.as_mut()),
-            std::task::Poll::Ready(trimmed.to_owned())
-        );
-        assert_eq!(history(world), [trimmed]);
+        assert_eq!(poll(&mut waiting), Some(trimmed.to_owned()));
+        assert_eq!(recalled(&world.mode.editor), [trimmed]);
         return;
     }
-    assert!(poll_once(waiting.as_mut()).is_pending());
-    assert!(history(world).is_empty());
+    assert!(poll(&mut waiting).is_none());
+    assert!(recalled(&world.mode.editor).is_empty());
     let [cleared] = named(&outcome.events, "editor").next().unwrap() else {
         panic!("the editor is cleared");
     };
@@ -1576,7 +1540,10 @@ fn submission(world: &World, text: &str, outcome: &Outcome) {
         panic!("one model command");
     };
     match search.as_str() {
-        Some(search) => assert!(shows(world, &format!("Model: {search}"))),
+        Some(search) => assert!(shows(
+            &world.mode.chat_container,
+            &format!("Model: {search}")
+        )),
         None => assert_eq!(
             model_panel(world).unwrap().get_search_input().get_value(),
             ""
@@ -1605,14 +1572,12 @@ fn model_commands_leave_waiter_and_history_untouched() {
         |directory| {
             let world = started(directory);
             catalog(&world);
-            let waiting = world.mode.get_user_input();
-            let mut waiting = std::pin::pin!(waiting);
-            assert!(poll_once(waiting.as_mut()).is_pending());
+            let mut waiting = waiting(&world.mode);
             for command in ["/model alpha", "/model", "/scoped-models"] {
-                submit(&world, command);
-                assert!(poll_once(waiting.as_mut()).is_pending());
+                submit_held(&world, command);
+                assert!(poll(&mut waiting).is_none());
             }
-            assert!(shows(&world, "Model: alpha"));
+            assert!(shows(&world.mode.chat_container, "Model: alpha"));
             assert!(scope_panel(&world).is_some());
             world.mode.editor_container.clear();
             world
@@ -1620,12 +1585,9 @@ fn model_commands_leave_waiter_and_history_untouched() {
                 .editor_container
                 .add_child(world.mode.editor.clone());
             world.mode.ui.set_focus(Some(world.mode.editor.clone()));
-            submit(&world, "normal");
-            assert_eq!(
-                poll_once(waiting.as_mut()),
-                std::task::Poll::Ready("normal".to_owned())
-            );
-            assert_eq!(history(&world), ["normal"]);
+            submit_held(&world, "normal");
+            assert_eq!(poll(&mut waiting), Some("normal".to_owned()));
+            assert_eq!(recalled(&world.mode.editor), ["normal"]);
         },
     );
 }
@@ -1667,19 +1629,19 @@ fn warning_lifetime_survives_rebinding_but_not_another_mode() {
             let world = replaceable(directory);
             key_command(&world, directory, "anthropic", (0, Some(SUBSCRIPTION_KEY)));
             check(&world, vec![Some(subscription_model(&world))]);
-            assert!(shows(&world, "Warning: "));
+            assert!(shows(&world.mode.chat_container, "Warning: "));
             let first = world.host.session();
             replace_session(&world);
             assert!(!Rc::ptr_eq(&first, &world.host.session()));
             key_command(&world, directory, "anthropic", (1, Some(SUBSCRIPTION_KEY)));
             world.mode.chat_container.clear();
             check(&world, vec![Some(subscription_model(&world))]);
-            assert!(!shows(&world, "Warning: "));
+            assert!(!shows(&world.mode.chat_container, "Warning: "));
             assert_eq!(lookups(directory, 1), 0);
             let other = started(directory);
             key_command(&other, directory, "anthropic", (2, Some(SUBSCRIPTION_KEY)));
             check(&other, vec![Some(subscription_model(&other))]);
-            assert!(shows(&other, "Warning: "));
+            assert!(shows(&other.mode.chat_container, "Warning: "));
             assert_eq!(lookups(directory, 2), 1);
         },
     );
@@ -1712,7 +1674,10 @@ fn saved_patterns(world: &World) -> Option<Vec<String>> {
 fn saved_by_panel(world: &World) -> Option<Vec<String>> {
     world.terminal.send_input("\x13");
     assert!(world.runtime.drain_futures().is_empty());
-    assert!(shows(world, "Model selection saved to settings"));
+    assert!(shows(
+        &world.mode.chat_container,
+        "Model selection saved to settings"
+    ));
     saved_patterns(world)
 }
 
@@ -1796,7 +1761,10 @@ fn opened(world: &World, result: Result<(), Box<dyn std::error::Error>>, expecte
     }
     assert_eq!(scope_panel(world).is_some(), expected.installed);
     let status = named(&expected.events, "status").next();
-    assert_eq!(shows(world, "No models available"), status.is_some());
+    assert_eq!(
+        shows(&world.mode.chat_container, "No models available"),
+        status.is_some()
+    );
     settled(world, &expected.outcome());
     if expected.installed {
         assert!(saved_patterns(world).is_none_or(|patterns| patterns != ["z/tail", "a/alpha"]));
@@ -1959,7 +1927,10 @@ fn scope_save_preserves_order_and_distinguishes_none_from_all() {
             assert!(world.runtime.drain_futures().is_empty());
             assert_eq!(serde_json::json!(saved_patterns(&world)), *persisted);
             assert_eq!(saved_patterns(&world), expected.saved);
-            assert!(shows(&world, "Model selection saved to settings"));
+            assert!(shows(
+                &world.mode.chat_container,
+                "Model selection saved to settings"
+            ));
             assert!(scope_panel(&world).is_some(), "saving keeps the panel open");
             settled(
                 &world,
@@ -2051,7 +2022,7 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
             *world.host.session().settings_manager().borrow_mut() =
                 SettingsManager::create(root, root, root);
             let ids: Vec<_> = catalog(&world).iter().map(id_of).collect();
-            submit(&world, "/scoped-models");
+            submit_held(&world, "/scoped-models");
             assert!(scope_panel(&world).is_some());
             for key in ["\r", "\x1b[B", "\r"] {
                 world.terminal.send_input(key);
