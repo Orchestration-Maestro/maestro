@@ -105,6 +105,14 @@ shared subscription owner; a failed native removal may retain the callable, but
 its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
 
+A feature whose nodes do not need the canvas can build them once and mount them
+both ways. The generic file artifact constructs its glyph, filename and guidance
+nodes in one builder: the retained factory wraps them in a `ReadingRoot` for the
+overlay, and `DomContent` places them directly on a page. The overlay keeps
+placement, measurement and clipping; the direct mount keeps only its own nodes and
+reaches no host surface. Features that stay retained until their own delivery keep
+using the factory alone.
+
 An optional `ReadingRoot::commit` callback reconciles a staged update into the
 previous root only after placement succeeds. This infallible callback preserves
 the previous element, slots and native state; roots without it replace content

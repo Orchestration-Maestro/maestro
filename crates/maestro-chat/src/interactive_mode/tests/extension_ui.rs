@@ -60,7 +60,7 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
 }
 
 /// The installed extension UI host of `mode`.
-fn port(mode: &Rc<InteractiveMode>) -> ExtensionUIContext {
+pub(super) fn port(mode: &Rc<InteractiveMode>) -> ExtensionUIContext {
     let shared = Rc::clone(mode);
     let host: Rc<dyn ExtensionUIContextPort> = shared;
     ExtensionUIContext::new(host)

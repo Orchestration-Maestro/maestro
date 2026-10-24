@@ -88,8 +88,9 @@ tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
-tests that drive a real session through the scripted provider, and the native development
-edges from the twenty-three declared callers to the
+tests that drive a real session through the scripted provider, the native-only
+`maestro-cli` to `maestro-listeners` development edge for the controlled print
+adapter, and the native development edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -353,8 +354,9 @@ exempt. The scan reads parsed syntax, so it does not expand macros, resolve
 arbitrary re-exports or follow unparsed fragments.
 
 The root manifest must forbid every protected quality lint; member manifests
-are parsed as TOML and must set the boolean `lints.workspace` to `true`,
-except for the guest-authoring manifest below.
+are parsed as TOML and must set the boolean `lints.workspace` to `true`.
+The only exception is the guest-authoring manifest's exact table below;
+missing lint wiring is rejected for every member, including that guest.
 The compiler rejects protected-lint allowances, including attributes emitted by
 macros and conditional attributes. Lint-group allowances fail because the
 workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
@@ -377,8 +379,8 @@ top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.
 
-All other members inherit the workspace lint table, including
-`unsafe_code = "forbid"`. The [terminal emulator](terminal-emulator.md) is pure Rust.
+Every member retains `unsafe_code = "forbid"`.
+The [terminal emulator](terminal-emulator.md) is pure Rust.
 
 The workspace daemon is core design: the root always wires the daemon,
 multiplexer. Required direct edges are root → application and multiplexer,

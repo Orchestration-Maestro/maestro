@@ -156,6 +156,52 @@ impl InteractiveMode {
         Ok(())
     }
 
+    /// Suspends the terminal to the background until the shell continues the process.
+    ///
+    /// Interrupts are ignored from now until the continuation, which restarts the terminal
+    /// with a full redraw on the terminal runtime. When stopping the terminal or the
+    /// process group fails, interrupts take their default action again and no later
+    /// continuation restarts the terminal.
+    ///
+    /// # Errors
+    /// Returns the native signal registration, terminal or signalling failure.
+    #[cfg(unix)]
+    pub(super) fn handle_ctrl_z(&self) -> Result<(), Box<dyn Error>> {
+        let interrupts = ignore_interrupts()?;
+        let suspended = maestro_app::continued().and_then(|continued| {
+            self.ui.stop()?;
+            maestro_app::stop_process_group()?;
+            Ok(continued)
+        });
+        let continued = match suspended {
+            Ok(continued) => continued,
+            Err(error) => {
+                interrupts.restore();
+                return Err(error.into());
+            }
+        };
+        let ui = self.ui.clone();
+        self.tool_environment
+            .runtime
+            .spawn_local(Box::pin(async move {
+                continued.await;
+                interrupts.restore();
+                ui.start()?;
+                ui.request_render(true);
+                Ok(())
+            }));
+        Ok(())
+    }
+
+    /// Says this host cannot suspend the terminal to the background.
+    ///
+    /// # Errors
+    /// Returns the published theme's failure.
+    #[cfg(any(windows, all(test, target_os = "linux")))]
+    pub(super) fn show_suspend_unsupported(&self) -> Result<(), Box<dyn Error>> {
+        self.show_status("Suspend to background is not supported on Windows")
+    }
+
     /// Reads the clipboard image on the host, keeping the mode until the read completes,
     /// then pastes it.
     fn handle_clipboard_image_paste(self: Rc<Self>) {
@@ -182,4 +228,30 @@ impl InteractiveMode {
             self.ui.request_render(false);
         }
     }
+}
+
+/// The interrupt's default action, prepared once for the process at its first suspension,
+/// so a later suspension cannot leave an earlier preparation taking the default action
+/// first.
+#[cfg(unix)]
+static INTERRUPT_ACTIONS: std::sync::Mutex<Option<maestro_app::DefaultSignalActions>> =
+    std::sync::Mutex::new(None);
+
+/// Makes interrupts do nothing until the returned actions are restored.
+///
+/// # Errors
+/// Returns the native handler registration failure.
+#[cfg(unix)]
+fn ignore_interrupts() -> io::Result<maestro_app::DefaultSignalActions> {
+    let mut prepared = INTERRUPT_ACTIONS
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    if let Some(actions) = prepared.as_ref() {
+        actions.defer();
+        return Ok(actions.clone());
+    }
+    let interrupt = [maestro_app::TerminationSignal::Interrupt];
+    Ok(prepared
+        .insert(maestro_app::DefaultSignalActions::new(&interrupt)?)
+        .clone())
 }

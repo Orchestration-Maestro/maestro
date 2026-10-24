@@ -19,6 +19,10 @@ impl InteractiveMode {
     /// Binds the transcript shortcuts and editor actions on the editor, in the order the
     /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
+        #[cfg(unix)]
+        self.on_action("app.suspend", |mode| mode.handle_ctrl_z());
+        #[cfg(windows)]
+        self.on_action("app.suspend", |mode| mode.show_suspend_unsupported());
         self.on_action("app.thinking.cycle", |mode| mode.cycle_thinking_level());
         self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
         self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
@@ -94,8 +98,8 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Flips and saves whether thinking is hidden, replays the transcript with it and shows
-    /// the new state.
+    /// Flips and saves whether thinking is hidden, replays the transcript with it, puts the
+    /// streaming row back after it with the new visibility and shows the new state.
     ///
     /// # Errors
     /// Returns the failure of the replay or of the published theme.
@@ -108,6 +112,12 @@ impl InteractiveMode {
             .borrow_mut()
             .set_hide_thinking_block(hide);
         self.rebuild_chat_from_messages()?;
+        let streaming = self.streaming.borrow().clone();
+        if let Some((component, message)) = streaming {
+            component.set_hide_thinking_block(hide);
+            component.update_content(message);
+            self.chat_container.add_child(component);
+        }
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
     }

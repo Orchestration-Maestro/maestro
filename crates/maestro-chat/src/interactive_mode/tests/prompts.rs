@@ -1,7 +1,10 @@
 //! The prompt loop over a real session answering through the scripted provider: startup
 //! notices and prompts, refused prompts, typed prompts and the current session.
 use super::{Setup, World, cases, isolated};
-use crate::{InteractiveMode, InteractiveModeOptions};
+use crate::{
+    AssistantMessageComponent, InteractiveMode, InteractiveModeOptions, ToolExecutionComponent,
+    UserMessageComponent,
+};
 use maestro_app::{
     AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
     ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions,
@@ -14,9 +17,10 @@ use maestro_models::{
     get_api_provider, register_faux_provider,
 };
 use maestro_theme::{Theme, ThemeColor};
-use maestro_tui::{Component, Container, Text};
+use maestro_tui::{Component, Container, Spacer, Text};
 use serde::Deserialize;
 use std::{
+    any::Any,
     cell::{Cell, RefCell},
     collections::BTreeMap,
     error::Error,
@@ -301,17 +305,19 @@ impl Recorder {
     }
 
     /// Records the rows of each notice added since the last record, skipping the
-    /// resource diagnostics the startup listing appends as a text row and a spacer.
+    /// resource diagnostics the startup listing appends as a text row and a spacer, and
+    /// the message rows the session's events add.
     fn flush(&self) {
         let children = self.chat.children();
         let children = children.borrow();
-        let mut index = self.recorded.get();
-        while index + 1 < children.len() {
-            let spacer = children[index].render(WIDTH);
+        let added = without_messages(&children[self.recorded.get()..]);
+        let mut index = 0;
+        while index + 1 < added.len() {
+            let spacer = added[index].render(WIDTH);
             if spacer.iter().all(String::is_empty) {
                 self.log
                     .borrow_mut()
-                    .push(Err(children[index + 1].render(WIDTH)));
+                    .push(Err(added[index + 1].render(WIDTH)));
             }
             index += 2;
         }
@@ -341,6 +347,23 @@ impl Recorder {
         assert!(prompts.iter_mut().all(|(_, rest)| rest.next().is_none()));
         observed
     }
+}
+
+/// `rows` without the message rows the session's events add: user, assistant and tool rows,
+/// and the spacer before a user row.
+fn without_messages(rows: &[Rc<dyn Component>]) -> Vec<&Rc<dyn Component>> {
+    let kind = |index: usize| rows.get(index).map(|row| -> &dyn Any { row.as_ref() });
+    let user = |index| kind(index).is_some_and(<dyn Any>::is::<UserMessageComponent>);
+    let kept = (0..rows.len()).filter(|&index| {
+        let Some(row) = kind(index) else {
+            return false;
+        };
+        let message = user(index)
+            || row.is::<AssistantMessageComponent>()
+            || row.is::<ToolExecutionComponent>();
+        !(message || row.is::<Spacer>() && user(index + 1))
+    });
+    kept.map(|index| &rows[index]).collect()
 }
 
 /// The text and image blocks of each user message `session` holds, in order.
