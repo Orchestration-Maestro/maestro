@@ -147,12 +147,11 @@ fn controlled_cases(rows: &[Row]) -> Result<(), String> {
                     signal: None,
                 },
             ))?;
-            let lines = host.observed().transcript[mark..].to_vec();
             assert_step(
                 &row.name,
                 step,
                 &Answer::of(super::guest_family::delivery(outcome))?,
-                &lines,
+                &host.observed().transcript[mark..],
             );
         }
     }
@@ -219,12 +218,11 @@ fn working_message_component_matches_startup_requests() -> Result<(), String> {
             }))
             .map_err(|error| error.to_string())?;
             let outcome = run.map_err(|error| error.to_string())??;
-            let lines = harness.store.data().observed.transcript[mark..].to_vec();
             assert_step(
                 &row.name,
                 step,
                 &Answer::of(super::host_family::delivery(outcome))?,
-                &lines,
+                &harness.store.data().observed.transcript[mark..],
             );
         }
     }

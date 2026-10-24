@@ -36,6 +36,9 @@ fn session_start(
 }
 
 /// Registers the startup handler through the supplied extension host.
+///
+/// # Errors
+/// Returns the host rejection unchanged when the host refuses the registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move { api.on("session_start", Rc::new(session_start)) })
