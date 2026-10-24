@@ -2,6 +2,7 @@
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
 use maestro_app::messages::UserMessageDelivery;
+use maestro_tui::EditorComponent;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -28,9 +29,10 @@ impl InteractiveMode {
         }
     }
 
-    /// Installs submission on the editor without keeping the mode alive: a recognized
-    /// command runs and reports its own outcome, any other trimmed nonempty text is queued
-    /// as steering during a compaction or a response, and otherwise it goes to the waiting
+    /// Installs submission on the editor without keeping the mode alive: a `/scoped-models`
+    /// or `/model` command clears the editor and runs itself, another recognized command
+    /// runs and reports its own outcome, any other trimmed nonempty text is queued as
+    /// steering during a compaction or a response, and otherwise it goes to the waiting
     /// input, if any, then into the editor's history.
     ///
     /// The editor empties itself before calling back, so a command needs no clearing step.
@@ -41,6 +43,28 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            if text == "/scoped-models" {
+                mode.editor.set_text("");
+                mode.report(mode.show_models_selector());
+                return;
+            }
+            if text == "/model" || text.starts_with("/model ") {
+                let search = text["/model".len()..].trim_matches(is_whitespace_scalar);
+                mode.submit_model_command(
+                    Some(search.to_owned()).filter(|search| !search.is_empty()),
+                );
+                return;
+            }
+            if text == "/fork" {
+                mode.report(mode.show_user_message_selector());
+                mode.editor.set_text("");
+                return;
+            }
+            if text == "/clone" {
+                mode.editor.set_text("");
+                mode.submit_clone_command();
+                return;
+            }
             if mode.runs_command(text) {
                 return;
             }
@@ -67,5 +91,21 @@ impl InteractiveMode {
             self.report(Err(error));
         }
         true
+    }
+
+    /// Clears the editor and clones the current leaf on the terminal runtime.
+    fn submit_clone_command(self: &Rc<Self>) {
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        let mode = Rc::clone(self);
+        runtime.spawn_local(Box::pin(async move { mode.handle_clone_command().await }));
+    }
+
+    /// Clears the editor and runs `/model` with `search` on the terminal runtime.
+    fn submit_model_command(self: Rc<Self>, search: Option<String>) {
+        self.editor.set_text("");
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        runtime.spawn_local(Box::pin(
+            async move { self.handle_model_command(search).await },
+        ));
     }
 }
