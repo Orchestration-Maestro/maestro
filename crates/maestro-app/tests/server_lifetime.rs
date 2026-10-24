@@ -3,8 +3,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::published;
 use crate::support::rpc_connection::{
-    Client, Outcomes, connect, no_workspace, replacement_watch, response_to, startup_select,
-    unspawned, user_entry,
+    Client, Outcomes, connect, no_workspace, replacement_watch, response_to, select_on,
+    startup_select, unspawned, user_entry,
 };
 use crate::support::runtime_fixtures::{runtime_for, stored_in};
 use crate::support::session_harness::{
@@ -537,33 +537,14 @@ fn failed_write_then_ready_eof_cannot_finish_before_close_starts() {
     });
 }
 
-/// An extension whose `session_shutdown` handler asks a selection and records its outcome.
-fn shutdown_select(outcomes: Outcomes) -> ExtensionFactory<Local> {
-    Rc::new(move |api| {
-        let outcomes = Rc::clone(&outcomes);
-        let shutdown = api.on::<SessionShutdownEvent, ()>(
-            "session_shutdown".into(),
-            Rc::new(move |_, ctx| {
-                let outcomes = Rc::clone(&outcomes);
-                Box::pin(async move {
-                    let select = ctx.ui()?.select("bye".into(), vec!["a".into()], None);
-                    let outcome = select.await.map_err(|error| error.to_string());
-                    outcomes.borrow_mut().push(outcome);
-                    Ok(None)
-                })
-            }),
-        );
-        Box::pin(std::future::ready(shutdown))
-    })
-}
-
 /// A dialog a shutdown handler asks after the input's end, once the session is bound, is
 /// asked and stays unanswered: nothing settles it and disposal keeps waiting.
 #[test]
 fn shutdown_dialog_after_input_end_stays_pending() {
     on_paused_task_set(|_| async {
         let outcomes: Outcomes = Rc::default();
-        let factory = shutdown_select(Rc::clone(&outcomes));
+        let factory =
+            select_on::<SessionShutdownEvent>("session_shutdown", "bye", Rc::clone(&outcomes));
         let (_h, runtime, _) = runtime_for("bye", vec![(None, factory)]).await;
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;

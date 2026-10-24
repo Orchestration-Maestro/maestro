@@ -352,20 +352,30 @@ pub type Outcomes = Rc<RefCell<Vec<Result<Option<String>, String>>>>;
 
 /// An extension whose `session_start` handler asks a selection and records its outcome.
 pub fn startup_select(outcomes: Outcomes) -> ExtensionFactory<Local> {
+    select_on::<SessionStartEvent>("session_start", "start", outcomes)
+}
+
+/// An extension whose handler of `event`, carrying `V`, asks the selection `title` and
+/// records its outcome.
+pub fn select_on<V: 'static>(
+    event: &'static str,
+    title: &'static str,
+    outcomes: Outcomes,
+) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
         let outcomes = Rc::clone(&outcomes);
-        let started = api.on::<SessionStartEvent, ()>(
-            "session_start".into(),
+        let registered = api.on::<V, ()>(
+            event.into(),
             Rc::new(move |_, ctx| {
                 let outcomes = Rc::clone(&outcomes);
                 Box::pin(async move {
-                    let select = ctx.ui()?.select("start".into(), vec!["a".into()], None);
+                    let select = ctx.ui()?.select(title.into(), vec!["a".into()], None);
                     let outcome = select.await.map_err(|error| error.to_string());
                     outcomes.borrow_mut().push(outcome);
                     Ok(None)
                 })
             }),
         );
-        Box::pin(std::future::ready(started))
+        Box::pin(std::future::ready(registered))
     })
 }
