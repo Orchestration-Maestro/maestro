@@ -1233,6 +1233,10 @@ fn shipped_examples() -> &'static [(&'static str, &'static str)] {
             include_str!("../../../examples/extensions/send_user_message.rs"),
         ),
         (
+            "examples/extensions/session_name.rs",
+            include_str!("../../../examples/extensions/session_name.rs"),
+        ),
+        (
             "examples/extensions/shutdown_command.rs",
             include_str!("../../../examples/extensions/shutdown_command.rs"),
         ),
