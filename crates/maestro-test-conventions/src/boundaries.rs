@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
+use std::path::Path;
 
-use crate::source::{Member, Source};
+use crate::source::{Member, Source, test_layout};
 use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
 
@@ -32,6 +33,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 records.scan(tokens);
             }
             check_declarations(member, source, &records, &mut declarations)?;
+            check_session_setup(member, source, &records)?;
             let context = ScanContext {
                 owner: &member.name,
                 directory: &member.directory,
@@ -50,9 +52,23 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
 /// Rust declaration keywords whose following identifiers are inspected.
 const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
 
+/// Session configuration record that only the shared interactive test setup constructs.
+const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
+
+/// The one owner of the interactive-mode test session setup.
+const SESSION_SETUP: &str = "tests/footer_support/session.rs";
+
+/// Footer support tree shared by the footer and interactive startup tests.
+const FOOTER_SUPPORT: &str = "tests/footer_support";
+
+/// Source tree holding the interactive mode and its own test modules.
+const INTERACTIVE_MODE: &str = "src/interactive_mode";
+
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
 struct Records {
+    /// First line naming the shared interactive session configuration.
+    session_configuration_line: Option<usize>,
     /// Declaration names paired with their source lines.
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
@@ -67,6 +83,7 @@ impl Records {
             let generated = matches!(tokens[..index].last(), Some(TokenTree::Punct(punctuation)) if punctuation.as_char() == '$');
             match token {
                 TokenTree::Ident(keyword) if !generated => {
+                    self.session_configuration(keyword);
                     self.declaration(keyword, &tokens[index + 1..]);
                     self.wit_macro(&tokens[index..]);
                 }
@@ -75,6 +92,14 @@ impl Records {
                 }
                 _ => {}
             }
+        }
+    }
+
+    /// Record the first line that names the shared interactive session configuration.
+    fn session_configuration(&mut self, keyword: &proc_macro2::Ident) {
+        if keyword.unraw() == SESSION_CONFIGURATION {
+            self.session_configuration_line
+                .get_or_insert(keyword.span().start().line);
         }
     }
 
@@ -141,6 +166,35 @@ fn union_body(token: Option<&TokenTree>) -> bool {
         Some(TokenTree::Ident(keyword)) => keyword == "where",
         _ => false,
     }
+}
+
+/// Interactive-mode chat test sources that build their sessions through the shared setup.
+///
+/// Paths compare by component, so native separators never change the answer.
+fn migrated(relative: &Path) -> bool {
+    if relative.starts_with(FOOTER_SUPPORT) {
+        return relative != Path::new(SESSION_SETUP);
+    }
+    relative.starts_with(INTERACTIVE_MODE) && test_layout(relative, Path::new(""))
+}
+
+/// Reject a second interactive-mode session setup outside its extracted owner.
+fn check_session_setup(member: &Member, source: &Source, records: &Records) -> Result<(), String> {
+    let Some(line) = records.session_configuration_line else {
+        return Ok(());
+    };
+    let in_scope = member.name == "maestro-chat"
+        && source
+            .path
+            .strip_prefix(&member.directory)
+            .is_ok_and(migrated);
+    if !in_scope {
+        return Ok(());
+    }
+    Err(format!(
+        "{}:{line}: session setup belongs in {SESSION_SETUP}",
+        source.path.display()
+    ))
 }
 
 /// Recognize selector declarations owned by the chat frontend.

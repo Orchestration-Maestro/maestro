@@ -246,6 +246,16 @@ application coupling, no application policy in frontends, a wiring-only binary,
 and complete WIT code-generation evidence. Current absent owners are tested with
 scratch workspaces, not certified as delivered capabilities.
 
+The chat tests that drive the interactive frontend build their session,
+credentials, catalog and resource loader in
+`crates/maestro-chat/tests/footer_support/session.rs`. A second construction of the
+session configuration in these test sources is rejected with its file and line, so
+they share one setup, which returns a session with its services. The rule covers the
+footer support tree, except the setup itself, and the test modules below
+`crates/maestro-chat/src/interactive_mode/`. Paths compare by component, so a native
+separator changes nothing, and the shared token walk includes macro arguments,
+closures and impl bodies.
+
 ## Quality checks
 
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
