@@ -46,6 +46,14 @@ Neither callback keeps the mode alive. Last, it lists the loaded resources and
 their diagnostics in the transcript, replays the session and refreshes the
 footer provider count.
 
+`InteractiveModeOptions::verbose` forces the expanded startup help, as does
+expanded tool output. Without verbose, the `quietStartup` setting leaves the
+header empty. Otherwise the header shows the application name and version, the
+compact key hints and two onboarding lines. In verbose mode it shows the full
+list of key hints instead. Hints follow the loaded bindings: several keys keep
+their order, and an unbound action shows no key. Header text keeps the colours
+of the theme in effect when it was built.
+
 ## Loaded resources
 
 The listing appends one section per kind of loaded resource that has entries, in

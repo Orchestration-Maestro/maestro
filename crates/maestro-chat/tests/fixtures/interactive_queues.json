@@ -1241,11 +1241,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1273,11 +1269,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1305,11 +1297,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1337,11 +1325,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1369,11 +1353,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1396,11 +1376,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1433,11 +1409,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1470,11 +1442,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1507,11 +1475,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1544,11 +1508,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1571,11 +1531,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1612,9 +1568,6 @@
         " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        "",
         "",
         " @dim@Queued message for after compaction\u001b[39m                                            "
       ]
@@ -1654,9 +1607,6 @@
         " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        "",
         "",
         " @dim@Queued message for after compaction\u001b[39m                                            "
       ]
@@ -1690,11 +1640,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1731,9 +1677,6 @@
         " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        "",
         "",
         " @dim@Queued message for after compaction\u001b[39m                                            "
       ]
@@ -1769,11 +1712,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1806,11 +1745,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -1847,9 +1782,6 @@
         " @dim@\u21b3 Alt+Up to edit all queued messages\u001b[39m                                           "
       ],
       "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        "",
         "",
         " @dim@Queued message for after compaction\u001b[39m                                            "
       ]
@@ -1883,11 +1815,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -2035,11 +1963,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -2065,11 +1989,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -2091,11 +2011,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -2127,11 +2043,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {
@@ -2163,11 +2075,7 @@
       "errors": [],
       "aborts": 0,
       "pending": [],
-      "chat": [
-        "@mdHeading@[Extensions]\u001b[39m                                                                    ",
-        "@dim@  <inline>\u001b[39m                                                                      ",
-        ""
-      ]
+      "chat": []
     }
   },
   {

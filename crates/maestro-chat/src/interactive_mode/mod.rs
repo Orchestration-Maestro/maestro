@@ -180,9 +180,9 @@ impl InteractiveMode {
 
     /// Prepares search programs and completion, builds the header, adds every container in order, focuses the editor, binds the
     /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources and replays the session, once; theme changes then refresh the
-    /// editor border, and theme and branch changes request fresh frames. Finally the
-    /// footer learns how many providers the model candidates cover.
+    /// loaded resources with their diagnostics and replays the session, once; theme
+    /// changes then refresh the editor border, and theme and branch changes request fresh
+    /// frames. Finally the footer learns how many providers the model candidates cover.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the

@@ -168,18 +168,19 @@ struct Resources {
 }
 
 impl ForwardingLoader {
-    /// A loader over `inner` answering `resources`, then the dark and light palettes.
+    /// A loader over `inner` answering `resources`, then the dark and light palettes, and
+    /// the supplied `extensions` before the listed ones.
     fn new(
         inner: Rc<dyn ResourceLoader<Local>>,
         resources: Resources,
-        inline: Option<Rc<LoadExtensionsResult<Local>>>,
+        extensions: Option<Rc<LoadExtensionsResult<Local>>>,
     ) -> Self {
         let Resources {
             context,
             skills,
             mut prompts,
             mut themes,
-            extensions,
+            extensions: paths,
             errors,
             commands,
             diagnostics,
@@ -195,7 +196,7 @@ impl ForwardingLoader {
             })
         });
         themes.extend([dark(), light()]);
-        let loaded = !(extensions.is_empty() && errors.is_empty() && commands.is_empty());
+        let loaded = !(paths.is_empty() && errors.is_empty() && commands.is_empty());
         Self {
             inner,
             themes: Rc::new(LoadThemesResult {
@@ -209,8 +210,8 @@ impl ForwardingLoader {
                 diagnostics: diagnostics.skills,
             }),
             prompts: RefCell::new(prompts.collect()),
-            extensions: inline
-                .or_else(|| loaded.then(|| Rc::new(load(extensions, errors, &commands)))),
+            extensions: extensions
+                .or_else(|| loaded.then(|| Rc::new(load(paths, errors, &commands)))),
             calls: RefCell::default(),
         }
     }

@@ -965,6 +965,8 @@ fn controlled(directory: &Path, refuse: bool) -> (World, Heard) {
     .build(directory);
     super::start(&world);
     world.runtime.settle().unwrap();
+    // The recorded transcripts start after the startup resource listing.
+    world.mode.chat_container.clear();
     let session = world.mode.runtime_host.session();
     let extension = Rc::clone(&session.resource_loader().get_extensions().extensions[0]);
     let source_info = Arc::clone(&extension.read().unwrap().source_info);
