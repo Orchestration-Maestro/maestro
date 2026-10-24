@@ -1,5 +1,6 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions, typed input and queued input.
+//! resources, notices, transcript shortcuts, editor actions, typed input and queued
+//! input.
 
 use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;

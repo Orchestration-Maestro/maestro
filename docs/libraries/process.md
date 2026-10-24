@@ -38,3 +38,8 @@ setup-time terminal signal registration. Its existing process, I/O, runtime,
 channel and timer features remain enabled. `tracing =0.1.44` (MIT), with default
 features, records pane identity and native actor errors. These features reuse the
 locked dependency closure; no package version changes.
+
+On Unix, `maestro-process` uses `signal-hook =0.3.18` (MIT OR Apache-2.0), with default
+features disabled, only to give a termination signal its native default action once
+graceful shutdown has started. Tokio keeps signal delivery. The package is already in the
+locked dependency closure; no package version changes.
