@@ -849,7 +849,13 @@ declared for individual nodes, keyed by JSON pointer; a node without an entry is
 and is never converted as an authored node. `SchemaKind` names the extensible kinds the
 schema builders produce. `Tool`, `Context` and `ToolInfo` default their schema operand to
 this owner, guest authoring re-exports it, and the model argument-validation owner is its
-only converter. Serialization writes the supplied JSON alone: providers, persisted JSON
+only converter. Inside that owner the supplied schema is indexed once: a data-only
+document holds each authored node's kind against the node's identity, a small context owns
+only the named definitions visible on the current conversion call path, and each stage and
+kind keeps its own module (conversion, instantiation, evaluation, comparison, object
+property modifiers). The stages receive the operands they act on, never the conversion
+context or a projection shared between kinds. Serialization writes the supplied JSON
+alone: providers, persisted JSON
 and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
 text. The guest carries the declared kinds only inside its opaque internal registration
 and enumeration transport; its WIT and callback identities do not change.

@@ -101,6 +101,14 @@ definition visible at the point where conversion reaches it. Union alternatives 
 checked against those same definitions, and a composed alternative keeps the constraints
 and optional members its author declared.
 
+Two authored nodes are compared by what each kind accepts. An alternative set never
+stands in for a sequence or an intersection of the same members, so its alternatives keep
+their own conversions. A member an object leaves optional never satisfies a member the
+compared object requires. Each object reads its required names once when its members are
+projected, so construction work grows with the member count rather than with its square.
+An authored kind is looked up by the identity of the schema node it describes, resolved
+once from the pointer the builder recorded.
+
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
 Combinator alternatives use independent candidates; the first valid converted
