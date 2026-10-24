@@ -1,6 +1,6 @@
 //! The prompt loop over a real session answering through the scripted provider: startup
 //! notices and prompts, refused prompts, typed prompts and the current session.
-use super::{Setup, World, isolated, typed::recorded};
+use super::{Setup, World, cases, isolated};
 use crate::{InteractiveMode, InteractiveModeOptions};
 use maestro_app::{
     AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
@@ -630,7 +630,7 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 /// Replays every recorded case of `test` in a fresh child.
 fn replay(test: &str) {
     isolated(test, |directory| {
-        for (startup, expected) in recorded::<Startup, Vec<Step>>(FIXTURES, test) {
+        for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
             on_local(replay_case(directory, startup, expected));
         }
     });
@@ -774,7 +774,7 @@ fn from_prompts<'a>(
 fn startup_message_traversal_has_linear_work() {
     const TEST: &str = "startup_message_traversal_has_linear_work";
     isolated(TEST, |directory| {
-        for (size, work) in recorded::<Size, Work>(FIXTURES, TEST) {
+        for (size, work) in cases::<Size, Work>(FIXTURES, TEST) {
             on_local(measure(directory, size, work));
         }
     });
