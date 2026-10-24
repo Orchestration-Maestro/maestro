@@ -40,7 +40,7 @@ struct CopyElement {
 }
 impl custom_element::CustomElement for CopyElement {
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
-        if let Some(root) = live(&self.root).filter(|root| root.is_connected()) {
+        if let Some(root) = crate::dom::connected(&self.root) {
             let copied = self.feedback.borrow().is_some();
             // Lifecycle callbacks have no error channel; a failed render keeps the previous control.
             let _ = render(&root, &self.view, copied);

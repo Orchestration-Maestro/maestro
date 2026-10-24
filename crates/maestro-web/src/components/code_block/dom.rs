@@ -36,11 +36,7 @@ impl custom_element::CustomElement for CodeElement {
         let _ = self.render();
     }
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
-        if self
-            .root
-            .deref()
-            .is_some_and(|root| root.unchecked_into::<HtmlElement>().is_connected())
-        {
+        if crate::dom::connected(&self.root).is_some() {
             let _ = self.render();
         }
     }
