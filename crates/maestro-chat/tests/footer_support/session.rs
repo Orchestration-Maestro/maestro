@@ -9,9 +9,14 @@ use maestro_app::{
 use maestro_theme::LiveTheme;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// A memory session over an in-memory catalog, settings and loader, with its services.
-pub fn session(cwd: &str, oauth_provider: Option<&str>) -> CreateAgentSessionRuntimeResult {
-    let services = services(cwd, oauth_provider);
+/// A memory session over an in-memory catalog, settings and loader, with its services;
+/// its resource loader is `loader` applied to the default one.
+pub fn session(
+    cwd: &str,
+    oauth_provider: Option<&str>,
+    loader: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+) -> CreateAgentSessionRuntimeResult {
+    let services = services(cwd, oauth_provider, loader);
     let session = AgentSession::new(AgentSessionConfig {
         agent: Rc::default(),
         session_manager: Rc::new(RefCell::new(
@@ -46,7 +51,11 @@ pub fn session(cwd: &str, oauth_provider: Option<&str>) -> CreateAgentSessionRun
 }
 
 /// The credentials, catalog, settings and loader the session is built over.
-fn services(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSessionServices<Local>> {
+fn services(
+    cwd: &str,
+    oauth_provider: Option<&str>,
+    wrap: impl FnOnce(Rc<dyn ResourceLoader<Local>>) -> Rc<dyn ResourceLoader<Local>>,
+) -> Rc<AgentSessionServices<Local>> {
     let settings = Rc::new(RefCell::new(
         SettingsManager::in_memory(Settings::default()),
     ));
@@ -58,8 +67,8 @@ fn services(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSessionServices<
         ModelRegistry::in_memory(Arc::clone(&auth), commands).expect("an in-memory catalog"),
     );
     let module_loader: ModuleLoader<Local> = Rc::new(|_| Box::pin(async { Err("unused".into()) }));
-    let loader: Rc<dyn ResourceLoader<Local>> =
-        Rc::new(DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+    let loader = wrap(Rc::new(DefaultResourceLoader::new(
+        DefaultResourceLoaderOptions {
             cwd: cwd.to_owned(),
             agent_dir: cwd.to_owned(),
             settings_manager: Some(Rc::clone(&settings)),
@@ -67,7 +76,8 @@ fn services(cwd: &str, oauth_provider: Option<&str>) -> Rc<AgentSessionServices<
                 Rc::new(tokio::task::LocalSet::new()),
                 module_loader,
             ),
-        }));
+        },
+    )));
     Rc::new(AgentSessionServices {
         cwd: cwd.to_owned(),
         agent_dir: cwd.to_owned(),

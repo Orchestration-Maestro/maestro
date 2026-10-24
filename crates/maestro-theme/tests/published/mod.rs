@@ -55,11 +55,20 @@ const KEYS: [&str; 45] = [
 
 /// Theme whose key at position `i` of [`KEYS`] has palette index `offset + i + 1`.
 pub fn theme(offset: u8) -> Rc<Theme> {
+    named(offset, None)
+}
+
+/// The same palette, registered under `name` when one is supplied.
+pub fn named(offset: u8, name: Option<&str>) -> Rc<Theme> {
     let colors = KEYS
         .into_iter()
         .zip(offset + 1..)
-        .map(|(name, index)| (ThemeColor::Named(name.to_owned()), ColorValue::Index(index)));
-    Rc::new(Theme::new(colors, [], ColorMode::Truecolor, ThemeOptions::default()).unwrap())
+        .map(|(key, index)| (ThemeColor::Named(key.to_owned()), ColorValue::Index(index)));
+    let options = ThemeOptions {
+        name: name.map(str::to_owned),
+        ..ThemeOptions::default()
+    };
+    Rc::new(Theme::new(colors, [], ColorMode::Truecolor, options).unwrap())
 }
 
 /// A state that never published a theme and names no directories.
