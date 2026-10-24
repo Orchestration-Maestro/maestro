@@ -23,6 +23,10 @@ pub struct Bank {
     binding: usize,
     /// Rejection supplied for the next request.
     error: Option<String>,
+    /// Method whose next request is rejected instead of the next request overall.
+    method: Option<String>,
+    /// Message the request of `method` is rejected with.
+    message: Option<String>,
 }
 
 /// Requested host state; every member is independent.
@@ -49,6 +53,21 @@ impl Bank {
     pub fn acquire(&self) -> usize {
         self.binding
     }
+
+    /// Rejects the next request of `method` with `message`, leaving other requests accepted.
+    pub fn reject(&mut self, method: &str, message: &str) {
+        self.method = Some(method.to_owned());
+        self.message = Some(message.to_owned());
+    }
+
+    /// Takes the rejection armed for `method`, once that method's request arrives.
+    fn refusal(&mut self, method: &str) -> Option<String> {
+        if self.method.as_deref() != Some(method) {
+            return None;
+        }
+        self.method = None;
+        self.message.take()
+    }
 }
 
 /// Records one request against the acquisition `key`, then returns its supplied rejection.
@@ -60,6 +79,7 @@ pub fn call(
 ) -> Result<(), String> {
     observed.log(format!("ui {key} {method} {operands}"));
     let error = observed.ui.error.take();
+    let error = error.or_else(|| observed.ui.refusal(method));
     error.map_or(Ok(()), Err)
 }
 
@@ -141,21 +161,21 @@ pub struct Receipt {
     pub operands: Value,
 }
 
+/// The UI request `line` records, if it records one.
+pub fn receipt(line: &str) -> Option<Receipt> {
+    let rest = line.strip_prefix("ui ")?;
+    let (key, rest) = rest.split_once(' ')?;
+    let (method, operands) = rest.split_once(' ')?;
+    Some(Receipt {
+        key: key.parse().ok()?,
+        method: method.to_owned(),
+        operands: serde_json::from_str(operands).ok()?,
+    })
+}
+
 /// The UI requests recorded in `lines`, in time order.
 pub fn receipts(lines: &[String]) -> Vec<Receipt> {
-    lines
-        .iter()
-        .filter_map(|line| line.strip_prefix("ui "))
-        .filter_map(|rest| {
-            let (key, rest) = rest.split_once(' ')?;
-            let (method, operands) = rest.split_once(' ')?;
-            Some(Receipt {
-                key: key.parse().ok()?,
-                method: method.to_owned(),
-                operands: serde_json::from_str(operands).ok()?,
-            })
-        })
-        .collect()
+    lines.iter().filter_map(|line| receipt(line)).collect()
 }
 
 impl State {

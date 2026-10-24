@@ -3,10 +3,12 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, session replay and the expansion and thinking shortcuts. The prompt loop,
-streaming messages, startup messages, installed custom headers, the terminal
-title and the other integrations are still to come; the mode reads submitted text
-but does not yet prompt the session.
+input, queued input, the export command, session replay, the expansion and thinking
+shortcuts, thinking and model cycling, the editor border, external editing and
+image paste. The prompt loop, streaming messages, startup messages, installed
+custom headers, the terminal title and the other integrations are still to come;
+the mode prompts the session only for input queued during a response or a
+compaction.
 
 ## Construction
 
@@ -32,9 +34,10 @@ fallback theme is returned.
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
 containers and the footer, in that order. It focuses the editor, binds the
-transcript shortcuts, installs editor submission and starts the terminal. A
-terminal start failure is returned and leaves the mode uninitialized. After a
-successful start, a theme change invalidates the presentation, recolours the
+transcript shortcuts, the queue keys and editor actions, installs editor submission
+and starts the terminal. A terminal start failure is returned and leaves the mode
+uninitialized. After a successful start, a theme change invalidates the
+presentation, recolours the
 editor border and requests a frame, and a branch change requests a frame. Neither
 callback keeps the mode alive. Last, it lists the loaded resources in the
 transcript and then replays the session (see below).
@@ -92,7 +95,9 @@ editor, with the key bound to `tui.input.submit` (Enter by default). Submitted
 text loses its outer whitespace under the shared whitespace policy: Unicode white
 space other than U+0085, plus U+FEFF. U+0085, U+200B, inner spaces and line breaks
 stay. Submission ignores text that is empty after trimming: no input receives it
-and the history does not record it.
+and the history does not record it. While the session compacts or a response
+streams, submitted text is queued instead (see Queued input) and no input receives
+it.
 
 Only one input waits at a time. The future starts waiting when it is first
 polled, not when it is created, and it does not borrow the mode. When it waits,
@@ -102,8 +107,14 @@ polled, and the replaced future stays pending.
 
 The waiting input receives the text before the editor's history records it, so
 code that runs when the input completes can already wait for the next one. Every
-accepted submission enters the history, whether or not an input was waiting.
-Submission does not keep the mode alive.
+submission delivered as prompt text enters the history, whether or not an input
+was waiting. Submission does not keep the mode alive.
+
+Submission offers the text to the mode's commands first. Text recognized as
+`/export` runs that command instead: it reports on the transcript, completes no
+waiting input and enters no history. Near spellings are prompt text, so
+`/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
+[interactive commands](commands.md).
 
 ## Session replay
 
@@ -132,6 +143,47 @@ editor history and, when the session was compacted, shows `Session compacted 1
 time` or `Session compacted N times`. A rebuild after the thinking shortcut replays
 without either effect, so the history is not filled twice.
 
+## Queued input
+
+While a response streams, Enter queues the trimmed text as steering and the key
+bound to `app.message.followUp` (Alt+Enter by default) queues it as a follow-up.
+Both record the text in the history and empty the editor, then send it to the
+session as a prompt with that delivery, so registered commands still run at once and
+templates still expand. The prompt starts at once; once it is queued, the pending
+rows are refreshed. When the session refuses it, the editor stays empty, the history
+keeps the text, the rows are not refreshed and the failure goes to the terminal
+runtime's error route. With no response streaming and no compaction, the follow-up
+key empties the editor and submits the text as Enter does; without an installed
+submission it does nothing. The follow-up key reads the editor's expanded text, so a
+large paste is sent in full.
+
+While the session compacts, a registered command (`/name`, with the name ending at the
+first space) still runs at once. The mode keeps any other text in the order it was
+typed, as steering from Enter or as a follow-up from the follow-up key, records it
+in the history, clears it from the editor, shows it in the pending rows and confirms
+it with the status line `Queued message for after compaction`. The mode does not
+yet send the kept messages when the compaction ends; until it does, they stay in
+the pending rows, and the dequeue key restores them.
+
+Queued messages, including those kept during a compaction, appear above the
+editor. Each steering message gets a dim `Steering: <text>` row and each follow-up
+message a dim `Follow-up: <text>` row, cut to one line. A last row names the keys bound to
+`app.message.dequeue` (Alt+Up by default) with `to edit all queued messages`. The
+keys are read when the rows are built, each part capitalized, as in `Ctrl+Alt+Q`.
+With nothing queued, the rows are removed.
+
+The dequeue key moves every queued message back into the editor: steering messages
+first, then follow-up messages, separated by blank lines and followed by the current
+draft when that draft is not blank. Duplicates and their order are kept. A status
+line then says `Restored 1 queued message to editor`,
+`Restored <n> queued messages to editor` or `No queued messages to restore`; with
+nothing queued the editor is left as it was.
+
+While a response streams, the interrupt key (Escape by default) restores the queued
+messages the same way and then stops the response, even when nothing was queued. When
+no response streams, the key does nothing. The queue keys do not keep the mode alive,
+and a failure in them goes to the terminal runtime's error route.
+
 ## Status lines
 
 A status is a dim line in the transcript. When the previous status line is still
@@ -148,5 +200,69 @@ The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock
 replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
 visible`. A shortcut's failure goes to the terminal runtime's error route.
 
-The editor border follows the session's thinking level, or the shell colour while
-the editor holds a shell command.
+## Thinking and model cycling
+
+The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
+session's next thinking level. It shows `Thinking level: <level>` as a status line
+and refreshes the footer and editor border; when the model cannot reason it shows
+`Current model does not support thinking` and changes nothing else. A recording
+failure goes to the terminal runtime's error route.
+
+The model cycle keys (`app.model.cycleForward` and `app.model.cycleBackward`,
+Ctrl+P and Shift+Ctrl+P by default) select the next or previous scoped model, or
+the next or previous available model when none are scoped. The cycle runs on the
+terminal runtime, which keeps the mode until it completes. It then shows
+`Switched to <name>`, using the model id when the name is empty and adding
+` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
+the footer and editor border. With no other candidate it shows
+`Only one model in scope` or `Only one model available`. A session error is shown
+as an error notice instead of the switch message. A failed credential lookup leaves
+the selection as it was; a recording or listener failure happens after the new
+model is selected, so that model stays selected.
+
+## Editor border
+
+The editor border shows the input mode. Text whose first character after leading
+whitespace is `!` is a shell command, and the border takes the theme's `bashMode`
+colour. Leading whitespace follows the same policy as submitted text, so U+FEFF and
+a no-break space are skipped while U+0085 and U+200B are not. Otherwise the border
+takes the colour of the session's thinking level, `thinkingOff` through
+`thinkingXhigh`. The border is repainted and a frame requested only when an edit
+switches between the two modes. A failure to read the theme is handed to the
+terminal's runtime host, which reports it.
+
+## External editing
+
+The key bound to `app.editor.external` (Ctrl+G by default) edits the editor text in
+an external editor. The mode reads the runtime's `VISUAL`, then `EDITOR`, each time
+the key is pressed; an empty value counts as unset, and neither value is trimmed.
+With no editor configured, the transcript shows the warning
+`No editor configured. Set $VISUAL or $EDITOR environment variable.` and nothing
+else happens. On Unix the command splits on ASCII spaces only, and the file path is
+its last argument; Windows runs it through the configured command interpreter, as
+the extension editor dialog does.
+
+The text written is the expanded text, so a collapsed paste is written in full
+rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
+the temporary directory. The mode then stops the terminal and runs the editor on
+the inherited terminal. A zero exit replaces the editor text with the file's text
+less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
+After every outcome the mode tries to remove the file it created, ignoring a failed
+removal, and restarts the terminal with a full redraw. Other failures are handed
+to the terminal's runtime host.
+
+## Image paste
+
+Pasting an image (`app.clipboard.pasteImage`: Ctrl+V by default, Alt+V on Windows)
+reads the clipboard through the application's
+image reader. An image is written to `maestro-clipboard-{UUID}.{extension}` in the
+temporary directory, with the extension of its type or `png`, and the file path is
+inserted at the cursor. The file stays for the prompt that uses it. No image, a
+failed read and a failed write all leave the editor as it was, without a message.
+
+Both actions create their temporary file exclusively, readable only by its owner on
+Unix: an existing file or symbolic link of the same name is left untouched, and the
+edit stops with an error before the editor runs. Neither action keeps the mode
+alive; a clipboard read in progress keeps the mode until it completes.
+
+Suspending to the background is not part of the mode yet.

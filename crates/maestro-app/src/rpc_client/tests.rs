@@ -1,6 +1,10 @@
 //! What a client releases when its work ends or its launch fails, observed in its own state.
-use super::{RpcClient, RpcClientError, RpcClientOptions, process};
-use std::{cell::RefCell, future::Future, rc::Rc};
+#[cfg(unix)]
+use super::process;
+use super::{RpcClient, RpcClientError, RpcClientOptions};
+#[cfg(unix)]
+use std::cell::RefCell;
+use std::{future::Future, rc::Rc};
 
 /// Runs `body` on a local executor with its own runtime.
 fn on_local<F: Future>(body: F) -> F::Output {
@@ -17,10 +21,12 @@ fn failed_prompt_releases_its_collection_registration() {
         let client = RpcClient::new(RpcClientOptions::default());
         let outcome = client.prompt_and_wait("hello", None, None).await;
         assert!(matches!(outcome, Err(RpcClientError::NotStarted)));
-        assert!(
-            client.inner.listeners.borrow().next_from(0).is_none(),
-            "the collection's registration is removed"
-        );
+        let live = {
+            let mut listeners = client.inner.listeners.borrow_mut();
+            let mut cursor = listeners.cursor();
+            listeners.next_from(&mut cursor).is_some()
+        };
+        assert!(!live, "the collection's registration is removed");
         // The executor drops the cancelled deadline task on its next turn.
         tokio::task::yield_now().await;
         assert_eq!(

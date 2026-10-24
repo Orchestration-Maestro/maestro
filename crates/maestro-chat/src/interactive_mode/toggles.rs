@@ -7,6 +7,7 @@ use crate::{
     CustomMessageComponent, SkillInvocationMessageComponent, ToolExecutionComponent,
 };
 use maestro_app::Local;
+use maestro_app::agent_session::CycleDirection;
 use maestro_theme::ThemeError;
 use maestro_tui::{Component, EditorComponent};
 use std::{any::Any, error::Error, rc::Rc};
@@ -15,27 +16,30 @@ use std::{any::Any, error::Error, rc::Rc};
 type Operation = fn(&InteractiveMode) -> Result<(), Box<dyn Error>>;
 
 impl InteractiveMode {
-    /// Binds the transcript shortcuts on the editor.
+    /// Binds the transcript shortcuts and editor actions on the editor, in the order the
+    /// editor consults them, then installs its change and image-paste callbacks.
     pub(super) fn setup_key_handlers(self: &Rc<Self>) {
+        self.on_action("app.thinking.cycle", Self::cycle_thinking_level);
+        self.on_model_cycle("app.model.cycleForward", CycleDirection::Forward);
+        self.on_model_cycle("app.model.cycleBackward", CycleDirection::Backward);
         self.on_action("app.tools.expand", Self::toggle_tool_output_expansion);
         self.on_action(
             "app.thinking.toggle",
             Self::toggle_thinking_block_visibility,
         );
+        self.on_action("app.editor.external", Self::open_external_editor);
+        self.setup_editor_callbacks();
     }
 
     /// Binds `action` to `operation` without retaining the mode; a failure goes to the
     /// terminal runtime's error route.
     fn on_action(self: &Rc<Self>, action: &str, operation: Operation) {
         let mode = Rc::downgrade(self);
-        let runtime = Rc::clone(&self.tool_environment.runtime);
         self.editor.on_action(
             action.to_owned(),
             Rc::new(move || {
-                if let Some(mode) = mode.upgrade()
-                    && let Err(error) = operation(&mode)
-                {
-                    runtime.spawn_local(Box::pin(std::future::ready(Err(error))));
+                if let Some(mode) = mode.upgrade() {
+                    mode.report(operation(&mode));
                 }
             }),
         );

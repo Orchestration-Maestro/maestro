@@ -777,6 +777,12 @@ pub fn on_paused_task_set<F: std::future::Future>(
     runtime.block_on(local.run_until(body(Rc::clone(&local))))
 }
 
+/// Returns once every task of an [`on_paused_task_set`] runtime waits: the paused clock
+/// moves only then.
+pub async fn until_idle() {
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+}
+
 /// The text of a message record: plain content, joined text blocks, or its summary.
 pub fn message_text(record: &Value) -> Value {
     match &record["content"] {

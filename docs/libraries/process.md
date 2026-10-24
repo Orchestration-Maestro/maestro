@@ -23,6 +23,10 @@ the application's inherited-terminal process bridge. This reuses the existing
 locked Tokio process dependency closure; it adds no runtime or deadline policy.
 Tokio is MIT licensed.
 
+Native `maestro-chat` names pasted clipboard images with `uuid =1.27.0`, defaults
+off with `std` and `v4`, the version and features the application already locks.
+uuid is licensed MIT OR Apache-2.0.
+
 Linux pane terminals use the existing `rustix =1.1.5` (Apache-2.0 WITH
 LLVM-exception OR Apache-2.0 OR MIT), with defaults off and `std`, `process`,
 `pty` and `termios` enabled; `pty` enables `fs`. Owned descriptors provide

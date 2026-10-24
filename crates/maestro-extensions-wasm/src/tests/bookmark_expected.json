@@ -1,0 +1,1919 @@
+{
+  "metadata": [
+    {
+      "name": "bookmark",
+      "description": "Bookmark last message (usage: /bookmark [label])",
+      "completions": false
+    },
+    {
+      "name": "unbookmark",
+      "description": "Remove bookmark from last labeled entry",
+      "completions": false
+    }
+  ],
+  "rows": [
+    {
+      "name": "last-assistant-not-last-entry",
+      "command": "bookmark",
+      "args": " checkpoint ",
+      "entries": [
+        {
+          "type": "message",
+          "id": "older",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "message",
+          "id": "question",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "question",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "message",
+          "id": "newer",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "custom",
+          "id": "custom",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "state"
+        },
+        {
+          "type": "message",
+          "id": "tail",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "question",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "newer",
+            "label": "checkpoint"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: checkpoint",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "array-order-not-timestamp",
+      "command": "bookmark",
+      "args": "order",
+      "entries": [
+        {
+          "type": "message",
+          "id": "first",
+          "parentId": null,
+          "timestamp": "2026-12-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "message",
+          "id": "last",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "last",
+            "label": "order"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: order",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "label-overwrites-existing",
+      "command": "bookmark",
+      "args": "new",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "new"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: new",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "plain",
+      "command": "bookmark",
+      "args": "topic",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "topic"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: topic",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "ascii-trim",
+      "command": "bookmark",
+      "args": " \t\n topic \r\n",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "topic"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: topic",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unicode-trim",
+      "command": "bookmark",
+      "args": "  topic ",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "topic"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: topic",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "internal-space",
+      "command": "bookmark",
+      "args": " alpha  beta ",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "alpha  beta"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: alpha  beta",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "literal-zero",
+      "command": "bookmark",
+      "args": "0",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "0"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: 0",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unicode-label",
+      "command": "bookmark",
+      "args": " 雪😀 ",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "雪😀"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: 雪😀",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "empty-default",
+      "command": "bookmark",
+      "args": "",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "bookmark-1700000000123"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: bookmark-1700000000123",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 1,
+        "error": null
+      }
+    },
+    {
+      "name": "space-default",
+      "command": "bookmark",
+      "args": " \t\r\n",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 1700000000124,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "bookmark-1700000000124"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: bookmark-1700000000124",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 1,
+        "error": null
+      }
+    },
+    {
+      "name": "epoch-default",
+      "command": "bookmark",
+      "args": "",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {},
+      "now": 0,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "bookmark-0"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: bookmark-0",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 1,
+        "error": null
+      }
+    },
+    {
+      "name": "bookmark-empty-session",
+      "command": "bookmark",
+      "args": "",
+      "entries": [],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [],
+        "notifications": [
+          {
+            "message": "No assistant message to bookmark",
+            "kind": "warning"
+          }
+        ],
+        "queries": [],
+        "clockReads": 1,
+        "error": null
+      }
+    },
+    {
+      "name": "bookmark-only-ineligible",
+      "command": "bookmark",
+      "args": "unused",
+      "entries": [
+        {
+          "type": "message",
+          "id": "user",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "question",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "thinking_level_change",
+          "id": "thinking",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "model_change",
+          "id": "model",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "provider": "test-provider",
+          "modelId": "test-model"
+        },
+        {
+          "type": "compaction",
+          "id": "compact",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "summary": "summary",
+          "firstKeptEntryId": "assistant",
+          "tokensBefore": 1
+        },
+        {
+          "type": "branch_summary",
+          "id": "branch",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "fromId": "assistant",
+          "summary": "branch"
+        },
+        {
+          "type": "custom",
+          "id": "custom",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "state"
+        },
+        {
+          "type": "custom_message",
+          "id": "display",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "display",
+          "content": "text",
+          "display": true
+        },
+        {
+          "type": "label",
+          "id": "label",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "targetId": "assistant",
+          "label": "tag"
+        },
+        {
+          "type": "session_info",
+          "id": "info",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "name": "session"
+        }
+      ],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [],
+        "notifications": [
+          {
+            "message": "No assistant message to bookmark",
+            "kind": "warning"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unbookmark-newest-any-kind",
+      "command": "unbookmark",
+      "args": "ignored",
+      "entries": [
+        {
+          "type": "message",
+          "id": "older",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "custom",
+          "id": "custom",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "state"
+        },
+        {
+          "type": "message",
+          "id": "tail",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "question",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "older": "old",
+        "custom": "not-a-bookmark-prefix"
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "custom"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark: not-a-bookmark-prefix",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "tail",
+          "custom"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unbookmark-skip-empty-and-absent",
+      "command": "unbookmark",
+      "args": "",
+      "entries": [
+        {
+          "type": "message",
+          "id": "older",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "custom",
+          "id": "custom",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "state"
+        },
+        {
+          "type": "message",
+          "id": "tail",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "question",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "older": "old",
+        "custom": ""
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "older"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark: old",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "tail",
+          "custom",
+          "older"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-message",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "assistant"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-thinking_level_change",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "thinking_level_change",
+          "id": "thinking",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "thinkingLevel": "high"
+        }
+      ],
+      "labels": {
+        "thinking": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "thinking"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "thinking"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-model_change",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "model_change",
+          "id": "model",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "provider": "test-provider",
+          "modelId": "test-model"
+        }
+      ],
+      "labels": {
+        "model": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "model"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "model"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-compaction",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "compaction",
+          "id": "compact",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "summary": "summary",
+          "firstKeptEntryId": "assistant",
+          "tokensBefore": 1
+        }
+      ],
+      "labels": {
+        "compact": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "compact"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "compact"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-branch_summary",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "branch_summary",
+          "id": "branch",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "fromId": "assistant",
+          "summary": "branch"
+        }
+      ],
+      "labels": {
+        "branch": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "branch"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "branch"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-custom",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "custom",
+          "id": "custom",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "state"
+        }
+      ],
+      "labels": {
+        "custom": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "custom"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "custom"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-custom_message",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "custom_message",
+          "id": "display",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "display",
+          "content": "text",
+          "display": true
+        }
+      ],
+      "labels": {
+        "display": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "display"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "display"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-label",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "label",
+          "id": "label",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "targetId": "assistant",
+          "label": "tag"
+        }
+      ],
+      "labels": {
+        "label": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "label"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "label"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "remove-session_info",
+      "command": "unbookmark",
+      "args": " ignored ",
+      "entries": [
+        {
+          "type": "session_info",
+          "id": "info",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "name": "session"
+        }
+      ],
+      "labels": {
+        "info": "  label 雪  "
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "info"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark:   label 雪  ",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "info"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unbookmark-empty-session",
+      "command": "unbookmark",
+      "args": "",
+      "entries": [],
+      "labels": {},
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [],
+        "notifications": [
+          {
+            "message": "No bookmarked entry found",
+            "kind": "warning"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unbookmark-no-labels",
+      "command": "unbookmark",
+      "args": "",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "custom",
+          "id": "custom",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "customType": "state"
+        }
+      ],
+      "labels": {
+        "assistant": ""
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [],
+        "notifications": [
+          {
+            "message": "No bookmarked entry found",
+            "kind": "warning"
+          }
+        ],
+        "queries": [
+          "custom",
+          "assistant"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "unbookmark-string-zero",
+      "command": "unbookmark",
+      "args": "",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "0"
+      },
+      "now": 1700000000123,
+      "failure": null,
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark: 0",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "assistant"
+        ],
+        "clockReads": 0,
+        "error": null
+      }
+    },
+    {
+      "name": "bookmark-read-error",
+      "command": "bookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "getEntries",
+      "expected": {
+        "sets": [],
+        "notifications": [],
+        "queries": [],
+        "clockReads": 0,
+        "error": "host refused getEntries"
+      }
+    },
+    {
+      "name": "bookmark-set-error",
+      "command": "bookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "setLabel",
+      "expected": {
+        "sets": [],
+        "notifications": [],
+        "queries": [],
+        "clockReads": 0,
+        "error": "host refused setLabel"
+      }
+    },
+    {
+      "name": "bookmark-notify-error",
+      "command": "bookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "notify",
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant",
+            "label": "label"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Bookmarked as: label",
+            "kind": "info"
+          }
+        ],
+        "queries": [],
+        "clockReads": 0,
+        "error": "host refused notify"
+      }
+    },
+    {
+      "name": "unbookmark-read-error",
+      "command": "unbookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "getEntries",
+      "expected": {
+        "sets": [],
+        "notifications": [],
+        "queries": [],
+        "clockReads": 0,
+        "error": "host refused getEntries"
+      }
+    },
+    {
+      "name": "unbookmark-label-error",
+      "command": "unbookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "getLabel",
+      "expected": {
+        "sets": [],
+        "notifications": [],
+        "queries": [
+          "assistant"
+        ],
+        "clockReads": 0,
+        "error": "host refused getLabel"
+      }
+    },
+    {
+      "name": "unbookmark-set-error",
+      "command": "unbookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "setLabel",
+      "expected": {
+        "sets": [],
+        "notifications": [],
+        "queries": [
+          "assistant"
+        ],
+        "clockReads": 0,
+        "error": "host refused setLabel"
+      }
+    },
+    {
+      "name": "unbookmark-notify-error",
+      "command": "unbookmark",
+      "args": "label",
+      "entries": [
+        {
+          "type": "message",
+          "id": "assistant",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "test-api",
+            "provider": "test-provider",
+            "model": "test-model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          }
+        }
+      ],
+      "labels": {
+        "assistant": "old"
+      },
+      "now": 1700000000123,
+      "failure": "notify",
+      "expected": {
+        "sets": [
+          {
+            "id": "assistant"
+          }
+        ],
+        "notifications": [
+          {
+            "message": "Removed bookmark: old",
+            "kind": "info"
+          }
+        ],
+        "queries": [
+          "assistant"
+        ],
+        "clockReads": 0,
+        "error": "host refused notify"
+      }
+    }
+  ]
+}

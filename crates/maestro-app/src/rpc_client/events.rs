@@ -1,6 +1,7 @@
 //! Event callbacks, their registrations and the waits for the end of a run.
 use super::{Inner, RpcClient, RpcClientError, RpcEventListener, expiry_at};
-use maestro_models::{ImageContent, records::listeners::Listeners};
+use maestro_listeners::Listeners;
+use maestro_models::ImageContent;
 use maestro_watch::fs_watch::NativeTimer;
 use serde_json::Value;
 use std::{cell::RefCell, convert::Infallible, future::Future, rc::Rc, time::Duration};

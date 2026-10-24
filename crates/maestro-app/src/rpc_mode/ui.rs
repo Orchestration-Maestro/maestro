@@ -1,8 +1,8 @@
 //! The extension interface over the protocol: dialogs are requests answered by a matching
 //! response, notices are requests nobody answers, and the terminal-only operations keep
 //! their headless defaults.
-use super::output::write_record;
-use super::{RpcOutput, RpcRecord};
+use super::RpcRecord;
+use super::connection::{Connection, write_to};
 use crate::rpc_types::{RpcExtensionUIMethod, RpcExtensionUIRequest, RpcExtensionUIResponse};
 use futures_util::future::OptionFuture;
 use maestro_extensions::EventError;
@@ -14,7 +14,12 @@ use maestro_models::Cancellation;
 use maestro_theme::LiveTheme;
 use serde::Deserialize;
 use serde_json::Value;
-use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::{Rc, Weak},
+    time::Duration,
+};
 use tokio::{sync::oneshot, time::Instant};
 
 /// A dialog's settled answer: its default, or the client's response.
@@ -40,8 +45,8 @@ type PendingDialogs = Rc<RefCell<HashMap<String, Waiting>>>;
 
 /// The extension interface of one connection, shared by every session it binds.
 pub(super) struct RpcUi {
-    /// The connection's output.
-    output: RpcOutput,
+    /// The connection that writes the requests.
+    connection: Weak<Connection>,
     /// The dialogs waiting for an answer.
     pending: PendingDialogs,
     /// The live theme.
@@ -49,10 +54,10 @@ pub(super) struct RpcUi {
 }
 
 impl RpcUi {
-    /// An interface writing to `output` that reads `theme`.
-    pub(super) fn new(output: RpcOutput, theme: LiveTheme) -> Self {
+    /// An interface writing through `connection` that reads `theme`.
+    pub(super) fn new(connection: Weak<Connection>, theme: LiveTheme) -> Self {
         Self {
-            output,
+            connection,
             pending: Rc::default(),
             theme,
         }
@@ -88,8 +93,15 @@ impl RpcUi {
     /// Writes `method` as the request `id`.
     fn send(&self, id: String, method: RpcExtensionUIMethod) -> Result<(), EventError> {
         let request = RpcExtensionUIRequest { id, method };
-        write_record(&self.output, RpcRecord::ExtensionUiRequest(&request))
+        write_to(&self.connection, RpcRecord::ExtensionUiRequest(&request))
             .map_err(EventError::from)
+    }
+
+    /// Settles every pending dialog as cancelled.
+    pub(super) fn cancel_pending(&self) {
+        for (_, waiting) in self.pending.borrow_mut().drain() {
+            drop(waiting.answer.send(Ok(Answer::Cancelled)));
+        }
     }
 
     /// Writes `method` as a request nobody answers.
@@ -98,7 +110,8 @@ impl RpcUi {
     }
 
     /// Writes `method` and settles with the picked answer, or with `default` once `signal`
-    /// aborts, `timeout` milliseconds pass or the client dismisses it.
+    /// aborts, `timeout` milliseconds pass or the client dismisses it. It settles with
+    /// `default` without asking when no answer can arrive.
     fn dialog<T: 'static>(
         &self,
         method: RpcExtensionUIMethod,
@@ -107,7 +120,11 @@ impl RpcUi {
         pick: fn(RpcExtensionUIResponse) -> T,
     ) -> ExtensionUIFuture<T> {
         let ExtensionUIDialogOptions { signal, timeout } = options.unwrap_or_default();
-        if signal.as_ref().is_some_and(Cancellation::is_aborted) {
+        let unanswerable = self
+            .connection
+            .upgrade()
+            .is_some_and(|connection| !connection.admits_dialogs());
+        if unanswerable || signal.as_ref().is_some_and(Cancellation::is_aborted) {
             return Box::pin(std::future::ready(Ok(default)));
         }
         let deadline = expiry(timeout).map(|duration| Instant::now() + duration);

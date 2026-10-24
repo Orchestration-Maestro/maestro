@@ -183,6 +183,12 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session and the application may depend on it, on native targets; callers keep
   kind filtering, name decoding and further ordering.
+- `maestro-listeners` is a declared core leaf below layer 0 with no workspace
+  dependencies. It retains callbacks in live registration order: one admission per
+  identity, removal that returns ownership to the caller, and traversal that sees
+  the collection as it is. Models, the toolkit, agent, application and extensions
+  may depend on it; they keep their own borrowing, locking and settlement policy.
+  Its storage reclaims retired registrations while no traversal runs.
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
@@ -526,11 +532,13 @@ target at `tests/integration.rs`.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
 its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 
 Shared extension event/result schemas and assembled prompt records belong to

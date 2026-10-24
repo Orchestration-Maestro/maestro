@@ -61,7 +61,11 @@ pub use components::session_selector::*;
 
 #[cfg(test)]
 extern crate self as maestro_chat;
+// The shared native test helpers name their child-process owner at the crate root.
 pub use components::bash_execution::BashExecutionComponent;
+#[cfg(test)]
+#[cfg(unix)]
+use components::session_selector::list::tests::session_picker::native_child as child;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use components::footer::FooterComponent;
@@ -75,3 +79,9 @@ pub mod interactive_mode;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use interactive_mode::{InteractiveMode, InteractiveModeOptions};
+
+#[cfg(not(target_arch = "wasm32"))]
+mod external_editor;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod temporary_file;

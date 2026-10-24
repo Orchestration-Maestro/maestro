@@ -9,4 +9,5 @@ mod input_presenters;
 mod model_account_checks;
 mod model_tables;
 mod package_command_checks;
+mod startup_config;
 mod support;

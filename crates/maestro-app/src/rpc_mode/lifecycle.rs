@@ -1,8 +1,6 @@
 //! A connection's lifetime: binding each session to the protocol, the extension operations
 //! behind command contexts, termination signals and shutdown.
-use super::connection::Connection;
-use super::output::write_record;
-use super::ui::RpcUi;
+use super::connection::{Connection, write_to};
 use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, RpcRecord};
 use crate::agent_session::{AgentSession, ExtensionBindings};
 use crate::runtime::agent_session_runtime::AgentSessionRuntime;
@@ -11,7 +9,6 @@ use maestro_extensions::{EventError, ExtensionCommandContextActions};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_process::TerminationSignal;
 use std::{
-    cell::RefCell,
     io,
     rc::{Rc, Weak},
 };
@@ -19,6 +16,22 @@ use tokio::sync::oneshot;
 
 /// Receives how the connection ended.
 pub(super) type Finish = oneshot::Receiver<io::Result<RpcConnectionOutcome>>;
+
+/// Where a connection is in its lifetime.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum Phase {
+    /// Lines are read; the initial binding may still run.
+    #[default]
+    Serving,
+    /// The input ended while the initial binding runs, so its dialogs cannot be answered.
+    InputEnded,
+    /// A shutdown owns the teardown but has not yet stopped signal delivery.
+    CloseQueued,
+    /// Signal delivery and the subscription are stopped and the runtime is disposing.
+    Closing,
+    /// The connection reported how it ended.
+    Closed,
+}
 
 /// Shutdown and subscription state of a connection.
 #[derive(Default)]
@@ -29,9 +42,9 @@ pub(super) struct Lifecycle {
     signal_cleanup: Option<Box<dyn Fn()>>,
     /// Whether an extension requested shutdown.
     shutdown_requested: bool,
-    /// Whether shutdown started.
-    pub(super) shutting_down: bool,
-    /// The first input or output failure, which the shutdown reports.
+    /// Where the connection is in its lifetime.
+    phase: Phase,
+    /// The first input or output failure, which the connection reports however it ends.
     failure: Option<io::Error>,
     /// Reports how the connection ended; taken by the first report.
     finish: Option<oneshot::Sender<io::Result<RpcConnectionOutcome>>>,
@@ -46,18 +59,11 @@ impl Connection {
         options: RpcModeOptions,
     ) -> (Rc<Self>, Finish) {
         let (finish, finished) = oneshot::channel();
-        let connection = Rc::new(Self {
-            ui: Rc::new(RpcUi::new(Rc::clone(&output), options.theme.clone())),
-            runtime,
-            output,
-            options,
-            early: RefCell::new(Some(Vec::new())),
-            bound: tokio::sync::Notify::new(),
-            lifecycle: RefCell::new(Lifecycle {
-                finish: Some(finish),
-                ..Lifecycle::default()
-            }),
-        });
+        let lifecycle = Lifecycle {
+            finish: Some(finish),
+            ..Lifecycle::default()
+        };
+        let connection = Self::new(runtime, output, options, lifecycle);
         let weak = Rc::downgrade(&connection);
         connection
             .runtime
@@ -95,12 +101,30 @@ impl Connection {
         self.bound.notify_waiters();
     }
 
-    /// Waits until the initial binding has handled the records that arrived meanwhile.
+    /// Waits until the initial binding has handled the records that arrived meanwhile. The
+    /// connection is ending, so the dialogs the binding waits on, now or later, settle as
+    /// cancelled: no answer can arrive.
     pub(super) async fn initial_binding(&self) {
         let bound = self.bound.notified();
         if self.early.borrow().is_some() {
+            self.lifecycle.borrow_mut().end_input();
+            self.ui.cancel_pending();
             bound.await;
         }
+    }
+
+    /// Whether a dialog asked now can be answered: not while an ending connection waits for
+    /// its initial binding.
+    pub(super) fn admits_dialogs(&self) -> bool {
+        self.early.borrow().is_none() || self.lifecycle.borrow().phase == Phase::Serving
+    }
+
+    /// Whether a shutdown owns the teardown.
+    pub(super) fn shutting_down(&self) -> bool {
+        matches!(
+            self.lifecycle.borrow().phase,
+            Phase::CloseQueued | Phase::Closing | Phase::Closed
+        )
     }
 
     /// Binds the current session's extensions to the protocol, then replaces the event
@@ -115,7 +139,7 @@ impl Connection {
         let weak = Rc::downgrade(self);
         let unsubscribe = session.subscribe(Rc::new(move |event| {
             if let Some(connection) = weak.upgrade() {
-                connection.write(RpcRecord::Event(event));
+                drop(connection.write(RpcRecord::Event(event)));
             }
         }));
         self.lifecycle.borrow_mut().unsubscribe = Some(Box::new(unsubscribe));
@@ -125,8 +149,7 @@ impl Connection {
     /// The protocol's extension interface, command operations, shutdown request and
     /// failure report.
     fn bindings(self: &Rc<Self>) -> ExtensionBindings {
-        let weak = Rc::downgrade(self);
-        let output = Rc::clone(&self.output);
+        let (weak, writer) = (Rc::downgrade(self), Rc::downgrade(self));
         ExtensionBindings {
             ui_context: Some(ExtensionUIContext::new(Rc::clone(&self.ui) as Rc<_>)),
             command_context_actions: Some(command_actions(Rc::downgrade(&self.runtime))),
@@ -137,7 +160,7 @@ impl Connection {
                 Ok(())
             })),
             on_error: Some(Rc::new(move |error| {
-                write_record(&output, RpcRecord::ExtensionError(error)).map_err(EventError::from)
+                write_to(&writer, RpcRecord::ExtensionError(error)).map_err(EventError::from)
             })),
         }
     }
@@ -171,35 +194,44 @@ impl Connection {
         }
     }
 
-    /// Ends the connection with `error` through the shutdown, once the initial binding is
-    /// done; a running shutdown reports the first failure instead of its outcome.
+    /// Keeps `error` as the connection's failure unless one came first, and starts the
+    /// shutdown unless one owns the teardown, which then reports the failure.
     pub(super) fn fail(self: &Rc<Self>, error: io::Error) {
-        let ending = {
+        let starting = {
             let mut lifecycle = self.lifecycle.borrow_mut();
-            let ending = lifecycle.shutting_down || lifecycle.failure.is_some();
             lifecycle.failure.get_or_insert(error);
-            ending
+            lifecycle.claim_close()
         };
-        if !ending {
+        if starting {
             let connection = Rc::clone(self);
             drop(tokio::task::spawn_local(async move {
-                connection.initial_binding().await;
-                connection.shutdown(RpcConnectionOutcome::Eof).await;
+                connection.close(RpcConnectionOutcome::Eof).await;
             }));
         }
     }
 
-    /// Stops signal delivery and the event subscription, disposes the runtime and finishes
-    /// with `outcome`, or with the first failure; a repeated shutdown finishes at once.
+    /// Shuts down with `outcome`. A shutdown repeated while the runtime disposes finishes at
+    /// once; one repeated before that leaves the report to the shutdown that owns the
+    /// teardown.
     pub(super) async fn shutdown(self: &Rc<Self>, outcome: RpcConnectionOutcome) {
+        let (claimed, phase) = {
+            let mut lifecycle = self.lifecycle.borrow_mut();
+            (lifecycle.claim_close(), lifecycle.phase)
+        };
+        if claimed {
+            self.close(outcome).await;
+        } else if phase == Phase::Closing {
+            self.finish(Ok(outcome));
+        }
+    }
+
+    /// Waits for the initial binding, stops signal delivery and the event subscription,
+    /// disposes the runtime and finishes with `outcome`.
+    async fn close(self: &Rc<Self>, outcome: RpcConnectionOutcome) {
+        self.initial_binding().await;
         let (signal_cleanup, unsubscribe) = {
             let mut lifecycle = self.lifecycle.borrow_mut();
-            if lifecycle.shutting_down {
-                drop(lifecycle);
-                self.finish(Ok(outcome));
-                return;
-            }
-            lifecycle.shutting_down = true;
+            lifecycle.phase = Phase::Closing;
             (
                 lifecycle.signal_cleanup.take(),
                 lifecycle.unsubscribe.take(),
@@ -212,19 +244,38 @@ impl Connection {
             unsubscribe();
         }
         let disposed = self.runtime.dispose().await;
-        let failure = self.lifecycle.borrow_mut().failure.take();
-        self.finish(match failure {
-            Some(error) => Err(error),
-            None => disposed.map(|()| outcome).map_err(io::Error::other),
-        });
+        self.finish(disposed.map(|()| outcome).map_err(io::Error::other));
     }
 
-    /// Reports how the connection ended; only the first report counts.
-    fn finish(&self, outcome: io::Result<RpcConnectionOutcome>) {
-        let finish = self.lifecycle.borrow_mut().finish.take();
-        if let Some(finish) = finish {
-            drop(finish.send(outcome));
+    /// Reports how the connection ended: the first failure when there was one, otherwise
+    /// `ended`; only the first report counts.
+    fn finish(&self, ended: io::Result<RpcConnectionOutcome>) {
+        let mut lifecycle = self.lifecycle.borrow_mut();
+        let Some(finish) = lifecycle.finish.take() else {
+            return;
+        };
+        lifecycle.phase = Phase::Closed;
+        let reported = lifecycle.failure.take().map_or(ended, Err);
+        drop(lifecycle);
+        drop(finish.send(reported));
+    }
+}
+
+impl Lifecycle {
+    /// Records that the input can no longer answer the initial binding.
+    fn end_input(&mut self) {
+        if self.phase == Phase::Serving {
+            self.phase = Phase::InputEnded;
         }
+    }
+
+    /// Gives the teardown to the caller when no shutdown owns it yet.
+    fn claim_close(&mut self) -> bool {
+        let claimed = matches!(self.phase, Phase::Serving | Phase::InputEnded);
+        if claimed {
+            self.phase = Phase::CloseQueued;
+        }
+        claimed
     }
 }
 

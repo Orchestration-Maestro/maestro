@@ -25,9 +25,13 @@ steps.
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
+| `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
+| `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
+| `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
+| `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
 
 ### Building an example
 
@@ -52,9 +56,17 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- pirate_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- bookmark_
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -97,6 +109,19 @@ The example needs a component-enabled host to load. The controlled run needs no
 provider, credentials or installation: it delivers every recorded tool call to
 the built component and to the in-process adapter.
 
+### What the hidden thinking label example does
+
+`/thinking-label <text>` sets the collapsed-thinking label the host shows, and
+`/thinking-label` without arguments clears it and restores `Pondering...` for the
+next session start. The example also applies the label it retains at every
+`session_start`, so the next session shows the label the session before set.
+
+A command that sets a label trims the surrounding whitespace and keeps the interior
+text as it is. When the host rejects a request the command ends with the host's
+message, and the label the example retains stays the one the command chose.
+Loading the component into an application is opt-in and needs a host that enables
+the component runtime.
+
 ### Building with-deps
 
 The [`with-deps/main.rs`](with-deps/main.rs) example parses a duration string
@@ -124,6 +149,33 @@ No provider, paid service or extension installation is required. Loading the
 built component into an application is opt-in and needs that application's
 component runtime.
 
+### What the compaction trigger example does
+
+`turn_end` records the context usage the host reports and requests compaction when
+a known estimate at or below 100,000 tokens is followed by a known estimate above
+it. `/trigger-compact` requests compaction immediately, and its arguments become
+the instructions the host passes on, trimmed, or none when they are blank.
+
+Usage the host does not report leaves the last known estimate as it was, and the
+command never changes it. Compaction, its notifications and any history change
+belong to the host: the extension only asks for them, reports `Compaction started`
+before the request and `Compaction completed` or `Compaction failed: <message>`
+when the host answers, each one only while a UI is available.
+
+No provider, paid service or extension installation is required for the
+controlled run. Loading the built component into an application is opt-in, and a
+real compaction also needs that application's model and runtime configuration.
+
+### What the bookmark example does
+
+`/bookmark` labels the newest assistant message and `/unbookmark` removes the
+newest label from any entry, so the tree view can show where the important
+points of a session are. A blank argument becomes a `bookmark-<epoch
+milliseconds>` label. The controlled run replays every recorded case against
+the built component with a supplied wall clock, so it needs no provider and no
+installation; loading the component into an application is opt-in and needs
+that application's component runtime.
+
 ### What the runtime reload command does
 
 `/reload-runtime` awaits the reload request its command context supplies and
@@ -132,3 +184,14 @@ which has no reload method, so it queues `/reload-runtime` as a follow-up user
 message and answers that it queued it. The controlled run reloads nothing in a
 running application; loading the component is opt-in and needs that
 application's component runtime.
+
+### What the pirate example does
+
+`/pirate` starts disabled. Each invocation reports the state it switched to and
+ignores its arguments. While the mode is on, `before_agent_start` returns the
+supplied prompt followed by this example's own pirate instructions; while it is
+off, the handler returns no override and leaves the event as it arrived. The
+state belongs to the factory instance, so two loaded copies toggle apart, and a
+host that refuses the notification still keeps the switch it made first. Loading
+the component into an application is opt-in and needs that application's
+component runtime.

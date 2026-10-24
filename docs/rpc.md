@@ -174,8 +174,11 @@ aborted writes nothing and returns its default. A dialog settles with whatever c
 a response that arrives after the abort or the deadline is ignored.
 
 Dialogs work while the first session is still binding: a `session_start` handler can ask
-one, and its answer finishes the binding, even when it is the input's final line. Other
-commands that arrive meanwhile wait and then run in arrival order.
+one, and its answer finishes the binding, even when it is the input's final line. When the
+input ends or fails before the answer, no answer can arrive: the dialog settles as cancelled,
+any dialog the binding asks after that settles as cancelled and writes no request, and the
+binding finishes. Other commands that arrive meanwhile wait and then run in arrival
+order.
 
 Widget factories, custom components, footers, headers, editor components and
 autocomplete providers need a terminal: they are never built here. Theme selection
@@ -188,6 +191,7 @@ or SIGHUP. At the end of input the server stops streaming events, starts disposi
 session and answers a final line without its LF; the process exits 0. A shutdown an
 extension requests takes effect after the next command's response. The first signal kills
 the shell commands still running, disposes the session and exits with 143 or 129. Once
-shutdown has started, a second signal kills the process by that signal, and the end of
-input exits 0 at once. A failed read or write also disposes the session, and the
-connection returns that failure.
+shutdown has started, a second signal kills the process by that signal; once the session
+is disposing, the end of input exits 0 at once. A failed read, or a failed write of any
+record, also disposes the session, and the connection returns that first failure however
+it then ends.

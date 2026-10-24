@@ -56,6 +56,9 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
 /// Rust declaration keywords whose following identifiers are inspected.
 const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type", "mod"];
 
+/// Shared protocol functions whose declarations have one owner.
+const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
+
 /// Session configuration record that only the shared interactive test setup constructs.
 const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
 
@@ -67,9 +70,6 @@ const FOOTER_SUPPORT: &str = "tests/footer_support";
 
 /// Source tree holding the interactive mode and its own test modules.
 const INTERACTIVE_MODE: &str = "src/interactive_mode";
-
-/// Shared protocol functions whose declarations have one owner.
-const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_response"];
 
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
@@ -279,7 +279,11 @@ fn check_declarations(
         }
         if matches!(
             owner,
-            "maestro-tools" | "maestro-request" | "maestro-entry" | "maestro-app"
+            "maestro-tools"
+                | "maestro-request"
+                | "maestro-entry"
+                | "maestro-app"
+                | "maestro-listeners"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -287,6 +291,26 @@ fn check_declarations(
                 source.path.display()
             ));
         }
+    }
+    Ok(())
+}
+
+/// Rejects a protocol record declared outside the application and the protocol crate.
+fn foreign_rpc_record(
+    member: &Member,
+    source: &Source,
+    name: &str,
+    line: usize,
+) -> Result<(), String> {
+    let record = name
+        .strip_prefix("Rpc")
+        .is_some_and(|rest| rest.starts_with(char::is_uppercase));
+    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
+        return Err(format!(
+            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
+            source.path.display(),
+            member.name
+        ));
     }
     Ok(())
 }
@@ -315,14 +339,16 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-request"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
         "maestro-entry"
-    } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
-        "maestro-json"
-    } else if name == "serialize_rpc_response" {
-        "maestro-protocol"
+    } else if name == "Listeners" {
+        "maestro-listeners"
     } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
         "maestro-test-terminal"
     } else if input_presenter_record(name) {
         "maestro-app"
+    } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
+        "maestro-json"
+    } else if name == "serialize_rpc_response" {
+        "maestro-protocol"
     } else {
         return None;
     };
@@ -342,26 +368,6 @@ fn input_presenter_record(name: &str) -> bool {
             | "SessionsFuture"
             | "SessionsLoader"
     )
-}
-
-/// Rejects a protocol record declared outside the application and the protocol crate.
-fn foreign_rpc_record(
-    member: &Member,
-    source: &Source,
-    name: &str,
-    line: usize,
-) -> Result<(), String> {
-    let record = name
-        .strip_prefix("Rpc")
-        .is_some_and(|rest| rest.starts_with(char::is_uppercase));
-    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
-        return Err(format!(
-            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
-            source.path.display(),
-            member.name
-        ));
-    }
-    Ok(())
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.

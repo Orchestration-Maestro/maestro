@@ -16,7 +16,7 @@ mod types;
 pub use types::{ModelInfo, RpcClientError, RpcClientOptions, RpcEventListener};
 
 use events::ClientListener;
-use maestro_models::records::listeners::Listeners;
+use maestro_listeners::Listeners;
 use maestro_watch::fs_watch::NativeTimer;
 use requests::Pending;
 use std::{

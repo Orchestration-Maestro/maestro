@@ -16,6 +16,11 @@ path = "../../examples/extensions/hello.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "hidden_thinking_label"
+path = "../../examples/extensions/hidden_thinking_label.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "shutdown_command"
 path = "../../examples/extensions/shutdown_command.rs"
 crate-type = ["cdylib"]
@@ -38,6 +43,21 @@ crate-type = ["cdylib"]
 [[example]]
 name = "protected_paths"
 path = "../../examples/extensions/protected_paths.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "pirate"
+path = "../../examples/extensions/pirate.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "trigger_compact"
+path = "../../examples/extensions/trigger_compact.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "bookmark"
+path = "../../examples/extensions/bookmark.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

@@ -1,11 +1,15 @@
 //! A connection's lifetime: binding each session, extension operations, shutdown on the
 //! input's end, an extension's request or a signal, and the initial binding's dialogs.
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::export_fixtures::published;
 use crate::support::rpc_connection::{
-    Client, Outcomes, connect, replacement_watch, response_to, startup_select, user_entry,
+    Client, Outcomes, connect, no_workspace, replacement_watch, response_to, select_on,
+    startup_select, unspawned, user_entry,
 };
 use crate::support::runtime_fixtures::{runtime_for, stored_in};
-use crate::support::session_harness::{hold_first_answer, on_paused_task_set, on_task_set};
+use crate::support::session_harness::{
+    hold_first_answer, on_paused_task_set, on_task_set, until_idle,
+};
 use maestro_app::{RpcConnectionOutcome, TerminationSignal};
 use maestro_extensions::{
     ExtensionCommandContext, ExtensionContext, ExtensionFactory, SessionShutdownEvent,
@@ -14,7 +18,12 @@ use maestro_extensions::{
 use maestro_models::Local;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
-use std::{cell::RefCell, pin::pin, rc::Rc, task::Poll};
+use std::{
+    cell::RefCell,
+    pin::pin,
+    rc::Rc,
+    task::{Context, Poll, Waker},
+};
 use tokio::sync::{Notify, mpsc};
 
 /// Answers the dialog `request` with `value`.
@@ -405,6 +414,194 @@ fn failed_reads_and_writes_still_shut_down() {
     });
 }
 
+/// A read failure or the input's end while a startup dialog waits settles the dialog as
+/// cancelled, since no answer can arrive: the binding finishes, the session is disposed and
+/// the connection ends with the failure or the end.
+#[test]
+fn lost_input_during_startup_dialog_still_shuts_down() {
+    on_paused_task_set(|_| async {
+        for label in ["read", "end"] {
+            let (outcomes, seen): (Outcomes, _) = (Rc::default(), Rc::default());
+            let factories = vec![
+                (None, startup_select(Rc::clone(&outcomes))),
+                (None, shutdown_watch(Rc::clone(&seen), None)),
+            ];
+            let (_h, runtime, _) = runtime_for(label, factories).await;
+            let mut client = connect(Rc::new(runtime));
+            assert_eq!(client.next().await["method"], "select");
+            if label == "read" {
+                client.fail_read();
+            } else {
+                client.end(None);
+            }
+            until_idle().await;
+            assert!(client.server.is_finished(), "{label}: the connection ended");
+            assert_eq!(*outcomes.borrow(), [Ok(None)], "{label}: cancelled");
+            assert_eq!(seen.borrow().len(), 1, "{label}: the session was disposed");
+            let outcome = client.outcome().await.map_err(|error| error.to_string());
+            let expected = if label == "read" {
+                Err("read failed".to_owned())
+            } else {
+                Ok(RpcConnectionOutcome::Eof)
+            };
+            assert_eq!(outcome, expected);
+        }
+    });
+}
+
+/// The input ending before the initial binding opens its first dialog settles that dialog
+/// as cancelled without asking it: the binding finishes, the session is disposed once and
+/// the connection ends.
+#[test]
+fn immediate_eof_before_first_startup_dialog() {
+    on_paused_task_set(|_| async {
+        let (outcomes, seen): (Outcomes, _) = (Rc::default(), Rc::default());
+        let factories = vec![
+            (None, startup_select(Rc::clone(&outcomes))),
+            (None, shutdown_watch(Rc::clone(&seen), None)),
+        ];
+        let (_h, runtime, _) = runtime_for("immediate", factories).await;
+        let mut client = connect(Rc::new(runtime));
+        client.end(None);
+        until_idle().await;
+        assert_eq!(*outcomes.borrow(), [Ok(None)], "the dialog was cancelled");
+        assert!(client.server.is_finished(), "the connection ended");
+        assert_eq!(seen.borrow().len(), 1, "the session was disposed");
+        assert_eq!(client.written(), Vec::<Value>::new(), "nothing was asked");
+        assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
+    });
+}
+
+/// After the input ends during one startup dialog, a later startup handler's dialog settles
+/// as cancelled at once instead of waiting for an answer that cannot arrive.
+#[test]
+fn consecutive_startup_dialogs_after_input_end() {
+    on_paused_task_set(|_| async {
+        let (outcomes, seen): (Outcomes, _) = (Rc::default(), Rc::default());
+        let factories = vec![
+            (None, startup_select(Rc::clone(&outcomes))),
+            (None, startup_select(Rc::clone(&outcomes))),
+            (None, shutdown_watch(Rc::clone(&seen), None)),
+        ];
+        let (_h, runtime, _) = runtime_for("consecutive", factories).await;
+        let mut client = connect(Rc::new(runtime));
+        assert_eq!(client.next().await["method"], "select");
+        client.end(None);
+        until_idle().await;
+        assert_eq!(
+            *outcomes.borrow(),
+            [Ok(None), Ok(None)],
+            "both were cancelled"
+        );
+        assert!(client.server.is_finished(), "the connection ended");
+        assert_eq!(seen.borrow().len(), 1, "the session was disposed");
+        assert_eq!(
+            client.written(),
+            Vec::<Value>::new(),
+            "the second was not asked"
+        );
+        assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
+    });
+}
+
+/// A failed write followed by the input's end, both ready in one poll, does not report the
+/// end before the shutdown the failure started has stopped signal delivery and begun
+/// disposing; the failure is reported and the session is disposed once.
+#[test]
+fn failed_write_then_ready_eof_cannot_finish_before_close_starts() {
+    on_paused_task_set(|_| async {
+        let seen = Rc::default();
+        let watch = shutdown_watch(Rc::clone(&seen), None);
+        let (_h, runtime, _) = runtime_for("queued-close", vec![(None, watch)]).await;
+        let (peer, mut server) = unspawned(Rc::new(runtime), no_workspace(), published());
+        let context = &mut Context::from_waker(Waker::noop());
+        assert!(server.as_mut().poll(context).is_pending());
+        // The initial binding runs on its own task.
+        until_idle().await;
+        peer.fail_writes();
+        peer.send(r#"{"type":"get_state"}"#);
+        peer.end(None);
+        let polled = server.as_mut().poll(context);
+        let (stopped, disposed) = (peer.signals_stopped(), seen.borrow().len());
+        assert!(
+            polled.is_pending(),
+            "ended with {polled:?} after {stopped} signal stops and {disposed} disposals"
+        );
+        let outcome = tokio::task::spawn_local(server).await.unwrap();
+        assert_eq!(
+            outcome.map_err(|error| error.to_string()),
+            Err("write failed".to_owned())
+        );
+        assert_eq!(seen.borrow().len(), 1, "the session was disposed");
+        assert_eq!(peer.signals_stopped(), 1, "signal delivery stopped");
+    });
+}
+
+/// A dialog a shutdown handler asks after the input's end, once the session is bound, is
+/// asked and stays unanswered: nothing settles it and disposal keeps waiting.
+#[test]
+fn shutdown_dialog_after_input_end_stays_pending() {
+    on_paused_task_set(|_| async {
+        let outcomes: Outcomes = Rc::default();
+        let factory =
+            select_on::<SessionShutdownEvent>("session_shutdown", "bye", Rc::clone(&outcomes));
+        let (_h, runtime, _) = runtime_for("bye", vec![(None, factory)]).await;
+        let mut client = connect(Rc::new(runtime));
+        client.ask(r#"{"type":"get_state"}"#).await;
+        client.end(None);
+        assert_eq!(client.next().await["method"], "select");
+        until_idle().await;
+        assert_eq!(*outcomes.borrow(), [], "the dialog is unanswered");
+        assert!(!client.server.is_finished(), "disposal still waits");
+        client.server.abort();
+    });
+}
+
+/// The input ending while a failure's shutdown disposes the session returns at once and
+/// still reports the failure; the session is disposed once.
+#[test]
+fn failure_then_input_end_keeps_the_failure() {
+    on_task_set(|_| async {
+        let (gate, seen) = (Rc::new(Gate::default()), Rc::default());
+        let watch = shutdown_watch(Rc::clone(&seen), Some(Rc::clone(&gate)));
+        let (_h, runtime, _) = runtime_for("failed-end", vec![(None, watch)]).await;
+        let mut client = connect(Rc::new(runtime));
+        client.ask(r#"{"type":"get_state"}"#).await;
+        client.fail_writes();
+        client.send(r#"{"type":"get_state"}"#);
+        gate.entered.notified().await;
+        client.end(None);
+        let outcome = client.outcome().await.map_err(|error| error.to_string());
+        assert_eq!(outcome, Err("write failed".to_owned()));
+        assert_eq!(seen.borrow().len(), 1);
+    });
+}
+
+/// A failed write of a notice an extension sends through a retained interface after the
+/// binding ends the connection with that failure.
+#[test]
+fn failed_notice_write_ends_the_connection() {
+    on_paused_task_set(|_| async {
+        let seen = Rc::default();
+        let watch = shutdown_watch(Rc::clone(&seen), None);
+        let (_h, runtime, _) = runtime_for("notice", vec![(None, watch)]).await;
+        let runtime = Rc::new(runtime);
+        let mut client = connect(Rc::clone(&runtime));
+        client.ask(r#"{"type":"get_state"}"#).await;
+        let ui = runtime.session().extension_runner().get_ui_context();
+        client.fail_writes();
+        let notified = ui
+            .notify("n".into(), None)
+            .map_err(|error| error.to_string());
+        assert_eq!(notified, Err("write failed".to_owned()));
+        until_idle().await;
+        assert!(client.server.is_finished(), "the connection ended");
+        assert_eq!(seen.borrow().len(), 1, "the session was disposed");
+        let outcome = client.outcome().await.map_err(|error| error.to_string());
+        assert_eq!(outcome, Err("write failed".to_owned()));
+    });
+}
+
 /// Disposal does not settle a dialog nobody answered, and once the connection ends nothing
 /// keeps the runtime alive.
 #[test]
@@ -462,8 +659,7 @@ fn startup_dialog_answered_by_final_line() {
         let request = client.next().await;
         let response = json!({"type": "extension_ui_response", "id": request["id"], "value": "a"});
         client.end(Some(&response.to_string()));
-        // The paused clock moves only once every task is idle.
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        until_idle().await;
         assert_eq!(*outcomes.borrow(), [Ok(Some("a".to_owned()))]);
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
     });

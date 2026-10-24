@@ -1,7 +1,17 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod actions;
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Only executable installation is shared."
+)]
+#[path = "../../../maestro-app/tests/support/native.rs"]
+mod native;
+mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod transcript;
+mod transfer;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};
@@ -25,24 +35,28 @@ use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
     EditorComponent, autocomplete,
 };
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
 
 /// Every recorded presentation case.
-const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", (&[], &[]), body);
+    isolated_case(test, "child", &[], body);
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
-/// directory, with the environment changes `(set, removed)` applied.
+/// directory, with no inherited environment apart from the command path and `envs`, so
+/// no developer credential reaches it. The child's temporary directory is that root's
+/// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
+/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
+/// instead of ending the child.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    (envs, removed): (&[(&str, &str)], &[&str]),
+    envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
     let selection = maestro_test_process::selection();
@@ -54,14 +68,31 @@ pub(super) fn isolated_case(
         return;
     }
     let scratch = child::Scratch::new();
-    let directory = scratch.0.path().to_str().unwrap();
-    let mut all = vec![(ENV_AGENT_DIR.as_str(), directory)];
+    let root = scratch.0.path();
+    for name in ["bin", "tmp"] {
+        std::fs::create_dir(root.join(name)).unwrap();
+    }
+    let path = format!(
+        "{}:{}",
+        root.join("bin").display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let mut all = vec![
+        (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
+        ("PATH", &path),
+        ("WAYLAND_DISPLAY", "maestro-test"),
+    ];
     all.extend_from_slice(envs);
     child::probe(
-        TestProcess::current(test).unwrap().case(case),
-        scratch.0.path(),
+        TestProcess::current(test)
+            .unwrap()
+            .env_clear()
+            .case(case)
+            .shell_setup("trap '' XFSZ")
+            .temp_dir(root.join("tmp")),
+        root,
         &all,
-        removed,
+        &[],
     );
 }
 
@@ -211,6 +242,8 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// The directories the theme registry reads, when it records themes on disk.
+    pub(super) directories: Option<maestro_theme::ThemeDirectories>,
 }
 
 impl Default for Setup {
@@ -223,6 +256,7 @@ impl Default for Setup {
             context: Vec::new(),
             skills: Vec::new(),
             prompts: Vec::new(),
+            directories: None,
             extension: None,
         }
     }
@@ -279,7 +313,10 @@ impl Setup {
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(published::unpublished());
+        let themes = Rc::new(match self.directories {
+            Some(directories) => ThemeState::new(directories),
+            None => published::unpublished(),
+        });
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
@@ -317,6 +354,13 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
         ("@warning@", ThemeColor::Warning),
+        ("@thinkingOff@", ThemeColor::ThinkingOff),
+        ("@thinkingMinimal@", ThemeColor::ThinkingMinimal),
+        ("@thinkingLow@", ThemeColor::ThinkingLow),
+        ("@thinkingMedium@", ThemeColor::ThinkingMedium),
+        ("@thinkingHigh@", ThemeColor::ThinkingHigh),
+        ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
+        ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
         ("@mdLink@", ThemeColor::MdLink),
     ] {
@@ -330,16 +374,16 @@ pub(super) fn painted(theme: &Theme, rows: &[String]) -> Vec<String> {
     rows.iter().map(|row| roles(theme, row)).collect()
 }
 
-/// One recorded case of this module's witnesses.
+/// One recorded case, read before its witness gives the input and observation their types.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Case {
+pub(super) struct Case {
     /// The witness the case belongs to.
     test: String,
     /// The recorded operation.
-    input: Input,
+    input: serde_json::Value,
     /// The recorded observation.
-    expected: Expected,
+    expected: serde_json::Value,
 }
 
 /// The recorded operations.
@@ -428,13 +472,21 @@ pub(super) enum Expected {
     },
 }
 
-/// The recorded cases of `test`.
-pub(super) fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
+/// The recorded cases of `test` in `fixtures`, typed by that witness.
+pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
+    fixtures: &str,
+    test: &str,
+) -> Vec<(I, E)> {
+    let all: Vec<Case> = serde_json::from_str(fixtures).unwrap();
     let cases: Vec<_> = all
         .into_iter()
         .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
+        .map(|case| {
+            (
+                serde_json::from_value(case.input).unwrap(),
+                serde_json::from_value(case.expected).unwrap(),
+            )
+        })
         .collect();
     assert!(!cases.is_empty());
     cases
@@ -445,9 +497,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
         |directory| {
-            for (input, expected) in
-                cases("startup_header_keeps_quiet_verbose_and_configured_hints_distinct")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
+            ) {
                 let (
                     Input::Header {
                         quiet,
@@ -488,8 +541,10 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
         |directory| {
-            for (input, expected) in cases("startup_notices_keep_labels_styles_padding_and_redraw")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_notices_keep_labels_styles_padding_and_redraw",
+            ) {
                 let (Input::Notice { kind, text, width }, Expected::Notice { lines, renders }) =
                     (input, expected)
                 else {
@@ -520,9 +575,12 @@ fn clear_editor_changes_text_and_requests_a_frame() {
         "clear_editor_changes_text_and_requests_a_frame",
         |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
-                <[_; 1]>::try_from(cases("clear_editor_changes_text_and_requests_a_frame"))
-                    .ok()
-                    .unwrap()
+                <[_; 1]>::try_from(cases::<Input, Expected>(
+                    FIXTURES,
+                    "clear_editor_changes_text_and_requests_a_frame",
+                ))
+                .ok()
+                .unwrap()
             else {
                 panic!("one clear case");
             };
