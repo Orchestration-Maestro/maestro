@@ -2,9 +2,10 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices and typed input. The prompt loop,
-startup messages, the terminal title and the other integrations are still to come;
-the mode reads submitted text but does not yet prompt the session.
+the startup help, the loaded-resource listing, the transcript notices and typed
+input. The prompt loop, startup messages, the terminal title and the other
+integrations are still to come; the mode reads submitted text but does not yet
+prompt the session.
 
 ## Construction
 
@@ -33,13 +34,45 @@ containers and the footer, in that order. It focuses the editor, installs editor
 submission and starts the terminal. A terminal start failure is returned and leaves the mode uninitialized.
 After a successful start, a theme change invalidates the presentation and requests a
 frame, and a branch change requests a frame. Neither callback keeps the mode alive.
+Last, it lists the loaded resources in the transcript.
 
-`InteractiveModeOptions::verbose` forces the expanded startup help. Without it,
-the `quietStartup` setting leaves the header empty. Otherwise the header shows the
+`InteractiveModeOptions::verbose` forces the expanded startup help, as does
+expanded tool output. Without verbose, the `quietStartup` setting leaves the
+header empty. Otherwise the header shows the
 application name and version, the compact key hints and two onboarding lines. In
 verbose mode it shows the full list of key hints instead. Hints follow the loaded
 bindings: several keys keep their order, and an unbound action shows no key.
 Header text keeps the colours of the theme in effect when it was built.
+
+## Loaded resources
+
+The listing appends one section per kind of loaded resource that has entries, in
+the order `[Context]`, `[Skills]`, `[Prompts]`. Each section is its heading over its
+entries, followed by an empty row; `[Context]` also gets an empty row above it.
+With `quietStartup` set and verbose off, nothing is listed.
+
+`[Context]` lists the context files the session's resource loader discovered, in
+discovery order. The compact form puts them on one row, separated by commas: a file
+inside the working directory shows its relative path (`.` for the directory
+itself), and any other file its absolute path. The expanded form puts each path on
+its own row. Paths resolve lexically, without reading the filesystem. A leading
+home directory is shown as `~`; an empty home directory abbreviates nothing. The home
+directory is looked up only when a full path is shown, so a listing of prompts
+alone needs none. When that lookup fails, the listing reports the failure.
+
+`[Skills]` and `[Prompts]` list the loader's skills and the session's prompt
+templates. The compact form is one row of skill names, or of prompt names with a
+leading `/`, trimmed and sorted for the current locale. The expanded form groups
+entries under `project`, `user` and `path` (command-line and temporary resources).
+Within each scope it lists plain paths first, then each package source with its
+entries, all sorted for the locale. A package entry is shown relative to its
+package root, or else by its path inside the npm or Git package directory. Prompts
+show their `/name`; when several templates share a file, the last one's name is
+shown.
+
+Sections start expanded in verbose mode or when tool output is expanded, and compact
+otherwise. Each section keeps the text it was built with. Expanding or collapsing it
+later repaints only its heading in the current theme.
 
 ## Notices and the editor
 
