@@ -28,6 +28,21 @@ pub use maestro_catalog::{
 
 pub use maestro_models::models_are_equal;
 
+/// Provider identifier resolved when no model is chosen, shared with the catalog selector.
+pub use maestro_catalog::DEFAULT_MODEL_PER_PROVIDER;
+
+/// Shipped provider labels, shared with registry display-name lookups.
+pub use maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES;
+
+/// Provider identifiers in embedded catalog order.
+pub use maestro_models::get_providers;
+
+/// Authorization choice prompt retaining supplied option order.
+pub use maestro_models::OAuthSelectPrompt;
+
+/// One supplied authorization choice.
+pub use maestro_models::OAuthSelectOption;
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_models::default_web_socket;
 
