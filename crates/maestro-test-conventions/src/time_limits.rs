@@ -24,27 +24,30 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 imports: aliases.0,
             };
             calls.visit_file(syntax);
-            diagnostics.extend(
-                calls
-                    .found
-                    .into_iter()
-                    .map(|(position, api)| (source.path.display().to_string(), position, api)),
-            );
+            diagnostics.extend(calls.found.into_iter().map(|(position, api)| {
+                let message = match api {
+                    Diagnostic::Timer(api) => format!(
+                        "test-owned time limit: {api}; wait for completion instead"
+                    ),
+                    Diagnostic::OptionalPoll => String::from(
+                        "optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())",
+                    ),
+                    Diagnostic::Capture(api) => format!(
+                        "scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead"
+                    ),
+                };
+                (source.path.display().to_string(), position.0, message)
+            }));
         }
     }
+    diagnostics.extend(check_ftp(members));
     if diagnostics.is_empty() {
         Ok(())
     } else {
         diagnostics.sort_by(|left, right| (&left.0, left.1).cmp(&(&right.0, right.1)));
         Err(diagnostics
             .into_iter()
-            .map(|(file, (line, _), api)| {
-                match api {
-                    Diagnostic::Timer(api) => format!("{file}:{line}: test-owned time limit: {api}; wait for completion instead"),
-                    Diagnostic::OptionalPoll => format!("{file}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())"),
-                    Diagnostic::Capture(api) => format!("{file}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead"),
-                }
-            })
+            .map(|(file, line, message)| format!("{file}:{line}: {message}"))
             .collect::<Vec<_>>()
             .join("\n"))
     }
@@ -58,6 +61,112 @@ enum Diagnostic {
     OptionalPoll,
     /// Canonical scoped subscriber identity that bypasses the test tracing owner.
     Capture(String),
+}
+
+/// Reject socket waits, discarded activity results and credential logs in the FTP source tree.
+///
+/// The FTP client keeps one inactivity owner and one command sender. A file in that tree other
+/// than the context may not start its own wait, discard an activity result or log a command.
+fn check_ftp(members: &[Member]) -> Vec<(String, usize, String)> {
+    let mut diagnostics = Vec::new();
+    for member in members {
+        for source in &member.sources {
+            let Some(path) = ftp_tree(&source.path) else {
+                continue;
+            };
+            let Some(syntax) = &source.syntax else {
+                continue;
+            };
+            let mut owner = FtpOwner {
+                context: path.ends_with("ftp_context.rs"),
+                found: Vec::new(),
+            };
+            owner.visit_file(syntax);
+            diagnostics.extend(owner.found.into_iter().map(|(line, message)| {
+                (source.path.display().to_string(), line, message.to_owned())
+            }));
+        }
+    }
+    diagnostics
+}
+
+/// The FTP source tree of the models crate, or the file name when this source belongs to it.
+fn ftp_tree(path: &std::path::Path) -> Option<String> {
+    let text = path.to_string_lossy();
+    text.contains("get_uri/ftp")
+        .then(|| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
+        .flatten()
+}
+
+/// Located FTP ownership violations.
+struct FtpOwner {
+    /// Whether this file is the single activity owner.
+    context: bool,
+    /// Located violations.
+    found: Vec<(usize, &'static str)>,
+}
+
+impl<'ast> Visit<'ast> for FtpOwner {
+    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+        if !self.context
+            && let syn::Expr::Path(path) = &*call.func
+            && let Some(last) = path.path.segments.last()
+            && matches!(
+                last.ident.unraw().to_string().as_str(),
+                "timeout" | "timeout_at" | "sleep" | "sleep_until" | "connect"
+            )
+        {
+            self.found.push((
+                call.span().start().line,
+                "FTP socket wait outside the activity owner",
+            ));
+        }
+        syn::visit::visit_expr_call(self, call);
+    }
+    fn visit_local(&mut self, local: &'ast syn::Local) {
+        if let syn::Pat::Wild(_) = &local.pat
+            && let Some(init) = &local.init
+            && discards(&init.expr)
+        {
+            self.found
+                .push((local.span().start().line, "FTP activity result discarded"));
+        }
+        syn::visit::visit_local(self, local);
+    }
+    fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
+        if let Some(last) = invocation.path.segments.last()
+            && matches!(
+                last.ident.unraw().to_string().as_str(),
+                "println"
+                    | "eprintln"
+                    | "print"
+                    | "dbg"
+                    | "debug"
+                    | "info"
+                    | "warn"
+                    | "error"
+                    | "trace"
+            )
+        {
+            self.found.push((
+                invocation.span().start().line,
+                "FTP command or credential logger",
+            ));
+        }
+        syn::visit::visit_macro(self, invocation);
+    }
+}
+
+/// Whether the expression throws away the result of a call.
+fn discards(expression: &syn::Expr) -> bool {
+    match expression {
+        syn::Expr::Await(awaited) => matches!(&*awaited.base, syn::Expr::MethodCall(_)),
+        syn::Expr::MethodCall(_) => true,
+        _ => false,
+    }
 }
 
 /// Test ownership and located policy occurrences for one source.
