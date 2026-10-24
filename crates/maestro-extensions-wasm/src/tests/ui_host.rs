@@ -27,6 +27,19 @@ pub struct Bank {
     method: Option<String>,
     /// Message the request of `method` is rejected with.
     message: Option<String>,
+    /// Rules a test arms for requests of one invocation.
+    rules: Rules,
+}
+
+/// One-shot request rules a test arms directly, without a control document.
+#[derive(Default)]
+struct Rules {
+    /// Accepted requests before the next one is rejected, counted from the arming point.
+    reject_after: Option<usize>,
+    /// Identity of the binding that follows the next accepted request.
+    switch_after: Option<usize>,
+    /// Requests the host has accepted since the rule was armed.
+    accepted: usize,
 }
 
 /// A supplied refusal and the method it is limited to.
@@ -78,6 +91,13 @@ impl Bank {
         self.message.take()
     }
 
+    /// Restores the state a fresh host starts from.
+    pub fn reset(&mut self) {
+        self.binding = 0;
+        self.error = None;
+        self.rules = Rules::default();
+    }
+
     /// Hands out the identity of the binding current at acquisition time.
     pub fn acquire(&self) -> usize {
         self.binding
@@ -87,6 +107,44 @@ impl Bank {
     pub fn reject(&mut self, method: &str, message: &str) {
         self.method = Some(method.to_owned());
         self.message = Some(message.to_owned());
+    }
+
+    /// Takes the rejection armed for `method`, once that method's request arrives.
+    fn refusal(&mut self, method: &str) -> Option<String> {
+        if self.method.as_deref() != Some(method) {
+            return None;
+        }
+        self.method = None;
+        self.message.take()
+    }
+
+    /// Rejects the next request after `index` accepted ones with `error`, once.
+    pub fn reject_at(&mut self, index: usize, error: &str) {
+        self.rules.reject_after = Some(index);
+        self.rules.accepted = 0;
+        self.error = Some(error.to_owned());
+    }
+
+    /// Resolves the binding `binding` for acquisitions after the next accepted request.
+    pub fn switch_after_first(&mut self, binding: usize) {
+        self.rules.switch_after = Some(binding);
+    }
+
+    /// Applies the armed rules to the request recorded next.
+    fn settle(&mut self) -> Result<(), String> {
+        let reject = self
+            .rules
+            .reject_after
+            .is_none_or(|index| index == self.rules.accepted);
+        if reject && let Some(error) = self.error.take() {
+            self.rules.reject_after = None;
+            return Err(error);
+        }
+        self.rules.accepted += 1;
+        if let Some(binding) = self.rules.switch_after.take() {
+            self.binding = binding;
+        }
+        Ok(())
     }
 }
 
@@ -98,7 +156,9 @@ pub fn call(
     operands: &Value,
 ) -> Result<(), String> {
     observed.log(format!("ui {key} {method} {operands}"));
-    observed.ui.refusal(method).map_or(Ok(()), Err)
+    let error = observed.ui.settle().err();
+    let error = error.or_else(|| observed.ui.refusal(method));
+    error.map_or(Ok(()), Err)
 }
 
 /// Supplied widget options; an absent record keeps the host default.
