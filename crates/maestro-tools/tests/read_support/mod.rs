@@ -20,6 +20,9 @@ use std::sync::{
 pub use maestro_test_directory::Scratch;
 
 /// Transport counting acquisition attempts, which never succeeds.
+///
+/// Only the unix search-program tests consume it, so other hosts would see it unused.
+#[cfg(unix)]
 pub fn counting_fetch(calls: &Arc<AtomicUsize>) -> maestro_models::Fetch {
     let calls = Arc::clone(calls);
     Arc::new(move |_| {
