@@ -26,7 +26,8 @@ pub struct ExtensionUIDialogOptions {
 }
 
 /// Placement for extension widgets.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum WidgetPlacement {
     /// Above the editor, the default.
     #[default]
@@ -52,7 +53,8 @@ pub struct WorkingIndicatorOptions {
 }
 
 /// Notification severity.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum NotificationType {
     /// Informational.
     Info,

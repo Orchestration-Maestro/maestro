@@ -103,6 +103,7 @@ mod sandbox_runtime_providers;
 mod sdk_root_exports;
 mod self_update_native;
 mod self_update_selection;
+mod server_commands;
 #[cfg(unix)]
 #[path = "support/service_observations.rs"]
 mod service_observations;
@@ -157,10 +158,16 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_extraction;
     #[cfg(not(target_arch = "wasm32"))]
+    pub mod export_fixtures;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
     pub mod no_commands;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod pdf;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod rpc_connection;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod runtime_fixtures;
     pub mod session_harness;
     #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;

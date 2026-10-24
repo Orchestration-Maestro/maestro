@@ -108,7 +108,7 @@ pub enum MessageDelivery {
 /// ```compile_fail,E0599
 /// let delivery = maestro_request::messages::UserMessageDelivery::NextTurn;
 /// ```
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum UserMessageDelivery {
     /// Request steering delivery.
