@@ -444,7 +444,7 @@ impl TestProcess {
         let executable = self.eligible()?;
         let mut command = match self.shell.take() {
             Some(setup) => {
-                let mut shell = Command::new("bash");
+                let mut shell = Command::new(shell_program());
                 shell.args(["-c", &format!("{setup}; exec \"$@\""), "startup"]);
                 shell.arg(executable);
                 shell
@@ -475,4 +475,18 @@ impl TestProcess {
                 .caused_by(error)
         })
     }
+}
+
+/// The `bash` that runs a setup script, resolved through this process's own `PATH`.
+///
+/// The child's environment is not consulted: a test that replaces `PATH` still needs its
+/// setup script to run before the test executable does.
+#[cfg(unix)]
+fn shell_program() -> PathBuf {
+    std::env::var_os("PATH")
+        .into_iter()
+        .flat_map(|paths| std::env::split_paths(&paths).collect::<Vec<_>>())
+        .map(|directory| directory.join("bash"))
+        .find(|candidate| candidate.is_file())
+        .unwrap_or_else(|| PathBuf::from("bash"))
 }

@@ -132,6 +132,7 @@ const EDIT_FILE: &str = "maestro-editor-1767323045006.maestro.md";
 /// Installs `script` as the executable `name` in the command directory of `directory`.
 pub(super) fn install(directory: &Path, name: &str, script: &str) -> PathBuf {
     let bin = directory.join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
     let source = bin.join(format!("{name}.source"));
     std::fs::write(&source, script).unwrap();
     let target = bin.join(name);

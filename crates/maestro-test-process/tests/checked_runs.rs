@@ -394,6 +394,20 @@ fn dropping_live_stdout_closes_the_only_read_end() {
 
 #[cfg(unix)]
 #[test]
+fn shell_setup_runs_when_the_child_replaces_path() {
+    let scratch = Scratch::new().unwrap();
+    let marker = scratch.path().join("setup-ran");
+    let setup = format!("echo ran > '{}'", marker.display());
+    plain(&left_name())
+        .env("PATH", scratch.path())
+        .shell_setup(setup)
+        .output()
+        .unwrap();
+    assert_eq!(std::fs::read_to_string(&marker).unwrap(), "ran\n");
+}
+
+#[cfg(unix)]
+#[test]
 fn failed_live_start_closes_and_reaps_direct_child() {
     let scratch = Scratch::new().unwrap();
     let pid_file = scratch.path().join("pid");
