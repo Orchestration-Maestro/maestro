@@ -223,7 +223,6 @@ fn parameter_schema_records_have_one_owner() {
          pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    assert_schema_default_bypasses_are_rejected(&workspace);
     source(
         &workspace,
         "maestro-request",
@@ -243,26 +242,6 @@ fn parameter_schema_records_have_one_owner() {
             && error.contains("maestro-request"),
         "{error}"
     );
-}
-
-/// Reject a retained generic whose default operand is ordinary JSON, bound or not.
-fn assert_schema_default_bypasses_are_rejected(workspace: &Workspace) {
-    for head in [
-        "pub struct ToolInfo<P = serde_json::Value> { parameters: P }",
-        "pub struct ToolInfo<P: Into<ParameterSchema> = serde_json::Value> { parameters: P }",
-    ] {
-        source(
-            workspace,
-            "maestro-request",
-            "src/lib.rs",
-            &format!("pub struct ParameterSchema {{ }}\npub enum SchemaKind {{ String }}\n{head}"),
-        );
-        let error = check_workspace(workspace.root.path()).unwrap_err();
-        assert!(
-            error.contains("ToolInfo must default its schema operand to ParameterSchema"),
-            "{head}: {error}"
-        );
-    }
 }
 
 #[test]

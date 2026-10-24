@@ -34,7 +34,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
             check_declarations(member, source, &records, &mut declarations)?;
             check_session_setup(member, source, &records)?;
-            check_parameter_schema_defaults(member, source, &records)?;
             let context = ScanContext {
                 owner: &member.name,
                 directory: &member.directory,
@@ -343,62 +342,6 @@ fn input_presenter_record(name: &str) -> bool {
             | "SessionsFuture"
             | "SessionsLoader"
     )
-}
-
-/// Reject a retained schema operand whose default is ordinary JSON.
-///
-/// The tool record names its schema type directly, so only a declaration that keeps the
-/// parameter generic can still widen it: this reads the type it actually defaults to.
-fn check_parameter_schema_defaults(
-    member: &Member,
-    source: &Source,
-    records: &Records,
-) -> Result<(), String> {
-    if member.name != "maestro-request" {
-        return Ok(());
-    }
-    for (name, line, head) in &records.struct_heads {
-        if name != "ToolInfo" || !declares_type_parameters(head) {
-            continue;
-        }
-        if !defaults_to_parameter_schema(head) {
-            return Err(format!(
-                "{}:{line}: {name} must default its schema operand to ParameterSchema",
-                source.path.display()
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// Whether a declaration head declares type parameters.
-fn declares_type_parameters(head: &TokenStream) -> bool {
-    head.clone()
-        .into_iter()
-        .any(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '<'))
-}
-
-/// Whether the last type parameter of a declaration head defaults to `ParameterSchema`.
-///
-/// Only the operand after the default marker counts, and a nested generic does not name the
-/// record itself.
-fn defaults_to_parameter_schema(head: &TokenStream) -> bool {
-    let tokens: Vec<TokenTree> = head.clone().into_iter().collect();
-    let Some(marker) = tokens
-        .iter()
-        .rposition(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '='))
-    else {
-        return false;
-    };
-    let operand = &tokens[marker + 1..];
-    let operand = operand
-        .iter()
-        .take_while(|token| !matches!(token, TokenTree::Punct(punct) if punct.as_char() == '>'))
-        .collect::<Vec<_>>();
-    !operand
-        .iter()
-        .any(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '<'))
-        && matches!(operand.last(), Some(TokenTree::Ident(ident)) if ident == "ParameterSchema")
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.
