@@ -7,6 +7,9 @@ modes and the interactive components stay with their own crates; the RPC client,
 which drives Maestro as a child process, lives here in `rpc_client`
 ([RPC client](../client.md)).
 
+[Session observations](lifecycle.md) describes name publication and finalized
+message replacements.
+
 ## Creating a session
 
 `create_agent_session` takes a `CreateAgentSessionOptions` and fills each absent
