@@ -106,6 +106,13 @@ impl Fixture {
             .unwrap()
             .unchecked_into()
     }
+    /// Observe that an activation left the platform's download effects untouched.
+    pub fn finish_none(&self) -> js_sys::Promise {
+        self.module0
+            .call("finishNone", &js_sys::Array::new())
+            .unwrap()
+            .unchecked_into()
+    }
 }
 
 /// Observe the original attachment bytes through the same native cleanup fixture.
