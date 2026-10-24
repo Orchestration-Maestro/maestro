@@ -120,7 +120,7 @@ impl<'a> Context<'a> {
         self.convert_child(value, pointer, &suffix);
     }
 
-    /// Convert every member that no declared pattern covers.
+    /// Convert the members each declared pattern covers, then the rest.
     fn convert_record(&mut self, value: &mut Value, pointer: &str, schema: &Value) {
         let Some(object) = value.as_object_mut() else {
             return;

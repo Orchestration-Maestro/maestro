@@ -2,7 +2,8 @@
 //!
 //! Every recorded case supplies a schema, the kinds its author declared for individual nodes,
 //! the original arguments and the prepared arguments or the exact diagnostic. The recorded
-//! outcomes come from the unmodified reference validator; this suite asserts them one by one.
+//! outcomes come from the reference validator; the record rows record the matching that
+//! validator applies to a member name, which conversion follows as it is written.
 
 use std::collections::BTreeMap;
 use std::collections::HashSet;
@@ -534,33 +535,53 @@ fn provider_projection_does_not_emit_schema_metadata() {
         };
         let serialized = serde_json::to_value(&tool.parameters).expect("schema serialization");
         assert_eq!(serialized, tool.parameters.as_json().clone());
-        for use_parameters in [true, false] {
-            let declarations = maestro_models::providers::content::google_shared::convert_tools(
-                std::slice::from_ref(&tool),
-                use_parameters,
-            )
-            .expect("one declaration");
-            let declared = serde_json::to_string(&declarations).expect("declaration serialization");
-            assert!(
-                declared.contains("\"name\""),
-                "declaration keeps the supplied schema"
-            );
-            assert!(
-                !declared.contains("~kind"),
-                "declaration carries no schema origin"
-            );
-        }
+        assert_projections(&tool);
         let context = maestro_models::Context {
             system_prompt: None,
             messages: Vec::new(),
-            tools: Some(vec![tool]),
+            tools: Some(vec![tool.clone()]),
         };
         let saved = serde_json::to_value(&context).expect("context serialization");
-        assert!(!saved.to_string().contains("~kind"));
+        assert_eq!(
+            saved,
+            serde_json::json!({
+                "messages": [],
+                "tools": [{
+                    "name": "echo",
+                    "description": "Projected tool",
+                    "parameters": tool.parameters.as_json().clone(),
+                }],
+            }),
+            "saved context carries the whole supplied schema"
+        );
         let restored: maestro_models::Context =
             serde_json::from_value(saved).expect("context deserialization");
         let restored_tool = &restored.tools.expect("tools")[0];
         assert!(restored_tool.parameters.conversions().is_empty());
+    }
+}
+
+/// Assert both content-provider projection modes carry the whole supplied schema.
+#[track_caller]
+fn assert_projections(tool: &Tool) {
+    for (use_parameters, field) in [(true, "parameters"), (false, "parametersJsonSchema")] {
+        let declarations = maestro_models::providers::content::google_shared::convert_tools(
+            std::slice::from_ref(tool),
+            use_parameters,
+        );
+        assert!(declarations.is_some(), "one declaration for {field}");
+        let declared = serde_json::to_value(&declarations).unwrap_or_default();
+        assert_eq!(
+            declared,
+            serde_json::json!([{
+                "functionDeclarations": [{
+                    "name": "echo",
+                    "description": "Projected tool",
+                    field: tool.parameters.as_json().clone(),
+                }],
+            }]),
+            "{field} projection carries the whole supplied schema"
+        );
     }
 }
 
@@ -570,7 +591,40 @@ fn authored_schema_walk_has_no_property_rescan() {
     for size in [16, 32, 64] {
         assert_declared_members(size);
         assert_record_members(size);
+        assert_members_are_not_rescanned(size);
     }
+}
+
+/// Assert a declared member converts once, never again through the additional schema.
+#[track_caller]
+fn assert_members_are_not_rescanned(size: usize) {
+    let mut properties = Map::new();
+    let mut arguments = Map::new();
+    let mut expected = Map::new();
+    let mut kinds = std::collections::HashMap::new();
+    kinds.insert(String::new(), SchemaKind::Object);
+    for index in 0..size {
+        let name = format!("m{index}");
+        properties.insert(name.clone(), serde_json::json!({"type": "string"}));
+        arguments.insert(name.clone(), Value::Null);
+        expected.insert(name, Value::from("null"));
+        kinds.insert(format!("/properties/m{index}"), SchemaKind::String);
+    }
+    kinds.insert("/additionalProperties".to_owned(), SchemaKind::Null);
+    let schema = ParameterSchema::authored(
+        serde_json::json!({
+            "type": "object",
+            "required": arguments.keys().cloned().collect::<Vec<_>>(),
+            "properties": properties,
+            "additionalProperties": {"type": "null"},
+        }),
+        kinds,
+    );
+    assert_eq!(
+        prepared(schema, arguments),
+        expected,
+        "{size} declared members convert once"
+    );
 }
 
 /// Assert every declared member of a wide object converts through its own node.

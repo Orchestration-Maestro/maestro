@@ -58,7 +58,23 @@ fn registered_schema_origin_survives_native_retention() {
         retained
     };
 
-    let declared = wrapped.definition.parameters;
+    let declared = &wrapped.definition.parameters;
     assert_eq!(declared.as_json(), retained.as_json(), "supplied schema");
     assert_eq!(declared.conversions(), retained.conversions(), "node kinds");
+
+    let call = maestro_models::ToolCall {
+        id: "call".to_owned(),
+        name: "echo".to_owned(),
+        arguments: serde_json::Map::from_iter([
+            ("authored".to_owned(), serde_json::Value::Null),
+            ("plain".to_owned(), serde_json::Value::Null),
+        ]),
+        thought_signature: None,
+    };
+    let prepared = maestro_models::validate_tool_arguments(&wrapped.definition, &call);
+    assert_eq!(
+        prepared.map(serde_json::Value::Object),
+        Ok(serde_json::json!({"authored": "null", "plain": ""})),
+        "prepared arguments keep the retained node kinds"
+    );
 }

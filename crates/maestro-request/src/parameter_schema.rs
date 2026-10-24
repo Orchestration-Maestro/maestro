@@ -55,10 +55,10 @@ pub enum SchemaKind {
 /// An owned parameter schema with the kinds its author declared for individual nodes.
 ///
 /// The record is the single owner of tool parameter schemas. It keeps the ordinary JSON
-/// Schema value at the root, so providers, persistence and comparisons observe exactly the
-/// supplied schema, and keeps the authored kinds beside it, keyed by JSON pointer. A node
-/// without an entry is plain: it stays whatever the supplied JSON says and is never
-/// converted as an authored node.
+/// Schema value at the root, so providers and persistence observe exactly the supplied
+/// schema, and keeps the authored kinds beside it, keyed by JSON pointer. A node without an
+/// entry is plain: it stays whatever the supplied JSON says and is never converted as an
+/// authored node. Equality compares the authored kinds as well as the supplied JSON.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ParameterSchema {
     /// Supplied JSON Schema value.

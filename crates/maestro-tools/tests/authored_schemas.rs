@@ -53,12 +53,11 @@ fn recorded(name: &str) -> Case {
     assert_eq!(cases.len(), 1, "one recorded producer case for {name}");
     let case = cases.pop().expect("recorded case");
     assert!(!case.schema.is_null() && !case.kinds.is_empty());
-    assert!(case.expected.is_object() || case.expected.is_string());
     assert!(!case.arguments.is_empty());
     case
 }
 
-/// Assert one declaration keeps the recorded JSON and the recorded node kinds.
+/// Assert one declaration keeps the recorded JSON, node kinds and prepared outcome.
 #[track_caller]
 fn assert_declaration(name: &str, parameters: &ParameterSchema) {
     let case = recorded(name);
@@ -75,6 +74,22 @@ fn assert_declaration(name: &str, parameters: &ParameterSchema) {
             "{name} kind at {pointer:?}"
         );
     }
+    let tool = maestro_models::Tool {
+        name: name.to_owned(),
+        description: String::new(),
+        parameters: parameters.clone(),
+    };
+    let call = maestro_models::ToolCall {
+        id: "call".to_owned(),
+        name: name.to_owned(),
+        arguments: case.arguments.clone(),
+        thought_signature: None,
+    };
+    let outcome = match maestro_models::validate_tool_arguments(&tool, &call) {
+        Ok(arguments) => serde_json::json!({"Ok": Value::Object(arguments)}),
+        Err(error) => serde_json::json!({"Err": error.message}),
+    };
+    assert_eq!(outcome, case.expected, "{name} prepared outcome");
 }
 
 /// A manager that searches no directory.
