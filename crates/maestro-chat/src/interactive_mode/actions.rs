@@ -179,7 +179,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the published theme's failure.
-    #[cfg(any(windows, test))]
+    #[cfg(any(windows, all(test, target_os = "linux")))]
     pub(super) fn show_suspend_unsupported(&self) -> Result<(), Box<dyn Error>> {
         self.show_status("Suspend to background is not supported on Windows")
     }
