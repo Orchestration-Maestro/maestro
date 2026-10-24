@@ -164,3 +164,33 @@ code-block, markdown-block, thinking-block {
 .maestro-thinking-expanded .maestro-thinking-chevron {
   transform: rotate(90deg);
 }
+.maestro-toggle {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  overflow: hidden;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-control);
+  background: color-mix(in srgb, var(--maestro-color-panel) 60%, transparent);
+}
+.maestro-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--maestro-color-muted);
+  cursor: pointer;
+}
+.maestro-toggle-button:hover {
+  color: var(--maestro-color-text);
+}
+.maestro-toggle-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--maestro-color-accent);
+}
+.maestro-toggle-selected, .maestro-toggle-selected:hover {
+  background: var(--maestro-color-background);
+  color: var(--maestro-color-text);
+}
