@@ -122,6 +122,20 @@ impl ManualRuntime {
         self.state.borrow().pending.len()
     }
 
+    /// Every pending deadline, in ascending order.
+    #[must_use]
+    pub fn deadlines(&self) -> Vec<Duration> {
+        let mut deadlines: Vec<Duration> = self
+            .state
+            .borrow()
+            .pending
+            .iter()
+            .map(|entry| entry.due)
+            .collect();
+        deadlines.sort_unstable();
+        deadlines
+    }
+
     /// Earliest pending deadline, if any.
     #[must_use]
     pub fn next_deadline(&self) -> Option<Duration> {
