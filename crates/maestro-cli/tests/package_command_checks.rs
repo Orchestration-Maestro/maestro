@@ -807,7 +807,7 @@ fn maestro_cli_step(code: i32) -> std::process::ExitStatus {
 #[test]
 fn self_update_unavailable_keeps_instruction_and_location() {
     let harness = Harness::new(None, None);
-    harness.state.updates.writable.set(false);
+    harness.state.absent_package.set(true);
     assert!(harness.run(&["update", "--self"]));
     let stderr = harness.stderr.text();
     assert!(

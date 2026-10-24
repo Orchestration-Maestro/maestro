@@ -214,8 +214,6 @@ pub struct Updates {
     pub steps: RefCell<VecDeque<ExitStatus>>,
     /// Commands handed to the runner in call order.
     pub runs: RefCell<Vec<String>>,
-    /// Whether the installation path is writable.
-    pub writable: Cell<bool>,
     /// A failure every synchronous query reports instead of an answer.
     pub sync_failure: RefCell<Option<String>>,
 }
@@ -226,30 +224,9 @@ fn coded(code: i32) -> ExitStatus {
     ExitStatus::from_raw(code << 8)
 }
 
-impl Updates {
-    /// A record whose installation path is writable.
-    pub fn writable() -> Self {
-        Self {
-            writable: Cell::new(true),
-            ..Self::default()
-        }
-    }
-}
-
 impl SelfUpdateOperations for Updates {
     fn is_windows(&self) -> bool {
         false
-    }
-
-    fn home_dir(&self) -> io::Result<String> {
-        Ok("/harness-home".into())
-    }
-
-    fn check_write_access(&self, _path: &str) -> io::Result<()> {
-        if self.writable.get() {
-            return Ok(());
-        }
-        Err(io::Error::from(io::ErrorKind::PermissionDenied))
     }
 
     fn run_command_sync(&self, _command: &str, _args: &[String]) -> Result<Output, SpawnSyncError> {
@@ -375,6 +352,8 @@ pub struct State {
     pub cwd_failure: RefCell<Option<String>>,
     /// Whether the factory supplies the second adapter.
     pub second: Cell<bool>,
+    /// Whether the package directory of the installation is absent.
+    pub absent_package: Cell<bool>,
     /// A storage adapter the loader uses instead of the settings files.
     pub storage: RefCell<Option<Arc<dyn SettingsStorage>>>,
     /// Settings owners observed by the manager factory, in call order.
@@ -418,10 +397,7 @@ impl Harness {
         std::fs::create_dir_all(&package).expect("package directory");
         let harness = Self {
             scratch,
-            state: Rc::new(State {
-                updates: Rc::new(Updates::writable()),
-                ..State::default()
-            }),
+            state: Rc::new(State::default()),
             version_options: VersionCheckOptions::default(),
             origin: String::new(),
             stdout: Capture::default(),
@@ -602,11 +578,16 @@ impl Harness {
 
     /// The installation evidence of this harness: a global npm package.
     fn installation(&self) -> Installation {
+        let package = if self.state.absent_package.get() {
+            "prefix/lib/node_modules/absent"
+        } else {
+            "prefix/lib/node_modules/maestro"
+        };
         Installation {
             module_dir: self
                 .scratch
                 .path()
-                .join("prefix/lib/node_modules/maestro")
+                .join(package)
                 .to_string_lossy()
                 .into_owned(),
             executable: "/opt/maestro/bin/maestro".into(),

@@ -20,12 +20,6 @@ impl SelfUpdateOperations for ReadOnly {
     fn is_windows(&self) -> bool {
         false
     }
-    fn home_dir(&self) -> io::Result<String> {
-        Ok("/absent-home".into())
-    }
-    fn check_write_access(&self, _path: &str) -> io::Result<()> {
-        Ok(())
-    }
     fn run_command_sync(&self, _command: &str, _args: &[String]) -> Result<Output, SpawnSyncError> {
         Err(SpawnSyncError::Spawn(io::Error::other(
             "no synchronous query",
