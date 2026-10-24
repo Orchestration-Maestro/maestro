@@ -40,7 +40,7 @@ pub(super) fn selected_shell_command(text: &str) -> Option<(&str, bool)> {
 }
 
 /// The address of the component `handle` holds, so two handles to one component share it.
-fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
+pub(super) fn component_address<T: ?Sized>(handle: &Rc<T>) -> usize {
     Rc::as_ptr(handle).cast::<()>() as usize
 }
 
