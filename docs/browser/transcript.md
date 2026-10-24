@@ -187,5 +187,25 @@ engine is consumed even when Markdown content is unchanged. A control that gains
 focus is scrolled into view. Dropping the owner removes the native root and revokes
 pending feedback.
 
+`MarkdownBlock::default()` and `ThinkingBlock::default()` are page content: they
+implement `DomContent` without a canvas host, and `MountedContent` places them.
+Markdown mounts a `div.maestro-markdown` root and puts the prepared document in
+the page's light DOM, so its text stays findable and selectable. An update with
+the same source and escaping keeps every node and refreshes the listings with the
+supplied syntax engine and localization. Switching to the reasoning presentation
+changes only the root's class, so listings, copy feedback and selection stay.
+Changed source is prepared, highlighted and assembled off the page, then replaces
+the root's children. A failed update returns its error and leaves the previous
+document in place.
+
+The reasoning disclosure is a native button named `Thinking...` with a chevron.
+Pointer, Enter or Space activation toggles it once. While expanded it shows the
+untrimmed source as a reasoning `MarkdownBlock`; the body exists only then. Each
+root keeps its own expansion through content and streaming updates, and dropping
+the root releases its toggle. The header shimmers while streaming. Its color and
+the chevron's rotation change through 150 ms transitions, and a reversed toggle
+turns back from the current angle. The `new(host)` constructors keep drawing on a
+canvas for the message rows and artifacts that still use one.
+
 Tool-renderer listings use the same listing pipeline with literal input; see
 [tool renderers](tool-renderers.md). Their text is not auto-decoded.

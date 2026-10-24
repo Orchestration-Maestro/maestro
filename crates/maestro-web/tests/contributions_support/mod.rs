@@ -157,3 +157,18 @@ impl DomContent for Text {
         Ok(())
     }
 }
+/// A CSS `rgb(...)` value for a `#rrggbb` brand color.
+pub(crate) fn rgb(hex: &str) -> String {
+    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
+    format!("rgb({}, {}, {})", channel(1), channel(3), channel(5))
+}
+/// One computed style property of an element.
+pub(crate) fn computed(element: &Element, property: &str) -> String {
+    web_sys::window()
+        .unwrap()
+        .get_computed_style(element)
+        .unwrap()
+        .unwrap()
+        .get_property_value(property)
+        .unwrap()
+}
