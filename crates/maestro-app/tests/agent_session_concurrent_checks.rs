@@ -5,7 +5,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, answer, corpus, get_assistant_texts, get_message_text, get_user_texts,
-    harness, on_task_set, start_prompt,
+    harness, on_task_set, session_run_ended, start_prompt,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
@@ -47,20 +47,6 @@ fn stored_roles(manager: &dyn ReadonlySessionManager) -> Vec<String> {
 /// The roles of the session's stored message entries.
 fn roles(h: &Harness) -> Vec<String> {
     stored_roles(&*h.session.session_manager().borrow())
-}
-
-/// Notified once the session has delivered the end of an agent run to its listeners.
-fn session_run_ended(h: &Harness) -> Rc<Notify> {
-    let ended = Rc::new(Notify::new());
-    let notify = Rc::clone(&ended);
-    drop(h.session.subscribe(Rc::new(move |event| {
-        if let AgentSessionEvent::Agent(event) = event
-            && matches!(*event.read().unwrap(), AgentEvent::AgentEnd { .. })
-        {
-            notify.notify_one();
-        }
-    })));
-    ended
 }
 
 /// The cancellation a provider request carries.

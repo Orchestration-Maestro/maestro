@@ -2,6 +2,8 @@
 #![cfg(test)]
 
 mod agent_session_concurrent_checks;
+mod agent_session_prompt_checks;
+mod agent_session_queue_checks;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
@@ -87,6 +89,7 @@ mod pdf_attachments;
 mod pdf_pages;
 mod pptx_attachments;
 mod prompt_templates_checks;
+mod queued_slash_command_followup_checks;
 mod resource_extension_loading;
 #[cfg(unix)]
 #[path = "support/resource_fixtures.rs"]
