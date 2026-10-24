@@ -55,6 +55,35 @@ every model enabled, or as many as the panel opened with, removes the setting.
 An empty or other explicit selection is saved as it is. Escape closes the panel,
 keeping the session's edits and leaving the setting as it was.
 
+## Changing settings
+
+`/settings` opens the settings panel in place of the editor over the current
+session and preferences: the panel reads the live session's compaction and queue
+policies, the model's own thinking levels, the registered and discovered theme
+inventory, and the typed preference values. A stored value of the wrong JSON type
+counts as unset and the getter's default applies; the stored settings are never
+rewritten by a read.
+
+Choosing a value applies it at once and saves it through the settings owner:
+session policies go to the session, which saves them, and the rest are written to
+the settings file. Image visibility and width, padding, completion height,
+thinking, the hardware cursor and the shrink policy update the retained rows,
+editor and terminal straight away, and skill command admission rebuilds the
+completion provider. Thinking visibility also rebuilds the transcript from the
+session's messages. Themes publish immediately; a preview never saves, a commit
+saves the requested name, and a theme that fails to load falls back to `dark`
+with:
+
+```text
+Failed to load theme "<name>": <error>
+Fell back to dark theme.
+```
+
+Every theme choice keeps the supplied watch effects, so a selected custom theme
+is watched again after a preview or a commit. Escape closes the panel, restores
+the editor with its focus and requests a frame. Forwarding to an installed
+custom editor belongs to that editor's own work.
+
 ## Subscription billing notice
 
 When the selected model belongs to the `anthropic` provider and a stored sign-in

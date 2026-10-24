@@ -414,31 +414,6 @@ fn settings_transport_change_reaches_the_live_agent() {
     );
 }
 
-#[test]
-fn settings_theme_preview_commit_and_failure_keep_distinct_effects() {
-    isolated(
-        "settings_theme_preview_commit_and_failure_keep_distinct_effects",
-        |directory| {
-            let world = started_settings(directory);
-            let list = open(&world);
-            let settings = Rc::clone(world.host.session().settings_manager());
-            choose(&list, "Theme", 0);
-            // The themes row opens a submenu over the inventory names, selecting the
-            // committed one.
-            let names = world.themes.get_available_themes().unwrap();
-            assert_eq!(names, ["dark", "light"]);
-            press(&list, "\x1b[B");
-            press(&list, "\r");
-            assert_eq!(
-                settings.borrow().get_theme().as_deref(),
-                Some("light"),
-                "commit saves the requested name"
-            );
-            drop(world.runtime.settle());
-        },
-    );
-}
-
 /// Whether the footer paints `label` in its current state.
 fn footer_shows(world: &World, label: &str) -> bool {
     world
@@ -1152,6 +1127,103 @@ fn settings_infallible_callbacks_report_original_failures() {
             world.terminal.set_hide_error(None);
             choose(&list, "hardware", 0);
             assert!(world.runtime.drain_futures().is_empty(), "control succeeds");
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// The published theme's name, or its absence.
+fn published(world: &World) -> Option<String> {
+    world
+        .themes
+        .theme()
+        .get()
+        .ok()
+        .and_then(|theme| theme.name().map(str::to_owned))
+}
+
+/// Writes a custom theme file named `name` holding `document`.
+fn custom_theme(directory: &Path, name: &str, document: &str) {
+    let custom = directory.join("themes");
+    std::fs::create_dir_all(&custom).unwrap();
+    std::fs::write(custom.join(format!("{name}.json")), document).unwrap();
+}
+
+#[test]
+fn settings_theme_preview_commit_and_failure_keep_distinct_effects() {
+    isolated(
+        "settings_theme_preview_commit_and_failure_keep_distinct_effects",
+        |directory| {
+            custom_theme(directory, "broken", "{ not json");
+            let world = started_settings(directory);
+            let settings = Rc::clone(world.host.session().settings_manager());
+            let names = world.themes.get_available_themes().unwrap();
+            assert!(names.contains(&"broken".to_owned()), "{names:?}");
+            let list = open(&world);
+            choose(&list, "Theme", 0);
+            press(&list, "\x1b[B");
+            assert_eq!(
+                published(&world).as_deref(),
+                Some("light"),
+                "preview paints"
+            );
+            assert_eq!(
+                settings.borrow().get_theme().as_deref(),
+                Some("dark"),
+                "preview never saves"
+            );
+            press(&list, "\r");
+            assert_eq!(settings.borrow().get_theme().as_deref(), Some("light"));
+            choose(&list, "Theme", 0);
+            let index = names.iter().position(|name| name == "broken").unwrap();
+            let committed = names.iter().position(|name| name == "light").unwrap();
+            for _ in 0..(index + names.len() - committed) % names.len() {
+                press(&list, "\x1b[B");
+            }
+            press(&list, "\r");
+            assert_eq!(
+                settings.borrow().get_theme().as_deref(),
+                Some("broken"),
+                "commit saves the requested name"
+            );
+            assert_eq!(published(&world).as_deref(), Some("dark"), "it falls back");
+            let rows = world.mode.chat_container.render(100).join("\n");
+            assert!(rows.contains("Failed to load theme \"broken\""), "{rows}");
+            assert!(rows.contains("Fell back to dark theme."));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn settings_theme_cancel_replays_the_saved_theme_without_persisting() {
+    isolated(
+        "settings_theme_cancel_replays_the_saved_theme_without_persisting",
+        |directory| {
+            let world = settings_world(directory, |settings| {
+                settings.set_theme("light".to_owned());
+            });
+            let settings = Rc::clone(world.host.session().settings_manager());
+            assert_eq!(published(&world).as_deref(), Some("light"));
+            let list = open(&world);
+            choose(&list, "Theme", 0);
+            press(&list, "\x1b[B");
+            assert_eq!(published(&world).as_deref(), Some("dark"));
+            press(&list, "\x1b");
+            assert!(matches!(published(&world).as_deref(), Some("light")));
+            assert_eq!(settings.borrow().get_theme().as_deref(), Some("light"));
+            choose(&list, "Theme", 0);
+            press(&list, "\x1b[B");
+            press(&list, "\r");
+            assert_eq!(settings.borrow().get_theme().as_deref(), Some("dark"));
+            choose(&list, "Theme", 0);
+            press(&list, "\x1b[B");
+            press(&list, "\x1b");
+            assert_eq!(
+                published(&world).as_deref(),
+                Some("dark"),
+                "cancel replays the latest committed selection"
+            );
             drop(world.runtime.settle());
         },
     );
