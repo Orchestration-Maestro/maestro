@@ -9,4 +9,5 @@ pub mod clipboard_image;
 pub mod clipboard_native;
 
 pub(crate) mod lock;
+pub(crate) mod numbers;
 pub(crate) mod uri;

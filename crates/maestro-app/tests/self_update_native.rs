@@ -274,3 +274,32 @@ impl SelfUpdateOperations for WindowsQuery {
         })
     }
 }
+
+#[cfg(windows)]
+#[test]
+fn windows_update_steps_receive_literal_arguments() {
+    use crate::support::run_io;
+    use maestro_app::configuration::config::NativeSelfUpdateOperations;
+    use std::fs;
+    let scratch = Scratch::new().unwrap();
+    let report = scratch.path().join("arguments.txt");
+    let shim = scratch.path().join("shim.cmd");
+    // The shim reports the operands it received: `%~2` without its own quoting
+    // and `%3` exactly as written, which tells an empty operand from none.
+    let script = format!(
+        "@echo off\r\n(echo second=\"[%~2]\"\r\necho marker=%3) > \"{}\"\r\n",
+        report.display()
+    );
+    fs::write(&shim, script).unwrap();
+    let command = shim.to_str().unwrap().to_owned();
+    let args = ["--prefix".to_owned(), r"C:\R&D".to_owned(), String::new()];
+    let status = run_io(NativeSelfUpdateOperations.run_command(&command, &args)).unwrap();
+    assert!(status.success());
+    assert_eq!(
+        fs::read_to_string(&report)
+            .unwrap()
+            .lines()
+            .collect::<Vec<_>>(),
+        [r#"second="[C:\R&D]""#, "marker=\"\""]
+    );
+}

@@ -1,5 +1,6 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions and typed input.
+//! resources, notices, transcript shortcuts, editor actions, typed input and queued
+//! input.
 
 use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -18,7 +19,9 @@ use std::{
 };
 
 mod actions;
+mod key_display;
 mod models;
+mod queues;
 mod replay;
 mod resources;
 mod selectors;
@@ -91,6 +94,8 @@ pub struct InteractiveMode {
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Whether this mode has shown the subscription billing notice.
     anthropic_subscription_warning_shown: Cell<bool>,
+    /// Messages typed while the session compacts, in the order they were typed.
+    compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
 }
 
 impl InteractiveMode {
@@ -135,12 +140,10 @@ impl InteractiveMode {
         let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
         footer.set_auto_compact_enabled(session.auto_compaction_enabled());
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
-        let selected_theme = session.settings_manager().borrow().get_theme();
-        let hide_thinking_block = session
-            .settings_manager()
-            .borrow()
-            .get_hide_thinking_block();
+        let settings = session.settings_manager();
+        let selected_theme = settings.borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
+        let hide_thinking_block = settings.borrow().get_hide_thinking_block();
         Ok(Rc::new(Self {
             runtime_host,
             options,
@@ -166,6 +169,7 @@ impl InteractiveMode {
             is_bash_mode: Cell::new(false),
             on_input_callback: Rc::default(),
             anthropic_subscription_warning_shown: Cell::new(false),
+            compaction_queued_messages: RefCell::default(),
         }))
     }
 
@@ -197,6 +201,7 @@ impl InteractiveMode {
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
         self.setup_key_handlers();
+        self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);

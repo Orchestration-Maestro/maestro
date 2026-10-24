@@ -182,13 +182,4 @@ impl InteractiveMode {
             self.ui.request_render(false);
         }
     }
-
-    /// Hands a failed editor callback's error to the terminal runtime, which reports it.
-    pub(super) fn report(&self, result: Result<(), Box<dyn Error>>) {
-        if let Err(error) = result {
-            self.tool_environment
-                .runtime
-                .spawn_local(Box::pin(std::future::ready(Err(error))));
-        }
-    }
 }

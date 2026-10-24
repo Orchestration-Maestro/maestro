@@ -52,6 +52,7 @@ maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
 maestro-tools = { path = "../maestro-tools" }
 maestro-process = { path = "../maestro-process" }
+maestro-listing = { path = "../maestro-listing" }
 maestro-theme = { path = "../maestro-theme" }
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
@@ -92,4 +93,24 @@ workspace = true
 [[example]]
 name = "count_prompt_tokens"
 path = "examples/count_prompt_tokens.rs"
+test = true
+
+[[example]]
+name = "cost_report"
+path = "examples/cost_report.rs"
+test = true
+
+[[example]]
+name = "usage_report"
+path = "examples/usage_report.rs"
+test = true
+
+[[example]]
+name = "tool_report"
+path = "examples/tool_report.rs"
+test = true
+
+[[example]]
+name = "transcript_report"
+path = "examples/transcript_report.rs"
 test = true
