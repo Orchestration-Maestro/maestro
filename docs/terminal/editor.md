@@ -85,7 +85,7 @@ per stored paste in creation order, so text inserted by a pass is eligible only
 for later passes.
 
 ```rust
-use maestro_tui::{Editor, tui::InputHandler};
+use maestro_tui::{Editor, interface::InputHandler};
 
 fn paste(editor: &Editor) -> String {
     let lines = (1..=11).map(|n| format!("line {n}")).collect::<Vec<_>>();

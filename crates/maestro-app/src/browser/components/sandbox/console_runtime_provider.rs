@@ -3,7 +3,7 @@
 //! ```
 //! use maestro_app::browser::components::sandbox::{
 //!     console_runtime_provider::ConsoleRuntimeProvider,
-//!     sandbox_runtime_provider::SandboxRuntimeProvider,
+//!     providers::SandboxRuntimeProvider,
 //! };
 //!
 //! let console = ConsoleRuntimeProvider::<serde_json::Value>::new();
