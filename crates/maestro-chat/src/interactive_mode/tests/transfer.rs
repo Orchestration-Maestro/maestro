@@ -1,23 +1,17 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, cases as recorded_cases, started};
-use crate::components::session_selector::list::tests::session_picker::native_child as child;
-use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, get_theme_directories};
+use super::{Setup, World, cases as recorded_cases, isolated_package, started};
+use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
 use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
-use maestro_test_process::TestProcess;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{path::Path, rc::Rc, sync::LazyLock};
+use std::{path::Path, rc::Rc};
 
 /// Every recorded argument case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_transfer.json");
-
-/// The package-directory environment key the installation reads.
-static ENV_PACKAGE_DIR: LazyLock<String> =
-    LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
 
 /// One recorded argument read.
 #[derive(Deserialize)]
@@ -74,30 +68,6 @@ fn transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary() 
     reads(
         "transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary",
         5,
-    );
-}
-
-/// Runs `body` in a fresh single-test child whose working directory is a disposable root
-/// and whose package directory is `package` inside it.
-fn isolated_export(test: &str, body: impl FnOnce(&Path, &Path)) {
-    if maestro_test_process::selection().is_child() {
-        let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-        let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
-        body(Path::new(&directory), Path::new(&package));
-        return;
-    }
-    let scratch = child::Scratch::new();
-    let directory = scratch.0.path();
-    let package = directory.join("package");
-    std::fs::create_dir(&package).unwrap();
-    child::probe(
-        TestProcess::current(test).unwrap().case("child"),
-        directory,
-        &[
-            (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
-            (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
-        ],
-        &[],
     );
 }
 
@@ -278,7 +248,7 @@ const EXPORT_CASES: [(&str, Format, Option<&str>); 11] = [
 
 #[test]
 fn transfer_export_selects_suffix_and_reports_the_returned_path() {
-    isolated_export(
+    isolated_package(
         "transfer_export_selects_suffix_and_reports_the_returned_path",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -312,7 +282,7 @@ fn transfer_export_selects_suffix_and_reports_the_returned_path() {
 
 #[test]
 fn transfer_export_errors_are_recoverable_and_keep_the_exact_prefix() {
-    isolated_export(
+    isolated_package(
         "transfer_export_errors_are_recoverable_and_keep_the_exact_prefix",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -367,7 +337,7 @@ const SUBMISSIONS: [(&str, bool); 8] = [
 
 #[test]
 fn transfer_installed_submit_consumes_only_export_commands() {
-    isolated_export(
+    isolated_package(
         "transfer_installed_submit_consumes_only_export_commands",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -414,7 +384,7 @@ fn transfer_installed_submit_consumes_only_export_commands() {
 
 #[test]
 fn transfer_submit_clears_after_export_failure_without_consuming_input() {
-    isolated_export(
+    isolated_package(
         "transfer_submit_clears_after_export_failure_without_consuming_input",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -435,7 +405,7 @@ fn transfer_submit_clears_after_export_failure_without_consuming_input() {
 
 #[test]
 fn transfer_jsonl_command_writes_current_branch_with_original_path() {
-    isolated_export(
+    isolated_package(
         "transfer_jsonl_command_writes_current_branch_with_original_path",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -474,7 +444,7 @@ fn transfer_jsonl_command_writes_current_branch_with_original_path() {
 
 #[test]
 fn transfer_html_command_uses_native_assets_and_the_current_session_environment() {
-    isolated_export(
+    isolated_package(
         "transfer_html_command_uses_native_assets_and_the_current_session_environment",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -521,7 +491,7 @@ fn transfer_html_command_uses_native_assets_and_the_current_session_environment(
 
 #[test]
 fn transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order() {
-    isolated_export(
+    isolated_package(
         "transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -558,7 +528,7 @@ fn transfer_html_native_preparation_keeps_package_layout_and_lazy_branch_order()
 
 #[test]
 fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
-    isolated_export(
+    isolated_package(
         "transfer_export_failure_keeps_waiter_and_releases_the_mode",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");
@@ -593,7 +563,7 @@ fn transfer_export_failure_keeps_waiter_and_releases_the_mode() {
 
 #[test]
 fn transfer_notice_failure_uses_existing_runtime_error_route() {
-    isolated_export(
+    isolated_package(
         "transfer_notice_failure_uses_existing_runtime_error_route",
         |directory, package| {
             bundle(&layout_dir(package, "src"), "SRC");

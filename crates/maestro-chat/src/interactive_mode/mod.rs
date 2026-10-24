@@ -22,6 +22,7 @@ mod actions;
 mod bash;
 mod events;
 mod key_display;
+mod notices;
 mod queues;
 mod replay;
 mod resources;

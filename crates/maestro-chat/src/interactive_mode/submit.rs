@@ -66,9 +66,16 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs the export command when `text` is one, handing a failure beyond the transcript
-    /// to the terminal runtime, and says whether `text` was handled as a command.
+    /// Runs the changelog or export command when `text` is one, handing a failure beyond
+    /// the transcript to the terminal runtime, and says whether `text` was handled as a
+    /// command.
     fn runs_command(&self, text: &str) -> bool {
+        if text == "/changelog" {
+            if let Err(error) = self.handle_changelog_command() {
+                self.report(Err(error));
+            }
+            return true;
+        }
         if text != "/export" && !text.starts_with("/export ") {
             return false;
         }

@@ -164,8 +164,8 @@ submission delivered as prompt text enters the history, whether or not an input
 was waiting. Submission does not keep the mode alive.
 
 Submission offers the text to the mode's commands first. Text recognized as
-`/export` runs that command instead: it reports on the transcript, completes no
-waiting input and enters no history. Near spellings are prompt text, so
+`/export` or `/changelog` runs that command instead: it reports on the
+transcript, completes no waiting input and enters no history. Near spellings are prompt text, so
 `/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
 [interactive commands](commands.md).
 
