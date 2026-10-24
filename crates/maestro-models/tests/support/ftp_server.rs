@@ -5,10 +5,12 @@
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
-use std::sync::{Arc, Mutex, PoisonError};
 use std::thread::JoinHandle;
+
+use tokio::sync::watch;
 
 /// Fallible test body result.
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -91,7 +93,7 @@ pub struct Dribble {
 
 impl Dribble {
     /// Send every piece, reporting each one to the test.
-    fn send(&self, control: &mut TcpStream, observed: &Observed) -> std::io::Result<()> {
+    fn send(&self, control: &mut Wire, observed: &Observed) -> std::io::Result<()> {
         for (index, part) in self.parts.iter().enumerate() {
             control.write_all(part)?;
             control.flush()?;
@@ -253,7 +255,8 @@ pub struct Closed {
 /// A running scripted server.
 pub struct Peer {
     address: SocketAddr,
-    commands: Arc<Mutex<Vec<String>>>,
+    commands: Arc<watch::Sender<Vec<String>>>,
+    written: Arc<AtomicUsize>,
     control_closed: Arc<AtomicBool>,
     data_closed: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
@@ -268,10 +271,21 @@ impl Peer {
 
     /// Commands the server has read so far.
     pub fn commands(&self) -> Vec<String> {
-        self.commands
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone()
+        self.commands.borrow().clone()
+    }
+
+    /// Wait until the server logged `count` lines starting with `line`.
+    pub async fn reached(&self, line: &str, count: usize) {
+        let mut log = self.commands.subscribe();
+        // The peer holds the sender, so the log stays open while it is awaited.
+        log.wait_for(|log| log.iter().filter(|seen| seen.starts_with(line)).count() >= count)
+            .await
+            .ok();
+    }
+
+    /// The bytes the server wrote to its connections so far.
+    pub fn written(&self) -> usize {
+        self.written.load(Ordering::SeqCst)
     }
 
     /// Stop accepting connections, wait until every admitted session ended, and report what the
@@ -308,9 +322,40 @@ impl Drop for Peer {
     }
 }
 
+/// A connection of the server, which counts the bytes it writes.
+struct Wire {
+    /// The socket written to.
+    stream: TcpStream,
+    /// The bytes the server wrote to every connection.
+    written: Arc<AtomicUsize>,
+}
+
+impl Wire {
+    /// Count the writes to `stream` among the bytes `observed` reports.
+    fn new(stream: TcpStream, observed: &Observed) -> Self {
+        Self {
+            stream,
+            written: Arc::clone(&observed.written),
+        }
+    }
+}
+
+impl Write for Wire {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        let count = self.stream.write(bytes)?;
+        self.written.fetch_add(count, Ordering::SeqCst);
+        Ok(count)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.stream.flush()
+    }
+}
+
 /// Recorded observations of one admitted session.
 struct Observed {
-    commands: Arc<Mutex<Vec<String>>>,
+    commands: Arc<watch::Sender<Vec<String>>>,
+    written: Arc<AtomicUsize>,
     control_closed: Arc<AtomicBool>,
     data_closed: Arc<AtomicBool>,
 }
@@ -319,9 +364,7 @@ impl Observed {
     /// Record one command before the server answers it.
     fn command(&self, command: &str) {
         self.commands
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(command.to_owned());
+            .send_modify(|log| log.push(command.to_owned()));
     }
 
     /// Record one progress marker, which a test reads instead of a command.
@@ -331,16 +374,13 @@ impl Observed {
 }
 
 /// Answer one admitted control connection from `scenario`.
-fn session(
-    mut control: TcpStream,
-    scenario: &Scenario,
-    observed: &Observed,
-) -> std::io::Result<()> {
+fn session(control: TcpStream, scenario: &Scenario, observed: &Observed) -> std::io::Result<()> {
     // A piece written while an earlier one awaits its acknowledgement would otherwise wait in
     // this side's send buffer after its progress marker, so the marker would not show the bytes
     // reached the client.
     control.set_nodelay(true)?;
     let mut reader = BufReader::new(control.try_clone()?);
+    let mut control = Wire::new(control, observed);
     match scripted(scenario, "") {
         Some(pieces) => pieces.send(&mut control, observed)?,
         None => reply(&mut control, scenario.greeting)?,
@@ -388,7 +428,7 @@ fn session(
 /// Answer `PASV` and `EPSV` with a fresh listener, which is returned for its data connection.
 fn passive(
     command: &str,
-    control: &mut TcpStream,
+    control: &mut Wire,
     script: &Passive,
 ) -> std::io::Result<Option<TcpListener>> {
     if !matches!(command, "PASV" | "EPSV") {
@@ -430,15 +470,15 @@ fn passive(
 ///
 /// A client that already closed its end leaves the socket unconnected or reset, which reports
 /// the closed connection the peer observes rather than a peer failure.
-fn close_data(stream: &mut TcpStream, observed: &Observed) -> std::io::Result<()> {
+fn close_data(stream: &mut Wire, observed: &Observed) -> std::io::Result<()> {
     // A client that closed the connection first ends the dialogue just as surely as one that
     // read every byte, so the observation covers both shapes.
     observed.data_closed.store(true, Ordering::SeqCst);
-    if let Err(error) = stream.shutdown(std::net::Shutdown::Write) {
+    if let Err(error) = stream.stream.shutdown(std::net::Shutdown::Write) {
         return if vanished(&error) { Ok(()) } else { Err(error) };
     }
     let mut exhausted = Vec::new();
-    match stream.read_to_end(&mut exhausted) {
+    match stream.stream.read_to_end(&mut exhausted) {
         Err(error) if vanished(&error) => Ok(()),
         other => other.map(drop),
     }
@@ -456,22 +496,22 @@ fn vanished(error: &std::io::Error) -> bool {
 }
 
 /// Take the data connection the client opened after a passive reply.
-fn accepted(data: &mut Option<TcpListener>) -> std::io::Result<TcpStream> {
+fn accepted(data: &mut Option<TcpListener>, observed: &Observed) -> std::io::Result<Wire> {
     // The client connects before it sends the command, so the connection is already queued.
     let listener = data.take().ok_or_else(no_data)?;
     let (stream, _) = listener.accept()?;
     stream.set_nodelay(true)?;
-    Ok(stream)
+    Ok(Wire::new(stream, observed))
 }
 
 /// Answer `FEAT` with its scripted reply.
-fn features(control: &mut TcpStream, announced: &Features) -> std::io::Result<()> {
+fn features(control: &mut Wire, announced: &Features) -> std::io::Result<()> {
     write!(control, "{}\r\n", announced.0)?;
     control.flush()
 }
 
 /// Answer `MDTM`.
-fn modification(control: &mut TcpStream, announced: &Modification) -> std::io::Result<()> {
+fn modification(control: &mut Wire, announced: &Modification) -> std::io::Result<()> {
     match announced {
         Modification::Instant(stamp) => reply(control, &format!("213 {stamp}")),
         Modification::Reply(line) => reply(control, line),
@@ -480,7 +520,7 @@ fn modification(control: &mut TcpStream, announced: &Modification) -> std::io::R
 
 /// Answer the command with the script's refusal, when it has one.
 fn refused(
-    control: &mut TcpStream,
+    control: &mut Wire,
     announced: Option<&'static str>,
     data: &mut Option<TcpListener>,
 ) -> std::io::Result<bool> {
@@ -494,7 +534,7 @@ fn refused(
 
 /// Answer a listing command, keeping the data connection observable until the client closes it.
 fn listed(
-    control: &mut TcpStream,
+    control: &mut Wire,
     announced: &Listing,
     data: &mut Option<TcpListener>,
     observed: &Observed,
@@ -504,7 +544,7 @@ fn listed(
     }
     let lines = announced.lines.join("\r\n") + "\r\n";
     reply(control, "150 here comes the listing")?;
-    let mut stream = accepted(data)?;
+    let mut stream = accepted(data, observed)?;
     stream.write_all(lines.as_bytes())?;
     close_data(&mut stream, observed)?;
     reply(control, "226 listing done")
@@ -521,7 +561,7 @@ fn scripted<'a>(scenario: &'a Scenario, command: &str) -> Option<&'a Dribble> {
 
 /// Answer `RETR`.
 fn transferred(
-    control: &mut TcpStream,
+    control: &mut Wire,
     scenario: &Scenario,
     data: &mut Option<TcpListener>,
     observed: &Observed,
@@ -531,7 +571,7 @@ fn transferred(
         return Ok(());
     }
     reply(control, "150 opening data connection")?;
-    let mut stream = accepted(data)?;
+    let mut stream = accepted(data, observed)?;
     match &announced.dribble {
         Some(pieces) => pieces.send(&mut stream, observed)?,
         None => {
@@ -583,7 +623,7 @@ fn no_data() -> std::io::Error {
 }
 
 /// Write one reply line.
-fn reply(control: &mut TcpStream, line: &str) -> std::io::Result<()> {
+fn reply(control: &mut Wire, line: &str) -> std::io::Result<()> {
     control.write_all(line.as_bytes())?;
     control.write_all(b"\r\n")?;
     control.flush()
@@ -638,12 +678,14 @@ fn accept_until_stopped(
 pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
-    let commands = Arc::new(Mutex::new(Vec::new()));
+    let commands = Arc::new(watch::Sender::new(Vec::new()));
+    let written = Arc::new(AtomicUsize::new(0));
     let control_closed = Arc::new(AtomicBool::new(false));
     let data_closed = Arc::new(AtomicBool::new(false));
     let stop = Arc::new(AtomicBool::new(false));
     let observed = Observed {
         commands: Arc::clone(&commands),
+        written: Arc::clone(&written),
         control_closed: Arc::clone(&control_closed),
         data_closed: Arc::clone(&data_closed),
     };
@@ -654,6 +696,7 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     Ok(Peer {
         address,
         commands,
+        written,
         control_closed,
         data_closed,
         stop,

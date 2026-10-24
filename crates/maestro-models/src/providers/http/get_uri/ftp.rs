@@ -13,6 +13,8 @@ use tokio::io::AsyncRead;
 
 use super::{Cache, Failure, Source, listing, notfound::NotFound, notmodified::NotModified};
 use client::{Client, Modification};
+#[cfg(test)]
+pub(super) use ftp_context::CONSUMED;
 use ftp_context::FtpError;
 #[cfg(test)]
 use ftp_context::{Data, Payload};

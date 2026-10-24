@@ -11,6 +11,20 @@ use super::INACTIVITY;
 use super::parse_control_response::{Frames, Reply};
 use crate::providers::http::get_uri::Failure;
 
+#[cfg(test)]
+thread_local! {
+    /// The bytes the connections of this thread consumed, which a timing test awaits before it
+    /// moves the clock past the instant they arrived at.
+    pub(in super::super) static CONSUMED: tokio::sync::watch::Sender<usize> =
+        tokio::sync::watch::Sender::new(0);
+}
+
+/// Report bytes a connection consumed to the timing tests of this thread.
+#[cfg(test)]
+fn consumed(bytes: usize) {
+    CONSUMED.with(|total| total.send_modify(|sum| *sum += bytes));
+}
+
 /// The connection whose silence ended a wait.
 #[derive(Clone, Copy, Debug)]
 enum Socket {
@@ -188,6 +202,8 @@ impl<R: AsyncRead + Unpin> Data<R> {
             .await?;
         if read > 0 {
             self.inactivity.refresh();
+            #[cfg(test)]
+            consumed(read);
         }
         Ok(read)
     }
@@ -353,6 +369,8 @@ impl Control {
             return Err(io::Error::other(Self::UNEXPECTED_CLOSE).into());
         }
         self.inactivity.refresh();
+        #[cfg(test)]
+        consumed(read);
         let text = self.decoder.push(&chunk[..read]);
         for reply in self.frames.push(&text)? {
             self.replies.push_back(reply);

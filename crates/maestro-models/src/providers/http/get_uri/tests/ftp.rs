@@ -1,7 +1,7 @@
 //! FTP source login, modification checks, listing fallback, transfer and teardown.
 
 use super::super::ftp::parse_control_response::Frames;
-use super::super::ftp::{INACTIVITY, instant_millis, payload, port};
+use super::super::ftp::{CONSUMED, INACTIVITY, instant_millis, payload, port};
 use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
 use crate::providers::http::{Route, configured_fetch};
 use crate::tests::ftp_server::{
@@ -30,9 +30,6 @@ fn hold_clock() -> std::sync::mpsc::Sender<()> {
 }
 
 /// Run a timing test on a paused runtime whose clock only the test moves.
-///
-/// The body runs as a task like the work it drives, so work its socket or timer woke runs before
-/// the body resumes from a yield.
 fn run_held(body: impl Future<Output = ()> + Send + 'static) {
     crate::tests::runtime::run_paused(async {
         let _clock = hold_clock();
@@ -47,46 +44,60 @@ fn run_held(body: impl Future<Output = ()> + Send + 'static) {
 struct Running<T> {
     /// The ending instant and output, once the work ended.
     ended: oneshot::Receiver<(Instant, T)>,
+    /// The bytes the connections of this thread consumed.
+    consumed: tokio::sync::watch::Receiver<usize>,
+    /// The bytes consumed before the work started.
+    before: usize,
 }
 
 impl<T: std::fmt::Debug + Send + 'static> Running<T> {
-    /// Start `work` as a task.
-    fn spawn(work: impl Future<Output = T> + Send + 'static) -> Self {
+    /// Start `work` as a task and return once its first poll ran, so the windows it opens at
+    /// once start before the clock moves.
+    async fn spawn(work: impl Future<Output = T> + Send + 'static) -> Self {
+        let consumed = CONSUMED.with(tokio::sync::watch::Sender::subscribe);
+        let before = *consumed.borrow();
+        let (started, start) = oneshot::channel();
         let (report, ended) = oneshot::channel();
         tokio::spawn(async move {
+            // The rest of this poll runs `work` up to its first wait before the body resumes.
+            started.send(()).ok();
             let output = work.await;
             report.send((Instant::now(), output)).ok();
         });
-        Self { ended }
+        start.await.expect("the task starts");
+        Self {
+            ended,
+            consumed,
+            before,
+        }
     }
 
-    /// Let due timers and ready sockets run, then take the ending when the work has ended.
-    async fn end(&mut self) -> Option<(Instant, T)> {
-        tokio::task::yield_now().await;
-        self.ended.try_recv().ok()
-    }
-
-    /// Let due timers and ready sockets run, then require that the work is still going.
-    async fn pending(&mut self, context: &str) {
-        if let Some((_, output)) = self.end().await {
+    /// Require that the work has not ended yet.
+    fn pending(&mut self, context: &str) {
+        if let Ok((_, output)) = self.ended.try_recv() {
             panic!("{context}, but the work ended with {output:?}");
         }
     }
 
-    /// Wait until the peer logged `count` lines starting with `line`, then give the client one
-    /// more turn to take what the peer wrote before logging it.
+    /// Wait until the peer logged `count` lines starting with `line` and the work consumed every
+    /// byte the peer wrote by then, so a window the bytes moved is moved before the clock is.
     async fn reached(&mut self, peer: &Peer, line: &str, count: usize) {
-        while peer
-            .commands()
-            .iter()
-            .filter(|seen| seen.starts_with(line))
-            .count()
-            < count
-        {
-            self.pending(&format!("the peer has not reached {line:?}"))
-                .await;
+        let before = self.before;
+        let consumed = &mut self.consumed;
+        let settled = async {
+            peer.reached(line, count).await;
+            let written = peer.written();
+            consumed
+                .wait_for(|total| total - before >= written)
+                .await
+                .ok();
+        };
+        tokio::select! {
+            () = settled => {}
+            ended = &mut self.ended => {
+                panic!("the work ended with {ended:?} before the peer reached {line:?}")
+            }
         }
-        tokio::task::yield_now().await;
     }
 
     /// The instant and output the work ended with.
@@ -96,8 +107,8 @@ impl<T: std::fmt::Debug + Send + 'static> Running<T> {
 }
 
 /// Load `uri` as a task.
-fn loading(uri: String) -> Running<Result<get_uri::Source, get_uri::Failure>> {
-    Running::spawn(async move { load(&uri, None).await })
+async fn loading(uri: String) -> Running<Result<get_uri::Source, get_uri::Failure>> {
+    Running::spawn(async move { load(&uri, None).await }).await
 }
 
 /// The log line a scripted peer writes when it reaches `stage`.
@@ -110,18 +121,17 @@ async fn to(origin: Instant, at: Duration) {
     tokio::time::advance((origin + at).saturating_duration_since(Instant::now())).await;
 }
 
-/// Require that the work ends at once, exactly `at` after `origin`, with the timeout of `socket`.
+/// Require that the work ends at the held instant, exactly `at` after `origin`, with the timeout of
+/// `socket`.
 async fn expires<T>(
-    mut running: Running<Result<T, get_uri::Failure>>,
+    running: Running<Result<T, get_uri::Failure>>,
     origin: Instant,
     at: Duration,
     socket: &str,
 ) where
     T: std::fmt::Debug + Send + 'static,
 {
-    let Some((ended, output)) = running.end().await else {
-        panic!("the {socket} did not expire {at:?} after the origin");
-    };
+    let (ended, output) = running.ended().await;
     let error = output.err().map(|error| error.to_string());
     assert_eq!(error, Some(format!("Timeout ({socket})")));
     assert_eq!(
@@ -824,9 +834,7 @@ fn ftp_cancelled_load_releases_the_connection() {
             let fetch = configured_fetch(Route::default());
             get_uri::load(&uri, None, &fetch).await
         });
-        while !peer.commands().iter().any(|line| line.starts_with("RETR")) {
-            tokio::task::yield_now().await;
-        }
+        peer.reached("RETR", 1).await;
         assert!(
             !task.is_finished(),
             "the load must still be reading when it is cancelled"
@@ -938,12 +946,12 @@ fn ftp_silent_server_times_out_the_control_connection() {
             modification: false,
             ..Silence::EVERY
         });
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         // The window starts once the loader waits for the reply the peer never sends.
         running.reached(&peer, "MDTM", 1).await;
         let origin = Instant::now();
         to(origin, before(30)).await;
-        running.pending("the wait is still inside its window").await;
+        running.pending("the wait is still inside its window");
         to(origin, INACTIVITY).await;
         expires(running, origin, INACTIVITY, "control socket").await;
         peer.finish().unwrap();
@@ -954,10 +962,10 @@ fn ftp_silent_server_times_out_the_control_connection() {
 fn ftp_silent_data_connection_times_out() {
     run_held(async {
         let origin = Instant::now();
-        let mut running = Running::spawn(async { payload(&mut Silent, None).await });
-        running.pending("the read awaits a byte").await;
+        let mut running = Running::spawn(async { payload(&mut Silent, None).await }).await;
+        running.pending("the read awaits a byte");
         to(origin, before(30)).await;
-        running.pending("the read is still inside its window").await;
+        running.pending("the read is still inside its window");
         to(origin, INACTIVITY).await;
         expires(running, origin, INACTIVITY, "data socket").await;
     });
@@ -991,16 +999,14 @@ fn ftp_login_window_resets_for_each_reply() {
         // Declared after the peer, so a failing step drops every sender before the peer waits for
         // its held reply.
         let releases = releasing;
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         running.reached(&peer, "USER", 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running.pending("the USER reply has its own window").await;
+        running.pending("the USER reply has its own window");
         releases.send(()).unwrap();
         running.reached(&peer, "PASS", 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running
-            .pending("the PASS reply has its own window, past the first window's deadline")
-            .await;
+        running.pending("the PASS reply has its own window, past the first window's deadline");
         releases.send(()).unwrap();
         let (_, load) = running.ended().await;
         let loaded = load.expect("both replies are inside their own windows");
@@ -1026,9 +1032,7 @@ fn ftp_teardown_does_not_wait_for_the_quit_reply() {
             "the load waited {:?} for the QUIT reply",
             started.elapsed()
         );
-        while !peer.commands().contains(&"QUIT".to_owned()) {
-            tokio::task::yield_now().await;
-        }
+        peer.reached("QUIT", 1).await;
         peer.finish().unwrap();
     });
 }
@@ -1124,16 +1128,14 @@ fn ftp_control_activity_keeps_greeting_alive() {
         }])
         .unwrap();
         let releases = releasing;
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         running.reached(&peer, &marker("piece-0"), 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running
-            .pending("a greeting piece keeps the window open")
-            .await;
+        running.pending("a greeting piece keeps the window open");
         releases.send(()).unwrap();
         running.reached(&peer, &marker("piece-1"), 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running.pending("the second piece resets the window").await;
+        running.pending("the second piece resets the window");
         releases.send(()).unwrap();
         let (_, loaded) = running.ended().await;
         let loaded = loaded.expect("the dribbled greeting is admitted");
@@ -1182,19 +1184,15 @@ fn ftp_control_activity_keeps_feature_reply_alive() {
         }])
         .unwrap();
         let releases = releasing;
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         running.reached(&peer, "FEAT", 1).await;
         running.reached(&peer, &marker("piece-0"), 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running
-            .pending("a multiline feature reply keeps its window open")
-            .await;
+        running.pending("a multiline feature reply keeps its window open");
         releases.send(()).unwrap();
         running.reached(&peer, &marker("piece-1"), 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running
-            .pending("an inner line with another code does not end the group")
-            .await;
+        running.pending("an inner line with another code does not end the group");
         releases.send(()).unwrap();
         let (_, loaded) = running.ended().await;
         let loaded = loaded.expect("the dribbled feature reply is read");
@@ -1223,12 +1221,10 @@ fn ftp_control_activity_keeps_completion_alive() {
         }])
         .unwrap();
         let releases = releasing;
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         running.reached(&peer, &marker("piece-0"), 1).await;
         tokio::time::advance(LOGIN_WAIT).await;
-        running
-            .pending("completion bytes after the data end still reset the control window")
-            .await;
+        running.pending("completion bytes after the data end still reset the control window");
         releases.send(()).unwrap();
         let (_, loaded) = running.ended().await;
         let loaded = loaded.expect("the dribbled completion settles the transfer");
@@ -1283,14 +1279,12 @@ fn ftp_data_activity_outlives_a_reply_window() {
         }])
         .unwrap();
         let releases = releasing;
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         running.reached(&peer, "RETR", 1).await;
         for piece in ["piece-0", "piece-1"] {
             running.reached(&peer, &marker(piece), 1).await;
             tokio::time::advance(LOGIN_WAIT).await;
-            running
-                .pending("data bytes keep the transfer alive past a control window")
-                .await;
+            running.pending("data bytes keep the transfer alive past a control window");
             releases.send(()).unwrap();
         }
         let (_, loaded) = running.ended().await;
@@ -1349,20 +1343,16 @@ fn ftp_data_window_starts_at_admission() {
                 ..admitted_by(admission, dribbled(&[b"", b"never"], pieces, closing))
             }])
             .unwrap();
-            let mut running = loading(source(&peer, "", "/script.pac"));
+            let mut running = loading(source(&peer, "", "/script.pac")).await;
             running.reached(&peer, "RETR", 1).await;
             let origin = Instant::now();
             to(origin, seconds(20)).await;
             admit.send(()).unwrap();
             running.reached(&peer, &marker("piece-0"), 1).await;
             to(origin, seconds(30)).await;
-            running
-                .pending(&format!("{opening}: the data window starts at admission"))
-                .await;
+            running.pending(&format!("{opening}: the data window starts at admission"));
             to(origin, before(50)).await;
-            running
-                .pending(&format!("{opening}: the admitted window is still open"))
-                .await;
+            running.pending(&format!("{opening}: the admitted window is still open"));
             to(origin, seconds(50)).await;
             expires(running, origin, seconds(50), "data socket").await;
             drop((piece, close));
@@ -1384,24 +1374,20 @@ fn ftp_late_data_byte_moves_the_admitted_window() {
                 dribbled(&[b"", b"x"], pieces, closing),
             )])
             .unwrap();
-            let mut running = loading(source(&peer, "", "/script.pac"));
+            let mut running = loading(source(&peer, "", "/script.pac")).await;
             running.reached(&peer, "RETR", 1).await;
             let origin = Instant::now();
             to(origin, seconds(admitted)).await;
             admit.send(()).unwrap();
             running.reached(&peer, &marker("piece-0"), 1).await;
             to(origin, seconds(byte)).await;
-            running
-                .pending("the admitted window is open when the byte arrives")
-                .await;
+            running.pending("the admitted window is open when the byte arrives");
             piece.send(()).unwrap();
             running.reached(&peer, &marker("piece-1"), 1).await;
             to(origin, seconds(admitted + 30)).await;
-            running
-                .pending("the byte replaced the admitted window")
-                .await;
+            running.pending("the byte replaced the admitted window");
             to(origin, before(byte + 30)).await;
-            running.pending("the byte's window is still open").await;
+            running.pending("the byte's window is still open");
             to(origin, seconds(byte + 30)).await;
             expires(running, origin, seconds(byte + 30), "data socket").await;
             drop(close);
@@ -1427,7 +1413,7 @@ fn ftp_early_completion_keeps_the_data_window() {
                 },
             )])
             .unwrap();
-            let mut running = loading(source(&peer, "", "/script.pac"));
+            let mut running = loading(source(&peer, "", "/script.pac")).await;
             running.reached(&peer, "RETR", 1).await;
             let origin = Instant::now();
             to(origin, seconds(admitted)).await;
@@ -1437,9 +1423,7 @@ fn ftp_early_completion_keeps_the_data_window() {
             piece.send(()).unwrap();
             running.reached(&peer, &marker("completion-sent"), 1).await;
             to(origin, before(admitted + 30)).await;
-            running
-                .pending("the completion leaves the data window open")
-                .await;
+            running.pending("the completion leaves the data window open");
             to(origin, seconds(admitted + 30)).await;
             expires(running, origin, seconds(admitted + 30), "data socket").await;
             drop(close);
@@ -1465,7 +1449,7 @@ fn ftp_data_end_hands_the_window_back_to_control() {
                 ..Scenario::default()
             }])
             .unwrap();
-            let mut running = loading(source(&peer, "", "/script.pac"));
+            let mut running = loading(source(&peer, "", "/script.pac")).await;
             running.reached(&peer, &marker("piece-0"), 1).await;
             let origin = Instant::now();
             to(origin, seconds(20)).await;
@@ -1485,9 +1469,7 @@ fn ftp_data_end_hands_the_window_back_to_control() {
                 }
             };
             to(origin, before(expiry)).await;
-            running
-                .pending("the control window runs from its last activity")
-                .await;
+            running.pending("the control window runs from its last activity");
             to(origin, seconds(expiry)).await;
             expires(running, origin, seconds(expiry), "control socket").await;
             drop(complete);
@@ -1508,13 +1490,11 @@ fn ftp_optional_commands_keep_terminal_failures() {
                 commands: silenced,
                 ..Silence::EVERY
             });
-            let mut running = loading(source(&peer, "", "/script.pac"));
+            let mut running = loading(source(&peer, "", "/script.pac")).await;
             running.reached(&peer, command, 1).await;
             let origin = Instant::now();
             to(origin, before(30)).await;
-            running
-                .pending("a silent optional command waits for its window")
-                .await;
+            running.pending("a silent optional command waits for its window");
             to(origin, INACTIVITY).await;
             expires(running, origin, INACTIVITY, "control socket").await;
             assert!(
@@ -1719,11 +1699,9 @@ fn ftp_control_and_data_finish_in_either_order() {
         }])
         .unwrap();
         let releases = releasing;
-        let mut running = loading(source(&peer, "", "/script.pac"));
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
         running.reached(&peer, &marker("completion-sent"), 1).await;
-        running
-            .pending("an early completion waits for the end of the data")
-            .await;
+        running.pending("an early completion waits for the end of the data");
         releases.send(()).unwrap();
         let (_, loaded) = running.ended().await;
         let loaded = loaded.expect("both endings settle the transfer");
