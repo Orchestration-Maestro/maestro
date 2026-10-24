@@ -3,16 +3,10 @@
 use std::time::Duration;
 
 use super::*;
+use crate::terminal::state::tests::test_terminal;
 use crate::terminal::state::{DetectedStateUpdate, HookReport};
 use maestro_detection::agents::Agent;
 use maestro_detection::agents::AgentVisibility;
-
-fn test_terminal() -> TerminalState {
-    TerminalState::new(
-        maestro_workspace::workspace::WorkspaceTopology::new(|| 0xabc).alloc_terminal_id(),
-        "/tmp".into(),
-    )
-}
 
 #[test]
 fn pane_presentation_sequences_remain_unbounded_while_token_sequences_are_bounded() {

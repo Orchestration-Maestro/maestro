@@ -23,5 +23,7 @@ pub mod pty;
 #[cfg(unix)]
 #[cfg(test)]
 mod tests {
+    #[path = "../../tests/support/poll.rs"]
+    pub(crate) mod poll;
     pub(crate) mod runtime;
 }

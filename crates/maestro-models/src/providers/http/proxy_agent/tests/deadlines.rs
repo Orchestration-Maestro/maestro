@@ -8,7 +8,7 @@ use std::time::Duration;
 use tower_service::Service;
 
 /// Keep paused time runnable until a peer reaches a named protocol boundary.
-async fn ready(
+pub(in crate::providers::http) async fn ready(
     received: &mpsc::Receiver<()>,
     future: &mut std::pin::Pin<Box<impl std::future::Future + ?Sized>>,
 ) {
@@ -19,7 +19,9 @@ async fn ready(
 }
 
 /// Poll the same operation once without advancing time or installing a test deadline.
-async fn pending(future: &mut std::pin::Pin<Box<impl std::future::Future + ?Sized>>) -> bool {
+pub(in crate::providers::http) async fn pending(
+    future: &mut std::pin::Pin<Box<impl std::future::Future + ?Sized>>,
+) -> bool {
     std::future::poll_fn(|context| {
         std::task::Poll::Ready(future.as_mut().poll(context).is_pending())
     })

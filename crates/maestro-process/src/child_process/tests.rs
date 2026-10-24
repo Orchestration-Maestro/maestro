@@ -67,6 +67,7 @@ async fn drain(mut pipe: Option<impl AsyncRead + Unpin>, keep: bool) -> io::Resu
     Ok(buf)
 }
 
+use crate::tests::poll::is_pending;
 use crate::tests::runtime::{paused_runtime, runtime};
 
 #[test]
@@ -209,11 +210,6 @@ async fn held_pipes() -> Held {
     held.open_gate();
     held.child.child.wait().await.unwrap();
     held
-}
-
-/// Polls `future` once and reports whether it is still pending.
-async fn is_pending<F: Future + Unpin>(future: &mut F) -> bool {
-    std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *future).poll(cx).is_pending())).await
 }
 
 #[test]

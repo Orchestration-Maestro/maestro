@@ -1,6 +1,8 @@
 //! Subscription account authorization through caller-supplied HTTP effects.
 #![cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
+use crate::native_peer::read_peer;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Fetch, HttpResponse, refresh_anthropic_token};
 #[cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
@@ -269,18 +271,6 @@ async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
             Ok(count) => bytes = &bytes[count..],
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
             Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => return,
-            Err(error) => panic!("{error}"),
-        }
-    }
-}
-#[cfg(not(target_arch = "wasm32"))]
-/// Read peer bytes after readiness, including the shutdown EOF.
-async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
-    loop {
-        peer.readable().await.unwrap();
-        match peer.try_read(bytes) {
-            Ok(count) => return count,
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
             Err(error) => panic!("{error}"),
         }
     }
