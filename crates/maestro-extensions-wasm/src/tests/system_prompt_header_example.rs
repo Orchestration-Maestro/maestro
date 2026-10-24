@@ -11,6 +11,7 @@ use serde_json::{Value, json};
 use super::controlled::Controlled;
 use super::documents::{Answer, Ended};
 use super::example_support::{release_all, start};
+use super::host::Harness;
 use super::ui_host::receipts;
 use crate::component_adapter::{Capabilities, Exports};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
@@ -123,6 +124,14 @@ fn supply(host: &Controlled, step: &Step) {
     host.observe().ui.control(&rejection.to_string());
 }
 
+/// Applies the host state one recorded step requires to the built component's host.
+fn supply_component(harness: &mut Harness, step: &Step) {
+    let state = json!({"state": {"prompt": step.prompt, "error": step.get_error}});
+    harness.observed().catalog.control(&state.to_string());
+    let rejection = json!({"error": step.set_error});
+    harness.observed().ui.control(&rejection.to_string());
+}
+
 /// Invokes one recorded step through the in-process adapter and asserts its answer.
 async fn run_step(
     host: &Controlled,
@@ -183,6 +192,40 @@ fn run_group(group: &str) -> Result<(), String> {
     })
 }
 
+/// Invokes one recorded step on the built component and asserts its answer.
+fn component_step(harness: &mut Harness, key: u32, step: &Step, case: &str) -> Result<(), String> {
+    let from = harness.observed().transcript.len();
+    let event = super::documents::document(&step.event);
+    let capabilities = super::host_family::guest::Capabilities {
+        ctx: harness
+            .ordinary("/controlled")
+            .map_err(|error| error.to_string())?,
+        signal: None,
+    };
+    let exports = harness.exports.clone();
+    let run = super::block_on(harness.store.run_concurrent(async |accessor| {
+        exports
+            .call_invoke_event(
+                accessor,
+                super::host::borrow(key),
+                event.to_string(),
+                capabilities,
+            )
+            .await
+    }))
+    .map_err(|error| error.to_string())?;
+    let outcome = run.map_err(|error| error.to_string())??;
+    let answer = Answer::of(super::host_family::delivery(outcome))?;
+    assert_eq!(
+        answer,
+        expected_answer(&event, step),
+        "{case} {}",
+        step.event
+    );
+    assert_requests(&harness.observed().transcript[from..], step, case);
+    Ok(())
+}
+
 /// Loading registers the two lifecycle handlers in order and requests no status.
 #[test]
 fn system_prompt_status_registers_lifecycle_handlers() -> Result<(), String> {
@@ -214,4 +257,32 @@ fn system_prompt_status_clears_on_shutdown() -> Result<(), String> {
 #[test]
 fn system_prompt_status_propagates_host_errors() -> Result<(), String> {
     run_group("errors")
+}
+
+/// The built single-copy example produces every recorded answer across the component interface.
+#[test]
+fn system_prompt_status_component_matches_lifecycle() -> Result<(), String> {
+    let path = super::build::example_component("system_prompt_header")?;
+    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
+    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
+        .map_err(|error| error.to_string())?;
+    let keys = [
+        harness
+            .callback(REGISTRATIONS[0])
+            .map_err(|error| error.to_string())?,
+        harness
+            .callback(REGISTRATIONS[1])
+            .map_err(|error| error.to_string())?,
+    ];
+    for case in corpus() {
+        for step in &case.steps {
+            supply_component(&mut harness, step);
+            component_step(&mut harness, key_for(keys, &step.event)?, step, &case.name)?;
+        }
+    }
+    for key in keys {
+        super::block_on(harness.release(key)).map_err(|error| error.to_string())?;
+    }
+    assert_eq!(harness.observed().live, 0);
+    Ok(())
 }
