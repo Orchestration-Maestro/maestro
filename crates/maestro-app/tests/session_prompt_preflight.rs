@@ -5,10 +5,10 @@
 use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, assert_transcript, assistant,
     case, command_extension, entries_view, harness, history_view, hold_first_answer,
-    input_extension, labelled,
-    load_history, messages_view, observed_preflight, of_kinds, on_task_set, outcome, queue_view,
-    recorded_skills, script_responses, shell_entries, start_and_abandon, start_prompt,
-    supplied_failure, template, transcribed, usage, user, with_placeholders,
+    input_extension, labelled, load_history, messages_view, observed_preflight, of_kinds,
+    on_task_set, outcome, queue_view, recorded_skills, script_responses, shell_entries,
+    start_and_abandon, start_prompt, supplied_failure, template, transcribed, usage, user,
+    with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_extensions::{

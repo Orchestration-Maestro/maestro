@@ -85,13 +85,8 @@ not satisfy a direct requirement. The permitted internal development edges are
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
-<<<<<<< HEAD
-`maestro-rpc` to `maestro-theme`, `maestro-tools` and `maestro-tui-crossterm` edges for its
-standard-stream child tests, and the native development edges from the twenty-three declared
-=======
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
-child tests, and the native development edges from the twenty-two declared
->>>>>>> 4b8d2529 (feat(rpc): serve the JSONL protocol over standard streams)
+child tests, and the native development edges from the twenty-three declared
 callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
