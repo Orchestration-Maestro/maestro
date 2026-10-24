@@ -5,10 +5,11 @@ use crate::{
         AttachmentHostError,
         browser::{append, host_error},
     },
+    components::copy_button::dom::{self as copy_button, Localization},
     dom::{DomView, Property, Reflected},
 };
 use js_sys::WeakRef;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::{Element, HtmlElement};
 
@@ -25,8 +26,8 @@ struct CodeElement {
     root: WeakRef,
     /// Page operands.
     view: Rc<DomView>,
-    /// The built listing and its copy control, changed in place on later renders.
-    shown: Option<(browser::Mounted, Element)>,
+    /// The built listing, changed in place on later renders.
+    shown: Option<Listing>,
     /// Accessors of the `code` and `language` properties.
     _properties: Reflected,
 }
@@ -36,11 +37,7 @@ impl custom_element::CustomElement for CodeElement {
         let _ = self.render();
     }
     fn attribute_changed_callback(&mut self, _: &str, _: JsValue, _: JsValue) {
-        if self
-            .root
-            .deref()
-            .is_some_and(|root| root.unchecked_into::<HtmlElement>().is_connected())
-        {
+        if crate::dom::connected(&self.root).is_some() {
             let _ = self.render();
         }
     }
@@ -61,33 +58,74 @@ impl CodeElement {
         let language = root.get_attribute("language").unwrap_or_default();
         let prepared = Prepared::new(&*self.view.highlighter, text, language)
             .map_err(|error| presentation(&error))?;
-        if let Some((mounted, copy)) = &self.shown {
-            mounted.update(&prepared);
-            return copy
-                .set_attribute("text", &prepared.text)
-                .map_err(|error| host_error(&error));
-        }
-        let document = &self.view.document;
-        let built = browser::build(document, &prepared)?;
         let title = self
             .view
             .i18n
             .text("Copy code")
             .map_err(|error| presentation(&error))?;
-        let copy = document
-            .create_element(crate::components::copy_button::dom::TAG)
-            .map_err(|error| host_error(&error))?;
+        if let Some(listing) = &self.shown {
+            return listing.update(&self.view, &prepared, &title);
+        }
+        let (node, listing) = Listing::build(&self.view, &prepared, &title)?;
+        root.replace_children_with_node_1(&node);
+        self.shown = Some(listing);
+        Ok(())
+    }
+}
+/// A built listing and its copy control.
+pub(crate) struct Listing {
+    /// Updatable label and body.
+    mounted: browser::Mounted,
+    /// Copy control receiving the listing text and title.
+    copy: Element,
+    /// Localization of the copy control's labels.
+    i18n: Localization,
+}
+impl Listing {
+    /// Build `prepared` with a copy control titled `title`; the caller places the returned node.
+    pub(crate) fn build(
+        view: &DomView,
+        prepared: &Prepared,
+        title: &str,
+    ) -> Result<(Element, Self), AttachmentHostError> {
+        let built = browser::build(&view.document, prepared)?;
+        let i18n = Rc::new(RefCell::new(Rc::clone(&view.i18n)));
+        let copy =
+            copy_button::create(&view.document, &i18n).map_err(|error| host_error(&error))?;
         for (name, value) in [
             ("text", prepared.text.as_str()),
-            ("title", &title),
+            ("title", title),
             ("show-text", ""),
         ] {
             copy.set_attribute(name, value)
                 .map_err(|error| host_error(&error))?;
         }
         append(&built.slot, &copy)?;
-        root.replace_children_with_node_1(&built.root);
-        self.shown = Some((built.mounted, copy));
+        let listing = Self {
+            mounted: built.mounted,
+            copy,
+            i18n,
+        };
+        Ok((built.root, listing))
+    }
+    /// Change only the label, body, text and title that differ, retaining selection and feedback.
+    ///
+    /// The copy control's labels follow `view`'s localization from now on.
+    pub(crate) fn update(
+        &self,
+        view: &DomView,
+        prepared: &Prepared,
+        title: &str,
+    ) -> Result<(), AttachmentHostError> {
+        self.mounted.update(prepared);
+        self.i18n.replace(Rc::clone(&view.i18n));
+        for (name, value) in [("text", prepared.text.as_str()), ("title", title)] {
+            if self.copy.get_attribute(name).as_deref() != Some(value) {
+                self.copy
+                    .set_attribute(name, value)
+                    .map_err(|error| host_error(&error))?;
+            }
+        }
         Ok(())
     }
 }

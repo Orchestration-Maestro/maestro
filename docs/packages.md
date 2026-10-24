@@ -55,6 +55,31 @@ failure text. A failing start callback stops the operation without an error even
 failing completion callback is reported as an error; a failing error callback
 replaces the error.
 
+## Commands
+
+`maestro-cli`'s `handle_package_command` turns `install`, `remove` (with
+`uninstall` as its alias), `update` and `list` into those operations and prints
+their outcomes; it returns whether the first argument named a package command.
+Each command loads settings lazily, reports their failures as
+`Warning (package command, <scope> settings): <message>`, keeps the raw global
+snapshot for self-update, and only then builds the manager. A warning callback may
+edit the live settings before that snapshot; later factory, progress and output
+edits do not replace it.
+
+Options are scanned left to right and keep the first value of each diagnostic
+category: unknown option, missing value, extra argument, conflict, then a missing
+install or remove source. `--help` wins over all of them and prints the complete
+document of its command. `--local` applies to install and remove only; `--self`,
+`--extensions`, `--extension <source>` and `--force` apply to update only. An empty
+first positional source is replaceable, while an empty extra argument is present
+and reports `Unexpected argument .` before any settings read or package effect.
+
+Update runs the selected extension update first and the application update second,
+so an extension failure stops before any self-update. The self-update side reuses
+the [application plan and runner](application/configuration.md#self-update-selection):
+a release that is not newer skips it, a changed package identity replaces the
+installed one, and a nonzero child exit reports the manual command to run.
+
 ## Persistence
 
 `install_and_persist` records the source after successful acquisition, replacing a
