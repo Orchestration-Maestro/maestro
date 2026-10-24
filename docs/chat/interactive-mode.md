@@ -204,9 +204,10 @@ While the session compacts, a registered command (`/name`, with the name ending 
 first space) still runs at once. The mode keeps any other text in the order it was
 typed, as steering from Enter or as a follow-up from the follow-up key, records it
 in the history, clears it from the editor, shows it in the pending rows and confirms
-it with the status line `Queued message for after compaction`. The mode does not
-yet send the kept messages when the compaction ends; until it does, they stay in
-the pending rows, and the dequeue key restores them.
+it with the status line `Queued message for after compaction`. When the compaction
+ends, the mode delivers what it kept (see
+[Compaction and retry progress](#compaction-and-retry-progress)); until then the
+messages stay in the pending rows, and the dequeue key restores them.
 
 Queued messages, including those kept during a compaction, appear above the
 editor. Each steering message gets a dim `Steering: <text>` row and each follow-up
@@ -295,11 +296,17 @@ presentation resumes, and turns the terminal's progress on. Because the
 retry's own row is removed there, a retry end that arrives afterwards removes
 nothing.
 
-Input queued during a compaction is not delivered yet. The mode keeps it in
-order until an owner captures it at the end of a compaction, refreshes the pending
-rows, and delivers it through the session's prompt, steering and follow-up
-operations; that delivery, its failure recovery and the retry choice the compaction
-end carries are the remaining part of this work.
+When a compaction ends, the mode captures the input it kept before the session
+does anything with it, shows the pending rows without it, and delivers it on the
+terminal host. A retried compaction queues each message the way its own kind asks:
+a registered command still runs as a prompt, and other text joins the steering or
+follow-up queue. Otherwise the first message that is not a registered command starts
+the next turn, the registered commands before it prompt first, and the rest of the
+batch follows behind that turn in order. A tail message is not sent once the first
+prompt has failed. A phase that fails clears the session's queues, restores the
+captured batch ahead of any input admitted since, and shows one notice reading
+`Failed to send queued message<s>: <error>`; a second failure changes nothing. A
+compaction that ends with nothing captured delivers nothing.
 
 ## Status lines
 

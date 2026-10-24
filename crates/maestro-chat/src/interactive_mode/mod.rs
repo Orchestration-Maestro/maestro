@@ -19,6 +19,7 @@ use std::{
 };
 
 mod actions;
+mod compaction_queue;
 mod events;
 mod key_display;
 mod progress;

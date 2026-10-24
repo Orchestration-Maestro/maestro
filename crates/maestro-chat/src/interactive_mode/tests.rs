@@ -358,6 +358,8 @@ pub(super) struct World {
 pub(super) struct Setup {
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
+    /// Creates every replacement session; the default refuses each one.
+    pub(super) runtime_factory: Option<maestro_app::CreateAgentSessionRuntimeFactory>,
     /// Changes the settings before construction.
     pub(super) configure: Box<dyn FnOnce(&mut SettingsManager)>,
     /// The theme name selected inside the loader's theme getter.
@@ -391,6 +393,7 @@ impl Default for Setup {
     fn default() -> Self {
         Self {
             options: InteractiveModeOptions::default(),
+            runtime_factory: None,
             configure: Box::new(|_| {}),
             select: None,
             cwd: None,
@@ -462,10 +465,10 @@ impl Setup {
             *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
         }
         let loader = loader.borrow().clone().unwrap();
-        let host = Rc::new(AgentSessionRuntime::new(
-            result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
-        ));
+        let factory = self.runtime_factory.unwrap_or_else(|| {
+            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }))
+        });
+        let host = Rc::new(AgentSessionRuntime::new(result, factory));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
         let themes = Rc::new(match self.directories {

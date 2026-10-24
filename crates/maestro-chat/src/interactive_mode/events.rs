@@ -48,19 +48,18 @@ impl InteractiveMode {
             }
             AgentSessionEvent::ThinkingLevelChanged { .. } => self.update_editor_border_color()?,
             AgentSessionEvent::CompactionStart { reason } => self.start_compaction(*reason)?,
-            // The input captured during the compaction is not delivered yet: its own owner
-            // and the retry choice `will_retry` arrive with that delivery.
             AgentSessionEvent::CompactionEnd {
                 reason,
                 result,
                 aborted,
                 error_message,
-                ..
+                will_retry,
             } => self.end_compaction(&CompactionOutcome {
                 reason: *reason,
                 result: result.as_ref(),
                 aborted: *aborted,
                 error_message: error_message.as_deref(),
+                will_retry: *will_retry,
             })?,
             AgentSessionEvent::AutoRetryStart {
                 attempt,
