@@ -114,9 +114,14 @@ impl InteractiveMode {
                 self.handle_message_end(&message)?;
             }
             AgentEvent::ToolExecutionStart { tool_call } => {
-                let call = tool_call.clone();
+                let row = self
+                    .pending_tools
+                    .borrow()
+                    .get(&tool_call.id)
+                    .cloned()
+                    .ok_or_else(|| tool_call.clone());
                 drop(event);
-                self.handle_tool_execution_start(call)?;
+                self.handle_tool_execution_start(row)?;
             }
             AgentEvent::ToolExecutionUpdate {
                 tool_call,
@@ -289,15 +294,17 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Marks the row of `call` started, giving the call a pending row when it has none.
+    /// Marks an existing row started, creating a pending row for an unknown call.
     ///
     /// # Errors
     /// Returns the failure of a renderer binding or of the row's rendering.
-    fn handle_tool_execution_start(&self, call: ToolCall) -> Result<(), Box<dyn Error>> {
-        let row = self.pending_tools.borrow().get(&call.id).cloned();
+    fn handle_tool_execution_start(
+        &self,
+        row: Result<Rc<ToolExecutionComponent>, ToolCall>,
+    ) -> Result<(), Box<dyn Error>> {
         let row = match row {
-            Some(row) => row,
-            None => self.add_pending_tool(call)?,
+            Ok(row) => row,
+            Err(call) => self.add_pending_tool(call)?,
         };
         row.mark_execution_started()?;
         self.ui.request_render(false);
