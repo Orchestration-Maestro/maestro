@@ -149,8 +149,9 @@ Input still goes to the shared buffer under the [Input](https://github.com/Orche
 While the drain runs, every event the buffer releases is discarded, whatever released it.
 The drain does not reset framing state.
 
-The future checks the elapsed quiet time and the maximum, then waits the shorter of the idle
-time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
+The future owns its state, so the terminal it came from stays usable while the drain
+is pending. It checks the elapsed quiet time and the maximum, then waits the shorter
+of the idle time and the time left, so the idle exit is noticed on that cadence. Only complete decoded
 text counts as activity, not the bytes of an unfinished character. When the future ends, or
 is dropped, input delivery resumes with the original callback. A drain also closes keyboard
 negotiation for the current generation: no later reply and no pending fallback decision

@@ -126,8 +126,10 @@ for placement, focus, visibility and terminal error ordering.
 `Terminal` covers starting with input and resize callbacks, writing, dimensions,
 cursor movement and visibility, clearing, the window title, the progress indicator
 and draining stale input. Effects return `io::Result` and carry the device's error
-unchanged. `drain_input` takes optional limits and returns a future; an adapter
-applies its own defaults, 1000 ms at most and 50 ms idle, when they are omitted.
+unchanged. `drain_input` takes optional limits and returns a future that owns its state, so a
+scheduled frame may borrow and render to the same terminal while the drain is
+pending; an adapter applies its own defaults, 1000 ms at most and 50 ms idle, when
+they are omitted.
 
 ## Editors and completion
 

@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use maestro_tui::autocomplete::{ArgumentCompletions, CompletionOptions, CursorPosition};
 use maestro_tui::editor_component::BorderColor;
-use maestro_tui::tui::{ChildArray, ComponentHandle, InputHandler};
+use maestro_tui::tui::{ChildArray, ComponentHandle, InputHandler, TerminalHandle};
 use maestro_tui::{
     AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayMargin,
     OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable, visible_width,
@@ -862,4 +862,19 @@ fn fallible_components_keep_infallible_defaults() {
         "render failed"
     );
     assert_composed_render_routes();
+}
+
+#[test]
+fn drain_future_releases_terminal_for_scheduled_work() {
+    let terminal: TerminalHandle = Rc::new(RefCell::new(Recording::new(false)));
+    let drain = terminal.borrow_mut().drain_input(None, None);
+    terminal
+        .borrow_mut()
+        .write("scheduled")
+        .expect("a frame renders while the drain owns its own state");
+    block_on(drain).expect("the drain completes");
+    assert!(
+        terminal.borrow_mut().stop().is_ok(),
+        "the terminal is still usable after the drain"
+    );
 }

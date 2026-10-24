@@ -205,7 +205,7 @@ impl Terminal for RecordingTerminal {
         &mut self,
         _max: Option<Duration>,
         _idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         Box::pin(async { Ok(()) })
     }
 

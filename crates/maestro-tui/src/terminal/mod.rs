@@ -27,12 +27,14 @@ pub trait Terminal {
 
     /// Reads and discards pending input before exit so key releases do not leak to a shell.
     ///
-    /// `None` leaves the adapter's defaults: a 1000 ms limit and a 50 ms idle exit.
+    /// `None` leaves the adapter's defaults: a 1000 ms limit and a 50 ms idle exit. The
+    /// returned future owns its state, so a scheduled frame may borrow and render to the
+    /// same terminal while the drain is pending.
     fn drain_input(
         &mut self,
         max: Option<Duration>,
         idle: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>>;
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>>;
 
     /// Writes output to the terminal.
     ///

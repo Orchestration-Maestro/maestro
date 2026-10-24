@@ -138,7 +138,7 @@ impl Terminal for Sink {
         &mut self,
         _: Option<Duration>,
         _: Option<Duration>,
-    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
+    ) -> Pin<Box<dyn Future<Output = io::Result<()>> + 'static>> {
         Box::pin(async { Ok(()) })
     }
 
