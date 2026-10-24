@@ -3,7 +3,7 @@
 use crate::support;
 use maestro_app::{
     AuthStorage, AuthStorageData, ConfigValueOperations, ModelCost, ModelFileOperations,
-    ModelInput, ModelRegistry, ProviderConfigInput, ProviderModelInput,
+    ModelInput, ModelRegistry, ProviderModelInput,
 };
 use maestro_cli::input::list_models::{ListModelsOptions, list_models};
 use maestro_theme::Collator;
@@ -77,21 +77,6 @@ fn definition(descriptor: &serde_json::Value) -> ProviderModelInput {
     }
 }
 
-/// Build one provider registration from its recorded descriptors.
-fn configuration(definitions: &[ProviderModelInput]) -> ProviderConfigInput {
-    ProviderConfigInput {
-        name: None,
-        base_url: Some("https://example.test".to_owned()),
-        api_key: Some("recorded key".to_owned()),
-        api: Some("openai-completions".to_owned()),
-        stream_simple: None,
-        headers: None,
-        auth_header: None,
-        oauth: None,
-        models: Some(definitions.to_vec()),
-    }
-}
-
 /// Register every recorded provider with its models, keeping their authored order.
 fn register(registry: &ModelRegistry, case: &support::Recorded) {
     let mut providers: Vec<(String, Vec<ProviderModelInput>)> = Vec::new();
@@ -110,7 +95,11 @@ fn register(registry: &ModelRegistry, case: &support::Recorded) {
         }
     }
     for (provider, definitions) in providers {
-        let options = Arc::new(RwLock::new(configuration(&definitions)));
+        let options = Arc::new(RwLock::new(crate::support::startup::configuration(
+            None,
+            "recorded key",
+            definitions,
+        )));
         registry
             .register_provider(&provider, options)
             .expect("registered provider");
