@@ -258,7 +258,9 @@ the native-only `maestro-extensions` to `maestro-credentials`, for extension tes
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
-for its standard-stream child tests,
+for its standard-stream child tests, the native-only, non-optional `maestro-chat`
+to `maestro-models` edge for interactive-mode tests that drive a real session
+through the scripted provider,
 and the native, non-optional dev-dependencies
 of the twenty-three declared callers on `maestro-test-process`, the owner of
 checked child tests (see

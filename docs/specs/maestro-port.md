@@ -609,6 +609,9 @@ dependency, supplies terminal newline normalization for checked-child tests.
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
 development dependencies, let the standard-stream child tests build the real export
 rendering environment; the adapter's normal dependency stays `maestro-app` alone.
+`maestro-chat` to `maestro-models`, declared as a non-optional native development
+dependency, lets interactive-mode tests drive a real session through the scripted
+provider; it permits no normal or build dependency on models.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.

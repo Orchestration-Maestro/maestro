@@ -302,6 +302,7 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
     ("maestro-rpc", "maestro-tui-crossterm"),
+    ("maestro-chat", "maestro-models"),
 ];
 
 /// Foundation utility that native crates may use beyond their table row.

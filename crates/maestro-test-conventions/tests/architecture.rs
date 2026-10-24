@@ -1919,6 +1919,34 @@ fn rpc_child_rendering_edges_are_development_only() {
 }
 
 #[test]
+fn chat_scripted_provider_edge_is_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-models"]);
+    let application = "maestro-app = { path = \"../maestro-app\" }";
+    let models = "models = { package = \"maestro-models\", path = \"../maestro-models\"";
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        &format!(
+            "[dependencies]\n{application}\n[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\n{models} }}"
+        ),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-chat",
+            "maestro-chat",
+            &format!("[{kind}]\n{application}\n{models}{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("forbidden production dependency: maestro-chat -> maestro-models".into()),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
 fn terminal_example_brand_edge_keeps_required_runtime_dependencies() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
