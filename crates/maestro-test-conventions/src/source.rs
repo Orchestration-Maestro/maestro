@@ -218,20 +218,6 @@ macro_rules! inherit_test_context {
 
 pub(crate) use {exclude_test_item, inherit_test_context};
 
-/// Call `visit` with every identifier inside `tokens`, nested groups included, once each.
-pub(crate) fn visit_token_identifiers(
-    tokens: &proc_macro2::TokenStream,
-    visit: &mut impl FnMut(&proc_macro2::Ident),
-) {
-    for tree in tokens.clone() {
-        match tree {
-            proc_macro2::TokenTree::Ident(ident) => visit(&ident),
-            proc_macro2::TokenTree::Group(group) => visit_token_identifiers(&group.stream(), visit),
-            _ => {}
-        }
-    }
-}
-
 /// Read a Cargo manifest through the native TOML parser.
 pub(crate) fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {
     std::fs::read_to_string(manifest)
