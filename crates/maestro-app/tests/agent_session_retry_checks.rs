@@ -41,6 +41,7 @@ fn retry_budget_ends_with_failure() {
         assert_eq!(h.requests.0.borrow().len(), 3);
         assert_eq!(starts[0]["delayMs"], json!(1));
         assert_eq!(starts[1]["delayMs"], json!(2));
+        assert_eq!(ends[0]["attempt"], json!(2));
         assert_eq!(ends[0]["finalError"], json!("overloaded_error"));
         assert!(!h.session.is_retrying());
         assert!(!h.session.is_streaming());

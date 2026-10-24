@@ -221,11 +221,17 @@ fn multiple_failures_recover_on_last_response() {
         start_prompt(&h, "hi").await.unwrap().unwrap();
         let events = events.borrow();
         assert_eq!(retry_order(&events), ["start:1", "start:2", "end:true"]);
+        let starts: Vec<&Value> = events
+            .iter()
+            .filter(|event| event["type"] == "auto_retry_start")
+            .collect();
         let ends: Vec<&Value> = events
             .iter()
             .filter(|event| event["type"] == "auto_retry_end")
             .collect();
         assert_eq!(h.requests.0.borrow().len(), 3);
+        assert_eq!(starts[0]["delayMs"], json!(1));
+        assert_eq!(starts[1]["delayMs"], json!(2));
         assert_eq!(ends[0]["attempt"], json!(2));
         assert_eq!(get_assistant_texts(&h), ["success"]);
         assert!(!h.session.is_retrying());
