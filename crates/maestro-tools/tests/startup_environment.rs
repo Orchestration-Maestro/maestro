@@ -1,9 +1,8 @@
 //! Startup offline selections reaching the search-program manager.
 #![cfg(test)]
 #![cfg(unix)]
-use super::read_support::{Fixture, Scratch, isolated_os};
+use super::read_support::{Fixture, Scratch, counting_fetch, isolated_os};
 use super::runtime::run;
-use maestro_models::Fetch;
 use maestro_tools::{SearchTool, ToolsManager, ToolsManagerOutput};
 use std::{
     path::Path,
@@ -28,15 +27,6 @@ const TRUTH: &[(Option<&str>, bool)] = &[
     (Some(" yes"), false),
     (Some("true "), false),
 ];
-
-/// Transport counting acquisition attempts, which never succeeds.
-fn counting_fetch(calls: &Arc<AtomicUsize>) -> Fetch {
-    let calls = Arc::clone(calls);
-    Arc::new(move |_| {
-        calls.fetch_add(1, Ordering::SeqCst);
-        Box::pin(async { Err(maestro_models::FetchError::Aborted) })
-    })
-}
 
 /// Places an executable program probe at `root/name` through a child process.
 fn program(root: &Path, name: &str) {
