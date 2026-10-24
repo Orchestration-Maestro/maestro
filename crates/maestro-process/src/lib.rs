@@ -19,6 +19,14 @@ pub use shell::{Launch, LaunchContext, windows_shell_launch};
 
 pub mod foreground;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod termination;
+
+#[cfg(unix)]
+pub use termination::DefaultSignalActions;
+#[cfg(not(target_arch = "wasm32"))]
+pub use termination::TerminationSignal;
+
 #[cfg(target_os = "linux")]
 pub mod pty;
 

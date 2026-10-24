@@ -700,6 +700,29 @@ controlled host, and `examples/extensions/README.md` holds the build and
 controlled-run commands. Compacting a running application is not part of that
 controlled run.
 
+### Entry bookmarks
+
+[`examples/extensions/bookmark.rs`](../../examples/extensions/bookmark.rs) labels
+session entries, which is what the tree view shows beside an entry. `/bookmark`
+labels the newest assistant message: with the argument text when it has any, and
+with `bookmark-<epoch milliseconds>` when the argument is blank. `/unbookmark`
+removes the newest label from any entry kind and ignores its arguments.
+
+The example reads the complete entry list once per invocation, walks it from the
+newest entry and stops at the first match, so a bookmark never scans the list
+twice. It keeps no label store of its own: `set_label` and `get_label` reach the
+host's session, and a label it removes keeps the entry it was written on.
+
+Entry identity comes from the entry `message`, `thinking_level_change`,
+`model_change`, `compaction`, `branch_summary`, `custom`, `custom_message`,
+`label` and `session_info` all carry, so removal covers every kind. Both commands
+return host failures unchanged, and a command that writes a label before
+notifying writes nothing when the label write itself fails.
+
+It is opt-in like the other shipped extensions: its crate's tests run the built
+component in a controlled host with a supplied wall clock, and
+`examples/extensions/README.md` holds the build and controlled-run commands.
+
 ### A user-request summary handler
 
 This executable handler summarizes only supplied user messages; block content becomes
