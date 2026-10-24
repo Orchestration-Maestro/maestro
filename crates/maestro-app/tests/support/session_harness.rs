@@ -1936,7 +1936,7 @@ pub fn waiting_tool(
         definition: Tool {
             name: "wait".into(),
             description: "Wait for release".into(),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
         label: "Wait".into(),
