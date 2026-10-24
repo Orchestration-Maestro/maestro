@@ -14,7 +14,6 @@ use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_theme::{LiveTheme, ThemeDirectories, ThemeState};
 use maestro_tui::{components::Text, tui::ComponentHandle};
 use serde_json::{Value, json};
-<<<<<<< HEAD
 use std::{cell::RefCell, rc::Rc};
 
 /// Writes JSONL to a nested missing directory and checks the recorded lines.

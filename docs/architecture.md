@@ -84,12 +84,10 @@ not satisfy a direct requirement. The permitted internal development edges are
 `maestro-tui-crossterm` to `maestro-brand` for the terminal examples, the
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
-<<<<<<< HEAD
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
-child tests, and the native development edges from the twenty-two declared
+child tests, and the native development edges from the twenty-three declared
 callers to the
-`maestro-test-process` owner (see the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does

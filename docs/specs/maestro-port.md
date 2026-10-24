@@ -610,7 +610,6 @@ native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-<<<<<<< HEAD
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
@@ -639,7 +638,6 @@ exclusive disposable-directory allocation and cleanup. It has no workspace
 edges except the native feature unifier and is excluded from the foundation
 utility permission. Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro-app`,
-<<<<<<< HEAD
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
