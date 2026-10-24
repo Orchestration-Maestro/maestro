@@ -306,7 +306,8 @@ screen channel and generated JSON Schema, with no domain dependencies.
 connection runner; `maestro-rpc` is its standard-stream adapter. Session and workspace
 operations use one contract across stdio and daemon sockets; JSONL framing belongs to
 `maestro-json::jsonl`. Conventions keep protocol records in the application and the
-protocol crate, and protocol output on the one record writer. Native input, rendering and notification conversions stay with their runtime adapters. See
+protocol crate. The connection output accepts only an `RpcLine`, which only an
+`RpcRecord` builds, so protocol output has one writer by type. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
 The workspace daemon is core design: the root always wires the daemon and the

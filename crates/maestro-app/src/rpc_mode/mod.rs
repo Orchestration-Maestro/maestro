@@ -7,24 +7,32 @@
 mod commands;
 mod connection;
 mod lifecycle;
+mod output;
 mod ui;
 
 pub use connection::{JsonlLineReader, RpcInput, RpcLineReader, run_rpc_connection};
+pub use output::{RpcLine, RpcRecord, stdout_output};
 
 use crate::rpc_types::{workspace, workspace_schema};
 use maestro_export::ExportOperations;
-use maestro_json::jsonl::serialize_json_line;
 use maestro_process::TerminationSignal;
 use maestro_theme::LiveTheme;
 use maestro_tools::ToolRenderEnvironment;
-use serde::Serialize;
 use std::{future::Future, io, pin::Pin, rc::Rc};
 
 /// A local operation a caller supplies.
 pub type RpcFuture<T> = Pin<Box<dyn Future<Output = T>>>;
 
 /// Writes one complete protocol line.
-pub type RpcOutput = Rc<dyn Fn(&str) -> io::Result<()>>;
+///
+/// Hand-built text never reaches it:
+///
+/// ```compile_fail
+/// fn write(output: &maestro_app::rpc_mode::RpcOutput) -> std::io::Result<()> {
+///     output("{}\n")
+/// }
+/// ```
+pub type RpcOutput = Rc<dyn Fn(&RpcLine) -> io::Result<()>>;
 
 /// Writes one workspace event on the connection's output.
 pub type WorkspaceEventSink = Rc<dyn Fn(workspace_schema::EventData) -> io::Result<()>>;
@@ -86,10 +94,4 @@ impl RpcConnectionOutcome {
             Self::Signal(signal) => 128 + signal.as_raw(),
         }
     }
-}
-
-/// Writes `record` as one compact JSON line through `output`.
-fn write_record(output: &RpcOutput, record: &impl Serialize) -> io::Result<()> {
-    let line = serialize_json_line(&serde_json::to_value(record)?)?;
-    output(&line)
 }

@@ -4,7 +4,8 @@
 use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::answer;
 use maestro_app::rpc_mode::{
-    RpcFuture, RpcInput, RpcLineReader, RpcProcessPort, WorkspaceEventSink, WorkspaceOperations,
+    RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcProcessPort, WorkspaceEventSink,
+    WorkspaceOperations,
 };
 use maestro_app::rpc_types::{workspace, workspace_schema};
 use maestro_app::{
@@ -186,11 +187,11 @@ pub fn serve(
     };
     let failing_writes = Rc::new(std::cell::Cell::new(false));
     let failing = Rc::clone(&failing_writes);
-    let output = Rc::new(move |line: &str| {
+    let output = Rc::new(move |line: &RpcLine| {
         if failing.get() {
             return Err(io::Error::other("write failed"));
         }
-        written.send(line.to_owned()).unwrap();
+        written.send(line.as_str().to_owned()).unwrap();
         Ok(())
     });
     let reader = Box::new(MemoryReader { inputs: received });

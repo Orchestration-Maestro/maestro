@@ -1,15 +1,15 @@
 //! A connection's lifetime: binding each session to the protocol, the extension operations
 //! behind command contexts, termination signals and shutdown.
 use super::connection::Connection;
+use super::output::write_record;
 use super::ui::RpcUi;
-use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, write_record};
+use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, RpcRecord};
 use crate::agent_session::{AgentSession, ExtensionBindings};
 use crate::runtime::agent_session_runtime::AgentSessionRuntime;
 use maestro_extensions::types::{ExtensionUIContext, SessionChangeResult};
 use maestro_extensions::{EventError, ExtensionCommandContextActions};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_process::TerminationSignal;
-use serde::Serialize;
 use std::{
     cell::RefCell,
     io,
@@ -35,18 +35,6 @@ pub(super) struct Lifecycle {
     failure: Option<io::Error>,
     /// Reports how the connection ended; taken by the first report.
     finish: Option<oneshot::Sender<io::Result<RpcConnectionOutcome>>>,
-}
-
-/// An extension failure as an uncorrelated record.
-#[derive(Serialize)]
-#[serde(tag = "type", rename = "extension_error", rename_all = "camelCase")]
-struct ExtensionErrorRecord<'a> {
-    /// The extension's path.
-    extension_path: &'a str,
-    /// The failed operation or event.
-    event: &'a str,
-    /// The failure message.
-    error: &'a str,
 }
 
 impl Connection {
@@ -127,7 +115,7 @@ impl Connection {
         let weak = Rc::downgrade(self);
         let unsubscribe = session.subscribe(Rc::new(move |event| {
             if let Some(connection) = weak.upgrade() {
-                connection.write(event);
+                connection.write(RpcRecord::Event(event));
             }
         }));
         self.lifecycle.borrow_mut().unsubscribe = Some(Box::new(unsubscribe));
@@ -149,12 +137,7 @@ impl Connection {
                 Ok(())
             })),
             on_error: Some(Rc::new(move |error| {
-                let record = ExtensionErrorRecord {
-                    extension_path: &error.extension_path,
-                    event: &error.event,
-                    error: &error.error,
-                };
-                write_record(&output, &record).map_err(EventError::from)
+                write_record(&output, RpcRecord::ExtensionError(error)).map_err(EventError::from)
             })),
         }
     }
