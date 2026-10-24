@@ -246,8 +246,10 @@ edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
 that build a real model catalog, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
+the native `maestro-rpc` to `maestro-theme`, `maestro-tools` and
+`maestro-tui-crossterm` edges for its standard-stream child tests,
 and the native, non-optional dev-dependencies
-of the twenty-one declared callers on `maestro-test-process`, the owner of
+of the twenty-two declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
