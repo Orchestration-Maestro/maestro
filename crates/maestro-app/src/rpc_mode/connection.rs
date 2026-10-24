@@ -3,10 +3,12 @@
 use super::commands::Reply;
 use super::lifecycle::{Finish, Lifecycle};
 use super::ui::RpcUi;
-use super::{RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord};
+use super::{
+    RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, RpcSessionOptions,
+    WorkspaceOperations,
+};
 use crate::agent_session::AgentSession;
 use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
-use crate::runtime::agent_session_runtime::AgentSessionRuntime;
 use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
 use serde_json::Value;
@@ -103,14 +105,12 @@ pub(super) type Record = Result<Value, serde_json::Error>;
 
 /// The state one connection shares between its loop, its tasks and its callbacks.
 pub(super) struct Connection {
-    /// The session runtime.
-    pub(super) runtime: Rc<AgentSessionRuntime>,
+    /// The session facilities, absent on workspace-only connections.
+    pub(super) session: Option<Rc<SessionConnection>>,
     /// The output, which only [`Connection::write`] reaches.
     output: RpcOutput,
-    /// The extension interface.
-    pub(super) ui: Rc<RpcUi>,
-    /// The caller's facilities.
-    pub(super) options: RpcModeOptions,
+    /// The caller's workspace operations.
+    pub(super) workspace: Rc<dyn WorkspaceOperations>,
     /// Records admitted during the initial binding, in arrival order; `None` once bound.
     pub(super) early: RefCell<Option<Vec<Record>>>,
     /// Notifies every waiter once the initial binding has handled the records that arrived
@@ -120,10 +120,32 @@ pub(super) struct Connection {
     pub(super) lifecycle: RefCell<Lifecycle>,
 }
 
-/// Serves `runtime_host` over `input` and `output` until the input ends, an extension
+/// Session-only state, with a non-owning route to the shared connection writer.
+pub(super) struct SessionConnection {
+    /// The session's runtime and native facilities.
+    pub(super) options: RpcSessionOptions,
+    /// The extension interface shared across session rebindings.
+    pub(super) ui: Rc<RpcUi>,
+    /// The shared protocol writer's owner.
+    connection: Weak<Connection>,
+}
+
+impl SessionConnection {
+    /// The current session.
+    pub(super) fn session(&self) -> Rc<AgentSession> {
+        self.options.runtime.session()
+    }
+
+    /// Writes a session record through the connection's only writer.
+    pub(super) fn write(&self, record: RpcRecord<'_>) -> io::Result<()> {
+        write_to(&self.connection, record)
+    }
+}
+
+/// Serves the supplied workspace and optional session over `input` and `output` until the input ends, an extension
 /// requests shutdown or a termination signal arrives; returns how it ended.
 ///
-/// The session is bound to the protocol's extension interface first; meanwhile dialog
+/// A supplied session is bound to the protocol's extension interface first; meanwhile dialog
 /// responses are answered and every other line waits, in arrival order, until binding ends.
 /// Commands run concurrently and answer as they finish. Must run inside a
 /// [`tokio::task::LocalSet`].
@@ -131,32 +153,33 @@ pub(super) struct Connection {
 /// # Errors
 /// Returns an input or output failure, or the failure of binding or disposing the session.
 pub async fn run_rpc_connection(
-    runtime_host: Rc<AgentSessionRuntime>,
     mut input: Box<dyn RpcLineReader>,
     output: RpcOutput,
     options: RpcModeOptions,
 ) -> io::Result<RpcConnectionOutcome> {
-    let (connection, mut finished) = Connection::start(runtime_host, output, options);
+    let (connection, mut finished) = Connection::start(output, options);
     let outcome = connection.serve(&mut *input, &mut finished).await;
     input.detach();
     outcome
 }
 
 impl Connection {
-    /// A connection serving `runtime` over `output` with `lifecycle`, before its initial
-    /// binding.
+    /// A connection with its workspace operations and optional unbound session.
     pub(super) fn new(
-        runtime: Rc<AgentSessionRuntime>,
         output: RpcOutput,
         options: RpcModeOptions,
         lifecycle: Lifecycle,
     ) -> Rc<Self> {
-        let theme = options.theme.clone();
         Rc::new_cyclic(|connection| Self {
-            ui: Rc::new(RpcUi::new(Weak::clone(connection), theme)),
-            runtime,
+            session: options.session.map(|options| {
+                Rc::new(SessionConnection {
+                    ui: Rc::new(RpcUi::new(Weak::clone(connection), options.theme.clone())),
+                    options,
+                    connection: Weak::clone(connection),
+                })
+            }),
             output,
-            options,
+            workspace: options.workspace,
             early: RefCell::new(Some(Vec::new())),
             bound: tokio::sync::Notify::new(),
             lifecycle: RefCell::new(lifecycle),
@@ -249,7 +272,9 @@ impl Connection {
         if let Ok(value) = &record
             && value.get("type").and_then(Value::as_str) == Some("extension_ui_response")
         {
-            self.ui.answer(value);
+            if let Some(session) = &self.session {
+                session.ui.answer(value);
+            }
             return None;
         }
         Some(record)
@@ -304,19 +329,19 @@ impl Connection {
         };
         let kind = value["type"].as_str().unwrap_or_default().to_owned();
         match command.command {
-            RpcCommandBody::Session(session) => {
-                self.run_session_command(command.id, kind, session).await
-            }
+            RpcCommandBody::Session(session) => match &self.session {
+                Some(owner) => owner.run_session_command(command.id, kind, session).await,
+                None => Reply::Handled(Some(RpcResponse::Error {
+                    id: command.id,
+                    command: Some(kind),
+                    error: "Session command unavailable; open in a session to use it".into(),
+                })),
+            },
             RpcCommandBody::Workspace(workspace) => Reply::Handled(Some(
                 self.run_workspace_command(command.id, kind, *workspace)
                     .await,
             )),
         }
-    }
-
-    /// The current session.
-    pub(super) fn session(&self) -> Rc<AgentSession> {
-        self.runtime.session()
     }
 
     /// Writes `record` as one line; a failed write ends the connection with that failure,

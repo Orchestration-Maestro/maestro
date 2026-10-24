@@ -168,7 +168,11 @@ need `unsafe` to hand its descriptor to the async runtime.
   read no variable and name no root.
 - **Dispatch.** Workspace commands reach the daemon through the shared RPC dispatch path, on stdio and on the
   socket. The socket adapter lives in `maestro-rpc::daemon`; daemon state, subscriptions and waits live in
-  `maestro-daemon::api`.
+  `maestro-daemon::api`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
+  connection teardown and drives the existing daemon `App::run` loop. Each accepted socket
+  uses the application connection runner with no session; supplied sessions remain supported
+  by that same runner. Typed requests flow down to daemon-owned handlers, never through a
+  second dispatch loop. Startup announces only resources that have actually bound.
 - **Continued requests.** A connection reads lines full duplex. A line that arrives during a subscription or
   a wait is the next command. End of input drops the pending work, which ends the wait or the subscription.
 
