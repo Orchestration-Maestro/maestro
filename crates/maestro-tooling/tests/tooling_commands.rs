@@ -1205,6 +1205,10 @@ fn shipped_examples() -> &'static [(&'static str, &'static str)] {
             include_str!("../../../examples/extensions/bookmark.rs"),
         ),
         (
+            "examples/extensions/dynamic_tools.rs",
+            include_str!("../../../examples/extensions/dynamic_tools.rs"),
+        ),
+        (
             "examples/extensions/hello.rs",
             include_str!("../../../examples/extensions/hello.rs"),
         ),
