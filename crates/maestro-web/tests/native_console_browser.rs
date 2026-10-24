@@ -1,8 +1,8 @@
 //! Console output mounted as native page content and followed through its own scroller.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, call, container, document, frames, host, page_module, selection, text,
-    until, view,
+    Clipboard, Recorded, call, computed, container, document, driver, frames, host, page_module,
+    rgb, selection, text, until, view,
 };
 use maestro_web::{
     ConsoleBlock, I18n,
@@ -173,7 +173,8 @@ impl Placed {
     /// Detach the root from the page, keeping it alive for a later reattachment.
     fn detach(&self) -> Element {
         let root = self.root();
-        self.parent.remove_child(&root).unwrap();
+        let parent = root.parent_node().unwrap();
+        parent.remove_child(&root).unwrap();
         root
     }
 }
@@ -191,6 +192,18 @@ async fn copied(page: &JsValue, element: &Element) {
 /// Wait for `element` to return to its idle control.
 async fn restored(page: &JsValue, element: &Element) {
     until(page, element, || text(element).is_empty()).await;
+}
+/// Collect page nodes no task boundary keeps alive.
+async fn collect(page: &JsValue) {
+    let window = web_sys::window().unwrap();
+    let collect: js_sys::Function = js_sys::Reflect::get(&window, &"gc".into())
+        .unwrap()
+        .unchecked_into();
+    for _ in 0..4 {
+        frames(page, 1).await;
+        collect.call0(&window).unwrap();
+    }
+    frames(page, 1).await;
 }
 
 /// The mounted console shows its header, copy title and literal output, scrolled to the end.
@@ -429,4 +442,115 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
     );
     clipboard.settle();
     copied(&page, &left_copy).await;
+    assert_retired_completions(&page, &clipboard, &cases).await;
+}
+/// A completion that settles after its control disconnected, or after it reconnected,
+/// is retired with the view that asked for it.
+async fn assert_retired_completions(page: &JsValue, clipboard: &Recorded, cases: &Console) {
+    let retiring = Placed::show(
+        Rc::clone(&view()),
+        &console(&cases.mount.content, ConsoleVariant::Default),
+    );
+    let root = retiring.root();
+    let control = copy_control(&root);
+    copy_button(&root).click();
+    let detached = retiring.detach();
+    clipboard.settle();
+    frames(page, 1).await;
+    assert!(
+        text(&control).is_empty(),
+        "a completion settled after disconnect painted feedback"
+    );
+    container().append_child(&detached).unwrap();
+    copy_button(&root).click();
+    let again = retiring.detach();
+    container().append_child(&again).unwrap();
+    clipboard.settle();
+    frames(page, 1).await;
+    assert!(
+        text(&control).is_empty(),
+        "a completion settled after reconnection painted feedback"
+    );
+}
+
+/// A removed console releases its scroller rather than retaining it through the copy callback.
+#[wasm_bindgen]
+pub async fn console_dom_removal_releases_its_subtree(import_module: js_sys::Function) {
+    let page = page_module(&import_module).await;
+    let view = view();
+    let _host = host(&view, &import_module);
+    let cases = fixture().console;
+    let placed = Placed::show(
+        Rc::clone(&view),
+        &console(&cases.mount.content, ConsoleVariant::Default),
+    );
+    let root = placed.root();
+    let scroller = root.query_selector(".console-scroll").unwrap().unwrap();
+    let copy = copy_control(&root);
+    let probes = [
+        js_sys::WeakRef::new(&root),
+        js_sys::WeakRef::new(&copy),
+        js_sys::WeakRef::new(&scroller),
+    ];
+    drop(root);
+    drop(copy);
+    drop(scroller);
+    drop(placed);
+    collect(&page).await;
+    let alive = probes.each_ref().map(|probe| probe.deref().is_some());
+    assert!(
+        !alive.contains(&true),
+        "the removed console retained root/copy/scroller: {alive:?}"
+    );
+}
+
+/// The console's copy control keeps compact geometry, a muted idle role and an accent
+/// highlight, measured on the painted control.
+async fn assert_compact_control(page: &JsValue, view: &maestro_web::dom::DomView, root: &Element) {
+    let presentation = view.pack.presentation(view.mode).unwrap();
+    let role = |name: &str| rgb(presentation.colors[name]);
+    let control = copy_button(root);
+    driver("driverPointer", "[0,0,false]").await;
+    settle_transitions(page, &control).await;
+    assert_eq!(computed(&control, "height"), "20px", "compact height");
+    assert_eq!(computed(&control, "column-gap"), "4px", "compact gap");
+    assert_eq!(computed(&control, "font-size"), "12px", "compact text");
+    assert_eq!(computed(&control, "color"), role("muted"), "idle role");
+    let rect = control.get_bounding_client_rect();
+    let point = format!(
+        "[{},{},false]",
+        rect.x() + rect.width() / 2.,
+        rect.y() + rect.height() / 2.
+    );
+    driver("driverPointer", &point).await;
+    settle_transitions(page, &control).await;
+    assert_eq!(
+        computed(&control, "background-color"),
+        role("accent"),
+        "hover surface"
+    );
+    assert_eq!(computed(&control, "color"), role("on-accent"), "hover role");
+    driver("driverPointer", "[0,0,false]").await;
+}
+/// Finish the control's running transitions, so the next reading is its painted result.
+async fn settle_transitions(page: &JsValue, element: &Element) {
+    call(page, "finish", &js_sys::Array::of1(element)).await;
+}
+
+/// The console's copy control keeps the reference's compact, muted and accent treatment.
+#[wasm_bindgen]
+pub async fn console_dom_control_keeps_compact_muted_and_accent_treatment(
+    import_module: js_sys::Function,
+) {
+    let page = page_module(&import_module).await;
+    let view = view();
+    let _host = host(&view, &import_module);
+    let cases = fixture().console;
+    let placed = Placed::show(
+        Rc::clone(&view),
+        &console(&cases.mount.content, ConsoleVariant::Default),
+    );
+    frames(&page, 1).await;
+    let root = placed.root();
+    assert_compact_control(&page, &view, &root).await;
 }

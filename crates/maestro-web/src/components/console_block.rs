@@ -16,6 +16,8 @@ use std::{
 mod browser;
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod dom;
+#[cfg(target_arch = "wasm32")]
+mod nodes;
 
 /// Console output's semantic color.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -62,26 +64,21 @@ pub struct ConsoleBlock {
 }
 impl Default for ConsoleBlock {
     fn default() -> Self {
-        Self {
-            content: String::new(),
-            variant: ConsoleVariant::default(),
-            host: None,
-            id: attachment_content::identity(),
-            prepared: None,
-            reading: None,
-            mounted: Rc::default(),
-            copy: None,
-        }
+        Self::with_host(None)
     }
 }
 impl ConsoleBlock {
     /// Start with empty ordinary output using the supplied platform.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self::with_host(Some(host))
+    }
+    /// Start with empty ordinary output and the platform a caller supplies, if any.
+    fn with_host(host: Option<Rc<dyn AttachmentHost>>) -> Self {
         Self {
             content: String::new(),
             variant: ConsoleVariant::default(),
-            host: Some(host),
+            host,
             id: attachment_content::identity(),
             prepared: None,
             reading: None,

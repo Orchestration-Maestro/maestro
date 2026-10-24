@@ -118,7 +118,10 @@
     "generic_artifact_dom_roots_release_their_own_resources",
     "console_dom_literal_scroll_and_variant",
     "console_dom_copy_feedback_uses_current_text_and_locale",
-    "console_dom_copy_disconnect_reconnect_releases_work"
+    "console_dom_copy_disconnect_reconnect_releases_work",
+    "console_dom_removal_releases_its_subtree",
+    "console_dom_control_keeps_compact_muted_and_accent_treatment",
+    "copy_control_keeps_focus_through_success_and_restoration"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

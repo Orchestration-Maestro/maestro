@@ -8,16 +8,20 @@ use crate::{
     utils::i18n::I18n,
 };
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
 };
-use wasm_bindgen::{JsValue, closure::Closure};
+use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::HtmlElement;
 
 /// Element tag of the copy control.
 const TAG: &str = "copy-button";
 /// Success feedback duration of a control built outside [`create`], in milliseconds.
 pub(crate) const FEEDBACK_MS: i32 = 2000;
+/// Attribute selecting the compact control treatment.
+const COMPACT: &str = "compact";
+/// Class carrying the compact geometry and the muted idle and accent highlight roles.
+const COMPACT_CLASS: &str = "maestro-button-compact";
 /// The active restoring timer while success feedback shows.
 type Feedback = Rc<RefCell<Option<Timer>>>;
 /// Localization a copy control resolves its labels through, replaceable by its creator.
@@ -49,6 +53,10 @@ struct Activation {
     feedback_ms: i32,
     /// Notification after each feedback change.
     changed: Option<Rc<dyn Fn()>>,
+    /// Connection generations, bumped on every connection and disconnection.
+    epoch: Rc<Cell<u64>>,
+    /// The generation that admitted this activation, which a later one retires.
+    admitted: u64,
 }
 /// Properties reflected onto the attributes; `title` is the element's own.
 const PROPERTIES: &[Property] = &[
@@ -71,6 +79,8 @@ struct CopyElement {
     feedback_ms: i32,
     /// Notification after each feedback change.
     changed: Option<Rc<dyn Fn()>>,
+    /// Connection generations, bumped on every connection and disconnection.
+    epoch: Rc<Cell<u64>>,
     /// Accessors of the `text` and `showText` properties.
     _properties: Reflected,
 }
@@ -95,12 +105,16 @@ impl custom_element::CustomElement for CopyElement {
             feedback: Rc::downgrade(&self.feedback),
             feedback_ms: self.feedback_ms,
             changed: self.changed.clone(),
+            epoch: Rc::clone(&self.epoch),
+            admitted: self.epoch.get().wrapping_add(1),
         });
+        self.epoch.set(activation.admitted);
         let callback = Closure::new(move || copy(&activation));
         self.click = EventSubscription::new(root.into(), "click", callback).ok();
     }
     fn disconnected_callback(&mut self) {
         self.click = None;
+        self.epoch.set(self.epoch.get().wrapping_add(1));
         let restoring = self.feedback.borrow_mut().take();
         drop(restoring);
     }
@@ -118,8 +132,12 @@ fn copy(activation: &Rc<Activation>) {
     );
     let activation = Rc::clone(activation);
     wasm_bindgen_futures::spawn_local(async move {
+        let settled = work.await;
+        if activation.epoch.get() != activation.admitted {
+            return;
+        }
         let (true, Some(owner), Some(window)) =
-            (work.await, activation.feedback.upgrade(), web_sys::window())
+            (settled, activation.feedback.upgrade(), web_sys::window())
         else {
             return;
         };
@@ -153,21 +171,30 @@ fn changed(activation: &Activation) {
         changed();
     }
 }
-/// Render the button with its icon and, when requested, the copied label.
+/// Render the button with its icon and, when requested, the copied label, keeping the native
+/// button so that keyboard focus survives success and restoration.
 fn render(root: &HtmlElement, view: &DomView, i18n: &I18n, copied: bool) -> Result<(), JsValue> {
     let document = &view.document;
-    let node = crate::icons::icon_node(if copied { "Check" } else { "Copy" })
-        .map_err(|error| JsValue::from_str(&error.to_string()))?
-        .ok_or_else(|| JsValue::from_str("Missing icon"))?;
-    let mut children: Vec<web_sys::Node> =
-        vec![crate::icons::icon_dom(&node, crate::icons::IconSize::Sm, None)?.into()];
-    if copied && root.has_attribute("show-text") {
-        let label = document.create_element("span")?;
-        let text = i18n
-            .text("Copied!")
-            .map_err(|error| JsValue::from_str(&error.to_string()))?;
-        label.set_text_content(Some(&text));
-        children.push(label.into());
+    let props = ButtonProps {
+        variant: ButtonVariant::Ghost,
+        size: ButtonSize::Sm,
+        class_name: if root.has_attribute(COMPACT) {
+            COMPACT_CLASS
+        } else {
+            ""
+        },
+        ..ButtonProps::default()
+    };
+    let control = if let Some(control) = root.first_element_child() {
+        control
+    } else {
+        let created = button(document, &props, &[])?;
+        root.append_child(&created)?;
+        created.unchecked_into()
+    };
+    let classes = props.classes();
+    if control.class_name() != classes {
+        control.set_class_name(&classes);
     }
     let title = match root.get_attribute("title") {
         Some(title) => title,
@@ -175,14 +202,25 @@ fn render(root: &HtmlElement, view: &DomView, i18n: &I18n, copied: bool) -> Resu
             .text("Copy")
             .map_err(|error| JsValue::from_str(&error.to_string()))?,
     };
-    let props = ButtonProps {
-        variant: ButtonVariant::Ghost,
-        size: ButtonSize::Sm,
-        title: Some(&title),
-        ..ButtonProps::default()
-    };
-    let control = button(document, &props, &children)?;
-    root.replace_children_with_node_1(&control);
+    if control.get_attribute("title").as_deref() != Some(title.as_str()) {
+        control.set_attribute("title", &title)?;
+    }
+    let glyph = crate::icons::icon_node(if copied { "Check" } else { "Copy" })
+        .map_err(|error| JsValue::from_str(&error.to_string()))?
+        .ok_or_else(|| JsValue::from_str("Missing icon"))?;
+    let children = document.create_document_fragment();
+    let icon: web_sys::Node =
+        crate::icons::icon_dom(&glyph, crate::icons::IconSize::Sm, None)?.into();
+    children.append_child(&icon)?;
+    if copied && root.has_attribute("show-text") {
+        let label = document.create_element("span")?;
+        let text = i18n
+            .text("Copied!")
+            .map_err(|error| JsValue::from_str(&error.to_string()))?;
+        label.set_text_content(Some(&text));
+        children.append_child(&label)?;
+    }
+    control.replace_children_with_node_1(&children);
     Ok(())
 }
 /// Define the copy control once for the page.
@@ -190,7 +228,7 @@ fn render(root: &HtmlElement, view: &DomView, i18n: &I18n, copied: bool) -> Resu
 /// Returns the browser's registration failure.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
-    let observed = vec!["title".into(), "show-text".into()];
+    let observed = vec!["title".into(), "show-text".into(), COMPACT.into()];
     crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
         let creating = CREATING.take();
         CopyElement {
@@ -204,6 +242,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
             feedback: Rc::default(),
             feedback_ms: creating.as_ref().map_or(FEEDBACK_MS, |c| c.feedback),
             changed: creating.and_then(|creating| creating.changed),
+            epoch: Rc::default(),
             _properties: properties,
         }
     })

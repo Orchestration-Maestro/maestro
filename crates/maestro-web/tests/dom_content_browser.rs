@@ -1,7 +1,8 @@
 //! Mounted page content, page-content registries and built-in elements in a real document.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Text, body, computed, container, host, result, rgb, text, view,
+    Clipboard, Recorded, Text, body, computed, container, host, page_module, result, rgb, text,
+    until, view,
 };
 use crate::message_renderer_support::{NativeMessage, message};
 use maestro_app::{AgentMessage, JsonObject, NoCustomMessages, ToolResultMessage};
@@ -640,6 +641,38 @@ pub async fn built_in_elements_follow_property_and_attribute_changes(
         .click();
     crate::contributions_support::until(&page, &control, || text(&control) == "Copied!").await;
     assert_eq!(clipboard.texts(), ["property text"]);
+}
+
+/// Success feedback and its restoration keep the focused native control in place.
+#[wasm_bindgen]
+pub async fn copy_control_keeps_focus_through_success_and_restoration(
+    import_module: js_sys::Function,
+) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let _clipboard = Recorded::install(Clipboard::Accept);
+    let control = view.document.create_element("copy-button").unwrap();
+    control.set_attribute("text", "payload").unwrap();
+    control.set_attribute("show-text", "").unwrap();
+    body().append_child(&control).unwrap();
+    let button: HtmlElement = control
+        .query_selector("button")
+        .unwrap()
+        .unwrap()
+        .unchecked_into();
+    button.focus().unwrap();
+    let focused = || {
+        view.document
+            .active_element()
+            .is_some_and(|active| active.is_same_node(Some(button.unchecked_ref())))
+    };
+    assert!(focused(), "the control did not take focus");
+    let page = page_module(&import_module).await;
+    button.click();
+    until(&page, &control, || text(&control) == "Copied!").await;
+    assert!(focused(), "success feedback dropped the focused control");
+    until(&page, &control, || text(&control).is_empty()).await;
+    assert!(focused(), "restoration dropped the focused control");
 }
 
 /// Running animations on an element.
