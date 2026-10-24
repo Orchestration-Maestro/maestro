@@ -332,11 +332,7 @@ fn refuse_writes(_case: &Case) -> Option<Vec<()>> {
 
 /// Replay each recorded case on its own real install tree.
 pub fn run(fixture: &str, compose_root: bool) {
-    if launched_for_case() {
-        return replay_child();
-    }
-    // Every case moves the working directory, which belongs to the whole process.
-    if maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap() {
+    if replayed_elsewhere() {
         return;
     }
     replay_cases(fixture, compose_root);
@@ -346,10 +342,7 @@ pub fn run(fixture: &str, compose_root: bool) {
 /// whose environments supply a home with spaces, an empty home, an absent home and an
 /// unrelated home beside a matching bin root.
 pub fn run_bun_roots(fixture: &str) {
-    if launched_for_case() {
-        return replay_child();
-    }
-    if maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap() {
+    if replayed_elsewhere() {
         return;
     }
     replay_cases(fixture, false);
@@ -361,9 +354,15 @@ pub fn run_bun_roots(fixture: &str) {
     }
 }
 
-/// Whether this process was launched to replay one supplied case.
-fn launched_for_case() -> bool {
-    maestro_test_process::selection().is_child()
+/// Whether another process replays the cases: a case child replays the one case it was
+/// supplied, and the isolated run has already replayed this test's body. Every case moves
+/// the working directory, which belongs to the whole process.
+fn replayed_elsewhere() -> bool {
+    if maestro_test_process::selection().is_child() {
+        replay_child();
+        return true;
+    }
+    maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap()
 }
 
 /// Replay every case of `fixture`.

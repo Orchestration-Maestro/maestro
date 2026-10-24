@@ -136,17 +136,16 @@ fn native_update_access_matches_system_decision() {
         command.display
     );
     // Each refused write withholds the command on its own, beside the other permitted one.
-    let Some(package_denied) = maestro_test_directory::deny(&package, 0o500).unwrap() else {
-        // A privileged run is not refused the write, so it cannot state these rows.
-        return;
-    };
-    assert_withheld(&context, &configured, &unwritable);
-    drop(package_denied);
-    let Some(parent_denied) = maestro_test_directory::deny(&parent, 0o500).unwrap() else {
-        return;
-    };
-    assert_withheld(&context, &configured, &unwritable);
-    drop(parent_denied);
+    for path in [&package, &parent] {
+        let Some(refused) = maestro_test_directory::deny(path, 0o500).unwrap() else {
+            // A privileged run is not refused the write, so it cannot state these rows.
+            return;
+        };
+        let (command, guidance) = observed(&context, &configured);
+        assert_eq!(command, None, "a refused write on {}", path.display());
+        assert_eq!(guidance, unwritable);
+        drop(refused);
+    }
     // Ownership was observed before the query, so a package the query removes fails the
     // first access and reports the installation as unmanaged.
     let context = SelfUpdateContext {
@@ -168,14 +167,6 @@ fn observed(
     let guidance =
         get_self_update_unavailable_instruction(context, "agent", Some(configured), None).unwrap();
     (command, guidance)
-}
-
-#[cfg(unix)]
-/// Assert that public selection withholds the command and reports the unwritable guidance.
-fn assert_withheld(context: &SelfUpdateContext<'_>, configured: &[String], unwritable: &str) {
-    let (command, guidance) = observed(context, configured);
-    assert_eq!(command, None, "a refused write withholds the command");
-    assert_eq!(guidance, unwritable);
 }
 
 #[cfg(unix)]
