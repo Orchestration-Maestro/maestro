@@ -26,11 +26,11 @@ use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
     EditorComponent, autocomplete,
 };
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 use std::{cell::RefCell, future::Future, io, path::Path, pin::Pin, rc::Rc};
 
 /// Every recorded presentation case.
-const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
+pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
@@ -259,16 +259,36 @@ fn painted(theme: &Theme, rows: &[String]) -> Vec<String> {
     rows.iter().map(|row| roles(theme, row)).collect()
 }
 
-/// One recorded case of this module's witnesses.
+/// One recorded case, read before its witness gives the input and observation their types.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Case {
+pub(super) struct Case {
     /// The witness the case belongs to.
     test: String,
     /// The recorded operation.
-    input: Input,
+    input: serde_json::Value,
     /// The recorded observation.
-    expected: Expected,
+    expected: serde_json::Value,
+}
+
+/// The recorded cases of `test` in `fixtures`, typed by that witness.
+pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
+    fixtures: &str,
+    test: &str,
+) -> Vec<(I, E)> {
+    let all: Vec<Case> = serde_json::from_str(fixtures).unwrap();
+    let cases: Vec<_> = all
+        .into_iter()
+        .filter(|case| case.test == test)
+        .map(|case| {
+            (
+                serde_json::from_value(case.input).unwrap(),
+                serde_json::from_value(case.expected).unwrap(),
+            )
+        })
+        .collect();
+    assert!(!cases.is_empty());
+    cases
 }
 
 /// The recorded operations.
@@ -357,26 +377,15 @@ pub(super) enum Expected {
     },
 }
 
-/// The recorded cases of `test`.
-pub(super) fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
-}
-
 #[test]
 fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
     isolated(
         "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
         |directory| {
-            for (input, expected) in
-                cases("startup_header_keeps_quiet_verbose_and_configured_hints_distinct")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_header_keeps_quiet_verbose_and_configured_hints_distinct",
+            ) {
                 let (
                     Input::Header {
                         quiet,
@@ -417,8 +426,10 @@ fn startup_notices_keep_labels_styles_padding_and_redraw() {
     isolated(
         "startup_notices_keep_labels_styles_padding_and_redraw",
         |directory| {
-            for (input, expected) in cases("startup_notices_keep_labels_styles_padding_and_redraw")
-            {
+            for (input, expected) in cases::<Input, Expected>(
+                FIXTURES,
+                "startup_notices_keep_labels_styles_padding_and_redraw",
+            ) {
                 let (Input::Notice { kind, text, width }, Expected::Notice { lines, renders }) =
                     (input, expected)
                 else {
@@ -449,9 +460,12 @@ fn clear_editor_changes_text_and_requests_a_frame() {
         "clear_editor_changes_text_and_requests_a_frame",
         |directory| {
             let [(Input::Clear, Expected::Clear { text, renders })] =
-                <[_; 1]>::try_from(cases("clear_editor_changes_text_and_requests_a_frame"))
-                    .ok()
-                    .unwrap()
+                <[_; 1]>::try_from(cases::<Input, Expected>(
+                    FIXTURES,
+                    "clear_editor_changes_text_and_requests_a_frame",
+                ))
+                .ok()
+                .unwrap()
             else {
                 panic!("one clear case");
             };

@@ -1,9 +1,9 @@
 //! Typed input through the editor's installed submission and the single waiting input.
-use super::{World, isolated, started};
+use super::{World, cases as recorded_cases, isolated, started};
 use crate::{CustomEditor, InteractiveMode};
 use maestro_tui::KeybindingKeys;
 use maestro_tui::tui::InputHandler;
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::Deserialize;
 use std::{
     cell::RefCell,
     future::Future,
@@ -16,35 +16,6 @@ use std::{
 
 /// Every recorded input case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_input.json");
-
-/// One recorded case, read before its witness gives the input and observation their types.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: serde_json::Value,
-    /// The recorded observation.
-    expected: serde_json::Value,
-}
-
-/// The recorded cases of `test`, typed by that witness.
-fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| {
-            (
-                serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!cases.is_empty());
-    cases
-}
 
 /// Polls `future` once with a waker that observes nothing.
 pub(super) fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
@@ -110,7 +81,7 @@ struct Selected {
 fn typed_submission_trims_ecmascript_whitespace_and_records_history() {
     const TEST: &str = "typed_submission_trims_ecmascript_whitespace_and_records_history";
     isolated(TEST, |directory| {
-        for (input, expected) in cases::<Selection, Selected>(TEST) {
+        for (input, expected) in recorded_cases::<Selection, Selected>(FIXTURES, TEST) {
             let world = started(directory);
             let mut waiter = input.waiting.then(|| waiting(&world.mode));
             submit(&world.mode, &input.value);
@@ -196,7 +167,7 @@ fn replace(world: &World) -> (bool, String, Vec<String>) {
 fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
     const TEST: &str = "typed_waiter_is_one_shot_without_buffering_early_submissions";
     isolated(TEST, |directory| {
-        for (input, expected) in cases::<Sequence, Waited>(TEST) {
+        for (input, expected) in recorded_cases::<Sequence, Waited>(FIXTURES, TEST) {
             let world = started(directory);
             let cleared = |world: &World| world.mode.on_input_callback.borrow().is_none();
             match (input.op.as_str(), expected) {
@@ -320,9 +291,10 @@ struct Reentered {
 fn typed_delivery_precedes_history_and_accepts_reentrant_registration() {
     const TEST: &str = "typed_delivery_precedes_history_and_accepts_reentrant_registration";
     isolated(TEST, |directory| {
-        let [(input, expected)] = <[(Sequence, Reentered); 1]>::try_from(cases(TEST))
-            .ok()
-            .unwrap();
+        let [(input, expected)] =
+            <[(Sequence, Reentered); 1]>::try_from(recorded_cases(FIXTURES, TEST))
+                .ok()
+                .unwrap();
         assert_eq!(input.op, "callback-reentry");
         let world = started(directory);
         world.mode.editor.add_to_history("older");
@@ -488,7 +460,7 @@ fn live_binding(directory: &Path, steps: &[LiveStep]) {
 fn typed_input_obeys_the_live_submit_binding() {
     const TEST: &str = "typed_input_obeys_the_live_submit_binding";
     isolated(TEST, |directory| {
-        for (input, expected) in cases::<Binding, Routed>(TEST) {
+        for (input, expected) in recorded_cases::<Binding, Routed>(FIXTURES, TEST) {
             match (input, expected) {
                 (
                     Binding::Keys { binding, keys },

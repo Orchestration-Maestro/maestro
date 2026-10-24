@@ -1,14 +1,14 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, started};
+use super::{Setup, World, cases as recorded_cases, started};
 use crate::components::session_selector::list::tests::session_picker::native_child as child;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, get_theme_directories};
 use maestro_app::{NativeExportOperations, ReadonlySessionManager, SessionManager};
 use maestro_test_process::TestProcess;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc, sync::LazyLock};
 
@@ -18,35 +18,6 @@ const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_transfe
 /// The package-directory environment key the installation reads.
 static ENV_PACKAGE_DIR: LazyLock<String> =
     LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
-
-/// One recorded case, read before its witness gives the input and observation their types.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: serde_json::Value,
-    /// The recorded observation.
-    expected: serde_json::Value,
-}
-
-/// The recorded cases of `test`, typed by that witness.
-fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| {
-            (
-                serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!cases.is_empty());
-    cases
-}
 
 /// One recorded argument read.
 #[derive(Deserialize)]
@@ -71,7 +42,7 @@ struct Parsed {
 /// Compares every recorded case of `test` with the reader's result, keeping a present
 /// empty argument apart from an absent one.
 fn reads(test: &str, expected_cases: usize) {
-    let cases: Vec<(Argument, Parsed)> = cases(test);
+    let cases: Vec<(Argument, Parsed)> = recorded_cases(FIXTURES, test);
     assert_eq!(cases.len(), expected_cases);
     for (input, expected) in cases {
         let observed = get_path_command_argument(&input.text, &input.command);
