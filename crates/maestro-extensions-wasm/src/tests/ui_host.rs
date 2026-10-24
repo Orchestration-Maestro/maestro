@@ -21,6 +21,8 @@ pub struct Ui(pub(super) usize);
 pub struct Bank {
     /// Identity of the binding acquisitions currently resolve.
     binding: usize,
+    /// Working directory of the context each acquisition was made through, in order.
+    pub acquired: Vec<String>,
     /// Rejection supplied for the next request it applies to.
     error: Option<Refusal>,
     /// Method whose next request is rejected instead of the next request overall.
@@ -78,8 +80,10 @@ impl Bank {
         self.message.take()
     }
 
-    /// Hands out the identity of the binding current at acquisition time.
-    pub fn acquire(&self) -> usize {
+    /// Hands out the identity of the binding current at acquisition time and records the
+    /// working directory of the context the acquisition was made through.
+    pub fn acquire(&mut self, owner: &str) -> usize {
+        self.acquired.push(owner.into());
         self.binding
     }
 

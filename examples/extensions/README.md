@@ -26,6 +26,7 @@ inserts at its own place instead of appending at the end of each list.
 | File | Registers |
 | --- | --- |
 | `bookmark.rs` | A `/bookmark` command that labels the last assistant message, so the tree view can find it again. |
+| `event_bus.rs` | An `emit` command that sends a notification on the event bus, and a retained listener that reports every notification through the current session's UI. |
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
@@ -56,6 +57,8 @@ the command and tools it registered:
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- bookmark_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- event_bus_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -158,6 +161,23 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 
 Its controlled run, listed with the others above, calls the registered tool with
 every recorded duration text.
+
+### What the event bus example does
+
+`/emit [message]` trims its argument and sends it on the fixed `my:notification`
+channel with `"from": "/emit command"`, defaulting to `hello` when nothing is
+left. The argument is always the message: the command takes no event name, so
+`/emit other:event payload` sends that whole text to the same channel.
+
+A retained listener reports each `my:notification` payload through the current
+session context's UI as `Event from {from}: {message}` at information severity.
+The example reports one notification at session start, keeps the latest session
+context when a session is replaced, and reports nothing before the first session
+starts.
+
+Any extension can emit on the same channel with an object holding string
+`message` and `from` members; other members are ignored. Loading the component
+into an application is opt-in and needs that application's component runtime.
 
 ### What the compaction trigger example does
 
