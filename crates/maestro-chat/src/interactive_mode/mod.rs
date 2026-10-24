@@ -1,7 +1,7 @@
 //! The interactive terminal mode: its retained containers, startup help, notices,
 //! transcript shortcuts, editor actions and typed input.
 
-use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
+use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
@@ -18,6 +18,7 @@ use std::{
 };
 
 mod actions;
+mod bash;
 mod replay;
 mod startup;
 mod submit;
@@ -84,6 +85,10 @@ pub struct InteractiveMode {
     pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// The shell row that is still producing output, when one is attached.
+    active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
+    /// Shell rows shown in the pending area until the next ordinary submission.
+    pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
 }
@@ -151,15 +156,12 @@ impl InteractiveMode {
             built_in_header: RefCell::default(),
             tool_environment,
             tool_output_expanded: Cell::new(false),
-            hide_thinking_block: Cell::new(
-                session
-                    .settings_manager()
-                    .borrow()
-                    .get_hide_thinking_block(),
-            ),
+            hide_thinking_block: Cell::new(hides_thinking(&session)),
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            active_shell: RefCell::default(),
+            pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
         }))
     }
@@ -230,6 +232,14 @@ fn create_ui(
     );
     ui.set_clear_on_shrink(settings.get_clear_on_shrink());
     ui
+}
+
+/// Whether the session hides assistant thinking.
+fn hides_thinking(session: &AgentSession) -> bool {
+    session
+        .settings_manager()
+        .borrow()
+        .get_hide_thinking_block()
 }
 
 /// Builds the editor with the configured padding and completion limit.

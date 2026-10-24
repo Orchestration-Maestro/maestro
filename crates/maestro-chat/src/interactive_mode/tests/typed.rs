@@ -63,7 +63,7 @@ fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
 
 /// The editor's history, newest first, recalled with Up from an empty editor, which is
 /// left empty again.
-fn recalled(editor: &CustomEditor) -> Vec<String> {
+pub(super) fn recalled(editor: &CustomEditor) -> Vec<String> {
     editor.set_text("");
     let mut history: Vec<String> = Vec::new();
     loop {
@@ -79,7 +79,7 @@ fn recalled(editor: &CustomEditor) -> Vec<String> {
 }
 
 /// Submits `text` through the callback the mode installed on its editor.
-fn submit(world: &World, text: &str) {
+pub(super) fn submit(world: &World, text: &str) {
     let callback = world.mode.editor.on_submit().unwrap();
     callback(text);
 }
