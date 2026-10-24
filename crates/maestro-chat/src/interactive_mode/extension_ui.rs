@@ -5,7 +5,31 @@ use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOp
 use maestro_tui::tui::InputHandler;
 use std::rc::Rc;
 
+mod widgets;
+
 impl ExtensionUIContextPort for InteractiveMode {
+    /// Updates the keyed footer status and requests a frame.
+    ///
+    /// # Errors
+    /// This implementation does not return errors.
+    fn set_status(&self, key: String, text: Option<String>) -> Result<(), EventError> {
+        self.set_extension_status(&key, text.as_deref());
+        Ok(())
+    }
+
+    /// Disposes the previous keyed widget and installs the supplied replacement.
+    ///
+    /// # Errors
+    /// Returns the original disposal, factory or text-theme failure.
+    fn set_widget(
+        &self,
+        key: String,
+        content: Option<maestro_app::WidgetContent>,
+        options: Option<maestro_app::ExtensionWidgetOptions>,
+    ) -> Result<(), EventError> {
+        self.set_extension_widget(key, content, options)
+    }
+
     /// Forwards the supplied text to the terminal's title setter unchanged.
     ///
     /// # Errors
