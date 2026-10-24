@@ -313,6 +313,20 @@ fn assert_released(h: Harness) {
 }
 
 #[test]
+fn dropping_the_harness_disposes_the_session() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let context = h.runner().create_context();
+        assert!(context.cwd().is_ok());
+        drop(h);
+        assert!(
+            context.cwd().is_err(),
+            "the session disposed with its harness"
+        );
+    });
+}
+
+#[test]
 fn controlled_exchange_retains_content_results_and_progress() {
     let expected = expected("exchange");
     let content = thinking_code_content();

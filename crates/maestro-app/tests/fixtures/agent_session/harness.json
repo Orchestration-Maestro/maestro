@@ -55,8 +55,6 @@
   },
   "retry_on_transient_error": {
     "call_count": 2,
-    "retry_start_count": 1,
-    "retry_end_count": 1,
     "retry_end_success": true,
     "retry_start_attempt": 1,
     "retry_start_delay_ms": 1,
