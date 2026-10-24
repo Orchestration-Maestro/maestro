@@ -2,6 +2,7 @@
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
 mod transcript;
+mod transfer;
 mod typed;
 
 use crate::{InteractiveMode, InteractiveModeOptions};

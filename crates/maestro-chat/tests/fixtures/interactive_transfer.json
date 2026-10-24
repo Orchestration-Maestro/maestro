@@ -1,0 +1,827 @@
+[
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": ""
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export "
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export\tfile.jsonl"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/exporter out.jsonl"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/important x"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export file.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "file.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export  file.jsonl  ignored"
+    },
+    "expected": {
+      "present": true,
+      "path": "file.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export john's/session.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "john's/session.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export \"path with spaces/a.jsonl\" ignored"
+    },
+    "expected": {
+      "present": true,
+      "path": "path with spaces/a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export 'path with spaces/a.html' ignored"
+    },
+    "expected": {
+      "present": true,
+      "path": "path with spaces/a.html"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export \"\""
+    },
+    "expected": {
+      "present": true,
+      "path": ""
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export ''"
+    },
+    "expected": {
+      "present": true,
+      "path": ""
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export \"unterminated"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export 'unterminated"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export \"a\\\"tail.jsonl\""
+    },
+    "expected": {
+      "present": true,
+      "path": "a\\"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export \"a'b.jsonl\""
+    },
+    "expected": {
+      "present": true,
+      "path": "a'b.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export \"a\nb.jsonl\""
+    },
+    "expected": {
+      "present": true,
+      "path": "a\nb.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export beforeafter.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "beforeafter.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_keeps_token_quotes_and_literal_bytes",
+    "input": {
+      "command": "/export",
+      "text": "/export 界/é😀.jsonl extra"
+    },
+    "expected": {
+      "present": true,
+      "path": "界/é😀.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export \ta.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a\tignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export \na.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a\nignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export \ra.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a\rignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export \u000ba.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a\u000bignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export \fa.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a\fignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export  a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export 　a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a　ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export ﻿a.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a.jsonl"
+    }
+  },
+  {
+    "test": "transfer_path_argument_uses_ecmascript_whitespace",
+    "input": {
+      "command": "/export",
+      "text": "/export a﻿ignored.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "a"
+    }
+  },
+  {
+    "test": "transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary",
+    "input": {
+      "command": "/import",
+      "text": "/import \"path/to/session.jsonl\""
+    },
+    "expected": {
+      "present": true,
+      "path": "path/to/session.jsonl"
+    }
+  },
+  {
+    "test": "transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary",
+    "input": {
+      "command": "/import",
+      "text": "/import \"path with spaces/session.jsonl\""
+    },
+    "expected": {
+      "present": true,
+      "path": "path with spaces/session.jsonl"
+    }
+  },
+  {
+    "test": "transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary",
+    "input": {
+      "command": "/import",
+      "text": "/import john's/session.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "john's/session.jsonl"
+    }
+  },
+  {
+    "test": "transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary",
+    "input": {
+      "command": "/import",
+      "text": "/important /tmp/session.jsonl"
+    },
+    "expected": {
+      "present": false,
+      "path": null
+    }
+  },
+  {
+    "test": "transfer_import_argument_preserves_quotes_apostrophes_and_command_boundary",
+    "input": {
+      "command": "/import",
+      "text": "/import /tmp/session.jsonl"
+    },
+    "expected": {
+      "present": true,
+      "path": "/tmp/session.jsonl"
+    }
+  }
+]
