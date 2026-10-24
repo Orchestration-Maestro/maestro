@@ -1,0 +1,194 @@
+//! The startup header, its help text and the labelled transcript notices.
+
+use super::InteractiveMode;
+use maestro_app::configuration::config::{APP_NAME, VERSION};
+use maestro_theme::{Theme, ThemeColor};
+use maestro_tui::{Component, EditorComponent, Spacer, Text};
+use std::{error::Error, rc::Rc};
+
+#[cfg(test)]
+#[cfg(unix)]
+mod tests;
+
+impl InteractiveMode {
+    /// Empties the editor and schedules a frame.
+    pub fn clear_editor(&self) {
+        self.editor.set_text("");
+        self.ui.request_render(false);
+    }
+
+    /// Appends an error notice to the transcript and schedules a frame.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's error colour.
+    pub fn show_error(&self, message: &str) -> Result<(), Box<dyn Error>> {
+        self.notice(&ThemeColor::Error, &format!("Error: {message}"))
+    }
+
+    /// Appends a warning notice to the transcript and schedules a frame.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's warning colour.
+    pub fn show_warning(&self, message: &str) -> Result<(), Box<dyn Error>> {
+        self.notice(&ThemeColor::Warning, &format!("Warning: {message}"))
+    }
+
+    /// Appends a spacer and one coloured text row, then schedules a frame.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's colour.
+    fn notice(&self, color: &ThemeColor, text: &str) -> Result<(), Box<dyn Error>> {
+        let text = self.themes.theme().get()?.fg(color, text)?;
+        self.chat_container.add_child(Rc::new(Spacer::new(1)));
+        self.chat_container
+            .add_child(Rc::new(Text::new(text, 1, 0, None)));
+        self.ui.request_render(false);
+        Ok(())
+    }
+
+    /// Adds the startup help to the header container: nothing when startup is quiet
+    /// without verbose, otherwise the compact or the expanded instructions.
+    ///
+    /// # Errors
+    /// Returns the failure of the published theme's colours.
+    pub(super) fn build_header(&self) -> Result<(), Box<dyn Error>> {
+        let session = self.runtime_host.session();
+        if !self.options.verbose && session.settings_manager().borrow().get_quiet_startup() {
+            self.header_container
+                .add_child(Rc::new(Text::new(String::new(), 0, 0, None)));
+            return Ok(());
+        }
+        let live = self.themes.theme();
+        let theme = live.get()?;
+        let hint = |action, text| maestro_app::key_hint(action, text, &live);
+        let raw = |key: &str, text| maestro_app::raw_key_hint(key, text, &live);
+        let key = maestro_app::key_text;
+        let expanded = expanded_instructions(&live)?;
+        let compact = [
+            hint("app.interrupt", "interrupt")?,
+            raw(
+                &format!("{}/{}", key("app.clear"), key("app.exit")),
+                "clear/exit",
+            )?,
+            raw("/", "commands")?,
+            raw("!", "bash")?,
+            hint("app.tools.expand", "more")?,
+        ]
+        .join(&theme.fg(&ThemeColor::Muted, " · ")?);
+        let logo = Theme::bold(&theme.fg(&ThemeColor::Accent, APP_NAME)?, true)
+            + &theme.fg(&ThemeColor::Dim, &format!(" v{VERSION}"))?;
+        let onboarding = theme.fg(&ThemeColor::Dim, "Maestro can explain its own features and look up its docs. Ask it how to use or extend Maestro.")?;
+        let compact_onboarding = theme.fg(
+            &ThemeColor::Dim,
+            &format!(
+                "Press {} to show full startup help and loaded resources.",
+                key("app.tools.expand")
+            ),
+        )?;
+        let header = ExpandableText::new(
+            format!("{logo}\n{compact}\n{compact_onboarding}\n\n{onboarding}"),
+            format!("{logo}\n{expanded}\n\n{onboarding}"),
+            self.options.verbose,
+            1,
+            0,
+        );
+        self.header_container.add_child(Rc::new(Spacer::new(1)));
+        self.header_container.add_child(Rc::new(header));
+        self.header_container.add_child(Rc::new(Spacer::new(1)));
+        Ok(())
+    }
+}
+
+/// The expanded startup instructions, one styled hint per line.
+///
+/// # Errors
+/// Returns the failure of the published theme's colours.
+fn expanded_instructions(
+    live: &maestro_theme::LiveTheme,
+) -> Result<String, maestro_theme::ThemeError> {
+    let hint = |action, text| maestro_app::key_hint(action, text, live);
+    let raw = |key: &str, text| maestro_app::raw_key_hint(key, text, live);
+    let key = maestro_app::key_text;
+    Ok([
+        hint("app.interrupt", "to interrupt")?,
+        hint("app.clear", "to clear")?,
+        raw(&format!("{} twice", key("app.clear")), "to exit")?,
+        hint("app.exit", "to exit (empty)")?,
+        hint("app.suspend", "to suspend")?,
+        hint("tui.editor.deleteToLineEnd", "to delete to end")?,
+        hint("app.thinking.cycle", "to cycle thinking level")?,
+        raw(
+            &format!(
+                "{}/{}",
+                key("app.model.cycleForward"),
+                key("app.model.cycleBackward")
+            ),
+            "to cycle models",
+        )?,
+        hint("app.model.select", "to select model")?,
+        hint("app.tools.expand", "to expand tools")?,
+        hint("app.thinking.toggle", "to expand thinking")?,
+        hint("app.editor.external", "for external editor")?,
+        raw("/", "for commands")?,
+        raw("!", "to run bash")?,
+        raw("!!", "to run bash (no context)")?,
+        hint("app.message.followUp", "to queue follow-up")?,
+        hint("app.message.dequeue", "to edit all queued messages")?,
+        hint("app.clipboard.pasteImage", "to paste image")?,
+        raw("drop files", "to attach")?,
+    ]
+    .join("\n"))
+}
+
+/// One help text with a collapsed and an expanded rendering.
+struct ExpandableText {
+    /// The text owner that paints, wraps and clips the current variant.
+    text: Text,
+    /// The compact rendering.
+    collapsed: String,
+    /// The expanded rendering.
+    expanded: String,
+}
+
+impl ExpandableText {
+    /// Builds the component and applies the initial expansion.
+    fn new(
+        collapsed: String,
+        expanded: String,
+        expanded_state: bool,
+        padding_x: usize,
+        padding_y: usize,
+    ) -> Self {
+        let value = Self {
+            text: Text::new(String::new(), padding_x, padding_y, None),
+            collapsed,
+            expanded,
+        };
+        value.set_expanded(expanded_state);
+        value
+    }
+
+    /// Replaces the rendered variant.
+    fn set_expanded(&self, expanded: bool) {
+        self.text.set_text(
+            if expanded {
+                &self.expanded
+            } else {
+                &self.collapsed
+            }
+            .to_owned(),
+        );
+    }
+}
+
+impl Component for ExpandableText {
+    /// Renders the current variant at the supplied width.
+    fn render(&self, width: usize) -> Vec<String> {
+        self.text.render(width)
+    }
+
+    /// Discards the text owner's cached lines.
+    fn invalidate(&self) {
+        self.text.invalidate();
+    }
+}

@@ -442,4 +442,4 @@ impl InputHandler for SessionList {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

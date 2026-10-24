@@ -150,7 +150,7 @@ pub struct World {
 impl World {
     /// A world over `cwd` with the dark palette published and one provider.
     pub fn new(cwd: &str, oauth_provider: Option<&str>) -> Self {
-        let session = session(cwd, oauth_provider).session;
+        let session = session(cwd, oauth_provider, |loader| loader).session;
         let (publication, theme) = published::published(&dark_theme());
         Self {
             session,
@@ -302,7 +302,7 @@ pub fn unpublished(cwd: &str) -> World {
     let state = published::unpublished();
     let theme = state.theme();
     World {
-        session: session(cwd, None).session,
+        session: session(cwd, None, |loader| loader).session,
         metadata: Metadata::new(Some("main"), 1.0),
         publication: Rc::new(state),
         theme,

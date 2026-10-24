@@ -15,6 +15,12 @@ pub(crate) mod manual_runtime;
 #[allow(dead_code, reason = "Only theme publication helpers are shared.")]
 #[path = "../../../maestro-theme/tests/published/mod.rs"]
 pub(crate) mod published;
+#[allow(
+    dead_code,
+    reason = "Shared terminal support exposes controls used by other crates."
+)]
+#[path = "../../../maestro-test-terminal/tests/support/recording_terminal.rs"]
+pub(crate) mod recording_terminal;
 #[path = "registry.rs"]
 pub(crate) mod registry;
 use bindings::Binding;

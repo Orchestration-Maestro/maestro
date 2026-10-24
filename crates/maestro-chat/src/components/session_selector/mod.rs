@@ -3,7 +3,7 @@ mod header;
 pub use header::{
     SessionScope, SessionSelectorHeader, SessionSelectorHeaderOptions, StatusMessage,
 };
-mod list;
+pub(crate) mod list;
 pub use list::{SessionList, SessionListOptions};
 
 mod tree;
