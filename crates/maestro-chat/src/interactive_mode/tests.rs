@@ -44,17 +44,19 @@ const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.js
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", (&[], &[]), body);
+    isolated_case(test, "child", &[], body);
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
-/// directory, with the environment changes `(set, removed)` applied. The child's
-/// temporary directory is that root's `tmp`, its commands are looked up in the root's
-/// `bin` first, and its clipboard is a Wayland one.
+/// directory, with no inherited environment apart from the command path and `envs`, so
+/// no developer credential reaches it. The child's temporary directory is that root's
+/// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
+/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
+/// instead of ending the child.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    (envs, removed): (&[(&str, &str)], &[&str]),
+    envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
     let selection = maestro_test_process::selection();
@@ -84,11 +86,13 @@ pub(super) fn isolated_case(
     child::probe(
         TestProcess::current(test)
             .unwrap()
+            .env_clear()
             .case(case)
+            .shell_setup("trap '' XFSZ")
             .temp_dir(root.join("tmp")),
         root,
         &all,
-        &[&["WSL_DISTRO_NAME", "WSLENV", "TERMUX_VERSION"], removed].concat(),
+        &[],
     );
 }
 
