@@ -16,6 +16,7 @@ use super::{HOME, RecordedSource, expand_all, in_home, repainted, sections, unkn
 use crate::interactive_mode::tests::{Setup, World, dark, light, painted, roles};
 use maestro_app::{ResourceDiagnostic, SourceInfo, home_directory};
 use maestro_tui::Component;
+use serde_json::json;
 use std::{
     cell::Cell,
     collections::hash_map::RandomState,
@@ -277,7 +278,7 @@ impl AsRef<str> for Counted<'_> {
 /// `count` local extension paths sharing every suffix but their second segment.
 fn equal_suffixes(count: usize) -> Vec<String> {
     (0..count)
-        .map(|index| format!("/root/{index}/same/tools/index.ts"))
+        .map(|index| format!("/root/{index:03}/same/tools/index.ts"))
         .collect()
 }
 
@@ -324,7 +325,7 @@ fn extension_label_work_stays_linear_in_total_path_segments() {
         let total: usize = segments.iter().map(Vec::len).sum();
         assert!(work.get() <= 4 * total, "{} > 4 * {total}", work.get());
         let expected: Vec<_> = (0..count)
-            .map(|index| format!("{index}/same/tools"))
+            .map(|index| format!("{index:03}/same/tools"))
             .collect();
         assert_eq!(labels, expected);
         let items: Vec<_> = paths
@@ -343,6 +344,39 @@ fn extension_label_work_stays_linear_in_total_path_segments() {
         let control = Cell::new(0);
         assert!(rescanned(&counted(&paths, &control)) > 4 * total);
     }
+}
+
+#[test]
+fn extension_listing_work_stays_linear_through_the_listing() {
+    let test = "extension_listing_work_stays_linear_through_the_listing";
+    in_home(test, |directory| {
+        let mut previous = None;
+        for count in [32, 64, 128] {
+            let paths = equal_suffixes(count);
+            let extensions: Vec<_> = paths
+                .iter()
+                .map(|path| json!({"path": path, "sourceInfo": {"source": "local", "scope": "project"}}))
+                .collect();
+            let listing = json!({"extensions": extensions, "width": 4096});
+            let (world, request) = world(directory, serde_json::from_value(listing).unwrap());
+            let lookups = Cell::new(0);
+            let home = || {
+                lookups.set(lookups.get() + 1);
+                home_directory()
+            };
+            request.list(&world, &home).unwrap();
+            let work = Cell::new(0);
+            let labels = get_distinct_suffix_labels(&counted(&paths, &work)).join(", ");
+            let theme = world.themes.theme().get().unwrap();
+            let rows = world.mode.chat_container.render(request.width);
+            let compact = painted(&theme, &[format!("@dim@  {labels}\u{1b}[39m")]);
+            assert_eq!(rows[1].trim_end(), compact[0]);
+            if let Some(previous) = previous {
+                assert_eq!(lookups.get(), 2 * previous, "home lookups grow linearly");
+            }
+            previous = Some(lookups.get());
+        }
+    });
 }
 
 /// An index of the recorded paths and their provenance, in insertion order.
