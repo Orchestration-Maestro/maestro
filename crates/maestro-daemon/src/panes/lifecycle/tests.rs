@@ -2,7 +2,7 @@
 use super::*;
 use crate::panes::launch::PaneLaunchEnv;
 use maestro_test_directory::temporary_root;
-use maestro_test_process::{TestProcess, run_alone};
+use maestro_test_process::{TestProcess, run_alone, test_name};
 use std::{ffi::OsString, io};
 
 #[test]
@@ -51,7 +51,7 @@ where
     F: FnOnce(PaneRuntime, mpsc::Receiver<AppEvent>, Arc<Notify>) -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
-    TestProcess::named("pane::runtime::tests::setup_entry")
+    TestProcess::named(test_name(setup_entry).unwrap())
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -793,7 +793,7 @@ fn manifest_publication_resets_only_matching_retained_runtime_detection() {
     if run_alone(name).unwrap() {
         return;
     }
-    TestProcess::named("pane::runtime::tests::setup_entry")
+    TestProcess::named(test_name(setup_entry).unwrap())
         .unwrap()
         .nocapture()
         .single_threaded()
