@@ -154,11 +154,13 @@ Serialization writes the supplied JSON alone.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use the default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 - **Registered tool:** A retained typed definition with shared provenance in the
   extension's ordered owner. Callback ownership follows the facade; invocation is
@@ -224,6 +226,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native, std-only test-support leaf that owns one named test's isolated execution: its checked-output operations start a libtest child and prove the child started exactly that test; argument-only invocation checks eligibility and leaves startup proof with the caller; distinct from product process execution (**Process**). It is reached only through native development dependencies of its declared callers. See the [contract](docs/specs/maestro-port.md#test-process-owner).
 - **Foundation utility:** The `maestro-path` library of lexical path operations, native component normalization and home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
 - **Directory listing:** The core leaf `maestro-listing` below layer 0, owning one directory's entries sorted by file name on every platform; resources, theme, the terminal toolkit, tools, session and the application list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
+- **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application and extensions subscribe and walk through it and keep their own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
 - **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
 - **Dependencies:** The generated `maestro-dependencies` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.

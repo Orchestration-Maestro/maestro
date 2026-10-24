@@ -1544,3 +1544,29 @@ fn input_presenter_records_reject_duplicate_owners() {
         assert_single_owner(name, "maestro-app", &["maestro-chat", "maestro-cli"]);
     }
 }
+
+#[test]
+fn listener_collection_declarations_stay_with_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-listeners", "maestro-tui"]);
+    let declaration = "pub struct Listeners<P> { entry: P }";
+    source(&workspace, "maestro-listeners", "src/lib.rs", declaration);
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for fragment in [
+        declaration,
+        "macro_rules! copy { () => { pub struct Listeners<P> { entry: P } }; }",
+        "fn copy() { let make = || pub struct Listeners<P> { entry: P }; }",
+        "impl TUI { fn copy() { pub struct Listeners<P> { entry: P } } }",
+    ] {
+        source(&workspace, "maestro-tui", "src/lib.rs", fragment);
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error.contains("Listeners declaration belongs to maestro-listeners"),
+            "{error}"
+        );
+        source(&workspace, "maestro-tui", "src/lib.rs", "");
+    }
+    source(&workspace, "maestro-listeners", "src/copy.rs", declaration);
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(error.contains("duplicate declaration Listeners"), "{error}");
+}

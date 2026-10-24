@@ -17,6 +17,7 @@ mod message_renderer_calls;
 mod registered_schemas;
 mod registered_tools;
 mod registration_queries;
+mod ui_bound_calls;
 mod ui_capabilities;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -37,6 +38,10 @@ mod model_support;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/ui_host.rs"]
 mod ui_host;
+
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/ui_toolkit.rs"]
+mod ui_toolkit;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/context_actions.rs"]

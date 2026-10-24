@@ -281,7 +281,11 @@ fn check_declarations(
         }
         if matches!(
             owner,
-            "maestro-tools" | "maestro-request" | "maestro-entry" | "maestro-app"
+            "maestro-tools"
+                | "maestro-request"
+                | "maestro-entry"
+                | "maestro-app"
+                | "maestro-listeners"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -319,6 +323,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-request"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
         "maestro-entry"
+    } else if name == "Listeners" {
+        "maestro-listeners"
     } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
         "maestro-test-terminal"
     } else if input_presenter_record(name) {

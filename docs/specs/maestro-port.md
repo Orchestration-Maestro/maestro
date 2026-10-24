@@ -333,12 +333,13 @@ from the optional foundation utility described below.
 | `maestro-lock` | guard file writes | — | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
+| `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
 | `maestro-ipc` | connect local sockets | — | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |
-| `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand` | 0 |
+| `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners` | 0 |
 | `maestro-resources` | discover resources | `maestro-request`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-listing` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json`, `maestro-resources` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
@@ -346,11 +347,11 @@ from the optional foundation utility described below.
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
-| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources` | 0 |
+| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources`, `maestro-listeners` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
-| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
+| `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
@@ -361,8 +362,8 @@ from the optional foundation utility described below.
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
-| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace` | 4 |
+| `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners` | 3 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -497,6 +498,19 @@ Unix only; that platform difference is a runtime mechanic, so the leaf does not
 copy it. Only resources, theme, the terminal toolkit, tools, session and the
 application may depend on it, and only on native targets. Callers keep their own kind filtering,
 name decoding and any further ordering.
+
+`maestro-listeners` is a core leaf below layer 0 with no workspace dependencies.
+It owns one job: retaining callbacks in live registration order. A callback is
+admitted once per identity, so registering a live one again keeps its first
+position, while removing and re-registering it moves it to the last position.
+Traversal sees the collection as it is at each step. Models, the terminal
+toolkit, the agent, the application and the extension runtime may depend on it.
+Each caller keeps its own borrowing, locking, delivery and settlement policy:
+the leaf holds no lock, runs no callback under its own borrow and returns removed
+ownership to the caller. Its storage is a flat ordered list plus an identity
+index; retired slots are reclaimed while no traversal runs, so one removal costs
+expected constant work and clearing every registration costs work proportional to
+their number. Traversal bookkeeping is per walk and never retains callbacks.
 
 Implement these owners only after this amendment lands, through
 [filesystem-watch ownership](https://github.com/Orchestration-Maestro/maestro/issues/493)
@@ -843,11 +857,13 @@ and enumeration transport; its WIT and callback identities do not change.
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
-it also owns subscribing, which returns the removal operation, and the live walk in
-registration order. What each listener receives and when it runs remain with the
-caller. The collection returns removed ownership for release outside guards.
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
+listeners, extension error delivery and terminal input listeners reuse it. For
+shared `Rc` callbacks it also owns subscribing, which returns the removal
+operation, and the live walk in registration order. What each listener receives
+and when it runs remain with the caller. The collection returns removed ownership
+for release outside guards, and it reclaims retired registrations while no
+traversal runs, so one removal and a complete clear both stay cheap.
 
 Extension runner sessions and context catalog getters retain one direct shared
 `ModelRegistry` holder; its internal synchronization stays catalog-owned.

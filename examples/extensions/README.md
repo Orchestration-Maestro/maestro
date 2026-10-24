@@ -30,6 +30,7 @@ steps.
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
 | `pirate.rs` | A `/pirate` command that toggles a pirate response style in the supplied prompt. |
+| `trigger_compact.rs` | A `turn_end` hook that requests compaction above 100,000 tokens and a `trigger-compact` command that requests compaction immediately. |
 
 ### Building an example
 
@@ -61,6 +62,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- protected_paths_
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- pirate_
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- trigger_compact_component_matches_host_requests
 ```
 
 No provider, paid service or extension installation is required. Loading a
@@ -142,6 +145,23 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
 No provider, paid service or extension installation is required. Loading the
 built component into an application is opt-in and needs that application's
 component runtime.
+
+### What the compaction trigger example does
+
+`turn_end` records the context usage the host reports and requests compaction when
+a known estimate at or below 100,000 tokens is followed by a known estimate above
+it. `/trigger-compact` requests compaction immediately, and its arguments become
+the instructions the host passes on, trimmed, or none when they are blank.
+
+Usage the host does not report leaves the last known estimate as it was, and the
+command never changes it. Compaction, its notifications and any history change
+belong to the host: the extension only asks for them, reports `Compaction started`
+before the request and `Compaction completed` or `Compaction failed: <message>`
+when the host answers, each one only while a UI is available.
+
+No provider, paid service or extension installation is required for the
+controlled run. Loading the built component into an application is opt-in, and a
+real compaction also needs that application's model and runtime configuration.
 
 ### What the runtime reload command does
 

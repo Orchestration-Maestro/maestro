@@ -4,7 +4,7 @@ use crate::{
     ExtensionExecution,
     types::{ExtensionError, ExtensionErrorListener},
 };
-use maestro_models::records::listeners::Listeners;
+use maestro_listeners::Listeners;
 impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Adds a failure listener; the returned operation removes it.
     pub fn on_error(&self, listener: ExtensionErrorListener) -> impl Fn() + use<E> {
