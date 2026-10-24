@@ -106,14 +106,10 @@ pub fn released(host: &Controlled) -> Vec<String> {
 /// # Errors
 /// Returns the component failure that ended the walk.
 pub fn released_component(harness: &mut Harness) -> Result<Vec<String>, String> {
-    let mut names = Vec::new();
-    loop {
-        let next = harness.store.data_mut().observed.next_to_release();
-        let Some((name, key)) = next else { break };
-        super::block_on(harness.release(key)).map_err(|error| error.to_string())?;
-        names.push(name);
-    }
-    Ok(names)
+    super::block_on(harness.release_all())
+        .into_iter()
+        .map(|(name, outcome)| outcome.map(|()| name).map_err(|error| error.to_string()))
+        .collect()
 }
 
 /// Runs the built component's command callback and returns its outcome; `held` keeps the

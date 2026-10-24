@@ -43,7 +43,7 @@ fn emit_command(api: ExtensionAPI) -> CommandOptions {
     }
 }
 
-/// Registers the notify command, the listener retained across sessions, and the emission at
+/// Registers the emit command, the listener retained across sessions, and the emission at
 /// session start.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {

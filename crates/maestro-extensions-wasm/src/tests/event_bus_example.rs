@@ -164,6 +164,13 @@ struct Mark {
 }
 
 impl Mark {
+    /// The start of what the host observed.
+    const START: Self = Self {
+        lines: 0,
+        emissions: 0,
+        acquired: 0,
+    };
+
     /// The current end of what the host observed.
     fn of(observed: &Observed) -> Self {
         Self {
@@ -409,14 +416,15 @@ fn emissions_since(observed: &Observed, mark: Mark) -> Vec<Emission> {
 /// The notifications reported since `mark`, each with the context that received it.
 fn notifications_since(observed: &Observed, mark: Mark) -> Vec<Notification> {
     let owners = &observed.ui.acquired[mark.acquired..];
-    let reached: Vec<(Option<String>, Option<String>)> = observed.transcript[mark.lines..]
-        .iter()
-        .filter_map(|line| line.strip_prefix("ui "))
-        .filter_map(|rest| rest.split_once(' '))
-        .filter_map(|(_, rest)| rest.split_once(' '))
-        .filter(|(method, _)| *method == "notify")
-        .map(|(_, operands)| serde_json::from_str(operands).expect("a recorded notification"))
-        .collect();
+    let reached: Vec<(Option<String>, Option<String>)> =
+        super::ui_host::receipts(&observed.transcript[mark.lines..])
+            .into_iter()
+            .filter(|receipt| receipt.method == "notify")
+            .map(|receipt| {
+                serde_json::from_value::<(Option<String>, Option<String>)>(receipt.operands)
+                    .expect("a recorded notification")
+            })
+            .collect();
     assert_eq!(
         owners.len(),
         reached.len(),
@@ -582,6 +590,10 @@ fn run_cases<'a>(
 ) -> Result<(), String> {
     for row in rows {
         let mut host = open()?;
+        assert!(
+            host.emissions(Mark::START).is_empty(),
+            "the factory emitted while it loaded"
+        );
         assert_registrations(host.as_ref(), &corpus.metadata);
         if needs_session(row) {
             host.start_session(FIRST)?;
@@ -620,7 +632,7 @@ fn event_bus_registers_channels_and_command() -> Result<(), String> {
     let corpus = corpus();
     assert_registrations(&host, &corpus.metadata);
     assert!(
-        host.emissions(host.mark()).is_empty(),
+        host.emissions(Mark::START).is_empty(),
         "the factory emitted while it loaded"
     );
     let order = registration_order(&host, &corpus.metadata);

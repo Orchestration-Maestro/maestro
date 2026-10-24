@@ -971,10 +971,8 @@ impl Driver for ComponentDriver {
         let Ok(harness) = started(&mut self.harness) else {
             return;
         };
-        loop {
-            let next = harness.observed().next_to_release();
-            let Some((name, key)) = next else { break };
-            if let Err(error) = harness.release(key).await {
+        for (name, outcome) in harness.release_all().await {
+            if let Err(error) = outcome {
                 harness
                     .observed()
                     .log(format!("release {name} failed: {error}"));
