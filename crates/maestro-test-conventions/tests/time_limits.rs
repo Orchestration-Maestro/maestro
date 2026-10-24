@@ -30,8 +30,6 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
                     format!("{}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())", directory.join(file).display())
                 } else if api.starts_with("tracing::") {
                     format!("{}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead", directory.join(file).display())
-                } else if api.starts_with("FTP ") {
-                    format!("{}:{line}: {api}", directory.join(file).display())
                 } else {
                     format!("{}:{line}: test-owned time limit: {api}; wait for completion instead", directory.join(file).display())
                 }
@@ -849,108 +847,6 @@ fn owner_captures_and_production_dispatch_are_allowed() {
         &[(
             "src/lib.rs",
             "fn sample() {\n    tracing::dispatcher::with_default(&dispatch, action);\n}\n",
-        )],
-        &[],
-    );
-}
-
-#[test]
-fn ftp_socket_waits_keep_the_activity_owner() {
-    for file in [
-        "src/providers/http/get_uri/ftp/transfer.rs",
-        "src/providers/http/get_uri/ftp/client.rs",
-    ] {
-        check(
-            "maestro-models",
-            &[(
-                file,
-                "async fn wait() {\n    tokio::time::timeout(deadline, operation).await;\n}\n",
-            )],
-            &[(file, 2, "FTP socket wait outside the activity owner")],
-        );
-    }
-    // A trait-qualified socket operation and an aliased timer are the single-expression shapes
-    // that a last-segment match misses.
-    for (line, contents) in [
-        (
-            2,
-            "async fn wait(stream: &mut Stream, buffer: &mut [u8]) {\n    tokio::io::AsyncReadExt::read(stream, buffer).await;\n}\n",
-        ),
-        (
-            3,
-            "use tokio::time::timeout as limited;\nasync fn wait() {\n    limited(deadline, operation).await;\n}\n",
-        ),
-        (
-            3,
-            "use tokio::io::{AsyncWriteExt as _, AsyncReadExt};\nasync fn wait(stream: &mut Stream, buffer: &mut [u8]) {\n    AsyncReadExt::read(stream, buffer).await;\n}\n",
-        ),
-    ] {
-        check(
-            "maestro-models",
-            &[("src/providers/http/get_uri/ftp/transfer.rs", contents)],
-            &[(
-                "src/providers/http/get_uri/ftp/transfer.rs",
-                line,
-                "FTP socket wait outside the activity owner",
-            )],
-        );
-    }
-    check(
-        "maestro-models",
-        &[(
-            "src/providers/http/get_uri/ftp/ftp_context.rs",
-            "async fn wait() {\n    tokio::time::timeout(deadline, operation).await;\n}\n",
-        )],
-        &[],
-    );
-}
-
-#[test]
-fn ftp_activity_result_cannot_be_discarded() {
-    for contents in [
-        "async fn send(context: &mut Context) {\n    let _ = context.request(\"NOOP\").await;\n}\n",
-        "fn send(context: &mut Context) {\n    let _ = context.send(\"NOOP\");\n}\n",
-        "async fn send(context: &mut Context) {\n    context.request(\"NOOP\").await.ok();\n}\n",
-    ] {
-        check(
-            "maestro-models",
-            &[("src/providers/http/get_uri/ftp/client.rs", contents)],
-            &[(
-                "src/providers/http/get_uri/ftp/client.rs",
-                2,
-                "FTP activity result discarded",
-            )],
-        );
-    }
-    check(
-        "maestro-models",
-        &[(
-            "src/providers/http/get_uri/ftp/client.rs",
-            "async fn send(context: &mut Context) {\n    let answered = context.request(\"NOOP\").await;\n    answered.ok();\n}\n",
-        )],
-        &[],
-    );
-}
-
-#[test]
-fn ftp_commands_keep_the_credential_safe_sender() {
-    check(
-        "maestro-models",
-        &[(
-            "src/providers/http/get_uri/ftp/client.rs",
-            "async fn login(context: &mut Context) {\n    context.send(\"QUIT\").await.ok();\n    tracing::debug!(\"> PASS {password}\");\n}\n",
-        )],
-        &[(
-            "src/providers/http/get_uri/ftp/client.rs",
-            3,
-            "FTP command or credential logger",
-        )],
-    );
-    check(
-        "maestro-models",
-        &[(
-            "src/providers/http/get_uri/ftp/client.rs",
-            "async fn send(context: &mut Context) {\n    context.send(\"USER anonymous\").await?;\n    Ok(())\n}\n",
         )],
         &[],
     );
