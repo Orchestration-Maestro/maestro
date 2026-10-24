@@ -300,14 +300,20 @@ struct Prepared {
     /// The case with its POSIX paths moved below that tree.
     case: Case,
     /// Permissions to give back before the tree is dropped, held only for that effect.
-    #[cfg(unix)]
-    _restores: Vec<maestro_test_directory::Restore>,
+    _restores: Restoring,
 }
+
+/// What a permission row has to give back: guards on Unix, nothing elsewhere.
+#[cfg(unix)]
+type Restoring = Vec<maestro_test_directory::Restore>;
+/// Nothing to restore where the host has no permission modes.
+#[cfg(not(unix))]
+type Restoring = Vec<()>;
 
 /// Refuse this process the write each recorded access error needs. `None` when the host is
 /// not refused, as in a privileged run, so the row cannot state its premise here.
 #[cfg(unix)]
-fn refuse_writes(case: &Case) -> Option<Vec<maestro_test_directory::Restore>> {
+fn refuse_writes(case: &Case) -> Option<Restoring> {
     let mut restores = Vec::new();
     for path in &case.input.access_errors {
         match maestro_test_directory::deny(path, 0o500) {
@@ -326,7 +332,7 @@ fn refuse_writes(case: &Case) -> Option<Vec<maestro_test_directory::Restore>> {
 
 /// Refuse nothing where the host has no permission modes; absent paths still refuse access.
 #[cfg(not(unix))]
-fn refuse_writes(_case: &Case) -> Option<Vec<()>> {
+fn refuse_writes(_case: &Case) -> Option<Restoring> {
     Some(Vec::new())
 }
 
