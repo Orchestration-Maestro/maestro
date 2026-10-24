@@ -117,7 +117,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
         definition: maestro_models::Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         label: "Echo".into(),
         prepare_arguments: None,

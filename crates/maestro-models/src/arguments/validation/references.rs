@@ -289,6 +289,11 @@ fn target<'a>(
 ) -> Option<Location<'a>> {
     let resource = &context.location.resource;
     let joined = |base: &Resource<'a>| base.uri.as_ref()?.join(reference).ok();
+    if let Some(fragment) = fragment_pointer(reference)
+        && let Some(found) = pointer(&context.location, &fragment)
+    {
+        return Some(found);
+    }
     let target = match kind {
         ReferenceKind::Recursive
             if resource.schema.get("$recursiveAnchor") == Some(&Value::Bool(true)) =>
@@ -304,6 +309,17 @@ fn target<'a>(
     Some(match kind {
         ReferenceKind::Dynamic => overridden(&context.scope, target, reference),
         _ => target,
+    })
+}
+
+/// The document pointer a local reference names, decoded, when it names one.
+fn fragment_pointer(reference: &str) -> Option<String> {
+    let fragment = reference.strip_prefix('#')?;
+    fragment.starts_with('/').then(|| {
+        percent_decode_str(fragment)
+            .decode_utf8()
+            .map(std::borrow::Cow::into_owned)
+            .unwrap_or_default()
     })
 }
 

@@ -34,6 +34,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
             check_declarations(member, source, &records, &mut declarations)?;
             check_session_setup(member, source, &records)?;
+            check_parameter_schema_defaults(member, source, &records)?;
             let context = ScanContext {
                 owner: &member.name,
                 directory: &member.directory,
@@ -73,6 +74,8 @@ struct Records {
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
+    /// Declared name, source line and head tokens of every struct, up to its body.
+    struct_heads: Vec<(String, usize, proc_macro2::TokenStream)>,
 }
 
 impl Records {
@@ -115,8 +118,18 @@ impl Records {
         if kind == "union" && !union_body(following.get(1)) {
             return;
         }
+        let line = keyword.span().start().line;
+        if kind == "struct" {
+            let head: TokenStream = following
+                .iter()
+                .take_while(|token| !matches!(token, TokenTree::Group(_)))
+                .cloned()
+                .collect();
+            self.struct_heads
+                .push((name.unraw().to_string(), line, head));
+        }
         self.declarations
-            .push((name.unraw().to_string(), kind, keyword.span().start().line));
+            .push((name.unraw().to_string(), kind, line));
     }
 
     /// Record supported interface-generation macro inputs.
@@ -297,6 +310,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     } else if matches!(
         name,
         "ToolInfo"
+            | "ParameterSchema"
+            | "SchemaKind"
             | "SlashCommandInfo"
             | "SlashCommandSource"
             | "MessageRenderOptions"
@@ -334,6 +349,58 @@ fn input_presenter_record(name: &str) -> bool {
             | "SessionsFuture"
             | "SessionsLoader"
     )
+}
+
+/// Reject shared records whose schema operand defaults to ordinary JSON.
+fn check_parameter_schema_defaults(
+    member: &Member,
+    source: &Source,
+    records: &Records,
+) -> Result<(), String> {
+    if member.name != "maestro-request" {
+        return Ok(());
+    }
+    for (name, line, head) in &records.struct_heads {
+        if !matches!(name.as_str(), "Tool" | "ToolInfo") {
+            continue;
+        }
+        if !declares_type_parameters(head) {
+            continue;
+        }
+        if !identifiers(head)
+            .iter()
+            .any(|ident| ident == "ParameterSchema")
+        {
+            return Err(format!(
+                "{}:{line}: {name} must default its schema operand to ParameterSchema",
+                source.path.display()
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Whether a declaration head declares type parameters.
+fn declares_type_parameters(head: &TokenStream) -> bool {
+    head.clone()
+        .into_iter()
+        .any(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == '<'))
+}
+
+/// Every identifier spelled inside a token stream, nested groups included.
+fn identifiers(tokens: &TokenStream) -> Vec<String> {
+    let mut names = Vec::new();
+    let mut pending = vec![tokens.clone()];
+    while let Some(stream) = pending.pop() {
+        for token in stream {
+            match token {
+                TokenTree::Ident(ident) => names.push(ident.unraw().to_string()),
+                TokenTree::Group(group) => pending.push(group.stream()),
+                _ => {}
+            }
+        }
+    }
+    names
 }
 
 /// Shared schema declarations whose specialization aliases remain owner-local.

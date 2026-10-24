@@ -521,7 +521,22 @@ pub fn get_file_type(filename: &str) -> FileType {
     }
 }
 /// Model schema using the shared string-enum owner.
-fn schema() -> serde_json::Value {
+fn schema() -> maestro_models::ParameterSchema {
+    maestro_models::ParameterSchema::authored(typed_schema(), authored_kinds())
+}
+/// Declared node kinds of the artifact parameters.
+fn authored_kinds() -> [(String, maestro_models::SchemaKind); 5] {
+    use maestro_models::SchemaKind;
+    [
+        (String::new(), SchemaKind::Object),
+        ("/properties/filename".to_owned(), SchemaKind::String),
+        ("/properties/content".to_owned(), SchemaKind::String),
+        ("/properties/old_str".to_owned(), SchemaKind::String),
+        ("/properties/new_str".to_owned(), SchemaKind::String),
+    ]
+}
+/// Ordinary JSON Schema text of the artifact parameters.
+fn typed_schema() -> serde_json::Value {
     json!({"type":"object", "required":["command","filename"], "properties": {
         "command": string_enum(&["create", "update", "rewrite", "get", "delete", "logs"], Some(StringEnumOptions { description: Some("The operation to perform"), default: None })),
         "filename": {"type":"string", "description":"Filename including extension (e.g., 'index.html', 'script.js')"},

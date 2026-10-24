@@ -260,7 +260,7 @@ pub enum Message {
 /// Describe a model-facing tool and its parameter schema.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Tool<TParameters = serde_json::Value> {
+pub struct Tool<TParameters = crate::parameter_schema::ParameterSchema> {
     /// Name.
     pub name: String,
     /// Description.

@@ -130,9 +130,7 @@ fn primitive(value: &Value, kind: Kind<'_>) -> Option<Value> {
         },
         (Kind::String, Value::Null) => Some(Value::String(String::new())),
         (Kind::String, Value::Bool(boolean)) => Some(Value::String(boolean.to_string())),
-        (Kind::String, Value::Number(number)) => Some(Value::String(
-            ryu_js::Buffer::new().format(number.as_f64()?).to_owned(),
-        )),
+        (Kind::String, Value::Number(number)) => number_text(number).map(Value::String),
         (Kind::Null, Value::String(text)) if text.is_empty() => Some(Value::Null),
         (Kind::Null, Value::Bool(false)) => Some(Value::Null),
         (Kind::Null, Value::Number(number)) if number.as_f64() == Some(0.0) => Some(Value::Null),
@@ -199,8 +197,14 @@ fn array(value: &mut Value, schema: &Value) {
     }
 }
 
+/// Spell a JSON number with the scalar spelling callers compare against.
+pub(super) fn number_text(number: &serde_json::Number) -> Option<String> {
+    let number = number.as_f64()?;
+    Some(ryu_js::Buffer::new().format(number).to_owned())
+}
+
 /// Parse nonblank decimal or unsigned radix text through native numeric primitives.
-fn parse_number(text: &str) -> Option<f64> {
+pub(super) fn parse_number(text: &str) -> Option<f64> {
     let text = text.trim_matches(super::super::json_parse::whitespace);
     if text.is_empty() {
         return None;

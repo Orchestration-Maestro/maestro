@@ -26,7 +26,7 @@ fn check_object(
     let tool = Tool {
         name: "check".into(),
         description: String::new(),
-        parameters: schema,
+        parameters: schema.into(),
     };
     let call = ToolCall {
         id: "1".into(),
@@ -439,7 +439,7 @@ fn maestro_keeps_schema_resource_origins_distinct() {
         let tool = Tool {
             name: "check".into(),
             description: String::new(),
-            parameters: schema,
+            parameters: schema.into(),
         };
         let call = ToolCall {
             id: "1".into(),

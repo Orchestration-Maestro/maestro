@@ -843,16 +843,27 @@ The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.
 
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`.
+The record keeps the supplied JSON Schema value and, beside it, the kinds its author
+declared for individual nodes, keyed by JSON pointer; a node without an entry is plain
+and is never converted as an authored node. `SchemaKind` names the extensible kinds the
+schema builders produce. `Tool`, `Context` and `ToolInfo` default their schema operand to
+this owner, guest authoring re-exports it, and the model argument-validation owner is its
+only converter. Serialization writes the supplied JSON alone: providers, persisted JSON
+and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
+text. The guest carries the declared kinds only inside its opaque internal registration
+and enumeration transport; its WIT and callback identities do not change.
+
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
-listeners, extension error delivery and terminal input listeners reuse it. For
-shared `Rc` callbacks it also owns subscribing, which returns the removal
-operation, and the live walk in registration order. What each listener receives
-and when it runs remain with the caller. The collection returns removed ownership
-for release outside guards, and it reclaims retired registrations while no
-traversal runs, so one removal and a complete clear both stay cheap.
+Native callers use the default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
+belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session listeners,
+extension error delivery and terminal input listeners reuse it. For shared `Rc`
+callbacks it also owns subscribing, which returns the removal operation, and the live
+walk in registration order. What each listener receives and when it runs remain with
+the caller. The collection returns removed ownership for release outside guards, and it
+reclaims retired registrations while no traversal runs, so one removal and a complete
+clear both stay cheap.
 
 Extension runner sessions and context catalog getters retain one direct shared
 `ModelRegistry` holder; its internal synchronization stays catalog-owned.

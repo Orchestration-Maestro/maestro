@@ -86,7 +86,7 @@ async fn preparation_precedes_validation_and_preserves_raw_events_case() {
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: serde_json::json!({"type":"object","properties":{"value":{"type":"integer"}},"required":["value"]}),
+            parameters: serde_json::json!({"type":"object","properties":{"value":{"type":"integer"}},"required":["value"]}).into(),
         },
         label: "Echo".into(),
         execution_mode: None,
@@ -214,7 +214,7 @@ async fn tool_artifacts_keep_content_details_and_timestamps_case() {
             definition: Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
-                parameters: serde_json::json!({"type":"object"}),
+                parameters: serde_json::json!({"type":"object"}).into(),
             },
             label: "Echo".into(),
             prepare_arguments: None,
@@ -551,7 +551,7 @@ fn ordered_tools(
                 definition: Tool {
                     name: name.into(),
                     description: name.into(),
-                    parameters: serde_json::json!({"type":"object"}),
+                    parameters: serde_json::json!({"type":"object"}).into(),
                 },
                 label: name.into(),
                 prepare_arguments: None,

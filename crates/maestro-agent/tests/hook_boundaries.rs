@@ -330,7 +330,7 @@ fn mutation_context(schema: &str, expected: serde_json::Value) -> maestro_agent:
         .write()
         .unwrap()
         .definition
-        .parameters = serde_json::json!({"type":"object","properties":{"value":{"type":schema}},"required":["value"]});
+        .parameters = serde_json::json!({"type":"object","properties":{"value":{"type":schema}},"required":["value"]}).into();
     if schema == "integer" {
         context.tools.as_ref().unwrap().read().unwrap()[0]
             .write()
