@@ -323,13 +323,19 @@ returns its rejection as a recoverable `ExtensionResult` error:
 | `set_title` | A literal terminal title. |
 
 The four option types are generated from the same interface file and re-exported at
-the author root. An absent option, an empty text and an explicit reset stay
-distinct on the wire, and callers own any default: `None` asks for the host's
-default, `Some("")` sends empty text. Literal text crosses unchanged, including
-whitespace, Unicode and styling bytes. Indicator frames are supplied verbatim and
-`interval_ms` crosses as `f64` without serialization, clamping or a guest timer.
-An empty frame list hides the indicator while `None` restores the animated
-default; both the animation and the placement defaults stay with the host.
+the author root. `None` and a present empty value stay different requests. The text
+methods forward what the caller supplied, so `Some("")` is an empty string the host
+keeps, while `None` means what its method says: `set_status` clears that key's text,
+`set_widget` removes the keyed widget, and `set_working_message`,
+`set_working_indicator` and `set_hidden_thinking_label` ask the host to restore its
+own default. `notify` without a severity leaves the notification's kind to the host.
+Inside the option records, an absent `placement` or an absent `frames` or
+`interval_ms` member stays absent, so the host applies its own default. Literal text
+crosses unchanged, including whitespace, Unicode and styling bytes. Indicator frames
+are supplied verbatim and `interval_ms` crosses as `f64` without serialization,
+clamping or a guest timer. An empty frame list hides the indicator while `None`
+restores the animated default; both the animation and the placement defaults stay
+with the host.
 
 A request borrows its text and lines only for the synchronous call; the host owns
 anything it retains. Clones of the facade share the acquired resource, so a handle
