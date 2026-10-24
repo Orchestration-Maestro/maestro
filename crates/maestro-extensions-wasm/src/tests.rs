@@ -47,6 +47,7 @@ mod finite_records;
 mod fixtures;
 mod guest_family;
 mod hello_example;
+mod hidden_thinking_label_example;
 pub(crate) mod host;
 mod host_family;
 mod join;

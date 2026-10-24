@@ -587,6 +587,27 @@ prompt. A supplied user append is already part of the event's `systemPrompt`,
 including any edit an earlier handler made; the example never appends that
 option again. Loading it into an application is opt-in, and
 `examples/extensions/README.md` gives the build and controlled-run commands.
+
+### A hidden thinking label
+
+[`examples/extensions/hidden_thinking_label.rs`](../../examples/extensions/hidden_thinking_label.rs)
+is the shipped collapsed-thinking-label extension. Its `/thinking-label`
+command sets the label the host shows, and the same command without arguments
+clears that label and restores `Pondering...` for the next session start. The
+example also registers a `session_start` handler that applies the label it
+retains, so the next session shows the label the session before set.
+
+The command trims the surrounding whitespace of the text it receives and keeps
+the interior text unchanged, and a command that sends no text takes the reset
+branch rather than setting an empty label. Clearing the label and applying the
+example default are separate requests: the first asks the host to restore its own
+default, and the second shows the example's text at the next session start.
+
+A host rejection ends the command with the host's message. The command has
+already stored the label it chose, so the next session start applies it. Loading the component into an application is opt-in and needs a host that
+enables the component runtime; `examples/extensions/README.md` gives the build
+and controlled-run commands.
+
 ### A duration tool with its own dependency
 
 `examples/extensions/with-deps/main.rs` is the shipped example that parses

@@ -25,6 +25,7 @@ steps.
 | `hello.rs` | A `hello` tool that greets the supplied name. |
 | `shutdown_command.rs` | A `/quit` command and two tools that request a clean shutdown. |
 | `prompt_customizer.rs` | Tool and skill guidance added to the supplied system prompt. |
+| `hidden_thinking_label.rs` | A `thinking-label` command that sets the label shown when thinking blocks are hidden, or resets it. |
 | [`with-deps/`](with-deps/) | A `parse_duration` tool that parses a human-readable duration to milliseconds with a regular-expression dependency. |
 | `reload_runtime.rs` | A `reload-runtime` command that reloads extensions, skills, prompts and themes, and a `reload_runtime` tool that queues that command as a follow-up message. |
 | `protected_paths.rs` | A `tool_call` hook that blocks writes and edits whose path contains one of three illustrative substrings, and warns when the host has UI. |
@@ -51,6 +52,8 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- shutdown_component_runs_every_registration
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+  -p maestro-extensions-wasm --lib -- hidden_thinking_label_component_runs_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- reload_runtime_component_uses_registered_callbacks
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -96,6 +99,19 @@ application is opt-in.
 The example needs a component-enabled host to load. The controlled run needs no
 provider, credentials or installation: it delivers every recorded tool call to
 the built component and to the in-process adapter.
+
+### What the hidden thinking label example does
+
+`/thinking-label <text>` sets the collapsed-thinking label the host shows, and
+`/thinking-label` without arguments clears it and restores `Pondering...` for the
+next session start. The example also applies the label it retains at every
+`session_start`, so the next session shows the label the session before set.
+
+A command that sets a label trims the surrounding whitespace and keeps the interior
+text as it is. When the host rejects a request the command ends with the host's
+message, and the label the example retains stays the one the command chose.
+Loading the component into an application is opt-in and needs a host that enables
+the component runtime.
 
 ### Building with-deps
 
