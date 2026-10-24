@@ -43,8 +43,10 @@ pub fn result_value(encoded: &str) -> Value {
     decoded(encoded, "details")
 }
 
-/// Releases every registration in the order the host received it and asserts nothing stayed lent.
-pub fn release_all(host: &Controlled) -> Vec<String> {
+/// Releases every registration in the order the host received it, asserting the host admitted
+/// exactly `expected` and kept nothing lent.
+pub fn release_all(host: &Controlled, expected: &[impl AsRef<str>]) {
+    let expected: Vec<&str> = expected.iter().map(AsRef::as_ref).collect();
     let mut names = Vec::new();
     loop {
         let next = host.observe().next_to_release();
@@ -52,8 +54,8 @@ pub fn release_all(host: &Controlled) -> Vec<String> {
         release(key);
         names.push(name);
     }
+    assert_eq!(names, expected, "the registrations the host received");
     assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
-    names
 }
 
 /// Runs the built component's command callback and returns its outcome; `held` keeps the

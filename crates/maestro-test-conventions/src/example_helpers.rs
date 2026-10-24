@@ -1,7 +1,8 @@
 //! Single-owner rule for the shared helpers of the shipped extension examples.
 
-use syn::spanned::Spanned;
-use syn::visit::{self, Visit};
+use std::str::FromStr;
+
+use proc_macro2::{Delimiter, TokenStream, TokenTree};
 
 use crate::source::{Member, Source};
 
@@ -13,14 +14,15 @@ const TESTS: &str = "src/tests";
 const SUFFIX: &str = "_example.rs";
 /// Operation that decodes a document member.
 const DECODED: &str = "example_support::decoded";
-/// Operation that releases every registration and returns its names.
+/// Operation that releases every registration and asserts the expected names.
 const RELEASED: &str = "example_support::release_all";
 
 /// Reject example tests that write a shared example operation inline.
 ///
-/// The shared decoding, registration-release walk and released-name comparison
-/// live once in the example support module; a per-example test that repeats one
-/// of them, or discards the names it releases, is reported with its file and line.
+/// The shared decoding and registration release live once in the example support
+/// module; a per-example test that repeats one of them is reported with its file
+/// and line. Each rule matches the operation's token fragment, so a copy inside a
+/// macro argument, a closure or a method is rejected like a bare call.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members.iter().filter(|member| member.name == GUEST) {
@@ -29,28 +31,27 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             .iter()
             .filter(|source| example_test(member, source));
         for source in sources {
-            let Some(syntax) = &source.syntax else {
+            let Ok(tokens) = TokenStream::from_str(&source.contents) else {
                 continue;
             };
-            let mut guard = Guard::default();
-            guard.visit_file(syntax);
             let file = source.path.display().to_string();
+            let mut found = Vec::new();
+            inline_copies(tokens, &mut found);
             diagnostics.extend(
-                guard
-                    .found
+                found
                     .into_iter()
-                    .map(|(position, message)| (file.clone(), position, message)),
+                    .map(|(line, message)| (file.clone(), line, message)),
             );
         }
     }
     if diagnostics.is_empty() {
         return Ok(());
     }
-    diagnostics.sort_by(|left, right| (&left.0, left.1).cmp(&(&right.0, right.1)));
+    diagnostics.sort();
     diagnostics.dedup();
     Err(diagnostics
         .into_iter()
-        .map(|(file, (line, _), message)| format!("{file}:{line}: {message}"))
+        .map(|(file, line, message)| format!("{file}:{line}: {message}"))
         .collect::<Vec<_>>()
         .join("\n"))
 }
@@ -69,90 +70,67 @@ fn example_test(member: &Member, source: &Source) -> bool {
         })
 }
 
-/// Located inline copies in one parsed example test.
-#[derive(Default)]
-struct Guard {
-    /// One-based position and message per copy.
-    found: Vec<((usize, usize), String)>,
-}
-
-impl<'ast> Visit<'ast> for Guard {
-    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
-        if named(&call.func, "from_str") && decodes_member(call) {
-            self.found.push((
-                position(&call.func),
-                format!("inline member decode; use {DECODED}"),
-            ));
-        }
-        visit::visit_expr_call(self, call);
-    }
-
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        if call.method == "next_to_release" {
-            self.found.push((
-                position(&call.method),
+/// Collect the inline copies in one token stream, descending into every group.
+fn inline_copies(tokens: TokenStream, found: &mut Vec<(usize, String)>) {
+    let tokens: Vec<TokenTree> = tokens.into_iter().collect();
+    for (index, token) in tokens.iter().enumerate() {
+        match token {
+            TokenTree::Ident(ident) if ident == "next_to_release" => found.push((
+                ident.span().start().line,
                 format!("inline registration release walk; use {RELEASED}"),
-            ));
+            )),
+            TokenTree::Ident(ident)
+                if ident == "from_str" && arguments(&tokens, index).is_some_and(decodes_member) =>
+            {
+                found.push((
+                    ident.span().start().line,
+                    format!("inline member decode; use {DECODED}"),
+                ));
+            }
+            _ => {}
         }
-        visit::visit_expr_method_call(self, call);
-    }
-
-    fn visit_stmt(&mut self, statement: &'ast syn::Stmt) {
-        if let syn::Stmt::Expr(syn::Expr::Call(call), Some(_)) = statement
-            && named(&call.func, "release_all")
-        {
-            self.found.push((
-                position(&call.func),
-                format!("compare the names {RELEASED} returns with the expected registrations"),
-            ));
+        if let TokenTree::Group(group) = token {
+            inline_copies(group.stream(), found);
         }
-        visit::visit_stmt(self, statement);
     }
 }
 
-/// Whether `function` names `name` in its last path segment.
-fn named(function: &syn::Expr, name: &str) -> bool {
-    matches!(
-        function,
-        syn::Expr::Path(path)
-            if path.path.segments.last().is_some_and(|segment| segment.ident == name)
-    )
-}
-
-/// Whether the call reads one text member of an indexed document.
-fn decodes_member(call: &syn::ExprCall) -> bool {
-    let mut access = MemberAccess::default();
-    for argument in &call.args {
-        access.visit_expr(argument);
-    }
-    access.indexed && access.text
-}
-
-/// The accesses an inline member decode combines.
-#[derive(Default)]
-struct MemberAccess {
-    /// Whether an index expression was read.
-    indexed: bool,
-    /// Whether indexed text was taken as a string.
-    text: bool,
-}
-
-impl Visit<'_> for MemberAccess {
-    fn visit_expr_index(&mut self, index: &syn::ExprIndex) {
-        self.indexed = true;
-        visit::visit_expr_index(self, index);
-    }
-
-    fn visit_expr_method_call(&mut self, call: &syn::ExprMethodCall) {
-        if call.method == "as_str" {
-            self.text = true;
+/// The argument tokens of the call whose callee starts at `index`, past a turbofish.
+fn arguments(tokens: &[TokenTree], index: usize) -> Option<TokenStream> {
+    let mut depth = 0usize;
+    for token in &tokens[index + 1..] {
+        match token {
+            TokenTree::Group(group) if depth == 0 => {
+                return (group.delimiter() == Delimiter::Parenthesis).then(|| group.stream());
+            }
+            TokenTree::Punct(punct) if punct.as_char() == '<' => depth += 1,
+            TokenTree::Punct(punct) if punct.as_char() == '>' && depth > 0 => depth -= 1,
+            TokenTree::Punct(punct) if depth == 0 && punct.as_char() == ':' => {}
+            TokenTree::Group(_) | TokenTree::Ident(_) | TokenTree::Literal(_) if depth > 0 => {}
+            _ => return None,
         }
-        visit::visit_expr_method_call(self, call);
     }
+    None
 }
 
-/// One-based line and column where `spanned` starts.
-fn position(spanned: &impl Spanned) -> (usize, usize) {
-    let start = spanned.span().start();
-    (start.line, start.column)
+/// Whether these argument tokens take an indexed member as a string.
+fn decodes_member(tokens: TokenStream) -> bool {
+    let tokens: Vec<TokenTree> = tokens.into_iter().collect();
+    for (index, token) in tokens.iter().enumerate() {
+        if let TokenTree::Group(group) = token {
+            if group.delimiter() == Delimiter::Bracket && reads_text(&tokens, index) {
+                return true;
+            }
+            if decodes_member(group.stream()) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Whether the group at `index` is an index followed by `.as_str`.
+fn reads_text(tokens: &[TokenTree], index: usize) -> bool {
+    matches!(tokens.get(index + 1), Some(TokenTree::Punct(punct)) if punct.as_char() == '.')
+        && matches!(tokens.get(index + 2), Some(TokenTree::Ident(ident)) if ident == "as_str")
 }

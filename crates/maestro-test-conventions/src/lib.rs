@@ -69,10 +69,11 @@ mod time_limits;
 /// generated catalog/binding sources are excluded. Macros are not expanded and
 /// unparsed fragments add no candidates; no suppression or baseline is supported.
 ///
-/// The shipped extension example tests decode a document member, release every
-/// registration and compare the released names through the example support
-/// module. A per-example test that writes the decode or the release walk inline,
-/// or discards the names it releases, is reported with its file and line.
+/// The shipped extension example tests decode a document member and release every
+/// registration through the example support module, whose release also asserts the
+/// names the caller expects and that nothing stays lent. A per-example test that
+/// writes the decode or the release walk inline is reported with its file and
+/// line, wherever the copy sits.
 ///
 /// # Errors
 ///

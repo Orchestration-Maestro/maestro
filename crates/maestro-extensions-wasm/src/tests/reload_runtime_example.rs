@@ -250,7 +250,7 @@ fn reload_runtime_registers_command_and_tool() -> Result<(), String> {
     let started = controlled()?;
     let expected = corpus().metadata;
     assert_metadata(&started.host.observed(), &expected);
-    assert_eq!(release_all(&started.host), recorded_order(&expected));
+    release_all(&started.host, &recorded_order(&expected));
     Ok(())
 }
 
@@ -292,7 +292,7 @@ fn reload_runtime_command_awaits_reload_and_returns() -> Result<(), String> {
     for case in selected(&corpus().commands, Outcome::Fulfilled) {
         command_case(&mut host, case);
     }
-    assert_eq!(release_all(&host.host), recorded_order(&corpus().metadata));
+    release_all(&host.host, &recorded_order(&corpus().metadata));
     Ok(())
 }
 
@@ -303,7 +303,7 @@ fn reload_runtime_command_propagates_reload_failure() -> Result<(), String> {
     for case in selected(&corpus().commands, Outcome::Rejected) {
         command_case(&mut host, case);
     }
-    assert_eq!(release_all(&host.host), recorded_order(&corpus().metadata));
+    release_all(&host.host, &recorded_order(&corpus().metadata));
     Ok(())
 }
 
@@ -351,7 +351,7 @@ fn reload_runtime_tool_queues_follow_up_before_result() -> Result<(), String> {
     for case in selected(&corpus().tools, Outcome::Fulfilled) {
         tool_case(&mut host, case);
     }
-    assert_eq!(release_all(&host.host), recorded_order(&corpus().metadata));
+    release_all(&host.host, &recorded_order(&corpus().metadata));
     Ok(())
 }
 
@@ -362,7 +362,7 @@ fn reload_runtime_tool_propagates_delivery_failure() -> Result<(), String> {
     for case in selected(&corpus().tools, Outcome::Rejected) {
         tool_case(&mut host, case);
     }
-    assert_eq!(release_all(&host.host), recorded_order(&corpus().metadata));
+    release_all(&host.host, &recorded_order(&corpus().metadata));
     Ok(())
 }
 

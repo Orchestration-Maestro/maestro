@@ -95,7 +95,7 @@ fn shutdown_example_registers_command_and_tool_contracts() -> Result<(), String>
         assert_eq!(json!(tools), expected["tools"]);
         assert!(host.observed().callback("prepare finish_and_exit").is_err());
         assert!(host.observed().callback("prepare deploy_and_exit").is_err());
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -118,7 +118,7 @@ fn quit_command_requests_shutdown() -> Result<(), String> {
             assert_eq!(host.observed().transcript[start..], ["context shutdown"]);
         }
         assert!(host.observed().updates.is_empty());
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -146,7 +146,7 @@ fn finish_tool_returns_after_request() -> Result<(), String> {
             assert_eq!(host.observed().transcript[start..], ["context shutdown"]);
             assert!(host.observed().updates.is_empty());
         }
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -196,7 +196,7 @@ fn deployment_progress_keeps_environment_and_order() -> Result<(), String> {
                 })
             );
         }
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -225,7 +225,7 @@ fn deployment_without_progress_keeps_result() -> Result<(), String> {
             result_value(&encoded),
             expected["withoutProgress"]["result"]
         );
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -361,7 +361,7 @@ fn refused_command(shutdown: &str) -> Result<(), String> {
             Err(shutdown.to_owned())
         );
         assert!(host.observed().transcript[start..].is_empty());
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -407,7 +407,7 @@ fn refused_tools(shutdown: &str) -> Result<(), String> {
         );
         assert_eq!(host.observed().updates.len(), 2);
         assert!(host.observed().transcript[start..].is_empty());
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -441,7 +441,7 @@ fn refused_progress(position: usize, message: &str) -> Result<(), String> {
             host.observed().transcript[start..].is_empty(),
             "no shutdown is requested"
         );
-        assert_eq!(release_all(&host), REGISTERED);
+        release_all(&host, &REGISTERED);
         Ok(())
     })
 }
@@ -483,7 +483,13 @@ fn shutdown_example_stops_on_registration_error() -> Result<(), String> {
                 "the registration at position {} is refused",
                 row["refused"]
             );
-            assert_eq!(json!(release_all(&host)), row["admitted"]);
+            let admitted: Vec<&str> = row["admitted"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|name| name.as_str().unwrap())
+                .collect();
+            release_all(&host, &admitted);
         }
         Ok(())
     })

@@ -28,9 +28,24 @@ const BYPASSES: &[Bypass] = &[
         "example_support::release_all",
     ),
     (
-        "discard_example.rs",
-        "//! Discard.\n/// Drains every registration without comparing them.\nfn drained(host: &Record) {\n    release_all(host);\n}\n",
-        "compare the names example_support::release_all returns",
+        "macro_decode_example.rs",
+        "//! Assert.\n/// Compares the schema the host received.\nfn schema_matches(expected: &Value) {\n    assert_eq!(\n        serde_json::from_str::<Value>(m[\"parameters\"].as_str().unwrap()).unwrap(),\n        expected\n    );\n}\n",
+        "example_support::decoded",
+    ),
+    (
+        "macro_walk_example.rs",
+        "//! Macro.\n/// Releases every registration inside a macro argument.\nfn released(host: &Record) {\n    assert!(host.observe().next_to_release().is_some());\n}\n",
+        "example_support::release_all",
+    ),
+    (
+        "closure_walk_example.rs",
+        "//! Closure.\n/// Releases every registration from a closure.\nfn released(host: &Record) {\n    let drain = || host.observe().next_to_release();\n    drain();\n}\n",
+        "example_support::release_all",
+    ),
+    (
+        "method_decode_example.rs",
+        "//! Method.\n/// Decodes the member inside a method.\nstruct Recorded;\nimpl Recorded {\n    /// Reads the recorded parameters.\n    fn parameters(&self, recorded: &str) -> Value {\n        serde_json::from_str::<Value>(recorded[\"parameters\"].as_str().unwrap()).unwrap()\n    }\n}\n",
+        "example_support::decoded",
     ),
 ];
 
@@ -77,7 +92,7 @@ fn example_helpers_accept_the_shared_calls() {
         &workspace,
         "maestro-extensions-wasm",
         "src/tests/hello_example.rs",
-        "//! Hello.\n/// Releases the single tool the example registered.\nfn greet(host: &Record) {\n    assert_eq!(release_all(host), [\"tool hello\"]);\n    let _ = decoded(registered, \"parameters\");\n    let _ = serde_json::from_str(include_str!(\"hello_expected.json\"));\n    let _ = row[\"duration\"].as_str();\n}\n",
+        "//! Hello.\n/// Releases the single tool the example registered.\nfn greet(host: &Record) {\n    release_all(host, &[\"tool hello\"]);\n    let _ = decoded(registered, \"parameters\");\n    let _ = serde_json::from_str(include_str!(\"hello_expected.json\"));\n    let _ = row[\"duration\"].as_str();\n}\n",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
