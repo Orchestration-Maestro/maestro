@@ -773,7 +773,7 @@ test('sandbox_click_bypasses_containing_page_coordinate_dispatch', async t => {
     });
     assert.equal(parentDispatches, 0, 'isolated target uses its own native input session');
     assert.equal(lines.filter(line => line === `PHASE ${first} click returned ${sandboxId}`).length, 1);
-    assert.equal(lines.at(-1), 'COMPLETE 45/45');
+    assert.equal(lines.at(-1), 'COMPLETE 101/101');
   }
 });
 
@@ -807,7 +807,7 @@ test('sandbox_click_cleans_selected_session_after_native_operations', async t =>
       };
       return inspect();
     });
-    if (outcome === 'success') assert.equal((await running).at(-1), 'COMPLETE 45/45');
+    if (outcome === 'success') assert.equal((await running).at(-1), 'COMPLETE 101/101');
     else await assert.rejects(running, error => { assert(error.cause.message.includes(sentinel)); return true; });
     assert.equal(created, outcome === 'create' ? 0 : 1, outcome);
     assert.equal(detached, created, outcome + ' releases every acquired native session');
