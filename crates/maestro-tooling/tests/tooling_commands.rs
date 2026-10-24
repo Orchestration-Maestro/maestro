@@ -1192,9 +1192,18 @@ fn standalone_inputs(source: &Path, package: &Path) {
     package_inputs(package);
 }
 
-/// The shipped examples and their index page, as authors write them.
-fn shipped_examples() -> [(&'static str, &'static str); 13] {
-    [
+/// The shipped examples and their index page, as authors write them. Keep the list in
+/// file-name order, so a new example inserts at its own place.
+fn shipped_examples() -> &'static [(&'static str, &'static str)] {
+    &[
+        (
+            "examples/extensions/README.md",
+            include_str!("../../../examples/extensions/README.md"),
+        ),
+        (
+            "examples/extensions/bookmark.rs",
+            include_str!("../../../examples/extensions/bookmark.rs"),
+        ),
         (
             "examples/extensions/hello.rs",
             include_str!("../../../examples/extensions/hello.rs"),
@@ -1204,50 +1213,73 @@ fn shipped_examples() -> [(&'static str, &'static str); 13] {
             include_str!("../../../examples/extensions/hidden_thinking_label.rs"),
         ),
         (
-            "examples/extensions/shutdown_command.rs",
-            include_str!("../../../examples/extensions/shutdown_command.rs"),
+            "examples/extensions/pirate.rs",
+            include_str!("../../../examples/extensions/pirate.rs"),
         ),
         (
             "examples/extensions/prompt_customizer.rs",
             include_str!("../../../examples/extensions/prompt_customizer.rs"),
         ),
         (
-            "examples/extensions/with-deps/main.rs",
-            include_str!("../../../examples/extensions/with-deps/main.rs"),
+            "examples/extensions/protected_paths.rs",
+            include_str!("../../../examples/extensions/protected_paths.rs"),
         ),
         (
             "examples/extensions/reload_runtime.rs",
             include_str!("../../../examples/extensions/reload_runtime.rs"),
         ),
         (
-            "examples/extensions/protected_paths.rs",
-            include_str!("../../../examples/extensions/protected_paths.rs"),
-        ),
-        (
-            "examples/extensions/pirate.rs",
-            include_str!("../../../examples/extensions/pirate.rs"),
-        ),
-        (
-            "examples/extensions/trigger_compact.rs",
-            include_str!("../../../examples/extensions/trigger_compact.rs"),
-        ),
-        (
-            "examples/extensions/bookmark.rs",
-            include_str!("../../../examples/extensions/bookmark.rs"),
-        ),
-        (
-            "examples/extensions/working_message_test.rs",
-            include_str!("../../../examples/extensions/working_message_test.rs"),
+            "examples/extensions/shutdown_command.rs",
+            include_str!("../../../examples/extensions/shutdown_command.rs"),
         ),
         (
             "examples/extensions/system_prompt_header.rs",
             include_str!("../../../examples/extensions/system_prompt_header.rs"),
         ),
         (
-            "examples/extensions/README.md",
-            include_str!("../../../examples/extensions/README.md"),
+            "examples/extensions/trigger_compact.rs",
+            include_str!("../../../examples/extensions/trigger_compact.rs"),
+        ),
+        (
+            "examples/extensions/with-deps/main.rs",
+            include_str!("../../../examples/extensions/with-deps/main.rs"),
+        ),
+        (
+            "examples/extensions/working_message_test.rs",
+            include_str!("../../../examples/extensions/working_message_test.rs"),
         ),
     ]
+}
+
+/// The example lists stay in name order, so a new example inserts at its own place instead of
+/// appending at the end of every list.
+#[test]
+fn shipped_example_lists_stay_in_name_order() {
+    let paths: Vec<&str> = shipped_examples().iter().map(|(path, _)| *path).collect();
+    assert!(
+        paths.is_sorted(),
+        "the shipped examples are not in file-name order: {paths:?}"
+    );
+    let targets = example_targets(include_str!("../../maestro-extensions-wasm/Cargo.toml"));
+    assert!(
+        targets.is_sorted(),
+        "the component examples are not in name order: {targets:?}"
+    );
+}
+
+/// The `[[example]]` target names one manifest declares, in authored order.
+fn example_targets(manifest: &str) -> Vec<&str> {
+    let mut targets = Vec::new();
+    let mut in_example = false;
+    for line in manifest.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_example = line == "[[example]]";
+        } else if in_example && let Some(name) = line.strip_prefix("name = \"") {
+            targets.push(name.trim_end_matches('"'));
+        }
+    }
+    targets
 }
 
 /// Write the package-level inputs the standalone layout copies.

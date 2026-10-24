@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::configuration::config;
-use maestro_markdown::{Cell, Kind, LinkType, Node};
+use maestro_markdown::{Cell, Kind, LinkType, Node, Table};
 use std::fs;
 use std::path::Path;
 
@@ -71,13 +71,58 @@ fn index_entries(index: &str) -> Vec<String> {
             {
                 entries.push(destination.clone());
             }
-            Kind::Table(table) => {
-                entries.extend(table.rows.iter().filter_map(|row| first_code(row)));
-            }
+            Kind::Table(table) => entries.extend(table_entries(table)),
             _ => {}
         }
     }
     entries
+}
+
+/// The file names one table lists, in row order.
+fn table_entries(table: &Table) -> Vec<String> {
+    table
+        .rows
+        .iter()
+        .filter_map(|row| first_code(row))
+        .collect()
+}
+
+/// The examples index keeps its table rows and its controlled-run commands in file-name
+/// order, so a new example inserts at its own place instead of appending at the end.
+#[test]
+fn examples_index_stays_in_file_name_order() {
+    let folder = config::get_examples_path().unwrap();
+    let index = fs::read_to_string(Path::new(&folder).join("extensions/README.md")).unwrap();
+    let rows = table_rows(&index);
+    assert!(
+        rows.is_sorted(),
+        "the examples table is not in file-name order: {rows:?}"
+    );
+    let filters = run_filters(&index);
+    assert!(
+        filters.is_sorted(),
+        "the controlled-run commands are not in file-name order: {filters:?}"
+    );
+}
+
+/// The file names every table of one index page lists, in authored order.
+fn table_rows(index: &str) -> Vec<String> {
+    let document = maestro_markdown::parse(index.to_owned());
+    descendants(document.nodes.iter(), nodes::children)
+        .flat_map(|node| match &node.kind {
+            Kind::Table(table) => table_entries(table),
+            _ => Vec::new(),
+        })
+        .collect()
+}
+
+/// The test filters one index page's controlled-run commands name, in authored order.
+fn run_filters(index: &str) -> Vec<String> {
+    index
+        .lines()
+        .filter_map(|line| line.split_once("--lib "))
+        .map(|(_, filter)| filter.trim().trim_start_matches("-- ").to_owned())
+        .collect()
 }
 
 /// The first code span among one table row's cells.
