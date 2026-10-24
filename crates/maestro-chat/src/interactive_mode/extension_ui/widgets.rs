@@ -75,7 +75,7 @@ impl InteractiveMode {
     }
 
     /// Rebuilds the two containers from their live maps, retaining the above spacer.
-    fn render_widgets(&self) {
+    pub(in super::super) fn render_widgets(&self) {
         for (container, map, leading) in [
             (
                 &self.widget_container_above,

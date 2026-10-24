@@ -946,8 +946,8 @@ fn startup_layout_focus_and_start_happen_once() {
                 })
         };
         assert!(same(&mode.ui.children().borrow()));
-        assert!(mode.widget_container_above.children().borrow().is_empty());
-        assert!(mode.widget_container_below.children().borrow().is_empty());
+        assert_eq!(mode.widget_container_above.render(80), [""]);
+        assert!(mode.widget_container_below.render(80).is_empty());
         world.terminal.send_input("x");
         assert_eq!(mode.editor.get_text(), "x");
         mode.init().unwrap();

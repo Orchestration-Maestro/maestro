@@ -190,6 +190,7 @@ impl InteractiveMode {
             return Ok(());
         }
         self.build_header()?;
+        self.render_widgets();
         for child in [
             &self.header_container,
             &self.chat_container,

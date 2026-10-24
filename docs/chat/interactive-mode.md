@@ -33,9 +33,10 @@ fallback theme is returned.
 
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. It focuses the editor, binds the
-transcript shortcuts, the queue keys and editor actions, installs editor submission
-and starts the terminal. A terminal start failure is returned and leaves the mode
+containers and the footer, in that order. The upper widget container starts with
+one blank spacer row; the lower widget container starts empty. It focuses the
+editor, binds the transcript shortcuts, the queue keys and editor actions, installs
+editor submission and starts the terminal. A terminal start failure is returned and leaves the mode
 uninitialized. Once started, it subscribes to the session events and sets the window
 title. A theme change then invalidates the presentation, recolours the editor border
 and requests a frame, and a branch change requests a frame. Neither callback keeps
