@@ -1,7 +1,9 @@
 //! Editor submission and the single waiting input operation.
 use super::InteractiveMode;
+use super::bash::selected_shell_command;
 use maestro_app::is_whitespace_scalar;
 use maestro_app::messages::UserMessageDelivery;
+use maestro_tui::EditorComponent;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -28,10 +30,11 @@ impl InteractiveMode {
         }
     }
 
-    /// Installs submission on the editor without keeping the mode alive: a recognized
-    /// command runs and reports its own outcome, any other trimmed nonempty text is queued
-    /// as steering during a compaction or a response, and otherwise it goes to the waiting
-    /// input, if any, then into the editor's history.
+    /// Installs submission on the editor without keeping the mode alive: a shell command
+    /// runs through the mode, a recognized command runs and reports its own outcome, and
+    /// any other trimmed nonempty text is queued as steering during a compaction or a
+    /// response and otherwise moves the pending shell rows into the transcript, goes to
+    /// the waiting input, if any, then into the editor's history.
     ///
     /// The editor empties itself before calling back, so a command needs no clearing step.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
@@ -41,6 +44,10 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            if let Some((command, exclude_from_context)) = selected_shell_command(text) {
+                mode.submit_shell_command(text, command, exclude_from_context);
+                return;
+            }
             if mode.runs_command(text) {
                 return;
             }
@@ -48,6 +55,7 @@ impl InteractiveMode {
                 Ok(false) => {}
                 queued => return mode.report(queued.map(drop)),
             }
+            mode.flush_pending_bash_components();
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {
                 // A dropped waiter no longer wants the text; history still records it.

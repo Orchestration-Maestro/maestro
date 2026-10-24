@@ -1,4 +1,13 @@
 //! Native presentation witnesses through the interactive mode's own interface.
+mod actions;
+mod bash;
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Only executable installation is shared."
+)]
+#[path = "../../../maestro-app/tests/support/native.rs"]
+mod native;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -36,15 +45,19 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
 /// so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl FnOnce(&Path)) {
-    isolated_case(test, "child", (&[], &[]), body);
+    isolated_case(test, "child", &[], body);
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
-/// directory, with the environment changes `(set, removed)` applied.
+/// directory, with no inherited environment apart from the command path and `envs`, so
+/// no developer credential reaches it. The child's temporary directory is that root's
+/// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
+/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
+/// instead of ending the child.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    (envs, removed): (&[(&str, &str)], &[&str]),
+    envs: &[(&str, &str)],
     body: impl FnOnce(&Path),
 ) {
     let selection = maestro_test_process::selection();
@@ -56,14 +69,31 @@ pub(super) fn isolated_case(
         return;
     }
     let scratch = child::Scratch::new();
-    let directory = scratch.0.path().to_str().unwrap();
-    let mut all = vec![(ENV_AGENT_DIR.as_str(), directory)];
+    let root = scratch.0.path();
+    for name in ["bin", "tmp"] {
+        std::fs::create_dir(root.join(name)).unwrap();
+    }
+    let path = format!(
+        "{}:{}",
+        root.join("bin").display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let mut all = vec![
+        (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
+        ("PATH", &path),
+        ("WAYLAND_DISPLAY", "maestro-test"),
+    ];
     all.extend_from_slice(envs);
     child::probe(
-        TestProcess::current(test).unwrap().case(case),
-        scratch.0.path(),
+        TestProcess::current(test)
+            .unwrap()
+            .env_clear()
+            .case(case)
+            .shell_setup("trap '' XFSZ")
+            .temp_dir(root.join("tmp")),
+        root,
         &all,
-        removed,
+        &[],
     );
 }
 
@@ -213,6 +243,10 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
+    /// Starts a fresh session for each replacement instead of failing it.
+    pub(super) replacing: bool,
+    /// Creates the session history under a file in this directory when supplied.
+    pub(super) session_history: Option<std::path::PathBuf>,
     /// The directories the theme registry reads, when it records themes on disk.
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
 }
@@ -229,6 +263,8 @@ impl Default for Setup {
             prompts: Vec::new(),
             directories: None,
             extension: None,
+            replacing: false,
+            session_history: None,
         }
     }
 }
@@ -266,11 +302,20 @@ impl Setup {
         let created = Rc::clone(&loader);
         let resources = (self.context, self.skills, self.prompts);
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
-        let result = session::session(&cwd, None, move |inner| {
-            let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
-            *created.borrow_mut() = Some(Rc::clone(&loader));
-            loader
-        });
+        let history = self
+            .session_history
+            .as_ref()
+            .map(|directory| directory.to_str().unwrap().to_owned());
+        let result = session::session_over(
+            &cwd,
+            None,
+            move |inner| {
+                let loader = Rc::new(ForwardingLoader::new(inner, resources, extensions));
+                *created.borrow_mut() = Some(Rc::clone(&loader));
+                loader
+            },
+            history.as_deref(),
+        );
         let settings = Rc::clone(result.session.settings_manager());
         settings.borrow_mut().set_theme("dark".to_owned());
         (self.configure)(&mut settings.borrow_mut());
@@ -280,7 +325,7 @@ impl Setup {
         let loader = loader.borrow().clone().unwrap();
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) })),
+            create(&cwd, self.replacing),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
@@ -308,6 +353,19 @@ impl Setup {
     }
 }
 
+/// The factory that creates each replacement session: a fresh one in `cwd` when
+/// `replacing`, otherwise the failure the other witnesses expect.
+fn create(cwd: &str, replacing: bool) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    if !replacing {
+        return Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }));
+    }
+    let cwd = cwd.to_owned();
+    Rc::new(move |_| {
+        let cwd = cwd.clone();
+        Box::pin(async move { Ok(session::session(&cwd, None, |inner| inner)) })
+    })
+}
+
 /// Builds a default mode in `directory` and initializes it, settling the first frame.
 fn started(directory: &Path) -> World {
     let world = Setup::default().build(directory);
@@ -325,6 +383,13 @@ pub(super) fn roles(theme: &Theme, text: &str) -> String {
         ("@muted@", ThemeColor::Muted),
         ("@error@", ThemeColor::Error),
         ("@warning@", ThemeColor::Warning),
+        ("@thinkingOff@", ThemeColor::ThinkingOff),
+        ("@thinkingMinimal@", ThemeColor::ThinkingMinimal),
+        ("@thinkingLow@", ThemeColor::ThinkingLow),
+        ("@thinkingMedium@", ThemeColor::ThinkingMedium),
+        ("@thinkingHigh@", ThemeColor::ThinkingHigh),
+        ("@thinkingXhigh@", ThemeColor::ThinkingXhigh),
+        ("@bashMode@", ThemeColor::BashMode),
         ("@mdHeading@", ThemeColor::MdHeading),
         ("@mdLink@", ThemeColor::MdLink),
     ] {

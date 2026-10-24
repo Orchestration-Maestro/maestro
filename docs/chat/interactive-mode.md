@@ -3,10 +3,11 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, queued input, the export command, session replay and the expansion and
-thinking shortcuts. The prompt loop, streaming messages, startup messages,
-installed custom headers, the terminal title and the other integrations are still
-to come; the mode prompts the session only for input queued during a response or a
+input, queued input, the export command, session replay, the expansion and thinking
+shortcuts, thinking and model cycling, the editor border, external editing and
+image paste. The prompt loop, streaming messages, startup messages, installed
+custom headers, the terminal title and the other integrations are still to come;
+the mode prompts the session only for input queued during a response or a
 compaction.
 
 ## Construction
@@ -33,9 +34,10 @@ fallback theme is returned.
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
 containers and the footer, in that order. It focuses the editor, binds the
-transcript shortcuts and the queue keys, installs editor submission and starts the
-terminal. A terminal start failure is returned and leaves the mode uninitialized.
-After a successful start, a theme change invalidates the presentation, recolours the
+transcript shortcuts, the queue keys and editor actions, installs editor submission
+and starts the terminal. A terminal start failure is returned and leaves the mode
+uninitialized. After a successful start, a theme change invalidates the
+presentation, recolours the
 editor border and requests a frame, and a branch change requests a frame. Neither
 callback keeps the mode alive. Last, it lists the loaded resources in the
 transcript and then replays the session (see below).
@@ -198,5 +200,69 @@ The thinking shortcut (`app.thinking.toggle`) flips and saves `hideThinkingBlock
 replays the transcript and shows `Thinking blocks: hidden` or `Thinking blocks:
 visible`. A shortcut's failure goes to the terminal runtime's error route.
 
-The editor border follows the session's thinking level, or the shell colour while
-the editor holds a shell command.
+## Thinking and model cycling
+
+The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
+session's next thinking level. It shows `Thinking level: <level>` as a status line
+and refreshes the footer and editor border; when the model cannot reason it shows
+`Current model does not support thinking` and changes nothing else. A recording
+failure goes to the terminal runtime's error route.
+
+The model cycle keys (`app.model.cycleForward` and `app.model.cycleBackward`,
+Ctrl+P and Shift+Ctrl+P by default) select the next or previous scoped model, or
+the next or previous available model when none are scoped. The cycle runs on the
+terminal runtime, which keeps the mode until it completes. It then shows
+`Switched to <name>`, using the model id when the name is empty and adding
+` (thinking: <level>)` for a reasoning model whose level is not `off`, and refreshes
+the footer and editor border. With no other candidate it shows
+`Only one model in scope` or `Only one model available`. A session error is shown
+as an error notice instead of the switch message. A failed credential lookup leaves
+the selection as it was; a recording or listener failure happens after the new
+model is selected, so that model stays selected.
+
+## Editor border
+
+The editor border shows the input mode. Text whose first character after leading
+whitespace is `!` is a shell command, and the border takes the theme's `bashMode`
+colour. Leading whitespace follows the same policy as submitted text, so U+FEFF and
+a no-break space are skipped while U+0085 and U+200B are not. Otherwise the border
+takes the colour of the session's thinking level, `thinkingOff` through
+`thinkingXhigh`. The border is repainted and a frame requested only when an edit
+switches between the two modes. A failure to read the theme is handed to the
+terminal's runtime host, which reports it.
+
+## External editing
+
+The key bound to `app.editor.external` (Ctrl+G by default) edits the editor text in
+an external editor. The mode reads the runtime's `VISUAL`, then `EDITOR`, each time
+the key is pressed; an empty value counts as unset, and neither value is trimmed.
+With no editor configured, the transcript shows the warning
+`No editor configured. Set $VISUAL or $EDITOR environment variable.` and nothing
+else happens. On Unix the command splits on ASCII spaces only, and the file path is
+its last argument; Windows runs it through the configured command interpreter, as
+the extension editor dialog does.
+
+The text written is the expanded text, so a collapsed paste is written in full
+rather than as its marker. It goes to `maestro-editor-{milliseconds}.maestro.md` in
+the temporary directory. The mode then stops the terminal and runs the editor on
+the inherited terminal. A zero exit replaces the editor text with the file's text
+less one final line feed; a nonzero exit, a signal or a failed launch keep the text.
+After every outcome the mode tries to remove the file it created, ignoring a failed
+removal, and restarts the terminal with a full redraw. Other failures are handed
+to the terminal's runtime host.
+
+## Image paste
+
+Pasting an image (`app.clipboard.pasteImage`: Ctrl+V by default, Alt+V on Windows)
+reads the clipboard through the application's
+image reader. An image is written to `maestro-clipboard-{UUID}.{extension}` in the
+temporary directory, with the extension of its type or `png`, and the file path is
+inserted at the cursor. The file stays for the prompt that uses it. No image, a
+failed read and a failed write all leave the editor as it was, without a message.
+
+Both actions create their temporary file exclusively, readable only by its owner on
+Unix: an existing file or symbolic link of the same name is left untouched, and the
+edit stops with an error before the editor runs. Neither action keeps the mode
+alive; a clipboard read in progress keeps the mode until it completes.
+
+Suspending to the background is not part of the mode yet.

@@ -280,12 +280,7 @@ fn context_files(located: Vec<Located>) -> Vec<ContextFile> {
 /// Runs `body` in a fresh child whose home directory and locale are the recorded ones.
 fn in_home(test: &str, body: impl FnOnce(&Path)) {
     let environment = [("HOME", HOME), ("LANG", "C.UTF-8")];
-    isolated_case(
-        test,
-        "child",
-        (&environment, &["LC_ALL", "LC_MESSAGES"]),
-        body,
-    );
+    isolated_case(test, "child", &environment, body);
 }
 
 /// The retained expandable sections of the transcript.
@@ -549,10 +544,10 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
         else {
             panic!("a native home case");
         };
-        let environment: (&[(&str, &str)], &[&str]) = match mode.as_str() {
-            "absent" => (&[], &["HOME"]),
-            "supplied" => (&[("HOME", "/tmp/supplied-home")], &[]),
-            "empty" => (&[("HOME", "")], &[]),
+        let environment: &[(&str, &str)] = match mode.as_str() {
+            "absent" => &[],
+            "supplied" => &[("HOME", "/tmp/supplied-home")],
+            "empty" => &[("HOME", "")],
             other => panic!("an unknown home mode {other}"),
         };
         isolated_case(test, &mode, environment, |directory| {

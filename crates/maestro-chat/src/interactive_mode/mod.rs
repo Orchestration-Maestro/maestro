@@ -1,7 +1,8 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, typed input and queued input.
+//! resources, notices, transcript shortcuts, editor actions, typed input and queued
+//! input.
 
-use crate::{CustomEditor, FooterComponent, ToolExecutionComponent};
+use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
@@ -17,6 +18,8 @@ use std::{
     rc::Rc,
 };
 
+mod actions;
+mod bash;
 mod key_display;
 mod queues;
 mod replay;
@@ -87,10 +90,33 @@ pub struct InteractiveMode {
     pending_tools: RefCell<IndexMap<String, Rc<ToolExecutionComponent>>>,
     /// Whether the editor holds a shell command.
     is_bash_mode: Cell<bool>,
+    /// The shell row that is still producing output, when one is attached.
+    active_shell: RefCell<Option<Rc<BashExecutionComponent>>>,
+    /// Shell rows shown in the pending area until the next ordinary submission.
+    pending_shells: RefCell<Vec<Rc<BashExecutionComponent>>>,
     /// The only currently waiting input delivery.
     on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
     /// Messages typed while the session compacts, in the order they were typed.
     compaction_queued_messages: RefCell<Vec<queues::CompactionQueuedMessage>>,
+}
+
+/// Creates the tool environment every rendered row draws over.
+///
+/// # Errors
+/// Returns the failure that stopped the documentation path or the highlighter.
+fn create_tool_environment(
+    runtime: &Rc<dyn TuiRuntime>,
+    themes: &Rc<ThemeState>,
+) -> Result<ToolRenderEnvironment, Box<dyn Error>> {
+    Ok(ToolRenderEnvironment {
+        runtime: Rc::clone(runtime),
+        readme_path: maestro_app::configuration::config::get_readme_path()?,
+        live_theme: themes.theme(),
+        highlighter: Rc::new(
+            SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
+        ),
+        terminal_image: TerminalImage::default(),
+    })
 }
 
 impl InteractiveMode {
@@ -108,15 +134,7 @@ impl InteractiveMode {
         operations: Rc<dyn FooterOperations>,
     ) -> Result<Rc<Self>, Box<dyn Error>> {
         let session = runtime_host.session();
-        let tool_environment = Rc::new(ToolRenderEnvironment {
-            runtime: terminal.1.clone(),
-            readme_path: maestro_app::configuration::config::get_readme_path()?,
-            live_theme: themes.theme(),
-            highlighter: Rc::new(
-                SyntectHighlighter::new().map_err(|error| -> Box<dyn Error> { error })?,
-            ),
-            terminal_image: TerminalImage::default(),
-        });
+        let tool_environment = Rc::new(create_tool_environment(&terminal.1, &themes)?);
         let ui = create_ui(&session, terminal, tool_environment.terminal_image.clone());
         let keys = KeybindingsManager::create(None)?;
         maestro_tui::set_keybindings((*keys).clone());
@@ -164,6 +182,8 @@ impl InteractiveMode {
             last_status: RefCell::default(),
             pending_tools: RefCell::default(),
             is_bash_mode: Cell::new(false),
+            active_shell: RefCell::default(),
+            pending_shells: RefCell::default(),
             on_input_callback: Rc::default(),
             compaction_queued_messages: RefCell::default(),
         }))
