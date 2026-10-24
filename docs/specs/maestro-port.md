@@ -70,7 +70,7 @@ Native sessions use the established JSONL files, project-path encoding, identifi
 
 Support branch traversal, names/labels, custom entries/messages, tool pairing, recorded model/thinking changes, compaction context, abandoned-branch summaries, usage/statistics and selected-branch JSONL export. Compaction preserves cut-point/token-estimate/image/tool-pair rules, exact prompts, retained-budget behavior and event/queue ordering. Import is current-session interchange, not a general migration framework.
 
-Deliver the complete self-contained offline session viewer: escaped data, tree navigation, filtering/search, deep links, collapsed details, syntax/Markdown/image/custom-tool rendering, statistics and JSONL download. Implement its behavior in Rust with a light-DOM browser viewer and embedded assets; opening the exported file requires neither a network service nor consumer compilation. The document serializer accepts data, render capabilities and a prebuilt viewer asset bundle; it does not import a frontend. Shared retained occurrences, stable active-first ordering, physical/visible tree projection, content extraction/search and raw-record ancestry live in `maestro-session::export_html::template`, reached by frontends through `maestro-app::export_html`. Filter, search, fold and selection state remain frontend-owned. The viewer itself belongs to the web frontend and calls the application's read-only session-view interface. Build packaging injects its bundle into the serializer, avoiding an application-to-frontend dependency. User-triggered online sharing is a separate operation with an owner-chosen destination.
+Deliver the complete self-contained offline session viewer: escaped data, tree navigation, filtering/search, deep links, collapsed details, syntax/Markdown/image/custom-tool rendering, statistics and JSONL download. Implement its behavior in Rust with a light-DOM browser viewer and embedded assets; opening the exported file requires neither a network service nor consumer compilation. The document serializer accepts data, render capabilities and a prebuilt viewer asset bundle; it does not import a frontend. Shared retained occurrences, stable active-first ordering, physical/visible tree projection, content extraction/search and raw-record ancestry live in `maestro-session::export_html::template`, reached by frontends through `maestro-app::export_html`. Filter, search, fold and selection state remain frontend-owned. The viewer itself belongs to the web frontend and calls the application's read-only session-view interface. Its entry values prepare raw operands before any browser effect: a falsy timestamp keeps the native locale call unperformed, and the prompt's skill block is parsed by the one application owner that native transcripts and the browser viewer share, available to browser builds rather than a second parser. Build packaging injects its bundle into the serializer, avoiding an application-to-frontend dependency. User-triggered online sharing is a separate operation with an owner-chosen destination.
 
 ## R05 — Tools and process operations
 
@@ -609,6 +609,9 @@ dependency, supplies terminal newline normalization for checked-child tests.
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
 development dependencies, let the standard-stream child tests build the real export
 rendering environment; the adapter's normal dependency stays `maestro-app` alone.
+`maestro-chat` to `maestro-models`, declared as a non-optional native development
+dependency, lets interactive-mode tests drive a real session through the scripted
+provider; it permits no normal or build dependency on models.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -860,9 +863,26 @@ The parser depends internally only on text and introduces no UI or effect owner.
 The dedicated conventions checker may consume its code-block source ranges for
 documentation checks; it does not own a separate Markdown grammar.
 
+Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema`.
+The record keeps the supplied JSON Schema value and, beside it, the kinds its author
+declared for individual nodes, keyed by JSON pointer; a node without an entry is plain
+and is never converted as an authored node. `SchemaKind` names the extensible kinds the
+schema builders produce. `Tool`, `Context` and `ToolInfo` default their schema operand to
+this owner, guest authoring re-exports it, and the model argument-validation owner is its
+only converter. Inside that owner the supplied schema is indexed once: a data-only
+document holds each authored node's kind against the node's identity, a small context owns
+only the named definitions visible on the current conversion call path, and each stage and
+kind keeps its own module (conversion, instantiation, evaluation, comparison, object
+property modifiers). The stages receive the operands they act on, never the conversion
+context or a projection shared between kinds. Serialization writes the supplied JSON
+alone: providers, persisted JSON
+and the SDK observe ordinary JSON Schema, and nothing infers author intent from a schema
+text. The guest carries the declared kinds only inside its opaque internal registration
+and enumeration transport; its WIT and callback identities do not change.
+
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+Native callers use its default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
 belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
 listeners, extension error delivery and terminal input listeners reuse it. For
 shared `Rc` callbacks it also owns subscribing, which returns the removal

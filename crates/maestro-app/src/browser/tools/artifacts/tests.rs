@@ -819,7 +819,7 @@ fn artifact_tool_declares_six_commands_and_plain_results() {
         let host = Arc::new(Host::default());
         let panel = maestro_app::ArtifactsPanel::new(host);
         let tool = panel.tool();
-        assert_eq!(tool.definition.parameters, corpus.schema);
+        assert_eq!(*tool.definition.parameters, corpus.schema);
         assert_eq!(tool.definition.name, corpus.declaration.name);
         assert_eq!(tool.label, corpus.declaration.label);
         let cancellation = maestro_models::Cancellation::new();

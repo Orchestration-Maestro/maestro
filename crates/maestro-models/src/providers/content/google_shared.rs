@@ -474,7 +474,7 @@ pub fn convert_tools(tools: &[Tool], use_parameters: bool) -> Option<Vec<Functio
             parameters: if use_parameters {
                 FunctionParameters::Parameters(without_metadata(&tool.parameters))
             } else {
-                FunctionParameters::ParametersJsonSchema(tool.parameters.clone())
+                FunctionParameters::ParametersJsonSchema(tool.parameters.as_json().clone())
             },
         })
         .collect();

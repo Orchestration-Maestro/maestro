@@ -62,8 +62,9 @@ invalidation. Summary labels and hints are repainted when rebuilt.
 
 `CustomMessageComponent` renders an extension-supplied custom message and
 `SkillInvocationMessageComponent` renders a parsed skill block; both are exported
-at the crate root and in their `components` modules, and the skill widget is
-native-only with its parsed record. Constructors take the live theme, prepared
+at the crate root and in their `components` modules; the skill widget is
+native-only, while the parsed record it renders belongs to the application and is
+available to browser builds. Constructors take the live theme, prepared
 Markdown callbacks and shared terminal image capabilities.
 
 The custom widget keeps one leading spacer and then either the component returned

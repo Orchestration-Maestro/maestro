@@ -53,6 +53,7 @@ pub(crate) mod host;
 mod host_family;
 mod join;
 mod observed;
+mod parameter_schemas;
 mod pirate_example;
 mod prompt_customizer_example;
 mod protected_paths_example;

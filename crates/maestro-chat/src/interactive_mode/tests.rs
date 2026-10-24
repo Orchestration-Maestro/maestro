@@ -10,6 +10,7 @@ mod extension_ui;
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
 mod progress;
+mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -29,12 +30,11 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
-    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
-    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
-    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
-    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
+    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
+    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
+    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
+    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -113,8 +113,8 @@ pub(super) fn isolated_case(
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
-/// successive prompt templates and context files, and changing the configured theme
-/// while its themes are read.
+/// successive prompt templates, context files and loaded extensions, and changing the
+/// configured theme while its themes are read.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
@@ -361,7 +361,7 @@ pub(super) struct World {
 pub(super) struct Setup {
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
-    /// Creates every replacement session; the default refuses each one.
+    /// Creates replacement sessions; the default shares the original services.
     pub(super) runtime_factory: Option<maestro_app::CreateAgentSessionRuntimeFactory>,
     /// Changes the settings before construction.
     pub(super) configure: Box<dyn FnOnce(&mut SettingsManager)>,
@@ -471,8 +471,12 @@ impl Setup {
             *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
         }
         let loader = loader.borrow().clone().unwrap();
+        let services = Rc::clone(&result.services);
         let factory = self.runtime_factory.unwrap_or_else(|| {
-            Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }))
+            Rc::new(move |options| {
+                let replacement = session::over(&options.cwd, &services);
+                Box::pin(std::future::ready(Ok(replacement)))
+            })
         });
         let host = Rc::new(AgentSessionRuntime::new(result, factory));
         let terminal = RecordingTerminal::new(80, 24);
@@ -683,7 +687,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                 assert!(!expanded, "tool output starts collapsed");
                 std::fs::write(directory.join("keybindings.json"), config.to_string()).unwrap();
                 let world = Setup {
-                    options: InteractiveModeOptions { verbose },
+                    options: InteractiveModeOptions {
+                        verbose,
+                        ..InteractiveModeOptions::default()
+                    },
                     configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
                     ..Setup::default()
                 }
