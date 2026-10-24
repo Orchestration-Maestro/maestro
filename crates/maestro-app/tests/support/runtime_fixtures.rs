@@ -42,8 +42,10 @@ pub fn start_event_view(event: &maestro_extensions::SessionStartEvent) -> Value 
 /// The resources every session of a runtime loads.
 #[derive(Clone)]
 pub struct Resources {
-    /// The loaded extensions.
+    /// The loaded extensions, shared by every session.
     pub extensions: Rc<LoadExtensionsResult<Local>>,
+    /// Extensions loaded afresh for each session, as a runtime factory loads them.
+    pub factories: Vec<(Option<&'static str>, ExtensionFactory<Local>)>,
     /// The loaded skills.
     pub skills: Rc<LoadSkillsResult>,
     /// The loaded prompt templates.
@@ -55,10 +57,20 @@ impl Resources {
     pub fn of(extensions: &Rc<LoadExtensionsResult<Local>>) -> Self {
         Self {
             extensions: Rc::clone(extensions),
+            factories: Vec::new(),
             skills: Rc::default(),
             prompts: Rc::default(),
         }
     }
+}
+
+/// The extensions a session over `cwd` loads: the shared set, or the factories loaded
+/// afresh.
+async fn session_extensions(resources: &Resources, cwd: &str) -> Rc<LoadExtensionsResult<Local>> {
+    if resources.factories.is_empty() {
+        return Rc::clone(&resources.extensions);
+    }
+    Rc::new(create_test_extensions_result(resources.factories.clone(), cwd).await)
 }
 
 /// The factory creating each runtime over the fixture's catalog with `resources` loaded.
@@ -78,12 +90,13 @@ pub fn factory(
             "session_start_event": options.session_start_event.as_ref().map(start_event_view),
         }));
         Box::pin(async move {
+            let extensions = session_extensions(&resources, &options.cwd).await;
             let settings = Rc::new(RefCell::new(SettingsManager::in_memory(
                 maestro_settings::Settings::default(),
             )));
             let loader: Rc<dyn maestro_app::resources::resource_loader::ResourceLoader<Local>> =
                 Rc::new(TestResourceLoader {
-                    extensions: resources.extensions,
+                    extensions,
                     skills: resources.skills,
                     prompts: resources.prompts,
                     ..create_test_resource_loader(None)
@@ -183,7 +196,8 @@ pub async fn runtime_with(
     let cwd = format!("{root}/{label}");
     std::fs::create_dir_all(&cwd).unwrap();
     let resources = Resources {
-        extensions: Rc::new(create_test_extensions_result(options.factories, &cwd).await),
+        extensions: Rc::new(create_test_extensions_result(Vec::new(), &cwd).await),
+        factories: options.factories,
         skills: Rc::new(LoadSkillsResult {
             skills: options.skills,
             diagnostics: Vec::new(),

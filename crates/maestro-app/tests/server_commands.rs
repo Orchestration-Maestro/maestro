@@ -1,6 +1,8 @@
 //! Each command over the protocol, answered by a real session runtime.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::rpc_connection::{Client, connect, of_type, replacement_watch, response_to};
+use crate::support::rpc_connection::{
+    Client, connect, of_type, replacement_watch, response_to, user_entry,
+};
 use crate::support::runtime_fixtures::{RuntimeOptions, runtime_for, runtime_with, stored_in};
 use crate::support::session_harness::{
     Auth, Harness, ScriptedShell, answer, command_extension, hold_first_answer, input_extension,
@@ -275,20 +277,6 @@ fn clone_uses_current_leaf_at_position() {
         assert_eq!(*watch.starts.borrow(), [json!("startup"), json!("fork")]);
         one_turn_reaches_client_once(&h, &mut client).await;
     });
-}
-
-/// Appends a user message with `text` and its answer to the current session, which writes
-/// the session file; returns the user message's entry.
-fn user_entry(runtime: &AgentSessionRuntime, text: &str) -> String {
-    let session = runtime.session();
-    let mut manager = session.session_manager().borrow_mut();
-    let entry = manager
-        .append_message(json!({"role": "user", "content": text, "timestamp": 1}))
-        .unwrap();
-    manager
-        .append_message(serde_json::to_value(answer("answered", None, None)).unwrap())
-        .unwrap();
-    entry
 }
 
 /// A prompt is answered once, when its preflight succeeds, also when an input handler
