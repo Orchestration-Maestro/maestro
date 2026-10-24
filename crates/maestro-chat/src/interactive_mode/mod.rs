@@ -1,4 +1,5 @@
-//! The interactive terminal mode: its retained containers, startup help and notices.
+//! The interactive terminal mode: its retained containers, startup help, notices and
+//! typed input.
 
 use crate::{CustomEditor, FooterComponent};
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
@@ -16,6 +17,7 @@ use std::{
 };
 
 mod startup;
+mod submit;
 
 #[cfg(test)]
 #[cfg(unix)]
@@ -60,6 +62,8 @@ pub struct InteractiveMode {
     footer_data_provider: FooterDataProvider,
     /// Whether the presentation has started.
     is_initialized: Cell<bool>,
+    /// The only currently waiting input delivery.
+    on_input_callback: Rc<RefCell<Option<tokio::sync::oneshot::Sender<String>>>>,
 }
 
 impl InteractiveMode {
@@ -113,11 +117,13 @@ impl InteractiveMode {
             footer,
             footer_data_provider,
             is_initialized: Cell::new(false),
+            on_input_callback: Rc::default(),
         }))
     }
 
-    /// Builds the header, adds every container in order, focuses the editor and starts
-    /// the terminal, once; theme and branch changes then request fresh frames.
+    /// Builds the header, adds every container in order, focuses the editor, installs
+    /// editor submission and starts the terminal, once; theme and branch changes then
+    /// request fresh frames.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours or of the terminal start.
@@ -139,6 +145,7 @@ impl InteractiveMode {
         }
         self.ui.add_child(self.footer.clone());
         self.ui.set_focus(Some(self.editor.clone()));
+        self.setup_editor_submit_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
         let mode = Rc::downgrade(self);

@@ -2,9 +2,9 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help and the transcript notices. Typed input, the prompt loop,
+the startup help, the transcript notices and typed input. The prompt loop,
 startup messages, the terminal title and the other integrations are still to come;
-the mode does not yet read submitted text or prompt the session.
+the mode reads submitted text but does not yet prompt the session.
 
 ## Construction
 
@@ -29,8 +29,8 @@ fallback theme is returned.
 
 `init` runs once; later calls change nothing. It builds the header, then adds the
 header, transcript, pending-messages, status, upper widget, editor and lower widget
-containers and the footer, in that order. It focuses the editor and starts the
-terminal. A terminal start failure is returned and leaves the mode uninitialized.
+containers and the footer, in that order. It focuses the editor, installs editor
+submission and starts the terminal. A terminal start failure is returned and leaves the mode uninitialized.
 After a successful start, a theme change invalidates the presentation and requests a
 frame, and a branch change requests a frame. Neither callback keeps the mode alive.
 
@@ -48,3 +48,23 @@ Header text keeps the colours of the theme in effect when it was built.
 Each requests one frame. The supplied text is kept as given, including line
 breaks and its own styling. `clear_editor` empties the editor and requests a
 frame; the editor's history is kept.
+
+## Typed input
+
+`get_user_input` returns a future for the next text the user submits from the
+editor, with the key bound to `tui.input.submit` (Enter by default). Submitted
+text loses its outer whitespace under the shared whitespace policy: Unicode white
+space other than U+0085, plus U+FEFF. U+0085, U+200B, inner spaces and line breaks
+stay. Submission ignores text that is empty after trimming: no input receives it
+and the history does not record it.
+
+Only one input waits at a time. The future starts waiting when it is first
+polled, not when it is created, and it does not borrow the mode. When it waits,
+the next accepted submission completes it and clears the wait. The mode keeps no
+submission for a later input. A later future replaces the waiting one when it is
+polled, and the replaced future stays pending.
+
+The waiting input receives the text before the editor's history records it, so
+code that runs when the input completes can already wait for the next one. Every
+accepted submission enters the history, whether or not an input was waiting.
+Submission does not keep the mode alive.
