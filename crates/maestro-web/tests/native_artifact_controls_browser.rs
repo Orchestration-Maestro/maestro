@@ -385,9 +385,10 @@ pub async fn download_dom_activation_uses_one_scoped_download(import_module: &js
             "pointer.bin".into(),
         ),
     );
+    // A Base64-shaped payload would be decoded; this control saves a literal payload.
     let (keys_owner, keys) = mounted(
         &view,
-        DownloadButtonProps::new(DownloadContent::Text("keys".into()), "keys.bin".into()),
+        DownloadButtonProps::new(DownloadContent::Text("keys!".into()), "keys.bin".into()),
     );
     form.append_child(&pointer).unwrap();
     form.append_child(&keys).unwrap();
@@ -411,7 +412,7 @@ pub async fn download_dom_activation_uses_one_scoped_download(import_module: &js
     );
     fixture.begin("success");
     driver("driverPress", "Enter").await;
-    let observed = fixture.finish(b"keys", "text/plain", "keys.bin", true);
+    let observed = fixture.finish(b"keys!", "text/plain", "keys.bin", true);
     wasm_bindgen_futures::JsFuture::from(observed)
         .await
         .unwrap();
@@ -462,13 +463,13 @@ pub async fn download_dom_retains_activation_inputs_and_releases_on_drop(
     );
     let (kept, kept_control) = mounted(
         &view,
-        DownloadButtonProps::new(DownloadContent::Text("kept".into()), "kept.bin".into()),
+        DownloadButtonProps::new(DownloadContent::Text("kept!".into()), "kept.bin".into()),
     );
     drop(released);
     fixture.begin("success");
     released_control.click();
     kept_control.click();
-    let observed = fixture.finish(b"kept", "text/plain", "kept.bin", true);
+    let observed = fixture.finish(b"kept!", "text/plain", "kept.bin", true);
     wasm_bindgen_futures::JsFuture::from(observed)
         .await
         .unwrap();
