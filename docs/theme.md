@@ -47,6 +47,11 @@ truecolor; an empty, `dumb` or `linux` `TERM`, `TERM_PROGRAM=Apple_Terminal`,
 and a `TERM` of `screen`, `screen-…` or `screen.…` select 256 colors; anything else
 is truecolor. An explicit mode, or any earlier failure, reads no environment.
 
+`supports_color` decides whether plain terminal messages, such as warnings, are
+styled at all. `FORCE_COLOR` decides first: `true`, an empty value or a positive
+level turns color on, and `false` or `0` turns it off. Without it, color is used
+when standard output is a terminal and `TERM` is not `dumb`.
+
 In 256-color mode a hex color becomes the nearest entry of the six-level cube,
 or a gray-ramp entry when its channel spread is below 10 and the gray is closer
 (weighted distance 0.299, 0.587, 0.114; lower index wins ties). Explicit

@@ -43,9 +43,10 @@ the session's scope, in its order, when there is one; otherwise from the
 enables every model. A setting that is not a list is treated as unset, and a list
 with a member that is not text is rejected before any pattern is resolved.
 Resolving the setting, and later each edit, writes the
-[scope warnings](../selection.md#scopes) to standard error, yellow when standard
-error is a terminal: `Warning: No models match pattern "<pattern>"` for a pattern
-that selects nothing, and the invalid thinking level warning for an unknown suffix.
+[scope warnings](../selection.md#scopes) to standard error, yellow when
+[`supports_color`](../theme.md) allows it:
+`Warning: No models match pattern "<pattern>"` for a pattern that selects nothing,
+and the invalid thinking level warning for an unknown suffix.
 
 Every edit applies to the session at once but is not saved. A selection with
 fewer models than the panel opened with becomes the session scope, in its order

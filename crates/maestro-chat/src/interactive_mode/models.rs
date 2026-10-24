@@ -14,7 +14,7 @@ use maestro_tui::Component;
 use std::{
     collections::HashSet,
     error::Error,
-    io::{self, IsTerminal},
+    io,
     rc::Rc,
     sync::{Arc, PoisonError, RwLock},
 };
@@ -299,7 +299,7 @@ impl InteractiveMode {
     }
 
     /// Resolves `patterns` against the current catalog in order, writing each pattern
-    /// warning to standard error, in yellow when standard error is a terminal.
+    /// warning to standard error, in yellow when the terminal takes colour.
     ///
     /// # Errors
     /// Returns the locale, availability or pattern failure.
@@ -313,7 +313,7 @@ impl InteractiveMode {
             &compare,
             &mut ModelResolverOutput {
                 stdout: &mut io::sink(),
-                color: stderr.is_terminal(),
+                color: maestro_theme::supports_color(),
                 stderr: &mut stderr,
             },
         )?)

@@ -4,6 +4,7 @@ use maestro_json::canonical_entries;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::collections::HashSet;
+use std::io::{self, IsTerminal};
 
 /// Read a file as UTF-8 text, replacing invalid sequences.
 ///
@@ -106,6 +107,22 @@ fn detect_mode() -> ColorMode {
     }
     ColorMode::Truecolor
 }
+/// Whether text written for the terminal takes colour, decided on standard output and the
+/// process environment.
+#[must_use]
+pub fn supports_color() -> bool {
+    color_supported(io::stdout().is_terminal(), |name| std::env::var(name).ok())
+}
+/// `FORCE_COLOR` decides first: `true`, empty or a positive level forces colour, `false` or
+/// `0` forbids it. Otherwise a terminal takes colour unless `TERM` is `dumb`.
+fn color_supported(stdout_is_terminal: bool, env: impl Fn(&str) -> Option<String>) -> bool {
+    let forced = env("FORCE_COLOR").and_then(|level| match level.as_str() {
+        "true" | "" => Some(true),
+        "false" => Some(false),
+        level => level.parse::<u32>().ok().map(|level| level > 0),
+    });
+    forced.unwrap_or_else(|| stdout_is_terminal && env("TERM").as_deref() != Some("dumb"))
+}
 /// Admit selected runtime fields with the native schema validator.
 fn validate(path: &str, json: &Value) -> Result<(), ThemeError> {
     let schema: Value =
@@ -182,3 +199,5 @@ pub(super) fn resolve(value: &Value, vars: &Value) -> Result<ColorValue, ThemeEr
     }
     authored(current)
 }
+#[cfg(test)]
+mod tests;

@@ -2060,19 +2060,38 @@ fn scope_resolution_warnings_reach_standard_error() {
             assert!(scope_panel(&world).is_some());
         });
     }
+    let lines = [
+        "Warning: No models match pattern \"missing/none\"",
+        "Warning: Invalid thinking level \"bogus\" in pattern \"a/alpha:bogus\". \
+         Using default instead.",
+    ];
+    // Captured streams: only a forced colour level styles the warnings.
+    let rows: [(&[(&str, &str)], bool); 4] = [
+        (&[], false),
+        (&[("FORCE_COLOR", "1")], true),
+        (&[("FORCE_COLOR", "0")], false),
+        (&[("TERM", "dumb")], false),
+    ];
     isolated(test, |_| {
-        let output = TestProcess::current(test)
-            .unwrap()
-            .case("warning")
-            .output()
-            .unwrap();
-        let stderr = String::from_utf8(output.stderr).unwrap();
-        assert!(output.status.success(), "{stderr}");
-        assert_eq!(
-            stderr,
-            "Warning: No models match pattern \"missing/none\"\n\
-             Warning: Invalid thinking level \"bogus\" in pattern \"a/alpha:bogus\". \
-             Using default instead.\n"
-        );
+        for (envs, yellow) in rows {
+            let output = TestProcess::current(test)
+                .unwrap()
+                .case("warning")
+                .envs(envs.iter().copied())
+                .output()
+                .unwrap();
+            let stderr = String::from_utf8(output.stderr).unwrap();
+            assert!(output.status.success(), "{stderr}");
+            let (open, close) = if yellow {
+                ("\u{1b}[33m", "\u{1b}[39m")
+            } else {
+                ("", "")
+            };
+            let expected: String = lines
+                .iter()
+                .map(|line| [open, line, close, "\n"].concat())
+                .collect();
+            assert_eq!(stderr, expected, "{envs:?}");
+        }
     });
 }
