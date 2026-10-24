@@ -4,12 +4,14 @@ use super::{Setup, World, cases, isolated};
 use crate::{InteractiveMode, InteractiveModeOptions};
 use maestro_app::{
     AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
-    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions, StopReason,
-    UserBlock, UserContent,
+    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions,
+    ProviderConfigInput, StopReason, UserBlock, UserContent,
 };
 use maestro_models::{
-    FauxAssistantMessageOptions, FauxProviderRegistration, FauxProviderState, FauxResponseStep,
-    RegisterFauxProviderOptions, faux_assistant_message, register_faux_provider,
+    ApiProvider, AssistantMessageEventStream, DiagnosticErrorInfo, FauxAssistantMessageOptions,
+    FauxProviderRegistration, FauxProviderState, FauxResponseStep, Invoke, ProviderCall,
+    ProviderExecution, RegisterFauxProviderOptions, StreamOptionsInput, faux_assistant_message,
+    get_api_provider, register_faux_provider,
 };
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::{Component, Container, Text};
@@ -94,6 +96,33 @@ fn input_hook(seen: &HookLog) -> ExtensionFactory<Local> {
     })
 }
 
+/// Keeps the scripted callback available when the model catalog refreshes its registrations.
+struct RetainedProvider(ApiProvider);
+
+impl<E: ProviderExecution> Invoke<E, ProviderCall<E, StreamOptionsInput<E>>> for RetainedProvider {
+    type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+
+    fn invoke(&self, input: ProviderCall<E, StreamOptionsInput<E>>) -> Self::Return {
+        match input.options {
+            Some(StreamOptionsInput::Raw(options)) => self.0.stream.call(
+                input.model,
+                input.context,
+                E::submission(Some(options), input.submit),
+            ),
+            Some(StreamOptionsInput::Simple(options)) => self.0.stream_simple.call(
+                input.model,
+                input.context,
+                E::submission(Some(options), input.submit),
+            ),
+            None => self.0.stream_simple.call(
+                input.model,
+                input.context,
+                E::submission(None, input.submit),
+            ),
+        }
+    }
+}
+
 impl Scripted {
     /// Builds a mode with `options` in `directory`; its key comes from the fallback resolver.
     fn new(directory: &Path, options: InteractiveModeOptions) -> Self {
@@ -105,14 +134,32 @@ impl Scripted {
         }
         .build(directory);
         let provider = register_faux_provider(RegisterFauxProviderOptions::default());
+        let callback = get_api_provider(&provider.api).unwrap();
+        world
+            .host
+            .session()
+            .model_registry()
+            .register_provider(
+                &provider.models[0].provider,
+                Arc::new(RwLock::new(ProviderConfigInput {
+                    api: Some(provider.api.clone()),
+                    stream_simple: Some(Arc::new(RetainedProvider(callback))),
+                    ..ProviderConfigInput::default()
+                })),
+            )
+            .unwrap();
         let refuse = Arc::new(AtomicBool::new(false));
         let refused = Arc::clone(&refuse);
+        let provider_id = provider.models[0].provider.clone();
         world
             .host
             .services()
             .auth_storage
-            .set_fallback_resolver(move |_| {
-                Ok((!refused.swap(false, Ordering::SeqCst)).then(|| "controlled-key".to_owned()))
+            .set_fallback_resolver(move |id| {
+                Ok(
+                    (id == provider_id && !refused.swap(false, Ordering::SeqCst))
+                        .then(|| "controlled-key".to_owned()),
+                )
             });
         let scripted = Self {
             world,
