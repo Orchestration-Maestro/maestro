@@ -196,10 +196,7 @@ fn working_message_returns_indicator_rejection() -> Result<(), String> {
 /// The built single-copy example runs every recorded case through its registration.
 #[test]
 fn working_message_component_matches_startup_requests() -> Result<(), String> {
-    let path = super::build::example_component("working_message_test")?;
-    let (engine, component) = super::build::compile(&path).map_err(|error| error.to_string())?;
-    let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
-        .map_err(|error| error.to_string())?;
+    let mut harness = super::host::Harness::example("working_message_test")?;
     let key = harness
         .callback("event session_start")
         .map_err(|error| error.to_string())?;
