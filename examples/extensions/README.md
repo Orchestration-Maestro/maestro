@@ -40,8 +40,13 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
 
 ### Running an example
 
-The controlled runs instantiate the built component in the test host and call
-the command and tools it registered:
+The hello, shutdown and runtime-reload runs build the example's component,
+instantiate it in the test host and call the tools and commands each one
+registered. The `prompt_guidance` filter selects two runs, one per route:
+`prompt_guidance_uses_supplied_tools_and_skills` starts the example's own source
+in the in-process controlled host, and
+`prompt_guidance_component_matches_supplied_options` builds and instantiates the
+component. Both invoke the registered `before_agent_start` event handler:
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
@@ -77,7 +82,7 @@ builds no prompt.
 The supplied prompt already holds the user append and any edit an earlier handler
 made, so the example never appends that option again. Loading the component into
 an application is opt-in.
-<<<<<<< HEAD
+
 ### Building with-deps
 
 The [`with-deps/main.rs`](with-deps/main.rs) example parses a duration string
