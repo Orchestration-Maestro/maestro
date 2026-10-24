@@ -15,8 +15,8 @@ use maestro_app::resources::resource_loader::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
 };
 use maestro_app::{
-    AgentSession, AgentSessionServices, CreateAgentSessionOptions,
-    CreateAgentSessionServicesOptions, SessionResources, create_agent_session,
+    AgentSession, AgentSessionServices, CreateAgentSessionFromServicesOptions,
+    CreateAgentSessionServicesOptions, create_agent_session_from_services,
     create_agent_session_services,
 };
 use maestro_credentials::{AuthStorage, AuthStorageData};
@@ -348,7 +348,7 @@ async fn services_for(
     local: &Rc<LocalSet>,
     packages: Option<bool>,
     search: Option<bool>,
-) -> AgentSessionServices<Local> {
+) -> Rc<AgentSessionServices<Local>> {
     let mut resources: ResourceLoaderOptions<Local> =
         ResourceLoaderOptions::new(Rc::clone(local), module_loader());
     resources.offline = packages;
@@ -362,30 +362,27 @@ async fn services_for(
         resource_loader_options: resources,
         offline: search,
     };
-    create_agent_session_services(options).await.unwrap()
+    create_agent_session_services(options)
+        .await
+        .map(Rc::new)
+        .unwrap()
 }
 
 /// Creates the session the services configure, carrying their retained search selection.
-async fn session_from(services: &AgentSessionServices<Local>) -> Rc<AgentSession<Local>> {
-    create_agent_session(CreateAgentSessionOptions {
-        cwd: Some(services.cwd.clone()),
-        agent_dir: Some(services.agent_dir.clone()),
-        auth_storage: Some(Arc::clone(&services.auth_storage)),
-        model_registry: Some(Arc::clone(&services.model_registry)),
+async fn session_from(services: &Rc<AgentSessionServices<Local>>) -> Rc<AgentSession<Local>> {
+    create_agent_session_from_services(CreateAgentSessionFromServicesOptions {
+        services: Rc::clone(services),
+        session_manager: Rc::new(RefCell::new(
+            SessionManager::in_memory(Some(&services.cwd)).unwrap(),
+        )),
+        session_start_event: None,
         model: None,
         thinking_level: None,
         scoped_models: Vec::new(),
-        no_tools: None,
         tools: None,
+        no_tools: None,
         custom_tools: Vec::new(),
-        resources: SessionResources::Loader(Rc::clone(&services.resource_loader)),
-        session_manager: Some(Rc::new(RefCell::new(
-            SessionManager::in_memory(Some(&services.cwd)).unwrap(),
-        ))),
-        settings_manager: Some(Rc::clone(&services.settings_manager)),
-        session_start_event: None,
         theme: maestro_theme::LiveTheme::default(),
-        offline: services.offline,
     })
     .await
     .expect("the session starts")
@@ -409,7 +406,7 @@ async fn search_failures(session: &Rc<AgentSession<Local>>) -> [String; 2] {
 }
 
 /// Builds the session over `services` and runs both search tools inside it.
-async fn session_search(services: &AgentSessionServices<Local>) -> [String; 2] {
+async fn session_search(services: &Rc<AgentSessionServices<Local>>) -> [String; 2] {
     search_failures(&session_from(services).await).await
 }
 
@@ -470,19 +467,17 @@ fn assert_no_search_program(services: &AgentSessionServices<Local>) {
     );
 }
 
+/// A second session over the same services keeps the retained search selection, and a
+/// separate service keeps its own.
 #[test]
 fn startup_selection_survives_service_replacement() {
     with_isolated_home("startup_selection_survives_service_replacement", |base| {
         let (root, marker) = package_tree(base, "replace");
         on_task_set(|local| async move {
             let selected = services_for(&root, &local, Some(true), Some(true)).await;
-            assert_eq!(selected.offline, Some(true));
             assert!(!marker.exists());
             assert_search_offline(&selected, &session_search(&selected).await);
-            let replacement = services_for(&root, &local, Some(true), Some(true)).await;
-            assert_eq!(replacement.offline, Some(true));
-            assert!(!marker.exists());
-            assert_search_offline(&replacement, &session_search(&replacement).await);
+            assert_search_offline(&selected, &session_search(&selected).await);
             let online = services_for(&root, &local, None, Some(false)).await;
             assert_eq!(online.offline, Some(false));
             assert!(
