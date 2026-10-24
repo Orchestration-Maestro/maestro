@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use crate::source::{Member, Source};
+use crate::source::{Member, Source, test_layout};
 use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
 
@@ -168,14 +168,6 @@ fn union_body(token: Option<&TokenTree>) -> bool {
     }
 }
 
-/// Whether a chat source is a test module of its owning crate.
-fn test_module(relative: &Path) -> bool {
-    relative.file_name().is_some_and(|name| name == "tests.rs")
-        || relative
-            .components()
-            .any(|component| component.as_os_str() == "tests")
-}
-
 /// Interactive-mode chat test sources that build their sessions through the shared setup.
 ///
 /// Paths compare by component, so native separators never change the answer.
@@ -183,7 +175,7 @@ fn migrated(relative: &Path) -> bool {
     if relative.starts_with(FOOTER_SUPPORT) {
         return relative != Path::new(SESSION_SETUP);
     }
-    relative.starts_with(INTERACTIVE_MODE) && test_module(relative)
+    relative.starts_with(INTERACTIVE_MODE) && test_layout(relative, Path::new(""))
 }
 
 /// Reject a second interactive-mode session setup outside its extracted owner.
