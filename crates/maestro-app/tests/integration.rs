@@ -2,10 +2,13 @@
 #![cfg(test)]
 
 mod agent_session_concurrent_checks;
+mod agent_session_model_extension_checks;
 mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod agent_session_stats_checks;
+mod agent_session_tree_navigation_checks;
 mod analysis_cost;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/analysis_fixtures.rs"]
@@ -14,7 +17,6 @@ mod analysis_shared;
 mod analysis_tools;
 mod analysis_transcripts;
 mod analysis_usage;
-mod agent_session_stats_checks;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;

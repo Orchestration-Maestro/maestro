@@ -33,6 +33,7 @@ fn services_factory(
                     cwd: input.cwd,
                     agent_dir: Some(input.agent_dir),
                     auth_storage: None,
+                    offline: None,
                     model_registry: Some(catalog),
                     settings_manager: None,
                     extension_flag_values: None,
