@@ -92,8 +92,8 @@ impl InteractiveMode {
         Ok(())
     }
 
-    /// Flips and saves whether thinking is hidden, replays the transcript with it and shows
-    /// the new state.
+    /// Flips and saves whether thinking is hidden, replays the transcript with it, puts the
+    /// streaming row back after it with the new visibility and shows the new state.
     ///
     /// # Errors
     /// Returns the failure of the replay or of the published theme.
@@ -106,6 +106,12 @@ impl InteractiveMode {
             .borrow_mut()
             .set_hide_thinking_block(hide);
         self.rebuild_chat_from_messages()?;
+        let streaming = self.streaming.borrow().clone();
+        if let Some((component, message)) = streaming {
+            component.set_hide_thinking_block(hide);
+            component.update_content(message);
+            self.chat_container.add_child(component);
+        }
         let state = if hide { "hidden" } else { "visible" };
         self.show_status(&format!("Thinking blocks: {state}"))
     }

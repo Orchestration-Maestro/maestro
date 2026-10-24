@@ -7,12 +7,12 @@ pub use maestro_agent::{
 };
 
 pub use maestro_models::{
-    AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Cancellation,
-    Context, DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse,
-    ImageContent, JsonObject, Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials,
-    OAuthError, OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage,
-    SharedHandle, SimpleStreamOptions, StopReason, TextContent, ToolCall, ToolResultMessage,
-    UserBlock, UserContent, UserMessage, default_fetch,
+    AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
+    BoxFuture, Cancellation, Context, DiagnosticErrorInfo, Fetch, FetchError, HttpBody,
+    HttpRequest, HttpResponse, ImageContent, JsonObject, Message, Model, ModelInput,
+    OAuthCallbacks, OAuthCredentials, OAuthError, OAuthProviderInterface, ProviderStreamOptions,
+    SharedAssistantMessage, SharedHandle, SimpleStreamOptions, StopReason, TextContent, ToolCall,
+    ToolResultMessage, UserBlock, UserContent, UserMessage, default_fetch,
 };
 
 /// Agent reasoning levels, including disabled reasoning.
