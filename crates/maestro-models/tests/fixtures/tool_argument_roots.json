@@ -1,0 +1,171 @@
+{
+  "parser": [
+    {
+      "input": null,
+      "expected": {}
+    },
+    {
+      "input": "",
+      "expected": {}
+    },
+    {
+      "input": " \t\r\n",
+      "expected": {}
+    },
+    {
+      "input": "\ufeff",
+      "expected": {}
+    },
+    {
+      "input": "\u0085",
+      "expected": {}
+    },
+    {
+      "input": "\"text\"",
+      "expected": "text"
+    },
+    {
+      "input": "\"\"",
+      "expected": ""
+    },
+    {
+      "input": "\"raw\ncontrol\"",
+      "expected": "raw\ncontrol"
+    },
+    {
+      "input": "\"bad\\q\"",
+      "expected": "bad\\q"
+    },
+    {
+      "input": "\"partial",
+      "expected": "partial"
+    },
+    {
+      "input": "0",
+      "expected": 0
+    },
+    {
+      "input": "-0",
+      "expected": 0,
+      "negativeZero": true
+    },
+    {
+      "input": "42",
+      "expected": 42
+    },
+    {
+      "input": "-3.5",
+      "expected": -3.5
+    },
+    {
+      "input": "1e21",
+      "expected": 1e+21
+    },
+    {
+      "input": "9007199254740993",
+      "expected": 9007199254740992
+    },
+    {
+      "input": "1e400",
+      "expected": null
+    },
+    {
+      "input": "true",
+      "expected": true
+    },
+    {
+      "input": "false",
+      "expected": false
+    },
+    {
+      "input": "null",
+      "expected": null
+    },
+    {
+      "input": "t",
+      "expected": true
+    },
+    {
+      "input": "tr",
+      "expected": true
+    },
+    {
+      "input": "f",
+      "expected": false
+    },
+    {
+      "input": "fa",
+      "expected": false
+    },
+    {
+      "input": "n",
+      "expected": {}
+    },
+    {
+      "input": "nu",
+      "expected": {}
+    },
+    {
+      "input": "[",
+      "expected": []
+    },
+    {
+      "input": "[1,",
+      "expected": [
+        1
+      ]
+    },
+    {
+      "input": "[null,false,\"x\",[2,2],{}]",
+      "expected": [
+        null,
+        false,
+        "x",
+        [
+          2,
+          2
+        ],
+        {}
+      ]
+    },
+    {
+      "input": "{\"b\":2,\"10\":10,\"2\":2,\"a\":1}",
+      "expected": {
+        "2": 2,
+        "10": 10,
+        "b": 2,
+        "a": 1
+      }
+    },
+    {
+      "input": "{\"a\":1,\"a\":2}",
+      "expected": {
+        "a": 2
+      }
+    },
+    {
+      "input": "invalid",
+      "expected": {}
+    },
+    {
+      "input": "null trailing",
+      "expected": {}
+    },
+    {
+      "input": "42 trailing",
+      "expected": {}
+    },
+    {
+      "input": "\"x\" trailing",
+      "expected": "x"
+    },
+    {
+      "input": "\ufeff42",
+      "expected": 42
+    },
+    {
+      "input": "\u008542",
+      "expected": {}
+    }
+  ]
+}
