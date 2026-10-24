@@ -34,6 +34,17 @@ pub enum SettingsScope {
     Project,
 }
 
+impl SettingsScope {
+    /// The scope's name as messages spell it.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Global => "global",
+            Self::Project => "project",
+        }
+    }
+}
+
 /// The cause carried by a storage failure.
 pub type SettingsStorageError = Box<dyn std::error::Error + Send + Sync>;
 

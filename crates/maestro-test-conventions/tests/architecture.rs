@@ -709,6 +709,7 @@ fn documentation_checks_may_reuse_the_markdown_owner() {
 
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
+    support_declarations_match_owner(FIXTURES, FIXTURE_CALLERS);
     assert!(documented_foundation_graph_matches_policy(
         FOUNDATION_SPECIFICATION
     ));
@@ -1529,6 +1530,7 @@ fn invalid_metadata_identities(workspace: &Workspace, valid: &serde_json::Value)
 
 #[test]
 fn test_dependency_cycles_are_rejected() {
+    support_edges_keep_cycle_checks(FIXTURES, "maestro-request");
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-agent", "maestro-models"]);
     workspace.member(
@@ -1601,7 +1603,7 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !excluded.contains(&from);
             let support_edge = support::policy::test_support_callers(to).is_some();
-            let approved = dev && support::policy::DEVELOPMENT.contains(&(from, to));
+            let approved = dev && support::policy::permitted_development(from, to);
             if from == to
                 || support_edge
                 || approved
@@ -1919,6 +1921,34 @@ fn rpc_child_rendering_edges_are_development_only() {
 }
 
 #[test]
+fn chat_scripted_provider_edge_is_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-models"]);
+    let application = "maestro-app = { path = \"../maestro-app\" }";
+    let models = "models = { package = \"maestro-models\", path = \"../maestro-models\"";
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        &format!(
+            "[dependencies]\n{application}\n[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\n{models} }}"
+        ),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-chat",
+            "maestro-chat",
+            &format!("[{kind}]\n{application}\n{models}{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("forbidden production dependency: maestro-chat -> maestro-models".into()),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
 fn terminal_example_brand_edge_keeps_required_runtime_dependencies() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
@@ -2203,7 +2233,7 @@ fn owner_entry(extra: &str) -> String {
 
 #[test]
 fn test_process_edges_are_native_development_only() {
-    support_edges_are_native_development_only(OWNER, &owner_callers());
+    support_declarations_match_owner(OWNER, &owner_callers());
 }
 
 #[test]
@@ -2412,6 +2442,31 @@ fn detection_text_test_edge_is_native() {
 }
 
 #[test]
+fn chat_models_test_edge_is_native() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-models"]);
+    let production = "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n";
+    let rejected = "maestro-chat: maestro-models test support must be a native, non-optional development dependency";
+    for declarations in [
+        "[dev-dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
+        "[target.'cfg(target_arch = \"wasm32\")'.dev-dependencies]\nmaestro-models = { path = \"../maestro-models\" }",
+    ] {
+        workspace.member(
+            "maestro-chat",
+            "maestro-chat",
+            &format!("{production}{declarations}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(rejected.into()),
+            "{declarations}"
+        );
+    }
+    workspace.member("maestro-chat", "maestro-chat", &format!("{production}[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nmaestro-models = {{ path = \"../maestro-models\" }}"));
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
 fn detection_catalog_uses_atomic_replacement() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-lock"]);
@@ -2424,6 +2479,21 @@ maestro-lock = { path = "../maestro-lock" }"#,
     workspace.list(&[("maestro-lock", "core"), ("maestro-detection", "core")]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
+
+/// The portable fixture owner.
+const FIXTURES: &str = "maestro-test-fixtures";
+
+/// Independently declared fixture consumers.
+const FIXTURE_CALLERS: &[&str] = &[
+    "maestro-agent",
+    "maestro-models",
+    "maestro-request",
+    "maestro-catalog",
+    "maestro-chat",
+    "maestro-credentials",
+    "maestro-tools",
+    "maestro-export",
+];
 
 /// The disposable-directory owner.
 const DIRECTORY: &str = "maestro-test-directory";
@@ -2481,21 +2551,21 @@ const DIRECTORY_CALLERS: &[&str] = &[
 
 #[test]
 fn directory_support_edges_are_native_development_only() {
-    support_edges_are_native_development_only(DIRECTORY, DIRECTORY_CALLERS);
+    support_declarations_match_owner(DIRECTORY, DIRECTORY_CALLERS);
 }
 
 #[test]
 fn tracing_support_edges_are_native_development_only() {
-    support_edges_are_native_development_only(TRACING, TRACING_CALLERS);
+    support_declarations_match_owner(TRACING, TRACING_CALLERS);
 }
 
 #[test]
 fn terminal_support_edges_are_native_development_only() {
-    support_edges_are_native_development_only(TERMINAL, TERMINAL_CALLERS);
+    support_declarations_match_owner(TERMINAL, TERMINAL_CALLERS);
 }
 
-/// Each of `callers` may declare `owner` only as a native, non-optional development dependency.
-fn support_edges_are_native_development_only(owner: &str, callers: &[&str]) {
+/// Check the permitted declaration forms for each support owner and its callers.
+fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
     for &caller in callers {
         let workspace = Workspace::new();
         workspace.foundation(&[caller, owner]);
@@ -2520,7 +2590,11 @@ fn support_edges_are_native_development_only(owner: &str, callers: &[&str]) {
                 "[{kind}]\nsupport = {{ package = {owner:?}, path = \"../{owner}\"{extra} }}\n"
             );
             let result = caller_declares(&workspace, caller, &declaration);
-            let expected = if accepted {
+            let expected = if owner == FIXTURES && !kind.ends_with("dev-dependencies") {
+                Err(format!(
+                    "{owner} is reachable only as a development dependency of its declared callers: {caller} -> {owner}"
+                ))
+            } else if owner == FIXTURES || accepted {
                 Ok(())
             } else {
                 Err(format!(
@@ -2534,6 +2608,7 @@ fn support_edges_are_native_development_only(owner: &str, callers: &[&str]) {
 
 #[test]
 fn directory_support_owner_has_no_domain_dependencies() {
+    support_owner_has_no_domain_dependencies(FIXTURES);
     support_owner_has_no_domain_dependencies(DIRECTORY);
 }
 
@@ -2579,6 +2654,7 @@ fn support_owner_has_no_domain_dependencies(owner: &str) {
 
 #[test]
 fn directory_support_permissions_are_exact() {
+    support_permissions_are_exact(FIXTURES, FIXTURE_CALLERS);
     support_permissions_are_exact(DIRECTORY, DIRECTORY_CALLERS);
 }
 
@@ -2600,7 +2676,8 @@ fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
         assert_eq!(
             caller_declares(&workspace, caller, &native),
             Err(format!(
-                "{owner} is reachable only as a native development dependency of its declared callers: {caller} -> {owner}"
+                "{owner} is reachable only as a {}development dependency of its declared callers: {caller} -> {owner}",
+                if owner == FIXTURES { "" } else { "native " }
             ))
         );
     }
@@ -2668,6 +2745,12 @@ fn support_edges_keep_cycle_checks(owner: &str, caller: &str) {
 
 #[test]
 fn directory_support_inventory_matches_contract() {
+    assert_eq!(
+        FIXTURE_CALLERS,
+        support::policy::test_support_callers(FIXTURES).unwrap()
+    );
+    let documented = specification_names("Fixture development callers are", "; declarations");
+    support_inventory_matches_contract(FIXTURES, FIXTURE_CALLERS, &documented);
     assert_eq!(DIRECTORY_CALLERS, support::policy::TEST_DIRECTORY_CALLERS);
     let documented = std::iter::once("maestro-app")
         .chain(specification_names(

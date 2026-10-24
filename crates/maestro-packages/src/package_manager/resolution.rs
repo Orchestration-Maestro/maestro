@@ -114,7 +114,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         } else if let Source::Git(git) = &parsed
             && scope == SourceScope::Temporary
             && git.r#ref.is_none()
-            && !super::update::offline()
+            && !self.offline()
         {
             self.refresh_temporary_git(git, source).await;
         }
@@ -128,7 +128,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         on_missing: Option<&'a super::MissingCallback<'a>>,
     ) -> io::Result<bool> {
-        if super::update::offline() {
+        if self.offline() {
             return Ok(false);
         }
         let action = match on_missing {

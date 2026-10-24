@@ -150,7 +150,8 @@ fn dummy_tools(failing: Option<&'static str>) -> IndexMap<String, SharedAgentToo
             name: "dummy".into(),
             description: "Dummy tool".into(),
             parameters: json!({"type": "object", "properties": {"q": {"type": "string"}},
-                "required": ["q"]}),
+                "required": ["q"]})
+            .into(),
         },
         description: None,
         label: "dummy".into(),
@@ -800,6 +801,7 @@ fn empty_resource_roots_keep_the_session_isolated() {
                 settings_manager: Some(Rc::new(RefCell::new(settings))),
                 session_start_event: None,
                 theme: maestro_theme::LiveTheme::default(),
+                offline: None,
             })
             .await
             .unwrap();

@@ -140,7 +140,7 @@ impl InteractiveMode {
             }
             Err(error) => {
                 row.set_complete(None, false, None, None);
-                self.show_error(&format!("Bash command failed: {error}"))
+                Ok(self.show_error(&format!("Bash command failed: {error}"))?)
             }
         }
     }
@@ -216,7 +216,8 @@ impl InteractiveMode {
             self.report(
                 self.show_warning(
                     "A bash command is already running. Press Esc to cancel it first.",
-                ),
+                )
+                .map_err(Into::into),
             );
             return;
         }

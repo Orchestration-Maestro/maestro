@@ -36,7 +36,7 @@ fn tool_metadata(name: &str, label: &str, description: &str, parameters: &Value)
         name: name.into(),
         label: label.into(),
         description: description.into(),
-        parameters: parameters.to_string(),
+        parameters: parameters.clone().into(),
         prompt_snippet: Presence::Missing,
         prompt_guidelines: Presence::Missing,
         render_shell: Presence::Missing,

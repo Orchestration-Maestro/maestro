@@ -2,6 +2,7 @@
 mod actions;
 mod bash;
 mod events;
+mod extension_ui;
 #[allow(
     dead_code,
     unused_imports,
@@ -9,6 +10,7 @@ mod events;
 )]
 #[path = "../../../maestro-app/tests/support/native.rs"]
 mod native;
+mod prompts;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
@@ -26,14 +28,15 @@ use crate::components::session_selector::list::tests::session_picker::{
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
+use maestro_app::presentation_data::footer_data_provider::{
+    FooterOperations, NativeFooterOperations,
+};
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
-    ExtensionCommandContext, ExtensionFactory, ExtensionLoadError, LoadExtensionsResult,
-    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
-    RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager,
-    Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, Extension, ExtensionCommandContext,
+    ExtensionFactory, ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult,
+    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, RegisteredCommand,
+    ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
+    SourceOrigin, SourceScope, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
 use maestro_test_process::TestProcess;
@@ -114,8 +117,8 @@ pub(super) fn isolated_case(
 }
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
-/// successive prompt templates and context files, and changing the configured theme
-/// while its themes are read.
+/// successive prompt templates, context files and loaded extensions, and changing the
+/// configured theme while its themes are read.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
@@ -376,7 +379,7 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The inline extension the session loads, when supplied.
     pub(super) extension: Option<ExtensionFactory<Local>>,
-    /// Starts a fresh session for each replacement instead of failing it.
+    /// Starts each replacement with fresh services instead of reusing the current ones.
     pub(super) replacing: bool,
     /// Creates the session history under a file in this directory when supplied.
     pub(super) session_history: Option<std::path::PathBuf>,
@@ -393,6 +396,8 @@ pub(super) struct Setup {
     pub(super) commands: Vec<(String, String)>,
     /// The diagnostics beside the skills, prompt templates and themes.
     pub(super) diagnostics: LoadedDiagnostics,
+    /// The watch, timer and Git effects the mode uses; the native ones when absent.
+    pub(super) watcher: Option<Rc<dyn FooterOperations>>,
 }
 
 impl Default for Setup {
@@ -414,6 +419,7 @@ impl Default for Setup {
             errors: Vec::new(),
             commands: Vec::new(),
             diagnostics: LoadedDiagnostics::default(),
+            watcher: None,
         }
     }
 }
@@ -441,30 +447,13 @@ fn loaded(cwd: &str, factory: ExtensionFactory<Local>) -> Rc<LoadExtensionsResul
     })
 }
 
-/// The slot a built mode keeps its forwarding loader in.
-type LoaderSlot = RefCell<Option<Rc<ForwardingLoader>>>;
-
-/// Applies the case's settings and the theme it selected, inside the loader's theme getter.
-fn prepare(
-    configure: Box<dyn FnOnce(&mut SettingsManager)>,
-    select: Option<String>,
-    settings: Rc<RefCell<SettingsManager>>,
-    loader: &LoaderSlot,
-) {
-    settings.borrow_mut().set_theme("dark".to_owned());
-    configure(&mut settings.borrow_mut());
-    if let Some(name) = select {
-        *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
-    }
-}
-
 impl Setup {
     /// Constructs the mode in `directory`.
     pub(super) fn build(self, directory: &Path) -> World {
         let cwd = self
             .cwd
             .unwrap_or_else(|| directory.to_str().unwrap().to_owned());
-        let loader: Rc<LoaderSlot> = Rc::new(RefCell::new(None));
+        let loader = Rc::new(RefCell::new(None::<Rc<ForwardingLoader>>));
         let created = Rc::clone(&loader);
         let resources = Resources {
             context: self.context,
@@ -480,7 +469,7 @@ impl Setup {
         let history = self
             .session_history
             .as_ref()
-            .map(|directory| directory.to_str().unwrap().to_owned());
+            .map(|d| d.to_str().unwrap().to_owned());
         let result = session::session_over(
             &cwd,
             None,
@@ -492,25 +481,24 @@ impl Setup {
             history.as_deref(),
         );
         let settings = Rc::clone(result.session.settings_manager());
-        prepare(self.configure, self.select, settings, &loader);
+        prepare_settings(settings, self.configure, self.select, &loader);
         let loader = loader.borrow().clone().unwrap();
+        let services = Rc::clone(&result.services);
         let host = Rc::new(AgentSessionRuntime::new(
             result,
-            create(&cwd, self.replacing),
+            create(services, self.replacing),
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(match self.directories {
-            Some(directories) => ThemeState::new(directories),
-            None => published::unpublished(),
-        });
+        let themes = registry(self.directories);
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
             self.options,
             (terminal.handle(), runtime.handle()),
             Rc::clone(&themes),
-            Rc::new(NativeFooterOperations::new(local)),
+            self.watcher
+                .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local))),
         )
         .unwrap();
         World {
@@ -524,16 +512,40 @@ impl Setup {
     }
 }
 
-/// The factory that creates each replacement session: a fresh one in `cwd` when
-/// `replacing`, otherwise the failure the other witnesses expect.
-fn create(cwd: &str, replacing: bool) -> maestro_app::CreateAgentSessionRuntimeFactory {
-    if !replacing {
-        return Rc::new(|_| Box::pin(async { Err(DiagnosticErrorInfo::new(None, "unused")) }));
+/// Applies the settings the caller changes and the theme name read while it answers.
+fn prepare_settings(
+    settings: Rc<RefCell<SettingsManager>>,
+    configure: Box<dyn FnOnce(&mut SettingsManager)>,
+    select: Option<String>,
+    loader: &Rc<RefCell<Option<Rc<ForwardingLoader>>>>,
+) {
+    settings.borrow_mut().set_theme("dark".to_owned());
+    (configure)(&mut settings.borrow_mut());
+    if let Some(name) = select {
+        *loader.borrow().as_ref().unwrap().select.borrow_mut() = Some((settings, name));
     }
-    let cwd = cwd.to_owned();
-    Rc::new(move |_| {
-        let cwd = cwd.clone();
-        Box::pin(async move { Ok(session::session(&cwd, None, |inner| inner)) })
+}
+
+/// The theme registry the mode selects from, unpublished without supplied directories.
+fn registry(directories: Option<maestro_theme::ThemeDirectories>) -> Rc<ThemeState> {
+    Rc::new(match directories {
+        Some(directories) => ThemeState::new(directories),
+        None => published::unpublished(),
+    })
+}
+
+/// The replacement factory, reusing `services` unless fresh services are selected.
+fn create(
+    services: Rc<maestro_app::AgentSessionServices<Local>>,
+    fresh: bool,
+) -> maestro_app::CreateAgentSessionRuntimeFactory {
+    Rc::new(move |options| {
+        let replacement = if fresh {
+            session::session(&options.cwd, None, |inner| inner)
+        } else {
+            session::over(&options.cwd, &services)
+        };
+        Box::pin(async { Ok(replacement) })
     })
 }
 
@@ -718,7 +730,10 @@ fn startup_header_keeps_quiet_verbose_and_configured_hints_distinct() {
                 assert!(!expanded, "tool output starts collapsed");
                 std::fs::write(directory.join("keybindings.json"), config.to_string()).unwrap();
                 let world = Setup {
-                    options: InteractiveModeOptions { verbose },
+                    options: InteractiveModeOptions {
+                        verbose,
+                        ..InteractiveModeOptions::default()
+                    },
                     configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
                     ..Setup::default()
                 }

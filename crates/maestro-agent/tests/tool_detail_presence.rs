@@ -59,7 +59,7 @@ fn definition() -> Tool {
     Tool {
         name: "echo".into(),
         description: String::new(),
-        parameters: json!({"type":"object"}),
+        parameters: json!({"type":"object"}).into(),
     }
 }
 /// A typed tool whose details follow `typed_result` and which reports every state as progress when supplied an observer.

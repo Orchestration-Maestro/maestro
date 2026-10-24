@@ -151,7 +151,7 @@ fn edit_arguments_use_preparation_before_shared_validation() {
             }
         }
     }
-    // Null conversion belongs to the shared validator, not preparation.
+    // Authored null conversion belongs to the shared validator, not preparation.
     let call = ToolCall {
         id: "id".into(),
         name: "edit".into(),
@@ -163,7 +163,7 @@ fn edit_arguments_use_preparation_before_shared_validation() {
     };
     assert_eq!(
         validate_tool_arguments(&tool.definition, &call).unwrap(),
-        json!({"path":"","edits":[{"oldText":"","newText":""}]})
+        json!({"path":"null","edits":[{"oldText":"null","newText":"null"}]})
             .as_object()
             .unwrap()
             .clone()

@@ -1597,7 +1597,7 @@ mod tests {
             tools: Some(vec![Tool {
                 name: "lookup".into(),
                 description: "Find".into(),
-                parameters: serde_json::json!({"type":"object"}),
+                parameters: serde_json::json!({"type":"object"}).into(),
             }]),
         }
     }

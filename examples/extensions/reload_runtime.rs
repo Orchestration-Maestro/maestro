@@ -20,7 +20,7 @@ fn reload_runtime_tool(api: ExtensionAPI) -> ToolDefinition {
             name: "reload_runtime".into(),
             label: "Reload Runtime".into(),
             description: "Reload extensions, skills, prompts, and themes".into(),
-            parameters: r#"{"type":"object","properties":{}}"#.into(),
+            parameters: serde_json::json!({"type":"object","properties":{}}).into(),
             prompt_snippet: Presence::Missing,
             prompt_guidelines: Presence::Missing,
             render_shell: Presence::Missing,
