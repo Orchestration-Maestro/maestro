@@ -1,13 +1,47 @@
-//! The theme section of the loaded-resource listing.
+//! The extension and theme sections of the loaded-resource listing.
 
+use super::labels::{
+    format_extension_display_path, get_compact_extension_labels, get_compact_path_label,
+};
 use super::{
-    HomeLookup, InteractiveMode, ResourceItem, format_compact_list, format_resource_groups,
-    labels::get_compact_path_label,
+    HomeLookup, InteractiveMode, ResourceItem, build_scope_groups, format_compact_list,
+    format_resource_groups, format_scope_groups, get_short_path,
 };
 use maestro_theme::{Collator, Theme};
 use std::{error::Error, rc::Rc};
 
 impl InteractiveMode {
+    /// Appends the extensions section: sorted compact labels, or display paths without
+    /// their index file grouped by scope and package.
+    ///
+    /// # Errors
+    /// Returns the failure of a path display or of the theme's colours.
+    pub(super) fn show_extensions(
+        &self,
+        items: &[ResourceItem<'_>],
+        theme: &Theme,
+        collator: &Collator,
+        home: &HomeLookup<'_>,
+    ) -> Result<(), Box<dyn Error>> {
+        if items.is_empty() {
+            return Ok(());
+        }
+        let expanded = format_scope_groups(
+            &build_scope_groups(items),
+            theme,
+            collator,
+            |item| Ok(format_extension_display_path(item.path, home)?),
+            |item| {
+                let short = get_short_path(item.path, item.source_info, home)?;
+                Ok(format_extension_display_path(&short, home)?)
+            },
+        )?;
+        let labels = get_compact_extension_labels(items, home)?;
+        let compact =
+            format_compact_list(labels.iter().map(String::as_str), theme, Some(collator))?;
+        self.add_loaded_section("Extensions", compact, expanded)
+    }
+
     /// Appends the themes section for the themes loaded from a file: sorted names, a
     /// nameless theme by its compact path, or paths grouped by scope and package.
     ///

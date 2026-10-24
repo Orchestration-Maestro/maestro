@@ -16,10 +16,10 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, ExtensionFactory,
-    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
-    PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
-    create_extension_runtime, load_extension_from_factory,
+    AgentSessionRuntime, ContextFile, DefaultEventBus, DiagnosticErrorInfo, Extension,
+    ExtensionFactory, LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult,
+    Local, PromptTemplate, ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill,
+    SourceInfo, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -28,7 +28,16 @@ use maestro_tui::{
     EditorComponent, autocomplete,
 };
 use serde::{Deserialize, de::DeserializeOwned};
-use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    future::Future,
+    io,
+    path::Path,
+    pin::Pin,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 /// Every recorded presentation case.
 pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
@@ -83,7 +92,7 @@ pub(super) struct ForwardingLoader {
     skills: Rc<LoadSkillsResult>,
     /// The prompt templates of each read; the last answers every later read.
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
-    /// The loaded extensions answered instead of the default loader's.
+    /// The loaded extensions, the default loader's when absent.
     extensions: Option<Rc<LoadExtensionsResult<Local>>>,
 }
 
@@ -97,11 +106,13 @@ struct Resources {
     prompts: Vec<Vec<PromptTemplate>>,
     /// The loaded themes listed before the dark and light palettes.
     themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance; the default loader's when empty.
+    extensions: Vec<(String, SourceInfo)>,
 }
 
 impl ForwardingLoader {
     /// A loader over `inner` answering `resources`, then the dark and light palettes, and
-    /// the supplied `extensions`.
+    /// the supplied `extensions` before the listed ones.
     fn new(
         inner: Rc<dyn ResourceLoader<Local>>,
         resources: Resources,
@@ -112,6 +123,7 @@ impl ForwardingLoader {
             skills,
             prompts,
             mut themes,
+            extensions: paths,
         } = resources;
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
@@ -130,8 +142,21 @@ impl ForwardingLoader {
                 diagnostics: Vec::new(),
             }),
             prompts: RefCell::new(prompts.collect()),
-            extensions,
+            extensions: extensions.or_else(|| (!paths.is_empty()).then(|| Rc::new(listed(paths)))),
         }
+    }
+}
+
+/// Extensions loaded from `paths` with their provenance, registering nothing.
+fn listed(paths: Vec<(String, SourceInfo)>) -> LoadExtensionsResult<Local> {
+    let extensions = paths.into_iter().map(|(path, source_info)| {
+        let source_info = Arc::new(RwLock::new(source_info));
+        Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
+    });
+    LoadExtensionsResult {
+        extensions: extensions.collect(),
+        errors: Vec::new(),
+        runtime: create_extension_runtime::<Local>(),
     }
 }
 
@@ -233,6 +258,8 @@ pub(super) struct Setup {
     pub(super) directories: Option<maestro_theme::ThemeDirectories>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance; the default loader's when empty.
+    pub(super) extensions: Vec<(String, SourceInfo)>,
 }
 
 impl Default for Setup {
@@ -248,6 +275,7 @@ impl Default for Setup {
             directories: None,
             extension: None,
             themes: Vec::new(),
+            extensions: Vec::new(),
         }
     }
 }
@@ -288,6 +316,7 @@ impl Setup {
             skills: self.skills,
             prompts: self.prompts,
             themes: self.themes,
+            extensions: self.extensions,
         };
         let extensions = self.extension.map(|factory| loaded(&cwd, factory));
         let result = session::session(&cwd, None, move |inner| {
