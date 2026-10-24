@@ -87,6 +87,10 @@ expansions and unparsed fragments are not checked, and compound configurations
 are not evaluated. There are no suppressions or baseline. See
 [quality checks](docs/architecture.md#quality-checks) for matching and diagnostics.
 Duplicate assertions are a review judgement.
+Conventions reject a temporary directory that test code in a migrated crate
+creates or removes itself through `std::env::temp_dir()` instead of
+`maestro-test-directory`; the diagnostic names `TEST_DIRECTORY_CALLERS`, where a
+new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or
 `invoke_callback` identifiers in chat production syntax, whatever the import form:
