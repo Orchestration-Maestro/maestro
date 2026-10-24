@@ -5,10 +5,10 @@ current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export command, session replay, the session events,
 compaction and retry progress, the expansion and thinking shortcuts, thinking and
-model cycling, the editor border, external editing and image paste. The prompt loop, streaming messages, startup
-messages, installed custom headers, the terminal title and the other integrations
-are still to come; the mode prompts the session only for input queued during a
-response or a compaction.
+model cycling, the editor border, external editing and image paste. The prompt
+loop, streaming messages, startup messages, installed custom headers, the terminal
+title and the other integrations are still to come; the mode prompts the session
+only for input queued during a response or a compaction.
 
 ## Construction
 

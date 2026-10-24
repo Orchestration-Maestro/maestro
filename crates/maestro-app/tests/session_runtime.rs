@@ -325,6 +325,108 @@ fn reports_a_vetoed_switch_to_a_stored_session() {
     });
 }
 
+#[test]
+fn command_actions_forward_to_the_current_session_and_runtime() {
+    on_task_set(|_| async {
+        let (h, runtime, recorded) = runtime_for("commands", Vec::new()).await;
+        drop(script_responses(&h, vec![answer("answer", None, None)]));
+        let session = runtime.session();
+        session
+            .prompt("question", PromptOptions::default())
+            .await
+            .unwrap();
+        let user_entry = {
+            let manager = session.session_manager().borrow();
+            let users: Vec<&Value> = manager
+                .get_entries()
+                .into_iter()
+                .filter(|entry| entry["type"] == "message" && entry["message"]["role"] == "user")
+                .collect();
+            users.last().unwrap()["id"].as_str().unwrap().to_owned()
+        };
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        (actions.operations().wait_for_idle)().await.unwrap();
+        (actions.operations().reload)().await.unwrap();
+        let leaf = runtime
+            .session()
+            .session_manager()
+            .borrow()
+            .get_leaf_id()
+            .map(str::to_owned)
+            .unwrap();
+        let navigated = (actions.operations().navigate_tree)(leaf, None)
+            .await
+            .unwrap();
+        assert!(!navigated.cancelled);
+        let forked = (actions.operations().fork)(user_entry, None).await.unwrap();
+        assert!(!forked.cancelled);
+        let created_at = recorded.factory_calls.borrow().len();
+        let created = (actions.operations().new_session)(None).await.unwrap();
+        assert!(!created.cancelled);
+        assert_eq!(recorded.factory_calls.borrow().len(), created_at + 1);
+        let cwd = runtime
+            .session()
+            .session_manager()
+            .borrow()
+            .get_cwd()
+            .to_owned();
+        let target = stored_file(&h, &cwd);
+        let switched = (actions.operations().switch_session)(target.clone(), None)
+            .await
+            .unwrap();
+        assert!(!switched.cancelled);
+        assert_eq!(runtime.session().session_file().unwrap(), target);
+        assert_eq!(
+            recorded.factory_calls.borrow().len(),
+            created_at + 2,
+            "the switch created the replacement session"
+        );
+    });
+}
+
+#[test]
+fn command_actions_project_cancelled_session_changes() {
+    on_task_set(|_| async {
+        let (h, runtime, _recorded) = runtime_for("commands-vetoed", vec![(None, vetoing())]).await;
+        let first = runtime.session();
+        let cwd = first.session_manager().borrow().get_cwd().to_owned();
+        let target = stored_file(&h, &cwd);
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        assert!(
+            (actions.operations().new_session)(None)
+                .await
+                .unwrap()
+                .cancelled
+        );
+        assert!(
+            (actions.operations().switch_session)(target, None)
+                .await
+                .unwrap()
+                .cancelled
+        );
+        assert!(
+            Rc::ptr_eq(&first, &runtime.session()),
+            "a cancelled change leaves the current session in place"
+        );
+    });
+}
+
+#[test]
+fn held_command_actions_report_the_ended_runtime() {
+    on_task_set(|_| async {
+        let (_h, runtime, _recorded) = runtime_for("commands-ended", Vec::new()).await;
+        let runtime = Rc::new(runtime);
+        let actions = runtime.command_context_actions();
+        drop(runtime);
+        let error = (actions.operations().wait_for_idle)()
+            .await
+            .expect_err("the runtime has ended");
+        assert_eq!(error.to_string(), "the session runtime has ended");
+    });
+}
+
 /// Runs two prompts on the runtime's session and forks at the second user message.
 async fn fork_case(label: &str, position: ForkPosition) -> (AgentSessionRuntime, Value) {
     let (h, runtime, _recorded) = runtime_for(label, Vec::new()).await;

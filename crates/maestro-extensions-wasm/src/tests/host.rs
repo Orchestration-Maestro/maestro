@@ -960,6 +960,17 @@ impl Harness {
         Self::from_compiled(engine, component).await
     }
 
+    /// Instantiates one registered example and runs its factory.
+    ///
+    /// # Errors
+    /// Returns the build, compilation or instantiation failure as text.
+    pub fn example(name: &str) -> Result<Self, String> {
+        let path = super::build::example_component(name)?;
+        let (engine, component) =
+            super::build::compile(&path).map_err(|error| error.to_string())?;
+        super::block_on(Self::from_compiled(&engine, &component)).map_err(|error| error.to_string())
+    }
+
     /// Instantiates a supplied compiled component and runs its factory.
     pub async fn from_compiled(engine: &Engine, component: &Component) -> wasmtime::Result<Self> {
         Self::start_on(engine, component, State::new()).await
