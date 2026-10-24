@@ -18,7 +18,9 @@ use std::{
 };
 
 mod actions;
+mod models;
 mod replay;
+mod selectors;
 mod startup;
 mod submit;
 mod toggles;
