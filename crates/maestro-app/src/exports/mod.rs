@@ -31,6 +31,9 @@ mod presentation_data;
 mod process;
 /// Existing resources re-exports.
 mod resources;
+/// The JSONL protocol records and server.
+#[cfg(not(target_arch = "wasm32"))]
+mod rpc;
 /// Existing session re-exports.
 mod session;
 /// Existing settings re-exports.
@@ -65,6 +68,8 @@ pub use presentation_data::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::*;
 pub use resources::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use rpc::*;
 pub use session::*;
 pub use settings::*;
 #[cfg(not(target_arch = "wasm32"))]

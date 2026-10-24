@@ -67,7 +67,7 @@ impl AgentSession<Local> {
     }
 
     /// The extension commands, then the prompt templates, then the skills, as commands.
-    fn get_commands(&self) -> Vec<SlashCommandInfo> {
+    pub(crate) fn get_commands(&self) -> Vec<SlashCommandInfo> {
         let commands = self.extension_runner().get_registered_commands();
         let commands = commands.into_iter().map(|command| SlashCommandInfo {
             name: command.invocation_name,
