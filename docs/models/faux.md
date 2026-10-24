@@ -16,8 +16,9 @@ default to their model IDs; other omitted fields retain these defaults.
 `faux_assistant_message` defaults to API/provider `faux`, model `faux-1`, stop
 reason `Stop` and the current epoch timestamp in integer milliseconds. Response
 IDs and error messages are absent unless supplied; usage and costs start at zero.
-`faux_tool_call` generates a `tool` identifier unless one is supplied. Text,
-thinking and tool content omit signatures; thinking omits the redacted flag.
+`faux_tool_call` generates a `tool` identifier unless one is supplied and keeps the
+argument value it is given, whatever its root kind. Text, thinking and tool content
+omit signatures; thinking omits the redacted flag.
 
 ## Two-turn tool flow
 
@@ -38,7 +39,7 @@ let mut context = Context {
     })],
     tools: None,
 };
-let arguments = serde_json::from_value(serde_json::json!({"text": "package.json"}))?;
+let arguments = serde_json::json!({"text": "package.json"});
 registration.set_responses(vec![FauxResponseStep::Message(Box::new(
     faux_assistant_message(vec![
         AssistantContent::Thinking(faux_thinking("Need to inspect package metadata first.")),

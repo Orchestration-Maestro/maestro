@@ -54,9 +54,9 @@ Deeper values fail strict parsing and yield `{}` during streaming, rather than a
 truncated container prefix. The bound counts consumed containers, not sibling
 width, quoted delimiters or unconsumed trailing text.
 
-`parsed_arguments(&str) -> JsonObject` delegates to `parse_streaming_json` and
-keeps only an object result; every other root becomes an empty object. It is
-available at the crate root, `arguments` and `arguments::json_parse` paths.
+`parsed_arguments(&str) -> serde_json::Value` delegates to `parse_streaming_json`
+and keeps whatever root the text spells, an object included. It is available at
+the crate root, `arguments` and `arguments::json_parse` paths.
 
 `sanitize_surrogates(&[u16]) -> String` preserves BMP text and valid UTF-16 pairs,
 removing unmatched surrogate units. Ordinary Rust strings need no cleanup.
@@ -85,8 +85,8 @@ received-arguments rendering.
 
 `validate_tool_call` selects the first declaration with the invocation's exact
 name. `validate_tool_arguments` checks one supplied declaration independently of
-its name. Both return an owned argument object and leave the invocation and schema
-unchanged.
+its name. Both return the owned validated argument value, whatever its root kind,
+and leave the invocation and schema unchanged.
 
 A declaration whose schema was built by a schema builder carries the kind of each node
 its author declared, beside the ordinary JSON Schema value. Preparation converts those
@@ -94,7 +94,11 @@ authored nodes first, as the builder declared them, and then runs the same
 primitive conversion over the plain schema. A schema supplied as ordinary JSON carries
 no declared kinds, so only the primitive conversion applies: `null` for a required
 string member stays `""` there, while the same member of an authored schema becomes
-`"null"`. Schema text never implies author intent; rebuilding it needs the builder.
+`"null"`. The authored pass keeps only the edits it makes inside the supplied
+containers: a replaced root is discarded, an alternative converts copies of its
+branches, positional conversion assigns elements in place, and item conversion
+returns a mapped copy that the plain pass observes unchanged. Schema text never
+implies author intent; rebuilding it needs the builder.
 
 Checking converts declared primitive values before evaluating the original schema.
 Objects and arrays are traversed only when their type is explicitly declared.
@@ -155,7 +159,7 @@ keys precede ordinary insertion-ordered keys. Returned diagnostics have an error
 stack or code.
 
 ```rust
-use maestro_models::{JsonObject, Tool, ToolCall, validate_tool_arguments};
+use maestro_models::{Tool, ToolCall, validate_tool_arguments};
 use serde_json::json;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -172,14 +176,14 @@ let tool = Tool {
 let mut call = ToolCall {
     id: "call-1".into(),
     name: "count".into(),
-    arguments: JsonObject::from_iter([("count".into(), json!("42"))]),
+    arguments: json!({"count": "42"}),
     thought_signature: None,
 };
 let checked = validate_tool_arguments(&tool, &call)?;
 assert_eq!(checked["count"].as_f64(), Some(42.0));
 assert_eq!(call.arguments["count"], "42");
 
-call.arguments.remove("count");
+call.arguments = json!({});
 let error = validate_tool_arguments(&tool, &call).unwrap_err();
 assert_eq!(error.message,
     "Validation failed for tool \"count\":\n  - count: must have required properties count\n\nReceived arguments:\n{}");
