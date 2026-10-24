@@ -325,6 +325,7 @@ pub(crate) const TEST_PROCESS: &str = "maestro-test-process";
 
 /// The only crates that may declare the test-process owner as a development dependency.
 pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-agent",
     "maestro-app",
     "maestro-catalog",
@@ -334,6 +335,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-models",
     "maestro-packages",
@@ -355,6 +357,7 @@ pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
 
 /// Declared consumers of disposable native directory ownership.
 pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
+    "maestro",
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
@@ -364,6 +367,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
+    "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
