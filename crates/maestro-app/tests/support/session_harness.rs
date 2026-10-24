@@ -534,6 +534,10 @@ fn agent(
     Rc::new(Agent::new_local(AgentOptions {
         spawn,
         stream_fn,
+        convert_to_llm: Some(Rc::new(|history| {
+            let messages = maestro_session::convert_to_llm(&history.read().unwrap());
+            Box::pin(std::future::ready(Ok(messages)))
+        })),
         initial_state: AgentInitialState {
             model: Some(Arc::new(RwLock::new(initial))),
             system_prompt: Some("base".into()),
@@ -820,6 +824,68 @@ pub fn get_assistant_texts(harness: &Harness) -> Vec<String> {
     texts_matching(harness, |message| {
         matches!(message, maestro_agent::AgentMessage::Assistant(_))
     })
+}
+
+/// The message fields the prompt and queue checks compare: the role and text, a custom
+/// message's own fields, a tool result's error flag and any image parts.
+pub fn delivery_message_view(record: &Value) -> Value {
+    let mut view = json!({"role": record["role"], "text": get_message_text(record)});
+    if record["role"] == "custom" {
+        for key in ["customType", "display", "details"] {
+            view[key] = record[key].clone();
+        }
+    }
+    if record["role"] == "toolResult" {
+        view["isError"] = record["isError"].clone();
+    }
+    if let Some(content) = record["content"].as_array() {
+        let images: Vec<&Value> = content
+            .iter()
+            .filter(|part| part["type"] == "image")
+            .collect();
+        if !images.is_empty() {
+            view["images"] = json!(images);
+        }
+    }
+    view
+}
+
+/// The delivered history and queue mirrors of `h`.
+pub fn delivery_view(h: &Harness) -> Value {
+    let messages: Vec<Value> = {
+        let messages = h.session.messages();
+        let messages = messages.read().unwrap();
+        messages
+            .iter()
+            .map(|message| delivery_message_view(&serde_json::to_value(message).unwrap()))
+            .collect()
+    };
+    json!({
+        "users": get_user_texts(h),
+        "assistants": get_assistant_texts(h),
+        "messages": messages,
+        "pending": h.session.pending_message_count(),
+        "steering": h.session.get_steering_messages(),
+        "followUp": h.session.get_follow_up_messages(),
+    })
+}
+
+/// The contexts the scripted stream received, as delivery messages, in request order.
+pub fn delivery_requests(h: &Harness) -> Value {
+    let requests: Vec<Vec<Value>> = h
+        .requests
+        .0
+        .borrow()
+        .iter()
+        .map(|context| {
+            context
+                .messages
+                .iter()
+                .map(|message| delivery_message_view(&serde_json::to_value(message).unwrap()))
+                .collect()
+        })
+        .collect();
+    json!(requests)
 }
 
 /// The text of each history message `keep` selects, in order.
@@ -1517,6 +1583,23 @@ pub fn bash_result_view(result: &maestro_tools::BashResult) -> Value {
     view
 }
 
+/// Notified once the session has delivered the end of an agent run to its listeners.
+pub fn session_run_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
+    let ended = Rc::new(tokio::sync::Notify::new());
+    let notify = Rc::clone(&ended);
+    drop(h.session.subscribe(Rc::new(move |event| {
+        if let AgentSessionEvent::Agent(event) = event
+            && matches!(
+                *event.read().unwrap(),
+                maestro_agent::AgentEvent::AgentEnd { .. }
+            )
+        {
+            notify.notify_one();
+        }
+    })));
+    ended
+}
+
 /// Notified once an agent run ends.
 pub fn agent_ended(h: &Harness) -> Rc<tokio::sync::Notify> {
     let ended = Rc::new(tokio::sync::Notify::new());
@@ -1812,6 +1895,39 @@ fn delivered_agent_event(event: &maestro_agent::AgentEvent<CustomAgentMessages>)
         view["delta"] = update.get("delta").cloned().unwrap_or(Value::Null);
     }
     view
+}
+
+/// An executable tool that reports its entry and answers `released` once released.
+pub fn waiting_tool(
+    started: Rc<tokio::sync::Notify>,
+    release: Rc<tokio::sync::Notify>,
+) -> maestro_agent::SharedAgentTool<Local> {
+    let tool = maestro_agent::AgentToolRecord::<Local> {
+        definition: Tool {
+            name: "wait".into(),
+            description: "Wait for release".into(),
+            parameters: json!({"type": "object", "properties": {}}),
+        },
+        description: None,
+        label: "Wait".into(),
+        prepare_arguments: None,
+        execute: Rc::new(move |_, _, _, _| {
+            started.notify_one();
+            let release = Rc::clone(&release);
+            Box::pin(async move {
+                release.notified().await;
+                Ok(maestro_agent::AgentToolResult {
+                    content: vec![maestro_models::UserBlock::Text(
+                        maestro_models::TextContent::new("released".into()),
+                    )],
+                    details: Some(json!({})),
+                    terminate: None,
+                })
+            })
+        }),
+        execution_mode: None,
+    };
+    Rc::new(RwLock::new(tool))
 }
 
 /// The echo tool, in place of the built-in tools: it marks `executed` and answers `echoed`.

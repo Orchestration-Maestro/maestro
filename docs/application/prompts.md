@@ -101,3 +101,13 @@ message, so a response's tool calls and results stay together. When appending on
 fails, that prompt fails and only the results not yet appended stay pending. Shell
 records announce no message start or end. `exclude_from_context` is stored with the
 record when given, and a truncated result keeps the path of its full output.
+
+## Qualified delivery
+
+The behaviour above is checked through the real session by
+[`agent_session_prompt_checks`](../../crates/maestro-app/tests/agent_session_prompt_checks.rs),
+[`agent_session_queue_checks`](../../crates/maestro-app/tests/agent_session_queue_checks.rs)
+and
+[`queued_slash_command_followup_checks`](../../crates/maestro-app/tests/queued_slash_command_followup_checks.rs).
+Each case compares the whole recorded operation: the history and queue mirrors, the
+actual provider requests and the errors.
