@@ -13,8 +13,8 @@ pub use maestro_models::{
     UserBlock, UserContent, UserMessage, default_fetch,
 };
 
-/// Agent reasoning levels, including disabled reasoning.
-pub use maestro_agent::ThinkingLevel;
+/// Agent reasoning levels, including disabled reasoning, and how queued messages are delivered.
+pub use maestro_agent::{QueueMode, ThinkingLevel};
 
 pub use maestro_models::{Local, Threaded};
 

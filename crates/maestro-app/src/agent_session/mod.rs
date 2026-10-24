@@ -23,6 +23,7 @@ mod types;
 #[cfg(not(target_arch = "wasm32"))]
 mod tests;
 
+pub use selection::delivery_mode;
 pub(crate) use selection::{model_level, saved_level};
 pub use skill_block::{ParsedSkillBlock, parse_skill_block};
 pub(crate) use state::{agent_messages, content_text, thrown};

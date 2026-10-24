@@ -12,6 +12,7 @@ mod native;
 mod queues;
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod settings;
 mod transcript;
 mod typed;
 
@@ -354,6 +355,11 @@ pub(super) struct World {
 /// Builds the inputs of one mode, letting `configure` change settings and the theme
 /// selected while the loader's themes are read.
 pub(super) struct Setup {
+    /// A supplied theme registry for inventory and custom-file observations.
+    pub(super) theme_state: Option<Rc<ThemeState>>,
+    /// Supplied native effects, when a test drives their local task set.
+    pub(super) operations:
+        Option<Rc<dyn maestro_app::presentation_data::footer_data_provider::FooterOperations>>,
     /// The mode options.
     pub(super) options: InteractiveModeOptions,
     /// Changes the settings before construction.
@@ -388,6 +394,8 @@ pub(super) struct Setup {
 impl Default for Setup {
     fn default() -> Self {
         Self {
+            theme_state: None,
+            operations: None,
             options: InteractiveModeOptions::default(),
             configure: Box::new(|_| {}),
             select: None,
@@ -466,14 +474,19 @@ impl Setup {
         let host = Rc::new(AgentSessionRuntime::new(result, create));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(published::unpublished());
+        let themes = self
+            .theme_state
+            .unwrap_or_else(|| Rc::new(published::unpublished()));
         let local = Rc::new(tokio::task::LocalSet::new());
+        let operations = self
+            .operations
+            .unwrap_or_else(|| Rc::new(NativeFooterOperations::new(local)));
         let mode = InteractiveMode::new(
             Rc::clone(&host),
             self.options,
             (terminal.handle(), runtime.handle()),
             Rc::clone(&themes),
-            Rc::new(NativeFooterOperations::new(local)),
+            operations,
         )
         .unwrap();
         World {

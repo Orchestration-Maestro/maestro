@@ -126,6 +126,7 @@ mod session_services;
 mod session_skill_blocks;
 mod session_statistics;
 mod session_tree_navigation;
+mod settings_callback_exports;
 mod settings_manager_bug_checks;
 mod settings_manager_checks;
 mod share_links;

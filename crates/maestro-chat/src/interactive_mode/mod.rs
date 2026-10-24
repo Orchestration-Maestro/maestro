@@ -25,6 +25,7 @@ mod queues;
 mod replay;
 mod resources;
 mod selectors;
+mod settings;
 mod startup;
 mod submit;
 mod toggles;
@@ -48,6 +49,8 @@ pub struct InteractiveModeOptions {
 pub struct InteractiveMode {
     /// The runtime the current session is read from.
     runtime_host: Rc<AgentSessionRuntime>,
+    /// The watch effects supplied to theme selection and its reloads.
+    settings_theme_watch: Rc<dyn maestro_theme::ThemeWatchOperations>,
     /// How the mode starts.
     options: InteractiveModeOptions,
     /// The terminal user interface this mode owns.
@@ -140,9 +143,11 @@ impl InteractiveMode {
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = settings.borrow().get_theme();
         let hide_thinking_block = settings.borrow().get_hide_thinking_block();
+        let settings_theme_watch = operations.clone();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
         Ok(Rc::new(Self {
             runtime_host,
+            settings_theme_watch,
             options,
             ui,
             themes,

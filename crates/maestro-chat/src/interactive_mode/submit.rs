@@ -29,8 +29,9 @@ impl InteractiveMode {
     }
 
     /// Installs submission on the editor without keeping the mode alive: trimmed nonempty
-    /// text runs a model command or queues as steering during a compaction or response;
-    /// otherwise it goes to the waiting input, if any, then into history.
+    /// text opens settings or runs a model command or queues as steering during a
+    /// compaction or response; otherwise it goes to the waiting input, if any, then into
+    /// history.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
@@ -38,6 +39,13 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            if text == "/settings" {
+                mode.report(
+                    mode.show_settings_selector()
+                        .map(|()| mode.editor.set_text("")),
+                );
+                return;
+            }
             if text == "/scoped-models" {
                 mode.editor.set_text("");
                 mode.report(mode.show_models_selector());
