@@ -212,14 +212,18 @@ impl InteractiveMode {
         queued
     }
 
-    /// Rebuilds the pending rows: one dim row per steering message, then per follow-up
-    /// message, then the dequeue hint with the keys bound now; nothing when no message is
-    /// queued.
+    /// Rebuilds the pending rows: the shell rows still shown there, then one dim row per
+    /// steering message, then per follow-up message, then the dequeue hint with the keys
+    /// bound now; without queued messages only the shell rows remain.
     ///
     /// # Errors
     /// Returns the failure of the published theme's dim colour.
     pub(super) fn update_pending_messages_display(&self) -> Result<(), Box<dyn Error>> {
         self.pending_messages_container.clear();
+        let shells = self.pending_shells.borrow().clone();
+        for shell in shells {
+            self.pending_messages_container.add_child(shell);
+        }
         let QueueTexts {
             steering,
             follow_up,

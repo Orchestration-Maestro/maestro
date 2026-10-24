@@ -172,6 +172,11 @@ message a dim `Follow-up: <text>` row, cut to one line. A last row names the key
 keys are read when the rows are built, each part capitalized, as in `Ctrl+Alt+Q`.
 With nothing queued, the rows are removed.
 
+A shell row shown in that area while a response streams stays above those text
+rows. Rebuilding them re-adds the same row rather than a new one, so a refresh, a
+dequeue or a theme change leaves its identity and its output in place; the next
+ordinary submission moves it into the transcript.
+
 The dequeue key moves every queued message back into the editor: steering messages
 first, then follow-up messages, separated by blank lines and followed by the current
 draft when that draft is not blank. Duplicates and their order are kept. A status

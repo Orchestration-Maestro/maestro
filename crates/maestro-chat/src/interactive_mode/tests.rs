@@ -15,6 +15,7 @@ mod transcript;
 mod transfer;
 mod typed;
 
+use crate::interactive_mode::bash::component_address;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
 // The controlled host, disposable directory and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
@@ -896,6 +897,9 @@ fn startup_callback_registration_does_not_retain_the_mode() {
     );
 }
 
+/// The operations an extension supplies for a shell command.
+pub(super) type ShellOperations = Arc<dyn maestro_app::BashOperations>;
+
 /// The failures the mode's work reported.
 pub(super) type Failures = Rc<RefCell<Vec<Box<dyn Error>>>>;
 
@@ -954,6 +958,11 @@ pub(super) fn on_tasks<T>(body: impl Future<Output = T>) -> T {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, body)
+}
+
+/// Submits `text` through the editor's installed submission.
+pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
+    mode.editor.on_submit().unwrap()(text);
 }
 
 /// Waits until `path` exists, yielding so the work that creates it runs.
@@ -1119,4 +1128,51 @@ pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
         .write()
         .unwrap()
         .thinking_level = level;
+}
+
+/// A started mode whose shell prints the command it runs.
+pub(super) fn echoing_shell(directory: &Path) -> World {
+    let script = scripted(directory, "echoing", "printf '%s\\n' \"$1\"");
+    let world = Setup {
+        configure: Box::new(move |settings: &mut SettingsManager| {
+            settings.set_shell_path(Some(script));
+        }),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().unwrap();
+    world.runtime.settle().unwrap();
+    world
+}
+
+/// Submits `count` shell commands while the response streams, waiting for each row.
+pub(super) async fn start_shells(world: &World, count: usize) {
+    for index in 0..count {
+        submit(&world.mode, &format!("!mark{index}"));
+        let mut started = false;
+        for _ in 0..10_000 {
+            let pending = world.mode.pending_shells.borrow().len();
+            if pending == index + 1 && active(world).is_none() {
+                started = true;
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert!(started, "shell row {index} settles");
+    }
+}
+
+/// The positions of `rows` among the transcript's children, in the order they occur.
+pub(super) fn transcript_positions(
+    world: &World,
+    rows: &[Rc<BashExecutionComponent>],
+) -> Vec<usize> {
+    let children = world.mode.chat_container.children();
+    let addresses: Vec<usize> = children.borrow().iter().map(component_address).collect();
+    rows.iter()
+        .filter_map(|row| {
+            let address = component_address(row);
+            addresses.iter().position(|shown| *shown == address)
+        })
+        .collect()
 }

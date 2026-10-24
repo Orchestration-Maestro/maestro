@@ -36,6 +36,7 @@ queued text and stops the response, leaving the shell command to finish on its o
 An accepted shell command is recorded in the editor's history. When an agent response is
 streaming, the command's row appears in the pending area and moves into the transcript
 with the next ordinary submission; otherwise the row appears in the transcript at once.
+The row keeps its place above the queued messages while a refresh rebuilds them.
 
 Extensions can answer a shell command through the `user_bash` event: returning a full
 result shows it without running a process and records it once, and returning operations
