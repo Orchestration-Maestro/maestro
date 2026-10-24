@@ -1,4 +1,6 @@
-# Extension question dialogs
+# Extension UI
+
+## Extension question dialogs
 
 `maestro_chat::ExtensionSelectorComponent` and
 `maestro_chat::ExtensionInputComponent` compose reusable questions from the
@@ -47,7 +49,7 @@ its own flag and immediately forwards every setter to the retained editor,
 including after the editor is removed from the displayed children. The writer
 consumes the child's cursor marker to place the hardware cursor.
 
-# Extension editor dialog
+## Extension editor dialog
 
 Native callers construct `maestro_chat::ExtensionEditorComponent` with a shared
 `Rc<TUI>`, a live application keybinding manager, a title and
@@ -75,7 +77,7 @@ its own focus state. The inherited container child-array interface remains
 available; removing visible children does not replace the retained input target.
 Callbacks may reenter rendering and input.
 
-## External editing
+### External editing
 
 The runtime's nonempty `VISUAL` wins over nonempty `EDITOR`. Selection is sampled
 independently when preparing help and on each invocation. With neither configured,
@@ -106,3 +108,39 @@ including file creation failure; a restart failure takes precedence. Successful
 restart requests a full redraw. External editing never submits or cancels.
 
 Interactive dialog presentation and settlement are separate from this component.
+
+## Completion
+
+`InteractiveMode` installs one completion provider on its editor when startup
+succeeds. Each rebuild starts from a fresh base provider over the current session:
+
+1. the builtin commands, in the order the workspace's command inventory lists them;
+2. the loaded prompt templates, with their argument hints;
+3. the extension commands, under the name each is invoked by;
+4. when the `enableSkillCommands` setting is on, one `skill:<name>` command per
+   loaded skill.
+
+A description carries its provenance marker: `u`, `p` or `t` for the user, project
+and temporary scopes, `u:` followed by the trimmed source for a package, and
+`u:git:host/owner/repo` with `@ref` when the source names one. Source text is trimmed by the shared
+whitespace scalars, which removes a byte-order mark and keeps U+0085. An absent
+description yields the marker alone; a resource without provenance keeps its
+description unchanged. Prompt templates and extensions keep their input order and
+duplicates. An extension command whose raw name is a builtin name is skipped, so the
+builtin keeps that name. Disabling skill commands rebuilds the list without them.
+
+`/model` completes argument text against the session's scoped models, or the
+catalog's available ones when none are scoped. Candidates are matched on identity
+and provider together, so `opus anthropic` finds one, and are offered as
+`provider/id` with the identity as the label and the provider as the description.
+The callback reads the session when the request arrives, so it follows a replaced
+session.
+
+An extension command's argument callback receives exactly the typed prefix and keeps
+its own failure. An absent list, an empty list and a failed callback stay distinct:
+the first two offer nothing, the third reports the failure.
+
+Typing `@` completes attachments through the search program selected during startup.
+File completion keeps the candidate and applied text of the toolkit's provider. The
+provider asks the search owner for the paths, so removing the selected program leaves
+completion with no candidates instead of falling back to another search.

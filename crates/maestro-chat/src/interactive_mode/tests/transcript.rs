@@ -1,6 +1,6 @@
 //! Transcript witnesses through the interactive mode's retained containers and shortcuts.
 use super::super::replay::aborted_notice;
-use super::{Setup, World, isolated};
+use super::{Setup, World, complete, isolated};
 use crate::BranchSummaryMessageComponent;
 use crate::CustomMessageComponent;
 use crate::interactive_mode::startup::ExpandableText;
@@ -369,7 +369,7 @@ fn transcript_registered_toggle_actions_release_the_mode() {
                 ..
             } = recorded(directory, Setup::default());
             let world_theme = |_: &Rc<crate::InteractiveMode>| Rc::clone(&themes);
-            mode.init().unwrap();
+            complete(mode.init()).unwrap();
             runtime.settle().unwrap();
             terminal.send_input("\x0f");
             assert!(mode.tool_output_expanded.get());
@@ -974,7 +974,7 @@ fn transcript_thinking_toggle_rebuilds_pending_rows_and_keeps_streaming_tail() {
                 &world,
                 vec![user_record("HISTORY"), assistant(&content, "toolUse", None)],
             );
-            world.mode.init().unwrap();
+            complete(world.mode.init()).unwrap();
             world.runtime.settle().unwrap();
             let before = history(&world);
             world.terminal.send_input("\x14");
