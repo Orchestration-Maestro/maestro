@@ -869,6 +869,32 @@ fn ftp_socket_waits_keep_the_activity_owner() {
             &[(file, 2, "FTP socket wait outside the activity owner")],
         );
     }
+    // A trait-qualified socket operation and an aliased timer are the single-expression shapes
+    // that a last-segment match misses.
+    for (line, contents) in [
+        (
+            2,
+            "async fn wait(stream: &mut Stream, buffer: &mut [u8]) {\n    tokio::io::AsyncReadExt::read(stream, buffer).await;\n}\n",
+        ),
+        (
+            3,
+            "use tokio::time::timeout as limited;\nasync fn wait() {\n    limited(deadline, operation).await;\n}\n",
+        ),
+        (
+            3,
+            "use tokio::io::{AsyncWriteExt as _, AsyncReadExt};\nasync fn wait(stream: &mut Stream, buffer: &mut [u8]) {\n    AsyncReadExt::read(stream, buffer).await;\n}\n",
+        ),
+    ] {
+        check(
+            "maestro-models",
+            &[("src/providers/http/get_uri/ftp/transfer.rs", contents)],
+            &[(
+                "src/providers/http/get_uri/ftp/transfer.rs",
+                line,
+                "FTP socket wait outside the activity owner",
+            )],
+        );
+    }
     check(
         "maestro-models",
         &[(
@@ -884,6 +910,7 @@ fn ftp_activity_result_cannot_be_discarded() {
     for contents in [
         "async fn send(context: &mut Context) {\n    let _ = context.request(\"NOOP\").await;\n}\n",
         "fn send(context: &mut Context) {\n    let _ = context.send(\"NOOP\");\n}\n",
+        "async fn send(context: &mut Context) {\n    context.request(\"NOOP\").await.ok();\n}\n",
     ] {
         check(
             "maestro-models",
