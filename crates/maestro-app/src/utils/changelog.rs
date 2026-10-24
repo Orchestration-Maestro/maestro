@@ -3,6 +3,7 @@
 use maestro_text::{is_whitespace_scalar, lossy_string};
 
 pub use crate::configuration::config::paths::get_changelog_path;
+use std::path::Path;
 
 /// A changelog section and the numeric version from its heading.
 #[derive(Debug, Clone, PartialEq)]
@@ -19,11 +20,19 @@ pub struct ChangelogEntry {
 
 /// Reads the changelog sections at `changelog_path`, in file order.
 ///
-/// A path that cannot be read yields no sections.
+/// A path that names no file yields no sections. A file that exists but cannot be read
+/// is reported to standard error and yields no sections.
 #[must_use]
 pub fn parse_changelog(changelog_path: &str) -> Vec<ChangelogEntry> {
-    let Ok(bytes) = std::fs::read(changelog_path) else {
+    if !Path::new(changelog_path).exists() {
         return Vec::new();
+    }
+    let bytes = match std::fs::read(changelog_path) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            eprintln!("Warning: Could not parse changelog: {error}");
+            return Vec::new();
+        }
     };
     let text = lossy_string(bytes);
     let mut entries = Vec::new();
@@ -103,23 +112,23 @@ fn same(left: f64, right: f64) -> bool {
 }
 
 /// Attaches the trimmed section text to its numeric record.
-fn with_content((entry, content): (ChangelogEntry, String)) -> ChangelogEntry {
-    ChangelogEntry {
-        content: content.trim_matches(is_whitespace_scalar).to_owned(),
-        ..entry
-    }
+fn with_content((entry, mut content): (ChangelogEntry, String)) -> ChangelogEntry {
+    let kept = content.trim_end_matches(is_whitespace_scalar).len();
+    content.truncate(kept);
+    ChangelogEntry { content, ..entry }
 }
 
 /// Reads the numeric version of an admitted heading line.
 ///
-/// The numbers may follow later heading marks on the same line.
+/// The numbers may follow later heading marks on the same line; a candidate that fails
+/// to read a version keeps the overlapping start of the next one.
 fn parse_heading(line: &str) -> Option<ChangelogEntry> {
     let mut rest = line;
     while let Some(at) = rest.find("##") {
-        rest = &rest[at + 2..];
-        if let Some(entry) = read_version(rest) {
+        if let Some(entry) = read_version(&rest[at + 2..]) {
             return Some(entry);
         }
+        rest = &rest[at + 1..];
     }
     None
 }

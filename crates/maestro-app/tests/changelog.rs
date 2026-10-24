@@ -2,10 +2,11 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+#[cfg(unix)]
+use crate::resource_fixtures::{child_stderr, directory_read_error, warnings};
 use maestro_app::{ChangelogEntry, compare_versions, parse_changelog};
 use maestro_test_directory::Scratch;
 use serde::Deserialize;
-use std::path::PathBuf;
 
 /// The recorded fields of one changelog entry.
 #[derive(Debug, Deserialize, PartialEq)]
@@ -55,6 +56,8 @@ enum Row {
     Unreadable {
         /// How the path fails to read.
         kind: UnreadableKind,
+        /// The warning lines the reference wrote to standard error.
+        warnings: usize,
     },
     /// A selection for one saved dotted version.
     Select {
@@ -125,9 +128,9 @@ fn positions(entries: &[ChangelogEntry], selected: &[&ChangelogEntry]) -> Vec<us
 /// Writes one recorded file row into its own file and parses that file.
 fn parse_row(scratch: &Scratch, index: usize, row: &Row) -> Vec<ChangelogEntry> {
     let path = scratch.path().join(format!("row{index}.md"));
-    let bytes = match row {
-        Row::Text { text, .. } => text.clone().into_bytes(),
-        Row::Bytes { bytes, .. } => bytes.clone(),
+    let bytes: &[u8] = match row {
+        Row::Text { text, .. } => text.as_bytes(),
+        Row::Bytes { bytes, .. } => bytes,
         _ => panic!("row {index} is not a file row"),
     };
     std::fs::write(&path, bytes).unwrap();
@@ -160,46 +163,77 @@ fn changelog_heading_recognition_matches_delimiters() {
 }
 
 #[test]
+fn changelog_overlapping_heading_candidates_keep_the_section() {
+    check_file_rows(&rows(), 18..19);
+}
+
+#[test]
 fn changelog_nonversion_sections_end_capture() {
-    check_file_rows(&rows(), 18..25);
+    check_file_rows(&rows(), 19..26);
 }
 
 #[test]
 fn changelog_keeps_line_endings_and_trims_boundaries() {
-    check_file_rows(&rows(), 25..34);
+    check_file_rows(&rows(), 26..35);
 }
 
 #[test]
 fn changelog_decodes_invalid_utf8_lossily() {
-    check_file_rows(&rows(), 34..35);
+    check_file_rows(&rows(), 35..36);
 }
 
-#[test]
-fn changelog_missing_or_unreadable_is_empty() {
+/// The warning line written for an unreadable changelog file.
+#[cfg(unix)]
+fn read_warning() -> String {
+    format!(
+        "Warning: Could not parse changelog: {}",
+        directory_read_error()
+    )
+}
+
+/// Parses every recorded read failure under `base`, which names a directory.
+#[cfg(unix)]
+fn parse_read_failures(base: &str) {
     let rows = rows();
-    let scratch = Scratch::new().unwrap();
-    let directory = scratch.path().join("directory.md");
+    let missing = format!("{base}/missing.md");
+    let directory = format!("{base}/unreadable.md");
     std::fs::create_dir(&directory).unwrap();
-    for (index, row) in rows.iter().enumerate().take(38).skip(35) {
-        let Row::Unreadable { kind } = row else {
+    for (index, row) in rows.iter().enumerate().take(39).skip(36) {
+        let Row::Unreadable { kind, .. } = row else {
             panic!("row {index} is not a read failure");
         };
         let path = match kind {
-            UnreadableKind::Missing => scratch.path().join("missing.md"),
-            UnreadableKind::Directory => directory.clone(),
-            UnreadableKind::Nul => PathBuf::from("nul\0name"),
+            UnreadableKind::Missing => missing.as_str(),
+            UnreadableKind::Directory => directory.as_str(),
+            UnreadableKind::Nul => "nul\0name",
         };
-        assert!(
-            parse_changelog(&path.display().to_string()).is_empty(),
-            "row {index}"
-        );
+        assert!(parse_changelog(path).is_empty(), "row {index}");
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn changelog_missing_or_unreadable_is_empty() {
+    let recorded: usize = rows()[36..39]
+        .iter()
+        .map(|row| match row {
+            Row::Unreadable { warnings, .. } => *warnings,
+            _ => panic!("not a read failure"),
+        })
+        .sum();
+    let Some((_base, stderr)) = child_stderr("changelog_missing_or_unreadable_is_empty", |base| {
+        parse_read_failures(base);
+    }) else {
+        return;
+    };
+    assert_eq!(warnings(&stderr), [read_warning()]);
+    assert_eq!(warnings(&stderr).len(), recorded);
 }
 
 #[test]
 fn changelog_comparison_returns_first_component_difference() {
     let rows = rows();
-    for (index, row) in rows.iter().enumerate().take(44).skip(38) {
+    for (index, row) in rows.iter().enumerate().take(45).skip(39) {
         let Row::Compare {
             left,
             right,
@@ -273,15 +307,15 @@ fn check_selection_rows(rows: &[Row], range: std::ops::Range<usize>) {
 
 #[test]
 fn changelog_selection_is_strict_and_keeps_input_order() {
-    check_selection_rows(&rows(), 44..45);
+    check_selection_rows(&rows(), 45..46);
 }
 
 #[test]
 fn changelog_saved_version_defaults_missing_and_invalid_parts() {
-    check_selection_rows(&rows(), 45..63);
+    check_selection_rows(&rows(), 46..64);
 }
 
 #[test]
 fn changelog_selection_borrows_original_entries_and_leaves_them_intact() {
-    check_selection_rows(&rows(), 63..65);
+    check_selection_rows(&rows(), 64..66);
 }

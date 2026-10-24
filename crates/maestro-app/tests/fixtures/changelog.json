@@ -180,6 +180,18 @@
   },
   {
     "operation": "text",
+    "text": "## Release ### [1.2.3]\nbody",
+    "expected": [
+      {
+        "major": 1,
+        "minor": 2,
+        "patch": 3,
+        "content": "## Release ### [1.2.3]\nbody"
+      }
+    ]
+  },
+  {
+    "operation": "text",
     "text": "",
     "expected": []
   },
@@ -387,15 +399,18 @@
   },
   {
     "operation": "unreadable",
-    "kind": "missing"
+    "kind": "missing",
+    "warnings": 0
   },
   {
     "operation": "unreadable",
-    "kind": "directory"
+    "kind": "directory",
+    "warnings": 1
   },
   {
     "operation": "unreadable",
-    "kind": "nul"
+    "kind": "nul",
+    "warnings": 0
   },
   {
     "operation": "compare",
