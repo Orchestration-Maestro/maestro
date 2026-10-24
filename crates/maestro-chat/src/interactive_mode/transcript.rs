@@ -126,10 +126,11 @@ impl InteractiveMode {
         ))
     }
 
-    /// The assistant rows' current thinking visibility.
+    /// The assistant rows' current thinking visibility and hidden-thinking label.
     pub(super) fn assistant_options(&self) -> AssistantMessageOptions {
         AssistantMessageOptions {
             hide_thinking_block: self.hide_thinking_block.get(),
+            hidden_thinking_label: self.hidden_thinking_label.borrow().clone(),
             ..AssistantMessageOptions::default()
         }
     }

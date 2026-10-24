@@ -3,6 +3,108 @@
     "test": "events_agent_start_selects_working_visibility_and_message",
     "input": {
       "op": "start",
+      "visible": false,
+      "progress": false,
+      "message": null
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": false,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": false,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": true,
+      "message": null
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": true,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": false,
+      "progress": true,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
       "visible": true,
       "progress": false,
       "message": null
@@ -24,6 +126,46 @@
     "input": {
       "op": "start",
       "visible": true,
+      "progress": false,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8m\u001b[39m                                                                                             "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": false,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8mCUSTOM\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
       "progress": true,
       "message": null
     },
@@ -32,6 +174,178 @@
       "status": [
         "",
         " \u001b[38;5;1m\u280b\u001b[39m \u001b[38;5;8mWorking...\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": true,
+      "message": ""
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8m\u001b[39m                                                                                             "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_agent_start_selects_working_visibility_and_message",
+    "input": {
+      "op": "start",
+      "visible": true,
+      "progress": true,
+      "message": "CUSTOM"
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " FRAME \u001b[38;5;8mCUSTOM\u001b[39m                                                                                       "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": false,
+      "visible": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": false,
+      "visible": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": true,
+      "visible": false
+    },
+    "expected": {
+      "chat": [],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "visible",
+      "streaming": true,
+      "visible": true
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " \u001b[38;5;8mWorking...\u001b[39m                                                                                         "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "indicator",
+      "indicator": {
+        "frames": []
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " \u001b[38;5;8mWorking...\u001b[39m                                                                                         "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "indicator",
+      "indicator": {
+        "frames": [
+          "ONLY"
+        ]
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " ONLY \u001b[38;5;8mWorking...\u001b[39m                                                                                    "
+      ],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": false
+    }
+  },
+  {
+    "test": "events_working_controls_update_retained_loader",
+    "input": {
+      "op": "indicator",
+      "indicator": {
+        "frames": [
+          "NEXT"
+        ],
+        "interval": 37
+      }
+    },
+    "expected": {
+      "chat": [],
+      "status": [
+        "",
+        " NEXT \u001b[38;5;8mWorking...\u001b[39m                                                                                    "
       ],
       "pendingRows": [],
       "pending": [],
@@ -697,6 +1011,144 @@
       "pending": [],
       "history": [],
       "streaming": false
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": false,
+      "label": null
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mThinking...\u001b[39m\u001b[23m                                                                                        ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": false,
+      "label": ""
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        "                                                                                                    ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": false,
+      "label": "CUSTOM_LABEL"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mCUSTOM_LABEL\u001b[39m\u001b[23m                                                                                       ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: hidden\u001b[39m                                                                            "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": true,
+      "label": null
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": true,
+      "label": ""
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
+    }
+  },
+  {
+    "test": "events_thinking_toggle_and_label_keep_streaming_tail",
+    "input": {
+      "op": "thinking",
+      "hide": true,
+      "label": "CUSTOM_LABEL"
+    },
+    "expected": {
+      "chat": [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;5;11mREASON\u001b[39m\u001b[23m                                                                                             ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ANSWER                                                                                             ",
+        "",
+        " \u001b[38;5;9mThinking blocks: visible\u001b[39m                                                                           "
+      ],
+      "status": [],
+      "pendingRows": [],
+      "pending": [],
+      "history": [],
+      "streaming": true
     }
   },
   {

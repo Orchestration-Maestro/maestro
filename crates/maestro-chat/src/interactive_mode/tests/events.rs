@@ -1,6 +1,7 @@
 //! The session-event subscriber: the terminal title, the thinking-level refresh, the working
 //! row and the streamed assistant and tool rows.
 use super::super::replay::aborted_notice;
+use super::extension_ui::port;
 use super::transcript::{
     Definition, assistant, call, history, kind_value, message, pending, recorded, registering,
     replay, text, tool, tool_params,
@@ -13,6 +14,7 @@ use maestro_app::{
     AgentEvent, AgentMessage, AgentSessionEvent, AgentToolResult, AssistantMessageEvent,
     AssistantMessageEventStream, PromptOptions, ReadonlySessionManager, SessionManager,
     SharedAssistantMessage, TextContent, ToolCall, ToolRenderResult, UserBlock,
+    WorkingIndicatorOptions,
 };
 use maestro_theme::ThemeColor;
 use maestro_tui::{Component, KeybindingKeys};
@@ -367,6 +369,17 @@ struct Queued {
     follow_up: Vec<String>,
 }
 
+/// A recorded working indicator.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RecordedIndicator {
+    /// The frames.
+    frames: Vec<String>,
+    /// The interval the recording passed under a name the indicator does not read.
+    #[serde(default)]
+    interval: Option<f64>,
+}
+
 /// One recorded agent-event operation.
 #[derive(Deserialize)]
 #[serde(
@@ -445,6 +458,25 @@ enum StreamOp {
         /// The message role.
         role: String,
     },
+    /// The working row's visibility set while a response streams or not.
+    Visible {
+        /// Whether a response streams.
+        streaming: bool,
+        /// The visibility set.
+        visible: bool,
+    },
+    /// The working indicator set while the row runs.
+    Indicator {
+        /// The indicator set.
+        indicator: RecordedIndicator,
+    },
+    /// The hidden-thinking label set before the thinking toggle while a row streams.
+    Thinking {
+        /// Whether thinking starts hidden.
+        hide: bool,
+        /// The label set, absent to restore the default.
+        label: Option<String>,
+    },
     /// A registered tool's progress and end with details of `kind`.
     Details {
         /// The JSON kind of the details, or `missing`.
@@ -452,6 +484,14 @@ enum StreamOp {
         /// Whether the end reports a failure.
         failed: bool,
     },
+}
+
+/// A working indicator of `frames`.
+fn frames(frames: &[&str]) -> WorkingIndicatorOptions {
+    WorkingIndicatorOptions {
+        frames: Some(frames.iter().map(|frame| (*frame).to_owned()).collect()),
+        interval_ms: None,
+    }
 }
 
 /// Terminal progress shown.
@@ -572,12 +612,17 @@ fn events_agent_start_selects_working_visibility_and_message() {
             else {
                 panic!("an agent start");
             };
-            // The delivered defaults: a shown row with the default message.
-            assert!(visible && message.is_none());
             let Expected::Shown(expected) = expected else {
                 panic!("a presentation");
             };
             let world = streamed(directory, shown_progress, Setup::default());
+            if !visible || message.is_some() {
+                // The recorded extension controls use a one-frame indicator.
+                let ui = port(&world.mode);
+                ui.set_working_indicator(Some(frames(&["FRAME"]))).unwrap();
+                ui.set_working_message(message).unwrap();
+                ui.set_working_visible(visible).unwrap();
+            }
             stale(&world, "stale");
             let effects = tap(&world);
             // A second start replaces the first start's row.
@@ -590,7 +635,7 @@ fn events_agent_start_selects_working_visibility_and_message() {
                 if shown_progress { started } else { Vec::new() }
             );
             shown(&world, &expected);
-            assert!(world.mode.loading_animation.borrow().is_some());
+            assert_eq!(world.mode.loading_animation.borrow().is_some(), visible);
             // The live setting is read at each event, in both directions.
             let settings = Rc::clone(world.host.session().settings_manager());
             settings
@@ -1422,4 +1467,149 @@ fn events_stream_work_is_linear() {
         assert_eq!(work[1], 2 * work[0]);
         assert_eq!(work[2], 2 * work[1]);
     });
+}
+
+/// Sets the working row's visibility while a response streams through `world`'s real
+/// session, after starting it hidden when it is to be shown; returns the status rows and
+/// whether a working row ran right after the change.
+fn visible_while_streaming(world: &World, visible: bool) -> (Vec<String>, bool) {
+    let ui = port(&world.mode);
+    if visible {
+        ui.set_working_visible(false).unwrap();
+    }
+    let seen = Rc::new(RefCell::new(None));
+    let (sink, mode) = (Rc::clone(&seen), Rc::downgrade(&world.mode));
+    prompted(world, move |_, stream| {
+        let mode = mode.upgrade().unwrap();
+        port(&mode).set_working_visible(visible).unwrap();
+        let running = mode.loading_animation.borrow().is_some();
+        sink.replace(Some((mode.status_container.render(100), running)));
+        stream.end(Some(shared(&json!([]), "stop", None)));
+    });
+    seen.take().unwrap()
+}
+
+#[test]
+fn events_working_controls_update_retained_loader() {
+    let test = "events_working_controls_update_retained_loader";
+    isolated(test, |directory| {
+        for (input, expected) in cases(FIXTURES, test) {
+            let Expected::Shown(expected) = expected else {
+                panic!("a presentation");
+            };
+            let world = streamed(directory, false, Setup::default());
+            let ui = port(&world.mode);
+            match input {
+                StreamOp::Visible {
+                    streaming: true,
+                    visible,
+                } => {
+                    // The recording hides the indicator, so no frame advances.
+                    ui.set_working_indicator(Some(frames(&[]))).unwrap();
+                    let (status, running) = visible_while_streaming(&world, visible);
+                    assert_eq!(status, expected.status);
+                    assert_eq!(running, visible);
+                    continue;
+                }
+                StreamOp::Visible {
+                    streaming: false,
+                    visible,
+                } => {
+                    ui.set_working_indicator(Some(frames(&[]))).unwrap();
+                    ui.set_working_visible(visible).unwrap();
+                    assert!(world.mode.loading_animation.borrow().is_none());
+                }
+                StreamOp::Indicator { indicator } => {
+                    ui.set_working_indicator(Some(frames(&["OLD"]))).unwrap();
+                    dispatch(&world, AgentEvent::AgentStart);
+                    let options = WorkingIndicatorOptions {
+                        frames: Some(indicator.frames),
+                        interval_ms: indicator.interval,
+                    };
+                    ui.set_working_indicator(Some(options)).unwrap();
+                }
+                _ => panic!("a working control"),
+            }
+            drawn(&world);
+            shown(&world, &expected);
+        }
+        hidden_row_releases_its_timer(directory);
+    });
+}
+
+/// Hides a running working row with the toolkit's animated indicator: the row goes and its
+/// animation leaves nothing pending.
+fn hidden_row_releases_its_timer(directory: &Path) {
+    let world = streamed(directory, false, Setup::default());
+    let ui = port(&world.mode);
+    ui.set_working_indicator(None).unwrap();
+    dispatch(&world, AgentEvent::AgentStart);
+    drawn(&world);
+    assert!(world.runtime.pending() > 0);
+    ui.set_working_visible(false).unwrap();
+    assert!(world.mode.loading_animation.borrow().is_none());
+    assert!(world.mode.status_container.render(100).is_empty());
+    let later = Duration::from_millis(world.runtime.millis() + 1000);
+    for result in world.runtime.advance_to(later) {
+        result.unwrap();
+    }
+    assert_eq!(world.runtime.pending(), 0);
+}
+
+#[test]
+fn events_thinking_toggle_and_label_keep_streaming_tail() {
+    let test = "events_thinking_toggle_and_label_keep_streaming_tail";
+    isolated(test, |directory| {
+        for (input, expected) in cases(FIXTURES, test) {
+            let (StreamOp::Thinking { hide, label }, Expected::Shown(expected)) = (input, expected)
+            else {
+                panic!("a thinking label");
+            };
+            let setup = Setup {
+                configure: Box::new(move |settings| settings.set_hide_thinking_block(hide)),
+                ..Setup::default()
+            };
+            let world = streamed(directory, false, setup);
+            let content = json!([{"type": "thinking", "thinking": "REASON"},
+                {"type": "text", "text": "ANSWER"}]);
+            dispatch(
+                &world,
+                AgentEvent::MessageStart {
+                    message: AgentMessage::Assistant(shared(&content, "stop", None)),
+                },
+            );
+            port(&world.mode).set_hidden_thinking_label(label).unwrap();
+            world.terminal.send_input("\x14");
+            shown(&world, &expected);
+        }
+        label_reaches_replayed_and_later_rows(directory);
+    });
+}
+
+/// Sets a label over a replayed assistant row: that row shows it, and so does a later
+/// streaming row.
+fn label_reaches_replayed_and_later_rows(directory: &Path) {
+    let setup = Setup {
+        configure: Box::new(|settings| settings.set_hide_thinking_block(true)),
+        ..Setup::default()
+    };
+    let world = streamed(directory, false, setup);
+    let content = json!([{"type": "thinking", "thinking": "REASON"},
+        {"type": "text", "text": "ANSWER"}]);
+    replay(&world, vec![assistant(&content, "stop", None)]);
+    port(&world.mode)
+        .set_hidden_thinking_label(Some("LABEL".into()))
+        .unwrap();
+    let labels = |world: &World| {
+        let chat = world.mode.chat_container.render(100).join("\n");
+        chat.matches("LABEL").count()
+    };
+    assert_eq!(labels(&world), 1);
+    dispatch(
+        &world,
+        AgentEvent::MessageStart {
+            message: AgentMessage::Assistant(shared(&content, "stop", None)),
+        },
+    );
+    assert_eq!(labels(&world), 2);
 }

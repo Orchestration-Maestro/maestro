@@ -5,9 +5,9 @@ current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
 input, queued input, the export command, the prompt loop, session replay, the
 session events with the working row and the streamed transcript rows, the window
-title, the expansion and thinking shortcuts, thinking and model cycling, the editor
-border, external editing and image paste. Installed custom headers, the extension
-controls of the working row and the hidden-thinking label, compaction and retry
+title, the extension controls of that row and of the hidden-thinking label, the
+expansion and thinking shortcuts, thinking and model cycling, the editor border,
+external editing and image paste. Installed custom headers, compaction and retry
 progress, a requested shutdown and the other integrations are still to come.
 
 ## Construction
@@ -293,8 +293,8 @@ The agent's events drive the working row and the transcript:
 
 - an agent start forgets the registered tool calls, shows terminal progress when
   `terminal.showTerminalProgress` is set, and replaces the working row in the status
-  rows: the toolkit's own indicator in the accent colour beside a muted
-  `Working...`, painted by the theme in effect when it is drawn;
+  rows, unless an extension hid it: the indicator in the accent colour beside the
+  muted working message, painted by the theme in effect when it is drawn;
 - a message start adds a custom or user message to the transcript, the user one
   also rebuilding the pending rows; an assistant message starts one streaming row
   that keeps the message it shows; a tool result adds nothing;
@@ -321,6 +321,19 @@ The agent's events drive the working row and the transcript:
   streaming row and forgets the registered calls; completed rows stay.
 
 Rows change in place, so each frame rewrites only from its first changed row.
+
+Extensions control the working row and the thinking label through the extension UI
+host:
+
+- the working message replaces `Working...`, also in a running row; clearing it
+  restores the default, while an empty message stays empty;
+- hiding the working row stops and removes it, and showing it again while a
+  response streams starts a new one; the setting holds for later responses;
+- a working indicator replaces the toolkit's own in the running row and in later
+  ones: its frames are shown as given, an empty list hides the indicator, and one
+  frame stays still; clearing it restores the toolkit's indicator;
+- the hidden-thinking label replaces `Thinking...` on every assistant row of the
+  transcript, the streaming row and later rows; clearing it restores the default.
 
 The window title is `Maestro - <name> - <directory>` when the session has a name
 and `Maestro - <directory>` when it has none. The directory is the last segment of

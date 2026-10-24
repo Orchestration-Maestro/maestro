@@ -3,14 +3,15 @@
 //! input.
 
 use crate::{
-    AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent,
-    ToolExecutionComponent,
+    AssistantMessageComponent, AssistantMessageOptions, BashExecutionComponent, CustomEditor,
+    FooterComponent, ToolExecutionComponent,
 };
 use indexmap::IndexMap;
 use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, KeybindingsManager, ReadonlyFooterDataProvider,
     ReadonlySessionManager, SettingsManager, SharedAssistantMessage, ToolRenderEnvironment,
+    WorkingIndicatorOptions,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
 use maestro_tui::tui::{TerminalHandle, TuiRuntime};
@@ -126,6 +127,14 @@ pub struct InteractiveMode {
     loading_animation: RefCell<Option<Loader>>,
     /// The assistant row of the response streaming now.
     streaming: RefCell<Option<StreamingMessage>>,
+    /// The extension's working message, the default one when absent.
+    working_message: RefCell<Option<String>>,
+    /// Whether the working row is shown while a response runs.
+    working_visible: Cell<bool>,
+    /// The extension's working indicator, the toolkit's own when absent.
+    working_indicator_options: RefCell<Option<WorkingIndicatorOptions>>,
+    /// The label shown for hidden thinking.
+    hidden_thinking_label: RefCell<String>,
 }
 
 impl InteractiveMode {
@@ -197,6 +206,12 @@ impl InteractiveMode {
             unsubscribe: RefCell::default(),
             loading_animation: RefCell::default(),
             streaming: RefCell::default(),
+            working_message: RefCell::default(),
+            working_visible: Cell::new(true),
+            working_indicator_options: RefCell::default(),
+            hidden_thinking_label: RefCell::new(
+                AssistantMessageOptions::default().hidden_thinking_label,
+            ),
         }))
     }
 

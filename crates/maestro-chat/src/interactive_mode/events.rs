@@ -100,7 +100,7 @@ impl InteractiveMode {
     }
 
     /// Forgets the pending calls, shows terminal progress when configured and replaces the
-    /// working row.
+    /// working row, unless an extension hid it.
     ///
     /// # Errors
     /// Returns the terminal's progress-writing failure.
@@ -108,9 +108,9 @@ impl InteractiveMode {
         drop(self.pending_tools.take());
         self.set_terminal_progress(true)?;
         self.stop_working_loader();
-        let loader = self.create_working_loader();
-        self.status_container.add_child(Rc::new(loader.clone()));
-        self.loading_animation.replace(Some(loader));
+        if self.working_visible.get() {
+            self.show_working_loader();
+        }
         self.ui.request_render(false);
         Ok(())
     }
@@ -323,7 +323,7 @@ impl InteractiveMode {
     }
 
     /// The streaming assistant row, when a response streams.
-    fn streaming_component(&self) -> Option<Rc<AssistantMessageComponent>> {
+    pub(super) fn streaming_component(&self) -> Option<Rc<AssistantMessageComponent>> {
         let streaming = self.streaming.borrow();
         streaming
             .as_ref()
