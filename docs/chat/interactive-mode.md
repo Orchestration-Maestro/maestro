@@ -47,8 +47,9 @@ Header text keeps the colours of the theme in effect when it was built.
 ## Loaded resources
 
 The listing appends one section per kind of loaded resource that has entries, in
-the order `[Context]`, `[Skills]`, `[Prompts]`, `[Themes]`. Each section is its heading over its
-entries, followed by an empty row; `[Context]` also gets an empty row above it.
+the order `[Context]`, `[Skills]`, `[Prompts]`, `[Extensions]`, `[Themes]`. Each
+section is its heading over its entries, followed by an empty row; `[Context]` also
+gets an empty row above it.
 With `quietStartup` set and verbose off, nothing is listed.
 
 `[Context]` lists the context files the session's resource loader discovered, in
@@ -69,6 +70,18 @@ entries, all sorted for the locale. A package entry is shown relative to its
 package root, or else by its path inside the npm or Git package directory. Prompts
 show their `/name`; when several templates share a file, the last one's name is
 shown.
+
+`[Extensions]` lists the loaded extensions. The compact form is one row of sorted
+labels. A package extension is labelled by its package: an npm source without
+`npm:`, or a Git source by its repository path. An index file below the package's
+`extensions` folder adds its folder after a colon (`workers:subagents`), and any
+other file adds its path. Other extensions are labelled by the shortest end of
+their path that no other such extension shares: `index.ts` and `index.js` files
+show their folder, and parent folders are added only as needed, so
+`/a/tools/index.ts` and `/b/tools/index.ts` become `a/tools` and `b/tools`. Two
+extensions at the same path keep the same full label. Package labels never make
+other labels longer. The expanded form groups the extensions by scope and package,
+showing each path without a final `/index.ts` or `/index.js`.
 
 `[Themes]` lists the loaded themes that came from a file; themes without a file,
 such as the shipped ones, are left out. The compact form is one row of theme names,

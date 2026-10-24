@@ -13,9 +13,10 @@ use maestro_app::configuration::config::{ENV_AGENT_DIR, VERSION};
 use maestro_app::contributions::LoadContributionsResult;
 use maestro_app::presentation_data::footer_data_provider::NativeFooterOperations;
 use maestro_app::{
-    AgentSessionRuntime, ContextFile, DiagnosticErrorInfo, LoadExtensionsResult, LoadPromptsResult,
-    LoadSkillsResult, LoadThemesResult, Local, PromptTemplate, ResourceExtensionPaths,
-    ResourceLoader, SettingsManager, Skill,
+    AgentSessionRuntime, ContextFile, DiagnosticErrorInfo, Extension, LoadExtensionsResult,
+    LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local, PromptTemplate,
+    ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo,
+    create_extension_runtime,
 };
 use maestro_test_process::TestProcess;
 use maestro_theme::{Theme, ThemeColor, ThemeState};
@@ -24,7 +25,16 @@ use maestro_tui::{
     EditorComponent, autocomplete,
 };
 use serde::Deserialize;
-use std::{cell::RefCell, collections::VecDeque, future::Future, io, path::Path, pin::Pin, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    future::Future,
+    io,
+    path::Path,
+    pin::Pin,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 /// Every recorded presentation case.
 const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
@@ -79,6 +89,8 @@ pub(super) struct ForwardingLoader {
     skills: Rc<LoadSkillsResult>,
     /// The prompt templates of each read; the last answers every later read.
     prompts: RefCell<VecDeque<Rc<LoadPromptsResult>>>,
+    /// The loaded extensions, the default loader's when absent.
+    extensions: Option<Rc<LoadExtensionsResult<Local>>>,
 }
 
 /// The resources a loader answers.
@@ -91,6 +103,8 @@ struct Resources {
     prompts: Vec<Vec<PromptTemplate>>,
     /// The loaded themes listed before the dark and light palettes.
     themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance; the default loader's when empty.
+    extensions: Vec<(String, SourceInfo)>,
 }
 
 impl ForwardingLoader {
@@ -101,6 +115,7 @@ impl ForwardingLoader {
             skills,
             prompts,
             mut themes,
+            extensions,
         } = resources;
         let prompts = prompts.into_iter().map(|prompts| {
             Rc::new(LoadPromptsResult {
@@ -119,13 +134,29 @@ impl ForwardingLoader {
                 diagnostics: Vec::new(),
             }),
             prompts: RefCell::new(prompts.collect()),
+            extensions: (!extensions.is_empty()).then(|| Rc::new(loaded(extensions))),
         }
+    }
+}
+
+/// Extensions loaded from `paths` with their provenance, registering nothing.
+fn loaded(paths: Vec<(String, SourceInfo)>) -> LoadExtensionsResult<Local> {
+    let extensions = paths.into_iter().map(|(path, source_info)| {
+        let source_info = Arc::new(RwLock::new(source_info));
+        Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
+    });
+    LoadExtensionsResult {
+        extensions: extensions.collect(),
+        errors: Vec::new(),
+        runtime: create_extension_runtime::<Local>(),
     }
 }
 
 impl ResourceLoader<Local> for ForwardingLoader {
     fn get_extensions(&self) -> Rc<LoadExtensionsResult<Local>> {
-        self.inner.get_extensions()
+        self.extensions
+            .clone()
+            .unwrap_or_else(|| self.inner.get_extensions())
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
         Rc::clone(&self.skills)
@@ -215,6 +246,8 @@ pub(super) struct Setup {
     pub(super) prompts: Vec<Vec<PromptTemplate>>,
     /// The loaded themes the loader answers before the dark and light palettes.
     pub(super) themes: Vec<Rc<Theme>>,
+    /// The loaded extensions by path and provenance; the default loader's when empty.
+    pub(super) extensions: Vec<(String, SourceInfo)>,
 }
 
 impl Default for Setup {
@@ -228,6 +261,7 @@ impl Default for Setup {
             skills: Vec::new(),
             prompts: Vec::new(),
             themes: Vec::new(),
+            extensions: Vec::new(),
         }
     }
 }
@@ -245,6 +279,7 @@ impl Setup {
             skills: self.skills,
             prompts: self.prompts,
             themes: self.themes,
+            extensions: self.extensions,
         };
         let result = session::session(&cwd, None, move |inner| {
             let loader = Rc::new(ForwardingLoader::new(inner, resources));

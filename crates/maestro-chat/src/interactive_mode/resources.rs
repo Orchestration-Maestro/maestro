@@ -13,7 +13,13 @@ use maestro_app::{
 use maestro_path::{Cwd, is_absolute, relative};
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Spacer;
-use std::{collections::HashMap, error::Error, io, rc::Rc};
+use std::{
+    collections::HashMap,
+    error::Error,
+    io,
+    rc::Rc,
+    sync::{PoisonError, RwLock, RwLockReadGuard},
+};
 
 mod labels;
 mod listing;
@@ -102,6 +108,11 @@ fn build_scope_groups<'a>(
         .into_iter()
         .filter(|group| !group.paths.is_empty() || !group.packages.is_empty())
         .collect()
+}
+
+/// Reads `lock`, whose writers never leave it inconsistent.
+fn read<T>(lock: &RwLock<T>) -> RwLockReadGuard<'_, T> {
+    lock.read().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// Displays `path` with the home prefix abbreviated, looking the home directory up now.
@@ -309,9 +320,28 @@ impl InteractiveMode {
         // The loader's own prompt read precedes the session's, whose templates are listed.
         drop(loader.get_prompts());
         let themes = loader.get_themes();
+        let extensions = loader.get_extensions();
+        let owners: Vec<_> = extensions
+            .extensions
+            .iter()
+            .map(|owner| read(owner))
+            .collect();
+        let sources: Vec<_> = owners
+            .iter()
+            .map(|owner| read(&owner.source_info))
+            .collect();
+        let items: Vec<_> = owners
+            .iter()
+            .zip(&sources)
+            .map(|(owner, source)| ResourceItem {
+                path: &owner.path,
+                source_info: Some(source),
+            })
+            .collect();
         self.show_context_resources(&loader.get_agents_files(), &theme, home)?;
         self.show_skills(&skills.skills, &theme, &collator, home)?;
         self.show_prompts(&session.prompt_templates().prompts, &theme, &collator, home)?;
+        self.show_extensions(&items, &theme, &collator, home)?;
         self.show_themes(&themes.themes, &theme, &collator, home)
     }
 
