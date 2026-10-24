@@ -19,6 +19,7 @@ use std::{
 
 mod replay;
 mod resources;
+mod share;
 mod startup;
 mod submit;
 mod toggles;

@@ -5,3 +5,8 @@ pub use maestro_process::{
     Launch, LaunchContext, OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync,
     windows_shell_launch,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_process::child_process::{
+    CapturedChild, Termination, WaitOptions, wait_for_child_process,
+};

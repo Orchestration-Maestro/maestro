@@ -102,12 +102,12 @@ fn isolated_export(test: &str, body: impl FnOnce(&Path, &Path)) {
 }
 
 /// The directory the export bundle of `layout` sits in inside `package`.
-fn layout_dir(package: &Path, layout: &str) -> std::path::PathBuf {
+pub(super) fn layout_dir(package: &Path, layout: &str) -> std::path::PathBuf {
     package.join(layout).join("core").join("export-html")
 }
 
 /// Writes the five bundle assets, each carrying `mark` so its document names its bundle.
-fn bundle(directory: &Path, mark: &str) {
+pub(super) fn bundle(directory: &Path, mark: &str) {
     let vendor = directory.join("vendor");
     std::fs::create_dir_all(&vendor).unwrap();
     for (path, body) in [
@@ -131,7 +131,7 @@ fn bundle(directory: &Path, mark: &str) {
 
 /// Copies the shipped theme documents into the bundle's package so the registry reads
 /// them, returning the directories it resolves for the running checkout.
-fn themes(package: &Path) -> ThemeDirectories {
+pub(super) fn themes(package: &Path) -> ThemeDirectories {
     let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-theme/assets/theme");
     let themes_dir = package.join("crates/maestro-theme/assets/theme");
     std::fs::create_dir_all(&themes_dir).unwrap();
@@ -145,7 +145,7 @@ fn themes(package: &Path) -> ThemeDirectories {
 
 /// A published two-branch history installed into the mode's shared session handle: the
 /// current branch keeps `BRANCH_ONE` and `BRANCH_TWO`, its sibling keeps `ANSWER_ONE`.
-fn branches(world: &World, directory: &Path) {
+pub(super) fn branches(world: &World, directory: &Path) {
     let cwd = directory.to_str().unwrap();
     let sessions = directory.join("sessions");
     let mut manager = SessionManager::create(cwd, Some(sessions.to_str().unwrap()), cwd).unwrap();
@@ -175,7 +175,7 @@ fn exportable(directory: &Path) -> World {
 
 /// A started mode over `directory` whose session is published and whose theme registry
 /// reads the shipped documents the bundle package carries.
-fn themed(directory: &Path, package: &Path) -> World {
+pub(super) fn themed(directory: &Path, package: &Path) -> World {
     let directories = themes(package);
     let world = Setup {
         directories: Some(directories),
@@ -194,15 +194,15 @@ fn cwd() -> String {
 }
 
 /// `world`'s transcript rows rendered wide enough to hold them.
-fn rows(world: &World) -> Vec<String> {
+pub(super) fn rows(world: &World) -> Vec<String> {
     world.mode.chat_container.render(WIDTH)
 }
 
 /// The row width every notice assertion renders at, wider than any recorded notice.
-const WIDTH: usize = 200;
+pub(super) const WIDTH: usize = 200;
 
 /// Asserts the transcript's last row is `message` painted in `role`, padded to the width.
-fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str) {
+pub(super) fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str) {
     let theme = world.themes.theme().get().unwrap();
     let painted = format!(" {}{message}\u{1b}[39m", theme.get_fg_ansi(role).unwrap());
     let padding = WIDTH.saturating_sub(1 + message.chars().count());
@@ -211,7 +211,7 @@ fn assert_last_row(world: &World, role: &ThemeColor, message: &str, label: &str)
 }
 
 /// Asserts the transcript's last row carries `needle`.
-fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
+pub(super) fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
     let row = rows(world).last().cloned().unwrap_or_default();
     assert!(row.contains(needle), "{label}: {row}");
 }

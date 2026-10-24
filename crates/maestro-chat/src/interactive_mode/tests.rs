@@ -1,6 +1,7 @@
 //! Native presentation witnesses through the interactive mode's own interface.
 #[path = "../../tests/footer_support/session.rs"]
 mod session;
+mod share;
 mod transcript;
 mod transfer;
 mod typed;

@@ -51,15 +51,32 @@ impl InteractiveMode {
         })));
     }
 
-    /// Runs the export command when `text` is one, handing a failure beyond the transcript
-    /// to the terminal runtime, and says whether `text` was handled as a command.
-    fn runs_command(&self, text: &str) -> bool {
-        if text != "/export" && !text.starts_with("/export ") {
+    /// Runs a recognized command, handing a failure beyond the transcript to the terminal
+    /// runtime, and says whether `text` was handled as a command. A share or copy command
+    /// is admitted on that runtime and clears the editor once it settles.
+    fn runs_command(self: &Rc<Self>, text: &str) -> bool {
+        if text == "/export" || text.starts_with("/export ") {
+            if let Err(error) = self.handle_export_command(text) {
+                self.report_runtime_error(error);
+            }
+            return true;
+        }
+        let share = text == "/share";
+        if !share && text != "/copy" {
             return false;
         }
-        if let Err(error) = self.handle_export_command(text) {
-            self.report_runtime_error(error);
-        }
+        let mode = Rc::clone(self);
+        self.tool_environment
+            .runtime
+            .spawn_local(Box::pin(async move {
+                let settled = if share {
+                    mode.handle_share_command().await
+                } else {
+                    mode.handle_copy_command().await
+                };
+                mode.clear_editor();
+                settled
+            }));
         true
     }
 }
