@@ -60,7 +60,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Best-effort refresh, with collection left outside the progress catch.
     pub(super) async fn refresh_temporary_git(&self, git: &GitSource, source: &str) {
-        if super::update::offline() {
+        if self.offline() {
             return;
         }
         let _ = self

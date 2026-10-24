@@ -467,7 +467,7 @@ fn install_tools(
             definition: Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
-                parameters: schema(),
+                parameters: schema().into(),
             },
             label: "Echo".into(),
             prepare_arguments: None,
@@ -502,7 +502,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),
-            parameters: schema(),
+            parameters: schema().into(),
         },
         label: "Echo".into(),
         prepare_arguments: preparation,

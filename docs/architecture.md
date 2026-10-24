@@ -86,8 +86,9 @@ native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
-child tests, and the native development edges from the twenty-three declared callers to
-the
+child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
+tests that drive a real session through the scripted provider, and the native development
+edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -450,8 +451,8 @@ When such a crate has top-level integration-test sources, the check requires
 target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+Native callers use its default parameter-schema owner through models; guest authoring
+keeps a `ToolInfo` alias over the same owner. Identity-deduplicated live callback storage
 belongs to `maestro-listeners::Listeners<P>`. Agent subscriptions, session
 listeners, extension error delivery and terminal input listeners reuse it. For
 shared `Rc` callbacks it also owns subscribing, which returns the removal

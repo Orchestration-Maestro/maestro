@@ -69,7 +69,7 @@ fn repl_factory_declares_schema_and_exports() {
                 serde_json::to_string(&tool.definition.parameters).unwrap(),
                 metadata["schemaText"]
             );
-            assert_eq!(tool.definition.parameters, metadata["parameters"]);
+            assert_eq!(*tool.definition.parameters, metadata["parameters"]);
             assert_eq!(
                 repl.sandbox_url_provider.read().unwrap().is_some(),
                 metadata["defaultSandboxUrlPresent"].as_bool().unwrap()
@@ -913,7 +913,7 @@ fn static_tool() -> maestro_agent::AgentTool {
         maestro_models::Tool {
             name: "static".into(),
             description: "unchanged".into(),
-            parameters: serde_json::json!({"type":"object"}),
+            parameters: serde_json::json!({"type":"object"}).into(),
         },
         "Static".into(),
         Arc::new(|_, _, _, _| {

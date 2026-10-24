@@ -74,7 +74,7 @@ fn duration_tool() -> ExtensionResult<ToolDefinition> {
             parameters: json!({"type":"object","required":["duration"],"properties":{
                 "duration":{"type":"string","description":"Duration string like '2 days', '1h', '5m'"}
             }})
-            .to_string(),
+            .into(),
             render_shell: Presence::Missing,
             execution_mode: Presence::Missing,
         },

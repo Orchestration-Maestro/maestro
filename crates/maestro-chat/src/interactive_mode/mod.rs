@@ -45,6 +45,16 @@ type StatusLine = (Rc<dyn Component>, Rc<Text>);
 pub struct InteractiveModeOptions {
     /// Forces the expanded startup help, even when startup is quiet.
     pub verbose: bool,
+    /// Providers whose credentials were migrated at startup, warned about in order.
+    pub migrated_providers: Vec<String>,
+    /// The warning shown when the session model could not be restored.
+    pub model_fallback_message: Option<String>,
+    /// The first prompt sent at startup.
+    pub initial_message: Option<String>,
+    /// Images attached to the first startup prompt.
+    pub initial_images: Option<Vec<maestro_app::ImageContent>>,
+    /// Prompts sent after the first startup prompt, in order.
+    pub initial_messages: Vec<String>,
 }
 
 /// The retained interactive presentation over the current session.

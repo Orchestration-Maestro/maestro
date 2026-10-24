@@ -80,6 +80,8 @@ struct Records {
     declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
+    /// Declared name, source line and head tokens of every struct, up to its body.
+    struct_heads: Vec<(String, usize, proc_macro2::TokenStream)>,
 }
 
 impl Records {
@@ -124,8 +126,18 @@ impl Records {
         if kind == "union" && !union_body(following.get(1)) {
             return;
         }
+        let line = keyword.span().start().line;
+        if kind == "struct" {
+            let head: TokenStream = following
+                .iter()
+                .take_while(|token| !matches!(token, TokenTree::Group(_)))
+                .cloned()
+                .collect();
+            self.struct_heads
+                .push((name.unraw().to_string(), line, head));
+        }
         self.declarations
-            .push((name.unraw().to_string(), kind, keyword.span().start().line));
+            .push((name.unraw().to_string(), kind, line));
     }
 
     /// Record supported interface-generation macro inputs.
@@ -327,6 +339,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     } else if matches!(
         name,
         "ToolInfo"
+            | "ParameterSchema"
+            | "SchemaKind"
             | "SlashCommandInfo"
             | "SlashCommandSource"
             | "MessageRenderOptions"

@@ -588,6 +588,12 @@ default. Renderer state remains local and is projected by `ToolRendererBinding`.
 Typed result renderers decode details through `from_definition`; raw renderers and
 Serialize-only details use `RegisteredToolInput::from_raw` without a decoder.
 
+A parameter schema built by a schema builder carries the kind of each node its author
+declared, beside the ordinary JSON Schema value. Argument preparation converts those
+nodes before the plain conversion pass; a schema written as ordinary JSON has no
+declared kinds and is converted as JSON alone. Provider payloads and saved JSON drop
+the declared kinds.
+
 ```rust
 use maestro_extensions::{ExtensionContext, ExtensionFactory, load_extension_from_factory};
 use maestro_models::{Local, Tool};
@@ -602,7 +608,7 @@ let factory: ExtensionFactory<Local> = Rc::new(|api| {
     let tool: ToolDefinitionRecord<ExtensionContext, Value, Value, (), Local, Local> =
         ToolDefinitionRecord {
             definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
-                parameters: json!({"type":"object"}) },
+                parameters: json!({"type":"object"}).into() },
             label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
             render_shell: None, prepare_arguments: None, execution_mode: None,
             execute: Rc::new(|_, params, _, _, ctx| Box::pin(async move {

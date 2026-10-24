@@ -98,6 +98,8 @@ pub struct DefaultPackageManager<O: PackageOperations> {
     root_cache: RefCell<(String, String)>,
     /// The callback used by the next progress emission.
     progress: RefCell<Option<ProgressCallback>>,
+    /// A caller's offline selection, or the ambient flag when absent.
+    offline: Option<bool>,
 }
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Stores the supplied inputs without observing settings or effects.
@@ -108,7 +110,22 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             operations,
             root_cache: RefCell::default(),
             progress: RefCell::default(),
+            offline: None,
         }
+    }
+
+    /// Selects offline mode from the caller instead of the ambient environment.
+    ///
+    /// An absent selection keeps reading `MAESTRO_OFFLINE` when an operation runs.
+    #[must_use]
+    pub fn with_offline(mut self, offline: Option<bool>) -> Self {
+        self.offline = offline;
+        self
+    }
+
+    /// Whether this operation suppresses remote work.
+    fn offline(&self) -> bool {
+        maestro_text::is_offline_selected(self.offline)
     }
 }
 

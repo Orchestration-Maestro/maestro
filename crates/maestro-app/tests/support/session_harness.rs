@@ -392,7 +392,7 @@ pub fn tool_definition(
         definition: Tool {
             name: name.into(),
             description: format!("{name} tool"),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         label: name.into(),
         prompt_snippet: snippet.map(str::to_owned),
@@ -1942,7 +1942,7 @@ pub fn waiting_tool(
         definition: Tool {
             name: "wait".into(),
             description: "Wait for release".into(),
-            parameters: json!({"type": "object", "properties": {}}),
+            parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
         label: "Wait".into(),
@@ -1974,7 +1974,8 @@ pub fn echo_tools(
         definition: Tool {
             name: "echo".into(),
             description: "Echo back".into(),
-            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+            parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}})
+                .into(),
         },
         description: None,
         label: "Echo".into(),

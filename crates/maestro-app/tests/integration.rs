@@ -24,6 +24,7 @@ mod browser_decimal;
 mod browser_discovery;
 mod browser_messages;
 mod browser_proxy;
+mod browser_schema_origins;
 mod browser_sessions;
 mod browser_storage;
 #[path = "support/browser_storage.rs"]
@@ -170,6 +171,7 @@ mod ssf_values;
 mod ssf_writers;
 mod startup_completion;
 mod startup_conversions;
+mod startup_environment;
 mod startup_timings;
 mod system_prompt_assembly;
 /// Strict recorded observations shared by several test modules.

@@ -487,7 +487,7 @@ fn install_tools(agent: &Arc<Agent<Notice>>, input: &Arc<Input>, trace: &Arc<Mut
             definition: maestro_models::Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
-                parameters: json!({"type":"object","properties":{}}),
+                parameters: json!({"type":"object","properties":{}}).into(),
             },
             label: "Echo".into(),
             prepare_arguments: None,
