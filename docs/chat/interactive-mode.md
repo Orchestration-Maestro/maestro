@@ -36,12 +36,13 @@ header, transcript, pending-messages, status, upper widget, editor and lower wid
 containers and the footer, in that order. The upper widget container starts with
 one blank spacer row; the lower widget container starts empty. It focuses the
 editor, binds the transcript shortcuts, the queue keys and editor actions, installs
-editor submission and starts the terminal. A terminal start failure is returned and leaves the mode
-uninitialized. Once started, it subscribes to the session events and sets the window
-title. A theme change then invalidates the presentation, recolours the editor border
-and requests a frame, and a branch change requests a frame. Neither callback keeps
-the mode alive. Last, it lists the loaded resources and their diagnostics in the
-transcript and then replays the session (see below).
+editor submission and the global debug key, and starts the terminal. A terminal
+start failure is returned and leaves the mode uninitialized. Once started, it
+subscribes to the session events and sets the window title. A theme change then
+invalidates the presentation, recolours the editor border and requests a frame,
+and a branch change requests a frame. Neither callback keeps the mode alive. Last,
+it lists the loaded resources and their diagnostics in the transcript and then
+replays the session (see below).
 
 `InteractiveModeOptions::verbose` forces the expanded startup help, as does
 expanded tool output. Without verbose, the `quietStartup` setting leaves the

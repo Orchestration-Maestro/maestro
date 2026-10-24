@@ -1,6 +1,6 @@
 //! The interactive terminal mode: its retained containers, startup help, loaded
-//! resources, notices, transcript shortcuts, editor actions, typed input and queued
-//! input.
+//! resources, notices, transcript shortcuts, editor actions, typed input, queued
+//! input and session commands.
 
 use crate::{BashExecutionComponent, CustomEditor, FooterComponent, ToolExecutionComponent};
 use indexmap::IndexMap;
@@ -20,6 +20,7 @@ use std::{
 
 mod actions;
 mod bash;
+mod debug;
 mod events;
 mod info;
 mod key_display;
@@ -70,6 +71,8 @@ pub struct InteractiveMode {
     options: InteractiveModeOptions,
     /// The terminal user interface this mode owns.
     ui: TUI,
+    /// The terminal host: log time, log file effects and failure reports.
+    runtime: Rc<dyn TuiRuntime>,
     /// The theme registry and its published theme.
     themes: Rc<ThemeState>,
     /// The startup header container.
@@ -166,6 +169,7 @@ impl InteractiveMode {
             runtime_host,
             options,
             ui,
+            runtime,
             themes,
             header_container: Rc::new(Container::new()),
             chat_container: Rc::new(Container::new()),
@@ -195,10 +199,10 @@ impl InteractiveMode {
     }
 
     /// Builds the header, adds every container in order, focuses the editor, binds the
-    /// transcript shortcuts, installs editor submission, starts the terminal, lists the
-    /// loaded resources with their diagnostics and replays the session, once; theme
-    /// changes then refresh the editor border, and theme and branch changes request
-    /// fresh frames.
+    /// transcript shortcuts, installs editor submission and the global debug key, starts
+    /// the terminal, lists the loaded resources with their diagnostics and replays the
+    /// session, once; theme changes then refresh the editor border, and theme and branch
+    /// changes request fresh frames.
     ///
     /// # Errors
     /// Returns the failure of the header's theme colours, of the terminal start, of the
@@ -225,6 +229,7 @@ impl InteractiveMode {
         self.setup_key_handlers();
         self.setup_queue_key_handlers();
         self.setup_editor_submit_handler();
+        self.setup_debug_handler();
         self.ui.start()?;
         self.is_initialized.set(true);
         self.subscribe_to_agent();
