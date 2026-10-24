@@ -5,11 +5,13 @@
     clippy::excessive_nesting
 )]
 
+use serde::Deserialize;
 use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::host::Harness;
 use super::host_family::guest::{ToolCapabilities, ToolInvocation};
+use super::observed::Observed;
 use crate::component_adapter::{Exports, release};
 use crate::loader::Extension;
 
@@ -29,6 +31,32 @@ pub async fn registered<E: Extension>(
     let (host, exports) = start::<E>().await?;
     let key = host.observed().callback(tool)?;
     Ok((host, key, exports))
+}
+
+/// The registered command a corpus records: its name, description and whether it has argument
+/// completions.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Command {
+    /// The command name.
+    pub name: String,
+    /// The command description.
+    pub description: String,
+    /// Whether the factory registers argument completions.
+    pub completions: bool,
+}
+
+/// Asserts the host received exactly the recorded command.
+pub fn assert_registered_command(observed: &Observed, command: &Command) {
+    assert_eq!(
+        observed.registrations.commands,
+        [(
+            command.name.clone(),
+            Some(command.description.clone()),
+            command.completions
+        )],
+        "the registered command"
+    );
 }
 
 /// Parses `text` and decodes the JSON document it carries at `member`.

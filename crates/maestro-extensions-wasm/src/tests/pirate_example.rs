@@ -8,7 +8,9 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::documents::Answer;
-use super::example_support::{invoke_command_on_component, release_all, start};
+use super::example_support::{
+    Command, assert_registered_command, invoke_command_on_component, release_all, start,
+};
 use super::host::Harness;
 use super::observed::Observed;
 use super::ui_host::receipts;
@@ -249,15 +251,7 @@ fn release_built(hosts: &mut [ComponentHost]) -> Result<(), String> {
 fn pirate_registers_command_and_prompt_handler() -> Result<(), String> {
     let metadata = corpus().metadata;
     let started = ControlledHost::new()?;
-    assert_eq!(
-        started.host.observed().registrations.commands,
-        [(
-            metadata.command.name.clone(),
-            Some(metadata.command.description.clone()),
-            metadata.command.completions
-        )],
-        "the registered command"
-    );
+    assert_registered_command(&started.host.observed(), &metadata.command);
     release_all(&started.host, &recorded_order(&metadata));
     Ok(())
 }
@@ -301,15 +295,7 @@ fn pirate_notify_failure_keeps_toggle() -> Result<(), String> {
 fn pirate_component_runs_recorded_transitions() -> Result<(), String> {
     let corpus = corpus();
     let mut hosts = components(3)?;
-    assert_eq!(
-        hosts[0].harness.observed().registrations.commands,
-        [(
-            corpus.metadata.command.name.clone(),
-            Some(corpus.metadata.command.description.clone()),
-            corpus.metadata.command.completions
-        )],
-        "the registered command"
-    );
+    assert_registered_command(hosts[0].harness.observed(), &corpus.metadata.command);
     for row in &corpus.rows {
         run(&mut hosts, row)?;
     }
@@ -378,18 +364,6 @@ struct RegistrationRow {
     operation: Registration,
     /// The name it registered.
     name: String,
-}
-
-/// The registered command's name, description and absent argument completions.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Command {
-    /// The command name.
-    name: String,
-    /// The command description.
-    description: String,
-    /// Whether the factory registers argument completions.
-    completions: bool,
 }
 
 /// One recorded operation: its inputs and the observations it must produce.
