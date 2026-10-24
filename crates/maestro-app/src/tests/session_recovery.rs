@@ -3,8 +3,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 use super::session_harness::{
     Auth, Harness, HarnessOptions, agent_ended, answer, assistant, case, harness, load_history,
-    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon, usage,
-    user,
+    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon,
+    summary_provider, usage, user,
 };
 use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_app::agent_session::CompactionReason;
@@ -42,10 +42,19 @@ fn keep_recent(settings: Value) -> Value {
 
 /// A session over the scripted provider, holding the recorded starting conversation.
 async fn seeded(settings: Value, factories: Vec<ExtensionFactory<Local>>) -> Harness {
+    seeded_window(WINDOW, settings, factories).await
+}
+
+/// A seeded session whose model reports the supplied context window.
+async fn seeded_window(
+    window: f64,
+    settings: Value,
+    factories: Vec<ExtensionFactory<Local>>,
+) -> Harness {
     let h = harness(HarnessOptions {
         settings: keep_recent(settings),
         factories,
-        context_window: Some(WINDOW),
+        context_window: Some(window),
         ..HarnessOptions::default()
     })
     .await;
@@ -365,10 +374,8 @@ fn supplied_summary() -> Handler {
     })
 }
 
-/// The extension the recorded cases install to supply the preparation's summary.
-fn summary_provider() -> ExtensionFactory<Local> {
-    handled(supplied_summary())
-}
+/// The summary text every recorded case supplies.
+const AUTO_SUMMARY: &str = "auto compacted";
 
 /// The extension the recorded cases install to refuse a compaction.
 fn veto() -> ExtensionFactory<Local> {
@@ -598,13 +605,66 @@ fn retry_classification_follows_the_reference_table() {
 
 // -------------------------------------------------------------- checks
 
+/// A summary provider that counts the compactions that reached it.
+fn counted_summary(calls: Rc<Cell<usize>>) -> ExtensionFactory<Local> {
+    handled(Rc::new(move |event| {
+        calls.set(calls.get() + 1);
+        let data = &event.data;
+        Some(SessionBeforeCompactResult {
+            cancel: Presence::Missing,
+            compaction: Presence::Present(CompactionResult {
+                summary: "auto compacted".to_owned(),
+                first_kept_entry_id: data.preparation.first_kept_entry_id.clone(),
+                tokens_before: data.preparation.tokens_before,
+                details: Presence::Present(json!({})),
+            }),
+        })
+    }))
+}
+
+/// Checks one finished response reporting `tokens` and `total`, and reports how many
+/// compactions started over a 100-token window.
+async fn started_compactions(settings: Value, tokens: [u64; 4], total: Option<u64>) -> usize {
+    let calls = Rc::new(Cell::new(0));
+    let h = seeded_window(100.0, settings, vec![counted_summary(Rc::clone(&calls))]).await;
+    let message = response(
+        400,
+        &json!({
+            "stopReason": StopReason::Stop,
+            "usage": usage(tokens, 0.0, total),
+        }),
+    );
+    h.session.check_compaction(&message, true).await.unwrap();
+    calls.get()
+}
+
+#[test]
+fn missing_total_compaction_thresholds_use_components() {
+    on_paused_task_set(|_| async {
+        let threshold = json!({"compaction": {"reserveTokens": 87}});
+        for (sum, expected) in [(12_u64, 0), (13, 0), (14, 1)] {
+            let starts = started_compactions(threshold.clone(), [sum, 0, 0, 0], None).await;
+            assert_eq!(starts, expected, "categories summing to {sum}");
+        }
+        let supplied = started_compactions(threshold, [14, 0, 0, 0], Some(1)).await;
+        assert_eq!(supplied, 0, "a supplied total replaces the categories");
+        let disabled = started_compactions(
+            json!({"compaction": {"enabled": false}}),
+            [14, 0, 0, 0],
+            None,
+        )
+        .await;
+        assert_eq!(disabled, 0, "disabled compaction");
+    });
+}
+
 #[test]
 fn disabled_compaction_emits_nothing() {
     let expected = case("compaction_checks", "disabled_setting_does_nothing");
     on_paused_task_set(|_| async {
         let h = seeded(
             json!({"compaction": {"enabled": false}}),
-            vec![summary_provider()],
+            vec![summary_provider(AUTO_SUMMARY)],
         )
         .await;
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
@@ -620,7 +680,7 @@ fn aborted_messages_are_skipped_unless_included() {
         "aborted_message_skipped_unless_included",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let aborted = response(
             400,
             &answer_extra(&StopReason::Aborted, Some("aborted"), 199_999),
@@ -641,7 +701,7 @@ fn aborted_messages_are_skipped_unless_included() {
 fn overflow_recovery_is_attempted_once_then_reported() {
     let expected = case("compaction_checks", "overflow_recovery_is_attempted_once");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let overflow = overflow_response();
         set_agent_messages(
             &h,
@@ -671,7 +731,7 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
         "overflow_recovery_continues_after_100ms",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let overflow = overflow_response();
         set_agent_messages(
             &h,
@@ -703,7 +763,7 @@ fn overflow_recovery_continues_after_one_hundred_milliseconds() {
 fn usage_before_the_compaction_boundary_is_ignored() {
     let expected = case("compaction_checks", "stale_usage_is_ignored");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let stale = response(250, &answer_extra(&StopReason::Stop, None, 199_999));
         let first_kept = append_boundary(&h, &stale, 199_999.0);
         append_user(&h, "after", 900);
@@ -717,7 +777,7 @@ fn usage_before_the_compaction_boundary_is_ignored() {
 fn threshold_compaction_ends_without_retry() {
     let expected = case("compaction_checks", "threshold_compacts_without_retry");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
@@ -731,7 +791,7 @@ fn below_threshold_usage_emits_nothing() {
     on_paused_task_set(|_| async {
         let h = seeded(
             json!({"compaction": {"reserveTokens": 1000}}),
-            vec![summary_provider()],
+            vec![summary_provider(AUTO_SUMMARY)],
         )
         .await;
         let message = response(400, &answer_extra(&StopReason::Stop, None, 198_000));
@@ -747,7 +807,7 @@ fn error_messages_use_the_last_successful_usage() {
         "error_message_uses_last_successful_usage",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let error = response(
             400,
             &answer_extra(&StopReason::Error, Some("529 overloaded"), 0),
@@ -771,7 +831,7 @@ fn error_messages_use_the_last_successful_usage() {
 fn errors_without_usage_emit_nothing() {
     let expected = case("compaction_checks", "error_without_usage_does_nothing");
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let error = response(
             400,
             &answer_extra(&StopReason::Error, Some("529 overloaded"), 0),
@@ -795,7 +855,7 @@ fn kept_pre_compaction_usage_does_not_trigger_compaction() {
         "post_compaction_error_ignores_kept_usage",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let kept = response(250, &answer_extra(&StopReason::Stop, None, 190_000));
         let first_kept = append_boundary(&h, &kept, 190_000.0);
         let error = response(
@@ -826,7 +886,7 @@ fn another_models_overflow_is_not_recovered() {
     on_paused_task_set(|_| async {
         let h = seeded(
             json!({"compaction": {"reserveTokens": 1000}}),
-            vec![summary_provider()],
+            vec![summary_provider(AUTO_SUMMARY)],
         )
         .await;
         let mut record = assistant(
@@ -848,7 +908,7 @@ fn queued_messages_resume_after_the_compaction() {
         "queue_only_compaction_resumes_at_100ms",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let queued: CustomAgentMessages = serde_json::from_value(json!({
             "role": "custom",
             "customType": "test",
@@ -886,7 +946,7 @@ fn automatic_compaction_without_credentials_ends_silently() {
         "auto_compaction_without_auth_ends_silently",
     );
     on_paused_task_set(|_| async {
-        let h = unauthenticated(vec![summary_provider()]).await;
+        let h = unauthenticated(vec![summary_provider(AUTO_SUMMARY)]).await;
         seed_history(&h);
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
@@ -918,7 +978,7 @@ fn automatic_compaction_over_empty_history_ends_silently() {
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
             settings: keep_recent(json!({})),
-            factories: vec![summary_provider()],
+            factories: vec![summary_provider(AUTO_SUMMARY)],
             context_window: Some(WINDOW),
             ..HarnessOptions::default()
         })
@@ -953,7 +1013,7 @@ fn automatic_start_event_precedes_the_abort_controller() {
         "auto_start_event_precedes_the_abort_controller",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let session = Rc::downgrade(&h.session);
         let stopped = Rc::new(Cell::new(false));
         let flag = Rc::clone(&stopped);
@@ -1076,7 +1136,7 @@ fn manual_compaction_uses_the_extension_summary() {
         "manual_compaction_uses_extension_summary",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let result = h.session.compact(None).await.unwrap();
         assert_eq!(
             result.summary,
@@ -1131,7 +1191,7 @@ fn compacting_twice_reports_already_compacted() {
         "manual_compaction_twice_reports_already_compacted",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         drop(h.session.compact(None).await.unwrap());
         h.events.borrow_mut().clear();
         let refused = h.session.compact(None).await;
@@ -1149,7 +1209,7 @@ fn compacting_empty_history_reports_nothing_to_compact() {
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions {
             settings: keep_recent(json!({})),
-            factories: vec![summary_provider()],
+            factories: vec![summary_provider(AUTO_SUMMARY)],
             context_window: Some(WINDOW),
             ..HarnessOptions::default()
         })
@@ -1247,7 +1307,7 @@ fn manual_start_event_precedes_the_abort_controller() {
         "manual_start_event_precedes_the_abort_controller",
     );
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let session = Rc::downgrade(&h.session);
         let stopped = Rc::new(Cell::new(false));
         let flag = Rc::clone(&stopped);
@@ -1570,7 +1630,7 @@ fn automatic_storage_failures_end_the_compaction() {
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
         let h = harness(HarnessOptions {
             settings: keep_recent(json!({})),
-            factories: vec![summary_provider()],
+            factories: vec![summary_provider(AUTO_SUMMARY)],
             context_window: Some(WINDOW),
             session_manager: Some(manager),
             ..HarnessOptions::default()
@@ -1600,7 +1660,7 @@ fn automatic_storage_failures_end_the_compaction() {
 #[test]
 fn end_listeners_see_the_compaction_running() {
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let session = Rc::downgrade(&h.session);
         let running = Rc::new(RefCell::new(Vec::new()));
         let seen = Rc::clone(&running);
@@ -1628,7 +1688,7 @@ fn end_listeners_see_the_compaction_running() {
 #[test]
 fn overflow_recovery_keeps_a_successful_stored_tail() {
     on_paused_task_set(|_| async {
-        let h = seeded(json!({}), vec![summary_provider()]).await;
+        let h = seeded(json!({}), vec![summary_provider(AUTO_SUMMARY)]).await;
         let kept = assistant(
             "kept answer",
             350,
@@ -1737,7 +1797,7 @@ fn repeated_summaries_announce_the_newest_entry() {
         let ids = Rc::new(RefCell::new(Vec::new()));
         let h = seeded(
             json!({}),
-            vec![summary_provider(), announced(Rc::clone(&ids))],
+            vec![summary_provider(AUTO_SUMMARY), announced(Rc::clone(&ids))],
         )
         .await;
         drop(h.session.compact(None).await.unwrap());
