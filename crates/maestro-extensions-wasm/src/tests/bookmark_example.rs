@@ -5,7 +5,9 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{Observation, invoke_command_on_component, release_all, start};
+use super::example_support::{
+    Command as CommandRecord, Observation, invoke_command_on_component, release_all, start,
+};
 use super::host::Harness;
 use super::reader_host::Reader;
 use crate::component_adapter::Exports;
@@ -687,18 +689,6 @@ struct Corpus {
     metadata: Vec<CommandRecord>,
     /// The recorded cases.
     rows: Vec<Case>,
-}
-
-/// One recorded command registration.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct CommandRecord {
-    /// The registered name.
-    name: String,
-    /// The registered description.
-    description: String,
-    /// Whether the factory registers argument completions.
-    completions: bool,
 }
 
 /// One recorded case: its inputs and the observations it must produce.
