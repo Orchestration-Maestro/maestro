@@ -47,7 +47,7 @@ fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
 }
 
 /// Polls `future` once with a waker that observes nothing.
-fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
+pub(super) fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
     match Pin::new(future).poll(&mut Context::from_waker(Waker::noop())) {
         Poll::Ready(output) => Some(output),
         Poll::Pending => None,
@@ -55,7 +55,7 @@ fn poll<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
 }
 
 /// An input future of `mode` that has been polled once and is waiting.
-fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
+pub(super) fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
     let mut waiter: Pin<Box<dyn Future<Output = String>>> = Box::pin(mode.get_user_input());
     assert_eq!(poll(&mut waiter), None);
     waiter
@@ -63,7 +63,7 @@ fn waiting(mode: &InteractiveMode) -> Pin<Box<dyn Future<Output = String>>> {
 
 /// The editor's history, newest first, recalled with Up from an empty editor, which is
 /// left empty again.
-fn recalled(editor: &CustomEditor) -> Vec<String> {
+pub(super) fn recalled(editor: &CustomEditor) -> Vec<String> {
     editor.set_text("");
     let mut history: Vec<String> = Vec::new();
     loop {
@@ -79,8 +79,8 @@ fn recalled(editor: &CustomEditor) -> Vec<String> {
 }
 
 /// Submits `text` through the callback the mode installed on its editor.
-fn submit(world: &World, text: &str) {
-    let callback = world.mode.editor.on_submit().unwrap();
+pub(super) fn submit(mode: &InteractiveMode, text: &str) {
+    let callback = mode.editor.on_submit().unwrap();
     callback(text);
 }
 
@@ -113,7 +113,7 @@ fn typed_submission_trims_ecmascript_whitespace_and_records_history() {
         for (input, expected) in cases::<Selection, Selected>(TEST) {
             let world = started(directory);
             let mut waiter = input.waiting.then(|| waiting(&world.mode));
-            submit(&world, &input.value);
+            submit(&world.mode, &input.value);
             let delivered: Vec<String> = waiter.as_mut().and_then(poll).into_iter().collect();
             assert_eq!(delivered, expected.delivered, "{:?}", input.value);
             assert_eq!(
@@ -164,17 +164,17 @@ enum Waited {
 
 /// Early, empty, accepted, later and fresh-waiter submissions.
 fn one_shot(world: &World) -> (Vec<String>, String) {
-    submit(world, " early ");
+    submit(&world.mode, " early ");
     let mut first = waiting(&world.mode);
-    submit(world, "   ");
+    submit(&world.mode, "   ");
     assert!(world.mode.on_input_callback.borrow().is_some());
     assert_eq!(poll(&mut first), None);
-    submit(world, " one ");
+    submit(&world.mode, " one ");
     let delivered = vec![poll(&mut first).unwrap()];
     assert!(world.mode.on_input_callback.borrow().is_none());
-    submit(world, " after ");
+    submit(&world.mode, " after ");
     let mut second = waiting(&world.mode);
-    submit(world, " two ");
+    submit(&world.mode, " two ");
     (delivered, poll(&mut second).unwrap())
 }
 
@@ -183,11 +183,11 @@ fn replace(world: &World) -> (bool, String, Vec<String>) {
     let mut old = waiting(&world.mode);
     let mut latest = waiting(&world.mode);
     assert_eq!(poll(&mut old), None);
-    submit(world, " replacement ");
+    submit(&world.mode, " replacement ");
     let old_done = poll(&mut old).is_some();
     let new_value = poll(&mut latest).unwrap();
     let history = recalled(&world.mode.editor);
-    submit(world, " later ");
+    submit(&world.mode, " later ");
     assert_eq!(poll(&mut old), None);
     (old_done, new_value, history)
 }
@@ -230,13 +230,13 @@ fn typed_waiter_is_one_shot_without_buffering_early_submissions() {
         }
         let world = started(directory);
         let mut unpolled = Box::pin(world.mode.get_user_input());
-        submit(&world, " unclaimed ");
+        submit(&world.mode, " unclaimed ");
         assert!(world.mode.on_input_callback.borrow().is_none());
         assert_eq!(poll(&mut unpolled), None);
-        submit(&world, " claimed ");
+        submit(&world.mode, " claimed ");
         assert_eq!(poll(&mut unpolled).as_deref(), Some("claimed"));
         drop(waiting(&world.mode));
-        submit(&world, " abandoned ");
+        submit(&world.mode, " abandoned ");
         assert!(world.mode.on_input_callback.borrow().is_none());
         assert_eq!(
             recalled(&world.mode.editor),
@@ -353,13 +353,13 @@ fn typed_delivery_precedes_history_and_accepts_reentrant_registration() {
             *next.borrow_mut() = Some(waiting(&mode));
             mode.editor.set_text("alternate editor text");
         })));
-        submit(&world, " selected ");
+        submit(&world.mode, " selected ");
         assert!(ON_WAKE.with_borrow(Option::is_none));
         assert_eq!(*observations.borrow(), expected.observations);
         assert_eq!(observations.borrow()[0].text, expected.first);
         assert_eq!(world.mode.editor.get_text(), "alternate editor text");
         assert_eq!(recalled(&world.mode.editor)[0], expected.first);
-        submit(&world, " next ");
+        submit(&world.mode, " next ");
         let mut waiter = second.borrow_mut().take().unwrap();
         assert_eq!(poll(&mut waiter), Some(expected.second));
         assert_eq!(recalled(&world.mode.editor), expected.history);

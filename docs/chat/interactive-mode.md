@@ -2,10 +2,11 @@
 
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
-the startup help, the transcript notices, typed input, session replay and the
-expansion and thinking shortcuts. The prompt loop, streaming messages, installed
-custom headers, the terminal title and the other integrations are still to come;
-the mode reads submitted text but does not yet prompt the session.
+the startup help, the transcript notices, typed input, the export command,
+session replay and the expansion and thinking shortcuts. The prompt loop,
+streaming messages, installed custom headers, the terminal title and the other
+integrations are still to come; the mode reads submitted text but does not yet
+prompt the session.
 
 ## Construction
 
@@ -69,8 +70,14 @@ polled, and the replaced future stays pending.
 
 The waiting input receives the text before the editor's history records it, so
 code that runs when the input completes can already wait for the next one. Every
-accepted submission enters the history, whether or not an input was waiting.
-Submission does not keep the mode alive.
+submission delivered as prompt text enters the history, whether or not an input
+was waiting. Submission does not keep the mode alive.
+
+Submission offers the text to the mode's commands first. Text recognized as
+`/export` runs that command instead: it reports on the transcript, completes no
+waiting input and enters no history. Near spellings are prompt text, so
+`/exporter notes.jsonl` and `/export` followed by a tab reach the input. See
+[interactive commands](commands.md).
 
 ## Session replay
 

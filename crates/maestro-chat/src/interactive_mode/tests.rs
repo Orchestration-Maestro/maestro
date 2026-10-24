@@ -139,6 +139,8 @@ struct Setup {
     select: Option<String>,
     /// The inline extension the session loads, when supplied.
     extension: Option<ExtensionFactory<Local>>,
+    /// The directories the theme registry reads, when it records themes on disk.
+    directories: Option<maestro_theme::ThemeDirectories>,
 }
 
 impl Default for Setup {
@@ -148,6 +150,7 @@ impl Default for Setup {
             configure: Box::new(|_| {}),
             select: None,
             extension: None,
+            directories: None,
         }
     }
 }
@@ -205,7 +208,10 @@ impl Setup {
         ));
         let terminal = RecordingTerminal::new(80, 24);
         let runtime = ManualRuntime::new();
-        let themes = Rc::new(published::unpublished());
+        let themes = Rc::new(match self.directories {
+            Some(directories) => ThemeState::new(directories),
+            None => published::unpublished(),
+        });
         let local = Rc::new(tokio::task::LocalSet::new());
         let mode = InteractiveMode::new(
             Rc::clone(&host),
