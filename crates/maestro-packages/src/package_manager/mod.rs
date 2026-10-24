@@ -125,9 +125,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
     /// Whether this operation suppresses remote work.
     fn offline(&self) -> bool {
-        self.offline.unwrap_or_else(|| {
-            maestro_text::is_truthy_env_flag(std::env::var("MAESTRO_OFFLINE").ok().as_deref())
-        })
+        maestro_text::is_offline_selected(self.offline)
     }
 }
 
