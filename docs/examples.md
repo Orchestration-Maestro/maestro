@@ -8,7 +8,7 @@ Run them directly with Cargo in a disposable Unix terminal.
 
 The package directory holds an `examples/` folder, beside the README and the
 documentation. `examples/README.md` indexes two folders, `extensions/` and
-`sdk/`, and each folder has its own index page. Thirteen extensions ship:
+`sdk/`, and each folder has its own index page. Fifteen extensions ship:
 `extensions/hello.rs` builds a greeting component, `extensions/shutdown_command.rs`
 builds a quit command with two tools that ask the host to shut down,
 `extensions/prompt_customizer.rs` builds a prompt-guidance component,
@@ -24,6 +24,8 @@ compaction above a token threshold and a command that requests compaction
 immediately, `extensions/bookmark.rs` labels the newest assistant message so the
 tree view can show it, `extensions/working_message_test.rs` asks for custom
 working text and an indicator whenever a session starts,
+`extensions/dynamic_tools.rs` registers one echo tool when a session starts and
+a command that adds more echo tools while the session runs,
 `extensions/session_name.rs` builds a command that sets or shows the session's
 friendly name, `extensions/system_prompt_header.rs` reports the current system
 prompt's length as status, and `extensions/send_user_message.rs` builds commands
