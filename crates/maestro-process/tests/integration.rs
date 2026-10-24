@@ -5,5 +5,6 @@ mod capture_lifecycle;
 mod child_status_checks;
 mod helper_launches;
 mod pty_children;
+mod startup_environment;
 mod streamed_capture;
 mod synchronous_capture;
