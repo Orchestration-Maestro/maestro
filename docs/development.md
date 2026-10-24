@@ -206,11 +206,21 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
   node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
 ```
 
+The tool report page is a second witness in the same job: `analysis_page.cjs`
+serves the committed report fixture, maps the page's two pinned library URLs to
+cached copies whose SHA-256 digests it checks (a missing copy is fetched with
+retries and a mismatch fails), and then observes what the page paints. A row
+click must change the selected summary and the canvas bitmap, a recorded
+`</script>` payload must stay inert text, and bar fills, chart label text and row
+borders must show the brand roles. The native report test holds the fixture
+byte-for-byte, so a template change has to move both.
+
 Canvas session-header tests and offline tool cards are not executed; the latter
 still depend on the canvas renderer. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
-requests the shared Chromium job with `browser_test_crates = ["maestro-web"]`.
+requests the shared Chromium job with
+`browser_test_crates = ["maestro-app", "maestro-web"]`.
 The job runs when the existing package selection includes a requested package,
 when a nonempty request changes, or for merge groups and main pushes; advisory-only
 runs skip it. Native package selection and the coverage floor stay unchanged.
