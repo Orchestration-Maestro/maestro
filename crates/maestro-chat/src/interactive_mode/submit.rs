@@ -1,6 +1,7 @@
 //! Editor submission and the single waiting input operation.
 use super::InteractiveMode;
 use maestro_app::is_whitespace_scalar;
+use maestro_tui::EditorComponent;
 use std::{
     future::{Future, pending},
     rc::Rc,
@@ -27,7 +28,9 @@ impl InteractiveMode {
     }
 
     /// Installs submission on the editor without keeping the mode alive: trimmed nonempty
-    /// text goes to the waiting input, if any, then into the editor's history.
+    /// text that is `/scoped-models` or a `/model` command clears the editor and runs the
+    /// command; other text goes to the waiting input, if any, then into the editor's
+    /// history.
     pub(super) fn setup_editor_submit_handler(self: &Rc<Self>) {
         let mode = Rc::downgrade(self);
         self.editor.set_on_submit(Some(Rc::new(move |text| {
@@ -35,6 +38,18 @@ impl InteractiveMode {
             let Some(mode) = mode.upgrade().filter(|_| !text.is_empty()) else {
                 return;
             };
+            if text == "/scoped-models" {
+                mode.editor.set_text("");
+                mode.report(mode.show_models_selector());
+                return;
+            }
+            if text == "/model" || text.starts_with("/model ") {
+                let search = text["/model".len()..].trim_matches(is_whitespace_scalar);
+                mode.submit_model_command(
+                    Some(search.to_owned()).filter(|search| !search.is_empty()),
+                );
+                return;
+            }
             let waiting = mode.on_input_callback.borrow_mut().take();
             if let Some(waiting) = waiting {
                 // A dropped waiter no longer wants the text; history still records it.
@@ -42,5 +57,14 @@ impl InteractiveMode {
             }
             mode.editor.add_to_history(text);
         })));
+    }
+
+    /// Clears the editor and runs `/model` with `search` on the terminal runtime.
+    fn submit_model_command(self: Rc<Self>, search: Option<String>) {
+        self.editor.set_text("");
+        let runtime = Rc::clone(&self.tool_environment.runtime);
+        runtime.spawn_local(Box::pin(
+            async move { self.handle_model_command(search).await },
+        ));
     }
 }

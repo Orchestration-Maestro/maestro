@@ -1,0 +1,2802 @@
+[
+  {
+    "operation": "account",
+    "case": "help_no_args",
+    "input": {
+      "args": [],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "help_empty",
+    "input": {
+      "args": [
+        ""
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "help_word",
+    "input": {
+      "args": [
+        "help"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "help_long",
+    "input": {
+      "args": [
+        "--help"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "help_short",
+    "input": {
+      "args": [
+        "-h"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "list_builtin",
+    "input": {
+      "args": [
+        "list"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Available OAuth providers:\n\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "unknown_command",
+    "input": {
+      "args": [
+        "wat"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Unknown command: wat\nUse 'maestro-model-account --help' for usage\n",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "unknown_case",
+    "input": {
+      "args": [
+        "List"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Unknown command: List\nUse 'maestro-model-account --help' for usage\n",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "unknown_provider",
+    "input": {
+      "args": [
+        "login",
+        "missing"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Unknown provider: missing\nUse 'maestro-model-account list' to see available providers\n",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "help_ignores_extra",
+    "input": {
+      "args": [
+        "help",
+        "ignored"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "list_ignores_extra",
+    "input": {
+      "args": [
+        "list",
+        "ignored"
+      ],
+      "registry": "builtin"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Available OAuth providers:\n\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "list_registered",
+    "input": {
+      "args": [
+        "list"
+      ],
+      "extraProviders": [
+        {
+          "id": "😀",
+          "name": "Emoji account"
+        },
+        {
+          "id": "123456789012345678901",
+          "name": "Long account"
+        }
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Available OAuth providers:\n\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n  fixture              Fixture account\n  😀                   Emoji account\n  123456789012345678901 Long account\n",
+      "stderr": "",
+      "trace": {
+        "opened": 0,
+        "closed": [],
+        "questions": [],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": []
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "explicit_login",
+    "input": {
+      "args": [
+        "login",
+        "fixture",
+        "ignored"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "empty_provider_arg",
+    "input": {
+      "args": [
+        "login",
+        ""
+      ],
+      "answers": [
+        "4"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "retained_callbacks",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "retain": true
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ],
+        "retained_callback": true
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callback_input_failure",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "failure": "input"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\n\nWaiting for approval\nPaste code: ",
+      "stderr": "Error: input failed\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code: "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_first",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "1"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to anthropic...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "anthropic"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:anthropic",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"anthropic\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_last",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_zero",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "0"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_past_last",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "5"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_negative",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "-1"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_blank",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        ""
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_whitespace_only",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        " \t\r\n"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_nonnumeric",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "word"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_trailing",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4junk"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_decimal",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4.0"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_exponent",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4e0"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_hex",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "0x4"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_signed",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "+4"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_leading_zero",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "04"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_whitespace",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        " \t4\r\n"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_bom",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "﻿4﻿"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_nel",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_large",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "99999999999999999999999999999"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_minus_zero",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "-0"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_sign_only",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "+"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_internal_space",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4 0"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_embedded_bom",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4﻿0"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_unicode_digit",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "４"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_infinity",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "Infinity"
+      ]
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_trailing_bom",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4﻿"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_long_zeros",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "selection_existing_file",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4junk"
+      ],
+      "seed": "{\"other\":{\"access\":\"keep\"}}"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): ",
+      "stderr": "Invalid selection\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\"other\":{\"access\":\"keep\"}}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "live_removed",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4"
+      ],
+      "live": "remove"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n",
+      "stderr": "Unknown provider: fixture\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [],
+        "answers": [],
+        "resolved": [],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "live_replaced",
+    "input": {
+      "args": [
+        "login"
+      ],
+      "answers": [
+        "4"
+      ],
+      "live": "replace"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Select a provider:\n\n  1. Anthropic (Claude Pro/Max)\n  2. GitHub Copilot\n  3. ChatGPT Plus/Pro (Codex Subscription)\n  4. Fixture account\n\nEnter number (1-4): Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 2,
+        "closed": [
+          1,
+          2
+        ],
+        "questions": [
+          "Enter number (1-4): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "replacement"
+        ],
+        "events": [
+          "open:1",
+          "question:1",
+          "close:1",
+          "open:2",
+          "login:fixture",
+          "close:2"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callbacks_absent",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "answers": [
+        " code \r\n"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\n\nWaiting for approval\nPaste code: \nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code: "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [
+          " code \r\n"
+        ],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callbacks_empty",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "answers": [
+        " code \r\n"
+      ],
+      "instructions": "",
+      "placeholder": ""
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\n\nWaiting for approval\nPaste code: \nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code: "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [
+          " code \r\n"
+        ],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callbacks_present",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "answers": [
+        " code \r\n"
+      ],
+      "instructions": "Use the one-time link",
+      "placeholder": "authorization code"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\nUse the one-time link\n\nWaiting for approval\nPaste code (authorization code): \nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code (authorization code): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [
+          " code \r\n"
+        ],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callbacks_whitespace",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "answers": [
+        " code \r\n"
+      ],
+      "instructions": " ",
+      "placeholder": " "
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\n \n\nWaiting for approval\nPaste code ( ): \nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code ( ): "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [
+          " code \r\n"
+        ],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callbacks_empty_answer",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "answers": [
+        ""
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\n\nWaiting for approval\nPaste code: \nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code: "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [
+          ""
+        ],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "login_failure",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "{\"other\":{\"access\":\"kept\"}}",
+      "failure": "denied"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": "Error: denied by fixture\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\"other\":{\"access\":\"kept\"}}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "callback_then_failure",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "callbacks": true,
+      "answers": [
+        ""
+      ],
+      "failure": "denied"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n\nOpen this URL in your browser:\nhttps://example.test/login\n\nWaiting for approval\nPaste code: ",
+      "stderr": "Error: denied by fixture\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [
+          "Paste code: "
+        ],
+        "login": [
+          "fixture"
+        ],
+        "answers": [
+          ""
+        ],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "question:1",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_missing",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_malformed",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "{no"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_object",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "{\"other\":{\"type\":\"api_key\",\"key\":\"keep\"},\"fixture\":{\"old\":true}}"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"other\": {\n    \"type\": \"api_key\",\n    \"key\": \"keep\"\n  },\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_array",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "[]"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": "Error: The account file does not hold a JSON object\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "[]"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_null",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "null"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": "Error: The account file does not hold a JSON object\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "null"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_string",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "\"text\""
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": "Error: The account file does not hold a JSON object\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "\"text\""
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_number",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "7"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": "Error: The account file does not hold a JSON object\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "7"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_boolean",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "false"
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": "Error: The account file does not hold a JSON object\n",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "false"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_directory",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "directory": true
+    },
+    "expected": {
+      "exit": 1,
+      "stdout": "Logging in to fixture...\n",
+      "stderr": null,
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": null
+    }
+  },
+  {
+    "operation": "account",
+    "case": "auth_indexed_members",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "seed": "{\"10\":{\"n\":10},\"2\":{\"n\":2},\"alpha\":{\"n\":0}}"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"2\": {\n    \"n\": 2\n  },\n  \"10\": {\n    \"n\": 10\n  },\n  \"alpha\": {\n    \"n\": 0\n  },\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_type_null",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "credentials": {
+        "refresh": "r",
+        "access": "a",
+        "expires": -0.0,
+        "type": null,
+        "metadata": [
+          null,
+          true,
+          {
+            "z": "é"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": null,\n    \"refresh\": \"r\",\n    \"access\": \"a\",\n    \"expires\": 0,\n    \"metadata\": [\n      null,\n      true,\n      {\n        \"z\": \"é\"\n      }\n    ]\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_type_string",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "credentials": {
+        "refresh": "r",
+        "access": "a",
+        "expires": -0.0,
+        "type": "custom",
+        "metadata": [
+          null,
+          true,
+          {
+            "z": "é"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"custom\",\n    \"refresh\": \"r\",\n    \"access\": \"a\",\n    \"expires\": 0,\n    \"metadata\": [\n      null,\n      true,\n      {\n        \"z\": \"é\"\n      }\n    ]\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_type_number",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "credentials": {
+        "refresh": "r",
+        "access": "a",
+        "expires": -0.0,
+        "type": 7,
+        "metadata": [
+          null,
+          true,
+          {
+            "z": "é"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": 7,\n    \"refresh\": \"r\",\n    \"access\": \"a\",\n    \"expires\": 0,\n    \"metadata\": [\n      null,\n      true,\n      {\n        \"z\": \"é\"\n      }\n    ]\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_type_boolean",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "credentials": {
+        "refresh": "r",
+        "access": "a",
+        "expires": -0.0,
+        "type": false,
+        "metadata": [
+          null,
+          true,
+          {
+            "z": "é"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": false,\n    \"refresh\": \"r\",\n    \"access\": \"a\",\n    \"expires\": 0,\n    \"metadata\": [\n      null,\n      true,\n      {\n        \"z\": \"é\"\n      }\n    ]\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_type_object",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "credentials": {
+        "refresh": "r",
+        "access": "a",
+        "expires": -0.0,
+        "type": {
+          "k": 1
+        },
+        "metadata": [
+          null,
+          true,
+          {
+            "z": "é"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": {\n      \"k\": 1\n    },\n    \"refresh\": \"r\",\n    \"access\": \"a\",\n    \"expires\": 0,\n    \"metadata\": [\n      null,\n      true,\n      {\n        \"z\": \"é\"\n      }\n    ]\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_type_array",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "credentials": {
+        "refresh": "r",
+        "access": "a",
+        "expires": -0.0,
+        "type": [
+          1
+        ],
+        "metadata": [
+          null,
+          true,
+          {
+            "z": "é"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": [\n      1\n    ],\n    \"refresh\": \"r\",\n    \"access\": \"a\",\n    \"expires\": 0,\n    \"metadata\": [\n      null,\n      true,\n      {\n        \"z\": \"é\"\n      }\n    ]\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_expiry_NaN",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "nonfinite": "NaN"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": null,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_expiry_Infinity",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "nonfinite": "Infinity"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": null,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "credential_expiry_-Infinity",
+    "input": {
+      "args": [
+        "login",
+        "fixture"
+      ],
+      "nonfinite": "-Infinity"
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to fixture...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "fixture"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:fixture",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"fixture\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": null,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "literal_provider___proto__",
+    "input": {
+      "args": [
+        "login",
+        "__proto__"
+      ],
+      "extraProviders": [
+        {
+          "id": "__proto__",
+          "name": "Literal account"
+        }
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to __proto__...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "__proto__"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:__proto__",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"__proto__\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "literal_provider_constructor",
+    "input": {
+      "args": [
+        "login",
+        "constructor"
+      ],
+      "extraProviders": [
+        {
+          "id": "constructor",
+          "name": "Literal account"
+        }
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to constructor...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "constructor"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:constructor",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"constructor\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "account",
+    "case": "literal_provider_2",
+    "input": {
+      "args": [
+        "login",
+        "2"
+      ],
+      "extraProviders": [
+        {
+          "id": "2",
+          "name": "Literal account"
+        }
+      ]
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "Logging in to 2...\n\nCredentials saved to auth.json\n",
+      "stderr": "",
+      "trace": {
+        "opened": 1,
+        "closed": [
+          1
+        ],
+        "questions": [],
+        "login": [
+          "2"
+        ],
+        "answers": [],
+        "resolved": [
+          "initial"
+        ],
+        "events": [
+          "open:1",
+          "login:2",
+          "close:1"
+        ]
+      },
+      "auth_text": "{\n  \"2\": {\n    \"type\": \"oauth\",\n    \"refresh\": \"refresh\",\n    \"access\": \"access\",\n    \"expires\": 1700000000000,\n    \"tenant\": \"team\"\n  }\n}"
+    }
+  },
+  {
+    "operation": "table",
+    "case": "empty",
+    "input": [],
+    "expected": {
+      "rows": "",
+      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n"
+    }
+  },
+  {
+    "operation": "table",
+    "case": "spaced_identifier",
+    "input": [
+      {
+        "id": "x",
+        "name": "One"
+      },
+      {
+        "id": "",
+        "name": "Empty ID"
+      }
+    ],
+    "expected": {
+      "rows": "  x                    One\n                       Empty ID",
+      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  x                    One\n                       Empty ID\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n"
+    }
+  },
+  {
+    "operation": "table",
+    "case": "column_widths",
+    "input": [
+      {
+        "id": "1234567890123456789",
+        "name": "Nineteen"
+      },
+      {
+        "id": "12345678901234567890",
+        "name": "Twenty"
+      },
+      {
+        "id": "123456789012345678901",
+        "name": "Twenty-one"
+      },
+      {
+        "id": "😀",
+        "name": "Unicode"
+      }
+    ],
+    "expected": {
+      "rows": "  1234567890123456789  Nineteen\n  12345678901234567890 Twenty\n  123456789012345678901 Twenty-one\n  😀                   Unicode",
+      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  1234567890123456789  Nineteen\n  12345678901234567890 Twenty\n  123456789012345678901 Twenty-one\n  😀                   Unicode\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n"
+    }
+  }
+]
