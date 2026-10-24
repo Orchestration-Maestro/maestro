@@ -60,6 +60,43 @@ pub fn compare_versions(v1: &ChangelogEntry, v2: &ChangelogEntry) -> f64 {
     v1.patch - v2.patch
 }
 
+/// Selects the entries that are strictly newer than the saved dotted `last_version`.
+///
+/// The selected entries are the caller's own records, in their input order.
+#[must_use]
+pub fn get_new_entries<'a>(
+    entries: &'a [ChangelogEntry],
+    last_version: &str,
+) -> Vec<&'a ChangelogEntry> {
+    let mut parts = last_version.split('.').map(parse_last_component);
+    let last = ChangelogEntry {
+        major: parts.next().unwrap_or_default(),
+        minor: parts.next().unwrap_or_default(),
+        patch: parts.next().unwrap_or_default(),
+        content: String::new(),
+    };
+    entries
+        .iter()
+        .filter(|entry| compare_versions(entry, &last) > 0.0)
+        .collect()
+}
+
+/// Reads one saved-version component, defaulting anything unrecognized to zero.
+fn parse_last_component(text: &str) -> f64 {
+    let text = text.trim_matches(is_whitespace_scalar);
+    match text {
+        "Infinity" | "+Infinity" => f64::INFINITY,
+        "-Infinity" => f64::NEG_INFINITY,
+        _ if text.bytes().all(is_decimal_byte) => text.parse().unwrap_or_default(),
+        _ => 0.0,
+    }
+}
+
+/// Whether a byte may appear in a signed decimal component or its exponent.
+fn is_decimal_byte(byte: u8) -> bool {
+    byte.is_ascii_digit() || matches!(byte, b'+' | b'-' | b'e' | b'E')
+}
+
 /// Whether two numeric components hold the same value, counting a missing value as different.
 fn same(left: f64, right: f64) -> bool {
     left.partial_cmp(&right) == Some(std::cmp::Ordering::Equal)

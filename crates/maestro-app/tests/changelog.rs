@@ -56,6 +56,15 @@ enum Row {
         /// How the path fails to read.
         kind: UnreadableKind,
     },
+    /// A selection for one saved dotted version.
+    Select {
+        /// Entries in their input order.
+        entries: Vec<Section>,
+        /// The saved version text.
+        last_version: String,
+        /// The input positions the reference selected.
+        expected: Vec<usize>,
+    },
     /// A comparison of two numeric records.
     Compare {
         /// First operand.
@@ -91,6 +100,24 @@ fn sections(entries: &[ChangelogEntry]) -> Vec<Section> {
             minor: entry.minor,
             patch: entry.patch,
             content: entry.content.clone(),
+        })
+        .collect()
+}
+
+/// The public records described by the recorded entries of a selection row.
+fn select_entries(entries: &[Section]) -> Vec<ChangelogEntry> {
+    entries.iter().map(entry).collect()
+}
+
+/// The input positions of the selected entries, which are the original records.
+fn positions(entries: &[ChangelogEntry], selected: &[&ChangelogEntry]) -> Vec<usize> {
+    selected
+        .iter()
+        .map(|chosen| {
+            entries
+                .iter()
+                .position(|entry| std::ptr::eq(entry, *chosen))
+                .unwrap()
         })
         .collect()
 }
@@ -221,4 +248,40 @@ fn changelog_exports_keep_the_configuration_path_owner() {
         maestro_app::utils::changelog::compare_versions(&root[0], &last).to_bits(),
         1.0_f64.to_bits()
     );
+    let newer = maestro_app::get_new_entries(&root, "1.0.0");
+    assert_eq!(newer, [&root[0]]);
+    let newer = maestro_app::utils::changelog::get_new_entries(&root, "1.0.0");
+    assert_eq!(newer, [&root[0]]);
+}
+
+/// Asserts the recorded selection of the rows in `rows`, keeping their indexes.
+fn check_selection_rows(rows: &[Row], range: std::ops::Range<usize>) {
+    for (index, row) in rows.iter().enumerate().take(range.end).skip(range.start) {
+        let Row::Select {
+            entries,
+            last_version,
+            expected,
+        } = row
+        else {
+            panic!("row {index} is not a selection");
+        };
+        let input = select_entries(entries);
+        let selected = maestro_app::get_new_entries(&input, last_version);
+        assert_eq!(positions(&input, &selected), *expected, "row {index}");
+    }
+}
+
+#[test]
+fn changelog_selection_is_strict_and_keeps_input_order() {
+    check_selection_rows(&rows(), 44..45);
+}
+
+#[test]
+fn changelog_saved_version_defaults_missing_and_invalid_parts() {
+    check_selection_rows(&rows(), 45..63);
+}
+
+#[test]
+fn changelog_selection_borrows_original_entries_and_leaves_them_intact() {
+    check_selection_rows(&rows(), 63..65);
 }

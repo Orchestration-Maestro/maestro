@@ -77,5 +77,5 @@ pub use tools::*;
 /// Changelog utility re-exports.
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::utils::changelog::{
-    ChangelogEntry, compare_versions, get_changelog_path, parse_changelog,
+    ChangelogEntry, compare_versions, get_changelog_path, get_new_entries, parse_changelog,
 };
