@@ -3,7 +3,19 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::configuration::config::{NativeSelfUpdateOperations, SelfUpdateOperations};
+#[cfg(unix)]
+use maestro_app::configuration::config::{
+    SelfUpdateCommand, SelfUpdateContext, get_self_update_command,
+    get_self_update_unavailable_instruction,
+};
+use maestro_process::SpawnSyncError;
 use maestro_test_directory::Scratch;
+use std::process::Output;
+
+/// Guidance for an installation no evidenced global root holds.
+#[cfg(unix)]
+const UNMANAGED: &str = "This installation is not managed by a global npm install. Update it with \
+    the package manager, wrapper, or source checkout that provides it.";
 
 #[cfg(unix)]
 #[test]
@@ -95,17 +107,13 @@ fn install_helper(scratch: &Scratch) -> std::path::PathBuf {
 #[test]
 fn native_update_access_matches_system_decision() {
     use maestro_app::configuration::config::installation::{Installation, PackageLayout};
-    use maestro_app::configuration::config::{
-        SelfUpdateContext, get_self_update_command, get_self_update_unavailable_instruction,
-    };
-    use std::{fs, os::unix::fs::PermissionsExt};
+    use std::fs;
     let scratch = Scratch::new().unwrap();
     let parent = scratch.path().join("node_modules");
     let package = parent.join("agent");
     fs::create_dir_all(&package).unwrap();
-    let helper = install_helper(&scratch);
     let configured = vec![
-        helper.to_string_lossy().into_owned(),
+        install_helper(&scratch).to_string_lossy().into_owned(),
         parent.to_string_lossy().into_owned(),
     ];
     let installation = Installation {
@@ -113,41 +121,80 @@ fn native_update_access_matches_system_decision() {
         executable: "/runtime/npm/node".into(),
         layout: PackageLayout::Package,
     };
-    let operations = NativeSelfUpdateOperations;
     let context = SelfUpdateContext {
         installation: &installation,
         package_dir: package.to_str().unwrap(),
-        operations: &operations,
+        operations: &NativeSelfUpdateOperations,
     };
-    for (package_mode, parent_mode) in [(0o700, 0o700), (0o500, 0o700), (0o700, 0o500)] {
-        fs::set_permissions(&package, fs::Permissions::from_mode(package_mode)).unwrap();
-        fs::set_permissions(&parent, fs::Permissions::from_mode(parent_mode)).unwrap();
-        let package_access = rustix::fs::access(&package, rustix::fs::Access::WRITE_OK).is_ok();
-        let parent_access = rustix::fs::access(&parent, rustix::fs::Access::WRITE_OK).is_ok();
-        assert_eq!(
-            operations
-                .check_write_access(package.to_str().unwrap())
-                .is_ok(),
-            package_access
-        );
-        assert_eq!(
-            operations
-                .check_write_access(parent.to_str().unwrap())
-                .is_ok(),
-            parent_access
-        );
-        let command = get_self_update_command(&context, "agent", Some(&configured), None).unwrap();
-        assert_eq!(command.is_some(), package_access && parent_access);
-        let guidance =
-            get_self_update_unavailable_instruction(&context, "agent", Some(&configured), None)
-                .unwrap();
-        assert_eq!(
-            guidance.contains("not writable"),
-            !(package_access && parent_access)
-        );
+    // A writable package and parent admit the command and keep the ordinary guidance.
+    let (command, guidance) = observed(&context, &configured);
+    let command = command.expect("a writable install selects an update");
+    assert_eq!(guidance, UNMANAGED);
+    let unwritable = format!(
+        "This installation is managed by a global npm install, but the install path is not \
+         writable. Update it yourself with: {}",
+        command.display
+    );
+    // Each refused write withholds the command on its own, beside the other permitted one.
+    let Some(package_denied) = maestro_test_directory::deny(&package, 0o500).unwrap() else {
+        // A privileged run is not refused the write, so it cannot state these rows.
+        return;
+    };
+    assert_withheld(&context, &configured, &unwritable);
+    drop(package_denied);
+    let Some(parent_denied) = maestro_test_directory::deny(&parent, 0o500).unwrap() else {
+        return;
+    };
+    assert_withheld(&context, &configured, &unwritable);
+    drop(parent_denied);
+    // Ownership was observed before the query, so a package the query removes fails the
+    // first access and reports the installation as unmanaged.
+    let context = SelfUpdateContext {
+        operations: &Removing { package: &package },
+        ..context
+    };
+    let (command, guidance) = observed(&context, &configured);
+    assert_eq!(command, None, "a package removed by its own query");
+    assert_eq!(guidance, UNMANAGED);
+}
+
+#[cfg(unix)]
+/// The command and guidance public selection reports for one context.
+fn observed(
+    context: &SelfUpdateContext<'_>,
+    configured: &[String],
+) -> (Option<SelfUpdateCommand>, String) {
+    let command = get_self_update_command(context, "agent", Some(configured), None).unwrap();
+    let guidance =
+        get_self_update_unavailable_instruction(context, "agent", Some(configured), None).unwrap();
+    (command, guidance)
+}
+
+#[cfg(unix)]
+/// Assert that public selection withholds the command and reports the unwritable guidance.
+fn assert_withheld(context: &SelfUpdateContext<'_>, configured: &[String], unwritable: &str) {
+    let (command, guidance) = observed(context, configured);
+    assert_eq!(command, None, "a refused write withholds the command");
+    assert_eq!(guidance, unwritable);
+}
+
+#[cfg(unix)]
+/// Removes the qualifying package while the query runs, after ownership was observed.
+struct Removing<'a> {
+    /// Package directory to remove.
+    package: &'a std::path::Path,
+}
+
+#[cfg(unix)]
+impl SelfUpdateOperations for Removing<'_> {
+    fn is_windows(&self) -> bool {
+        false
     }
-    fs::set_permissions(&parent, fs::Permissions::from_mode(0o700)).unwrap();
-    fs::set_permissions(&package, fs::Permissions::from_mode(0o700)).unwrap();
+    fn run_command_sync(&self, command: &str, args: &[String]) -> Result<Output, SpawnSyncError> {
+        let output = NativeSelfUpdateOperations.run_command_sync(command, args)?;
+        std::fs::remove_dir_all(self.package).unwrap();
+        Ok(output)
+    }
 }
 
 #[cfg(windows)]
@@ -155,9 +202,10 @@ fn native_update_access_matches_system_decision() {
 fn native_windows_update_access_matches_directory_rule() {
     use std::fs;
     let scratch = Scratch::new().unwrap();
-    let operations = NativeSelfUpdateOperations;
-    let dir = scratch.path().join("directory");
-    fs::create_dir(&dir).unwrap();
+    let directory = scratch.path().join("directory");
+    fs::create_dir(&directory).unwrap();
+    let package = directory.join("agent");
+    fs::create_dir(&package).unwrap();
     let file = scratch.path().join("file");
     drop(
         fs::OpenOptions::new()
@@ -166,46 +214,37 @@ fn native_windows_update_access_matches_directory_rule() {
             .open(&file)
             .unwrap(),
     );
-    for path in [&dir, &file] {
-        assert!(
-            operations
-                .check_write_access(path.to_str().unwrap())
-                .is_ok()
-        );
-        let original_permissions = fs::metadata(path).unwrap().permissions();
-        let mut permissions = original_permissions.clone();
-        permissions.set_readonly(true);
-        fs::set_permissions(path, permissions).unwrap();
-        assert_eq!(
-            operations
-                .check_write_access(path.to_str().unwrap())
-                .is_ok(),
-            path == &dir
-        );
-        fs::set_permissions(path, original_permissions).unwrap();
-    }
-    assert!(
-        operations
-            .check_write_access(scratch.path().join("absent").to_str().unwrap())
-            .is_err()
-    );
-    windows_selection_uses_native_access(&scratch);
+    // A writable directory admits the command.
+    assert!(selects(&package));
+    // A directory whose read-only attribute is set still admits it.
+    let directory_attributes = fs::metadata(&package).unwrap().permissions();
+    let mut readonly = directory_attributes.clone();
+    readonly.set_readonly(true);
+    fs::set_permissions(&package, readonly).unwrap();
+    assert!(selects(&package));
+    fs::set_permissions(&package, directory_attributes).unwrap();
+    // A read-only regular file does not.
+    let file_attributes = fs::metadata(&file).unwrap().permissions();
+    let mut readonly = file_attributes.clone();
+    readonly.set_readonly(true);
+    fs::set_permissions(&file, readonly).unwrap();
+    assert!(!selects(&file));
+    fs::set_permissions(&file, file_attributes).unwrap();
+    // An absent package selects nothing.
+    assert!(!selects(&scratch.path().join("absent")));
+    // Qualification created or modified no probe file.
     assert_eq!(fs::read(&file).unwrap(), b"");
-    assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
+    assert_eq!(fs::read_dir(&directory).unwrap().count(), 1);
 }
 
 #[cfg(windows)]
-fn windows_selection_uses_native_access(scratch: &Scratch) {
+/// Whether public selection offers the automatic command for `package`, where the query
+/// reports the directory holding it as the global root.
+fn selects(package: &std::path::Path) -> bool {
     use maestro_app::configuration::config::installation::{Installation, PackageLayout};
     use maestro_app::configuration::config::{SelfUpdateContext, get_self_update_command};
-    let package = scratch.path().join("directory").join("agent");
-    std::fs::create_dir(&package).unwrap();
     let operations = WindowsQuery {
-        root: scratch
-            .path()
-            .join("directory")
-            .to_string_lossy()
-            .into_owned(),
+        root: package.parent().unwrap().to_string_lossy().into_owned(),
     };
     let installation = Installation {
         module_dir: r"C:\source".into(),
@@ -218,22 +257,9 @@ fn windows_selection_uses_native_access(scratch: &Scratch) {
         operations: &operations,
     };
     let configured = vec!["query-only".into()];
-    assert!(
-        get_self_update_command(&context, "agent", Some(&configured), None)
-            .unwrap()
-            .is_some()
-    );
-    let original_permissions = std::fs::metadata(&package).unwrap().permissions();
-    let mut permissions = original_permissions.clone();
-    permissions.set_readonly(true);
-    std::fs::set_permissions(&package, permissions).unwrap();
-    assert!(
-        get_self_update_command(&context, "agent", Some(&configured), None)
-            .unwrap()
-            .is_some()
-    );
-    std::fs::set_permissions(&package, original_permissions).unwrap();
-    std::fs::remove_dir(&package).unwrap();
+    get_self_update_command(&context, "agent", Some(&configured), None)
+        .unwrap()
+        .is_some()
 }
 
 #[cfg(windows)]
@@ -245,21 +271,11 @@ impl SelfUpdateOperations for WindowsQuery {
     fn is_windows(&self) -> bool {
         true
     }
-    fn home_dir(&self) -> std::io::Result<String> {
-        unreachable!()
-    }
-    fn check_write_access(&self, path: &str) -> std::io::Result<()> {
-        NativeSelfUpdateOperations.check_write_access(path)
-    }
-    fn run_command_sync(
-        &self,
-        command: &str,
-        args: &[String],
-    ) -> Result<std::process::Output, maestro_process::SpawnSyncError> {
+    fn run_command_sync(&self, command: &str, args: &[String]) -> Result<Output, SpawnSyncError> {
         use std::os::windows::process::ExitStatusExt;
         assert_eq!(command, "query-only");
         assert_eq!(args, ["root", "-g"]);
-        Ok(std::process::Output {
+        Ok(Output {
             status: std::process::ExitStatus::from_raw(0),
             stdout: self.root.as_bytes().to_vec(),
             stderr: Vec::new(),
