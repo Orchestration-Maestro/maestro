@@ -3,7 +3,7 @@
 use super::calendar::{days_after, days_before, local_midnight};
 use super::formatting::{cost as amount, count, pad_end, pad_start};
 use super::jsonl::kept_lines;
-use super::{is_journal, present, resolve_path, session_base};
+use super::{is_journal, resolve_path, session_base};
 use crate::utils::numbers::decimal_integer_prefix;
 use chrono::{Local, NaiveDate};
 use maestro_text::utf16_order;
@@ -38,14 +38,6 @@ struct Totals {
     cache_write: f64,
     /// Reported total tokens.
     total_tokens: f64,
-    /// Reported input cost.
-    cost_input: f64,
-    /// Reported output cost.
-    cost_output: f64,
-    /// Reported cache-read cost.
-    cost_cache_read: f64,
-    /// Reported cache-write cost.
-    cost_cache_write: f64,
     /// Reported total cost.
     cost_total: f64,
     /// Number of assistant messages counted.
@@ -224,7 +216,10 @@ fn accumulate(
     if message.get("role").and_then(Value::as_str) != Some("assistant") {
         return Ok(());
     }
-    let Some(usage) = message.get("usage").filter(|usage| present(usage)) else {
+    let Some(usage) = message
+        .get("usage")
+        .filter(|usage| maestro_json::is_truthy(usage))
+    else {
         return Ok(());
     };
     let instant = reported_instant(message, entry.get("timestamp"));
@@ -288,10 +283,6 @@ fn add_usage(totals: &mut Totals, usage: &Value, file: &str) {
     totals.cache_read += member(usage, "cacheRead");
     totals.cache_write += member(usage, "cacheWrite");
     totals.total_tokens += member(usage, "totalTokens");
-    totals.cost_input += member(cost, "input");
-    totals.cost_output += member(cost, "output");
-    totals.cost_cache_read += member(cost, "cacheRead");
-    totals.cost_cache_write += member(cost, "cacheWrite");
     totals.cost_total += member(cost, "total");
     totals.assistant_messages += 1;
     totals.sessions.insert(file.to_owned());

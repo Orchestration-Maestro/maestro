@@ -5,6 +5,7 @@ use maestro_process::child_process::{
     CapturedChild, OutputStream, Termination, WaitOptions, wait_for_child_process_with_sink,
 };
 use serde_json::Value;
+use std::borrow::Cow;
 use std::io::{self, Write};
 
 /// The widest preview line the analysis output shows.
@@ -181,7 +182,7 @@ impl Stream<'_> {
     fn tool(&mut self, event: &Value) -> io::Result<()> {
         let Some(name) = event
             .get("toolName")
-            .filter(|name| super::super::present(name))
+            .filter(|name| maestro_json::is_truthy(name))
             .and_then(Value::as_str)
         else {
             return Ok(());
@@ -221,7 +222,7 @@ fn arguments(event: &Value, name: &str) -> String {
         "read" => {
             let mut text = field("path").to_owned();
             for key in ["offset", "limit"] {
-                if let Some(value) = args.get(key).filter(|value| super::super::present(value)) {
+                if let Some(value) = args.get(key).filter(|value| maestro_json::is_truthy(value)) {
                     text.push(' ');
                     text.push_str(key);
                     text.push('=');
@@ -236,13 +237,15 @@ fn arguments(event: &Value, name: &str) -> String {
 }
 
 /// Spell one recorded number or string the way a text argument reads.
-fn spell(value: &Value) -> String {
+fn spell(value: &Value) -> Cow<'_, str> {
     match value {
-        Value::Number(number) => ryu_js::Buffer::new()
-            .format_finite(number.as_f64().unwrap_or_default())
-            .to_owned(),
-        Value::String(text) => text.clone(),
-        other => maestro_json::compact_json(other).unwrap_or_default(),
+        Value::Number(number) => Cow::Owned(
+            ryu_js::Buffer::new()
+                .format_finite(number.as_f64().unwrap_or_default())
+                .to_owned(),
+        ),
+        Value::String(text) => Cow::Borrowed(text),
+        other => Cow::Owned(maestro_json::compact_json(other).unwrap_or_default()),
     }
 }
 

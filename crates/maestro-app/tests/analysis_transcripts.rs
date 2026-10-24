@@ -172,6 +172,37 @@ fn transcript_text_blocks_keep_only_nonblank_text() {
     });
 }
 
+#[test]
+fn transcript_blocks_keep_only_the_text_discriminant() {
+    with_isolated_home(
+        "transcript_blocks_keep_only_the_text_discriminant",
+        |base| {
+            let project = format!("{base}/project");
+            std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
+            // A block of another kind may carry a `text` member; only `type: "text"` counts.
+            let blocks = || {
+                serde_json::json!([
+                    {"type": "thinking", "text": "leaked", "thinking": "reasoning"},
+                    {"type": "toolCall", "text": "leaked too", "name": "read"},
+                    {"type": "text", "text": "kept"},
+                ])
+            };
+            let text = [message("user", blocks()), message("assistant", blocks())].join("\n");
+            sessions(base, &project, &[("a.jsonl", &text)]);
+            let output = format!("{base}/out");
+            let run = run_transcripts(&["--output", &output, &project], false)
+                .expect("the command reads its directory");
+            assert!(run.succeeded(), "{run:?}");
+            let written = std::fs::read_to_string(format!("{output}/session-transcripts-000.txt"))
+                .expect("the transcript file is readable");
+            assert_eq!(
+                written,
+                "=== SESSION: a.jsonl ===\n[USER]\nkept\n---\n[ASSISTANT]\nkept\n=== END SESSION ==="
+            );
+        },
+    );
+}
+
 /// One split case: two sessions of `sizes`, and the lines it must report.
 fn split_case(base: &str, name: &str, sizes: (usize, usize), expected: &[&str]) {
     let project = format!("{base}/{name}");

@@ -30,7 +30,9 @@ with the path it looked for; an empty or fully filtered directory reports that
 no sessions were found.
 
 Each journal whose own filename instant is at or after the local midnight `-n`
-days before today contributes its assistant messages that report a cost. Days
+days before today contributes its assistant messages that report a cost. The cost
+report alone takes its root from the `HOME` variable; the other three use the
+account-aware home directory, so they still work where `HOME` is unset. Days
 are UTC calendar days of the message instant, providers keep their recorded
 names including ones that collide with inherited object properties, and every
 amount is spelled with four fractional digits. Days, providers and the grand
@@ -76,9 +78,9 @@ each report their own outcome and exit one.
 
 Sessions are named in UTF-16 order and each becomes one wrapper holding its
 stored user and assistant messages in file order, split by `---`. Message text
-keeps string content as authored and joins the nonempty text blocks of an array
-with a line feed; other blocks are ignored, and a message whose text is only
-whitespace is dropped.
+keeps string content as authored and joins the nonempty blocks of type `text`
+with a line feed; blocks of any other type are ignored, even when they carry a
+`text` member, and a message whose text is only whitespace is dropped.
 
 Wrappers are packed into `session-transcripts-NNN.txt` files up to 100,000 UTF-16
 units, separated by a blank line. A wrapper larger than that goes to its own
@@ -106,14 +108,19 @@ program.
 Tool calls, results and errors are counted per tool, the reported result text
 size is estimated as a quarter of its UTF-16 units rounded up, and each result's
 estimate is also attributed to the bash command of the call it answers, keyed by
-the first command word, an optional non-option second word, and the leading
-program with its environment assignments and one `sudo` removed. At most fifty
-bash rows are listed.
+the first command word and an optional non-option second word. Environment
+assignments and one `sudo` are stripped only while a command word remains, so a
+command of nothing but assignments keeps its own first word and a bare `sudo`
+stays `sudo`. A result answering an empty command is counted for its tool only.
+At most fifty bash rows are listed.
 
 The generated page keeps the report layout, selectors, charts and histogram
 canvases. Its colors and font stacks come from the shared brand pack as CSS
 custom properties, and the two chart and style libraries stay the script source
-URLs the reference writes, so nothing is bundled.
+URLs the reference writes, so nothing is bundled. The charts paint those roles
+rather than library defaults: bar fills take the accent, tick and legend text the
+muted color in the body font, grid lines the border color, and a table row's top
+border the border color.
 
 ## Reading the journals
 
@@ -128,6 +135,6 @@ or role are ignored rather than rejected.
 
 Report days come from the session library's local-time resolver, which is also
 where stored timestamps are read. A local time that occurs twice resolves to the
-earlier instant, and a local time skipped by a daylight-saving change keeps the
-offset in force at that reading, so it advances by the change the zone actually
-made instead of being rejected.
+earlier instant, and a local time skipped by a daylight-saving change is read with
+the offset in force before the change, so it lands past the gap by the size of the
+change instead of being rejected.

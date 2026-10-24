@@ -465,6 +465,7 @@ fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
             "America/Havana",
             "Pacific/Apia",
             "America/Montreal",
+            "Europe/Berlin",
         ] {
             crate::subprocess::run_child(
                 maestro_test_process::TestProcess::current(

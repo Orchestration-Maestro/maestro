@@ -1,7 +1,9 @@
 //! The tool report over literal synthetic session directories.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::analysis_fixtures::{Run, page_data, root, run_tools, scratch};
+use crate::analysis_fixtures::Run;
+use crate::analysis_fixtures::{page_data, root, run_tools, scratch};
+use crate::isolated_home::with_environment;
 use serde_json::Value;
 
 /// The shared identity pack the page takes its colors from.
@@ -354,6 +356,85 @@ fn bash_command_keys_keep_prefix_and_separator_rules() {
 }
 
 #[test]
+fn bash_command_keys_keep_a_final_command_word() {
+    let scratch = scratch();
+    let sessions = format!("{}/sessions", root(&scratch));
+    let commands = ["FOO=bar", "FOO=bar baz", "sudo", "A=1 sudo"];
+    let entries = commands
+        .iter()
+        .enumerate()
+        .map(|(index, command)| {
+            call(
+                &index.to_string(),
+                "bash",
+                serde_json::json!({"command": command}),
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    write(&sessions, &[("a.jsonl", entries)]);
+    let (run, page) = report(&scratch, &sessions);
+    assert!(run.succeeded());
+    let data = page_data(&page);
+    let mut keys = data["bashCommands"]
+        .as_array()
+        .expect("commands are listed")
+        .iter()
+        .map(|row| {
+            (
+                row["name"].as_str().expect("a command name").to_owned(),
+                row["calls"].as_u64().expect("recorded calls"),
+            )
+        })
+        .collect::<Vec<_>>();
+    keys.sort();
+    // A prefix is stripped only while a command word remains, so `FOO=bar` is the
+    // command itself and `A=1 sudo` keeps `sudo` as its command.
+    assert_eq!(
+        keys,
+        [
+            ("FOO=bar".to_owned(), 1),
+            ("baz".to_owned(), 1),
+            ("sudo".to_owned(), 2),
+        ]
+    );
+}
+
+#[test]
+fn tool_results_for_empty_commands_keep_no_bash_row() {
+    let scratch = scratch();
+    let sessions = format!("{}/sessions", root(&scratch));
+    write(
+        &sessions,
+        &[(
+            "a.jsonl",
+            [
+                call("1", "bash", serde_json::json!({"command": ""})),
+                call("2", "bash", serde_json::json!({"command": "git status"})),
+                result("1", "bash", serde_json::json!("abcdefgh"), false),
+                result("2", "bash", serde_json::json!("abcd"), false),
+            ]
+            .join("\n"),
+        )],
+    );
+    let (run, page) = report(&scratch, &sessions);
+    assert!(run.succeeded());
+    let data = page_data(&page);
+    let bash = data["bashCommands"]
+        .as_array()
+        .expect("commands are listed");
+    // The result answering the empty command is attributed to the tool row only.
+    assert_eq!(bash.len(), 1);
+    assert_eq!(bash[0]["name"], serde_json::json!("git status"));
+    assert_eq!(bash[0]["calls"], serde_json::json!(1));
+    assert_eq!(bash[0]["estimatedTokens"], serde_json::json!(1));
+    let tools = data["tools"].as_array().expect("tools are listed");
+    assert_eq!(tools[0]["name"], serde_json::json!("bash"));
+    assert_eq!(tools[0]["results"], serde_json::json!(2));
+    assert_eq!(tools[0]["estimatedTokens"], serde_json::json!(3));
+}
+
+#[test]
 fn tool_rows_sort_stably_and_limit_bash_rows() {
     let scratch = scratch();
     let sessions = format!("{}/sessions", root(&scratch));
@@ -407,35 +488,6 @@ fn tool_report_keeps_empty_and_nonempty_page_states() {
     assert!(page.contains("row?summary(row):'No data'"));
     assert!(page.contains("<h2 class=\"font-semibold mb-3\">Tool calls</h2>"));
     assert_eq!(page.matches("<canvas").count(), 5);
-}
-
-#[test]
-fn tool_report_row_click_updates_selected_histogram() {
-    let scratch = scratch();
-    let sessions = format!("{}/sessions", root(&scratch));
-    write(
-        &sessions,
-        &[(
-            "a.jsonl",
-            [
-                call("1", "read", serde_json::json!({"path": "a"})),
-                result("1", "read", serde_json::json!("abcd"), false),
-                call("2", "bash", serde_json::json!({"command": "git status"})),
-                result("2", "bash", serde_json::json!("abcdefgh"), false),
-            ]
-            .join("\n"),
-        )],
-    );
-    let (run, page) = report(&scratch, &sessions);
-    assert!(run.succeeded());
-    let data = page_data(&page);
-    assert_eq!(data["tools"].as_array().map(Vec::len), Some(2));
-    // The click operation selects the row and dispatches its update together.
-    assert!(page.contains(
-        "row.addEventListener('click',()=>{const select=document.getElementById(el==='tools'?'toolSelect':'bashSelect');select.value=row.dataset.row;select.dispatchEvent(new Event('change'))})"
-    ));
-    assert!(page.contains("document.getElementById(selectId).addEventListener('change',update)"));
-    assert!(page.contains("function singleHistogram(canvasId,summaryId,selectId,rows)"));
 }
 
 #[test]
@@ -513,19 +565,81 @@ fn tool_report_uses_shared_brand_and_pinned_asset_links() {
     )));
 }
 
+/// A fixture sessions directory holding one call, its result and a payload name.
+fn fixture_records() -> String {
+    [
+        call("1", "bash", serde_json::json!({"command": "git status"})),
+        call("2", "read", serde_json::json!({"path": "a"})),
+        result("1", "bash", serde_json::json!("abcdefgh"), false),
+        result("2", "read", serde_json::json!("x".repeat(400)), false),
+        result(
+            "3",
+            "</script><script>globalThis.payloadExecuted=1</script>",
+            serde_json::json!("literal"),
+            false,
+        ),
+    ]
+    .join("\n")
+}
+
 #[test]
-fn tool_report_launches_platform_opener_with_literal_path() {
+fn tool_report_page_matches_the_committed_fixture() {
     let scratch = scratch();
-    let sessions = format!("{}/sessions", root(&scratch));
-    write(&sessions, &[("a.jsonl", String::new())]);
-    let output = format!("{}/report.html", root(&scratch));
-    let run = run_tools(&["--sessions-dir", &sessions, "--output", &output])
-        .expect("the report reads its directory");
+    let sessions = format!("{}/sessions-<img src=x>", root(&scratch));
+    write(&sessions, &[("a.jsonl", fixture_records())]);
+    let (run, page) = report(&scratch, &sessions);
     assert!(run.succeeded());
-    assert!(std::path::Path::new(&output).exists());
+    // The scratch root is the only host-specific part of the page.
+    let normalized = page.replace(&root(&scratch), "/fixture");
     assert_eq!(
-        run.stdout,
-        format!("Wrote {output}\n"),
-        "the page is written and reported before the viewer starts"
+        normalized,
+        include_str!("fixtures/analysis/tool-report.html"),
+        "regenerate the committed page when the report template changes"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn tool_report_opens_the_page_with_the_recorded_arguments() {
+    with_environment(
+        "tool_report_opens_the_page_with_the_recorded_arguments",
+        &[("PATH", "$BASE/bin:/usr/bin:/bin")],
+        |base| {
+            let sessions = format!("{base}/sessions");
+            write(&sessions, &[("a.jsonl", String::new())]);
+            let output = format!("{base}/report.html");
+            let viewer = format!("{base}/bin/xdg-open");
+            std::fs::create_dir_all(format!("{base}/bin"))
+                .expect("the viewer directory is creatable");
+            std::fs::write(
+                &viewer,
+                format!("#!/bin/sh\nprintf '%s\\n' \"$@\" > {base}/open.txt\n"),
+            )
+            .expect("the viewer is writable");
+            let mut permissions = std::fs::metadata(&viewer)
+                .expect("the viewer is readable")
+                .permissions();
+            std::os::unix::fs::PermissionsExt::set_mode(&mut permissions, 0o755);
+            std::fs::set_permissions(&viewer, permissions).expect("the viewer is executable");
+            let run = run_tools(&["--sessions-dir", &sessions, "--output", &output])
+                .expect("the report reads its directory");
+            assert!(run.succeeded(), "{run:?}");
+            assert_eq!(run.stdout, format!("Wrote {output}\n"));
+            // The viewer is started detached, so its record is awaited, not assumed.
+            let record = format!("{base}/open.txt");
+            let mut found = String::new();
+            for _ in 0..200 {
+                if let Ok(text) = std::fs::read_to_string(&record) {
+                    found = text;
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            assert_eq!(
+                found,
+                format!("{output}\n"),
+                "the viewer receives the page path"
+            );
+        },
     );
 }

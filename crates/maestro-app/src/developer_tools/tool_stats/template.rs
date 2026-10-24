@@ -27,23 +27,18 @@ pub(super) fn render(
     now: chrono::DateTime<chrono::Local>,
 ) -> io::Result<String> {
     let css = properties().map_err(io::Error::other)?;
-    let accent = css
-        .get("--maestro-color-accent")
-        .cloned()
-        .unwrap_or_default();
     let data = data(report, sessions, now);
     let stamp = data
         .get("generatedAt")
         .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_owned();
+        .unwrap_or_default();
     let mut page = head(&css);
     page.push_str(&body(
         &escape(sessions, EscapeMode::Xml),
         report.files,
-        &stamp,
+        stamp,
     ));
-    page.push_str(&script(&compact(&data), &accent));
+    page.push_str(&script(&compact(&data), &Paint::of(&css)));
     Ok(page)
 }
 
@@ -64,7 +59,7 @@ fn head(css: &BTreeMap<String, String>) -> String {
         .collect::<Vec<_>>()
         .join(";");
     format!(
-        "<!doctype html>\n<html>\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>Maestro Tool Stats</title>\n\t<script src=\"{TAILWIND}\"></script>\n\t<script src=\"{CHART}\"></script>\n\t<style>\n\t\t:root{{{declarations}}}\n\t\tbody{{background:var(--maestro-color-background);color:var(--maestro-color-text);font-family:var(--maestro-font-body)}}\n\t\th1,h2{{font-family:var(--maestro-font-display)}}\n\t\tcode{{font-family:var(--maestro-font-mono)}}\n\t\t.card{{background:var(--maestro-color-panel)}}\n\t\t.muted{{color:var(--maestro-color-muted)}}\n\t\t.select{{background:var(--maestro-color-panel);color:var(--maestro-color-text)}}\n\t\t#tools tbody tr[data-row]:hover,#bash tbody tr[data-row]:hover{{background:color-mix(in srgb,var(--maestro-color-border) 50%,transparent)}}\n\t\t#tools th,#bash th{{color:var(--maestro-color-muted)}}\n\t\t#tools td,#bash td{{border-color:var(--maestro-color-border)}}\n\t\t.mono{{font-family:var(--maestro-font-mono)}}\n\t</style>\n</head>\n"
+        "<!doctype html>\n<html>\n<head>\n\t<meta charset=\"utf-8\">\n\t<title>Maestro Tool Stats</title>\n\t<script src=\"{TAILWIND}\"></script>\n\t<script src=\"{CHART}\"></script>\n\t<style>\n\t\t:root{{{declarations}}}\n\t\tbody{{background:var(--maestro-color-background);color:var(--maestro-color-text);font-family:var(--maestro-font-body)}}\n\t\th1,h2{{font-family:var(--maestro-font-display)}}\n\t\tcode{{font-family:var(--maestro-font-mono)}}\n\t\t.card{{background:var(--maestro-color-panel)}}\n\t\t.muted{{color:var(--maestro-color-muted)}}\n\t\t.select{{background:var(--maestro-color-panel);color:var(--maestro-color-text)}}\n\t\t#tools tbody tr[data-row]:hover,#bash tbody tr[data-row]:hover{{background:color-mix(in srgb,var(--maestro-color-border) 50%,transparent)}}\n\t\t#tools th,#bash th{{color:var(--maestro-color-muted)}}\n\t\t#tools tbody tr[data-row],#bash tbody tr[data-row]{{border-color:var(--maestro-color-border)}}\n\t\t.mono{{font-family:var(--maestro-font-mono)}}\n\t</style>\n</head>\n"
     )
 }
 
@@ -75,10 +70,42 @@ fn body(sessions: &str, files: usize, stamp: &str) -> String {
     )
 }
 
+/// The brand roles the page paints its charts and rows with.
+struct Paint<'a> {
+    /// Bar fill.
+    accent: &'a str,
+    /// Chart tick and legend text.
+    muted: &'a str,
+    /// Chart grid and axis lines.
+    border: &'a str,
+    /// Chart text family.
+    font: &'a str,
+}
+
+impl<'a> Paint<'a> {
+    /// Read the roles from the page's declared custom properties.
+    fn of(css: &'a BTreeMap<String, String>) -> Self {
+        let role = |name: &str| css.get(name).map(String::as_str).unwrap_or_default();
+        Self {
+            accent: role("--maestro-color-accent"),
+            muted: role("--maestro-color-muted"),
+            border: role("--maestro-color-border"),
+            font: role("--maestro-font-body"),
+        }
+    }
+}
+
 /// The page's script: the emitted data and the table, selector and chart logic.
-fn script(data: &str, accent: &str) -> String {
+fn script(data: &str, paint: &Paint<'_>) -> String {
+    let Paint {
+        accent,
+        muted,
+        border,
+        font,
+    } = paint;
+    let (accent, muted, border, font) = (json!(accent), json!(muted), json!(border), json!(font));
     format!(
-        "\t<script>\n\t\tconst data={data};\n\t\tconst accent=\"{accent}\";\n\t\tfunction fmt(n){{return Math.round(n).toLocaleString()}}\n\t\tfunction esc(s){{return String(s).replace(/[&<>\\\"]/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\\\"':'&quot;'}}[c]))}}\n\t\tfunction table(rows,el){{\n\t\t\tdocument.getElementById(el).innerHTML='<table class=\"w-full text-sm\"><thead><tr><th class=\"text-left p-2\">Name</th><th class=\"text-right p-2\">Calls</th><th class=\"text-right p-2\">Results</th><th class=\"text-right p-2\">Est. tokens</th><th class=\"text-right p-2\">Avg/result</th><th class=\"text-left p-2 w-64\">Histogram</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr class=\"border-t cursor-pointer\" data-row=\"'+i+'\"><td class=\"p-2 mono\">'+esc(r.name)+'</td><td class=\"p-2 text-right\">'+fmt(r.calls)+'</td><td class=\"p-2 text-right\">'+fmt(r.results??r.samples.length)+'</td><td class=\"p-2 text-right\">'+fmt(r.estimatedTokens)+'</td><td class=\"p-2 text-right\">'+fmt(r.avg)+'</td><td class=\"p-2\"><canvas id=\"'+el+'Hist'+i+'\" height=\"34\"></canvas></td></tr>').join('')+'</tbody></table>';\n\t\t\trows.forEach((r,i)=>new Chart(document.getElementById(el+'Hist'+i),{{type:'bar',data:{{labels:data.bucketLabels,datasets:[{{data:r.histogram,label:r.name,backgroundColor:accent}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{title:(items)=>data.bucketLabels[items[0].dataIndex]+' tokens'}}}}}},scales:{{x:{{display:false}},y:{{display:false}}}}}}}}));\n\t\t\tdocument.querySelectorAll('#'+el+' tr[data-row]').forEach(row=>row.addEventListener('click',()=>{{const select=document.getElementById(el==='tools'?'toolSelect':'bashSelect');select.value=row.dataset.row;select.dispatchEvent(new Event('change'))}}));\n\t\t}}\n\t\tfunction fillSelect(id,rows){{document.getElementById(id).innerHTML=rows.map((r,i)=>'<option value=\"'+i+'\">'+esc(r.name)+'</option>').join('')}}\n\t\tfunction summary(r){{return fmt(r.calls)+' calls, '+fmt(r.results??r.samples.length)+' results, '+fmt(r.estimatedTokens)+' estimated result tokens, '+fmt(r.avg)+' avg/result'}}\n\t\tfunction singleHistogram(canvasId,summaryId,selectId,rows){{\n\t\t\tlet chart;\n\t\t\tfunction update(){{\n\t\t\t\tconst row=rows[Number(document.getElementById(selectId).value)]??rows[0];\n\t\t\t\tdocument.getElementById(summaryId).textContent=row?summary(row):'No data';\n\t\t\t\tif(chart)chart.destroy();\n\t\t\t\tchart=new Chart(document.getElementById(canvasId),{{type:'bar',data:{{labels:data.bucketLabels,datasets:[{{label:row?.name??'',data:row?.histogram??[],backgroundColor:accent}}]}},options:{{plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{title:(items)=>data.bucketLabels[items[0].dataIndex]+' tokens',label:(item)=>fmt(item.raw)+' results'}}}}}},scales:{{y:{{beginAtZero:true,title:{{display:true,text:'result count'}}}},x:{{title:{{display:true,text:'estimated tokens/result'}}}}}}}}}});\n\t\t\t}}\n\t\t\tdocument.getElementById(selectId).addEventListener('change',update);\n\t\t\tupdate();\n\t\t}}\n\t\ttable(data.tools,'tools');\n\t\ttable(data.bashCommands,'bash');\n\t\tfillSelect('toolSelect',data.tools);\n\t\tfillSelect('bashSelect',data.bashCommands);\n\t\tsingleHistogram('toolHistogram','toolSummary','toolSelect',data.tools);\n\t\tsingleHistogram('bashHistogram','bashSummary','bashSelect',data.bashCommands);\n\t\tnew Chart(document.getElementById('tokens'),{{type:'bar',data:{{labels:data.tools.map(r=>r.name),datasets:[{{label:'estimated tokens',data:data.tools.map(r=>r.estimatedTokens)}}]}},options:{{plugins:{{legend:{{display:false}}}}}}}});\n\t\tnew Chart(document.getElementById('calls'),{{type:'bar',data:{{labels:data.tools.map(r=>r.name),datasets:[{{label:'calls',data:data.tools.map(r=>r.calls)}}]}},options:{{plugins:{{legend:{{display:false}}}}}}}});\n\t</script>\n</body>\n</html>\n"
+        "\t<script>\n\t\tconst data={data};\n\t\tconst accent={accent};\n\t\tChart.defaults.color={muted};\n\t\tChart.defaults.borderColor={border};\n\t\tChart.defaults.font.family={font};\n\t\tfunction fmt(n){{return Math.round(n).toLocaleString()}}\n\t\tfunction esc(s){{return String(s).replace(/[&<>\\\"]/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\\\"':'&quot;'}}[c]))}}\n\t\tfunction table(rows,el){{\n\t\t\tdocument.getElementById(el).innerHTML='<table class=\"w-full text-sm\"><thead><tr><th class=\"text-left p-2\">Name</th><th class=\"text-right p-2\">Calls</th><th class=\"text-right p-2\">Results</th><th class=\"text-right p-2\">Est. tokens</th><th class=\"text-right p-2\">Avg/result</th><th class=\"text-left p-2 w-64\">Histogram</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr class=\"border-t cursor-pointer\" data-row=\"'+i+'\"><td class=\"p-2 mono\">'+esc(r.name)+'</td><td class=\"p-2 text-right\">'+fmt(r.calls)+'</td><td class=\"p-2 text-right\">'+fmt(r.results??r.samples.length)+'</td><td class=\"p-2 text-right\">'+fmt(r.estimatedTokens)+'</td><td class=\"p-2 text-right\">'+fmt(r.avg)+'</td><td class=\"p-2\"><canvas id=\"'+el+'Hist'+i+'\" height=\"34\"></canvas></td></tr>').join('')+'</tbody></table>';\n\t\t\trows.forEach((r,i)=>new Chart(document.getElementById(el+'Hist'+i),{{type:'bar',data:{{labels:data.bucketLabels,datasets:[{{data:r.histogram,label:r.name,backgroundColor:accent}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{title:(items)=>data.bucketLabels[items[0].dataIndex]+' tokens'}}}}}},scales:{{x:{{display:false}},y:{{display:false}}}}}}}}));\n\t\t\tdocument.querySelectorAll('#'+el+' tr[data-row]').forEach(row=>row.addEventListener('click',()=>{{const select=document.getElementById(el==='tools'?'toolSelect':'bashSelect');select.value=row.dataset.row;select.dispatchEvent(new Event('change'))}}));\n\t\t}}\n\t\tfunction fillSelect(id,rows){{document.getElementById(id).innerHTML=rows.map((r,i)=>'<option value=\"'+i+'\">'+esc(r.name)+'</option>').join('')}}\n\t\tfunction summary(r){{return fmt(r.calls)+' calls, '+fmt(r.results??r.samples.length)+' results, '+fmt(r.estimatedTokens)+' estimated result tokens, '+fmt(r.avg)+' avg/result'}}\n\t\tfunction singleHistogram(canvasId,summaryId,selectId,rows){{\n\t\t\tlet chart;\n\t\t\tfunction update(){{\n\t\t\t\tconst row=rows[Number(document.getElementById(selectId).value)]??rows[0];\n\t\t\t\tdocument.getElementById(summaryId).textContent=row?summary(row):'No data';\n\t\t\t\tif(chart)chart.destroy();\n\t\t\t\tchart=new Chart(document.getElementById(canvasId),{{type:'bar',data:{{labels:data.bucketLabels,datasets:[{{label:row?.name??'',data:row?.histogram??[],backgroundColor:accent}}]}},options:{{plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{title:(items)=>data.bucketLabels[items[0].dataIndex]+' tokens',label:(item)=>fmt(item.raw)+' results'}}}}}},scales:{{y:{{beginAtZero:true,title:{{display:true,text:'result count'}}}},x:{{title:{{display:true,text:'estimated tokens/result'}}}}}}}}}});\n\t\t\t}}\n\t\t\tdocument.getElementById(selectId).addEventListener('change',update);\n\t\t\tupdate();\n\t\t}}\n\t\ttable(data.tools,'tools');\n\t\ttable(data.bashCommands,'bash');\n\t\tfillSelect('toolSelect',data.tools);\n\t\tfillSelect('bashSelect',data.bashCommands);\n\t\tsingleHistogram('toolHistogram','toolSummary','toolSelect',data.tools);\n\t\tsingleHistogram('bashHistogram','bashSummary','bashSelect',data.bashCommands);\n\t\tnew Chart(document.getElementById('tokens'),{{type:'bar',data:{{labels:data.tools.map(r=>r.name),datasets:[{{label:'estimated tokens',data:data.tools.map(r=>r.estimatedTokens),backgroundColor:accent}}]}},options:{{plugins:{{legend:{{display:false}}}}}}}});\n\t\tnew Chart(document.getElementById('calls'),{{type:'bar',data:{{labels:data.tools.map(r=>r.name),datasets:[{{label:'calls',data:data.tools.map(r=>r.calls),backgroundColor:accent}}]}},options:{{plugins:{{legend:{{display:false}}}}}}}});\n\t</script>\n</body>\n</html>\n"
     )
 }
 
@@ -104,45 +131,34 @@ fn rows(report: &Report, bash: bool) -> Vec<Value> {
         report
             .bash
             .iter()
-            .map(|(name, totals)| {
-                row(&Emitted {
-                    name,
-                    calls: totals.calls,
-                    results: None,
-                    tokens: totals.tokens,
-                    samples: &totals.samples,
-                    errors: None,
-                })
+            .map(|(name, totals)| Emitted {
+                name,
+                calls: totals.calls,
+                results: None,
+                tokens: totals.tokens,
+                samples: &totals.samples,
+                errors: None,
             })
             .collect::<Vec<_>>()
     } else {
         report
             .tools
             .iter()
-            .map(|(name, totals)| {
-                row(&Emitted {
-                    name,
-                    calls: totals.calls,
-                    results: Some(totals.results),
-                    tokens: totals.tokens,
-                    samples: &totals.samples,
-                    errors: Some(totals.errors),
-                })
+            .map(|(name, totals)| Emitted {
+                name,
+                calls: totals.calls,
+                results: Some(totals.results),
+                tokens: totals.tokens,
+                samples: &totals.samples,
+                errors: Some(totals.errors),
             })
             .collect::<Vec<_>>()
     };
-    rows.sort_by_key(|row| std::cmp::Reverse(tokens_of(row)));
+    rows.sort_by_key(|row| std::cmp::Reverse(row.tokens));
     if bash {
         rows.truncate(super::BASH_ROWS);
     }
-    rows
-}
-
-/// Estimated tokens of one emitted row.
-fn tokens_of(row: &Value) -> u64 {
-    row.get("estimatedTokens")
-        .and_then(Value::as_u64)
-        .unwrap_or_default()
+    rows.iter().map(row).collect()
 }
 
 /// The counters one emitted row reports.

@@ -4,6 +4,7 @@ mod analysis;
 mod prompts;
 
 use analysis::{Painting, Tone, paint};
+use std::borrow::Cow;
 use std::io::{self, Write};
 use std::path::Path;
 use std::process::ExitCode;
@@ -183,19 +184,24 @@ fn messages(path: &str) -> io::Result<Vec<String>> {
 }
 
 /// The text one recorded message content holds, its text blocks joined by LF.
-fn text_of(content: Option<&serde_json::Value>) -> String {
+fn text_of(content: Option<&serde_json::Value>) -> Cow<'_, str> {
     let Some(content) = content else {
-        return String::new();
+        return Cow::Borrowed("");
     };
     match content {
-        serde_json::Value::String(text) => text.clone(),
-        serde_json::Value::Array(blocks) => blocks
-            .iter()
-            .filter_map(|block| block.get("text").and_then(serde_json::Value::as_str))
-            .filter(|text| !text.is_empty())
-            .collect::<Vec<_>>()
-            .join("\n"),
-        _ => String::new(),
+        serde_json::Value::String(text) => Cow::Borrowed(text),
+        serde_json::Value::Array(blocks) => Cow::Owned(
+            blocks
+                .iter()
+                .filter(|block| {
+                    block.get("type").and_then(serde_json::Value::as_str) == Some("text")
+                })
+                .filter_map(|block| block.get("text").and_then(serde_json::Value::as_str))
+                .filter(|text| !text.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ),
+        _ => Cow::Borrowed(""),
     }
 }
 

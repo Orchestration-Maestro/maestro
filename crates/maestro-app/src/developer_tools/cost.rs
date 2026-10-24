@@ -3,7 +3,7 @@
 use super::calendar::{Day, local_midnight};
 use super::formatting::{cost as amount, pad_end, pad_start};
 use super::jsonl::trimmed_lines;
-use super::{is_journal, present, session_base};
+use super::{cost_session_base, is_journal};
 use crate::utils::numbers::decimal_integer_prefix;
 use chrono::{Local, NaiveDate, TimeDelta};
 use maestro_text::utf16_order;
@@ -69,7 +69,7 @@ pub fn main(
         return Ok(ExitCode::from(1));
     };
     let sessions = maestro_path::join(&[
-        &session_base()?,
+        &cost_session_base()?,
         &maestro_session::encode_session_dir(&project),
     ]);
     if !std::path::Path::new(&sessions).exists() {
@@ -185,7 +185,10 @@ fn accumulate(report: &mut Report, entry: &Value) {
     let Some(usage) = message.get("usage").and_then(Value::as_object) else {
         return;
     };
-    let Some(cost) = usage.get("cost").filter(|cost| present(cost)) else {
+    let Some(cost) = usage
+        .get("cost")
+        .filter(|cost| maestro_json::is_truthy(cost))
+    else {
         return;
     };
     let Some(instant) = entry.get("timestamp").and_then(instant) else {

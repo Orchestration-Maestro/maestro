@@ -121,9 +121,8 @@ pub fn parse_timestamp_millis(text: &str) -> Option<i64> {
 
 /// Resolve a local date-time to epoch milliseconds.
 ///
-/// A repeated local time selects the earlier instant. A skipped local time keeps
-/// the offset in force at that local reading, so it advances by the actual change
-/// the zone makes.
+/// A repeated local time selects the earlier instant. A skipped local time uses
+/// the offset in force before the transition, so it resolves past the gap.
 #[must_use]
 pub fn local_timestamp_millis(value: NaiveDateTime) -> Option<i64> {
     match Local.from_local_datetime(&value) {
@@ -132,14 +131,22 @@ pub fn local_timestamp_millis(value: NaiveDateTime) -> Option<i64> {
             Some(earlier.timestamp_millis().min(later.timestamp_millis()))
         }
         chrono::LocalResult::None => {
-            let reading = value.and_utc();
-            let offset = i64::from(Local.offset_from_utc_datetime(&value).local_minus_utc());
-            Some(
-                (reading.timestamp() - offset) * 1_000
-                    + i64::from(reading.timestamp_subsec_millis()),
-            )
+            Some(value.and_utc().timestamp_millis() - gap_offset_millis(value))
         }
     }
+}
+
+/// The offset a zone applies before the transition that skips `reading`, in milliseconds.
+///
+/// The first probe reads the offset at the reading taken as UTC, the second the
+/// offset one probe earlier. A forward transition makes the earlier one the
+/// offset in force before it, so the smaller of the two applies.
+fn gap_offset_millis(reading: NaiveDateTime) -> i64 {
+    let first = Local.offset_from_utc_datetime(&reading);
+    let first_seconds = i64::from(first.local_minus_utc());
+    let second =
+        Local.offset_from_utc_datetime(&(reading - chrono::Duration::seconds(first_seconds)));
+    i64::from(second.local_minus_utc().min(first.local_minus_utc())) * 1_000
 }
 
 /// Retain injected content, visibility and details with a parsed timestamp.

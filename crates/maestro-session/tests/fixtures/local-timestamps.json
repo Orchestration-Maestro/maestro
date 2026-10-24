@@ -82,5 +82,26 @@
     "millis": -1601668800000,
     "local_date": "1919-04-01",
     "local_hour": 0
+  },
+  {
+    "zone": "Europe/Berlin",
+    "wall": "2026-03-29T02:30:00",
+    "millis": 1774747800000,
+    "local_date": "2026-03-29",
+    "local_hour": 3
+  },
+  {
+    "zone": "Europe/Berlin",
+    "wall": "2026-10-25T02:30:00",
+    "millis": 1792888200000,
+    "local_date": "2026-10-25",
+    "local_hour": 2
+  },
+  {
+    "zone": "Europe/Berlin",
+    "wall": "2026-03-30T00:00:00",
+    "millis": 1774821600000,
+    "local_date": "2026-03-30",
+    "local_hour": 0
   }
 ]

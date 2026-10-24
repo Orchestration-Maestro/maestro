@@ -1,8 +1,11 @@
 //! Policies the analysis commands share with the document and session owners.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::analysis_fixtures::{root, run_cost, run_tools, run_usage, scratch};
+use crate::analysis_fixtures::{
+    ZONE, root, run_cost, run_tools, run_transcripts, run_usage, scratch,
+};
 use crate::isolated_home::with_environment;
+use crate::isolated_home::with_environment_without;
 
 /// An assistant entry carrying a reported cost.
 fn cost_entry(provider: &str, total: f64) -> String {
@@ -150,4 +153,49 @@ fn analysis_large_reports_keep_every_selected_record() {
             .sum::<u64>();
         assert_eq!(read["estimatedTokens"], serde_json::json!(summed));
     }
+}
+
+#[test]
+fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
+    with_environment_without(
+        "session_roots_follow_the_account_home_and_cost_keeps_the_variable",
+        &[("TZ", ZONE)],
+        &["HOME"],
+        |base| {
+            let project = format!("{base}/project");
+            std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
+            let account = maestro_resources::paths::native_home_directory()
+                .expect("the child has an account home directory")
+                .display()
+                .to_string();
+            let root = format!("{account}/.maestro/agent/sessions");
+            let expected = format!("{root}/{}", maestro_session::encode_session_dir(&project));
+            // The report names the directory it resolved, which follows the account home.
+            let tools = run_tools(&["--output", &format!("{base}/page.html")])
+                .expect_err("the account home holds no sessions");
+            assert_eq!(
+                tools.to_string(),
+                format!("Sessions directory not found: {root}")
+            );
+            let transcripts =
+                run_transcripts(&["--output", &format!("{base}/out"), &project], false)
+                    .expect("the transcript command reads its directory");
+            assert!(transcripts.failed());
+            assert_eq!(
+                transcripts.stderr,
+                format!("No sessions found for {project}\nExpected: {expected}\n")
+            );
+            let usage = run_usage(&["--cwd", &project, "--days", "7"])
+                .expect("the report reads its directory");
+            assert!(usage.failed());
+            assert_eq!(
+                usage.stderr,
+                format!("Sessions directory not found: {expected}\n")
+            );
+            // The cost report reads the variable directly and reports its absence.
+            let cost = run_cost(&["-d", &project, "-n", "7"])
+                .expect_err("the variable names no home directory");
+            assert_eq!(cost.to_string(), "no home directory");
+        },
+    );
 }

@@ -3,9 +3,10 @@
 mod template;
 
 use super::jsonl::kept_lines;
-use super::{present, resolve_path, session_base};
+use super::{resolve_path, session_base};
 use indexmap::IndexMap;
 use serde_json::Value;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::process::ExitCode;
@@ -192,7 +193,10 @@ fn accumulate(report: &mut Report, entry: &Value) -> io::Result<()> {
     if entry.get("type").and_then(Value::as_str) != Some("message") {
         return Ok(());
     }
-    let Some(message) = entry.get("message").filter(|message| present(message)) else {
+    let Some(message) = entry
+        .get("message")
+        .filter(|message| maestro_json::is_truthy(message))
+    else {
         return Ok(());
     };
     let role = message.get("role").and_then(Value::as_str);
@@ -222,12 +226,18 @@ fn calls(report: &mut Report, message: &Value) {
         report.tools.entry(name.to_owned()).or_default().calls += 1;
         let command = (name == "bash")
             .then(|| block.get("arguments").and_then(bash_command))
-            .flatten();
-        if let Some(identifier) = block.get("id").and_then(key) {
-            report.calls.insert(identifier, command.clone());
-        }
-        if let Some(command) = command.filter(|command| !command.is_empty()) {
+            .flatten()
+            .filter(|command| !command.is_empty());
+        let identifier = block.get("id").and_then(key).map(Cow::into_owned);
+        if let Some(command) = command {
             report.bash.entry(command_key(&command)).or_default().calls += 1;
+            if let Some(identifier) = identifier {
+                report.calls.insert(identifier, Some(command));
+                continue;
+            }
+        }
+        if let Some(identifier) = identifier {
+            report.calls.insert(identifier, None);
         }
     }
 }
@@ -236,7 +246,7 @@ fn calls(report: &mut Report, message: &Value) {
 fn results(report: &mut Report, message: &Value) {
     let Some(name) = message
         .get("toolName")
-        .filter(|name| present(name))
+        .filter(|name| maestro_json::is_truthy(name))
         .and_then(Value::as_str)
     else {
         return;
@@ -252,9 +262,9 @@ fn results(report: &mut Report, message: &Value) {
     }
     let answered = message
         .get("toolCallId")
-        .filter(|identifier| present(identifier))
+        .filter(|identifier| maestro_json::is_truthy(identifier))
         .and_then(key)
-        .and_then(|identifier| report.calls.get(&identifier))
+        .and_then(|identifier| report.calls.get(identifier.as_ref()))
         .and_then(Option::as_deref);
     let Some(command) = answered else {
         return;
@@ -265,14 +275,14 @@ fn results(report: &mut Report, message: &Value) {
 }
 
 /// The map key a recorded identifier contributes, when it is a scalar.
-fn key(value: &Value) -> Option<String> {
+fn key(value: &Value) -> Option<Cow<'_, str>> {
     match value {
-        Value::String(text) => Some(text.clone()),
-        Value::Number(number) => Some(
+        Value::String(text) => Some(Cow::Borrowed(text)),
+        Value::Number(number) => Some(Cow::Owned(
             ryu_js::Buffer::new()
                 .format_finite(number.as_f64().unwrap_or_default())
                 .to_owned(),
-        ),
+        )),
         _ => None,
     }
 }
@@ -287,14 +297,16 @@ fn bash_command(arguments: &Value) -> Option<String> {
 }
 
 /// The text one result's content contributes, blocks separated by LF.
-fn content_text(content: Option<&Value>) -> String {
+fn content_text(content: Option<&Value>) -> Cow<'_, str> {
     let Some(content) = content else {
-        return String::new();
+        return Cow::Borrowed("");
     };
     match content {
-        Value::String(text) => text.clone(),
-        Value::Array(blocks) => blocks.iter().map(block_text).collect::<Vec<_>>().join("\n"),
-        _ => String::new(),
+        Value::String(text) => Cow::Borrowed(text),
+        Value::Array(blocks) => {
+            Cow::Owned(blocks.iter().map(block_text).collect::<Vec<_>>().join("\n"))
+        }
+        _ => Cow::Borrowed(""),
     }
 }
 
@@ -327,10 +339,10 @@ fn command_key(command: &str) -> String {
     let first = first_segment(command);
     let words = ws_words(first.trim_matches(maestro_text::is_whitespace_scalar));
     let mut rest = words.as_slice();
-    while rest.first().is_some_and(|word| assignment(word)) {
+    while rest.len() > 1 && rest.first().is_some_and(|word| assignment(word)) {
         rest = &rest[1..];
     }
-    if rest.first().is_some_and(|word| *word == "sudo") {
+    if rest.len() > 1 && rest.first().is_some_and(|word| *word == "sudo") {
         rest = &rest[1..];
     }
     let mut parts = rest.iter();

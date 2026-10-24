@@ -16,22 +16,34 @@ pub mod tool_stats;
 
 use std::io;
 
-/// The agent directory beneath the home directory.
+/// The agent directory beneath the host's home directory.
 ///
 /// # Errors
-/// Returns a native error when the environment names no home directory.
+/// Returns a not-found error when the host names no home directory, or an
+/// invalid-data one when it is not valid UTF-8.
 pub(crate) fn agent_base() -> io::Result<String> {
-    let home = std::env::var("HOME")
-        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "no home directory"))?;
-    Ok(maestro_path::join(&[&home, ".maestro/agent"]))
+    Ok(maestro_path::join(&[
+        &maestro_resources::paths::home_directory()?,
+        ".maestro/agent",
+    ]))
 }
 
-/// The session root beneath the home directory.
+/// The session root beneath the host's home directory.
 ///
 /// # Errors
-/// Returns a native error when the environment names no home directory.
+/// Returns the home directory failure of [`agent_base`].
 pub(crate) fn session_base() -> io::Result<String> {
     Ok(maestro_path::join(&[&agent_base()?, "sessions"]))
+}
+
+/// The session root beneath the `HOME` variable, which the cost report alone reads.
+///
+/// # Errors
+/// Returns a native error when the variable names no directory.
+pub(crate) fn cost_session_base() -> io::Result<String> {
+    let home = std::env::var("HOME")
+        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "no home directory"))?;
+    Ok(maestro_path::join(&[&home, ".maestro/agent/sessions"]))
 }
 
 /// Resolve an authored path against the process working directory.
@@ -39,21 +51,12 @@ pub(crate) fn session_base() -> io::Result<String> {
 /// # Errors
 /// Returns the native working-directory failure.
 pub(crate) fn resolve_path(path: &str) -> io::Result<String> {
-    let resolved = maestro_path::resolve_with(&[&[path]], Vec::new, || {
-        std::env::current_dir().map(|dir| dir.to_string_lossy().into_owned())
-    })?;
+    let resolved = maestro_path::resolve_with(
+        &[&[path]],
+        maestro_resources::drive_directories,
+        maestro_resources::current_directory,
+    )?;
     Ok(resolved.into_iter().next().unwrap_or_default())
-}
-
-/// Whether a recorded JSON value counts as present for a source `||` guard.
-pub(crate) fn present(value: &serde_json::Value) -> bool {
-    match value {
-        serde_json::Value::Null => false,
-        serde_json::Value::Bool(flag) => *flag,
-        serde_json::Value::Number(number) => number.as_f64().is_some_and(|number| number != 0.0),
-        serde_json::Value::String(text) => !text.is_empty(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
-    }
 }
 
 /// Whether a directory entry name is a session journal.
