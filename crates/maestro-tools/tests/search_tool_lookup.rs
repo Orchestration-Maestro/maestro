@@ -203,6 +203,16 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
             expected.map(|name| format!("{name} --version\n"))
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
+        if mode == "alias" {
+            let selected = ToolsManager::new(bin.text(), Some(counting_fetch(&calls)))
+                .with_offline(Some(true));
+            assert_eq!(
+                selected.get_tool_path(SearchTool::Fd).await.as_deref(),
+                Some("fdfind")
+            );
+            assert_eq!(probe_log(&root), Some("fdfind --version\n".to_owned()));
+            assert_eq!(calls.load(Ordering::SeqCst), 0);
+        }
     });
 }
 

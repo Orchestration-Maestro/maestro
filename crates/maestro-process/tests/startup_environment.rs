@@ -56,6 +56,7 @@ fn edited(edit: impl FnOnce(&mut Command)) -> String {
     let mut command = Command::new("sh");
     command.args(["-c", "printf '%s|%s' \"$MAESTRO_CODING_AGENT\" \"$ONLY\""]);
     command.env("MAESTRO_CODING_AGENT", "true");
+    command.env_remove("ONLY");
     edit(&mut command);
     let output = spawn_sync(
         &mut command,
@@ -111,6 +112,7 @@ fn sdk_children_keep_ambient_marker() {
                 Some(value) => child.env("MAESTRO_CODING_AGENT", value),
                 None => child.env_remove("MAESTRO_CODING_AGENT"),
             };
+            child = child.env_remove("KEPT");
             let output = child.output().unwrap();
             assert!(output.status.success(), "{case}");
         }

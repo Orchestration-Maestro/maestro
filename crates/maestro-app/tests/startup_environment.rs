@@ -3,6 +3,7 @@
 #![cfg(unix)]
 use crate::resource_fixtures::{Root, module_loader, with_isolated_home};
 use crate::service_observations as services;
+use crate::support::session_harness::on_task_set;
 use maestro_app::configuration::telemetry::{
     is_install_telemetry_enabled, report_install_telemetry,
 };
@@ -14,14 +15,19 @@ use maestro_app::resources::resource_loader::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
 };
 use maestro_app::{
-    AgentSessionServices, CreateAgentSessionServicesOptions, create_agent_session_services,
+    AgentSession, AgentSessionServices, CreateAgentSessionOptions,
+    CreateAgentSessionServicesOptions, SessionResources, create_agent_session,
+    create_agent_session_services,
 };
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_models::Local;
+use maestro_session::SessionManager;
 use maestro_settings::{Settings, SettingsManager};
 use serde_json::json;
 use services::{ORIGIN, Transport};
+use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 use tokio::task::LocalSet;
 
 /// The truth-value selections a startup decides, in both unequal directions.
@@ -53,6 +59,42 @@ fn ambient_rows() -> Vec<AmbientRow> {
     }
     rows
 }
+
+/// One ambient environment the release selection matrix runs under, with whether its
+/// nonempty flags still disable the operations they belong to.
+#[derive(Clone, Copy)]
+struct Ambient {
+    /// The variable values the child process receives.
+    env: &'static [(&'static str, &'static str)],
+    /// Whether the ambient offline flag disables its operation.
+    offline: bool,
+    /// Whether the ambient version-skip flag disables its operation.
+    skip: bool,
+}
+
+/// The ambient environments: no flags, empty values, and each flag set on its own.
+const AMBIENTS: [Ambient; 4] = [
+    Ambient {
+        env: &[],
+        offline: false,
+        skip: false,
+    },
+    Ambient {
+        env: &[("MAESTRO_OFFLINE", ""), ("MAESTRO_SKIP_VERSION_CHECK", "")],
+        offline: false,
+        skip: false,
+    },
+    Ambient {
+        env: &[("MAESTRO_OFFLINE", "1")],
+        offline: true,
+        skip: false,
+    },
+    Ambient {
+        env: &[("MAESTRO_SKIP_VERSION_CHECK", "1")],
+        offline: false,
+        skip: true,
+    },
+];
 
 /// Options carrying only a fetch override and the two selections.
 fn options(
@@ -99,20 +141,37 @@ async fn release_gates(selection: (Option<bool>, Option<bool>)) -> (usize, usize
 
 #[test]
 fn startup_selection_skips_all_release_entrypoints() {
-    if services::isolated("startup_selection_skips_all_release_entrypoints") {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let home = scratch.path().display().to_string();
+    let selected = maestro_test_process::run_per_environment(
+        "startup_selection_skips_all_release_entrypoints",
+        AMBIENTS,
+        |ambient| {
+            let mut environment =
+                std::collections::BTreeMap::from([("HOME".to_owned(), home.clone())]);
+            environment.extend(
+                ambient
+                    .env
+                    .iter()
+                    .map(|(key, value)| ((*key).to_owned(), (*value).to_owned())),
+            );
+            environment
+        },
+    )
+    .unwrap();
+    let Some(selected) = selected else {
         return;
-    }
+    };
+    let ambient = selected[0];
     for selection in SELECTIONS {
-        let suppressed = selection.0 == Some(true) || selection.1 == Some(true);
-        let expected = (
-            usize::from(!suppressed),
-            usize::from(!suppressed),
-            usize::from(!suppressed),
-        );
+        let suppressed =
+            selection.0.unwrap_or(ambient.offline) || selection.1.unwrap_or(ambient.skip);
+        let expected = usize::from(!suppressed);
         assert_eq!(
             services::run(release_gates(selection)),
-            expected,
-            "{selection:?}"
+            (expected, expected, expected),
+            "{selection:?} under {:?}",
+            ambient.env
         );
     }
 }
@@ -283,8 +342,8 @@ fn loader_startup_selection_reaches_configured_packages() {
     );
 }
 
-/// Creates the session services over `root` with the two independent offline selections.
-fn services_for(
+/// Creates the services over `root` with the two independent offline selections.
+async fn services_for(
     root: &Root,
     local: &Rc<LocalSet>,
     packages: Option<bool>,
@@ -296,44 +355,100 @@ fn services_for(
     let options = CreateAgentSessionServicesOptions {
         cwd: root.project(),
         agent_dir: Some(root.agent()),
-        auth_storage: Some(std::sync::Arc::new(AuthStorage::in_memory(
-            AuthStorageData::default(),
-        ))),
+        auth_storage: Some(Arc::new(AuthStorage::in_memory(AuthStorageData::default()))),
         settings_manager: None,
         model_registry: None,
         extension_flag_values: None,
         resource_loader_options: resources,
         offline: search,
     };
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime
-        .block_on(local.run_until(create_agent_session_services(options)))
-        .unwrap()
+    create_agent_session_services(options).await.unwrap()
+}
+
+/// Creates the session the services configure, carrying their retained search selection.
+async fn session_from(services: &AgentSessionServices<Local>) -> Rc<AgentSession<Local>> {
+    create_agent_session(CreateAgentSessionOptions {
+        cwd: Some(services.cwd.clone()),
+        agent_dir: Some(services.agent_dir.clone()),
+        auth_storage: Some(Arc::clone(&services.auth_storage)),
+        model_registry: Some(Arc::clone(&services.model_registry)),
+        model: None,
+        thinking_level: None,
+        scoped_models: Vec::new(),
+        no_tools: None,
+        tools: None,
+        custom_tools: Vec::new(),
+        resources: SessionResources::Loader(Rc::clone(&services.resource_loader)),
+        session_manager: Some(Rc::new(RefCell::new(
+            SessionManager::in_memory(Some(&services.cwd)).unwrap(),
+        ))),
+        settings_manager: Some(Rc::clone(&services.settings_manager)),
+        session_start_event: None,
+        theme: maestro_theme::LiveTheme::default(),
+        offline: services.offline,
+    })
+    .await
+    .expect("the session starts")
+    .session
+}
+
+/// Runs both search tools inside `session` and reports the failure each missing program
+/// causes.
+async fn search_failures(session: &Rc<AgentSession<Local>>) -> [String; 2] {
+    let mut failures = [String::new(), String::new()];
+    for (slot, name) in failures.iter_mut().zip(["find", "grep"]) {
+        let definition = session.get_tool_definition(name).expect("a search tool");
+        let tool =
+            maestro_extensions::wrap_registered_tool(&definition, session.extension_runner());
+        *slot = (tool.execute)("call".to_owned(), json!({"pattern": "*"}), None, None)
+            .await
+            .expect_err("no search program is installed")
+            .message;
+    }
+    failures
+}
+
+/// Builds the session over `services` and runs both search tools inside it.
+async fn session_search(services: &AgentSessionServices<Local>) -> [String; 2] {
+    search_failures(&session_from(services).await).await
+}
+
+/// A session whose search selection is offline admits no program: both tools fail before
+/// running one, and no staging entry or program appears in the binary directory.
+fn assert_search_offline(services: &AgentSessionServices<Local>, failures: &[String; 2]) {
+    assert_eq!(
+        failures[0],
+        "fd is not available and could not be downloaded"
+    );
+    assert_eq!(
+        failures[1],
+        "ripgrep (rg) is not available and could not be downloaded"
+    );
+    assert_no_search_program(services);
 }
 
 #[test]
 fn session_startup_selection_reaches_find_and_grep() {
     with_isolated_home("session_startup_selection_reaches_find_and_grep", |base| {
         let (root, marker) = package_tree(base, "session");
-        let local = Rc::new(LocalSet::new());
-        let services = services_for(&root, &local, Some(true), Some(false));
-        assert!(
-            !marker.exists(),
-            "the search selection must not change packages"
-        );
-        assert_eq!(services.offline, Some(false));
-        assert_no_search_program(&services);
+        on_task_set(|local| async move {
+            let services = services_for(&root, &local, Some(true), Some(false)).await;
+            assert!(
+                !marker.exists(),
+                "the search selection must not change packages"
+            );
+            assert_eq!(services.offline, Some(false));
+            assert_no_search_program(&services);
+        });
     });
     with_isolated_home("session_startup_selection_reaches_find_and_grep", |base| {
         let (root, marker) = package_tree(base, "session-online");
-        let local = Rc::new(LocalSet::new());
-        let services = services_for(&root, &local, None, Some(true));
-        assert!(marker.exists(), "the package selection stays independent");
-        assert_eq!(services.offline, Some(true));
-        assert_no_search_program(&services);
+        on_task_set(|local| async move {
+            let services = services_for(&root, &local, None, Some(true)).await;
+            assert!(marker.exists(), "the package selection stays independent");
+            assert_eq!(services.offline, Some(true));
+            assert_search_offline(&services, &session_search(&services).await);
+        });
     });
 }
 
@@ -359,18 +474,21 @@ fn assert_no_search_program(services: &AgentSessionServices<Local>) {
 fn startup_selection_survives_service_replacement() {
     with_isolated_home("startup_selection_survives_service_replacement", |base| {
         let (root, marker) = package_tree(base, "replace");
-        let local = Rc::new(LocalSet::new());
-        let selected = services_for(&root, &local, Some(true), Some(true));
-        assert_eq!(selected.offline, Some(true));
-        assert!(!marker.exists());
-        let replacement = services_for(&root, &local, Some(true), Some(true));
-        assert_eq!(replacement.offline, Some(true));
-        assert!(!marker.exists());
-        let online = services_for(&root, &local, None, Some(false));
-        assert_eq!(online.offline, Some(false));
-        assert!(
-            marker.exists(),
-            "a separate service keeps its own selection"
-        );
+        on_task_set(|local| async move {
+            let selected = services_for(&root, &local, Some(true), Some(true)).await;
+            assert_eq!(selected.offline, Some(true));
+            assert!(!marker.exists());
+            assert_search_offline(&selected, &session_search(&selected).await);
+            let replacement = services_for(&root, &local, Some(true), Some(true)).await;
+            assert_eq!(replacement.offline, Some(true));
+            assert!(!marker.exists());
+            assert_search_offline(&replacement, &session_search(&replacement).await);
+            let online = services_for(&root, &local, None, Some(false)).await;
+            assert_eq!(online.offline, Some(false));
+            assert!(
+                marker.exists(),
+                "a separate service keeps its own selection"
+            );
+        });
     });
 }

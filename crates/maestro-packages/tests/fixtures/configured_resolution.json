@@ -7901,6 +7901,40 @@
     }
   },
   {
+    "case": "selection-ambient-truthy",
+    "recipe": {
+      "action": "error",
+      "project": {
+        "packages": [
+          "npm:missing",
+          "https://github.com/team/missing",
+          "npm:ready"
+        ]
+      },
+      "packages": {
+        "project/.maestro/npm/node_modules/ready": {
+          "extensions": [
+            "entry.ts"
+          ]
+        }
+      },
+      "selection": false,
+      "offline": "1"
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "Missing source: npm:missing"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [
+        "npm:missing"
+      ],
+      "second": null
+    }
+  },
+  {
     "case": "selection-pin-exact",
     "recipe": {
       "project": {

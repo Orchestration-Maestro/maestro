@@ -21,6 +21,7 @@ fn startup_selection_skips_missing_remote_sources() {
         "selection-_true_",
         "selection-_false_",
         "selection-_absent_",
+        "selection-ambient-truthy",
     ]);
 }
 

@@ -24,9 +24,16 @@ const TRUTH: &[(Option<&str>, bool)] = &[
     (Some("TRUE"), true),
     (Some("yes"), true),
     (Some("YeS"), true),
+    (Some(" "), false),
+    (Some("\u{feff}false"), false),
     (Some(" yes"), false),
     (Some("true "), false),
 ];
+
+/// An explicit selection contradicting an ambient flag value, and whether the missing
+/// program is still acquired.
+const OVERRIDES: [(Option<bool>, &str, bool); 2] =
+    [(Some(false), "1", true), (Some(true), "0", false)];
 
 /// Places an executable program probe at `root/name` through a child process.
 fn program(root: &Path, name: &str) {
@@ -127,6 +134,33 @@ fn startup_selection_keeps_installed_tool_discovery() {
             Some(format!("{}/fd", bin.text()))
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
+    });
+}
+
+#[test]
+fn startup_selection_overrides_contradictory_ambient_flags() {
+    run(async {
+        for (index, (selection, ambient, acquires)) in OVERRIDES.iter().enumerate() {
+            let mode = index.to_string();
+            if !isolated_os(
+                "startup_selection_overrides_contradictory_ambient_flags",
+                &mode,
+                &[
+                    ("PATH", Some(std::ffi::OsStr::new(""))),
+                    ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new(ambient))),
+                ],
+            ) {
+                continue;
+            }
+            let (manager, calls, bin) = manager(*selection);
+            assert_eq!(manager.ensure_tool(SearchTool::Fd, None).await, None);
+            assert_eq!(
+                calls.load(Ordering::SeqCst),
+                usize::from(*acquires),
+                "selection {selection:?} over ambient {ambient}"
+            );
+            assert!(entries(&bin).is_empty());
+        }
     });
 }
 
