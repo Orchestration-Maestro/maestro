@@ -3,7 +3,8 @@
 `maestro_chat::InteractiveMode` holds the native terminal presentation of the
 current session. This page covers what exists today: construction, startup,
 the startup help, the loaded-resource listing, the transcript notices, typed
-input, session replay and the expansion and thinking shortcuts. The prompt loop,
+input, session replay, the reset of the presentation after a session replacement,
+the fatal-error exit and the expansion and thinking shortcuts. The prompt loop,
 streaming messages, startup messages, installed custom headers, the terminal
 title and the other integrations are still to come; the mode reads submitted text
 but does not yet prompt the session.
@@ -187,6 +188,21 @@ without either effect, so the history is not filled twice.
 
 A status is a dim line in the transcript. When the previous status line is still
 the last row, a new status replaces its text; otherwise it starts a new line.
+
+## Session replacement and fatal errors
+
+`render_current_session_state` clears the transcript and the pending-message rows and
+then replays the current session with the initial replay's effects: it refreshes the
+footer and the editor border, adds each user text to the editor history and shows the
+compaction notice. A transcript row or pending tool row left by the replaced session
+does not survive the call, so the presentation shows only the session it now reads.
+
+`handle_fatal_runtime_error` takes a prefix and the error that ended a session
+operation. It appends `Error: <prefix>: <message>` to the transcript, where the message
+is the error's own text, then closes the theme watch and stops the terminal, so no
+theme reload or frame repaints while the process ends. It then ends the process with
+status 1. A failure while appending the notice or while stopping the terminal is
+ignored, because the process is ending either way.
 
 ## Shortcuts
 

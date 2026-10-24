@@ -130,8 +130,7 @@ impl InteractiveMode {
             session.session_manager().borrow().get_cwd().to_owned(),
             operations.clone(),
         );
-        let footer = create_footer(session.clone(), &footer_data_provider, themes.theme())?;
-        footer.set_auto_compact_enabled(session.auto_compaction_enabled());
+        let footer = create_footer(&session, &footer_data_provider, themes.theme())?;
         themes.set_registered_themes(session.resource_loader().get_themes().themes.clone());
         let selected_theme = session.settings_manager().borrow().get_theme();
         themes.init_theme(selected_theme.as_deref(), Some(operations))?;
@@ -221,6 +220,32 @@ impl InteractiveMode {
         })?;
         self.render_initial_messages()
     }
+
+    /// Clears the transcript and the pending-message rows, then replays the current session
+    /// with the initial replay's footer, history and compaction effects.
+    ///
+    /// # Errors
+    /// Returns the failure of reading the session context, of a stored record, of a row's
+    /// rendering or of the published theme.
+    pub fn render_current_session_state(&self) -> Result<(), Box<dyn Error>> {
+        self.chat_container.clear();
+        self.pending_messages_container.clear();
+        self.render_initial_messages()
+    }
+
+    /// Reports a fatal runtime failure as its transcript notice, closes the theme watch
+    /// and stops the terminal, so nothing repaints while the process ends.
+    fn report_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) {
+        let _ = self.show_error(&format!("{prefix}: {error}"));
+        self.themes.stop_theme_watcher();
+        let _ = self.ui.stop();
+    }
+
+    /// Reports a fatal runtime failure and ends the process with status one.
+    pub fn handle_fatal_runtime_error(&self, prefix: &str, error: &dyn Error) -> ! {
+        self.report_fatal_runtime_error(prefix, error);
+        std::process::exit(1);
+    }
 }
 
 /// Builds the frame writer with the configured hardware-cursor and clear-on-shrink policies,
@@ -263,20 +288,23 @@ fn create_editor(
     ))
 }
 
-/// Builds the footer over the session, its metadata and the published theme.
+/// Builds the footer over the session, its metadata and the published theme, and applies
+/// the session's auto-compaction setting.
 ///
 /// # Errors
 /// Returns the failure of the collator reading the locale environment.
 fn create_footer(
-    session: Rc<AgentSession>,
+    session: &Rc<AgentSession>,
     data: &FooterDataProvider,
     theme: LiveTheme,
 ) -> Result<Rc<FooterComponent>, Box<dyn Error>> {
-    Ok(Rc::new(FooterComponent::new(
-        session,
+    let footer = FooterComponent::new(
+        Rc::clone(session),
         Rc::new(data.clone()),
         theme,
         Rc::new(Collator::new(&|key| std::env::var(key).ok())?),
         Rc::new(|key| std::env::var(key).ok()),
-    )))
+    );
+    footer.set_auto_compact_enabled(session.auto_compaction_enabled());
+    Ok(Rc::new(footer))
 }

@@ -704,7 +704,7 @@ fn usage() -> Value {
 }
 
 /// A stored assistant record with `content`, its stop reason and an optional error.
-fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
+pub(super) fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
     let mut record = json!({"role": "assistant", "content": content, "api": "controlled",
         "provider": "controlled", "model": "controlled", "usage": usage(),
         "stopReason": stop, "timestamp": 0});
@@ -715,7 +715,7 @@ fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
 }
 
 /// A stored tool call of `name` with the recorded object arguments.
-fn call(id: &str, name: &str) -> Value {
+pub(super) fn call(id: &str, name: &str) -> Value {
     json!({"type": "toolCall", "id": id, "name": name, "arguments": {"z": 1, "a": 2}})
 }
 
@@ -727,7 +727,7 @@ fn result(id: &str) -> Value {
 }
 
 /// A stored user record with text content.
-fn user_record(text: &str) -> Value {
+pub(super) fn user_record(text: &str) -> Value {
     json!({"role": "user", "content": text, "timestamp": 0})
 }
 
@@ -930,7 +930,7 @@ fn transcript_initial_replay_updates_footer_history_and_compaction_notice() {
 }
 
 /// Owned inputs for a stand-alone row of `id`, used to seed a stale registration.
-fn tool_params(world: &World, id: &str) -> crate::ToolExecutionParams {
+pub(super) fn tool_params(world: &World, id: &str) -> crate::ToolExecutionParams {
     crate::ToolExecutionParams {
         tool_name: "unknown_tool".into(),
         tool_call_id: id.into(),
