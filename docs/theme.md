@@ -48,9 +48,23 @@ and a `TERM` of `screen`, `screen-…` or `screen.…` select 256 colors; anythi
 is truecolor. An explicit mode, or any earlier failure, reads no environment.
 
 `supports_color` decides whether plain terminal messages, such as warnings, are
-styled at all. `FORCE_COLOR` decides first: `true`, an empty value or a positive
-level turns color on, and `false` or `0` turns it off. Without it, color is used
-when standard output is a terminal and `TERM` is not `dumb`.
+styled at all. The checks run in this order:
+
+1. A `FORCE_COLOR` of `0` or `false` turns color off. `true`, an empty value or a
+   positive level asks for color.
+2. An Azure Pipelines agent (`TF_BUILD` and `AGENT_NAME` both set) gets color.
+3. Without `FORCE_COLOR`, standard output must be a terminal.
+4. A `TERM` of `dumb` gets color only when `FORCE_COLOR` asked for it.
+5. Windows gets color.
+6. With `CI` set, color comes only from GitHub Actions, Gitea Actions, CircleCI,
+   Travis CI, AppVeyor, GitLab CI, Buildkite, Drone, `CI_NAME=codeship` or
+   `FORCE_COLOR`.
+7. With `TEAMCITY_VERSION` set, version 9.1 or later gets color.
+8. Any `COLORTERM`, a `TERM_PROGRAM` of `iTerm.app` or `Apple_Terminal`, or a
+   `TERM` that is `wezterm`, ends in `-256` or `-256color`, starts with `screen`,
+   `xterm`, `vt100`, `vt220` or `rxvt`, or contains `color`, `ansi`, `cygwin` or
+   `linux` (in any case) gets color.
+9. Anything else gets color only when `FORCE_COLOR` asked for it.
 
 In 256-color mode a hex color becomes the nearest entry of the six-level cube,
 or a gray-ramp entry when its channel spread is below 10 and the gray is closer
