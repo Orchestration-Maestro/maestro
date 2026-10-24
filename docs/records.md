@@ -370,9 +370,11 @@ the [tree guide](tree.md). Branch extraction and forking are described in
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions,
-session listeners and extension error delivery reuse it. For shared `Rc` callbacks
+its existing `ToolInfo<String>` alias. Live callback storage belongs to the
+dependency-free leaf `maestro-listeners::Listeners<P>`, which admits a callback
+either once per allocation or once per registration, as the caller's source keeps
+them. Agent subscriptions, session listeners, extension error delivery and native
+output-failure handlers reuse it; models keeps no copy. For shared `Rc` callbacks
 it also owns subscribing, which returns the removal operation, and the live walk in
 registration order. What each listener receives and when it runs remain with the
 caller. The collection returns removed ownership for release outside guards.

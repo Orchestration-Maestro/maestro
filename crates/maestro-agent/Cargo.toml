@@ -10,6 +10,7 @@ repository.workspace = true
 maestro-tool = { path = "../maestro-tool" }
 maestro-text = { path = "../maestro-text" }
 futures-util.workspace = true
+maestro-listeners = { path = "../maestro-listeners" }
 maestro-models = { path = "../maestro-models" }
 serde_json.workspace = true
 

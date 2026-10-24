@@ -32,6 +32,7 @@ roxmltree = { version = "=0.21.1", default-features = false, features = ["std", 
 url = "=2.5.8"
 ryu-js.workspace = true
 futures-util.workspace = true
+maestro-listeners = { path = "../maestro-listeners" }
 maestro-models = { path = "../maestro-models" }
 maestro-tools = { path = "../maestro-tools" }
 maestro-session = { path = "../maestro-session" }

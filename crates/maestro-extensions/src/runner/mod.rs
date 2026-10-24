@@ -21,6 +21,7 @@ use crate::{
 };
 pub(crate) use binding::ContextBinding;
 pub use binding::ExtensionRunnerSession;
+use maestro_listeners::Listeners;
 use maestro_models::Threaded;
 use maestro_resources::ResourceDiagnostic;
 use maestro_theme::LiveTheme;
@@ -35,11 +36,7 @@ pub struct ExtensionRunner<E: ExtensionExecution = Threaded> {
     /// Shared action runtime.
     runtime: E::Shared<ExtensionRuntime<E>>,
     /// Live attributed error observers.
-    error_listeners: Rc<
-        RefCell<
-            maestro_models::records::listeners::Listeners<crate::types::ExtensionErrorListener>,
-        >,
-    >,
+    error_listeners: Rc<RefCell<Listeners<crate::types::ExtensionErrorListener>>>,
     /// Current extension load order.
     extensions: ExtensionCollection<E>,
     /// State shared with this runner's contexts.

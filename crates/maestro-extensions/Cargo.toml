@@ -13,6 +13,7 @@ maestro-tools = { path = "../maestro-tools" }
 serde.workspace = true
 indexmap = "=2.14.2"
 maestro-catalog = { path = "../maestro-catalog" }
+maestro-listeners = { path = "../maestro-listeners" }
 maestro-models = { path = "../maestro-models" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-session = { path = "../maestro-session" }
