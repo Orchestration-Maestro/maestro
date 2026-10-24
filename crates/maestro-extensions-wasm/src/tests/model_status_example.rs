@@ -1,11 +1,10 @@
 //! The shipped model-status factory exercised through registration and invocation.
 use serde_json::{Value, json};
 
-use super::controlled::Controlled;
 use super::documents::{Answer, Ended};
 use super::session_corpus::same;
 use super::ui_host::receipts;
-use crate::component_adapter::{Capabilities, Exports, release};
+use crate::component_adapter::{Capabilities, release};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/model_status.rs"]
@@ -77,7 +76,8 @@ fn same_event(answer: &Answer, row: &Value) {
     }
 }
 
-/// Checks that the handler left the row's event as it was and returned no result.
+/// Checks that the row records a successful outcome, and that the handler left its event as it
+/// was and returned no result.
 fn unchanged(answer: &Answer, row: &Value) {
     same_event(answer, row);
     assert!(
@@ -85,25 +85,17 @@ fn unchanged(answer: &Answer, row: &Value) {
         "{}: the handler returned a result",
         row["name"]
     );
+    assert_eq!(
+        row["outcome"]["ok"].as_bool(),
+        Some(true),
+        "{}: recorded outcome",
+        row["name"]
+    );
 }
 
-/// Checks that the handler reached exactly the row's recorded host requests, in order.
-fn assert_requests(host: &Controlled, from: usize, row: &Value) {
-    let seen: Vec<(String, Value)> = receipts(&host.observed().transcript[from..])
-        .into_iter()
-        .map(|receipt| (receipt.method, receipt.operands))
-        .collect();
-    let expected = reached(row);
-    assert_eq!(seen.len(), expected.len(), "{}: host requests", row["name"]);
-    for (index, (method, operands)) in expected.iter().enumerate() {
-        assert_eq!(&seen[index].0, method, "{}: request {index}", row["name"]);
-        same(&seen[index].1, operands);
-    }
-}
-
-/// Checks that the built component reached exactly the row's recorded host requests.
-fn assert_requests_on_component(harness: &mut super::host::Harness, from: usize, row: &Value) {
-    let seen: Vec<(String, Value)> = receipts(&harness.observed().transcript[from..])
+/// Checks that the recorded transcript reached exactly the row's recorded host requests, in order.
+fn assert_requests(transcript: &[String], row: &Value) {
+    let seen: Vec<(String, Value)> = receipts(transcript)
         .into_iter()
         .map(|receipt| (receipt.method, receipt.operands))
         .collect();
@@ -140,9 +132,7 @@ fn model_status_registers_only_selection_hook() -> Result<(), String> {
 #[test]
 fn model_status_selection_preserves_literal_identifiers() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<ModelStatus>().await?;
+        let (host, exports) = super::example_support::start::<ModelStatus>().await?;
         let key = host.observed().callback("event model_select")?;
         let successes = rows(false);
         assert_eq!(successes.len(), 14, "recorded successes");
@@ -160,7 +150,7 @@ fn model_status_selection_preserves_literal_identifiers() -> Result<(), String> 
                 )
                 .await?;
             unchanged(&Answer::of(super::guest_family::delivery(outcome))?, &row);
-            assert_requests(&host, from, &row);
+            assert_requests(&host.observed().transcript[from..], &row);
         }
         release(key);
         assert_eq!(host.observed().live, 0, "the host lent nothing it kept");
@@ -171,11 +161,12 @@ fn model_status_selection_preserves_literal_identifiers() -> Result<(), String> 
 /// The capacity of the captured stream: every recorded diagnostic byte, plus the one byte that
 /// keeps the stream from reporting itself closed once the last of them is written.
 fn stream_capacity() -> usize {
-    let recorded: usize = corpus()["rows"]
+    let corpus = corpus();
+    let recorded: usize = corpus["rows"]
         .as_array()
         .unwrap()
         .iter()
-        .flat_map(|row| row["effects"].as_array().unwrap().clone())
+        .flat_map(|row| row["effects"].as_array().unwrap())
         .filter(|effect| effect[0] == "stdout")
         .map(|effect| effect[1].as_str().unwrap().len())
         .sum();
@@ -189,7 +180,7 @@ fn diagnostic(row: &Value) -> Vec<u8> {
         .unwrap()
         .iter()
         .filter(|effect| effect[0] == "stdout")
-        .flat_map(|effect| effect[1].as_str().unwrap().as_bytes().to_vec())
+        .flat_map(|effect| effect[1].as_str().unwrap().bytes())
         .collect()
 }
 
@@ -254,6 +245,7 @@ fn model_status_component_runs_selection_hook() -> Result<(), String> {
         let start = stdout.contents().len();
         let answer = invoke_on_component(&mut harness, key, &row)?;
         unchanged(&answer, &row);
+        assert_requests(&harness.observed().transcript[from..], &row);
         let seen = checkpoints(&harness.observed().transcript[from..], start);
         let reached = reached(&row);
         assert_eq!(seen, reached.len(), "{}: stream checkpoints", row["name"]);
@@ -273,15 +265,14 @@ fn model_status_component_runs_selection_hook() -> Result<(), String> {
 /// Runs both recorded rejections and a later control through the in-process adapter.
 fn rejections_in_process() -> Result<(), String> {
     super::block_on(async {
-        let host = Controlled::default();
-        let exports = Exports::new(host.clone());
-        exports.start::<ModelStatus>().await?;
+        let (host, exports) = super::example_support::start::<ModelStatus>().await?;
         let key = host.observed().callback("event model_select")?;
         for row in rows(true) {
+            let reject = row["reject"].as_str().unwrap();
             let error = row["outcome"]["error"].as_str().unwrap().to_owned();
             host.observe()
                 .ui
-                .control(&json!({ "error": error }).to_string());
+                .control(&json!({ "error": reject }).to_string());
             let from = host.observed().transcript.len();
             let outcome = exports
                 .invoke_event(
@@ -296,7 +287,7 @@ fn rejections_in_process() -> Result<(), String> {
             let answer = Answer::of(super::guest_family::delivery(outcome))?;
             same_event(&answer, &row);
             assert_eq!(answer.ended, Ended::Failed(error), "{}", row["name"]);
-            assert_requests(&host, from, &row);
+            assert_requests(&host.observed().transcript[from..], &row);
         }
         let control = &rows(false)[0];
         let outcome = exports
@@ -333,11 +324,12 @@ fn rejections_on_component() -> Result<(), String> {
         .callback("event model_select")
         .map_err(|error| error.to_string())?;
     for row in rows(true) {
+        let reject = row["reject"].as_str().unwrap();
         let error = row["outcome"]["error"].as_str().unwrap().to_owned();
         harness
             .observed()
             .ui
-            .control(&json!({ "error": error }).to_string());
+            .control(&json!({ "error": reject }).to_string());
         let from = harness.observed().transcript.len();
         let start = stdout.contents().len();
         let answer = invoke_on_component(&mut harness, key, &row)?;
@@ -351,7 +343,7 @@ fn rejections_on_component() -> Result<(), String> {
             "{}: diagnostics after a rejection",
             row["name"]
         );
-        assert_requests_on_component(&mut harness, from, &row);
+        assert_requests(&harness.observed().transcript[from..], &row);
     }
     let control = &rows(false)[0];
     let start = stdout.contents().len();
