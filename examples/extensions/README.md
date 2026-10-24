@@ -166,6 +166,16 @@ No provider, paid service or extension installation is required for the
 controlled run. Loading the built component into an application is opt-in, and a
 real compaction also needs that application's model and runtime configuration.
 
+### What the bookmark example does
+
+`/bookmark` labels the newest assistant message and `/unbookmark` removes the
+newest label from any entry, so the tree view can show where the important
+points of a session are. A blank argument becomes a `bookmark-<epoch
+milliseconds>` label. The controlled run replays every recorded case against
+the built component with a supplied wall clock, so it needs no provider and no
+installation; loading the component into an application is opt-in and needs
+that application's component runtime.
+
 ### What the runtime reload command does
 
 `/reload-runtime` awaits the reload request its command context supplies and

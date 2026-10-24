@@ -24,7 +24,7 @@ impl Extension for Bookmark {
 }
 
 /// The registrations the shipped factory makes, in the order the host received them.
-const REGISTRATIONS: [&str; 1] = ["command bookmark"];
+const REGISTRATIONS: [&str; 2] = ["command bookmark", "command unbookmark"];
 
 /// One invocation's observations and the answer it returned.
 struct Answer {
@@ -48,8 +48,8 @@ trait Host {
     /// The clock reads since the last reset, when this host supplies a clock.
     fn clock_reads(&self) -> Option<usize>;
 
-    /// Runs the bookmark command with `args`.
-    fn run(&mut self, args: &str) -> Answer;
+    /// Runs the command `command` with `args`.
+    fn run(&mut self, command: Command, args: &str) -> Answer;
 
     /// Releases every registration the host received.
     fn release(&mut self);
@@ -62,7 +62,9 @@ struct ControlledHost {
     /// The adapter serving the factory's callbacks.
     exports: Exports<Controlled>,
     /// The registered bookmark command.
-    command: u32,
+    bookmark: u32,
+    /// The registered removal command.
+    unbookmark: u32,
 }
 
 impl Host for ControlledHost {
@@ -88,14 +90,14 @@ impl Host for ControlledHost {
         None
     }
 
-    fn run(&mut self, args: &str) -> Answer {
+    fn run(&mut self, command: Command, args: &str) -> Answer {
         let mark = self.host.observed().transcript.len();
         let context = self.host.command_context("/work");
-        let outcome = super::block_on(self.exports.invoke_command(
-            self.command,
-            args.to_owned(),
-            context,
-        ));
+        let key = match command {
+            Command::Bookmark => self.bookmark,
+            Command::Unbookmark => self.unbookmark,
+        };
+        let outcome = super::block_on(self.exports.invoke_command(key, args.to_owned(), context));
         Answer {
             lines: self.host.observed().transcript[mark..].to_vec(),
             outcome,
@@ -112,7 +114,9 @@ struct ComponentHost {
     /// The instantiated component.
     harness: Harness,
     /// The registered bookmark command.
-    command: u32,
+    bookmark: u32,
+    /// The registered removal command.
+    unbookmark: u32,
 }
 
 impl ComponentHost {
@@ -123,10 +127,17 @@ impl ComponentHost {
             super::build::compile(&path).map_err(|error| error.to_string())?;
         let harness = super::block_on(Harness::from_compiled(&engine, &component))
             .map_err(|error| error.to_string())?;
-        let command = harness
+        let bookmark = harness
             .callback("command bookmark")
             .map_err(|error| error.to_string())?;
-        Ok(Self { harness, command })
+        let unbookmark = harness
+            .callback("command unbookmark")
+            .map_err(|error| error.to_string())?;
+        Ok(Self {
+            harness,
+            bookmark,
+            unbookmark,
+        })
     }
 }
 
@@ -157,9 +168,13 @@ impl Host for ComponentHost {
         Some(self.harness.clock().reads())
     }
 
-    fn run(&mut self, args: &str) -> Answer {
+    fn run(&mut self, command: Command, args: &str) -> Answer {
         let mark = self.harness.store.data().observed.transcript.len();
-        let outcome = invoke_command_on_component(&mut self.harness, self.command, args, false);
+        let key = match command {
+            Command::Bookmark => self.bookmark,
+            Command::Unbookmark => self.unbookmark,
+        };
+        let outcome = invoke_command_on_component(&mut self.harness, key, args, false);
         Answer {
             lines: self.harness.store.data().observed.transcript[mark..].to_vec(),
             outcome,
@@ -178,11 +193,13 @@ impl Host for ComponentHost {
 /// Starts the shipped factory on the controlled adapter.
 fn controlled() -> Result<ControlledHost, String> {
     let (host, exports) = super::block_on(start::<Bookmark>())?;
-    let command = host.observed().callback("command bookmark")?;
+    let bookmark = host.observed().callback("command bookmark")?;
+    let unbookmark = host.observed().callback("command unbookmark")?;
     Ok(ControlledHost {
         host,
         exports,
-        command,
+        bookmark,
+        unbookmark,
     })
 }
 
@@ -235,6 +252,179 @@ fn bookmark_missing_assistant_warns() -> Result<(), String> {
     Ok(())
 }
 
+/// Every recorded removal case clears the newest label of any entry kind.
+#[test]
+fn unbookmark_selects_latest_nonempty_label() -> Result<(), String> {
+    let mut host = controlled()?;
+    let corpus = corpus();
+    for case in selected(&corpus, |case| {
+        case.command == Command::Unbookmark
+            && case.failure.is_none()
+            && !case.expected.queries.is_empty()
+            && case.expected.notifications[0].kind.as_deref() == Some("info")
+    }) {
+        run_case(&mut host, case);
+    }
+    host.release();
+    Ok(())
+}
+
+/// A session without a label anywhere is reported and left alone.
+#[test]
+fn unbookmark_without_labels_warns() -> Result<(), String> {
+    let mut host = controlled()?;
+    let corpus = corpus();
+    for case in selected(&corpus, |case| {
+        case.command == Command::Unbookmark
+            && case.failure.is_none()
+            && case.expected.notifications[0].kind.as_deref() == Some("warning")
+    }) {
+        run_case(&mut host, case);
+    }
+    host.release();
+    Ok(())
+}
+
+/// A rejected host operation keeps the writes and notifications that came before it.
+#[test]
+fn bookmark_host_failures_preserve_effect_order() -> Result<(), String> {
+    let mut host = controlled()?;
+    let corpus = corpus();
+    for case in selected(&corpus, |case| case.failure.is_some()) {
+        run_case(&mut host, case);
+    }
+    host.release();
+    Ok(())
+}
+
+/// One traversal case of the walk test.
+struct Walk {
+    /// The command it invokes.
+    command: Command,
+    /// The labels the host holds before the invocation.
+    labels: BTreeMap<String, String>,
+    /// The argument text it supplies.
+    args: String,
+    /// The identities it reads a label for, in query order.
+    queries: Vec<String>,
+    /// The label writes it produces.
+    sets: Vec<Set>,
+    /// The notification it produces.
+    notification: Notification,
+}
+
+/// One entries request per invocation, and at most one label query per visited entry.
+///
+/// The recorded repeated-scan control reads a quadratic number of labels, which the
+/// per-entry bound rejects.
+#[test]
+fn bookmark_walk_is_linear() -> Result<(), String> {
+    let mut host = controlled()?;
+    for count in [32_usize, 64, 128] {
+        for case in walk_cases(count) {
+            let reader = run_case(&mut host, &case);
+            assert_eq!(
+                entry_requests(&reader),
+                1,
+                "{}: entries requests",
+                case.name
+            );
+        }
+    }
+    host.release();
+    Ok(())
+}
+
+/// The three recorded traversals over `count` assistant entries.
+fn walk_cases(count: usize) -> Vec<Case> {
+    let newest = format!("entry{}", count - 1);
+    let visited: Vec<String> = (0..count)
+        .rev()
+        .map(|index| format!("entry{index}"))
+        .collect();
+    let info = |message: &str| Notification {
+        message: message.to_owned(),
+        kind: Some("info".to_owned()),
+    };
+    vec![
+        walk(
+            count,
+            Walk {
+                command: Command::Bookmark,
+                labels: BTreeMap::default(),
+                args: "topic".to_owned(),
+                queries: Vec::new(),
+                sets: vec![Set {
+                    id: newest.clone(),
+                    label: Some("topic".to_owned()),
+                }],
+                notification: info("Bookmarked as: topic"),
+            },
+        ),
+        walk(
+            count,
+            Walk {
+                command: Command::Unbookmark,
+                labels: BTreeMap::default(),
+                args: String::new(),
+                queries: visited,
+                sets: Vec::new(),
+                notification: Notification {
+                    message: "No bookmarked entry found".to_owned(),
+                    kind: Some("warning".to_owned()),
+                },
+            },
+        ),
+        walk(
+            count,
+            Walk {
+                command: Command::Unbookmark,
+                labels: BTreeMap::from([(newest.clone(), "newest".to_owned())]),
+                args: String::new(),
+                queries: vec![newest.clone()],
+                sets: vec![Set {
+                    id: newest,
+                    label: None,
+                }],
+                notification: info("Removed bookmark: newest"),
+            },
+        ),
+    ]
+}
+
+/// One traversal case over `count` assistant entries with the supplied walk's state.
+fn walk(count: usize, walk: Walk) -> Case {
+    Case {
+        name: format!("{count} entries"),
+        command: walk.command,
+        args: walk.args,
+        entries: Value::Array(
+            (0..count)
+                .map(|index| assistant(&format!("entry{index}")))
+                .collect(),
+        ),
+        labels: walk.labels,
+        now: 0,
+        failure: None,
+        expected: Expected {
+            sets: walk.sets,
+            notifications: vec![walk.notification],
+            queries: walk.queries,
+            clock_reads: 0,
+            error: None,
+        },
+    }
+}
+
+/// The number of times the guest asked for the session entries.
+fn entry_requests(reader: &Reader) -> usize {
+    reader
+        .queries()
+        .iter()
+        .filter(|query| query.method == "getEntries")
+        .count()
+}
+
 /// Boundary whitespace follows the native trim, which keeps U+FEFF and drops U+0085.
 #[test]
 fn bookmark_labels_use_native_whitespace() -> Result<(), String> {
@@ -280,8 +470,7 @@ fn bookmark_labels_use_native_whitespace() -> Result<(), String> {
 fn bookmark_component_replays_recorded_cases() -> Result<(), String> {
     let mut started = ComponentHost::new()?;
     let corpus = corpus();
-    let cases = selected(&corpus, |case| case.command == Command::Bookmark);
-    for case in &cases {
+    for case in &corpus.rows {
         run_case(&mut started, case);
     }
     started.release();
@@ -312,11 +501,11 @@ fn selected(corpus: &Corpus, keep: impl Fn(&Case) -> bool) -> Vec<&Case> {
 }
 
 /// Runs one recorded case and asserts every observation it records.
-fn run_case<H: Host>(host: &mut H, case: &Case) {
+fn run_case<H: Host>(host: &mut H, case: &Case) -> Reader {
     let reader = host.supply(supplied(case)).expect("the supplied reader");
     host.reject(case.failure.as_deref());
     host.set_clock(case.now);
-    let answer = host.run(&case.args);
+    let answer = host.run(case.command, &case.args);
     assert_eq!(
         label_writes(&answer.lines),
         case.expected.sets,
@@ -344,6 +533,7 @@ fn run_case<H: Host>(host: &mut H, case: &Case) {
     if let Some(reads) = host.clock_reads() {
         assert_eq!(reads, case.expected.clock_reads, "{}: clock", case.name);
     }
+    reader
 }
 
 /// The reader replies one recorded case supplies.

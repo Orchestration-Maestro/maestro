@@ -47,7 +47,39 @@ fn bookmark(api: &ExtensionAPI, args: &str, ctx: &ExtensionCommandContext) -> Ex
     )
 }
 
-/// Registers the bookmark command.
+/// Reads the identity of a session entry, whichever of the nine kinds it is.
+fn entry_id(entry: &SessionEntry) -> &str {
+    match entry {
+        SessionEntry::Message(value) => &value.base.id,
+        SessionEntry::ThinkingLevelChange(value) => &value.base.id,
+        SessionEntry::ModelChange(value) => &value.base.id,
+        SessionEntry::Compaction(value) => &value.base.id,
+        SessionEntry::BranchSummary(value) => &value.base.id,
+        SessionEntry::Custom(value) => &value.base.id,
+        SessionEntry::CustomMessage(value) => &value.base.id,
+        SessionEntry::Label(value) => &value.base.id,
+        SessionEntry::SessionInfo(value) => &value.base.id,
+    }
+}
+
+/// Removes the newest label through the supplied host.
+fn unbookmark(api: &ExtensionAPI, ctx: &ExtensionCommandContext) -> ExtensionResult<()> {
+    let reader = ctx.session_manager()?;
+    for entry in reader.get_entries()?.iter().rev() {
+        let id = entry_id(entry);
+        if let Some(label) = reader.get_label(id)?.filter(|value| !value.is_empty()) {
+            api.set_label(id, None)?;
+            return ctx.ui()?.notify(
+                &format!("Removed bookmark: {label}"),
+                Some(NotificationType::Info),
+            );
+        }
+    }
+    ctx.ui()?
+        .notify("No bookmarked entry found", Some(NotificationType::Warning))
+}
+
+/// Registers the bookmark and removal commands.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
@@ -60,6 +92,18 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 handler: Rc::new(move |args, ctx| {
                     let api = registered.clone();
                     Box::pin(async move { bookmark(&api, &args, &ctx) })
+                }),
+            },
+        )?;
+        let registered = api.clone();
+        api.register_command(
+            "unbookmark",
+            CommandOptions {
+                description: Some("Remove bookmark from last labeled entry".into()),
+                get_argument_completions: None,
+                handler: Rc::new(move |_, ctx| {
+                    let api = registered.clone();
+                    Box::pin(async move { unbookmark(&api, &ctx) })
                 }),
             },
         )
