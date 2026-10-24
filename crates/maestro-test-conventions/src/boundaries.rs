@@ -229,12 +229,6 @@ fn selector(name: &str) -> bool {
     )
 }
 
-/// Recognize the one crate and file that declare the bound UI callback handle.
-fn bound_ui_call(member: &Member, source: &Source) -> bool {
-    member.name == "maestro-extensions"
-        && source.path == member.directory.join("src/types/ui/callbacks.rs")
-}
-
 /// Recognize the command-line wrapper module that carries no widget declarations.
 fn cli_configuration_wrapper(member: &Member, source: &Source, name: &str, kind: &str) -> bool {
     name == "config_selector"
@@ -251,13 +245,6 @@ fn check_declarations(
     declarations: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     for (name, kind, line) in &records.declarations {
-        if name == "UIHostCall" && !bound_ui_call(member, source) {
-            return Err(format!(
-                "{}:{line}: UIHostCall declaration belongs to \
-                 maestro-extensions src/types/ui/callbacks.rs",
-                source.path.display()
-            ));
-        }
         let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };

@@ -21,7 +21,7 @@ use maestro_tui::tui::{InputListener, InputListenerResult};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, TUI, TerminalImage,
 };
-use std::{future::Future, pin::Pin, rc::Rc};
+use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A frame writer over a recording terminal and a manual runtime.
 pub fn screen() -> (TUI, RecordingTerminal) {
@@ -205,15 +205,15 @@ impl ReadonlyFooterDataProvider for Metadata {
 pub struct Keyboard {
     /// The real writer.
     pub tui: TUI,
-    /// Handler failures the host received.
-    pub errors: Trace,
+    /// Original handler failures the host received.
+    pub errors: Rc<RefCell<Vec<EventError>>>,
 }
 impl Keyboard {
     /// A host over `tui` recording handler failures.
     pub fn new(tui: TUI) -> Self {
         Self {
             tui,
-            errors: Trace::default(),
+            errors: Rc::default(),
         }
     }
 }
@@ -225,7 +225,7 @@ impl ExtensionUIContextPort for Keyboard {
         let errors = self.errors.clone();
         let listener: InputListener = Rc::new(move |data: &str| {
             handler.call(data.to_owned()).unwrap_or_else(|error| {
-                mark(&errors, error.to_string());
+                errors.borrow_mut().push(error);
                 InputListenerResult::Pass
             })
         });

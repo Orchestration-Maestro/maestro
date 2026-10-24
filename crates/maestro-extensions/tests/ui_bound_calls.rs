@@ -1,6 +1,7 @@
 //! Bound UI callbacks: both execution families, origin, identity and release.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::error_support::Marker;
 use crate::local_support::{Loaded, Released, Trace, loaded_for, mark};
 use crate::ui_toolkit::{Keyboard, Metadata, Words, screen};
 use maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider;
@@ -405,12 +406,14 @@ fn origin_case<E: ExtensionExecution, R: Recorder>(
     foreign.on("ui", foreign_listener);
     loaded.api.events.on("ui", same_listener);
     let inner = trace.clone();
+    let failure = std::sync::Arc::new(());
+    let returned = std::sync::Arc::clone(&failure);
     let handler: TerminalInputHandler = loaded.api.ui_callback(move |data: String, emitter| {
         inner.record("before".to_owned());
         emitter.emit("ui", json!(null));
         assert_eq!(inner.lines(), ["before", "same"]);
         inner.record(format!("after {data}"));
-        Err("retained failure".into())
+        Err(Box::new(Marker(std::sync::Arc::as_ptr(&returned).addr())))
     });
     let (tui, terminal) = screen();
     tui.start().unwrap();
@@ -420,7 +423,12 @@ fn origin_case<E: ExtensionExecution, R: Recorder>(
     drop(loaded);
     terminal.send_input("data");
     assert_eq!(trace.lines(), ["before", "same", "after data", "foreign"]);
-    assert_eq!(*host.errors.borrow(), ["retained failure"]);
+    let errors = host.errors.borrow();
+    assert_eq!(errors.len(), 1);
+    let reported = errors[0]
+        .downcast_ref::<Marker<usize>>()
+        .expect("the host reported a rewritten error");
+    assert_eq!(reported.0, std::sync::Arc::as_ptr(&failure).addr());
 }
 
 #[test]
@@ -532,6 +540,25 @@ fn bound_ui_calls_release_the_origin_after_the_last_handle() {
         weak
     };
     assert!(weak.upgrade().is_none());
+    let released = Rc::new(Cell::new(false));
+    let sentinel = Released(Rc::clone(&released));
+    let bus = create_event_bus_for::<Local>(
+        Rc::new(|_| {}),
+        Rc::new(move |_: &str| {
+            let _ = &sentinel;
+        }),
+    );
+    let origin = loaded_for::<Local>("/origin", bus.for_extension());
+    let handle: UIHostCall<(), ()> = origin.api.ui_callback(|(), _| Ok(()));
+    drop(origin);
+    drop(bus);
+    assert!(
+        !released.get(),
+        "a handle released its origin while it could still be called"
+    );
+    handle.call(()).unwrap();
+    drop(handle);
+    assert!(released.get(), "the origin outlived its last handle");
     let calls = Rc::new(Cell::new(0));
     let counted = calls.clone();
     let failing: UIHostCall<(), u8> = loaded.api.ui_callback(move |(), _| {

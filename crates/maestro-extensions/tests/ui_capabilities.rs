@@ -1,6 +1,7 @@
 //! Retained UI capabilities, headless results and typed message renderers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::error_support;
 use crate::limited_host;
 use crate::local_support;
 #[path = "../../maestro-theme/tests/published/mod.rs"]
@@ -1008,7 +1009,7 @@ fn deciding_handler(api: &ExtensionAPI<Local>, seen: &Trace) -> TerminalInputHan
             "c" | "\u{1}" => InputListenerResult::Consume,
             "r" => InputListenerResult::Replace("R".into()),
             "e" => InputListenerResult::Replace(String::new()),
-            "!" => return Err("handler failed".into()),
+            "!" => return Err(Box::new(error_support::Marker(7_u64))),
             _ => InputListenerResult::Pass,
         })
     })
@@ -1044,7 +1045,14 @@ fn terminal_input_keeps_consumption_replacement_and_unsubscribe() {
             "\"\\u{1}\""
         ]
     );
-    assert_eq!(*host.errors.borrow(), ["handler failed"]);
+    let errors = host.errors.borrow();
+    assert_eq!(errors.len(), 1);
+    assert_eq!(
+        errors[0]
+            .downcast_ref::<error_support::Marker<u64>>()
+            .map(|m| m.0),
+        Some(7)
+    );
     let retained = Trace::default();
     let observer = retained.clone();
     let dropped = ui.on_terminal_input(callbacks.api.ui_callback(move |data: String, _| {
